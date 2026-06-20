@@ -1,0 +1,252 @@
+<div class="fade-in">
+  <% if (!summary) { %>
+    <!-- EMPTY STATE -->
+    <div class="card empty-state text-center" style="padding: 80px 20px;">
+      <div class="empty-state-icon"><i class="bi bi-bar-chart-steps"></i></div>
+      <h2 class="empty-state-title" style="font-size: 22px; margin-bottom: 12px;">Selamat Datang di Dashboard SE2026 PPU</h2>
+      <p class="empty-state-text" style="font-size: 14px; max-width: 540px; margin: 0 auto 24px; color: var(--text-secondary);">
+        Dashboard monitoring progres Sensus Ekonomi 2026 Kabupaten Penajam Paser Utara belum terisi data. Silakan upload file Excel rekapitulasi harian pertama Anda untuk memulai visualisasi monitoring.
+      </p>
+      <a href="/upload" class="btn btn-primary"><i class="bi bi-lightning-charge-fill"></i> Upload Data Rekap Pertama</a>
+    </div>
+  <% } else { %>
+    
+    <!-- KPI CARDS GRID -->
+    <div class="stats-grid">
+      
+      <div class="stat-card blue">
+        <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
+        <div class="stat-label">Total SubSLS (Blok Sensus)</div>
+        <div class="stat-value"><%= summary.total.toLocaleString('id-ID') %></div>
+        <div class="stat-sub">Beban sensus seluruh PPU</div>
+      </div>
+
+      <div class="stat-card green">
+        <div class="stat-icon" style="color: var(--accent-green);"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="stat-label">SubSLS Selesai</div>
+        <div class="stat-value"><%= summary.selesai.toLocaleString('id-ID') %></div>
+        <div class="stat-sub">Selesai dicacah (<%= ((summary.selesai / summary.total) * 100).toFixed(1) %>%)</div>
+      </div>
+
+      <div class="stat-card yellow">
+        <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+        <div class="stat-label">SubSLS Tersisa</div>
+        <div class="stat-value"><%= summary.belum.toLocaleString('id-ID') %></div>
+        <div class="stat-sub">Belum selesai dicacah (<%= ((summary.belum / summary.total) * 100).toFixed(1) %>%)</div>
+      </div>
+
+      <div class="stat-card cyan">
+        <div class="stat-icon"><i class="bi bi-building-fill"></i></div>
+        <div class="stat-label">Total Usaha Ditemukan</div>
+        <div class="stat-value"><%= summary.usaha_total.toLocaleString('id-ID') %></div>
+        <div class="stat-sub">Ditemukan + Baru (+<%= summary.usaha_baru.toLocaleString('id-ID') %> baru)</div>
+      </div>
+
+      <div class="stat-card purple">
+        <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+        <div class="stat-label">Total Keluarga Ditemukan</div>
+        <div class="stat-value"><%= summary.keluarga_total.toLocaleString('id-ID') %></div>
+        <div class="stat-sub">Ditemukan + Baru (+<%= summary.keluarga_baru.toLocaleString('id-ID') %> baru)</div>
+      </div>
+
+    </div>
+
+    <!-- MAIN DASHBOARD CONTENT GRID -->
+    <div class="overview-grid">
+      
+      <!-- LEFT: PROGRESS GAUGE & DETAILS -->
+      <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div class="card-header">
+          <div class="card-title"><i class="bi bi-graph-up-arrow"></i> Progres Penyelesaian Sensus</div>
+          <span class="badge badge-green"><%= ((summary.selesai / summary.total) * 100).toFixed(1) %>%</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 20px; align-items: center; padding: 10px 0;">
+          
+          <div class="progress-ring-wrap" style="height: 180px;">
+            <canvas id="progressChart"></canvas>
+            <div class="progress-ring-text">
+              <div class="progress-ring-pct"><%= ((summary.selesai / summary.total) * 100).toFixed(0) %>%</div>
+              <div class="progress-ring-label">Selesai</div>
+            </div>
+          </div>
+
+          <div>
+            <div class="summary-split">
+              <div class="summary-item">
+                <div class="summary-item-label text-green">Usaha Baru</div>
+                <div class="summary-item-value">+<%= summary.usaha_baru.toLocaleString('id-ID') %></div>
+                <div class="summary-item-sub">Usaha terdaftar baru</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-item-label text-cyan">Keluarga Baru</div>
+                <div class="summary-item-value">+<%= summary.keluarga_baru.toLocaleString('id-ID') %></div>
+                <div class="summary-item-sub">Keluarga terdaftar baru</div>
+              </div>
+            </div>
+            
+            <div class="summary-split mt-4">
+              <div class="summary-item">
+                <div class="summary-item-label text-red">Usaha Tutup</div>
+                <div class="summary-item-value"><%= summary.usaha_tutup.toLocaleString('id-ID') %></div>
+                <div class="summary-item-sub">Usaha tutup / pindah</div>
+              </div>
+              <div class="summary-item">
+                <div class="summary-item-label text-yellow">Meninggal</div>
+                <div class="summary-item-value"><%= summary.meninggal.toLocaleString('id-ID') %></div>
+                <div class="summary-item-sub">Anggota KK meninggal</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-secondary);">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>Usaha Tidak Ditemukan: <strong><%= summary.usaha_tidak_ditemukan.toLocaleString('id-ID') %></strong></span>
+            <span>Keluarga Tidak Ditemukan: <strong><%= summary.keluarga_tidak_ditemukan.toLocaleString('id-ID') %></strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: TREN HARIAN -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="bi bi-calendar3"></i> Tren Progres Pengumpulan Data Harian</div>
+        </div>
+        <div style="height: 240px; position: relative;">
+          <canvas id="trenChartCanvas"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BOTTOM ROW: KECAMATAN DETAILS -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-geo-alt"></i> Ringkasan Progres per Kecamatan</div>
+        <a href="/kecamatan" class="btn btn-secondary btn-sm">Rincian Kecamatan <i class="bi bi-arrow-right-short"></i></a>
+      </div>
+
+      <div class="search-wrap mb-4" style="max-width: 240px; margin-bottom: 16px;">
+        <input type="search" id="kecOverviewSearch" placeholder="Cari kecamatan...">
+      </div>
+
+      <div class="comparison-grid">
+        
+        <div class="table-wrap">
+          <table id="kecOverviewTable">
+            <thead>
+              <tr>
+                <th>Kecamatan</th>
+                <th class="text-right">Total SubSLS</th>
+                <th class="text-right">Selesai</th>
+                <th class="text-right">Progres %</th>
+                <th class="text-right">Beban Muatan</th>
+                <th class="text-right">Usaha Total</th>
+                <th class="text-right">Keluarga Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% kecStats.forEach(k => { %>
+                <% let kPct = k.total_subsls ? ((k.selesai / k.total_subsls) * 100).toFixed(1) : 0; %>
+                <tr>
+                  <td class="td-primary"><a href="/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" style="color: inherit; text-decoration: none;"><i class="bi bi-geo-alt"></i> <%= k.kecamatan %></a></td>
+                  <td class="text-right"><%= k.total_subsls %></td>
+                  <td class="text-right fw-bold"><%= k.selesai %></td>
+                  <td class="text-right">
+                    <% if (kPct == 100) { %>
+                      <span class="badge badge-green">100%</span>
+                    <% } else if (kPct < 25) { %>
+                      <span class="badge badge-red"><%= kPct %>%</span>
+                    <% } else { %>
+                      <span class="badge badge-blue"><%= kPct %>%</span>
+                    <% } %>
+                  </td>
+                  <td class="text-right"><%= k.total_muatan.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold td-primary"><%= k.usaha_total.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold"><%= k.keluarga_total.toLocaleString('id-ID') %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="height: 240px; position: relative;">
+          <canvas id="kecBarChartCanvas"></canvas>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- DETAILS HOUSING / RUMAH -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-house-door"></i> Klasifikasi Tipe Bangunan Tinggal</div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;">
+        
+        <div class="summary-item">
+          <div class="summary-item-label">Rumah Tunggal</div>
+          <div class="summary-item-value"><%= (summary.rumah_tunggal || 0).toLocaleString('id-ID') %></div>
+          <div class="summary-item-sub">Bangunan mandiri tunggal</div>
+        </div>
+
+        <div class="summary-item">
+          <div class="summary-item-label">Rumah Deret</div>
+          <div class="summary-item-value"><%= (summary.rumah_deret || 0).toLocaleString('id-ID') %></div>
+          <div class="summary-item-sub">Bangunan gandeng/berbaris</div>
+        </div>
+
+        <div class="summary-item">
+          <div class="summary-item-label">Rumah Susun</div>
+          <div class="summary-item-value"><%= (summary.rumah_susun || 0).toLocaleString('id-ID') %></div>
+          <div class="summary-item-sub">Rusun sederhana</div>
+        </div>
+
+        <div class="summary-item">
+          <div class="summary-item-label">Apartemen</div>
+          <div class="summary-item-value"><%= (summary.apartemen || 0).toLocaleString('id-ID') %></div>
+          <div class="summary-item-sub">Kondominium / apartemen</div>
+        </div>
+
+        <div class="summary-item">
+          <div class="summary-item-label">Lainnya</div>
+          <div class="summary-item-value"><%= (summary.lainnya || 0).toLocaleString('id-ID') %></div>
+          <div class="summary-item-sub">Ruko, mes, kontainer, dll.</div>
+        </div>
+
+      </div>
+    </div>
+
+  <% } %>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    <% if (summary) { %>
+      // Initialize progress donut chart
+      createDonutChart('progressChart', <%= summary.selesai %>, <%= summary.total %>, '#c2410c');
+
+      // Initialize tren line chart
+      const rawTrenData = <%- tren %>;
+      createTrenChart('trenChartCanvas', rawTrenData);
+
+      // Initialize kecamatan comparison bar chart
+      const kecLabels = [];
+      const kecSelesai = [];
+      const kecTotal = [];
+      <% kecStats.forEach(k => { %>
+        kecLabels.push("<%= k.kecamatan %>");
+        kecSelesai.push(<%= k.selesai %>);
+        kecTotal.push(<%= k.total_subsls %>);
+      <% }) %>
+
+      createBarChart('kecBarChartCanvas', kecLabels, kecSelesai, kecTotal, 'Progres Per Kecamatan (SubSLS)');
+
+      // Initialize table sorting and searching
+      makeTableSortable('kecOverviewTable');
+      makeTableSearchable('kecOverviewSearch', 'kecOverviewTable');
+    <% } %>
+  });
+</script>

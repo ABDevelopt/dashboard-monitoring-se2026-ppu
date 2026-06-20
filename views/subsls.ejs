@@ -1,0 +1,194 @@
+<div class="fade-in">
+  <% if (!uploadId) { %>
+    <div class="card empty-state text-center">
+      <div class="empty-state-icon"><i class="bi bi-bar-chart-steps"></i></div>
+      <div class="empty-state-title">Belum Ada Data Terupload</div>
+      <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/upload">Upload Data</a>.</div>
+    </div>
+  <% } else { %>
+    
+    <!-- FILTER BAR -->
+    <div class="card">
+      <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
+        <div class="card-title"><i class="bi bi-search"></i> Filter Pencarian SubSLS</div>
+        <a href="/subsls" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
+      </div>
+      
+      <form action="/subsls" method="GET" id="filterForm">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
+          
+          <div>
+            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
+            <select name="kec" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+              <option value="">-- Semua Kecamatan --</option>
+              <% kecList.forEach(k => { %>
+                <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Desa/Kelurahan</label>
+            <select name="desa" onchange="document.getElementById('filterForm').submit()" style="width:100%;" <%= !filterKec ? 'disabled' : '' %>>
+              <option value="">-- Semua Desa --</option>
+              <% desaList.forEach(d => { %>
+                <option value="<%= d.desa %>" <%= filterDesa === d.desa ? 'selected' : '' %>><%= d.desa %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
+            <select name="korlap" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+              <option value="">-- Semua Korlap --</option>
+              <% korlapList.forEach(k => { %>
+                <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
+            <select name="pml" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+              <option value="">-- Semua PML --</option>
+              <% pmlList.forEach(p => { %>
+                <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PCL (Pencacah)</label>
+            <select name="pcl" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+              <option value="">-- Semua PCL --</option>
+              <% pclList.forEach(p => { %>
+                <option value="<%= p.pcl %>" <%= filterPcl === p.pcl ? 'selected' : '' %>><%= p.pcl %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Status Progres</label>
+            <select name="status" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+              <option value="">-- Semua Status --</option>
+              <option value="selesai" <%= filterStatus === 'selesai' ? 'selected' : '' %>>Selesai Pencacahan</option>
+              <option value="belum" <%= filterStatus === 'belum' ? 'selected' : '' %>>Belum Selesai</option>
+            </select>
+          </div>
+
+        </div>
+      </form>
+    </div>
+
+    <!-- MAIN DATA TABLE -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <div class="card-title">
+          <span><i class="bi bi-box-seam"></i> Daftar Rincian SubSLS (Blok Sensus)</span>
+        </div>
+        <div>
+          <span style="font-size:12px; margin-right:12px; color:var(--text-secondary);">
+            Menampilkan <%= data.length %> dari <%= total.toLocaleString('id-ID') %> SubSLS
+          </span>
+          <a href="/subsls/export" class="btn btn-success btn-sm"><i class="bi bi-download"></i> Export ke CSV</a>
+        </div>
+      </div>
+
+      <div class="search-wrap mb-4" style="max-width: 300px;">
+        <input type="search" id="localSearch" placeholder="Cari di halaman ini...">
+      </div>
+
+      <% if (data && data.length > 0) { %>
+        <div class="table-wrap">
+          <table id="subslsTable">
+            <thead>
+              <tr>
+                <th>Kode SLS</th>
+                <th>Nama SLS</th>
+                <th>Kecamatan</th>
+                <th>Desa</th>
+                <th>PCL</th>
+                <th>PML</th>
+                <th>Korlap</th>
+                <th class="text-right">Muatan</th>
+                <th class="text-center">Status</th>
+                <th class="text-right">Usaha Baru</th>
+                <th class="text-right">Usaha Total</th>
+                <th class="text-right">Keluarga Baru</th>
+                <th class="text-right">Keluarga Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% data.forEach(row => { %>
+                <tr>
+                  <td class="td-code"><%= row.kode %></td>
+                  <td class="td-primary"><%= row.nama_sls %></td>
+                  <td><%= row.kecamatan %></td>
+                  <td><%= row.desa %></td>
+                  <td class="td-primary"><%= row.pcl %></td>
+                  <td><%= row.pml %></td>
+                  <td><%= row.korlap %></td>
+                  <td class="text-right fw-bold" data-sort="<%= row.muatan %>"><%= row.muatan.toLocaleString('id-ID') %></td>
+                  <td class="text-center" data-sort="<%= row.sudah_diisi %>">
+                    <% if (row.sudah_diisi) { %>
+                      <span class="badge badge-green">Selesai</span>
+                    <% } else { %>
+                      <span class="badge badge-red">Belum</span>
+                    <% } %>
+                  </td>
+                  <td class="text-right text-green" data-sort="<%= row.usaha_baru %>">+<%= row.usaha_baru.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold" data-sort="<%= row.usaha_total %>"><%= row.usaha_total.toLocaleString('id-ID') %></td>
+                  <td class="text-right text-cyan" data-sort="<%= row.keluarga_baru %>">+<%= row.keluarga_baru.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold" data-sort="<%= row.keluarga_total %>"><%= row.keluarga_total.toLocaleString('id-ID') %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- PAGINATION -->
+        <% if (totalPages > 1) { %>
+          <div class="pagination">
+            <div>
+              Halaman <strong><%= page %></strong> dari <strong><%= totalPages %></strong> (Total <%= total.toLocaleString('id-ID') %> record)
+            </div>
+            <div class="pagination-pages">
+              <!-- First Page -->
+              <% if (page > 1) { %>
+                <a href="/subsls?page=1&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="page-btn"><i class="bi bi-chevron-double-left"></i> Pertama</a>
+                <a href="/subsls?page=<%= page - 1 %>&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="page-btn"><i class="bi bi-chevron-left"></i> Seb.</a>
+              <% } %>
+
+              <!-- Page range -->
+              <% 
+                let startPage = Math.max(1, page - 2);
+                let endPage = Math.min(totalPages, page + 2);
+                for (let i = startPage; i <= endPage; i++) {
+              %>
+                <a href="/subsls?page=<%= i %>&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="page-btn <%= page === i ? 'active' : '' %>"><%= i %></a>
+              <% } %>
+
+              <!-- Next page -->
+              <% if (page < totalPages) { %>
+                <a href="/subsls?page=<%= page + 1 %>&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="page-btn">Ber. <i class="bi bi-chevron-right"></i></a>
+                <a href="/subsls?page=<%= totalPages %>&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="page-btn">Terakhir <i class="bi bi-chevron-double-right"></i></a>
+              <% } %>
+            </div>
+          </div>
+        <% } %>
+
+      <% } else { %>
+        <div class="no-data">
+          <i class="bi bi-slash-circle-fill text-red" style="font-size: 18px; margin-right: 6px;"></i> Tidak ditemukan data SubSLS yang sesuai dengan kriteria filter Anda.
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    makeTableSortable('subslsTable');
+    makeTableSearchable('localSearch', 'subslsTable');
+  });
+</script>

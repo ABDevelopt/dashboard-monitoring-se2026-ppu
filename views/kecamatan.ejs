@@ -1,0 +1,104 @@
+<div class="fade-in">
+  <% if (!uploadId) { %>
+    <div class="card empty-state text-center">
+      <div class="empty-state-icon"><i class="bi bi-bar-chart-steps"></i></div>
+      <div class="empty-state-title">Belum Ada Data Terupload</div>
+      <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/upload">Upload Data</a>.</div>
+    </div>
+  <% } else { %>
+
+    <!-- KECAMATAN CARDS GRID -->
+    <div class="kec-grid">
+      <% kecStats.forEach(k => { %>
+        <% let pctVal = k.total_subsls ? ((k.selesai / k.total_subsls) * 100).toFixed(1) : 0; %>
+        <a href="/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" class="kec-card <%= filterKec === k.kecamatan ? 'active' : '' %>">
+          <div class="kec-name"><i class="bi bi-geo-alt"></i> Kec. <%= k.kecamatan %></div>
+          <div class="kec-pct"><%= pctVal %>%</div>
+          
+          <div class="progress-bar-wrap" style="height: 6px; margin-top: 8px; margin-bottom: 8px;">
+            <div class="progress-bar <%= pctVal == 100 ? 'green' : (pctVal < 25 ? 'red' : 'blue') %>" data-width="<%= pctVal %>" style="width: 0%;"></div>
+          </div>
+          
+          <div class="kec-detail">
+            SubSLS: <strong><%= k.selesai %> / <%= k.total_subsls %></strong> Selesai<br>
+            Total Muatan: <strong><%= k.total_muatan.toLocaleString('id-ID') %></strong><br>
+            Total Usaha: <strong><%= k.usaha_total.toLocaleString('id-ID') %></strong><br>
+            Total Keluarga: <strong><%= k.keluarga_total.toLocaleString('id-ID') %></strong>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+
+    <!-- DETAIL TABLE OF DESAS FOR CHOSEN KECAMATAN -->
+    <% if (filterKec) { %>
+      <div class="card mt-4">
+        <div class="card-header">
+          <div class="card-title"><i class="bi bi-houses"></i> Rincian Progres Per Desa/Kelurahan di Kecamatan <%= filterKec %></div>
+          <a href="/kecamatan" class="btn btn-secondary btn-xs"><i class="bi bi-x-lg"></i> Tutup Rincian</a>
+        </div>
+
+        <div class="search-wrap mb-4" style="max-width: 300px;">
+          <input type="search" id="desaSearch" placeholder="Cari nama desa/kelurahan...">
+        </div>
+
+        <% if (desaStats && desaStats.length > 0) { %>
+          <div class="table-wrap">
+            <table id="desaTable">
+              <thead>
+                <tr>
+                  <th>Nama Desa/Kelurahan</th>
+                  <th class="text-right">Total SubSLS</th>
+                  <th class="text-right">SubSLS Selesai</th>
+                  <th class="text-right">Progres %</th>
+                  <th class="text-right">Muatan Target</th>
+                  <th class="text-right">Total Usaha</th>
+                  <th class="text-right">Total Keluarga</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% desaStats.forEach(d => { %>
+                  <% let dPct = d.total_subsls ? ((d.selesai / d.total_subsls) * 100).toFixed(1) : 0; %>
+                  <tr>
+                    <td class="td-primary"><i class="bi bi-house"></i> <%= d.desa %></td>
+                    <td class="text-right" data-sort="<%= d.total_subsls %>"><%= d.total_subsls %></td>
+                    <td class="text-right fw-bold" data-sort="<%= d.selesai %>" style="<%= d.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= d.selesai %></td>
+                    <td class="text-right" data-sort="<%= dPct %>">
+                      <% if (dPct == 100) { %>
+                        <span class="badge badge-green">100%</span>
+                      <% } else if (dPct == 0) { %>
+                        <span class="badge badge-red">0%</span>
+                      <% } else if (dPct < 25) { %>
+                        <span class="badge badge-yellow"><%= dPct %>%</span>
+                      <% } else { %>
+                        <span class="badge badge-blue"><%= dPct %>%</span>
+                      <% } %>
+                    </td>
+                    <td class="text-right" data-sort="<%= d.total_muatan %>"><%= d.total_muatan.toLocaleString('id-ID') %></td>
+                    <td class="text-right fw-bold td-primary" data-sort="<%= d.usaha_total %>"><%= d.usaha_total.toLocaleString('id-ID') %></td>
+                    <td class="text-right fw-bold" data-sort="<%= d.keluarga_total %>"><%= d.keluarga_total.toLocaleString('id-ID') %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <div class="no-data">Tidak ada rincian data desa/kelurahan.</div>
+        <% } %>
+      </div>
+    <% } else { %>
+      <div class="card empty-state text-center" style="border-style: dashed; border-width: 2px;">
+        <div class="empty-state-icon"><i class="bi bi-arrow-up-circle"></i></div>
+        <div class="empty-state-title">Pilih Kecamatan</div>
+        <div class="empty-state-text">Klik salah satu kartu kecamatan di atas untuk melihat rincian progres per desa/kelurahan.</div>
+      </div>
+    <% } %>
+
+  <% } %>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    makeTableSortable('desaTable');
+    makeTableSearchable('desaSearch', 'desaTable');
+  });
+</script>

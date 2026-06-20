@@ -1,0 +1,19 @@
+# Node dependencies
+node_modules/
+
+# Local databases & SQLite logs
+data/*.db
+data/*.db-journal
+data/*.db-shm
+data/*.db-wal
+
+# User uploaded files
+uploads/*
+!uploads/.gitkeep
+
+# System/IDE configs
+.idea/
+.vscode/
+.DS_Store
+.gemini/
+.agents/

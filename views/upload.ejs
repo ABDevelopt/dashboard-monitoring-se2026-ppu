@@ -1,0 +1,88 @@
+<div class="fade-in">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span><i class="bi bi-upload"></i> Upload File Rekap Baru</span>
+      </div>
+    </div>
+    
+    <form action="/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
+      <div class="mb-4">
+        <label for="tanggal" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-calendar3"></i> Tanggal Data Rekap</label>
+        <input type="date" id="tanggal" name="tanggal" required style="width: 100%; max-width: 300px; padding: 10px; font-size: 13px;" value="<%= new Date().toISOString().slice(0, 10) %>">
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Pilih tanggal pelaksanaan sensus yang diwakili oleh data ini (biasanya tanggal hari ini atau kemarin).</p>
+      </div>
+
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-zone-icon"><i class="bi bi-cloud-arrow-up"></i></div>
+        <div class="upload-zone-title">Tarik & Lepas File Excel di Sini</div>
+        <div class="upload-zone-sub">atau klik untuk menelusuri file (.xlsx, .xls)</div>
+        <input type="file" id="excelFile" name="excelFile" accept=".xlsx, .xls" required style="display: none;">
+      </div>
+
+      <div class="mt-4" style="display: flex; justify-content: flex-end;">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-lightning-charge-fill"></i> Mulai Proses Upload</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card mt-4">
+    <div class="card-header">
+      <div class="card-title">
+        <span><i class="bi bi-clock-history"></i> Riwayat Upload & Histori Data</span>
+      </div>
+      <span class="badge badge-blue"><%= uploads.length %> Upload</span>
+    </div>
+
+    <div class="search-wrap mb-4" style="max-width: 240px; margin-bottom: 16px;">
+      <input type="search" id="uploadsSearch" placeholder="Cari nama file/tanggal...">
+    </div>
+
+    <% if (uploads && uploads.length > 0) { %>
+      <div class="table-wrap">
+        <table id="uploadsTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nama File</th>
+              <th>Tanggal Data</th>
+              <th class="text-right">SubSLS Terisi</th>
+              <th>Waktu Upload</th>
+              <th style="width: 100px;" class="text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% uploads.forEach(u => { %>
+              <tr>
+                <td class="td-code"><%= u.id %></td>
+                <td class="td-primary"><%= u.filename %></td>
+                <td><span class="badge badge-gray"><%= u.tanggal %></span></td>
+                <td class="text-right fw-bold td-primary"><%= u.total_subsls_terisi.toLocaleString('id-ID') %></td>
+                <td><%= new Date(u.created_at).toLocaleString('id-ID') %></td>
+                <td class="text-center">
+                  <form action="/upload/delete/<%= u.id %>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data upload ini? Seluruh progres terkait upload ini akan terhapus secara permanen.')">
+                    <button type="submit" class="btn btn-danger btn-xs"><i class="bi bi-trash"></i> Hapus</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <div class="empty-state">
+        <div class="empty-state-icon"><i class="bi bi-folder-x"></i></div>
+        <div class="empty-state-title">Belum Ada Data Sensus</div>
+        <div class="empty-state-text">Silakan upload file Excel rekap harian pertama Anda untuk mengaktifkan dashboard monitoring.</div>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    initUploadZone('uploadZone', 'excelFile');
+    makeTableSortable('uploadsTable');
+    makeTableSearchable('uploadsSearch', 'uploadsTable');
+  });
+</script>

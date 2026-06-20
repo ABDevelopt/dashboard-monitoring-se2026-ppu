@@ -1,0 +1,159 @@
+<div class="fade-in">
+  <% if (!uploadId) { %>
+    <div class="card empty-state text-center">
+      <div class="empty-state-icon"><i class="bi bi-bar-chart-steps"></i></div>
+      <div class="empty-state-title">Belum Ada Data Terupload</div>
+      <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/upload">Upload Data</a>.</div>
+    </div>
+  <% } else { %>
+
+    <!-- TWO-COLUMN GRID FOR DRILLDOWN -->
+    <div class="drilldown-grid mt-4">
+      
+      <!-- PML LIST TABLE -->
+      <div class="card" style="margin-bottom: 0;">
+        <div class="card-header">
+          <div class="card-title"><i class="bi bi-clipboard2-data"></i> Progres Kinerja per PML (Pengawas)</div>
+          <span class="badge badge-blue"><%= pmlStats.length %> PML</span>
+        </div>
+
+        <div class="search-wrap mb-4" style="max-width: 300px;">
+          <input type="search" id="pmlSearch" placeholder="Cari nama PML...">
+        </div>
+
+        <% if (pmlStats && pmlStats.length > 0) { %>
+          <div class="table-wrap" style="max-height: 600px; overflow-y: auto;">
+            <table id="pmlTable">
+              <thead>
+                <tr>
+                  <th>Nama PML</th>
+                  <th>Korlap</th>
+                  <th class="text-right">Jumlah PCL</th>
+                  <th class="text-right">SubSLS</th>
+                  <th class="text-right">Selesai</th>
+                  <th class="text-right">Progres %</th>
+                  <th class="text-right">Total Usaha</th>
+                  <th class="text-right">Total Keluarga</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% pmlStats.forEach(p => { %>
+                  <% let completionPct = p.total_subsls ? Math.round((p.selesai / p.total_subsls) * 100) : 0; %>
+                  <tr class="<%= filterPml === p.pml ? 'active' : '' %>" style="<%= filterPml === p.pml ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
+                    <td class="td-primary">
+                      <a href="/pml?pml=<%= encodeURIComponent(p.pml) %>" style="color: inherit; text-decoration: none; display: block;">
+                        <i class="bi bi-clipboard2-data"></i> <%= p.pml %>
+                      </a>
+                    </td>
+                    <td><%= p.korlap %></td>
+                    <td class="text-right" data-sort="<%= p.jumlah_pcl %>"><%= p.jumlah_pcl %> PCL</td>
+                    <td class="text-right" data-sort="<%= p.total_subsls %>"><%= p.total_subsls %></td>
+                    <td class="text-right fw-bold" data-sort="<%= p.selesai %>" style="<%= p.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= p.selesai %></td>
+                    <td class="text-right" data-sort="<%= completionPct %>">
+                      <% if (completionPct === 100) { %>
+                        <span class="badge badge-green">100%</span>
+                      <% } else if (completionPct === 0) { %>
+                        <span class="badge badge-red">0%</span>
+                      <% } else if (completionPct < 25) { %>
+                        <span class="badge badge-yellow"><%= completionPct %>%</span>
+                      <% } else { %>
+                        <span class="badge badge-blue"><%= completionPct %>%</span>
+                      <% } %>
+                    </td>
+                    <td class="text-right fw-bold td-primary" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
+                    <td class="text-right fw-bold" data-sort="<%= p.keluarga_total %>"><%= p.keluarga_total.toLocaleString('id-ID') %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <div class="no-data">Tidak ada PML yang cocok.</div>
+        <% } %>
+      </div>
+
+      <!-- PML'S PCL TEAM DETAILS -->
+      <div>
+        <% if (filterPml) { %>
+          <div class="card" style="margin-bottom: 0; position: sticky; top: 80px;">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-people"></i> Anggota Tim PCL: <%= filterPml %></div>
+              <a href="/pml" class="btn btn-secondary btn-xs"><i class="bi bi-x-lg"></i> Tutup</a>
+            </div>
+
+            <% if (detailPcl && detailPcl.length > 0) { %>
+              <div class="mb-4">
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
+                  Korlap Atasan: <strong><%= detailPcl[0].korlap %></strong>
+                </div>
+                <% 
+                  let totalBeban = detailPcl.reduce((acc, c) => acc + c.total_subsls, 0);
+                  let totalSelesai = detailPcl.reduce((acc, c) => acc + c.selesai, 0);
+                  let totalPct = totalBeban ? ((totalSelesai / totalBeban) * 100).toFixed(1) : 0;
+                %>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                  <span>Progres Tim PML</span>
+                  <span class="fw-bold"><%= totalSelesai %> / <%= totalBeban %> selesai (<%= totalPct %>%)</span>
+                </div>
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar <%= totalPct == 100 ? 'green' : (totalPct < 25 ? 'red' : 'blue') %>" data-width="<%= totalPct %>" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <div class="search-wrap mb-4" style="max-width: 100%; margin-bottom: 12px;">
+                <input type="search" id="detailPclSearch" placeholder="Cari nama PCL dalam tim...">
+              </div>
+
+              <div id="detailPclList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
+                <% detailPcl.forEach(item => { %>
+                  <div class="detail-item">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span class="fw-bold" style="color: var(--text-primary);"><i class="bi bi-person"></i> <%= item.pcl %></span>
+                      <% if (item.pct === 100) { %>
+                        <span class="badge badge-green btn-xs">100%</span>
+                      <% } else if (item.pct === 0) { %>
+                        <span class="badge badge-red btn-xs">0%</span>
+                      <% } else { %>
+                        <span class="badge badge-blue btn-xs"><%= item.pct %>%</span>
+                      <% } %>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">
+                      Wilayah Kerja: Kec. <strong><%= item.kecamatan %></strong>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                      SubSLS: <strong><%= item.selesai %> / <%= item.total_subsls %></strong> Selesai
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 6px; font-size: 11px;">
+                      <span style="background: rgba(16,185,129,0.1); padding: 2px 8px; border-radius: 4px; color: var(--accent-green);"><i class="bi bi-building"></i> <%= item.usaha_total %> Usaha</span>
+                      <span style="background: rgba(6,182,212,0.1); padding: 2px 8px; border-radius: 4px; color: var(--accent-cyan);"><i class="bi bi-people"></i> <%= item.keluarga_total %> Keluarga</span>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <div class="no-data">Tidak ada detail PCL.</div>
+            <% } %>
+          </div>
+        <% } else { %>
+          <div class="card empty-state text-center" style="height: 100%; min-height: 300px; display: flex; flex-direction: column; justify-content: center; border-style: dashed;">
+            <div class="empty-state-icon"><i class="bi bi-arrow-left-circle"></i></div>
+            <div class="empty-state-title">Pilih PML</div>
+            <div class="empty-state-text">Klik nama PML di tabel sebelah kiri untuk melihat rincian PCL yang diawasi beserta progres kinerja per PCL.</div>
+          </div>
+        <% } %>
+      </div>
+
+    </div>
+
+  <% } %>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    makeTableSortable('pmlTable');
+    makeTableSearchable('pmlSearch', 'pmlTable');
+    <% if (filterPml) { %>
+      makeListSearchable('detailPclSearch', 'detailPclList', '.detail-item');
+    <% } %>
+  });
+</script>

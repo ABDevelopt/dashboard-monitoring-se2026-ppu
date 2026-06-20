@@ -1,0 +1,199 @@
+<div class="fade-in">
+  <% if (!uploadId) { %>
+    <div class="card empty-state text-center">
+      <div class="empty-state-icon"><i class="bi bi-bar-chart-steps"></i></div>
+      <div class="empty-state-title">Belum Ada Data Terupload</div>
+      <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/upload">Upload Data</a>.</div>
+    </div>
+  <% } else { %>
+
+    <!-- FILTER BAR -->
+    <div class="card">
+      <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
+        <div class="card-title"><i class="bi bi-search"></i> Filter Pencarian PCL</div>
+        <a href="/pcl" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
+      </div>
+      
+      <form action="/pcl" method="GET" id="filterForm">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+          
+          <div>
+            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
+            <select name="kec" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+              <option value="">-- Semua Kecamatan --</option>
+              <% kecList.forEach(k => { %>
+                <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
+            <select name="korlap" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+              <option value="">-- Semua Korlap --</option>
+              <% korlapList.forEach(k => { %>
+                <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
+            <select name="pml" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+              <option value="">-- Semua PML --</option>
+              <% pmlList.forEach(p => { %>
+                <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
+              <% }) %>
+            </select>
+          </div>
+
+        </div>
+      </form>
+    </div>
+
+    <!-- TWO-COLUMN GRID FOR DRILLDOWN -->
+    <div class="drilldown-grid mt-4">
+      
+      <!-- PCL LIST TABLE -->
+      <div class="card" style="margin-bottom: 0;">
+        <div class="card-header">
+          <div class="card-title"><i class="bi bi-person-gear"></i> Progres Kinerja per PCL (Pencacah)</div>
+          <span class="badge badge-blue"><%= pclStats.length %> PCL</span>
+        </div>
+
+        <div class="search-wrap mb-4" style="max-width: 300px;">
+          <input type="search" id="pclSearch" placeholder="Cari nama PCL...">
+        </div>
+
+        <% if (pclStats && pclStats.length > 0) { %>
+          <div class="table-wrap" style="max-height: 600px; overflow-y: auto;">
+            <table id="pclTable">
+              <thead>
+                <tr>
+                  <th>Nama PCL</th>
+                  <th>PML</th>
+                  <th>Kecamatan</th>
+                  <th class="text-right">SubSLS</th>
+                  <th class="text-right">Selesai</th>
+                  <th class="text-right">Progres %</th>
+                  <th class="text-right">Total Usaha</th>
+                  <th class="text-right">Total Keluarga</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% pclStats.forEach(p => { %>
+                  <tr class="<%= filterPcl === p.pcl ? 'active' : '' %>" style="<%= filterPcl === p.pcl ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
+                    <td class="td-primary">
+                      <a href="/pcl?pcl=<%= encodeURIComponent(p.pcl) %>&kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" style="color: inherit; text-decoration: none; display: block;">
+                        <i class="bi bi-person"></i> <%= p.pcl %>
+                      </a>
+                    </td>
+                    <td><%= p.pml %></td>
+                    <td><%= p.kecamatan %></td>
+                    <td class="text-right" data-sort="<%= p.total_subsls %>"><%= p.total_subsls %></td>
+                    <td class="text-right fw-bold" data-sort="<%= p.selesai %>" style="<%= p.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= p.selesai %></td>
+                    <td class="text-right" data-sort="<%= p.pct %>">
+                      <% if (p.pct === 100) { %>
+                        <span class="badge badge-green">100%</span>
+                      <% } else if (p.pct === 0) { %>
+                        <span class="badge badge-red">0%</span>
+                      <% } else if (p.pct < 25) { %>
+                        <span class="badge badge-yellow"><%= p.pct %>%</span>
+                      <% } else { %>
+                        <span class="badge badge-blue"><%= p.pct %>%</span>
+                      <% } %>
+                    </td>
+                    <td class="text-right fw-bold td-primary" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
+                    <td class="text-right fw-bold" data-sort="<%= p.keluarga_total %>"><%= p.keluarga_total.toLocaleString('id-ID') %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <div class="no-data">Tidak ada PCL yang cocok dengan filter.</div>
+        <% } %>
+      </div>
+
+      <!-- DETAIL OF CHOSEN PCL -->
+      <div>
+        <% if (filterPcl) { %>
+          <div class="card" style="margin-bottom: 0; position: sticky; top: 80px;">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-search"></i> Rincian Tugas SLS: <%= filterPcl %></div>
+              <a href="/pcl?kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="btn btn-secondary btn-xs"><i class="bi bi-x-lg"></i> Tutup</a>
+            </div>
+
+            <% if (detailSubsls && detailSubsls.length > 0) { %>
+              <div class="mb-4">
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
+                  PML: <strong><%= detailSubsls[0].pml %></strong> · Korlap: <strong><%= detailSubsls[0].korlap %></strong>
+                </div>
+                <% 
+                  let doneCount = detailSubsls.filter(s => s.sudah_diisi).length;
+                  let totalCount = detailSubsls.length;
+                  let donePct = ((doneCount / totalCount) * 100).toFixed(1);
+                %>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                  <span>Progres SubSLS</span>
+                  <span class="fw-bold"><%= doneCount %> / <%= totalCount %> selesai (<%= donePct %>%)</span>
+                </div>
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar <%= donePct == 100 ? 'green' : (donePct < 25 ? 'red' : 'blue') %>" data-width="<%= donePct %>" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <div class="search-wrap mb-4" style="max-width: 100%; margin-bottom: 12px;">
+                <input type="search" id="detailSubslsSearch" placeholder="Cari nama SLS/kode...">
+              </div>
+
+              <div id="detailSubslsList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
+                <% detailSubsls.forEach(s => { %>
+                  <div class="detail-item" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                      <span class="td-code"><%= s.kode %></span>
+                      <% if (s.sudah_diisi) { %>
+                        <span class="badge badge-green btn-xs">Selesai</span>
+                      <% } else { %>
+                        <span class="badge badge-red btn-xs">Belum</span>
+                      <% } %>
+                    </div>
+                    <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;"><%= s.nama_sls %></div>
+                    <div style="font-size: 11px; color: var(--text-muted);"><%= s.kecamatan %> · <%= s.desa %></div>
+                    
+                    <% if (s.sudah_diisi) { %>
+                      <div style="display: flex; gap: 8px; margin-top: 6px; font-size: 11px;">
+                        <span style="background: rgba(16,185,129,0.1); padding: 2px 8px; border-radius: 4px; color: var(--accent-green);"><i class="bi bi-building"></i> <%= s.usaha_total %> Usaha</span>
+                        <span style="background: rgba(6,182,212,0.1); padding: 2px 8px; border-radius: 4px; color: var(--accent-cyan);"><i class="bi bi-people"></i> <%= s.keluarga_total %> Keluarga</span>
+                      </div>
+                    <% } %>
+                  </div>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <div class="no-data">Tidak ada rincian tugas.</div>
+            <% } %>
+          </div>
+        <% } else { %>
+          <div class="card empty-state text-center" style="height: 100%; min-height: 300px; display: flex; flex-direction: column; justify-content: center; border-style: dashed;">
+            <div class="empty-state-icon"><i class="bi bi-arrow-left-circle"></i></div>
+            <div class="empty-state-title">Pilih PCL</div>
+            <div class="empty-state-text">Klik nama PCL di tabel sebelah kiri untuk melihat rincian alokasi SubSLS dan progres pencacahan secara detail.</div>
+          </div>
+        <% } %>
+      </div>
+
+    </div>
+
+  <% } %>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    makeTableSortable('pclTable');
+    makeTableSearchable('pclSearch', 'pclTable');
+    <% if (filterPcl) { %>
+      makeListSearchable('detailSubslsSearch', 'detailSubslsList', '.detail-item');
+    <% } %>
+  });
+</script>

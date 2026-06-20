@@ -1,0 +1,148 @@
+<div class="fade-in">
+  <% if (!uploadId) { %>
+    <div class="card empty-state text-center">
+      <div class="empty-state-icon"><i class="bi bi-bar-chart-steps"></i></div>
+      <div class="empty-state-title">Belum Ada Data Terupload</div>
+      <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/upload">Upload Data</a>.</div>
+    </div>
+  <% } else { %>
+    <!-- HEADER RINGKASAN EARLY WARNING -->
+    <div class="stats-grid">
+      <div class="stat-card red">
+        <div class="stat-icon"><i class="bi bi-person-gear"></i></div>
+        <div class="stat-label">PCL Tanpa Progres</div>
+        <div class="stat-value"><%= warning.zeroPcl.length %></div>
+        <div class="stat-sub">Pencacah dengan 0% selesai</div>
+      </div>
+      <div class="stat-card yellow">
+        <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+        <div class="stat-label">PCL Progres Lambat</div>
+        <div class="stat-value"><%= warning.slowPcl.length %></div>
+        <div class="stat-sub">Pencacah di bawah 25% progres</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-icon"><i class="bi bi-clipboard2-data"></i></div>
+        <div class="stat-label">PML Tanpa Progres</div>
+        <div class="stat-value"><%= warning.zeroPml.length %></div>
+        <div class="stat-sub">Pengawas dengan 0% selesai</div>
+      </div>
+    </div>
+
+    <!-- PENGUMUMAN EARLY WARNING -->
+    <div class="overview-grid mt-4">
+      
+      <!-- PCL TANPA PROGRES (ZERO PROGRESS) -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="text-red"><i class="bi bi-exclamation-octagon"></i> PCL Tanpa Progres (0%)</span>
+          </div>
+          <span class="badge badge-red"><%= warning.zeroPcl.length %> Petugas</span>
+        </div>
+        
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Daftar PCL yang telah mendapatkan tugas SLS tetapi belum berhasil menyelesaikan satu pun SLS hingga saat ini.</p>
+
+        <% if (warning.zeroPcl.length > 0) { %>
+          <div style="max-height: 480px; overflow-y: auto; padding-right: 4px;">
+            <% warning.zeroPcl.forEach(item => { %>
+              <div class="warning-card danger">
+                <div class="warning-icon"><i class="bi bi-exclamation-triangle-fill text-red"></i></div>
+                <div class="warning-body">
+                  <div class="warning-name"><%= item.pcl %></div>
+                  <div class="warning-meta">
+                    Kec. <strong><%= item.kecamatan %></strong> · PML: <strong><%= item.pml %></strong> · Korlap: <strong><%= item.korlap %></strong>
+                  </div>
+                  <div class="warning-stats">
+                    <span class="warning-stat"><i class="bi bi-box-seam"></i> Beban: <strong><%= item.total_subsls %> SubSLS</strong></span>
+                    <span class="warning-stat text-red">Progres: <strong>0%</strong></span>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="no-data">
+            <i class="bi bi-check-circle-fill text-green" style="font-size: 18px; margin-right: 6px;"></i> Seluruh PCL telah memiliki progres pengumpulan data.
+          </div>
+        <% } %>
+      </div>
+
+      <!-- PML TANPA PROGRES (ZERO PROGRESS) -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="text-red"><i class="bi bi-clipboard2-data"></i> PML Tanpa Progres (0%)</span>
+          </div>
+          <span class="badge badge-red"><%= warning.zeroPml.length %> Pengawas</span>
+        </div>
+
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Daftar PML (Pengawas Lapangan) yang seluruh PCL di bawah naungannya belum menyetor progres data.</p>
+
+        <% if (warning.zeroPml.length > 0) { %>
+          <div style="max-height: 480px; overflow-y: auto; padding-right: 4px;">
+            <% warning.zeroPml.forEach(item => { %>
+              <div class="warning-card danger">
+                <div class="warning-icon"><i class="bi bi-people-fill text-red"></i></div>
+                <div class="warning-body">
+                  <div class="warning-name"><%= item.pml %></div>
+                  <div class="warning-meta">
+                    Korlap: <strong><%= item.korlap %></strong>
+                  </div>
+                  <div class="warning-stats">
+                    <span class="warning-stat"><i class="bi bi-box-seam"></i> Beban Tim: <strong><%= item.total_subsls %> SubSLS</strong></span>
+                    <span class="warning-stat text-red">Progres Tim: <strong>0%</strong></span>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="no-data">
+            <i class="bi bi-check-circle-fill text-green" style="font-size: 18px; margin-right: 6px;"></i> Seluruh tim PML telah memiliki progres di lapangan.
+          </div>
+        <% } %>
+      </div>
+
+    </div>
+
+    <!-- PCL DENGAN PROGRES LAMBAT (< 25%) -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="text-yellow"><i class="bi bi-hourglass-split"></i> PCL dengan Progres Lambat (< 25%)</span>
+        </div>
+        <span class="badge badge-yellow"><%= warning.slowPcl.length %> Petugas</span>
+      </div>
+
+      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Daftar PCL yang progresnya lambat atau berada di bawah 25% dari total beban SubSLS yang ditugaskan kepada mereka.</p>
+
+      <% if (warning.slowPcl.length > 0) { %>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; max-height: 500px; overflow-y: auto; padding-right: 4px;">
+          <% warning.slowPcl.forEach(item => { %>
+            <div class="warning-card caution">
+              <div class="warning-icon"><i class="bi bi-exclamation-triangle-fill text-yellow"></i></div>
+              <div class="warning-body">
+                <div class="warning-name"><%= item.pcl %></div>
+                <div class="warning-meta">
+                  Kec. <strong><%= item.kecamatan %></strong> · PML: <strong><%= item.pml %></strong> · Korlap: <strong><%= item.korlap %></strong>
+                </div>
+                <div class="warning-stats">
+                  <span class="warning-stat">Beban: <strong><%= item.total_subsls %> SubSLS</strong></span>
+                  <span class="warning-stat">Selesai: <strong class="text-yellow"><%= item.selesai %> SubSLS</strong></span>
+                  <span class="warning-stat text-yellow">Progres: <strong><%= item.pct %>%</strong></span>
+                </div>
+                <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
+                  <div class="progress-bar yellow" data-width="<%= item.pct %>" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <div class="no-data">
+          <i class="bi bi-check-circle-fill text-green" style="font-size: 18px; margin-right: 6px;"></i> Tidak ada PCL dengan progres lambat (semua di atas 25% progres). Kerja bagus!
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+</div>

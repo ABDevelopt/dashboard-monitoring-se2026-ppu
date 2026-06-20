@@ -1,0 +1,142 @@
+<div class="fade-in">
+  <% if (!uploadId) { %>
+    <div class="card empty-state text-center">
+      <div class="empty-state-icon"><i class="bi bi-bar-chart-steps"></i></div>
+      <div class="empty-state-title">Belum Ada Data Terupload</div>
+      <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/upload">Upload Data</a>.</div>
+    </div>
+  <% } else { %>
+
+    <!-- GRID DUA KOLOM UNTUK PCL DAN PML -->
+    <div class="drilldown-grid">
+      
+      <!-- KOLOM KIRI: TOP 5 PCL -->
+      <div>
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div class="card-title"><i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Top 5 PCL Berperforma Terbaik</div>
+            <span class="badge badge-green">Pencacah Lapangan</span>
+          </div>
+          
+          <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
+            Peringkat PCL ditentukan berdasarkan persentase penyelesaian SubSLS terbanyak, jumlah volume SLS yang diselesaikan, dan total muatan usaha yang dicatat.
+          </p>
+
+          <% if (performers.topPcl && performers.topPcl.length > 0) { %>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <% performers.topPcl.forEach((item, index) => { %>
+                <% 
+                  let borderClass = '';
+                  let medalIcon = '<i class="bi bi-award"></i>';
+                  let medalColor = 'var(--text-muted)';
+                  
+                  if (index === 0) { 
+                    borderClass = 'border: 1px solid #fbbf24; background: rgba(251,191,36,0.03);'; 
+                    medalIcon = '<i class="bi bi-trophy-fill"></i>';
+                    medalColor = '#fbbf24';
+                  } else if (index === 1) { 
+                    borderClass = 'border: 1px solid #94a3b8; background: rgba(148,163,184,0.03);'; 
+                    medalIcon = '<i class="bi bi-award-fill"></i>';
+                    medalColor = '#cbd5e1';
+                  } else if (index === 2) { 
+                    borderClass = 'border: 1px solid #f97316; background: rgba(249,115,22,0.03);'; 
+                    medalIcon = '<i class="bi bi-award-fill"></i>';
+                    medalColor = '#f97316';
+                  }
+                %>
+                
+                <div class="warning-card" style="<%= borderClass %> margin-bottom: 0;">
+                  <div class="warning-icon" style="font-size: 26px; color: <%= medalColor %>;"><%- medalIcon %></div>
+                  <div class="warning-body" style="width: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                      <span class="warning-name">Rank <%= index + 1 %>: <%= item.pcl %></span>
+                      <span class="badge badge-green"><%= item.pct %>% Selesai</span>
+                    </div>
+                    <div class="warning-meta">
+                      Kec. <strong><%= item.kecamatan %></strong> · PML: <strong><%= item.pml %></strong> · Korlap: <strong><%= item.korlap %></strong>
+                    </div>
+                    <div class="warning-stats">
+                      <span class="warning-stat">SubSLS: <strong><%= item.selesai %> / <%= item.total_subsls %></strong></span>
+                      <span class="warning-stat"><i class="bi bi-building text-green"></i> Usaha: <strong><%= item.usaha_total %></strong></span>
+                      <span class="warning-stat"><i class="bi bi-people text-cyan"></i> Keluarga: <strong><%= item.keluarga_total %></strong></span>
+                    </div>
+                    <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
+                      <div class="progress-bar green" data-width="<%= item.pct %>" style="width: 0%;"></div>
+                    </div>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <div class="no-data">Belum ada data performa PCL.</div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- KOLOM KANAN: TOP 5 PML -->
+      <div>
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div class="card-title"><i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Top 5 PML Berperforma Terbaik</div>
+            <span class="badge badge-blue">Pengawas Lapangan</span>
+          </div>
+
+          <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
+            Peringkat PML ditentukan berdasarkan akumulasi persentase penyelesaian tim PCL di bawah pengawasannya serta total volume pendataan usaha dan keluarga.
+          </p>
+
+          <% if (performers.topPml && performers.topPml.length > 0) { %>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <% performers.topPml.forEach((item, index) => { %>
+                <% 
+                  let borderClass = '';
+                  let medalIcon = '<i class="bi bi-award"></i>';
+                  let medalColor = 'var(--text-muted)';
+                  
+                  if (index === 0) { 
+                    borderClass = 'border: 1px solid #fbbf24; background: rgba(251,191,36,0.03);'; 
+                    medalIcon = '<i class="bi bi-trophy-fill"></i>';
+                    medalColor = '#fbbf24';
+                  } else if (index === 1) { 
+                    borderClass = 'border: 1px solid #94a3b8; background: rgba(148,163,184,0.03);'; 
+                    medalIcon = '<i class="bi bi-award-fill"></i>';
+                    medalColor = '#cbd5e1';
+                  } else if (index === 2) { 
+                    borderClass = 'border: 1px solid #f97316; background: rgba(249,115,22,0.03);'; 
+                    medalIcon = '<i class="bi bi-award-fill"></i>';
+                    medalColor = '#f97316';
+                  }
+                %>
+                
+                <div class="warning-card" style="<%= borderClass %> margin-bottom: 0;">
+                  <div class="warning-icon" style="font-size: 26px; color: <%= medalColor %>;"><%- medalIcon %></div>
+                  <div class="warning-body" style="width: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                      <span class="warning-name">Rank <%= index + 1 %>: <%= item.pml %></span>
+                      <span class="badge badge-blue"><%= item.pct %>% Selesai</span>
+                    </div>
+                    <div class="warning-meta">
+                      Tim Korlap: <strong><%= item.korlap %></strong>
+                    </div>
+                    <div class="warning-stats">
+                      <span class="warning-stat">Total SubSLS Tim: <strong><%= item.selesai %> / <%= item.total_subsls %></strong></span>
+                      <span class="warning-stat"><i class="bi bi-building text-green"></i> Usaha: <strong><%= item.usaha_total %></strong></span>
+                      <span class="warning-stat"><i class="bi bi-people text-cyan"></i> Keluarga: <strong><%= item.keluarga_total %></strong></span>
+                    </div>
+                    <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
+                      <div class="progress-bar blue" data-width="<%= item.pct %>" style="width: 0%;"></div>
+                    </div>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <div class="no-data">Belum ada data performa PML.</div>
+          <% } %>
+        </div>
+      </div>
+
+    </div>
+
+  <% } %>
+</div>

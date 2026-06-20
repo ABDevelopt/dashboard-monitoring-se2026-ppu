@@ -1,0 +1,6 @@
+<div class="card empty-state text-center fade-in">
+  <div class="empty-state-icon text-red"><i class="bi bi-exclamation-triangle-fill"></i></div>
+  <h2 class="empty-state-title" style="font-size: 24px; margin-bottom: 12px;"><%= typeof title !== 'undefined' ? title : 'Terjadi Kesalahan' %></h2>
+  <p class="empty-state-text" style="font-size: 14px; max-width: 500px; margin: 0 auto 20px;"><%= typeof message !== 'undefined' ? message : 'Terjadi kesalahan internal pada server.' %></p>
+  <a href="/" class="btn btn-primary">Kembali ke Beranda</a>
+</div>
