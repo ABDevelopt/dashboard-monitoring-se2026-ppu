@@ -17,3 +17,7 @@ uploads/*
 .DS_Store
 .gemini/
 .agents/
+
+# Temporary Office lock files
+~$*.xlsx
+~$*.xls
