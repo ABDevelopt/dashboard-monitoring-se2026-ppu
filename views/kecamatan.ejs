@@ -30,7 +30,8 @@
     </div>
 
     <!-- DETAIL TABLE OF DESAS FOR CHOSEN KECAMATAN -->
-    <% if (filterKec) { %>
+    <div id="kecDetailContainer">
+      <% if (filterKec) { %>
       <div class="card mt-4">
         <div class="card-header">
           <div class="card-title"><i class="bi bi-houses"></i> Rincian Progres Per Desa/Kelurahan di Kecamatan <%= filterKec %></div>
@@ -92,6 +93,7 @@
         <div class="empty-state-text">Klik salah satu kartu kecamatan di atas untuk melihat rincian progres per desa/kelurahan.</div>
       </div>
     <% } %>
+    </div>
 
   <% } %>
 </div>
@@ -100,5 +102,92 @@
   document.addEventListener('DOMContentLoaded', () => {
     makeTableSortable('desaTable');
     makeTableSearchable('desaSearch', 'desaTable');
+
+    const detailContainer = document.getElementById('kecDetailContainer');
+    const cardsGrid = document.querySelector('.kec-grid');
+
+    if (cardsGrid && detailContainer) {
+      // Intercept card clicks
+      cardsGrid.addEventListener('click', (e) => {
+        const link = e.target.closest('a.kec-card');
+        if (!link) return;
+
+        e.preventDefault();
+        const url = link.getAttribute('href');
+
+        // Update active class on cards
+        cardsGrid.querySelectorAll('a.kec-card').forEach(c => {
+          c.classList.remove('active');
+        });
+        link.classList.add('active');
+
+        // Opacity transition
+        detailContainer.style.opacity = '0.5';
+
+        fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newDetail = doc.getElementById('kecDetailContainer');
+            if (newDetail) {
+              detailContainer.innerHTML = newDetail.innerHTML;
+              detailContainer.style.opacity = '1';
+
+              // Update URL path without refresh
+              window.history.pushState(null, '', url);
+
+              // Re-bind sort and search utilities
+              makeTableSortable('desaTable');
+              makeTableSearchable('desaSearch', 'desaTable');
+
+              // Re-bind close handler
+              bindCloseDetail();
+            }
+          })
+          .catch(err => {
+            console.error(err);
+            detailContainer.style.opacity = '1';
+          });
+      });
+    }
+
+    // AJAX Tutup Detail handler
+    function bindCloseDetail() {
+      const closeBtn = detailContainer.querySelector('.btn-secondary');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const url = closeBtn.getAttribute('href');
+
+          // Reset active cards
+          if (cardsGrid) {
+            cardsGrid.querySelectorAll('a.kec-card').forEach(c => {
+              c.classList.remove('active');
+            });
+          }
+
+          detailContainer.style.opacity = '0.5';
+          fetch(url)
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(html, 'text/html');
+              const newDetail = doc.getElementById('kecDetailContainer');
+              if (newDetail) {
+                detailContainer.innerHTML = newDetail.innerHTML;
+                detailContainer.style.opacity = '1';
+                window.history.pushState(null, '', url);
+              }
+            })
+            .catch(err => {
+              console.error(err);
+              detailContainer.style.opacity = '1';
+            });
+        });
+      }
+    }
+
+    bindCloseDetail();
   });
 </script>

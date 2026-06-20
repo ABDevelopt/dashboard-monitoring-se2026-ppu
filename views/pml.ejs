@@ -73,7 +73,7 @@
       </div>
 
       <!-- PML'S PCL TEAM DETAILS -->
-      <div>
+      <div id="pmlDetailContainer">
         <% if (filterPml) { %>
           <div class="card" style="margin-bottom: 0; position: sticky; top: 80px;">
             <div class="card-header">
@@ -152,8 +152,102 @@
   document.addEventListener('DOMContentLoaded', () => {
     makeTableSortable('pmlTable');
     makeTableSearchable('pmlSearch', 'pmlTable');
+    
+    // Initial searchable bind
     <% if (filterPml) { %>
       makeListSearchable('detailPclSearch', 'detailPclList', '.detail-item');
     <% } %>
+
+    // AJAX Drilldown logic for PML
+    const detailContainer = document.getElementById('pmlDetailContainer');
+    const table = document.getElementById('pmlTable');
+
+    if (table && detailContainer) {
+      // Intercept row clicks
+      table.querySelector('tbody').addEventListener('click', (e) => {
+        const link = e.target.closest('td.td-primary a');
+        if (!link) return;
+
+        e.preventDefault();
+        const url = link.getAttribute('href');
+        const row = link.closest('tr');
+
+        // Update active row visual indicator
+        table.querySelectorAll('tbody tr').forEach(r => {
+          r.classList.remove('active');
+          r.removeAttribute('style');
+        });
+        row.classList.add('active');
+        row.style.background = 'var(--bg-card-hover)';
+        row.style.fontWeight = '500';
+
+        // Opacity transition
+        detailContainer.style.opacity = '0.5';
+
+        fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newDetail = doc.getElementById('pmlDetailContainer');
+            if (newDetail) {
+              detailContainer.innerHTML = newDetail.innerHTML;
+              detailContainer.style.opacity = '1';
+
+              // Update URL path without refresh
+              window.history.pushState(null, '', url);
+
+              // Re-bind list search utility
+              makeListSearchable('detailPclSearch', 'detailPclList', '.detail-item');
+
+              // Re-bind close handler
+              bindCloseDetail();
+            }
+          })
+          .catch(err => {
+            console.error(err);
+            detailContainer.style.opacity = '1';
+          });
+      });
+    }
+
+    // AJAX Tutup Detail handler
+    function bindCloseDetail() {
+      const closeBtn = detailContainer.querySelector('.btn-secondary');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const url = closeBtn.getAttribute('href');
+
+          // Reset active rows
+          if (table) {
+            table.querySelectorAll('tbody tr').forEach(r => {
+              r.classList.remove('active');
+              r.removeAttribute('style');
+            });
+          }
+
+          detailContainer.style.opacity = '0.5';
+          fetch(url)
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(html, 'text/html');
+              const newDetail = doc.getElementById('pmlDetailContainer');
+              if (newDetail) {
+                detailContainer.innerHTML = newDetail.innerHTML;
+                detailContainer.style.opacity = '1';
+                window.history.pushState(null, '', url);
+              }
+            })
+            .catch(err => {
+              console.error(err);
+              detailContainer.style.opacity = '1';
+            });
+        });
+      }
+    }
+
+    bindCloseDetail();
   });
 </script>
