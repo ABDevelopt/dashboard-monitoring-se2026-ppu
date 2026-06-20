@@ -44,6 +44,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/', require('./routes/index'));
+app.use('/map', require('./routes/map'));
 app.use('/kecamatan', require('./routes/kecamatan'));
 app.use('/korlap', require('./routes/korlap'));
 app.use('/pml', require('./routes/pml'));
