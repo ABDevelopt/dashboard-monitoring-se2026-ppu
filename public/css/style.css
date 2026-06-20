@@ -32,6 +32,8 @@
   --bg-summary: rgba(255, 255, 255, 0.03);
   --bg-progress-wrap: rgba(255, 255, 255, 0.06);
   --bg-warning-stat: rgba(255, 255, 255, 0.05);
+  
+  --bg-glow: radial-gradient(circle at 50% -20%, rgba(var(--accent-rgb), 0.08), transparent 70%);
 }
 
 body.light-mode {
@@ -51,6 +53,8 @@ body.light-mode {
   --bg-summary: rgba(45, 39, 36, 0.025);
   --bg-progress-wrap: rgba(45, 39, 36, 0.05);
   --bg-warning-stat: rgba(45, 39, 36, 0.04);
+  
+  --bg-glow: radial-gradient(circle at 50% -20%, rgba(var(--accent-rgb), 0.03), transparent 70%);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -59,7 +63,8 @@ html { scroll-behavior: smooth; }
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background: var(--bg-primary);
+  background: var(--bg-glow), var(--bg-primary);
+  background-attachment: fixed;
   color: var(--text-primary);
   min-height: 100vh;
   display: flex;
@@ -171,7 +176,7 @@ body {
 }
 
 .nav-item.active {
-  background: rgba(var(--accent-rgb), 0.12);
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.12) 0%, rgba(var(--accent-rgb), 0.02) 100%);
   color: var(--accent-blue);
   font-weight: 600;
 }
@@ -227,6 +232,14 @@ body {
   position: sticky;
   top: 0;
   z-index: 50;
+}
+
+.topbar::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
 }
 
 .topbar-title {
@@ -322,6 +335,7 @@ body {
   border-color: var(--border-light);
   transform: translateY(-2px);
   box-shadow: var(--shadow);
+  background: linear-gradient(135deg, var(--bg-card) 0%, rgba(var(--accent-rgb), 0.03) 100%);
 }
 
 .stat-card::before {
@@ -710,7 +724,7 @@ th.sortable.sort-desc::after {
 
 .kec-card:hover, .kec-card.active {
   border-color: var(--accent-blue);
-  background: var(--bg-card-hover);
+  background: linear-gradient(135deg, var(--bg-card-hover) 0%, rgba(var(--accent-rgb), 0.03) 100%);
   transform: translateY(-2px);
   box-shadow: var(--shadow);
 }
