@@ -219,13 +219,6 @@
 </style>
 
 <div class="fade-in">
-  <% if (!uploadId) { %>
-    <div class="card empty-state text-center">
-      <div class="empty-state-icon"><i class="bi bi-bar-chart-steps"></i></div>
-      <div class="empty-state-title">Belum Ada Data Terupload</div>
-      <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/upload">Upload Data</a>.</div>
-    </div>
-  <% } else { %>
     <div class="map-container-wrap">
       
       <!-- SIDEBAR PANEL -->
@@ -476,7 +469,7 @@
           const total = stat ? stat.total_subsls : 0;
           const selesai = stat ? stat.selesai : 0;
           const pct = total ? ((selesai / total) * 100).toFixed(1) : '0.0';
-          const totalMuatan = stat ? stat.total_muatan : 0;
+          const totalMuatan = stat ? stat.total_muatan : (properties.total_muatan || 0);
           const usaha = stat ? stat.usaha_total : 0;
           const keluarga = stat ? stat.keluarga_total : 0;
 
@@ -538,7 +531,7 @@
         function showSlsDetails(properties) {
           const stat = slsStats.find(s => s.kode === properties.kode);
           const isSelesai = stat ? stat.selesai === 1 : false;
-          const muatan = stat ? stat.muatan : 0;
+          const muatan = stat ? stat.muatan : (properties.muatan || 0);
           const usaha = stat ? stat.usaha_total : 0;
           const keluarga = stat ? stat.keluarga_total : 0;
           const pcl = stat ? stat.pcl : 'Belum Ditentukan';
@@ -741,5 +734,4 @@
         bootstrap();
       });
     </script>
-  <% } %>
 </div>

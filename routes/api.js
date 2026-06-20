@@ -43,8 +43,7 @@ router.get('/summary', (req, res) => {
 
 // Map Statistics API
 router.get('/map-stats', (req, res) => {
-  const uploadId = res.locals.uploadId;
-  if (!uploadId) return res.json({ desaStats: [], slsStats: [] });
+  const uploadId = res.locals.uploadId || -1;
 
   const db = getDb();
   
