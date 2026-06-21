@@ -19,7 +19,7 @@
           </div>
           
           <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
-            Peringkat PCL ditentukan berdasarkan persentase penyelesaian target muatan sensus terbanyak, jumlah volume SLS yang diselesaikan, dan total muatan usaha yang dicatat.
+            Peringkat PCL ditentukan berdasarkan persentase penyelesaian target muatan sensus terbanyak, total beban muatan (assignment), dan total muatan usaha yang dicatat.
           </p>
 
           <% if (performers.topPcl && performers.topPcl.length > 0) { %>
@@ -56,7 +56,7 @@
                       Kec. <strong><%= item.kecamatan %></strong> · PML: <strong><%= item.pml %></strong> · Korlap: <strong><%= item.korlap %></strong>
                     </div>
                     <div class="warning-stats">
-                      <span class="warning-stat">SubSLS: <strong><%= item.selesai %> / <%= item.total_subsls %></strong></span>
+                      <span class="warning-stat">Assignment: <strong><%= item.total_muatan.toLocaleString('id-ID') %></strong></span>
                       <span class="warning-stat"><i class="bi bi-building text-green"></i> Usaha: <strong><%= item.usaha_total %></strong></span>
                       <span class="warning-stat"><i class="bi bi-people text-cyan"></i> Keluarga: <strong><%= item.keluarga_total %></strong></span>
                     </div>
@@ -82,7 +82,7 @@
           </div>
 
           <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
-            Peringkat PML ditentukan berdasarkan akumulasi persentase penyelesaian target muatan tim PCL di bawah pengawasannya serta total volume pendataan usaha dan keluarga.
+            Peringkat PML ditentukan berdasarkan akumulasi persentase penyelesaian target muatan tim PCL di bawah pengawasannya, total beban muatan (assignment), dan total volume pendataan usaha.
           </p>
 
           <% if (performers.topPml && performers.topPml.length > 0) { %>
@@ -119,7 +119,7 @@
                       Tim Korlap: <strong><%= item.korlap %></strong>
                     </div>
                     <div class="warning-stats">
-                      <span class="warning-stat">Total SubSLS Tim: <strong><%= item.selesai %> / <%= item.total_subsls %></strong></span>
+                      <span class="warning-stat">Total Assignment Tim: <strong><%= item.total_muatan.toLocaleString('id-ID') %></strong></span>
                       <span class="warning-stat"><i class="bi bi-building text-green"></i> Usaha: <strong><%= item.usaha_total %></strong></span>
                       <span class="warning-stat"><i class="bi bi-people text-cyan"></i> Keluarga: <strong><%= item.keluarga_total %></strong></span>
                     </div>
