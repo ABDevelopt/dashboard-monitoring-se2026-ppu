@@ -25,14 +25,21 @@
         <div class="stat-icon" style="color: var(--accent-green);"><i class="bi bi-check-circle-fill"></i></div>
         <div class="stat-label">SubSLS Selesai</div>
         <div class="stat-value"><%= summary.selesai.toLocaleString('id-ID') %></div>
-        <div class="stat-sub">Selesai dicacah (<%= ((summary.selesai / summary.total) * 100).toFixed(1) %>%)</div>
+        <div class="stat-sub">Progres Muatan: <strong><%= ((summary.muatan_selesai / summary.muatan_total) * 100).toFixed(1) %>%</strong></div>
       </div>
 
       <div class="stat-card yellow">
         <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
         <div class="stat-label">SubSLS Tersisa</div>
         <div class="stat-value"><%= summary.belum.toLocaleString('id-ID') %></div>
-        <div class="stat-sub">Belum selesai dicacah (<%= ((summary.belum / summary.total) * 100).toFixed(1) %>%)</div>
+        <div class="stat-sub">Muatan Tersisa: <strong><%= (((summary.muatan_total - summary.muatan_selesai) / summary.muatan_total) * 100).toFixed(1) %>%</strong></div>
+      </div>
+
+      <div class="stat-card red">
+        <div class="stat-icon"><i class="bi bi-intersect"></i></div>
+        <div class="stat-label">Usaha Ganda</div>
+        <div class="stat-value"><%= (summary.usaha_ganda || 0).toLocaleString('id-ID') %></div>
+        <div class="stat-sub">Usaha teridentifikasi ganda</div>
       </div>
 
       <div class="stat-card cyan">
@@ -58,7 +65,7 @@
       <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
         <div class="card-header">
           <div class="card-title"><i class="bi bi-graph-up-arrow"></i> Progres Penyelesaian Sensus</div>
-          <span class="badge badge-green"><%= ((summary.selesai / summary.total) * 100).toFixed(1) %>%</span>
+          <span class="badge badge-green"><%= ((summary.muatan_selesai / summary.muatan_total) * 100).toFixed(1) %>%</span>
         </div>
 
         <div style="display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 20px; align-items: center; padding: 10px 0;">
@@ -66,8 +73,8 @@
           <div class="progress-ring-wrap" style="height: 180px;">
             <canvas id="progressChart"></canvas>
             <div class="progress-ring-text">
-              <div class="progress-ring-pct"><%= ((summary.selesai / summary.total) * 100).toFixed(0) %>%</div>
-              <div class="progress-ring-label">Selesai</div>
+              <div class="progress-ring-pct"><%= ((summary.muatan_selesai / summary.muatan_total) * 100).toFixed(0) %>%</div>
+              <div class="progress-ring-label">Muatan</div>
             </div>
           </div>
 
@@ -149,7 +156,7 @@
             </thead>
             <tbody>
               <% kecStats.forEach(k => { %>
-                <% let kPct = k.total_subsls ? ((k.selesai / k.total_subsls) * 100).toFixed(1) : 0; %>
+                <% let kPct = k.total_muatan ? ((k.muatan_selesai / k.total_muatan) * 100).toFixed(1) : 0; %>
                 <tr>
                   <td class="td-primary"><a href="/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" style="color: inherit; text-decoration: none;"><i class="bi bi-geo-alt"></i> <%= k.kecamatan %></a></td>
                   <td class="text-right"><%= k.total_subsls %></td>
@@ -226,7 +233,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     <% if (summary) { %>
       // Initialize progress donut chart
-      createDonutChart('progressChart', <%= summary.selesai %>, <%= summary.total %>, '#c2410c');
+      createDonutChart('progressChart', <%= summary.muatan_selesai %>, <%= summary.muatan_total %>, '#c2410c');
 
       // Initialize tren line chart
       const rawTrenData = <%- tren %>;
@@ -238,11 +245,11 @@
       const kecTotal = [];
       <% kecStats.forEach(k => { %>
         kecLabels.push("<%= k.kecamatan %>");
-        kecSelesai.push(<%= k.selesai %>);
-        kecTotal.push(<%= k.total_subsls %>);
+        kecSelesai.push(<%= k.muatan_selesai %>);
+        kecTotal.push(<%= k.total_muatan %>);
       <% }) %>
 
-      createBarChart('kecBarChartCanvas', kecLabels, kecSelesai, kecTotal, 'Progres Per Kecamatan (SubSLS)');
+      createBarChart('kecBarChartCanvas', kecLabels, kecSelesai, kecTotal, 'Progres Per Kecamatan (Muatan)');
 
       // Initialize table sorting and searching
       makeTableSortable('kecOverviewTable');

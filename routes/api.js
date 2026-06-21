@@ -54,6 +54,7 @@ router.get('/map-stats', (req, res) => {
       COUNT(m.kode) AS total_subsls,
       SUM(CASE WHEN p.kode IS NOT NULL THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
+      SUM(CASE WHEN p.kode IS NOT NULL THEN m.muatan ELSE 0 END) AS muatan_selesai,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
     FROM subsls_master m

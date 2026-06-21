@@ -130,13 +130,13 @@
                   PML: <strong><%= detailSubsls[0].pml %></strong> · Korlap: <strong><%= detailSubsls[0].korlap %></strong>
                 </div>
                 <% 
-                  let doneCount = detailSubsls.filter(s => s.sudah_diisi).length;
-                  let totalCount = detailSubsls.length;
-                  let donePct = ((doneCount / totalCount) * 100).toFixed(1);
+                  let doneMuatan = detailSubsls.reduce((acc, s) => acc + (s.sudah_diisi ? s.muatan : 0), 0);
+                  let totalMuatan = detailSubsls.reduce((acc, s) => acc + s.muatan, 0);
+                  let donePct = totalMuatan ? ((doneMuatan / totalMuatan) * 100).toFixed(1) : 0;
                 %>
                 <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
-                  <span>Progres SubSLS</span>
-                  <span class="fw-bold"><%= doneCount %> / <%= totalCount %> selesai (<%= donePct %>%)</span>
+                  <span>Progres Muatan</span>
+                  <span class="fw-bold"><%= doneMuatan.toLocaleString('id-ID') %> / <%= totalMuatan.toLocaleString('id-ID') %> muatan (<%= donePct %>%)</span>
                 </div>
                 <div class="progress-bar-wrap">
                   <div class="progress-bar <%= donePct == 100 ? 'green' : (donePct < 25 ? 'red' : 'blue') %>" data-width="<%= donePct %>" style="width: 0%;"></div>

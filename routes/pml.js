@@ -18,9 +18,10 @@ router.get('/', (req, res) => {
           COUNT(m.kode) AS total_subsls,
           SUM(CASE WHEN p.kode IS NOT NULL THEN 1 ELSE 0 END) AS selesai,
           SUM(m.muatan) AS total_muatan,
+          SUM(CASE WHEN p.kode IS NOT NULL THEN m.muatan ELSE 0 END) AS muatan_selesai,
           SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
           SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
-          ROUND(100.0 * SUM(CASE WHEN p.kode IS NOT NULL THEN 1 ELSE 0 END) / COUNT(m.kode), 1) AS pct
+          CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(CASE WHEN p.kode IS NOT NULL THEN m.muatan ELSE 0 END) / SUM(m.muatan), 1) ELSE 0.0 END AS pct
         FROM subsls_master m
         LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
         WHERE m.pml = ?

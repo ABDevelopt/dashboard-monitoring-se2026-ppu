@@ -377,7 +377,7 @@
         function getDesaColor(iddesa) {
           const stat = desaStats.find(s => s.iddesa === iddesa);
           if (!stat) return '#94a3b8'; // gray for no data
-          const pct = stat.total_subsls ? (stat.selesai / stat.total_subsls) * 100 : 0;
+          const pct = stat.total_muatan ? (stat.muatan_selesai / stat.total_muatan) * 100 : 0;
           if (pct === 100) return '#10b981'; // Green
           if (pct >= 75) return '#0284c7';  // Blue
           if (pct >= 25) return '#eab308';  // Yellow
@@ -468,8 +468,9 @@
           const stat = desaStats.find(s => s.iddesa === properties.iddesa);
           const total = stat ? stat.total_subsls : 0;
           const selesai = stat ? stat.selesai : 0;
-          const pct = total ? ((selesai / total) * 100).toFixed(1) : '0.0';
           const totalMuatan = stat ? stat.total_muatan : (properties.total_muatan || 0);
+          const selesaiMuatan = stat ? stat.muatan_selesai : 0;
+          const pct = totalMuatan ? ((selesaiMuatan / totalMuatan) * 100).toFixed(1) : '0.0';
           const usaha = stat ? stat.usaha_total : 0;
           const keluarga = stat ? stat.keluarga_total : 0;
 
@@ -487,7 +488,7 @@
             </div>
             <div class="map-card-stat">
               <span class="map-card-label">Progres Capaian</span>
-              <span class="map-card-value" style="color: ${selesai === total ? 'var(--accent-green)' : 'inherit'}">${pct}%</span>
+              <span class="map-card-value" style="color: ${pct === '100.0' ? 'var(--accent-green)' : 'inherit'}">${pct}%</span>
             </div>
             <div class="map-card-stat">
               <span class="map-card-label">Muatan Target</span>
@@ -592,15 +593,17 @@
                   const stat = desaStats.find(s => s.iddesa === feature.properties.iddesa);
                   const total = stat ? stat.total_subsls : 0;
                   const selesai = stat ? stat.selesai : 0;
-                  const pct = total ? ((selesai / total) * 100).toFixed(1) : '0';
+                  const totalMuatan = stat ? stat.total_muatan : 0;
+                  const selesaiMuatan = stat ? stat.muatan_selesai : 0;
+                  const pct = totalMuatan ? ((selesaiMuatan / totalMuatan) * 100).toFixed(1) : '0';
                   
                   const popupHtml = `
                     <div style="font-family: 'Inter', sans-serif; min-width: 160px;">
                       <strong style="font-size: 13px; color: var(--text-primary);">Desa ${feature.properties.nmdesa}</strong><br>
                       <span style="font-size: 11px; color: var(--text-secondary);">Kec. ${feature.properties.nmkec}</span>
                       <table class="info-table">
-                        <tr><td class="label">Progres</td><td class="value">${selesai} / ${total} SLS</td></tr>
-                        <tr><td class="label">Persentase</td><td class="value">${pct}%</td></tr>
+                        <tr><td class="label">Progres SLS</td><td class="value">${selesai} / ${total} SLS</td></tr>
+                        <tr><td class="label">Progres Muatan</td><td class="value">${pct}%</td></tr>
                       </table>
                     </div>
                   `;

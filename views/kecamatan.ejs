@@ -10,7 +10,7 @@
     <!-- KECAMATAN CARDS GRID -->
     <div class="kec-grid">
       <% kecStats.forEach(k => { %>
-        <% let pctVal = k.total_subsls ? ((k.selesai / k.total_subsls) * 100).toFixed(1) : 0; %>
+        <% let pctVal = k.total_muatan ? ((k.muatan_selesai / k.total_muatan) * 100).toFixed(1) : 0; %>
         <a href="/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" class="kec-card <%= filterKec === k.kecamatan ? 'active' : '' %>">
           <div class="kec-name"><i class="bi bi-geo-alt"></i> Kec. <%= k.kecamatan %></div>
           <div class="kec-pct"><%= pctVal %>%</div>
@@ -58,7 +58,7 @@
               </thead>
               <tbody>
                 <% desaStats.forEach(d => { %>
-                  <% let dPct = d.total_subsls ? ((d.selesai / d.total_subsls) * 100).toFixed(1) : 0; %>
+                  <% let dPct = d.total_muatan ? ((d.muatan_selesai / d.total_muatan) * 100).toFixed(1) : 0; %>
                   <tr>
                     <td class="td-primary"><i class="bi bi-house"></i> <%= d.desa %></td>
                     <td class="text-right" data-sort="<%= d.total_subsls %>"><%= d.total_subsls %></td>

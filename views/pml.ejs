@@ -38,7 +38,7 @@
               </thead>
               <tbody>
                 <% pmlStats.forEach(p => { %>
-                  <% let completionPct = p.total_subsls ? Math.round((p.selesai / p.total_subsls) * 100) : 0; %>
+                  <% let completionPct = p.total_muatan ? Math.round((p.muatan_selesai / p.total_muatan) * 100) : 0; %>
                   <tr class="<%= filterPml === p.pml ? 'active' : '' %>" style="<%= filterPml === p.pml ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="td-primary">
                       <a href="/pml?pml=<%= encodeURIComponent(p.pml) %>" style="color: inherit; text-decoration: none; display: block;">
@@ -87,13 +87,13 @@
                   Korlap Atasan: <strong><%= detailPcl[0].korlap %></strong>
                 </div>
                 <% 
-                  let totalBeban = detailPcl.reduce((acc, c) => acc + c.total_subsls, 0);
-                  let totalSelesai = detailPcl.reduce((acc, c) => acc + c.selesai, 0);
+                  let totalBeban = detailPcl.reduce((acc, c) => acc + c.total_muatan, 0);
+                  let totalSelesai = detailPcl.reduce((acc, c) => acc + c.muatan_selesai, 0);
                   let totalPct = totalBeban ? ((totalSelesai / totalBeban) * 100).toFixed(1) : 0;
                 %>
                 <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
                   <span>Progres Tim PML</span>
-                  <span class="fw-bold"><%= totalSelesai %> / <%= totalBeban %> selesai (<%= totalPct %>%)</span>
+                  <span class="fw-bold"><%= totalSelesai.toLocaleString('id-ID') %> / <%= totalBeban.toLocaleString('id-ID') %> muatan (<%= totalPct %>%)</span>
                 </div>
                 <div class="progress-bar-wrap">
                   <div class="progress-bar <%= totalPct == 100 ? 'green' : (totalPct < 25 ? 'red' : 'blue') %>" data-width="<%= totalPct %>" style="width: 0%;"></div>

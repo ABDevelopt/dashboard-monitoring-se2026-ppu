@@ -38,7 +38,7 @@
               </thead>
               <tbody>
                 <% korlapStats.forEach(k => { %>
-                  <% let completionPct = k.total_subsls ? Math.round((k.selesai / k.total_subsls) * 100) : 0; %>
+                  <% let completionPct = k.total_muatan ? Math.round((k.muatan_selesai / k.total_muatan) * 100) : 0; %>
                   <tr class="<%= filterKorlap === k.korlap ? 'active' : '' %>" style="<%= filterKorlap === k.korlap ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="td-primary">
                       <a href="/korlap?korlap=<%= encodeURIComponent(k.korlap) %>" style="color: inherit; text-decoration: none; display: block;">
@@ -84,13 +84,13 @@
             <% if (detailData && detailData.length > 0) { %>
               <div class="mb-4">
                 <% 
-                  let totalBeban = detailData.reduce((acc, c) => acc + c.total_subsls, 0);
-                  let totalSelesai = detailData.reduce((acc, c) => acc + c.selesai, 0);
+                  let totalBeban = detailData.reduce((acc, c) => acc + c.total_muatan, 0);
+                  let totalSelesai = detailData.reduce((acc, c) => acc + c.muatan_selesai, 0);
                   let totalPct = totalBeban ? ((totalSelesai / totalBeban) * 100).toFixed(1) : 0;
                 %>
                 <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
                   <span>Progres Tim Korlap</span>
-                  <span class="fw-bold"><%= totalSelesai %> / <%= totalBeban %> selesai (<%= totalPct %>%)</span>
+                  <span class="fw-bold"><%= totalSelesai.toLocaleString('id-ID') %> / <%= totalBeban.toLocaleString('id-ID') %> muatan (<%= totalPct %>%)</span>
                 </div>
                 <div class="progress-bar-wrap">
                   <div class="progress-bar <%= totalPct == 100 ? 'green' : (totalPct < 25 ? 'red' : 'blue') %>" data-width="<%= totalPct %>" style="width: 0%;"></div>
@@ -103,11 +103,11 @@
 
               <div id="detailPmlList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
                 <% detailData.forEach(item => { %>
-                  <% let itemPct = item.total_subsls ? Math.round((item.selesai / item.total_subsls) * 100) : 0; %>
+                  <% let itemPct = item.total_muatan ? Math.round((item.muatan_selesai / item.total_muatan) * 100) : 0; %>
                   <div class="detail-item">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                       <a href="/pml?pml=<%= encodeURIComponent(item.pml) %>" class="fw-bold" style="color: var(--accent-cyan); text-decoration: none;">
-                        <i class="bi bi-clipboard2-data"></i> <%= item.pml %>
+                         <i class="bi bi-clipboard2-data"></i> <%= item.pml %>
                       </a>
                       <% if (itemPct === 100) { %>
                         <span class="badge badge-green btn-xs">100%</span>
