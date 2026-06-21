@@ -25,14 +25,14 @@
         <div class="stat-icon" style="color: var(--accent-green);"><i class="bi bi-check-circle-fill"></i></div>
         <div class="stat-label">SubSLS Selesai</div>
         <div class="stat-value"><%= summary.selesai.toLocaleString('id-ID') %></div>
-        <div class="stat-sub">Progres Muatan: <strong><%= ((summary.muatan_selesai / summary.muatan_total) * 100).toFixed(1) %>%</strong></div>
+        <div class="stat-sub">Progres Muatan: <strong><%= ((summary.usaha_total / summary.muatan_total) * 100).toFixed(2) %>%</strong></div>
       </div>
 
       <div class="stat-card yellow">
         <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
         <div class="stat-label">SubSLS Tersisa</div>
         <div class="stat-value"><%= summary.belum.toLocaleString('id-ID') %></div>
-        <div class="stat-sub">Muatan Tersisa: <strong><%= (((summary.muatan_total - summary.muatan_selesai) / summary.muatan_total) * 100).toFixed(1) %>%</strong></div>
+        <div class="stat-sub">Muatan Tersisa: <strong><%= (((summary.muatan_total - summary.usaha_total) / summary.muatan_total) * 100).toFixed(2) %>%</strong></div>
       </div>
 
       <div class="stat-card red">
@@ -65,7 +65,7 @@
       <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
         <div class="card-header">
           <div class="card-title"><i class="bi bi-graph-up-arrow"></i> Progres Penyelesaian Sensus</div>
-          <span class="badge badge-green"><%= ((summary.muatan_selesai / summary.muatan_total) * 100).toFixed(1) %>%</span>
+          <span class="badge badge-green"><%= ((summary.usaha_total / summary.muatan_total) * 100).toFixed(2) %>%</span>
         </div>
 
         <div style="display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 20px; align-items: center; padding: 10px 0;">
@@ -73,7 +73,7 @@
           <div class="progress-ring-wrap" style="height: 180px;">
             <canvas id="progressChart"></canvas>
             <div class="progress-ring-text">
-              <div class="progress-ring-pct"><%= ((summary.muatan_selesai / summary.muatan_total) * 100).toFixed(0) %>%</div>
+              <div class="progress-ring-pct"><%= ((summary.usaha_total / summary.muatan_total) * 100).toFixed(2) %>%</div>
               <div class="progress-ring-label">Muatan</div>
             </div>
           </div>
@@ -156,7 +156,7 @@
             </thead>
             <tbody>
               <% kecStats.forEach(k => { %>
-                <% let kPct = k.total_muatan ? ((k.muatan_selesai / k.total_muatan) * 100).toFixed(1) : 0; %>
+                <% let kPct = k.total_muatan ? ((k.usaha_total / k.total_muatan) * 100).toFixed(2) : '0.00'; %>
                 <tr>
                   <td class="td-primary"><a href="/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" style="color: inherit; text-decoration: none;"><i class="bi bi-geo-alt"></i> <%= k.kecamatan %></a></td>
                   <td class="text-right"><%= k.total_subsls %></td>
@@ -164,7 +164,7 @@
                   <td class="text-right">
                     <% if (kPct == 100) { %>
                       <span class="badge badge-green">100%</span>
-                    <% } else if (kPct < 25) { %>
+                    <% } else if (parseFloat(kPct) < 25) { %>
                       <span class="badge badge-red"><%= kPct %>%</span>
                     <% } else { %>
                       <span class="badge badge-blue"><%= kPct %>%</span>
@@ -233,7 +233,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     <% if (summary) { %>
       // Initialize progress donut chart
-      createDonutChart('progressChart', <%= summary.muatan_selesai %>, <%= summary.muatan_total %>, '#c2410c');
+      createDonutChart('progressChart', <%= summary.usaha_total %>, <%= summary.muatan_total %>, '#c2410c');
 
       // Initialize tren line chart
       const rawTrenData = <%- tren %>;
@@ -245,7 +245,7 @@
       const kecTotal = [];
       <% kecStats.forEach(k => { %>
         kecLabels.push("<%= k.kecamatan %>");
-        kecSelesai.push(<%= k.muatan_selesai %>);
+        kecSelesai.push(<%= k.usaha_total %>);
         kecTotal.push(<%= k.total_muatan %>);
       <% }) %>
 
