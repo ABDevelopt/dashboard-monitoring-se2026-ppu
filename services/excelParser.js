@@ -166,4 +166,91 @@ function toTitleCase(str) {
   return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 }
 
-module.exports = { parseAndSaveExcel, loadMasterFromJson };
+function loadMasterFromExcel(filePath) {
+  const db = getDb();
+  const wb = XLSX.readFile(filePath, { raw: true });
+  const sheetName = wb.Sheets['master'] ? 'master' : wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  if (!ws) throw new Error('Sheet master data tidak ditemukan.');
+
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
+  if (rows.length < 2) throw new Error('File Excel master data kosong.');
+
+  const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
+
+  // Helper to find column index with aliases
+  const findCol = (aliases) => {
+    for (const alias of aliases) {
+      const idx = headers.indexOf(alias);
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  const colIdx = {
+    kode: findCol(['kode', 'id_subsls', 'id subsls', 'id_sls', 'id sls']),
+    kode_kec: findCol(['kode_kec', 'kode kec', 'id_kec', 'id kec']),
+    kecamatan: findCol(['kecamatan', 'kec']),
+    desa: findCol(['desa', 'kelurahan', 'desa_kelurahan', 'desa/kelurahan']),
+    nama_sls: findCol(['nama_sls', 'nama sls', 'sls', 'nama_sls_master']),
+    korlap: findCol(['korlap', 'nama_korlap', 'nama korlap']),
+    pml: findCol(['pml', 'nama_pml', 'nama pml', 'pengawas']),
+    pcl: findCol(['pcl', 'nama_pcl', 'nama pcl', 'pencacah']),
+    muatan: findCol(['muatan', 'total_muatan', 'total_muatan_assignment', 'assignment', 'beban']),
+    kode_2025: findCol(['kode_2025', 'id_subsls_2025', 'id_subsls_2025'])
+  };
+
+  if (colIdx.kode === -1) throw new Error('Kolom "kode" atau "id_subsls" tidak ditemukan.');
+  if (colIdx.kecamatan === -1) throw new Error('Kolom "kecamatan" tidak ditemukan.');
+  if (colIdx.desa === -1) throw new Error('Kolom "desa" tidak ditemukan.');
+
+  const dataRows = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const kode = String(row[colIdx.kode] || '').trim();
+    if (!kode) continue;
+
+    const kode_kec = colIdx.kode_kec !== -1 ? String(row[colIdx.kode_kec] || '').trim() : kode.substring(6, 8);
+    const kecamatan = toTitleCase(String(row[colIdx.kecamatan] || '').trim());
+    const desa = toTitleCase(String(row[colIdx.desa] || '').trim());
+    const nama_sls = colIdx.nama_sls !== -1 ? String(row[colIdx.nama_sls] || '').trim() : '';
+    const korlap = colIdx.korlap !== -1 ? String(row[colIdx.korlap] || '').trim() : '';
+    const pml = colIdx.pml !== -1 ? normalizeName(String(row[colIdx.pml] || '')) : '';
+    const pcl = colIdx.pcl !== -1 ? normalizeName(String(row[colIdx.pcl] || '')) : '';
+    const muatan = colIdx.muatan !== -1 ? toInt(row[colIdx.muatan]) : 0;
+    const kode_2025 = colIdx.kode_2025 !== -1 ? String(row[colIdx.kode_2025] || '').trim() : kode;
+
+    dataRows.push([
+      kode,
+      kode_kec,
+      kecamatan,
+      desa,
+      nama_sls,
+      korlap,
+      pml,
+      pcl,
+      muatan,
+      kode_2025
+    ]);
+  }
+
+  if (dataRows.length === 0) throw new Error('Tidak ada baris data master yang valid.');
+
+  const insert = db.prepare(`
+    INSERT OR REPLACE INTO subsls_master 
+      (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const saveTx = db.transaction((list) => {
+    db.prepare('DELETE FROM subsls_master').run();
+    for (const item of list) {
+      insert.run(...item);
+    }
+  });
+
+  saveTx(dataRows);
+  return dataRows.length;
+}
+
+module.exports = { parseAndSaveExcel, loadMasterFromJson, loadMasterFromExcel };

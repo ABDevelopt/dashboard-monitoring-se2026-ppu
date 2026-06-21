@@ -53,6 +53,7 @@ app.use('/subsls', require('./routes/subsls'));
 app.use('/early-warning', require('./routes/earlywarning'));
 app.use('/leaderboard', require('./routes/leaderboard'));
 app.use('/upload', require('./routes/upload'));
+app.use('/master', require('./routes/master'));
 app.use('/api', require('./routes/api'));
 
 // 404
@@ -69,10 +70,15 @@ app.use((err, req, res, next) => {
 // Init DB & load master data
 function init() {
   try {
-    getDb(); // initialize schema
-    const masterPath = path.join(__dirname, 'kelompok_populasi_pml_pcl_korlap_muatan.json');
-    const count = loadMasterFromJson(masterPath);
-    console.log(`✅ Master SubSLS loaded: ${count} records`);
+    const db = getDb(); // initialize schema
+    const rowCount = db.prepare('SELECT COUNT(*) as count FROM subsls_master').get().count;
+    if (rowCount === 0) {
+      const masterPath = path.join(__dirname, 'kelompok_populasi_pml_pcl_korlap_muatan.json');
+      const count = loadMasterFromJson(masterPath);
+      console.log(`✅ Master SubSLS loaded: ${count} records (from JSON)`);
+    } else {
+      console.log(`✅ Master SubSLS already populated: ${rowCount} records (from DB)`);
+    }
   } catch (err) {
     console.error('❌ Error loading master data:', err.message);
   }
