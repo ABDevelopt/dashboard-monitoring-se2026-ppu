@@ -17,9 +17,9 @@ router.get('/', (req, res) => {
           m.pml, m.korlap,
           COUNT(DISTINCT m.pcl) AS jumlah_pcl,
           COUNT(m.kode) AS total_subsls,
-          SUM(CASE WHEN p.kode IS NOT NULL THEN 1 ELSE 0 END) AS selesai,
+          SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
           SUM(m.muatan) AS total_muatan,
-          SUM(CASE WHEN p.kode IS NOT NULL THEN m.muatan ELSE 0 END) AS muatan_selesai,
+          SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
           SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
           SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
         FROM subsls_master m
