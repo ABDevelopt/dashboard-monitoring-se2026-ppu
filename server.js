@@ -39,6 +39,7 @@ app.use((req, res, next) => {
   const latest = getLatestUpload();
   res.locals.latestUpload = latest || null;
   res.locals.uploadId = latest ? latest.id : null;
+  res.locals.isAdmin = req.session.isAdmin || false;
   next();
 });
 
@@ -53,9 +54,43 @@ app.use('/subsls', require('./routes/subsls'));
 app.use('/early-warning', require('./routes/earlywarning'));
 app.use('/leaderboard', require('./routes/leaderboard'));
 app.use('/performa-terendah', require('./routes/performa-terendah'));
-app.use('/upload', require('./routes/upload'));
-app.use('/master', require('./routes/master'));
 app.use('/api', require('./routes/api'));
+
+// Admin Auth Middleware
+function requireAdmin(req, res, next) {
+  if (req.session.isAdmin) return next();
+  req.flash('error', 'Akses ditolak. Silakan login sebagai admin.');
+  res.redirect('/admin');
+}
+
+// Admin Router
+const adminRouter = express.Router();
+app.use('/admin', adminRouter);
+
+adminRouter.get('/', (req, res) => {
+  if (req.session.isAdmin) return res.redirect('/admin/upload');
+  res.render('login', { title: 'Login Admin', activePage: 'admin' });
+});
+
+adminRouter.post('/login', (req, res) => {
+  const { password } = req.body;
+  if (password === 'adminse2026') {
+    req.session.isAdmin = true;
+    res.redirect('/admin/upload');
+  } else {
+    req.flash('error', 'Password salah.');
+    res.redirect('/admin');
+  }
+});
+
+adminRouter.get('/logout', (req, res) => {
+  req.session.destroy();
+  res.redirect('/');
+});
+
+// Protected Admin Routes
+adminRouter.use('/upload', requireAdmin, require('./routes/upload'));
+adminRouter.use('/master', requireAdmin, require('./routes/master'));
 
 // 404
 app.use((req, res) => {

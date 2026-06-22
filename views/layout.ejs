@@ -71,13 +71,20 @@
       <span class="nav-icon"><i class="bi bi-box-seam"></i></span> Per SubSLS
     </a>
 
-    <div class="nav-section">Kelola</div>
-    <a href="/upload" class="nav-item <%= activePage === 'upload' ? 'active' : '' %>">
+    <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+    <div class="nav-section">Admin</div>
+    <a href="/admin/upload" class="nav-item <%= activePage === 'upload' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-upload"></i></span> Upload Data
     </a>
-    <a href="/master" class="nav-item <%= activePage === 'master' ? 'active' : '' %>">
+    <a href="/admin/master" class="nav-item <%= activePage === 'master' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-database-fill-gear"></i></span> Kelola Master Data
     </a>
+    <a href="/admin/logout" class="nav-item">
+      <span class="nav-icon"><i class="bi bi-box-arrow-right"></i></span> Logout Admin
+    </a>
+    <% } %>
+
+    <div class="nav-section">Export</div>
     <a href="/subsls/export" class="nav-item">
       <span class="nav-icon"><i class="bi bi-download"></i></span> Export CSV
     </a>
@@ -113,7 +120,9 @@
       <button class="btn btn-secondary" id="themeToggle" title="Ubah Tema" style="padding: 8px 12px; min-width: auto;">
         <i class="bi bi-moon-fill" id="themeIcon"></i>
       </button>
-      <a href="/upload" class="btn btn-primary"><i class="bi bi-upload"></i> Upload Data</a>
+      <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+        <a href="/admin/upload" class="btn btn-primary"><i class="bi bi-upload"></i> Upload Data</a>
+      <% } %>
     </div>
   </header>
 

@@ -85,7 +85,7 @@ router.get('/', (req, res) => {
 router.post('/upload', upload.single('masterFile'), (req, res) => {
   if (!req.file) {
     req.flash('error', 'File tidak ditemukan. Silakan pilih file Excel (.xlsx/.xls) or JSON.');
-    return res.redirect('/master');
+    return res.redirect('/admin/master');
   }
 
   const filePath = req.file.path;
@@ -103,12 +103,12 @@ router.post('/upload', upload.single('masterFile'), (req, res) => {
     fs.unlinkSync(filePath);
 
     req.flash('success', `Master data berhasil diupload! File: ${req.file.originalname} | Total record terproses: ${count}`);
-    res.redirect('/master');
+    res.redirect('/admin/master');
   } catch (err) {
     console.error('Master upload error:', err);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     req.flash('error', `Gagal mengimpor master data: ${err.message}`);
-    res.redirect('/master');
+    res.redirect('/admin/master');
   }
 });
 
@@ -125,11 +125,11 @@ router.post('/reset', (req, res) => {
     const count = loadMasterFromJson(masterPath);
 
     req.flash('success', `Berhasil merestore master data bawaan! Total record terproses: ${count}`);
-    res.redirect('/master');
+    res.redirect('/admin/master');
   } catch (err) {
     console.error('Master reset error:', err);
     req.flash('error', `Gagal merestore master data bawaan: ${err.message}`);
-    res.redirect('/master');
+    res.redirect('/admin/master');
   }
 });
 
@@ -139,7 +139,7 @@ router.post('/add', (req, res) => {
 
   if (!kode || !kecamatan || !desa) {
     req.flash('error', 'Kode SLS, Kecamatan, dan Desa wajib diisi.');
-    return res.redirect('/master');
+    return res.redirect('/admin/master');
   }
 
   const db = getDb();
@@ -148,7 +148,7 @@ router.post('/add', (req, res) => {
   const existing = db.prepare('SELECT kode FROM subsls_master WHERE kode = ?').get(kode);
   if (existing) {
     req.flash('error', `Gagal menambahkan: Kode SLS ${kode} sudah terdaftar di master data.`);
-    return res.redirect('/master');
+    return res.redirect('/admin/master');
   }
 
   const kode_kec = kode.substring(6, 8) || '00';
@@ -172,11 +172,11 @@ router.post('/add', (req, res) => {
     );
 
     req.flash('success', `Berhasil menambahkan SLS baru: ${nama_sls || kode}`);
-    res.redirect('/master');
+    res.redirect('/admin/master');
   } catch (err) {
     console.error('Master add error:', err);
     req.flash('error', `Gagal menambahkan SLS baru: ${err.message}`);
-    res.redirect('/master');
+    res.redirect('/admin/master');
   }
 });
 
@@ -186,7 +186,7 @@ router.post('/edit', (req, res) => {
 
   if (!kode) {
     req.flash('error', 'Kode SLS tidak valid.');
-    return res.redirect('/master');
+    return res.redirect('/admin/master');
   }
 
   const db = getDb();
@@ -212,11 +212,11 @@ router.post('/edit', (req, res) => {
     );
 
     req.flash('success', `Berhasil mengupdate SLS master: ${nama_sls || kode}`);
-    res.redirect('/master');
+    res.redirect('/admin/master');
   } catch (err) {
     console.error('Master edit error:', err);
     req.flash('error', `Gagal mengupdate SLS master: ${err.message}`);
-    res.redirect('/master');
+    res.redirect('/admin/master');
   }
 });
 
@@ -231,16 +231,16 @@ router.post('/delete/:kode', (req, res) => {
     const hasProgress = db.prepare('SELECT COUNT(*) as n FROM progres WHERE kode = ?').get(kode).n;
     if (hasProgress > 0) {
       req.flash('error', `Gagal menghapus: SLS ${kode} memiliki data progres pencacahan terikat.`);
-      return res.redirect('/master');
+      return res.redirect('/admin/master');
     }
 
     db.prepare('DELETE FROM subsls_master WHERE kode = ?').run(kode);
     req.flash('success', `Berhasil menghapus SLS master: ${kode}`);
-    res.redirect('/master');
+    res.redirect('/admin/master');
   } catch (err) {
     console.error('Master delete error:', err);
     req.flash('error', `Gagal menghapus SLS: ${err.message}`);
-    res.redirect('/master');
+    res.redirect('/admin/master');
   }
 });
 

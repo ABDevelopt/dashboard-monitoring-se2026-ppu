@@ -6,7 +6,7 @@
       </div>
     </div>
     
-    <form action="/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
+    <form action="/admin/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
       <div class="mb-4">
         <label for="tanggal" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-calendar3"></i> Tanggal Data Rekap</label>
         <input type="date" id="tanggal" name="tanggal" required style="width: 100%; max-width: 300px; padding: 10px; font-size: 13px;" value="<%= new Date().toISOString().slice(0, 10) %>">
@@ -60,8 +60,8 @@
                 <td class="text-right fw-bold td-primary"><%= u.total_subsls_terisi.toLocaleString('id-ID') %></td>
                 <td><%= new Date(u.created_at).toLocaleString('id-ID') %></td>
                 <td class="text-center" style="display: flex; gap: 4px; justify-content: center;">
-                  <a href="/upload/download/<%= u.id %>" class="btn btn-secondary" style="padding: 4px 8px;" title="Download File Excel"><i class="bi bi-download"></i></a>
-                  <form action="/upload/delete/<%= u.id %>" method="POST" onsubmit="return confirm('Yakin ingin menghapus data rekap ini?');" style="margin: 0;">
+                  <a href="/admin/upload/download/<%= u.id %>" class="btn btn-secondary" style="padding: 4px 8px;" title="Download File Excel"><i class="bi bi-download"></i></a>
+                  <form action="/admin/upload/delete/<%= u.id %>" method="POST" onsubmit="return confirm('Yakin ingin menghapus data rekap ini?');" style="margin: 0;">
                     <button type="submit" class="btn btn-secondary text-red" style="padding: 4px 8px;" title="Hapus"><i class="bi bi-trash"></i></button>
                   </form>
                 </td>

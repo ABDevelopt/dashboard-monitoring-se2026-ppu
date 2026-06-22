@@ -38,7 +38,7 @@ router.get('/', (req, res) => {
 router.post('/', upload.single('excelFile'), (req, res) => {
   if (!req.file) {
     req.flash('error', 'File tidak ditemukan. Pastikan memilih file Excel.');
-    return res.redirect('/upload');
+    return res.redirect('/admin/upload');
   }
 
   const tanggal = req.body.tanggal || new Date().toISOString().slice(0, 10);
@@ -52,7 +52,7 @@ router.post('/', upload.single('excelFile'), (req, res) => {
   } catch (err) {
     console.error('Upload error:', err);
     req.flash('error', `Gagal memproses file: ${err.message}`);
-    res.redirect('/upload');
+    res.redirect('/admin/upload');
   }
 });
 
@@ -61,7 +61,7 @@ router.post('/delete/:id', (req, res) => {
   const id = parseInt(req.params.id);
   getDb().prepare('DELETE FROM uploads WHERE id = ?').run(id);
   req.flash('success', 'Upload berhasil dihapus.');
-  res.redirect('/upload');
+  res.redirect('/admin/upload');
 });
 
 // GET: Download file
@@ -70,7 +70,7 @@ router.get('/download/:id', (req, res) => {
   const uploadRec = getDb().prepare('SELECT * FROM uploads WHERE id = ?').get(id);
   if (!uploadRec || !uploadRec.stored_filename) {
     req.flash('error', 'File fisik tidak ditemukan. Pastikan file ini di-upload setelah fitur download ditambahkan.');
-    return res.redirect('/upload');
+    return res.redirect('/admin/upload');
   }
 
   const filePath = path.join(__dirname, '../uploads', uploadRec.stored_filename);
@@ -78,7 +78,7 @@ router.get('/download/:id', (req, res) => {
     res.download(filePath, uploadRec.filename);
   } else {
     req.flash('error', 'File fisik tidak ditemukan di server.');
-    res.redirect('/upload');
+    res.redirect('/admin/upload');
   }
 });
 
