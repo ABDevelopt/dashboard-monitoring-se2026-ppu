@@ -27,8 +27,8 @@ router.get('/', (req, res) => {
     if (filterKorlap) { cond.push('m.korlap = ?'); params.push(filterKorlap); }
     if (filterPml) { cond.push('m.pml = ?'); params.push(filterPml); }
     if (filterPcl) { cond.push('m.pcl = ?'); params.push(filterPcl); }
-    if (filterStatus === 'selesai') cond.push('p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan');
-    if (filterStatus === 'belum') cond.push('(p.kode IS NULL OR (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) < m.muatan)');
+    if (filterStatus === 'selesai') cond.push('p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan');
+    if (filterStatus === 'belum') cond.push('(p.kode IS NULL OR m.muatan = 0 OR (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) < m.muatan)');
 
     const where = cond.length ? 'AND ' + cond.join(' AND ') : '';
 
@@ -43,7 +43,7 @@ router.get('/', (req, res) => {
       SELECT 
         m.kode, m.kecamatan, m.desa, m.nama_sls,
         m.korlap, m.pml, m.pcl, m.muatan,
-        CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END AS sudah_diisi,
+        CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END AS sudah_diisi,
         COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
         COALESCE(p.usaha_ditemukan, 0) AS usaha_ditemukan,
         COALESCE(p.usaha_baru, 0) AS usaha_baru,
@@ -100,7 +100,7 @@ router.get('/export', (req, res) => {
     SELECT 
       m.kode, m.kecamatan, m.desa, m.nama_sls,
       m.korlap, m.pml, m.pcl, m.muatan,
-      CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 'Selesai' ELSE 'Belum' END AS status,
+      CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 'Selesai' ELSE 'Belum' END AS status,
       COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
       COALESCE(p.usaha_ditemukan, 0) AS usaha_ditemukan,
       COALESCE(p.usaha_baru, 0) AS usaha_baru,
