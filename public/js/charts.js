@@ -179,7 +179,6 @@ function createTrenChart(canvasId, trenData) {
 
   const theme = getThemeColors();
   const labels = trenData.map(d => d.tanggal);
-  const dataSubsls = trenData.map(d => d.subsls_selesai);
   const dataUsaha = trenData.map(d => d.usaha_total);
 
   const chart = new Chart(ctx, {
@@ -187,17 +186,6 @@ function createTrenChart(canvasId, trenData) {
     data: {
       labels,
       datasets: [
-        {
-          label: 'SubSLS Selesai',
-          data: dataSubsls,
-          borderColor: '#c2410c',
-          backgroundColor: 'rgba(194, 65, 12, 0.1)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          pointBackgroundColor: '#c2410c',
-        },
         {
           label: 'Total Usaha',
           data: dataUsaha,
@@ -207,8 +195,7 @@ function createTrenChart(canvasId, trenData) {
           tension: 0.4,
           pointRadius: 4,
           pointHoverRadius: 6,
-          pointBackgroundColor: '#10b981',
-          yAxisID: 'y2'
+          pointBackgroundColor: '#10b981'
         }
       ]
     },
@@ -232,13 +219,7 @@ function createTrenChart(canvasId, trenData) {
         y: {
           ticks: { color: theme.text, font: { size: 11 } },
           grid: { color: theme.grid },
-          title: { display: true, text: 'SubSLS', color: theme.text, font: { size: 10 } }
-        },
-        y2: {
-          position: 'right',
-          ticks: { color: theme.text, font: { size: 11 } },
-          grid: { display: false },
-          title: { display: true, text: 'Usaha', color: theme.text, font: { size: 10 } }
+          title: { display: true, text: 'Total Usaha', color: theme.text, font: { size: 10 } }
         }
       }
     }
