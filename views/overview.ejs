@@ -11,30 +11,18 @@
     </div>
   <% } else { %>
     
-    <!-- KPI CARDS GRID -->
+    <!-- KPI CARDS GRID (4 kartu utama) -->
     <div class="stats-grid">
-      
-      <div class="stat-card blue">
-        <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
-        <div class="stat-label">Total SubSLS (Blok Sensus)</div>
-        <div class="stat-value"><%= summary.total.toLocaleString('id-ID') %></div>
-        <div class="stat-sub">Beban sensus seluruh PPU</div>
-      </div>
 
+      <!-- SubSLS Selesai — digabung dengan konteks total -->
       <div class="stat-card green">
         <div class="stat-icon" style="color: var(--accent-green);"><i class="bi bi-check-circle-fill"></i></div>
         <div class="stat-label">SubSLS Selesai</div>
-        <div class="stat-value"><%= summary.selesai.toLocaleString('id-ID') %></div>
-        <div class="stat-sub">Progres Muatan: <strong><%= ((summary.usaha_total / summary.muatan_total) * 100).toFixed(2) %>%</strong></div>
+        <div class="stat-value"><%= summary.selesai.toLocaleString('id-ID') %> <span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">/ <%= summary.total.toLocaleString('id-ID') %></span></div>
+        <div class="stat-sub">Progres Muatan: <strong><%= ((summary.usaha_total / summary.muatan_total) * 100).toFixed(2) %>%</strong> · Tersisa: <strong><%= summary.belum.toLocaleString('id-ID') %></strong></div>
       </div>
 
-      <div class="stat-card yellow">
-        <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
-        <div class="stat-label">SubSLS Tersisa</div>
-        <div class="stat-value"><%= summary.belum.toLocaleString('id-ID') %></div>
-        <div class="stat-sub">Muatan Tersisa: <strong><%= (((summary.muatan_total - summary.usaha_total) / summary.muatan_total) * 100).toFixed(2) %>%</strong></div>
-      </div>
-
+      <!-- Usaha Ganda — sinyal kualitas data -->
       <div class="stat-card red">
         <div class="stat-icon"><i class="bi bi-intersect"></i></div>
         <div class="stat-label">Usaha Ganda</div>
@@ -42,23 +30,26 @@
         <div class="stat-sub">Usaha teridentifikasi ganda</div>
       </div>
 
+      <!-- Total Usaha Ditemukan -->
       <div class="stat-card cyan">
         <div class="stat-icon"><i class="bi bi-building-fill"></i></div>
         <div class="stat-label">Total Usaha Ditemukan</div>
         <div class="stat-value"><%= summary.usaha_total.toLocaleString('id-ID') %></div>
-        <div class="stat-sub">Ditemukan + Baru (+<%= summary.usaha_baru.toLocaleString('id-ID') %> baru)</div>
+        <div class="stat-sub">Ditemukan + Baru (<span style="color: var(--accent-green);">+<%= summary.usaha_baru.toLocaleString('id-ID') %> baru</span>)</div>
       </div>
 
+      <!-- Total Keluarga Ditemukan -->
       <div class="stat-card purple">
         <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
         <div class="stat-label">Total Keluarga Ditemukan</div>
         <div class="stat-value"><%= summary.keluarga_total.toLocaleString('id-ID') %></div>
-        <div class="stat-sub">Ditemukan + Baru (+<%= summary.keluarga_baru.toLocaleString('id-ID') %> baru)</div>
+        <div class="stat-sub">Ditemukan + Baru (<span style="color: var(--accent-green);">+<%= summary.keluarga_baru.toLocaleString('id-ID') %> baru</span>)</div>
       </div>
 
     </div>
 
     <!-- GRAFIK KHUSUS PROGRES PENCACAHAN MUATAN -->
+
     <div class="card" style="margin-top: 20px; position: relative; overflow: hidden; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(var(--accent-rgb), 0.02) 100%); border: 1px solid var(--border); padding: 20px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
         <div style="display: flex; align-items: center; gap: 10px;">
