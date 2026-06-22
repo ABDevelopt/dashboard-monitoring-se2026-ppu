@@ -26,14 +26,18 @@
             <table id="pmlTable">
               <thead>
                 <tr>
-                  <th>Nama PML</th>
-                  <th>Korlap</th>
-                  <th class="text-right">Jumlah PCL</th>
-                  <th class="text-right">SubSLS</th>
-                  <th class="text-right">Selesai</th>
-                  <th class="text-right">Progres %</th>
-                  <th class="text-right">Total Usaha</th>
-                  <th class="text-right">Total Keluarga</th>
+                  <th rowspan="2">Nama PML</th>
+                  <th rowspan="2">Korlap</th>
+                  <th rowspan="2" class="text-right">Jumlah PCL</th>
+                  <th rowspan="2" class="text-right">SubSLS</th>
+                  <th rowspan="2" class="text-right">Selesai</th>
+                  <th rowspan="2" class="text-right">Progres %</th>
+                  <th colspan="1" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Blok Usaha</th>
+                  <th colspan="1" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Blok Keluarga</th>
+                </tr>
+                <tr>
+                  <th class="text-right bg-cyan-soft">Total Usaha</th>
+                  <th class="text-right bg-purple-soft">Total Keluarga</th>
                 </tr>
               </thead>
               <tbody>
@@ -60,8 +64,8 @@
                         <span class="badge badge-blue"><%= completionPct %>%</span>
                       <% } %>
                     </td>
-                    <td class="text-right fw-bold td-primary" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
-                    <td class="text-right fw-bold" data-sort="<%= p.keluarga_total %>"><%= p.keluarga_total.toLocaleString('id-ID') %></td>
+                    <td class="text-right fw-bold td-primary bg-cyan-soft" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
+                    <td class="text-right fw-bold bg-purple-soft" data-sort="<%= p.keluarga_total %>"><%= p.keluarga_total.toLocaleString('id-ID') %></td>
                   </tr>
                 <% }) %>
               </tbody>

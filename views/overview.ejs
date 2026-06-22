@@ -33,16 +33,18 @@
         <div class="stat-sub">Usaha teridentifikasi ganda</div>
       </div>
 
-      <!-- Total Usaha Ditemukan -->
-      <div class="stat-card cyan">
+      <!-- BLOK USAHA -->
+      <div class="stat-card cyan" style="border: 1px solid rgba(6, 182, 212, 0.3); background-color: rgba(6, 182, 212, 0.03);">
+        <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--accent-cyan); margin-bottom: 8px; letter-spacing: 1px;"><i class="bi bi-briefcase-fill"></i> BLOK USAHA</div>
         <div class="stat-icon"><i class="bi bi-building-fill"></i></div>
         <div class="stat-label">Total Usaha Ditemukan</div>
         <div class="stat-value"><%= summary.usaha_total.toLocaleString('id-ID') %></div>
         <div class="stat-sub">Ditemukan + Baru (<span style="color: var(--accent-green);">+<%= summary.usaha_baru.toLocaleString('id-ID') %> baru</span>)</div>
       </div>
 
-      <!-- Total Keluarga Ditemukan -->
-      <div class="stat-card purple">
+      <!-- BLOK KELUARGA -->
+      <div class="stat-card purple" style="border: 1px solid rgba(168, 85, 247, 0.3); background-color: rgba(168, 85, 247, 0.03);">
+        <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--accent-purple); margin-bottom: 8px; letter-spacing: 1px;"><i class="bi bi-house-door-fill"></i> BLOK KELUARGA</div>
         <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
         <div class="stat-label">Total Keluarga Ditemukan</div>
         <div class="stat-value"><%= summary.keluarga_total.toLocaleString('id-ID') %></div>
@@ -208,13 +210,17 @@
           <table id="kecOverviewTable">
             <thead>
               <tr>
-                <th>Kecamatan</th>
-                <th class="text-right">Total SubSLS</th>
-                <th class="text-right">Selesai</th>
-                <th class="text-right">Progres %</th>
-                <th class="text-right">Beban Muatan</th>
-                <th class="text-right">Usaha Total</th>
-                <th class="text-right">Keluarga Total</th>
+                <th rowspan="2">Kecamatan</th>
+                <th rowspan="2" class="text-right">Total SubSLS</th>
+                <th rowspan="2" class="text-right">Selesai</th>
+                <th rowspan="2" class="text-right">Progres %</th>
+                <th rowspan="2" class="text-right">Beban Muatan</th>
+                <th colspan="1" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Blok Usaha</th>
+                <th colspan="1" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Blok Keluarga</th>
+              </tr>
+              <tr>
+                <th class="text-right bg-cyan-soft">Usaha Total</th>
+                <th class="text-right bg-purple-soft">Keluarga Total</th>
               </tr>
             </thead>
             <tbody>
@@ -234,8 +240,8 @@
                     <% } %>
                   </td>
                   <td class="text-right"><%= k.total_muatan.toLocaleString('id-ID') %></td>
-                  <td class="text-right fw-bold td-primary"><%= k.usaha_total.toLocaleString('id-ID') %></td>
-                  <td class="text-right fw-bold"><%= k.keluarga_total.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold td-primary bg-cyan-soft"><%= k.usaha_total.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold bg-purple-soft"><%= k.keluarga_total.toLocaleString('id-ID') %></td>
                 </tr>
               <% }) %>
             </tbody>

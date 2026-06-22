@@ -107,19 +107,23 @@
           <table id="subslsTable">
             <thead>
               <tr>
-                <th>Kode SLS</th>
-                <th>Nama SLS</th>
-                <th>Kecamatan</th>
-                <th>Desa</th>
-                <th>PCL</th>
-                <th>PML</th>
-                <th>Korlap</th>
-                <th class="text-right">Muatan</th>
-                <th class="text-center">Status</th>
-                <th class="text-right">Usaha Baru</th>
-                <th class="text-right">Usaha Total</th>
-                <th class="text-right">Keluarga Baru</th>
-                <th class="text-right">Keluarga Total</th>
+                <th rowspan="2">Kode SLS</th>
+                <th rowspan="2">Nama SLS</th>
+                <th rowspan="2">Kecamatan</th>
+                <th rowspan="2">Desa</th>
+                <th rowspan="2">PCL</th>
+                <th rowspan="2">PML</th>
+                <th rowspan="2">Korlap</th>
+                <th rowspan="2" class="text-right">Muatan</th>
+                <th rowspan="2" class="text-center">Status</th>
+                <th colspan="2" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Blok Usaha</th>
+                <th colspan="2" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Blok Keluarga</th>
+              </tr>
+              <tr>
+                <th class="text-right bg-cyan-soft">Usaha Baru</th>
+                <th class="text-right bg-cyan-soft">Usaha Total</th>
+                <th class="text-right bg-purple-soft">Keluarga Baru</th>
+                <th class="text-right bg-purple-soft">Keluarga Total</th>
               </tr>
             </thead>
             <tbody>
@@ -140,10 +144,10 @@
                       <span class="badge badge-red">Belum</span>
                     <% } %>
                   </td>
-                  <td class="text-right text-green" data-sort="<%= row.usaha_baru %>">+<%= row.usaha_baru.toLocaleString('id-ID') %></td>
-                  <td class="text-right fw-bold" data-sort="<%= row.usaha_total %>"><%= row.usaha_total.toLocaleString('id-ID') %></td>
-                  <td class="text-right text-cyan" data-sort="<%= row.keluarga_baru %>">+<%= row.keluarga_baru.toLocaleString('id-ID') %></td>
-                  <td class="text-right fw-bold" data-sort="<%= row.keluarga_total %>"><%= row.keluarga_total.toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft text-green" data-sort="<%= row.usaha_baru %>">+<%= (row.usaha_baru || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold bg-cyan-soft" data-sort="<%= row.usaha_total %>"><%= (row.usaha_total || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-purple-soft text-cyan" data-sort="<%= row.keluarga_baru %>">+<%= (row.keluarga_baru || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold bg-purple-soft" data-sort="<%= row.keluarga_total %>"><%= (row.keluarga_total || 0).toLocaleString('id-ID') %></td>
                 </tr>
               <% }) %>
             </tbody>

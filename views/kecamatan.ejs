@@ -47,23 +47,27 @@
             <table id="desaTable">
               <thead>
                 <tr>
-                  <th>Nama Desa/Kelurahan</th>
-                  <th class="text-right">Total SubSLS</th>
-                  <th class="text-right">SubSLS Selesai</th>
-                  <th class="text-right">Progres %</th>
-                  <th class="text-right">Muatan Target</th>
-                  <th class="text-right">Total Usaha</th>
-                  <th class="text-right">Total Keluarga</th>
+                  <th rowspan="2">Nama Desa/Kelurahan</th>
+                  <th rowspan="2" class="text-right">Total SubSLS</th>
+                  <th rowspan="2" class="text-right">SubSLS Selesai</th>
+                  <th rowspan="2" class="text-right">Progres %</th>
+                  <th rowspan="2" class="text-right">Muatan Target</th>
+                  <th colspan="1" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Blok Usaha</th>
+                  <th colspan="1" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Blok Keluarga</th>
+                </tr>
+                <tr>
+                  <th class="text-right bg-cyan-soft">Total Usaha</th>
+                  <th class="text-right bg-purple-soft">Total Keluarga</th>
                 </tr>
               </thead>
               <tbody>
                 <% desaStats.forEach(d => { %>
                   <% let dPct = d.total_muatan ? ((d.usaha_total / d.total_muatan) * 100).toFixed(2) : '0.00'; %>
                   <tr>
-                    <td class="td-primary"><i class="bi bi-house"></i> <%= d.desa %></td>
+                    <td class="td-primary"><a href="/subsls?kec=<%= encodeURIComponent(filterKec) %>&desa=<%= encodeURIComponent(d.desa) %>" style="color: inherit; text-decoration: none;"><i class="bi bi-pin-map"></i> <%= d.desa %></a></td>
                     <td class="text-right" data-sort="<%= d.total_subsls %>"><%= d.total_subsls %></td>
-                    <td class="text-right fw-bold" data-sort="<%= d.selesai %>" style="<%= d.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= d.selesai %></td>
-                    <td class="text-right" data-sort="<%= dPct %>">
+                    <td class="text-right fw-bold" data-sort="<%= d.selesai %>"><%= d.selesai %></td>
+                    <td class="text-right" data-sort="<%= parseFloat(dPct) %>">
                       <% if (parseFloat(dPct) >= 100) { %>
                         <span class="badge badge-green">100%</span>
                       <% } else if (parseFloat(dPct) <= 0) { %>
@@ -75,8 +79,8 @@
                       <% } %>
                     </td>
                     <td class="text-right" data-sort="<%= d.total_muatan %>"><%= d.total_muatan.toLocaleString('id-ID') %></td>
-                    <td class="text-right fw-bold td-primary" data-sort="<%= d.usaha_total %>"><%= d.usaha_total.toLocaleString('id-ID') %></td>
-                    <td class="text-right fw-bold" data-sort="<%= d.keluarga_total %>"><%= d.keluarga_total.toLocaleString('id-ID') %></td>
+                    <td class="text-right fw-bold td-primary bg-cyan-soft" data-sort="<%= d.usaha_total %>"><%= d.usaha_total.toLocaleString('id-ID') %></td>
+                    <td class="text-right fw-bold bg-purple-soft" data-sort="<%= d.keluarga_total %>"><%= d.keluarga_total.toLocaleString('id-ID') %></td>
                   </tr>
                 <% }) %>
               </tbody>
