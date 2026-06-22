@@ -22,6 +22,7 @@ function initSchema() {
     CREATE TABLE IF NOT EXISTS uploads (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       filename TEXT NOT NULL,
+      stored_filename TEXT,
       tanggal DATE NOT NULL,
       total_subsls_terisi INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP

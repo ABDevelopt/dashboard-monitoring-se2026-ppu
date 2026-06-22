@@ -44,7 +44,7 @@ router.post('/', upload.single('excelFile'), (req, res) => {
   const tanggal = req.body.tanggal || new Date().toISOString().slice(0, 10);
 
   try {
-    const result = parseAndSaveExcel(req.file.path, req.file.originalname, tanggal);
+    const result = parseAndSaveExcel(req.file.path, req.file.originalname, req.file.filename, tanggal);
     req.flash('success', 
       `Upload berhasil! File: ${req.file.originalname} | Tanggal: ${tanggal} | SubSLS terproses: ${result.uniqueSubsls}`
     );
@@ -62,6 +62,24 @@ router.post('/delete/:id', (req, res) => {
   getDb().prepare('DELETE FROM uploads WHERE id = ?').run(id);
   req.flash('success', 'Upload berhasil dihapus.');
   res.redirect('/upload');
+});
+
+// GET: Download file
+router.get('/download/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  const uploadRec = getDb().prepare('SELECT * FROM uploads WHERE id = ?').get(id);
+  if (!uploadRec || !uploadRec.stored_filename) {
+    req.flash('error', 'File fisik tidak ditemukan. Pastikan file ini di-upload setelah fitur download ditambahkan.');
+    return res.redirect('/upload');
+  }
+
+  const filePath = path.join(__dirname, '../uploads', uploadRec.stored_filename);
+  if (fs.existsSync(filePath)) {
+    res.download(filePath, uploadRec.filename);
+  } else {
+    req.flash('error', 'File fisik tidak ditemukan di server.');
+    res.redirect('/upload');
+  }
 });
 
 module.exports = router;

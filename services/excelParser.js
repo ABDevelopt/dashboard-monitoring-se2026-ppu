@@ -49,7 +49,7 @@ function loadMasterFromJson(jsonPath) {
 }
 
 // Parse Excel dan simpan ke DB
-function parseAndSaveExcel(filePath, originalName, tanggal) {
+function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal) {
   const db = getDb();
   const wb = XLSX.readFile(filePath, { raw: true });
 
@@ -87,7 +87,7 @@ function parseAndSaveExcel(filePath, originalName, tanggal) {
 
   // Insert upload record
   const uploadStmt = db.prepare(`
-    INSERT INTO uploads (filename, tanggal, total_subsls_terisi) VALUES (?, ?, ?)
+    INSERT INTO uploads (filename, stored_filename, tanggal, total_subsls_terisi) VALUES (?, ?, ?, ?)
   `);
 
   // Collect data rows
@@ -139,7 +139,7 @@ function parseAndSaveExcel(filePath, originalName, tanggal) {
     }
   });
 
-  const uploadResult = uploadStmt.run(originalName, tanggal, dataRows.length);
+  const uploadResult = uploadStmt.run(originalFilename, storedFilename, tanggal, dataRows.length);
   const uploadId = uploadResult.lastInsertRowid;
   doInsert(uploadId, dataRows);
 
