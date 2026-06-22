@@ -14,16 +14,6 @@
     <!-- KPI CARDS GRID (4 kartu utama) -->
     <div class="stats-grid">
 
-      <!-- SubSLS Selesai — digabung dengan konteks total -->
-      <div class="stat-card green">
-        <div class="stat-icon" style="color: var(--accent-green);"><i class="bi bi-check-circle-fill"></i></div>
-        <div class="stat-label">
-          SubSLS Selesai
-          <span title="Kriteria Selesai: SubSLS memiliki target muatan > 0 DAN jumlah (Usaha Ditemukan + Baru) >= Muatan" style="cursor: help; margin-left: 4px; color: var(--text-muted);"><i class="bi bi-info-circle"></i></span>
-        </div>
-        <div class="stat-value"><%= summary.selesai.toLocaleString('id-ID') %> <span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">/ <%= summary.total.toLocaleString('id-ID') %></span></div>
-        <div class="stat-sub">Progres Muatan: <strong><%= ((summary.usaha_total / summary.muatan_total) * 100).toFixed(2) %>%</strong> · Tersisa: <strong><%= summary.belum.toLocaleString('id-ID') %></strong></div>
-      </div>
 
       <!-- Usaha Ganda — sinyal kualitas data -->
       <div class="stat-card red">
