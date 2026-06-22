@@ -96,7 +96,7 @@ function getProgresWithMaster(uploadId) {
       p.tidak_ditemukan, p.ditemukan, p.keluarga_baru,
       p.meninggal, p.tidak_eligible, p.tidak_dapat_ditemui,
       p.rumah_tunggal, p.rumah_deret, p.rumah_susun, p.apartemen, p.lainnya,
-      CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END AS sudah_diisi
+      CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END AS sudah_diisi
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     ORDER BY m.kecamatan, m.desa, m.kode
@@ -109,9 +109,9 @@ function getKecamatanStats(uploadId) {
     SELECT 
       m.kecamatan,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
       SUM(COALESCE(p.usaha_tidak_ditemukan, 0)) AS usaha_tidak_ditemukan,
@@ -131,9 +131,9 @@ function getKorlapStats(uploadId) {
       COUNT(DISTINCT m.pcl) AS jumlah_pcl,
       COUNT(DISTINCT m.pml) AS jumlah_pml,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
     FROM subsls_master m
@@ -151,9 +151,9 @@ function getPmlStats(uploadId) {
       m.korlap,
       COUNT(DISTINCT m.pcl) AS jumlah_pcl,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
     FROM subsls_master m
@@ -172,9 +172,9 @@ function getPclStats(uploadId) {
       m.korlap,
       m.kecamatan,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
     FROM subsls_master m
@@ -190,7 +190,7 @@ function getTrenHarian() {
     SELECT 
       u.tanggal,
       u.filename,
-      COUNT(DISTINCT CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN p.kode ELSE NULL END) AS subsls_selesai,
+      COUNT(DISTINCT CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN p.kode ELSE NULL END) AS subsls_selesai,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
     FROM uploads u
@@ -208,14 +208,14 @@ function getOverviewSummary(uploadId) {
     SELECT COUNT(DISTINCT p.kode) as n 
     FROM progres p
     JOIN subsls_master m ON p.kode = m.kode
-    WHERE p.upload_id = ? AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan
+    WHERE p.upload_id = ? AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan
   `).get(uploadId).n;
   const muatan_total = getDb().prepare('SELECT SUM(muatan) as n FROM subsls_master').get().n || 0;
   const muatan_selesai = getDb().prepare(`
     SELECT SUM(m.muatan) as n 
     FROM subsls_master m 
     JOIN progres p ON m.kode = p.kode 
-    WHERE p.upload_id = ? AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan
+    WHERE p.upload_id = ? AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan
   `).get(uploadId).n || 0;
 
   const stats = getDb().prepare(`
@@ -251,9 +251,9 @@ function getEarlyWarning(uploadId) {
       MAX(m.korlap) AS korlap, 
       MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     GROUP BY m.pcl COLLATE NOCASE
@@ -268,9 +268,9 @@ function getEarlyWarning(uploadId) {
       MAX(m.korlap) AS korlap, 
       MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
       CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) / SUM(m.muatan), 2) ELSE 0.0 END AS pct
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
@@ -284,9 +284,9 @@ function getEarlyWarning(uploadId) {
       m.pml, 
       MAX(m.korlap) AS korlap,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     GROUP BY m.pml COLLATE NOCASE
@@ -306,7 +306,7 @@ function getTopPerformers(uploadId) {
       MAX(m.korlap) AS korlap, 
       MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
       CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) / SUM(m.muatan), 2) ELSE 0.0 END AS pct,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
@@ -323,7 +323,7 @@ function getTopPerformers(uploadId) {
       m.pml, 
       MAX(m.korlap) AS korlap,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
       CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) / SUM(m.muatan), 2) ELSE 0.0 END AS pct,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
@@ -347,7 +347,7 @@ function getBottomPerformers(uploadId) {
       MAX(m.korlap) AS korlap, 
       MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
       CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) / SUM(m.muatan), 2) ELSE 0.0 END AS pct,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
@@ -364,7 +364,7 @@ function getBottomPerformers(uploadId) {
       m.pml, 
       MAX(m.korlap) AS korlap,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+      SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
       CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) / SUM(m.muatan), 2) ELSE 0.0 END AS pct,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
