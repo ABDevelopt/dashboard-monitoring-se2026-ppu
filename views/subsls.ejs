@@ -69,8 +69,11 @@
           </div>
 
           <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Status Progres</label>
-            <select name="status"  style="width:100%;">
+            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">
+              Status Progres
+              <span title="Kriteria Selesai: SubSLS memiliki target muatan > 0 DAN jumlah (Usaha Ditemukan + Baru) >= Muatan" style="cursor: help; margin-left: 4px;"><i class="bi bi-info-circle"></i></span>
+            </label>
+            <select name="status" style="width:100%;">
               <option value="">-- Semua Status --</option>
               <option value="selesai" <%= filterStatus === 'selesai' ? 'selected' : '' %>>Selesai Pencacahan</option>
               <option value="belum" <%= filterStatus === 'belum' ? 'selected' : '' %>>Belum Selesai</option>
