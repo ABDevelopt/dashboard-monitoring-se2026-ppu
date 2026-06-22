@@ -6,6 +6,7 @@
       <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/upload">Upload Data</a>.</div>
     </div>
   <% } else { %>
+    <div id="ajax-container">
 
     <!-- FILTER BAR -->
     <div class="card">
@@ -19,7 +20,7 @@
           
           <div>
             <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
-            <select name="kec" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+            <select name="kec"  style="width:100%;">
               <option value="">-- Semua Kecamatan --</option>
               <% kecList.forEach(k => { %>
                 <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
@@ -29,7 +30,7 @@
 
           <div>
             <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
-            <select name="korlap" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+            <select name="korlap"  style="width:100%;">
               <option value="">-- Semua Korlap --</option>
               <% korlapList.forEach(k => { %>
                 <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
@@ -39,7 +40,7 @@
 
           <div>
             <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
-            <select name="pml" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+            <select name="pml"  style="width:100%;">
               <option value="">-- Semua PML --</option>
               <% pmlList.forEach(p => { %>
                 <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
@@ -196,4 +197,70 @@
       makeListSearchable('detailSubslsSearch', 'detailSubslsList', '.detail-item');
     <% } %>
   });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('ajax-container');
+  if (!container) return;
+
+  function attachListeners() {
+    const filterForm = document.getElementById('filterForm');
+    if (filterForm) {
+      const selects = filterForm.querySelectorAll('select');
+      selects.forEach(sel => {
+        sel.addEventListener('change', () => {
+          fetchAndReplace(new URLSearchParams(new FormData(filterForm)).toString());
+        });
+      });
+      
+      const resetBtn = document.querySelector('a[href="/pcl"]');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          fetchAndReplace('');
+        });
+      }
+    }
+
+    const pclLinks = document.querySelectorAll('a[href^="/pcl?pcl="]');
+    pclLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const urlObj = new URL(link.href, window.location.origin);
+        fetchAndReplace(urlObj.search);
+      });
+    });
+  }
+
+  function fetchAndReplace(queryString) {
+    const url = '/pcl' + (queryString ? (queryString.startsWith('?') ? queryString : '?' + queryString) : '');
+    const ajaxContainer = document.getElementById('ajax-container');
+    ajaxContainer.style.opacity = '0.5';
+    ajaxContainer.style.pointerEvents = 'none';
+    
+    fetch(url)
+      .then(res => res.text())
+      .then(html => {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const newContainer = doc.getElementById('ajax-container');
+        if (newContainer) {
+          ajaxContainer.innerHTML = newContainer.innerHTML;
+          history.pushState(null, '', url);
+          attachListeners();
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => {
+        ajaxContainer.style.opacity = '1';
+        ajaxContainer.style.pointerEvents = 'auto';
+      });
+  }
+
+  attachListeners();
+  
+  window.addEventListener('popstate', () => {
+    fetchAndReplace(window.location.search);
+  });
+});
 </script>

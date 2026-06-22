@@ -6,6 +6,7 @@
       <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/upload">Upload Data</a>.</div>
     </div>
   <% } else { %>
+    <div id="ajax-container">
     
     <!-- FILTER BAR -->
     <div class="card">
@@ -19,7 +20,7 @@
           
           <div>
             <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
-            <select name="kec" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+            <select name="kec"  style="width:100%;">
               <option value="">-- Semua Kecamatan --</option>
               <% kecList.forEach(k => { %>
                 <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
@@ -29,7 +30,7 @@
 
           <div>
             <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Desa/Kelurahan</label>
-            <select name="desa" onchange="document.getElementById('filterForm').submit()" style="width:100%;" <%= !filterKec ? 'disabled' : '' %>>
+            <select name="desa"  style="width:100%;" <%= !filterKec ? 'disabled' : '' %>>
               <option value="">-- Semua Desa --</option>
               <% desaList.forEach(d => { %>
                 <option value="<%= d.desa %>" <%= filterDesa === d.desa ? 'selected' : '' %>><%= d.desa %></option>
@@ -39,7 +40,7 @@
 
           <div>
             <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
-            <select name="korlap" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+            <select name="korlap"  style="width:100%;">
               <option value="">-- Semua Korlap --</option>
               <% korlapList.forEach(k => { %>
                 <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
@@ -49,7 +50,7 @@
 
           <div>
             <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
-            <select name="pml" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+            <select name="pml"  style="width:100%;">
               <option value="">-- Semua PML --</option>
               <% pmlList.forEach(p => { %>
                 <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
@@ -59,7 +60,7 @@
 
           <div>
             <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PCL (Pencacah)</label>
-            <select name="pcl" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+            <select name="pcl"  style="width:100%;">
               <option value="">-- Semua PCL --</option>
               <% pclList.forEach(p => { %>
                 <option value="<%= p.pcl %>" <%= filterPcl === p.pcl ? 'selected' : '' %>><%= p.pcl %></option>
@@ -69,7 +70,7 @@
 
           <div>
             <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Status Progres</label>
-            <select name="status" onchange="document.getElementById('filterForm').submit()" style="width:100%;">
+            <select name="status"  style="width:100%;">
               <option value="">-- Semua Status --</option>
               <option value="selesai" <%= filterStatus === 'selesai' ? 'selected' : '' %>>Selesai Pencacahan</option>
               <option value="belum" <%= filterStatus === 'belum' ? 'selected' : '' %>>Belum Selesai</option>
@@ -191,4 +192,74 @@
     makeTableSortable('subslsTable');
     makeTableSearchable('localSearch', 'subslsTable');
   });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('ajax-container');
+  if (!container) return;
+
+  function attachListeners() {
+    const filterForm = document.getElementById('filterForm');
+    if (filterForm) {
+      const selects = filterForm.querySelectorAll('select');
+      selects.forEach(sel => {
+        sel.addEventListener('change', () => {
+          fetchAndReplace(new URLSearchParams(new FormData(filterForm)).toString());
+        });
+      });
+      
+      const resetBtn = document.querySelector('a[href="/subsls"]');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          fetchAndReplace('');
+        });
+      }
+    }
+  }
+
+  function fetchAndReplace(queryString) {
+    const url = '/subsls' + (queryString ? (queryString.startsWith('?') ? queryString : '?' + queryString) : '');
+    const ajaxContainer = document.getElementById('ajax-container');
+    ajaxContainer.style.opacity = '0.5';
+    ajaxContainer.style.pointerEvents = 'none';
+    
+    fetch(url)
+      .then(res => res.text())
+      .then(html => {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const newContainer = doc.getElementById('ajax-container');
+        if (newContainer) {
+          ajaxContainer.innerHTML = newContainer.innerHTML;
+          history.pushState(null, '', url);
+          attachListeners();
+          
+          // Re-initialize local search if it exists in the new DOM
+          const localSearch = document.getElementById('localSearch');
+          if (localSearch) {
+             localSearch.addEventListener('keyup', function() {
+                let filter = this.value.toLowerCase();
+                let rows = document.querySelectorAll('#subslsTable tbody tr');
+                rows.forEach(row => {
+                   let text = row.textContent.toLowerCase();
+                   row.style.display = text.includes(filter) ? '' : 'none';
+                });
+             });
+          }
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => {
+        ajaxContainer.style.opacity = '1';
+        ajaxContainer.style.pointerEvents = 'auto';
+      });
+  }
+
+  attachListeners();
+  
+  window.addEventListener('popstate', () => {
+    fetchAndReplace(window.location.search);
+  });
+});
 </script>
