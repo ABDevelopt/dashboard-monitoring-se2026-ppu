@@ -251,36 +251,51 @@
       <div class="card-header">
         <div class="card-title"><i class="bi bi-house-door"></i> Klasifikasi Tipe Bangunan Tinggal</div>
       </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;">
-        
-        <div class="summary-item">
-          <div class="summary-item-label">Rumah Tunggal</div>
-          <div class="summary-item-value"><%= (summary.rumah_tunggal || 0).toLocaleString('id-ID') %></div>
-          <div class="summary-item-sub">Bangunan mandiri tunggal</div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px;">
+
+        <div class="bangunan-card">
+          <div class="bangunan-img-wrap">
+            <img src="/images/bangunan_tunggal.png" alt="Rumah Tunggal" class="bangunan-img">
+          </div>
+          <div class="bangunan-label">Rumah Tunggal</div>
+          <div class="bangunan-value"><%= (summary.rumah_tunggal || 0).toLocaleString('id-ID') %></div>
+          <div class="bangunan-sub">Bangunan mandiri tunggal</div>
         </div>
 
-        <div class="summary-item">
-          <div class="summary-item-label">Rumah Deret</div>
-          <div class="summary-item-value"><%= (summary.rumah_deret || 0).toLocaleString('id-ID') %></div>
-          <div class="summary-item-sub">Bangunan gandeng/berbaris</div>
+        <div class="bangunan-card">
+          <div class="bangunan-img-wrap">
+            <img src="/images/bangunan_deret.png" alt="Rumah Deret" class="bangunan-img">
+          </div>
+          <div class="bangunan-label">Rumah Deret</div>
+          <div class="bangunan-value"><%= (summary.rumah_deret || 0).toLocaleString('id-ID') %></div>
+          <div class="bangunan-sub">Bangunan gandeng/berbaris</div>
         </div>
 
-        <div class="summary-item">
-          <div class="summary-item-label">Rumah Susun</div>
-          <div class="summary-item-value"><%= (summary.rumah_susun || 0).toLocaleString('id-ID') %></div>
-          <div class="summary-item-sub">Rusun sederhana</div>
+        <div class="bangunan-card">
+          <div class="bangunan-img-wrap">
+            <img src="/images/bangunan_susun.png" alt="Rumah Susun" class="bangunan-img">
+          </div>
+          <div class="bangunan-label">Rumah Susun</div>
+          <div class="bangunan-value"><%= (summary.rumah_susun || 0).toLocaleString('id-ID') %></div>
+          <div class="bangunan-sub">Rusun sederhana</div>
         </div>
 
-        <div class="summary-item">
-          <div class="summary-item-label">Apartemen</div>
-          <div class="summary-item-value"><%= (summary.apartemen || 0).toLocaleString('id-ID') %></div>
-          <div class="summary-item-sub">Kondominium / apartemen</div>
+        <div class="bangunan-card">
+          <div class="bangunan-img-wrap">
+            <img src="/images/bangunan_apartemen.png" alt="Apartemen" class="bangunan-img">
+          </div>
+          <div class="bangunan-label">Apartemen</div>
+          <div class="bangunan-value"><%= (summary.apartemen || 0).toLocaleString('id-ID') %></div>
+          <div class="bangunan-sub">Kondominium / apartemen</div>
         </div>
 
-        <div class="summary-item">
-          <div class="summary-item-label">Lainnya</div>
-          <div class="summary-item-value"><%= (summary.lainnya || 0).toLocaleString('id-ID') %></div>
-          <div class="summary-item-sub">Ruko, mes, kontainer, dll.</div>
+        <div class="bangunan-card">
+          <div class="bangunan-img-wrap">
+            <img src="/images/bangunan_lainnya.png" alt="Lainnya" class="bangunan-img">
+          </div>
+          <div class="bangunan-label">Lainnya</div>
+          <div class="bangunan-value"><%= (summary.lainnya || 0).toLocaleString('id-ID') %></div>
+          <div class="bangunan-sub">Ruko, mes, kontainer, dll.</div>
         </div>
 
       </div>

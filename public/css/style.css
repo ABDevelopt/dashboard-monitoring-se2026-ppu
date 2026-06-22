@@ -924,3 +924,76 @@ th.sortable.sort-desc::after {
   padding: 10px;
   margin-bottom: 8px;
 }
+
+/* ====== BANGUNAN CARD (Klasifikasi Tipe Bangunan) ====== */
+.bangunan-card {
+  background: var(--bg-summary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 12px 14px;
+  text-align: center;
+  transition: var(--transition);
+  cursor: default;
+}
+
+.bangunan-card:hover {
+  border-color: var(--border-light);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+  background: linear-gradient(160deg, var(--bg-card) 0%, rgba(var(--accent-rgb), 0.04) 100%);
+}
+
+.bangunan-img-wrap {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 12px;
+  border-radius: 16px;
+  background: rgba(var(--accent-rgb), 0.06);
+  border: 1px solid rgba(var(--accent-rgb), 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.bangunan-card:hover .bangunan-img-wrap {
+  background: rgba(var(--accent-rgb), 0.12);
+  transform: scale(1.05);
+}
+
+.bangunan-img {
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  display: block;
+}
+
+.bangunan-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.bangunan-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.bangunan-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+@media (max-width: 768px) {
+  .bangunan-img-wrap { width: 60px; height: 60px; border-radius: 12px; }
+  .bangunan-img { width: 50px; height: 50px; }
+  .bangunan-value { font-size: 20px; }
+}
