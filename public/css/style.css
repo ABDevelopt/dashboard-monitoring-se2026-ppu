@@ -810,17 +810,45 @@ th.sortable.sort-desc::after {
   .sidebar { transform: translateX(-100%); }
   .sidebar.active { transform: translateX(0); }
   .main-wrapper { margin-left: 0; }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .page-content { padding: 16px; }
   .btn-toggle-sidebar { display: inline-block; }
   .btn-close-sidebar { display: block; }
+
+  /* KPI cards: 2 kolom, kompak */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    padding: 12px 12px 12px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 72px;
+  }
+  .stat-icon { display: none; }
+  .stat-label {
+    font-size: 10px;
+    margin-bottom: 4px;
+    letter-spacing: 0.03em;
+  }
+  .stat-value {
+    font-size: 20px;
+    margin-bottom: 2px;
+  }
+  .stat-sub { font-size: 10px; line-height: 1.3; }
 }
 
 @media (max-width: 480px) {
-  .stats-grid { grid-template-columns: 1fr; }
+  /* Tetap 2 kolom — lebih padat dari 1 kolom penuh */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .summary-split { grid-template-columns: 1fr; }
   .topbar { padding: 0 16px; }
   .topbar-subtitle { display: none; }
+  .stat-value { font-size: 18px; }
+  .stat-label { font-size: 9px; }
+  .stat-sub { font-size: 9px; }
 }
 
 /* ====== ANIMATIONS ====== */
