@@ -180,6 +180,7 @@ function createTrenChart(canvasId, trenData) {
   const theme = getThemeColors();
   const labels = trenData.map(d => d.tanggal);
   const dataUsaha = trenData.map(d => d.usaha_total);
+  const dataKeluarga = trenData.map(d => d.keluarga_total || 0);
 
   const chart = new Chart(ctx, {
     type: 'line',
@@ -196,6 +197,17 @@ function createTrenChart(canvasId, trenData) {
           pointRadius: 4,
           pointHoverRadius: 6,
           pointBackgroundColor: '#10b981'
+        },
+        {
+          label: 'Total Keluarga',
+          data: dataKeluarga,
+          borderColor: '#7c3aed',
+          backgroundColor: 'rgba(124, 58, 237, 0.08)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#7c3aed'
         }
       ]
     },
@@ -219,7 +231,7 @@ function createTrenChart(canvasId, trenData) {
         y: {
           ticks: { color: theme.text, font: { size: 11 } },
           grid: { color: theme.grid },
-          title: { display: true, text: 'Total Usaha', color: theme.text, font: { size: 10 } }
+          title: { display: true, text: 'Jumlah', color: theme.text, font: { size: 10 } }
         }
       }
     }
