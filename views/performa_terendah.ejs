@@ -8,16 +8,16 @@
   <% } else { %>
     
     <!-- BANNER PENJELASAN PENENTUAN PERFORMA -->
-    <details class="card" style="margin-bottom: 20px; border-left: 4px solid var(--accent-cyan); background: rgba(217, 119, 6, 0.05); padding: 16px 20px; cursor: pointer;">
+    <details class="card" style="margin-bottom: 20px; border-left: 4px solid var(--accent-red); background: rgba(239, 68, 68, 0.05); padding: 16px 20px; cursor: pointer;">
       <summary style="display: flex; gap: 14px; align-items: center; font-weight: 600; color: var(--text-primary); list-style: none; outline: none; user-select: none;">
         <style>
           details summary::-webkit-details-marker { display: none; }
           details[open] .bi-chevron-down { transform: rotate(180deg); }
           .bi-chevron-down { transition: transform 0.2s ease; }
         </style>
-        <div style="font-size: 22px; color: var(--accent-cyan); display: flex; align-items: center; justify-content: center; height: 24px;"><i class="bi bi-info-circle-fill"></i></div>
+        <div style="font-size: 22px; color: var(--accent-red); display: flex; align-items: center; justify-content: center; height: 24px;"><i class="bi bi-exclamation-triangle-fill"></i></div>
         <div style="flex: 1; display: flex; justify-content: space-between; align-items: center; min-width: 0;">
-          <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Penjelasan Penentuan Performa Terbaik</span>
+          <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Penjelasan Penentuan Performa Terendah</span>
           <span style="font-size: 12px; color: var(--text-secondary); font-weight: 500; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
             Klik untuk detail <i class="bi bi-chevron-down"></i>
           </span>
@@ -25,15 +25,15 @@
       </summary>
       <div style="margin-top: 12px; padding-left: 36px; cursor: default;" onclick="event.stopPropagation()">
         <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
-          Peringkat petugas dengan performa terbaik dihitung dan diurutkan menggunakan kriteria berikut:
+          Urutan petugas dengan performa terendah dihitung dan diurutkan menggunakan kriteria berikut:
         </p>
         <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
-          <li><strong>Metrik Utama:</strong> Total volume gabungan hasil pencacahan, yaitu: <code style="background: var(--bg-warning-stat); border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; font-family: monospace;">(Usaha Ditemukan + Usaha Baru) + (Keluarga Ditemukan + Keluarga Baru)</code>.</li>
+          <li><strong>Metrik Utama:</strong> Diurutkan mulai dari total volume gabungan hasil pencacahan terkecil, yaitu: <code style="background: var(--bg-warning-stat); border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; font-family: monospace;">(Usaha Ditemukan + Usaha Baru) + (Keluarga Ditemukan + Keluarga Baru)</code>.</li>
           <li><strong>Konsolidasi Petugas:</strong> Pengelompokan data petugas bersifat <em>case-insensitive</em> (mengabaikan perbedaan huruf besar/kecil) untuk memastikan data petugas dengan variasi penulisan nama tetap teragregasi menjadi satu.</li>
-          <li><strong>Aturan Pemecah Seri (Tie-Breaker):</strong> Jika dua atau lebih petugas memiliki total volume gabungan yang sama, peringkat ditentukan berturut-turut berdasarkan:
+          <li><strong>Aturan Pemecah Seri (Tie-Breaker):</strong> Jika dua atau lebih petugas memiliki total volume gabungan yang sama, posisi terendah (teratas pada daftar ini) ditentukan berturut-turut berdasarkan:
             <ol style="margin-top: 4px; padding-left: 16px; list-style-type: decimal;">
-              <li>Jumlah volume usaha (terbanyak).</li>
-              <li>Jumlah target/beban muatan awal <code style="background: var(--bg-warning-stat); border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; font-family: monospace;">total_muatan</code> (terbanyak).</li>
+              <li>Jumlah volume usaha terkecil (usaha_total paling sedikit).</li>
+              <li>Jumlah target/beban muatan awal <code style="background: var(--bg-warning-stat); border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; font-family: monospace;">total_muatan</code> terbesar (beban kerja terbesar dengan hasil pencacahan terkecil dianggap performa lebih rendah).</li>
             </ol>
           </li>
         </ul>
@@ -43,47 +43,46 @@
     <!-- GRID DUA KOLOM UNTUK PCL DAN PML -->
     <div class="drilldown-grid">
       
-      <!-- KOLOM KIRI: TOP 5 PCL -->
+      <!-- KOLOM KIRI: BOTTOM 5 PCL -->
       <div>
         <div class="card" style="margin-bottom: 20px;">
           <div class="card-header">
-            <div class="card-title"><i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Top 5 PCL Berperforma Terbaik</div>
-            <span class="badge badge-green">Pencacah Lapangan</span>
+            <div class="card-title"><i class="bi bi-arrow-down-circle-fill" style="color: var(--accent-red);"></i> 5 PCL Performa Terendah</div>
+            <span class="badge badge-red">Pencacah Lapangan</span>
           </div>
           
           <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
-            Peringkat PCL ditentukan berdasarkan gabungan total muatan usaha (usaha ditemukan + baru) dan keluarga (keluarga ditemukan + baru) yang dicatat.
+            Peringkat PCL ditentukan berdasarkan gabungan total muatan usaha (usaha ditemukan + baru) dan keluarga (keluarga ditemukan + baru) yang dicatat (diurutkan dari yang paling sedikit).
           </p>
 
-          <% if (performers.topPcl && performers.topPcl.length > 0) { %>
+          <% if (performers.bottomPcl && performers.bottomPcl.length > 0) { %>
             <div style="display: flex; flex-direction: column; gap: 12px;">
-              <% performers.topPcl.forEach((item, index) => { %>
+              <% performers.bottomPcl.forEach((item, index) => { %>
                 <% 
-                  let borderClass = '';
-                  let medalIcon = '<i class="bi bi-award"></i>';
-                  let medalColor = 'var(--text-muted)';
+                  let borderClass = 'border: 1px solid var(--border);';
+                  let statusIcon = '<i class="bi bi-arrow-down-circle"></i>';
+                  let iconColor = 'var(--accent-red)';
                   
                   if (index === 0) { 
-                    borderClass = 'border: 1px solid #fbbf24; background: rgba(251,191,36,0.03);'; 
-                    medalIcon = '<i class="bi bi-trophy-fill"></i>';
-                    medalColor = '#fbbf24';
+                    borderClass = 'border: 1px solid #ef4444; background: rgba(239,68,68,0.03);'; 
+                    statusIcon = '<i class="bi bi-exclamation-triangle-fill"></i>';
                   } else if (index === 1) { 
-                    borderClass = 'border: 1px solid #94a3b8; background: rgba(148,163,184,0.03);'; 
-                    medalIcon = '<i class="bi bi-award-fill"></i>';
-                    medalColor = '#cbd5e1';
-                  } else if (index === 2) { 
                     borderClass = 'border: 1px solid #f97316; background: rgba(249,115,22,0.03);'; 
-                    medalIcon = '<i class="bi bi-award-fill"></i>';
-                    medalColor = '#f97316';
+                    statusIcon = '<i class="bi bi-exclamation-circle-fill"></i>';
+                    iconColor = '#f97316';
+                  } else if (index === 2) { 
+                    borderClass = 'border: 1px solid #eab308; background: rgba(234,179,8,0.03);'; 
+                    statusIcon = '<i class="bi bi-exclamation-circle-fill"></i>';
+                    iconColor = '#eab308';
                   }
                 %>
                 
-                <div class="warning-card" style="<%= borderClass %> margin-bottom: 0;">
-                  <div class="warning-icon" style="font-size: 26px; color: <%= medalColor %>;"><%- medalIcon %></div>
+                <div class="warning-card danger" style="<%= borderClass %> margin-bottom: 0;">
+                  <div class="warning-icon" style="font-size: 26px; color: <%= iconColor %>;"><%- statusIcon %></div>
                   <div class="warning-body" style="width: 100%;">
                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                      <span class="warning-name">Rank <%= index + 1 %>: <%= item.pcl %></span>
-                      <span class="badge badge-green"><%= (item.usaha_total + item.keluarga_total).toLocaleString('id-ID') %> (Usaha + Kel)</span>
+                      <span class="warning-name">Posisi <%= index + 1 %>: <%= item.pcl %></span>
+                      <span class="badge badge-red"><%= (item.usaha_total + item.keluarga_total).toLocaleString('id-ID') %> (Usaha + Kel)</span>
                     </div>
                     <div class="warning-meta">
                       Kec. <strong><%= item.kecamatan %></strong> · PML: <strong><%= item.pml %></strong> · Korlap: <strong><%= item.korlap %></strong>
@@ -94,7 +93,7 @@
                       <span class="warning-stat">Progres: <strong><%= item.pct %>%</strong></span>
                     </div>
                     <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
-                      <div class="progress-bar green" data-width="<%= item.pct %>" style="width: 0%;"></div>
+                      <div class="progress-bar red" data-width="<%= item.pct %>" style="width: 0%;"></div>
                     </div>
                   </div>
                 </div>
@@ -106,47 +105,46 @@
         </div>
       </div>
 
-      <!-- KOLOM KANAN: TOP 5 PML -->
+      <!-- KOLOM KANAN: BOTTOM 5 PML -->
       <div>
         <div class="card" style="margin-bottom: 20px;">
           <div class="card-header">
-            <div class="card-title"><i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Top 5 PML Berperforma Terbaik</div>
-            <span class="badge badge-blue">Pengawas Lapangan</span>
+            <div class="card-title"><i class="bi bi-arrow-down-circle-fill" style="color: var(--accent-red);"></i> 5 PML Performa Terendah</div>
+            <span class="badge badge-red">Pengawas Lapangan</span>
           </div>
 
           <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
-            Peringkat PML ditentukan berdasarkan gabungan total muatan usaha dan keluarga yang dicatat oleh tim PCL di bawah pengawasannya.
+            Peringkat PML ditentukan berdasarkan gabungan total muatan usaha dan keluarga yang dicatat oleh tim PCL di bawah pengawasannya (diurutkan dari yang paling sedikit).
           </p>
 
-          <% if (performers.topPml && performers.topPml.length > 0) { %>
+          <% if (performers.bottomPml && performers.bottomPml.length > 0) { %>
             <div style="display: flex; flex-direction: column; gap: 12px;">
-              <% performers.topPml.forEach((item, index) => { %>
+              <% performers.bottomPml.forEach((item, index) => { %>
                 <% 
-                  let borderClass = '';
-                  let medalIcon = '<i class="bi bi-award"></i>';
-                  let medalColor = 'var(--text-muted)';
+                  let borderClass = 'border: 1px solid var(--border);';
+                  let statusIcon = '<i class="bi bi-arrow-down-circle"></i>';
+                  let iconColor = 'var(--accent-red)';
                   
                   if (index === 0) { 
-                    borderClass = 'border: 1px solid #fbbf24; background: rgba(251,191,36,0.03);'; 
-                    medalIcon = '<i class="bi bi-trophy-fill"></i>';
-                    medalColor = '#fbbf24';
+                    borderClass = 'border: 1px solid #ef4444; background: rgba(239,68,68,0.03);'; 
+                    statusIcon = '<i class="bi bi-exclamation-triangle-fill"></i>';
                   } else if (index === 1) { 
-                    borderClass = 'border: 1px solid #94a3b8; background: rgba(148,163,184,0.03);'; 
-                    medalIcon = '<i class="bi bi-award-fill"></i>';
-                    medalColor = '#cbd5e1';
-                  } else if (index === 2) { 
                     borderClass = 'border: 1px solid #f97316; background: rgba(249,115,22,0.03);'; 
-                    medalIcon = '<i class="bi bi-award-fill"></i>';
-                    medalColor = '#f97316';
+                    statusIcon = '<i class="bi bi-exclamation-circle-fill"></i>';
+                    iconColor = '#f97316';
+                  } else if (index === 2) { 
+                    borderClass = 'border: 1px solid #eab308; background: rgba(234,179,8,0.03);'; 
+                    statusIcon = '<i class="bi bi-exclamation-circle-fill"></i>';
+                    iconColor = '#eab308';
                   }
                 %>
                 
-                <div class="warning-card" style="<%= borderClass %> margin-bottom: 0;">
-                  <div class="warning-icon" style="font-size: 26px; color: <%= medalColor %>;"><%- medalIcon %></div>
+                <div class="warning-card danger" style="<%= borderClass %> margin-bottom: 0;">
+                  <div class="warning-icon" style="font-size: 26px; color: <%= iconColor %>;"><%- statusIcon %></div>
                   <div class="warning-body" style="width: 100%;">
                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                      <span class="warning-name">Rank <%= index + 1 %>: <%= item.pml %></span>
-                      <span class="badge badge-blue"><%= (item.usaha_total + item.keluarga_total).toLocaleString('id-ID') %> (Usaha + Kel)</span>
+                      <span class="warning-name">Posisi <%= index + 1 %>: <%= item.pml %></span>
+                      <span class="badge badge-red"><%= (item.usaha_total + item.keluarga_total).toLocaleString('id-ID') %> (Usaha + Kel)</span>
                     </div>
                     <div class="warning-meta">
                       Tim Korlap: <strong><%= item.korlap %></strong>
@@ -157,7 +155,7 @@
                       <span class="warning-stat">Progres: <strong><%= item.pct %>%</strong></span>
                     </div>
                     <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
-                      <div class="progress-bar blue" data-width="<%= item.pct %>" style="width: 0%;"></div>
+                      <div class="progress-bar red" data-width="<%= item.pct %>" style="width: 0%;"></div>
                     </div>
                   </div>
                 </div>

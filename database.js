@@ -245,21 +245,27 @@ function getOverviewSummary(uploadId) {
 function getEarlyWarning(uploadId) {
   const zeroPcl = getDb().prepare(`
     SELECT 
-      m.pcl, m.pml, m.korlap, m.kecamatan,
+      m.pcl, 
+      MAX(m.pml) AS pml, 
+      MAX(m.korlap) AS korlap, 
+      MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
       SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
       SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
-    HAVING selesai = 0
+    GROUP BY m.pcl COLLATE NOCASE
+    HAVING SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) = 0
     ORDER BY total_subsls DESC
   `).all(uploadId);
 
   const slowPcl = getDb().prepare(`
     SELECT 
-      m.pcl, m.pml, m.korlap, m.kecamatan,
+      m.pcl, 
+      MAX(m.pml) AS pml, 
+      MAX(m.korlap) AS korlap, 
+      MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
       SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
@@ -267,22 +273,23 @@ function getEarlyWarning(uploadId) {
       CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) / SUM(m.muatan), 2) ELSE 0.0 END AS pct
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
-    HAVING selesai > 0 AND pct < 25
+    GROUP BY m.pcl COLLATE NOCASE
+    HAVING SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) > 0 AND pct < 25.00
     ORDER BY pct ASC
   `).all(uploadId);
 
   const zeroPml = getDb().prepare(`
     SELECT 
-      m.pml, m.korlap,
+      m.pml, 
+      MAX(m.korlap) AS korlap,
       COUNT(m.kode) AS total_subsls,
       SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
       SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.pml, m.korlap
-    HAVING selesai = 0
+    GROUP BY m.pml COLLATE NOCASE
+    HAVING SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) = 0
     ORDER BY total_subsls DESC
   `).all(uploadId);
 
@@ -293,7 +300,10 @@ function getEarlyWarning(uploadId) {
 function getTopPerformers(uploadId) {
   const topPcl = getDb().prepare(`
     SELECT 
-      m.pcl, m.pml, m.korlap, m.kecamatan,
+      m.pcl, 
+      MAX(m.pml) AS pml, 
+      MAX(m.korlap) AS korlap, 
+      MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
       SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
@@ -302,14 +312,15 @@ function getTopPerformers(uploadId) {
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
-    ORDER BY pct DESC, total_muatan DESC, usaha_total DESC
+    GROUP BY m.pcl COLLATE NOCASE
+    ORDER BY (usaha_total + keluarga_total) DESC, usaha_total DESC, total_muatan DESC
     LIMIT 5
   `).all(uploadId);
 
   const topPml = getDb().prepare(`
     SELECT 
-      m.pml, m.korlap,
+      m.pml, 
+      MAX(m.korlap) AS korlap,
       COUNT(m.kode) AS total_subsls,
       SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
@@ -318,16 +329,58 @@ function getTopPerformers(uploadId) {
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.pml, m.korlap
-    ORDER BY pct DESC, total_muatan DESC, usaha_total DESC
+    GROUP BY m.pml COLLATE NOCASE
+    ORDER BY (usaha_total + keluarga_total) DESC, usaha_total DESC, total_muatan DESC
     LIMIT 5
   `).all(uploadId);
 
   return { topPcl, topPml };
 }
 
+// Bottom performers
+function getBottomPerformers(uploadId) {
+  const bottomPcl = getDb().prepare(`
+    SELECT 
+      m.pcl, 
+      MAX(m.pml) AS pml, 
+      MAX(m.korlap) AS korlap, 
+      MAX(m.kecamatan) AS kecamatan,
+      COUNT(m.kode) AS total_subsls,
+      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+      SUM(m.muatan) AS total_muatan,
+      CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) / SUM(m.muatan), 2) ELSE 0.0 END AS pct,
+      SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
+      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
+    FROM subsls_master m
+    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    GROUP BY m.pcl COLLATE NOCASE
+    ORDER BY (usaha_total + keluarga_total) ASC, usaha_total ASC, total_muatan DESC
+    LIMIT 5
+  `).all(uploadId);
+
+  const bottomPml = getDb().prepare(`
+    SELECT 
+      m.pml, 
+      MAX(m.korlap) AS korlap,
+      COUNT(m.kode) AS total_subsls,
+      SUM(CASE WHEN p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+      SUM(m.muatan) AS total_muatan,
+      CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) / SUM(m.muatan), 2) ELSE 0.0 END AS pct,
+      SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
+      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
+    FROM subsls_master m
+    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    GROUP BY m.pml COLLATE NOCASE
+    ORDER BY (usaha_total + keluarga_total) ASC, usaha_total ASC, total_muatan DESC
+    LIMIT 5
+  `).all(uploadId);
+
+  return { bottomPcl, bottomPml };
+}
+
 module.exports = {
   getDb, getLatestUpload, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
-  getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers
+  getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
+  getBottomPerformers
 };

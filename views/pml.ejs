@@ -37,6 +37,7 @@
                 </tr>
               </thead>
               <tbody>
+                <% pmlStats.forEach(p => { %>
                   <% let completionPct = p.total_muatan ? ((p.usaha_total / p.total_muatan) * 100).toFixed(2) : '0.00'; %>
                   <tr class="<%= filterPml === p.pml ? 'active' : '' %>" style="<%= filterPml === p.pml ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="td-primary">

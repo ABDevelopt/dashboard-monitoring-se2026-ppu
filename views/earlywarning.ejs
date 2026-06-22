@@ -12,7 +12,7 @@
         <div class="stat-icon"><i class="bi bi-person-gear"></i></div>
         <div class="stat-label">PCL Tanpa Progres</div>
         <div class="stat-value"><%= warning.zeroPcl.length %></div>
-        <div class="stat-sub">Pencacah dengan 0% selesai</div>
+        <div class="stat-sub">Pencacah tanpa progres usaha</div>
       </div>
       <div class="stat-card yellow">
         <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
@@ -24,7 +24,7 @@
         <div class="stat-icon"><i class="bi bi-clipboard2-data"></i></div>
         <div class="stat-label">PML Tanpa Progres</div>
         <div class="stat-value"><%= warning.zeroPml.length %></div>
-        <div class="stat-sub">Pengawas dengan 0% selesai</div>
+        <div class="stat-sub">Pengawas tanpa progres usaha</div>
       </div>
     </div>
 
@@ -40,7 +40,7 @@
           <span class="badge badge-red"><%= warning.zeroPcl.length %> Petugas</span>
         </div>
         
-        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Daftar PCL yang telah mendapatkan tugas SLS tetapi belum berhasil menyelesaikan satu pun SLS hingga saat ini.</p>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Daftar PCL yang telah mendapatkan tugas SLS tetapi belum mencatat progres usaha sama sekali hingga saat ini.</p>
 
         <% if (warning.zeroPcl.length > 0) { %>
           <div style="max-height: 480px; overflow-y: auto; padding-right: 4px;">
@@ -76,7 +76,7 @@
           <span class="badge badge-red"><%= warning.zeroPml.length %> Pengawas</span>
         </div>
 
-        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Daftar PML (Pengawas Lapangan) yang seluruh PCL di bawah naungannya belum menyetor progres data.</p>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Daftar PML (Pengawas Lapangan) yang seluruh PCL di bawah naungannya belum mencatat progres usaha sama sekali.</p>
 
         <% if (warning.zeroPml.length > 0) { %>
           <div style="max-height: 480px; overflow-y: auto; padding-right: 4px;">
@@ -114,7 +114,7 @@
         <span class="badge badge-yellow"><%= warning.slowPcl.length %> Petugas</span>
       </div>
 
-      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Daftar PCL yang progresnya lambat atau berada di bawah 25% dari total beban SubSLS yang ditugaskan kepada mereka.</p>
+      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Daftar PCL yang progresnya lambat atau berada di bawah 25% dari total target muatan (assignment) yang ditugaskan kepada mereka.</p>
 
       <% if (warning.slowPcl.length > 0) { %>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; max-height: 500px; overflow-y: auto; padding-right: 4px;">
