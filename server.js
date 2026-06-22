@@ -29,11 +29,14 @@ app.use(session({
 }));
 app.use(flash());
 
+const APP_VERSION = Date.now(); // Startup timestamp for cache busting
+
 // Global locals
 app.use((req, res, next) => {
   res.locals.success = req.flash('success');
   res.locals.error = req.flash('error');
   res.locals.activePage = ''; // default value
+  res.locals.appVersion = APP_VERSION;
 
   // Inject upload info globally
   const latest = getLatestUpload();
