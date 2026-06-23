@@ -61,8 +61,8 @@
 
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); margin-bottom: 20px;">
             <div>
-              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Approved</div>
-              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);"><%= (summary.approved_total || 0).toLocaleString('id-ID') %></div>
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Capaian</div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);"><%= totalPengerjaan.toLocaleString('id-ID') %></div>
             </div>
             <div>
               <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Target</div>
@@ -72,7 +72,7 @@
             </div>
             <div>
               <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Sisa</div>
-              <div style="font-size: 14px; font-weight: 700; color: var(--accent-yellow);"><%= Math.max(0, summary.target_fasih_total - (summary.approved_total || 0)).toLocaleString('id-ID') %></div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--accent-yellow);"><%= Math.max(0, summary.target_fasih_total - totalPengerjaan).toLocaleString('id-ID') %></div>
             </div>
           </div>
         </div>
