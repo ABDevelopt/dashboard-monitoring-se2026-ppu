@@ -204,7 +204,7 @@
 
   @media (max-width: 992px) {
     .map-container-wrap {
-      flex-direction: column;
+      flex-direction: column-reverse;
       height: auto;
     }
     .map-sidebar-panel {
@@ -213,7 +213,10 @@
       overflow-y: visible;
     }
     .map-canvas-container {
-      height: 480px;
+      flex: none;
+      width: 100%;
+      height: 450px;
+      min-height: 450px;
     }
   }
 </style>
