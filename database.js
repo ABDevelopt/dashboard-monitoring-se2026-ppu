@@ -251,7 +251,11 @@ function getTrenHarian() {
       u.filename,
       COUNT(DISTINCT CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN p.kode ELSE NULL END) AS subsls_selesai,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
+      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
+      SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
+      SUM(COALESCE(p.approved, 0)) AS approved_total,
+      SUM(COALESCE(p.rejected, 0)) AS rejected_total
     FROM uploads u
     LEFT JOIN progres p ON p.upload_id = u.id
     LEFT JOIN subsls_master m ON p.kode = m.kode

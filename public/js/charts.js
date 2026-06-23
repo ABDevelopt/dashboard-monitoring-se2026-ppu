@@ -241,6 +241,95 @@ function createTrenChart(canvasId, trenData) {
   return chart;
 }
 
+// ===== LINE CHART (Fasih Tren) =====
+function createFasihTrenChart(canvasId, trenData) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx || !trenData || !trenData.length) return;
+
+  const theme = getThemeColors();
+  const labels = trenData.map(d => d.tanggal);
+  const dataDraft = trenData.map(d => d.draft_total || 0);
+  const dataSubmitted = trenData.map(d => d.submitted_total || 0);
+  const dataApproved = trenData.map(d => d.approved_total || 0);
+  const dataRejected = trenData.map(d => d.rejected_total || 0);
+
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Draft',
+          data: dataDraft,
+          borderColor: '#eab308',
+          backgroundColor: 'rgba(234, 179, 8, 0.04)',
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#eab308'
+        },
+        {
+          label: 'Submitted',
+          data: dataSubmitted,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.04)',
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#3b82f6'
+        },
+        {
+          label: 'Approved',
+          data: dataApproved,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.04)',
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#10b981'
+        },
+        {
+          label: 'Rejected',
+          data: dataRejected,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.04)',
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#ef4444'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: theme.text, font: { size: 11, family: 'Inter' } } },
+        tooltip: {
+          backgroundColor: theme.bgCard,
+          borderColor: theme.border,
+          borderWidth: 1,
+          titleColor: theme.title,
+          bodyColor: theme.text,
+          mode: 'index',
+          intersect: false,
+        }
+      },
+      scales: {
+        x: { ticks: { color: theme.text, font: { size: 11 } }, grid: { color: theme.grid } },
+        y: {
+          ticks: { color: theme.text, font: { size: 11 } },
+          grid: { color: theme.grid },
+          title: { display: true, text: 'Jumlah Dokumen', color: theme.text, font: { size: 10 } }
+        }
+      }
+    }
+  });
+  window.activeCharts = window.activeCharts || [];
+  window.activeCharts.push(chart);
+  return chart;
+}
+
 // ===== UPLOAD DRAG & DROP =====
 function initUploadZone(zoneId, inputId) {
   const zone = document.getElementById(zoneId);
