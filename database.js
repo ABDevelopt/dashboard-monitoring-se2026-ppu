@@ -314,7 +314,7 @@ function getOverviewSummary(uploadId) {
 }
 
 // Early warning: PCL dengan 0 progres
-function getEarlyWarning(uploadId) {
+function getEarlyWarning(uploadId, filters = {}) {
   // Hitung jumlah hari sensus berjalan (dari tanggal upload pertama ke upload saat ini)
   const currentUpload = getDb().prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
   const firstUpload = getDb().prepare('SELECT MIN(tanggal) as min_tanggal FROM uploads').get();
@@ -325,6 +325,30 @@ function getEarlyWarning(uploadId) {
     const d2 = new Date(currentUpload.tanggal);
     const diffTime = d2 - d1;
     diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+  }
+
+  let where = '';
+  const paramsZeroPcl = [uploadId];
+  const paramsSlowPcl = [diffDays, uploadId];
+  const paramsZeroPml = [uploadId];
+
+  if (filters.kec) {
+    where += ' AND m.kecamatan = ?';
+    paramsZeroPcl.push(filters.kec);
+    paramsSlowPcl.push(filters.kec);
+    paramsZeroPml.push(filters.kec);
+  }
+  if (filters.korlap) {
+    where += ' AND m.korlap = ?';
+    paramsZeroPcl.push(filters.korlap);
+    paramsSlowPcl.push(filters.korlap);
+    paramsZeroPml.push(filters.korlap);
+  }
+  if (filters.pml) {
+    where += ' AND m.pml = ?';
+    paramsZeroPcl.push(filters.pml);
+    paramsSlowPcl.push(filters.pml);
+    paramsZeroPml.push(filters.pml);
   }
 
   const zeroPcl = getDb().prepare(`
@@ -344,10 +368,11 @@ function getEarlyWarning(uploadId) {
       SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
     HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) = 0
     ORDER BY total_subsls DESC
-  `).all(uploadId);
+  `).all(...paramsZeroPcl);
 
   const slowPcl = getDb().prepare(`
     SELECT 
@@ -369,10 +394,11 @@ function getEarlyWarning(uploadId) {
       SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
     HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0 AND rata_rata < 5.0
     ORDER BY rata_rata ASC
-  `).all(diffDays, uploadId);
+  `).all(...paramsSlowPcl);
 
   const zeroPml = getDb().prepare(`
     SELECT 
@@ -389,16 +415,33 @@ function getEarlyWarning(uploadId) {
       SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    WHERE 1=1 ${where}
     GROUP BY m.pml COLLATE NOCASE
     HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) = 0
     ORDER BY total_subsls DESC
-  `).all(uploadId);
+  `).all(...paramsZeroPml);
 
   return { zeroPcl, slowPcl, zeroPml, diffDays };
 }
 
 // Top performers
-function getTopPerformers(uploadId) {
+function getTopPerformers(uploadId, filters = {}) {
+  let where = '';
+  const params = [uploadId];
+
+  if (filters.kec) {
+    where += ' AND m.kecamatan = ?';
+    params.push(filters.kec);
+  }
+  if (filters.korlap) {
+    where += ' AND m.korlap = ?';
+    params.push(filters.korlap);
+  }
+  if (filters.pml) {
+    where += ' AND m.pml = ?';
+    params.push(filters.pml);
+  }
+
   const topPcl = getDb().prepare(`
     SELECT 
       m.pcl, 
@@ -418,10 +461,11 @@ function getTopPerformers(uploadId) {
       SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
     ORDER BY (usaha_total + keluarga_total) DESC, usaha_total DESC, total_muatan DESC
     LIMIT 5
-  `).all(uploadId);
+  `).all(...params);
 
   const topPml = getDb().prepare(`
     SELECT 
@@ -440,16 +484,33 @@ function getTopPerformers(uploadId) {
       SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    WHERE 1=1 ${where}
     GROUP BY m.pml COLLATE NOCASE
     ORDER BY (usaha_total + keluarga_total) DESC, usaha_total DESC, total_muatan DESC
     LIMIT 5
-  `).all(uploadId);
+  `).all(...params);
 
   return { topPcl, topPml };
 }
 
 // Bottom performers
-function getBottomPerformers(uploadId) {
+function getBottomPerformers(uploadId, filters = {}) {
+  let where = '';
+  const params = [uploadId];
+
+  if (filters.kec) {
+    where += ' AND m.kecamatan = ?';
+    params.push(filters.kec);
+  }
+  if (filters.korlap) {
+    where += ' AND m.korlap = ?';
+    params.push(filters.korlap);
+  }
+  if (filters.pml) {
+    where += ' AND m.pml = ?';
+    params.push(filters.pml);
+  }
+
   const bottomPcl = getDb().prepare(`
     SELECT 
       m.pcl, 
@@ -469,10 +530,11 @@ function getBottomPerformers(uploadId) {
       SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
     ORDER BY (usaha_total + keluarga_total) ASC, usaha_total ASC, total_muatan DESC
     LIMIT 5
-  `).all(uploadId);
+  `).all(...params);
 
   const bottomPml = getDb().prepare(`
     SELECT 
@@ -491,10 +553,11 @@ function getBottomPerformers(uploadId) {
       SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    WHERE 1=1 ${where}
     GROUP BY m.pml COLLATE NOCASE
     ORDER BY (usaha_total + keluarga_total) ASC, usaha_total ASC, total_muatan DESC
     LIMIT 5
-  `).all(uploadId);
+  `).all(...params);
 
   return { bottomPcl, bottomPml };
 }
