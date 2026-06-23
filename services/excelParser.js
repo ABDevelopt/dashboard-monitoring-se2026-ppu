@@ -263,7 +263,7 @@ function toTitleCase(str) {
 function loadMasterFromExcel(filePath) {
   const db = getDb();
   const wb = XLSX.readFile(filePath, { raw: true });
-  const sheetName = wb.Sheets['master'] ? 'master' : wb.SheetNames[0];
+  const sheetName = wb.Sheets['master'] ? 'master' : (wb.SheetNames.find(s => s.toLowerCase().includes('data pencacahan')) || wb.SheetNames[0]);
   const ws = wb.Sheets[sheetName];
   if (!ws) throw new Error('Sheet master data tidak ditemukan.');
 
@@ -280,6 +280,29 @@ function loadMasterFromExcel(filePath) {
     }
     return -1;
   };
+
+  // INTERCEPT: Jika file yang diupload adalah rancangan-muatan (punya kolom 'idsubsls beneran')
+  if (headers.includes('idsubsls beneran') || headers.includes('idsubsls_beneran')) {
+    const kodeIdx = findCol(['idsubsls beneran', 'idsubsls_beneran']);
+    const targetIdx = findCol(['total assignment fasih', 'target_fasih', 'total_assignment_fasih', 'assignment_fasih', 'fasih_target']);
+    
+    if (targetIdx === -1) throw new Error('Kolom "TOTAL ASSIGNMENT FASIH" tidak ditemukan di file rancangan.');
+    
+    let updatedCount = 0;
+    const updateStmt = db.prepare('UPDATE subsls_master SET target_fasih = ? WHERE kode = ? OR kode_2025 = ?');
+    
+    db.transaction(() => {
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        let kode = String(row[kodeIdx] || '').trim();
+        if (!kode) continue;
+        const target = toInt(row[targetIdx]);
+        const res = updateStmt.run(target, kode, kode);
+        if (res.changes > 0) updatedCount++;
+      }
+    })();
+    return; // Selesai update target_fasih, tidak lanjut ke load master normal
+  }
 
   const colIdx = {
     kode: findCol(['kode', 'id_subsls', 'id subsls', 'id_sls', 'id sls']),
