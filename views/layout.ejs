@@ -585,15 +585,22 @@
       let type = '';
       let name = '';
 
-      if (href.startsWith('/korlap?korlap=')) {
-        type = 'korlap';
-        name = decodeURIComponent(href.split('/korlap?korlap=')[1]);
-      } else if (href.startsWith('/pml?pml=')) {
-        type = 'pml';
-        name = decodeURIComponent(href.split('/pml?pml=')[1]);
-      } else if (href.startsWith('/pcl?pcl=')) {
-        type = 'pcl';
-        name = decodeURIComponent(href.split('/pcl?pcl=')[1]);
+      // Use URL parsing for robust multi-param extraction
+      try {
+        const url = new URL(href, window.location.origin);
+        const path = url.pathname;
+        if (path === '/korlap' && url.searchParams.has('korlap')) {
+          type = 'korlap';
+          name = url.searchParams.get('korlap');
+        } else if (path === '/pml' && url.searchParams.has('pml')) {
+          type = 'pml';
+          name = url.searchParams.get('pml');
+        } else if (path === '/pcl' && url.searchParams.has('pcl')) {
+          type = 'pcl';
+          name = url.searchParams.get('pcl');
+        }
+      } catch (_) {
+        // Fallback: ignore malformed URLs
       }
 
       if (type && name) {
