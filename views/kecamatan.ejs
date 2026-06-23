@@ -1,3 +1,12 @@
+<%
+  let activeTargetPct = 25;
+  let targetMonthName = 'Juni';
+  const currentMonth = new Date().getMonth(); // 5 = Juni, 6 = Juli
+  if (currentMonth === 6) { // Juli
+    activeTargetPct = 50;
+    targetMonthName = 'Juli';
+  }
+%>
 <div class="fade-in">
   <% if (!uploadId) { %>
     <div class="card empty-state text-center">
@@ -15,8 +24,20 @@
           <div class="kec-name"><i class="bi bi-geo-alt"></i> Kec. <%= k.kecamatan %></div>
           <div class="kec-pct"><%= pctVal %>%</div>
           
-          <div class="progress-bar-wrap" style="height: 6px; margin-top: 8px; margin-bottom: 8px;">
-            <div class="progress-bar <%= parseFloat(pctVal) >= 100 ? 'green' : (parseFloat(pctVal) < 25 ? 'red' : 'blue') %>" data-width="<%= pctVal %>" style="width: 0%;"></div>
+          <div class="progress-bar-target-wrap" style="position: relative; height: 6px; margin-top: 16px; margin-bottom: 8px;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
+              <div class="progress-bar <%= parseFloat(pctVal) >= 100 ? 'green' : (parseFloat(pctVal) < activeTargetPct ? 'red' : 'blue') %>" data-width="<%= pctVal %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
+            </div>
+            
+            <!-- Marker 25% (Juni) -->
+            <div style="position: absolute; left: 25%; top: -3px; height: 12px; border-left: 1px dashed <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 25 ? '1' : '0.5' %>; z-index: 2; pointer-events: none;">
+              <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">Jun: 25%</span>
+            </div>
+
+            <!-- Marker 50% (Juli) -->
+            <div style="position: absolute; left: 50%; top: -3px; height: 12px; border-left: 1px dashed <%= activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 50 ? '1' : '0.5' %>; z-index: 2; pointer-events: none;">
+              <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: <%= activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">Jul: 50%</span>
+            </div>
           </div>
           
           <div class="kec-detail">
@@ -92,7 +113,7 @@
                     <td class="text-right bg-cyan-soft" data-sort="<%= parseFloat(muatanPct) %>">
                       <% if (parseFloat(muatanPct) >= 100) { %>
                         <span class="badge badge-green">100%</span>
-                      <% } else if (parseFloat(muatanPct) < 25) { %>
+                      <% } else if (parseFloat(muatanPct) < activeTargetPct) { %>
                         <span class="badge badge-red"><%= muatanPct %>%</span>
                       <% } else { %>
                         <span class="badge badge-blue"><%= muatanPct %>%</span>

@@ -1,3 +1,12 @@
+<%
+  let activeTargetPct = 25;
+  let targetMonthName = 'Juni';
+  const currentMonth = new Date().getMonth(); // 5 = Juni, 6 = Juli
+  if (currentMonth === 6) { // Juli
+    activeTargetPct = 50;
+    targetMonthName = 'Juli';
+  }
+%>
 <div class="fade-in">
   <% if (!summary) { %>
     <!-- EMPTY STATE -->
@@ -131,15 +140,28 @@
           </div>
         </div>
 
-        <div style="background: var(--bg-progress-wrap); height: 28px; border-radius: 14px; overflow: hidden; position: relative; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">
-          <div class="progress-bar" data-width="<%= totalPct %>" style="background: linear-gradient(90deg, var(--accent-blue) 0%, var(--accent-cyan) 100%); height: 20px; width: 0%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.25);">
-            <% if (parseFloat(totalPct) > 8) { %>
-              <span style="font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"><%= totalPct %>%</span>
+        <div style="position: relative; height: 28px; margin-top: 14px; margin-bottom: 14px;">
+          <!-- Track & Progress Bar -->
+          <div style="background: var(--bg-progress-wrap); height: 28px; border-radius: 14px; overflow: hidden; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">
+            <div class="progress-bar" data-width="<%= totalPct %>" style="background: linear-gradient(90deg, var(--accent-blue) 0%, var(--accent-cyan) 100%); height: 20px; width: 0%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.25);">
+              <% if (parseFloat(totalPct) > 8) { %>
+                <span style="font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"><%= totalPct %>%</span>
+              <% } %>
+            </div>
+            <% if (parseFloat(totalPct) <= 8) { %>
+              <span style="margin-left: 12px; font-size: 11px; font-weight: 800; color: var(--text-primary);"><%= totalPct %>%</span>
             <% } %>
           </div>
-          <% if (parseFloat(totalPct) <= 8) { %>
-            <span style="margin-left: 12px; font-size: 11px; font-weight: 800; color: var(--text-primary);"><%= totalPct %>%</span>
-          <% } %>
+
+          <!-- Marker 25% (Juni) -->
+          <div style="position: absolute; left: 25%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 25 ? '1' : '0.4' %>; z-index: 2; pointer-events: none;">
+            <span style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">Target Juni: 25%</span>
+          </div>
+
+          <!-- Marker 50% (Juli) -->
+          <div style="position: absolute; left: 50%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 50 ? '1' : '0.4' %>; z-index: 2; pointer-events: none;">
+            <span style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">Target Juli: 50%</span>
+          </div>
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
@@ -328,7 +350,7 @@
                   <td class="text-right bg-cyan-soft">
                     <% if (parseFloat(muatanPct) >= 100) { %>
                       <span class="badge badge-green">100%</span>
-                    <% } else if (parseFloat(muatanPct) < 25) { %>
+                    <% } else if (parseFloat(muatanPct) < activeTargetPct) { %>
                       <span class="badge badge-red"><%= muatanPct %>%</span>
                     <% } else { %>
                       <span class="badge badge-blue"><%= muatanPct %>%</span>
