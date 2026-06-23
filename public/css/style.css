@@ -1145,18 +1145,58 @@ th.sortable.sort-desc::after { content: '\f229'; font-family: 'bootstrap-icons' 
 
 .card.card-expanded .card-header {
   flex-shrink: 0 !important;
-  margin-bottom: 20px !important;
+  margin-bottom: 0 !important;
   border-bottom: 1px solid var(--border) !important;
-  padding-bottom: 16px !important;
+  padding-bottom: 12px !important;
   padding-right: 50px !important; /* avoid close button overlap */
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  align-items: center !important;
 }
 
-.card.card-expanded .search-wrap,
-.card.card-expanded form,
-.card.card-expanded > div:not(.table-wrap):not(.card-header):not(.search-wrap),
-.card.card-expanded .pagination {
-  flex-shrink: 0 !important;
-  margin-bottom: 16px !important;
+/* Filter bar row shown inside card-header when expanded */
+.card.card-expanded .expand-filter-bar {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  align-items: center !important;
+  flex: 1 1 100% !important; /* take full width as second row */
+  padding-top: 10px !important;
+  border-top: 1px solid var(--border) !important;
+  margin-top: 4px !important;
+}
+
+/* Compact the search inputs when in the expand toolbar */
+.card.card-expanded .expand-filter-el.search-wrap,
+.card.card-expanded .expand-filter-bar .search-wrap {
+  margin-bottom: 0 !important;
+  min-width: 180px !important;
+  flex: 0 1 240px !important;
+}
+.card.card-expanded .expand-filter-el.search-wrap input,
+.card.card-expanded .expand-filter-bar .search-wrap input {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* Compact the filter form when in the expand toolbar */
+.card.card-expanded .expand-filter-el#filterForm,
+.card.card-expanded .expand-filter-bar form#filterForm {
+  margin-bottom: 0 !important;
+  width: 100% !important;
+}
+.card.card-expanded .expand-filter-bar .filter-form-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)) !important;
+  gap: 8px !important;
+}
+.card.card-expanded .expand-filter-bar label {
+  font-size: 10px !important;
+  margin-bottom: 2px !important;
+}
+.card.card-expanded .expand-filter-bar select {
+  font-size: 11px !important;
+  padding: 4px 8px !important;
+  height: 28px !important;
 }
 
 .card.card-expanded .table-wrap {
@@ -1168,7 +1208,15 @@ th.sortable.sort-desc::after { content: '\f229'; font-family: 'bootstrap-icons' 
   border: 1px solid var(--border) !important;
   border-radius: 8px !important;
   background: var(--bg-primary) !important;
+  margin-top: 16px !important;
 }
+
+/* Other sibling elements in expanded card (progress sections, etc.) */
+.card.card-expanded > div:not(.table-wrap):not(.card-header):not(.expand-filter-bar) {
+  flex-shrink: 0 !important;
+  margin-bottom: 12px !important;
+}
+
 
 /* Force showing all columns when table is expanded & Format as Spreadsheet */
 .card.card-expanded .hide-md {

@@ -243,20 +243,66 @@
     // Dynamic Expand Table Feature
     const toggleCardExpand = (card, btn, closeOverlayBtn) => {
       const isExpanded = card.classList.contains('card-expanded');
+      const header = card.querySelector('.card-header');
+      const actionsWrap = header ? header.querySelector('.card-actions') : null;
+
       if (isExpanded) {
+        // ---- COLLAPSING ----
         card.classList.remove('card-expanded');
         document.body.classList.remove('has-expanded-card');
         btn.innerHTML = '<i class="bi bi-arrows-angle-expand"></i> <span>Expand</span>';
         btn.classList.remove('btn-danger');
         btn.classList.add('btn-secondary');
         if (closeOverlayBtn) closeOverlayBtn.style.display = 'none';
+
+        // Restore moved filter elements back to their original positions
+        if (card._movedFilters) {
+          card._movedFilters.forEach(({ el, parent, nextSibling }) => {
+            el.classList.remove('expand-filter-el');
+            parent.insertBefore(el, nextSibling);
+          });
+          delete card._movedFilters;
+        }
+
+        // Remove the expand filter bar wrapper if we created one
+        const filterBar = header ? header.querySelector('.expand-filter-bar') : null;
+        if (filterBar) filterBar.remove();
+
       } else {
+        // ---- EXPANDING ----
         card.classList.add('card-expanded');
         document.body.classList.add('has-expanded-card');
         btn.innerHTML = '<i class="bi bi-fullscreen-exit"></i> <span>Collapse</span>';
         btn.classList.remove('btn-secondary');
         btn.classList.add('btn-danger');
         if (closeOverlayBtn) closeOverlayBtn.style.display = 'flex';
+
+        // Create filter bar container to insert into header
+        if (header && actionsWrap) {
+          const filterBar = document.createElement('div');
+          filterBar.className = 'expand-filter-bar';
+
+          // Find moveable filter elements: .search-wrap and form#filterForm inside card (not in header)
+          const candidates = [];
+          card.querySelectorAll('.search-wrap, form#filterForm').forEach(el => {
+            if (!header.contains(el)) candidates.push(el);
+          });
+
+          const moved = [];
+          candidates.forEach(el => {
+            const parent = el.parentElement;
+            const nextSibling = el.nextSibling;
+            el.classList.add('expand-filter-el');
+            filterBar.appendChild(el);
+            moved.push({ el, parent, nextSibling });
+          });
+
+          if (moved.length > 0) {
+            // Insert filter bar before card-actions (i.e., before the expand button)
+            header.insertBefore(filterBar, actionsWrap);
+            card._movedFilters = moved;
+          }
+        }
       }
       window.dispatchEvent(new Event('resize'));
     };
@@ -318,6 +364,7 @@
         actionsWrap.appendChild(expandBtn);
       }
     });
+
 
     // ============================================================
     // Modal Detail Renderers — Summary Card Style
