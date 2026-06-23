@@ -54,7 +54,9 @@
             </div>
             <div>
               <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Target</div>
-              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);"><%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); cursor: pointer; border-bottom: 1px dashed var(--accent-purple); display: inline-block;" onclick="alert('Rincian Target FASIH Dinamis:\n\nTarget Awal: <%= (summary.target_awal_total || 0).toLocaleString('id-ID') %>\n(+) Usaha Baru: <%= (summary.usaha_baru || 0).toLocaleString('id-ID') %>\n(+) Keluarga Baru: <%= (summary.keluarga_baru || 0).toLocaleString('id-ID') %>\n(-) Usaha Tutup: <%= (summary.usaha_tutup || 0).toLocaleString('id-ID') %>\n(-) Keluarga Tdk Ditemukan: <%= (summary.keluarga_tidak_ditemukan || 0).toLocaleString('id-ID') %>\n\nTotal Target Saat Ini: <%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %>')">
+                <%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %> <i class="bi bi-info-circle" style="font-size: 10px; color: var(--accent-purple);"></i>
+              </div>
             </div>
             <div>
               <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Sisa</div>

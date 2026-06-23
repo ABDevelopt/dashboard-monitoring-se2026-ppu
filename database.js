@@ -293,6 +293,10 @@ function getOverviewSummary(uploadId) {
     WHERE p.upload_id = ? AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan
   `).get(uploadId).n || 0;
 
+  const target_awal_total = getDb().prepare(`
+    SELECT SUM(target_fasih) AS n FROM subsls_master
+  `).get().n || 0;
+
   const target_fasih_total = getDb().prepare(`
     SELECT SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
              THEN 0 
@@ -327,7 +331,7 @@ function getOverviewSummary(uploadId) {
     FROM progres WHERE upload_id = ?
   `).get(uploadId);
 
-  return { total, selesai, belum: total - selesai, muatan_total, muatan_selesai, target_fasih_total, ...stats };
+  return { total, selesai, belum: total - selesai, muatan_total, muatan_selesai, target_awal_total, target_fasih_total, ...stats };
 }
 
 // Early warning: PCL dengan 0 progres
