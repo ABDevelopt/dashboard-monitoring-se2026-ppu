@@ -485,6 +485,100 @@ select:focus, input:focus {
 .warning-stats { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .warning-stat { background: var(--bg-warning-stat); padding: 4px 10px; border-radius: 99px; font-size: 11px; color: var(--text-secondary); }
 
+/* ====== FASIH STATS GRID ====== */
+.fasih-grid-container {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+.fasih-grid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+.fasih-grid-title {
+  color: var(--text-secondary);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.fasih-grid-title i {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.fasih-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  text-align: center;
+}
+.fasih-grid-item {
+  padding: 4px 2px;
+  border-radius: 6px;
+  font-size: 10px;
+  transition: var(--transition);
+}
+.fasih-grid-item-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+.fasih-grid-item-value {
+  font-weight: 700;
+  font-size: 12px;
+}
+/* Light/Dark mode colors for the grid items */
+/* Draft: Slate/Gray */
+.fasih-item-draft {
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.fasih-item-draft .fasih-grid-item-label { color: var(--text-muted); }
+.fasih-item-draft .fasih-grid-item-value { color: var(--text-primary); }
+
+/* Submit: Purple */
+.fasih-item-submit {
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+body.light-mode .fasih-item-submit {
+  background: rgba(139, 92, 246, 0.06);
+}
+.fasih-item-submit .fasih-grid-item-label { color: #a78bfa; }
+body.light-mode .fasih-item-submit .fasih-grid-item-label { color: #7c3aed; }
+.fasih-item-submit .fasih-grid-item-value { color: #c084fc; }
+body.light-mode .fasih-item-submit .fasih-grid-item-value { color: #6d28d9; }
+
+/* Approve: Green */
+.fasih-item-approve {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+body.light-mode .fasih-item-approve {
+  background: rgba(16, 185, 129, 0.06);
+}
+.fasih-item-approve .fasih-grid-item-label { color: #34d399; }
+body.light-mode .fasih-item-approve .fasih-grid-item-label { color: #059669; }
+.fasih-item-approve .fasih-grid-item-value { color: #6ee7b7; }
+body.light-mode .fasih-item-approve .fasih-grid-item-value { color: #047857; }
+
+/* Reject: Red */
+.fasih-item-reject {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+body.light-mode .fasih-item-reject {
+  background: rgba(239, 68, 68, 0.06);
+}
+.fasih-item-reject .fasih-grid-item-label { color: #f87171; }
+body.light-mode .fasih-item-reject .fasih-grid-item-label { color: #dc2626; }
+.fasih-item-reject .fasih-grid-item-value { color: #fca5a5; }
+body.light-mode .fasih-item-reject .fasih-grid-item-value { color: #b91c1c; }
+
 /* ====== UPLOAD ZONE ====== */
 .upload-zone {
   border: 2px dashed var(--border-light);
