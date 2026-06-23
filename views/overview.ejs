@@ -403,7 +403,10 @@
 
         <div class="bangunan-card">
           <div class="bangunan-img-wrap">
-            <img src="/images/bangunan_tunggal.png" alt="Rumah Tunggal" class="bangunan-img">
+            <picture style="display: block;">
+              <source srcset="/images/bangunan_tunggal.webp" type="image/webp">
+              <img src="/images/bangunan_tunggal.png" alt="Rumah Tunggal" class="bangunan-img">
+            </picture>
           </div>
           <div class="bangunan-label">Rumah Tunggal</div>
           <div class="bangunan-value"><%= (summary.rumah_tunggal || 0).toLocaleString('id-ID') %></div>
@@ -412,7 +415,10 @@
 
         <div class="bangunan-card">
           <div class="bangunan-img-wrap">
-            <img src="/images/bangunan_deret.png" alt="Rumah Deret" class="bangunan-img">
+            <picture style="display: block;">
+              <source srcset="/images/bangunan_deret.webp" type="image/webp">
+              <img src="/images/bangunan_deret.png" alt="Rumah Deret" class="bangunan-img">
+            </picture>
           </div>
           <div class="bangunan-label">Rumah Deret</div>
           <div class="bangunan-value"><%= (summary.rumah_deret || 0).toLocaleString('id-ID') %></div>
@@ -421,7 +427,10 @@
 
         <div class="bangunan-card">
           <div class="bangunan-img-wrap">
-            <img src="/images/bangunan_susun.png" alt="Rumah Susun" class="bangunan-img">
+            <picture style="display: block;">
+              <source srcset="/images/bangunan_susun.webp" type="image/webp">
+              <img src="/images/bangunan_susun.png" alt="Rumah Susun" class="bangunan-img">
+            </picture>
           </div>
           <div class="bangunan-label">Rumah Susun</div>
           <div class="bangunan-value"><%= (summary.rumah_susun || 0).toLocaleString('id-ID') %></div>
@@ -430,7 +439,10 @@
 
         <div class="bangunan-card">
           <div class="bangunan-img-wrap">
-            <img src="/images/bangunan_apartemen.png" alt="Apartemen" class="bangunan-img">
+            <picture style="display: block;">
+              <source srcset="/images/bangunan_apartemen.webp" type="image/webp">
+              <img src="/images/bangunan_apartemen.png" alt="Apartemen" class="bangunan-img">
+            </picture>
           </div>
           <div class="bangunan-label">Apartemen</div>
           <div class="bangunan-value"><%= (summary.apartemen || 0).toLocaleString('id-ID') %></div>
@@ -439,7 +451,10 @@
 
         <div class="bangunan-card">
           <div class="bangunan-img-wrap">
-            <img src="/images/bangunan_lainnya.png" alt="Lainnya" class="bangunan-img">
+            <picture style="display: block;">
+              <source srcset="/images/bangunan_lainnya.webp" type="image/webp">
+              <img src="/images/bangunan_lainnya.png" alt="Lainnya" class="bangunan-img">
+            </picture>
           </div>
           <div class="bangunan-label">Lainnya</div>
           <div class="bangunan-value"><%= (summary.lainnya || 0).toLocaleString('id-ID') %></div>
