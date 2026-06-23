@@ -1,0 +1,136 @@
+<div class="fade-in">
+  <% if (!uploadId) { %>
+    <div class="card empty-state text-center">
+      <div class="empty-state-icon"><i class="bi bi-bar-chart-steps"></i></div>
+      <div class="empty-state-title">Belum Ada Data Terupload</div>
+      <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/upload">Upload Data</a>.</div>
+    </div>
+  <% } else { %>
+    <!-- INFO ALERT FOR SOON STATUS -->
+    <div class="card" style="border-left: 4px solid var(--accent-yellow); background: rgba(251, 191, 36, 0.05); margin-bottom: 20px; padding: 16px;">
+      <div style="display: flex; gap: 12px; align-items: flex-start;">
+        <span style="font-size: 24px; color: var(--accent-yellow); line-height: 1;"><i class="bi bi-exclamation-triangle-fill"></i></span>
+        <div>
+          <h4 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 700; color: var(--text-primary);">Fitur Deteksi Awal Anomali Petugas (Dalam Pengembangan / Coming Soon)</h4>
+          <p style="margin: 0; font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+            Halaman ini menampilkan agregat awal indikator ketidaknormalan (anomali) hasil pengisian survei/assignment oleh masing-masing PCL. Indikator saat ini mencakup temuan <strong>Usaha Ganda</strong>, entri keluarga/usaha <strong>Tidak Dapat Ditemui</strong>, serta isian yang <strong>Ditolak (Rejected)</strong> oleh PML. Versi mendatang akan dilengkapi dengan deteksi anomali statistik berbasis outlier, kesesuaian koordinat spasial (geotagging), dan analisis pola data (Hukum Benford).
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="card" style="margin-bottom: 20px;">
+      <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
+        <div class="card-title"><i class="bi bi-search"></i> Filter Pencarian Anomali</div>
+        <a href="/deteksi-anomali" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
+      </div>
+      
+      <form action="/deteksi-anomali" method="GET" id="filterForm">
+        <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
+          
+          <div>
+            <label for="filterKec" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
+            <select id="filterKec" name="kec" onchange="this.form.submit();" style="width:100%;">
+              <option value="">-- Semua Kecamatan --</option>
+              <% kecList.forEach(k => { %>
+                <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterKorlap" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
+            <select id="filterKorlap" name="korlap" onchange="this.form.submit();" style="width:100%;">
+              <option value="">-- Semua Korlap --</option>
+              <% korlapList.forEach(k => { %>
+                <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterPml" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
+            <select id="filterPml" name="pml" onchange="this.form.submit();" style="width:100%;">
+              <option value="">-- Semua PML --</option>
+              <% pmlList.forEach(p => { %>
+                <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
+              <% }) %>
+            </select>
+          </div>
+          
+        </div>
+      </form>
+    </div>
+
+    <!-- MAIN ANOMALY TABLE -->
+    <div class="card" style="margin-bottom: 0;">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-shield-exclamation"></i> Daftar Temuan Anomali Isian Petugas (PCL)</div>
+        <span class="badge badge-yellow"><%= anomalies.length %> Petugas Bermasalah</span>
+      </div>
+
+      <div class="search-wrap mb-4">
+        <input type="search" id="anomalySearch" placeholder="Cari nama PCL..." aria-label="Cari nama Pencacah PCL" style="width: 100%; max-width: 280px;">
+      </div>
+
+      <% if (anomalies && anomalies.length > 0) { %>
+        <div class="table-wrap" style="max-height: 600px; overflow-y: auto; overflow-x: auto;">
+          <table id="anomalyTable">
+            <thead>
+              <tr>
+                <th rowspan="2">Nama PCL</th>
+                <th rowspan="2">Kecamatan</th>
+                <th rowspan="2" class="hide-md">PML</th>
+                <th rowspan="2" class="hide-md">Korlap</th>
+                <th colspan="3" class="text-center" style="border-bottom: 1px solid var(--border);">Indikator Anomali</th>
+                <th rowspan="2" class="text-right bg-yellow-soft">Total Temuan</th>
+              </tr>
+              <tr>
+                <th class="text-right text-red">Usaha Ganda</th>
+                <th class="text-right text-yellow">Tidak Dapat Ditemui</th>
+                <th class="text-right text-red">Ditolak PML</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% anomalies.forEach(item => { %>
+                <tr>
+                  <td class="td-primary">
+                    <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: inherit; text-decoration: none; display: block;">
+                      <i class="bi bi-person-exclamation text-yellow"></i> <%= item.pcl %>
+                    </a>
+                  </td>
+                  <td><%= item.kecamatan %></td>
+                  <td class="hide-md"><%= item.pml %></td>
+                  <td class="hide-md"><%= item.korlap %></td>
+                  <td class="text-right fw-bold text-red" data-sort="<%= item.usaha_ganda %>"><%= item.usaha_ganda.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold text-yellow" data-sort="<%= item.tidak_dapat_ditemui %>"><%= item.tidak_dapat_ditemui.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold text-red" data-sort="<%= item.rejected %>"><%= item.rejected.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold bg-yellow-soft" data-sort="<%= item.total_anomali %>" style="color: var(--accent-yellow);"><%= item.total_anomali.toLocaleString('id-ID') %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div style="padding: 40px; text-align: center; color: var(--text-muted);">
+          <i class="bi bi-shield-check text-green" style="font-size: 48px;"></i>
+          <p style="margin-top: 16px; font-size: 14px; font-weight: 600;">Tidak Ada Temuan Anomali Awal</p>
+          <p style="font-size: 12px; color: var(--text-muted); max-width: 320px; margin: 8px auto 0 auto;">Seluruh PCL saat ini memiliki data bersih dengan 0 usaha ganda, 0 entri tidak dapat ditemui, dan 0 penolakan.</p>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Bind sorting and searching
+  if (typeof makeTableSortable === 'function') {
+    makeTableSortable('anomalyTable');
+  }
+  if (typeof makeTableSearchable === 'function') {
+    makeTableSearchable('anomalySearch', 'anomalyTable');
+  }
+});
+</script>

@@ -566,9 +566,48 @@ function getBottomPerformers(uploadId, filters = {}) {
   return { bottomPcl, bottomPml };
 }
 
+function getAnomalyStats(uploadId, filters = {}) {
+  let where = '';
+  const params = [uploadId];
+
+  if (filters.kec) {
+    where += ' AND m.kecamatan = ?';
+    params.push(filters.kec);
+  }
+  if (filters.korlap) {
+    where += ' AND m.korlap = ?';
+    params.push(filters.korlap);
+  }
+  if (filters.pml) {
+    where += ' AND m.pml = ?';
+    params.push(filters.pml);
+  }
+
+  // Query aggregates of anomaly indicators per PCL
+  const sql = `
+    SELECT 
+      m.pcl,
+      m.pml,
+      m.korlap,
+      m.kecamatan,
+      SUM(COALESCE(p.usaha_ganda, 0)) AS usaha_ganda,
+      SUM(COALESCE(p.tidak_dapat_ditemui, 0)) AS tidak_dapat_ditemui,
+      SUM(COALESCE(p.rejected, 0)) AS rejected,
+      (SUM(COALESCE(p.usaha_ganda, 0)) + SUM(COALESCE(p.tidak_dapat_ditemui, 0)) + SUM(COALESCE(p.rejected, 0))) AS total_anomali
+    FROM subsls_master m
+    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    WHERE 1=1 ${where}
+    GROUP BY m.pcl
+    HAVING total_anomali > 0
+    ORDER BY total_anomali DESC
+  `;
+
+  return getDb().prepare(sql).all(params);
+}
+
 module.exports = {
   getDb, getLatestUpload, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
-  getBottomPerformers
+  getBottomPerformers, getAnomalyStats
 };

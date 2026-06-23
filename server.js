@@ -57,6 +57,7 @@ app.use('/subsls', require('./routes/subsls'));
 app.use('/early-warning', require('./routes/earlywarning'));
 app.use('/leaderboard', require('./routes/leaderboard'));
 app.use('/performa-terendah', require('./routes/performa-terendah'));
+app.use('/deteksi-anomali', require('./routes/deteksianomali'));
 app.use('/api', require('./routes/api'));
 
 // Admin Auth Middleware
