@@ -1390,6 +1390,10 @@ body.has-expanded-card .topbar {
   left: 0 !important;
   z-index: 2010 !important;
 }
+body.has-expanded-card .fade-in {
+  transform: none !important;
+  animation: none !important;
+}
 
 /* ====== SIDEBAR COLLAPSE ON DESKTOP ====== */
 @media (min-width: 769px) {
