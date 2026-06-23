@@ -29,7 +29,7 @@ app.use(session({
 }));
 app.use(flash());
 
-const APP_VERSION = Date.now(); // Startup timestamp for cache busting
+const APP_VERSION = Date.now(); // Startup timestamp for cache busting (updated to force reload)
 
 // Global locals
 app.use((req, res, next) => {

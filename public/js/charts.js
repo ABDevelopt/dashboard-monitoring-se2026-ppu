@@ -29,7 +29,6 @@ function makeTableSortable(tableId) {
     
     // Add sortable class to show icon cues
     th.classList.add('sortable');
-    th.setAttribute('role', 'button');
     th.setAttribute('tabindex', '0');
     th.setAttribute('aria-sort', 'none');
     
@@ -39,7 +38,7 @@ function makeTableSortable(tableId) {
 
       headers.forEach(h => {
         h.classList.remove('sort-asc', 'sort-desc');
-        if (h.getAttribute('role') === 'button') {
+        if (h.classList.contains('sortable')) {
           h.setAttribute('aria-sort', 'none');
         }
       });

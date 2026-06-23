@@ -11,7 +11,8 @@
   <% if (!summary) { %>
     <!-- EMPTY STATE -->
     <div class="card empty-state text-center" style="padding: 80px 20px;">
-      <img src="/logo-mark.png" alt="Emblem SE2026" style="width: 80px; height: 80px; margin-bottom: 20px; opacity: 0.85; object-fit: contain;">
+      <img src="/logo-mark.png" alt="Emblem SE2026" class="logo-light" loading="eager" style="width: 80px; height: 80px; margin-bottom: 20px; opacity: 0.85; object-fit: contain;">
+      <img src="/logo-mark-dark.png" alt="Emblem SE2026" class="logo-dark" fetchpriority="high" loading="eager" style="width: 80px; height: 80px; margin-bottom: 20px; opacity: 0.85; object-fit: contain;">
       <h2 class="empty-state-title" style="font-size: 22px; margin-bottom: 12px;">Selamat Datang di Dashboard SE2026 PPU</h2>
       <p class="empty-state-text" style="font-size: 14px; max-width: 540px; margin: 0 auto 24px; color: var(--text-secondary);">
         Dashboard monitoring progres Sensus Ekonomi 2026 Kabupaten Penajam Paser Utara belum terisi data. Silakan upload file Excel rekapitulasi harian pertama Anda untuk memulai visualisasi monitoring.
@@ -154,12 +155,12 @@
           </div>
 
           <!-- Marker 25% (Juni) -->
-          <div style="position: absolute; left: 25%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 25 ? '1' : '0.4' %>; z-index: 2; pointer-events: none;">
+          <div style="position: absolute; left: 25%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--border)' %>; z-index: 2; pointer-events: none;">
             <span style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">Target Juni: 25%</span>
           </div>
 
           <!-- Marker 50% (Juli) -->
-          <div style="position: absolute; left: 50%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 50 ? '1' : '0.4' %>; z-index: 2; pointer-events: none;">
+          <div style="position: absolute; left: 50%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--border)' %>; z-index: 2; pointer-events: none;">
             <span style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">Target Juli: 50%</span>
           </div>
         </div>
@@ -186,7 +187,7 @@
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px;">
             
             <!-- KELOMPOK USAHA -->
-            <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: var(--radius-md); padding: 12px;">
+            <div style="background: var(--bg-summary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px;">
               <div style="font-size: 11px; font-weight: 800; color: var(--accent-cyan); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;"><i class="bi bi-briefcase-fill"></i> Temuan Sektor Usaha</div>
               <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
                 
@@ -230,7 +231,7 @@
             </div>
 
             <!-- KELOMPOK KELUARGA -->
-            <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: var(--radius-md); padding: 12px;">
+            <div style="background: var(--bg-summary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px;">
               <div style="font-size: 11px; font-weight: 800; color: var(--accent-purple); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;"><i class="bi bi-people-fill"></i> Temuan Sektor Keluarga</div>
               <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
                 
@@ -317,35 +318,25 @@
       <div class="comparison-grid">
         
         <div class="table-wrap">
-          <table id="kecOverviewTable">
-            <thead class="hide-sm">
+          <!-- Desktop Table (visible on desktop only) -->
+          <table id="kecOverviewTable" class="hide-sm">
+            <thead>
               <tr>
-                <th rowspan="2">Kecamatan</th>
-                <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th>
-                <th colspan="3" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
-                <th colspan="4" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
+                <th rowspan="2" scope="col">Kecamatan</th>
+                <th colspan="2" class="text-center" scope="colgroup" style="border-bottom: 1px solid var(--border);">SubSLS</th>
+                <th colspan="3" class="text-center bg-purple-soft" scope="colgroup" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                <th colspan="4" class="text-center bg-cyan-soft" scope="colgroup" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
               </tr>
               <tr>
-                <th class="text-right">Total</th>
-                <th class="text-right">Selesai</th>
-                
-                <th class="text-right bg-purple-soft">Approved</th>
-                <th class="text-right bg-purple-soft">Target</th>
-                <th class="text-right bg-purple-soft">Progres %</th>
-                
-                <th class="text-right bg-cyan-soft">Usaha Total</th>
-                <th class="text-right bg-cyan-soft">Target Muatan</th>
-                <th class="text-right bg-cyan-soft">Progres %</th>
-                <th class="text-right bg-cyan-soft">Keluarga Total</th>
-              </tr>
-            </thead>
-            <thead class="show-sm-table-header">
-              <tr>
-                <th>Kecamatan</th>
-                <th class="text-right">Total SLS</th>
-                <th class="text-right">Selesai</th>
-                <th class="text-right bg-purple-soft">FASIH %</th>
-                <th class="text-right bg-cyan-soft">Muatan %</th>
+                <th scope="col" class="text-right">Total</th>
+                <th scope="col" class="text-right">Selesai</th>
+                <th scope="col" class="text-right bg-purple-soft">Approved</th>
+                <th scope="col" class="text-right bg-purple-soft">Target</th>
+                <th scope="col" class="text-right bg-purple-soft">Progres %</th>
+                <th scope="col" class="text-right bg-cyan-soft">Usaha Total</th>
+                <th scope="col" class="text-right bg-cyan-soft">Target Muatan</th>
+                <th scope="col" class="text-right bg-cyan-soft">Progres %</th>
+                <th scope="col" class="text-right bg-cyan-soft">Keluarga Total</th>
               </tr>
             </thead>
             <tbody>
@@ -353,13 +344,12 @@
                 <% let fasihPct = k.target_fasih_total ? ((( (k.submitted_total || 0) + (k.approved_total || 0) + (k.rejected_total || 0) ) / k.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
                 <% let muatanPct = k.total_muatan ? (( (k.usaha_total + k.keluarga_total) / k.total_muatan ) * 100).toFixed(2) : '0.00'; %>
                 <tr>
-                  <td class="td-primary"><a href="/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" style="color: inherit; text-decoration: none;"><i class="bi bi-geo-alt"></i> <%= k.kecamatan %></a></td>
-                  <td class="text-right"><%= k.total_subsls %></td>
-                  <td class="text-right fw-bold"><%= k.selesai %></td>
-                  
-                  <td class="text-right bg-purple-soft hide-sm"><%= (k.approved_total || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-purple-soft hide-sm"><%= (k.target_fasih_total || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-purple-soft">
+                  <td class="td-primary" scope="row"><a href="/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" style="color: inherit; text-decoration: none;"><i class="bi bi-geo-alt"></i> <%= k.kecamatan %></a></td>
+                  <td class="text-right" data-sort="<%= k.total_subsls %>"><%= k.total_subsls %></td>
+                  <td class="text-right fw-bold" data-sort="<%= k.selesai %>"><%= k.selesai %></td>
+                  <td class="text-right bg-purple-soft" data-sort="<%= k.approved_total || 0 %>"><%= (k.approved_total || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-purple-soft" data-sort="<%= k.target_fasih_total || 0 %>"><%= (k.target_fasih_total || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>">
                     <% if (parseFloat(fasihPct) >= 100) { %>
                       <span class="badge badge-green">100%</span>
                     <% } else if (parseFloat(fasihPct) < 25) { %>
@@ -368,10 +358,9 @@
                       <span class="badge badge-blue"><%= fasihPct %>%</span>
                     <% } %>
                   </td>
-                  
-                  <td class="text-right fw-bold bg-cyan-soft hide-sm"><%= k.usaha_total.toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-cyan-soft hide-sm"><%= k.total_muatan.toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-cyan-soft">
+                  <td class="text-right fw-bold bg-cyan-soft" data-sort="<%= k.usaha_total %>"><%= k.usaha_total.toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft" data-sort="<%= k.total_muatan %>"><%= k.total_muatan.toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft" data-sort="<%= parseFloat(muatanPct) %>">
                     <% if (parseFloat(muatanPct) >= 100) { %>
                       <span class="badge badge-green">100%</span>
                     <% } else if (parseFloat(muatanPct) < activeTargetPct) { %>
@@ -380,7 +369,49 @@
                       <span class="badge badge-blue"><%= muatanPct %>%</span>
                     <% } %>
                   </td>
-                  <td class="text-right bg-cyan-soft hide-sm"><%= k.keluarga_total.toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft" data-sort="<%= k.keluarga_total %>"><%= k.keluarga_total.toLocaleString('id-ID') %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+
+          <!-- Mobile Table (visible on mobile only) -->
+          <table id="kecOverviewTableMobile" class="show-sm-table">
+            <thead>
+              <tr>
+                <th scope="col">Kecamatan</th>
+                <th class="text-right" scope="col">Total SLS</th>
+                <th class="text-right" scope="col">Selesai</th>
+                <th class="text-right bg-purple-soft" scope="col">FASIH %</th>
+                <th class="text-right bg-cyan-soft" scope="col">Muatan %</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% kecStats.forEach(k => { %>
+                <% let fasihPct = k.target_fasih_total ? ((( (k.submitted_total || 0) + (k.approved_total || 0) + (k.rejected_total || 0) ) / k.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
+                <% let muatanPct = k.total_muatan ? (( (k.usaha_total + k.keluarga_total) / k.total_muatan ) * 100).toFixed(2) : '0.00'; %>
+                <tr>
+                  <td class="td-primary" scope="row"><a href="/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" style="color: inherit; text-decoration: none;"><i class="bi bi-geo-alt"></i> <%= k.kecamatan %></a></td>
+                  <td class="text-right" data-sort="<%= k.total_subsls %>"><%= k.total_subsls %></td>
+                  <td class="text-right fw-bold" data-sort="<%= k.selesai %>"><%= k.selesai %></td>
+                  <td class="text-right bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>">
+                    <% if (parseFloat(fasihPct) >= 100) { %>
+                      <span class="badge badge-green">100%</span>
+                    <% } else if (parseFloat(fasihPct) < 25) { %>
+                      <span class="badge badge-red"><%= fasihPct %>%</span>
+                    <% } else { %>
+                      <span class="badge badge-blue"><%= fasihPct %>%</span>
+                    <% } %>
+                  </td>
+                  <td class="text-right bg-cyan-soft" data-sort="<%= parseFloat(muatanPct) %>">
+                    <% if (parseFloat(muatanPct) >= 100) { %>
+                      <span class="badge badge-green">100%</span>
+                    <% } else if (parseFloat(muatanPct) < activeTargetPct) { %>
+                      <span class="badge badge-red"><%= muatanPct %>%</span>
+                    <% } else { %>
+                      <span class="badge badge-blue"><%= muatanPct %>%</span>
+                    <% } %>
+                  </td>
                 </tr>
               <% }) %>
             </tbody>
@@ -492,6 +523,8 @@
       // Initialize table sorting and searching
       makeTableSortable('kecOverviewTable');
       makeTableSearchable('kecOverviewSearch', 'kecOverviewTable');
+      makeTableSortable('kecOverviewTableMobile');
+      makeTableSearchable('kecOverviewSearch', 'kecOverviewTableMobile');
     <% } %>
   });
 </script>

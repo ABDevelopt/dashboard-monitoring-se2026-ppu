@@ -9,11 +9,11 @@
   --accent-blue: #f97316; /* brighter orange for dark mode contrast */
   --accent-cyan: #fbbf24; /* brighter amber for dark mode contrast */
   --accent-rgb: 249, 115, 22;
-  --accent-green: #10b981;
+  --accent-green: #34d399; /* brighter green for dark mode accessibility */
   --accent-yellow: #fbbf24;
-  --accent-red: #ef4444;
+  --accent-red: #f87171; /* brighter red for dark mode accessibility */
   --accent-orange: #c2410c;
-  --accent-purple: #8b5cf6;
+  --accent-purple: #a78bfa; /* brighter purple for dark mode accessibility */
   --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
   --text-muted: #8e9eab; /* brighter grey for dark mode readability */
@@ -54,6 +54,9 @@ body.light-mode {
   --bg-progress-wrap: rgba(60, 51, 46, 0.05);
   --bg-warning-stat: rgba(60, 51, 46, 0.04);
   --bg-glow: radial-gradient(circle at 50% -20%, rgba(var(--accent-rgb), 0.02), transparent 70%);
+  --accent-green: #047857; /* darker green for light mode contrast */
+  --accent-red: #b91c1c; /* darker red for light mode contrast */
+  --accent-purple: #6d28d9; /* darker purple for light mode contrast */
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -408,6 +411,7 @@ tbody td { padding: 10px 12px; color: var(--text-secondary); vertical-align: mid
 
 /* Responsive Column Utilities */
 .show-sm-table-header { display: none; }
+.show-sm-table { display: none !important; }
 
 
 
@@ -696,7 +700,7 @@ body.light-mode .page-btn.active { color: white; }
 }
 
 /* ====== TABLES SORTABLE ====== */
-th.sortable { cursor: pointer; position: relative; padding-right: 16px !important; }
+th.sortable { cursor: pointer; position: relative; padding-right: 24px !important; }
 th.sortable::after {
   content: '\f127';
   font-family: 'bootstrap-icons' !important;
@@ -704,7 +708,7 @@ th.sortable::after {
   opacity: 0.45;
   font-size: 11px;
   position: absolute;
-  right: 4px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
 }
@@ -1014,6 +1018,7 @@ th.sortable.sort-desc::after { content: '\f229'; font-family: 'bootstrap-icons' 
   tbody td { padding: 6px 6px; font-size: 11.5px; }
   .hide-sm { display: none !important; }
   .show-sm-table-header { display: table-header-group !important; }
+  .show-sm-table { display: table !important; }
 
 
 
@@ -1407,6 +1412,23 @@ body.has-expanded-card .fade-in {
   body.sidebar-collapsed .topbar {
     left: 0;
   }
+}
+
+/* ====== LOGO SWITCHING (LIGHT/DARK MODE) ====== */
+/* Default (Dark Mode) */
+.logo-light {
+  display: none !important;
+}
+.logo-dark {
+  display: inline-block !important;
+}
+
+/* Light Mode Overrides */
+body.light-mode .logo-light {
+  display: inline-block !important;
+}
+body.light-mode .logo-dark {
+  display: none !important;
 }
 
 
