@@ -41,7 +41,7 @@
         Excel harus berisi header kolom: `kode`, `kecamatan`, `desa`, `nama_sls`, `korlap`, `pml`, `pcl`, `muatan` (target muatan).
       </p>
 
-      <form action="/master/upload" method="POST" enctype="multipart/form-data">
+      <form action="/admin/master/upload" method="POST" enctype="multipart/form-data">
         <div class="upload-zone" id="masterUploadZone" style="padding: 30px 20px; border: 2px dashed var(--border); border-radius: var(--radius); text-align: center; cursor: pointer; transition: var(--transition);">
           <input type="file" name="masterFile" id="masterFileInput" accept=".json,.xlsx,.xls" style="display: none;" required>
           <div style="font-size: 32px; color: var(--accent-cyan); margin-bottom: 10px;"><i class="bi bi-cloud-arrow-up-fill"></i></div>
