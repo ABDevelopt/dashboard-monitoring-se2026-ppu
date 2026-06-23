@@ -17,7 +17,7 @@
   <% } else { %>
 
     <!-- TWO-COLUMN GRID FOR DRILLDOWN -->
-    <div class="drilldown-grid mt-4">
+    <div class="drilldown-grid <%= filterPml ? 'has-selection' : 'no-selection' %> mt-4">
       
       <!-- PML LIST TABLE -->
       <div class="card" style="margin-bottom: 0;">
@@ -266,6 +266,13 @@
               detailContainer.innerHTML = newDetail.innerHTML;
               detailContainer.style.opacity = '1';
 
+              // Toggle grid selection classes
+              const grid = document.querySelector('.drilldown-grid');
+              if (grid) {
+                grid.classList.remove('no-selection');
+                grid.classList.add('has-selection');
+              }
+
               // Update URL path without refresh
               window.history.pushState(null, '', url);
 
@@ -311,6 +318,13 @@
                 detailContainer.innerHTML = newDetail.innerHTML;
                 detailContainer.style.opacity = '1';
                 window.history.pushState(null, '', url);
+
+                // Toggle grid selection classes
+                const grid = document.querySelector('.drilldown-grid');
+                if (grid) {
+                  grid.classList.remove('has-selection');
+                  grid.classList.add('no-selection');
+                }
                 if (window.initProgressBars) window.initProgressBars(detailContainer);
               }
             })

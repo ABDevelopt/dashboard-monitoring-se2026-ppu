@@ -807,6 +807,46 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
   gap: 16px;
+  transition: grid-template-columns 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.drilldown-grid.no-selection {
+  grid-template-columns: 1.62fr 0.38fr;
+}
+.drilldown-grid.has-selection {
+  grid-template-columns: 1.15fr 0.85fr;
+}
+
+/* Minimalist Empty State when no item is selected */
+.drilldown-grid.no-selection .empty-state {
+  padding: 30px 16px !important;
+  border-style: dashed !important;
+  border-width: 1.5px !important;
+  border-color: var(--border) !important;
+  background: rgba(255, 255, 255, 0.01);
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  height: 100%;
+}
+.drilldown-grid.no-selection .empty-state-icon {
+  font-size: 32px !important;
+  margin-bottom: 8px !important;
+  opacity: 0.65 !important;
+  color: var(--accent-cyan) !important;
+}
+.drilldown-grid.no-selection .empty-state-title {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 4px !important;
+}
+.drilldown-grid.no-selection .empty-state-text {
+  font-size: 11px !important;
+  color: var(--text-muted) !important;
+  max-width: 180px !important;
+  margin: 0 auto !important;
+  line-height: 1.45 !important;
 }
 .comparison-grid {
   display: grid;
