@@ -14,6 +14,7 @@ const settingKeys = [
   'page_pml',
   'page_pcl',
   'page_export',
+  'page_aiagent',
   'overview_fasih',
   'overview_muatan',
   'overview_tren_muatan',

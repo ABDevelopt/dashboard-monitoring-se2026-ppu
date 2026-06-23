@@ -61,7 +61,8 @@ const routeSettingsMap = {
   '/subsls/export': 'page_export',
   '/korlap': 'page_korlap',
   '/pml': 'page_pml',
-  '/pcl': 'page_pcl'
+  '/pcl': 'page_pcl',
+  '/admin/agent': 'page_aiagent'
 };
 
 app.use((req, res, next) => {
@@ -143,6 +144,7 @@ adminRouter.get('/logout', (req, res) => {
 adminRouter.use('/upload', requireAdmin, require('./routes/upload'));
 adminRouter.use('/master', requireAdmin, require('./routes/master'));
 adminRouter.use('/settings', requireAdmin, require('./routes/settings'));
+adminRouter.use('/agent', requireAdmin, require('./routes/agent'));
 
 // 404
 app.use((req, res) => {

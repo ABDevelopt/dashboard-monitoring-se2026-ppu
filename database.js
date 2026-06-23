@@ -625,6 +625,7 @@ function initSettings() {
     'page_pml': '1',
     'page_pcl': '1',
     'page_export': '1',
+    'page_aiagent': '0',
     'overview_fasih': '1',
     'overview_muatan': '1',
     'overview_tren_muatan': '1',

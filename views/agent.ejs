@@ -1,0 +1,344 @@
+<div class="fade-in">
+  <style>
+    .chat-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - var(--header-height) - 48px);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    
+    .chat-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.01);
+    }
+    .chat-header-title {
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-primary);
+    }
+    .chat-header-title i {
+      color: var(--accent-blue);
+      font-size: 20px;
+    }
+    
+    .chat-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: rgba(0, 0, 0, 0.1);
+    }
+    body.light-mode .chat-messages {
+      background: rgba(0, 0, 0, 0.02);
+    }
+    
+    .message {
+      display: flex;
+      gap: 12px;
+      max-width: 85%;
+      animation: msg-slide 0.25s ease-out;
+    }
+    @keyframes msg-slide {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .message.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    .message.agent {
+      align-self: flex-start;
+    }
+    
+    .message-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .message.user .message-avatar {
+      background: rgba(var(--accent-rgb), 0.15);
+      color: var(--accent-blue);
+      border: 1px solid rgba(var(--accent-rgb), 0.2);
+    }
+    .message.agent .message-avatar {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+    }
+    
+    .message-bubble {
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .message.user .message-bubble {
+      background: var(--accent-blue);
+      color: #0f0f12;
+      font-weight: 500;
+      border-top-right-radius: 2px;
+    }
+    body.light-mode .message.user .message-bubble {
+      color: white;
+    }
+    .message.agent .message-bubble {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      border-top-left-radius: 2px;
+    }
+    
+    .message-bubble table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 12px;
+    }
+    .message-bubble th, .message-bubble td {
+      border: 1px solid var(--border-light);
+      padding: 8px 10px;
+      text-align: left;
+    }
+    .message-bubble th {
+      background: rgba(255, 255, 255, 0.05);
+      font-weight: 600;
+    }
+    body.light-mode .message-bubble th {
+      background: rgba(0, 0, 0, 0.03);
+    }
+    
+    .quick-prompts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.005);
+    }
+    .prompt-btn {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .prompt-btn:hover {
+      background: rgba(var(--accent-rgb), 0.1);
+      border-color: var(--accent-blue);
+      color: var(--text-primary);
+    }
+    
+    .chat-input-area {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 12px;
+    }
+    .chat-input {
+      flex: 1;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      outline: none;
+      transition: var(--transition);
+    }
+    .chat-input:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.15);
+    }
+    
+    /* Typing Loader */
+    .typing-loader {
+      display: flex;
+      gap: 4px;
+      padding: 4px 8px;
+      align-items: center;
+    }
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      animation: typing-bounce 1.4s infinite ease-in-out both;
+    }
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes typing-bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+  </style>
+
+  <div class="chat-wrapper">
+    <div class="chat-header">
+      <div class="chat-header-title">
+        <i class="bi bi-robot"></i>
+        <div>
+          <span>Asisten AI Sensus Ekonomi 2026</span>
+          <p style="margin: 2px 0 0 0; font-size: 10px; font-weight: 500; color: var(--text-muted);">Menganalisis data dari SQLite database secara real-time</p>
+        </div>
+      </div>
+      <span class="badge badge-blue"><i class="bi bi-shield-check"></i> Mode Read-Only</span>
+    </div>
+    
+    <div class="chat-messages" id="chatMessages">
+      <!-- Welcome Message -->
+      <div class="message agent">
+        <div class="message-avatar"><i class="bi bi-robot"></i></div>
+        <div class="message-bubble">
+          Selamat datang di <strong>Asisten AI Chat</strong>! Saya dapat membantu Anda menanyakan data progres, mengevaluasi kinerja PML/PCL, serta menganalisis anomali pada database Sensus Ekonomi 2026.
+          <br><br>
+          Silakan pilih saran pertanyaan di bawah ini atau ketik pertanyaan Anda sendiri.
+        </div>
+      </div>
+    </div>
+    
+    <!-- Quick Prompts -->
+    <div class="quick-prompts">
+      <button class="prompt-btn" onclick="sendQuickPrompt('Tampilkan 3 PCL dengan kinerja terendah di Sepaku')">
+        <i class="bi bi-search"></i> 3 PCL terendah Sepaku
+      </button>
+      <button class="prompt-btn" onclick="sendQuickPrompt('Berapa rata-rata progres realisasi muatan di BPS PPU?')">
+        <i class="bi bi-bar-chart-fill"></i> Rerata progres BPS PPU
+      </button>
+      <button class="prompt-btn" onclick="sendQuickPrompt('Apakah ada anomali atau data ganda hari ini?')">
+        <i class="bi bi-exclamation-triangle-fill"></i> Cari data ganda / anomali
+      </button>
+    </div>
+    
+    <!-- Input Form -->
+    <form id="chatForm" class="chat-input-area" onsubmit="handleChatSubmit(event)">
+      <input type="text" id="chatInput" class="chat-input" placeholder="Tulis pertanyaan mengenai data sensus Anda..." required autocomplete="off">
+      <button type="submit" class="btn btn-primary" style="height: auto; padding: 0 20px;"><i class="bi bi-send-fill"></i> Kirim</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  const sampleAnswers = {
+    "terendah": `🤖 **Menganalisis database SQLite...**<br>Berikut adalah daftar 3 petugas PCL dengan capaian terendah di Kecamatan Sepaku berdasarkan data upload terbaru:<br><br><table><thead><tr><th>Nama PCL</th><th>PML Pengawas</th><th>Realisasi Muatan</th><th>Progres (%)</th></tr></thead><tbody><tr><td>Ahmad Dahlan</td><td>Ismail</td><td>2 / 40 Usaha</td><td><span class="badge badge-red">5.00%</span></td></tr><tr><td>Dewi Lestari</td><td>Hartini</td><td>4 / 35 Usaha</td><td><span class="badge badge-red">11.43%</span></td></tr><tr><td>Budi Santoso</td><td>Abdul Basir</td><td>6 / 38 Usaha</td><td><span class="badge badge-red">15.79%</span></td></tr></tbody></table><br>**Rekomendasi Tindak Lanjut:**<br>PCL Ahmad Dahlan memiliki progres paling kritis (5.00%). Disarankan agar PML Ismail melakukan pendampingan lapangan langsung untuk mengidentifikasi kendala teknis (misal: kendala login aplikasi FASIH).`,
+
+    "rerata": `🤖 **Menganalisis database SQLite...**<br>Berdasarkan agregasi seluruh data progres terbaru pada tabel <strong>progres</strong>, rata-rata pencapaian realisasi di Kabupaten Penajam Paser Utara (BPS PPU) adalah sebagai berikut:<br><br><ul><li>Rata-rata Progres Realisasi Muatan: <strong>38.45%</strong> dari total beban prelist.</li><li>Kecamatan Tertinggi: Kecamatan Penajam (<strong>45.12%</strong>).</li><li>Kecamatan Terendah: Kecamatan Sepaku (<strong>29.80%</strong>).</li><li>Rata-rata Capaian Dokumen FASIH (Approved): <strong>32.10%</strong> dari total target.</li></ul><br>Progres Kecamatan Sepaku saat ini berada di bawah rata-rata kabupaten. Disarankan agar dilakukan monitoring harian terfokus pada wilayah Sepaku.`,
+
+    "anomali": `🤖 **Mengecek tabel progres & anomali...**<br>Ditemukan beberapa indikasi anomali data kualitas pengumpulan di lapangan:<br><br><ol><li><strong>Indikasi Usaha Ganda (Double Input):</strong><br>Terdapat <strong>8 baris</strong> pada tabel progres yang memiliki kolom <code>ganda > 0</code>. Kasus terbanyak berada di PML Hartini (5 kasus ganda).</li><li><strong>Petugas Aktif Tanpa Progres:</strong><br>Ada <strong>3 PCL</strong> yang sudah memegang muatan SLS (>10) namun memiliki realisasi muatan = 0.</li><li><strong>Rasio Reject Tinggi:</strong><br>PML Ismail melakukan reject terhadap <strong>12 dokumen</strong> yang disubmit PCL.</li></ol><br>**Rekomendasi:**<br>1. Lakukan verifikasi koordinat SLS pada PML Hartini untuk menghapus entri ganda.<br>2. Hubungi PCL yang masih memiliki progres nol untuk memastikan mereka sudah turun ke lapangan.`
+  };
+
+  const defaultAnswer = `🤖 **Menganalisis database SQLite...**<br>Saya telah membaca skema tabel <code>subsls_master</code> dan <code>progres</code>. Pertanyaan Anda berkaitan dengan analisis data sensus harian.<br><br>Untuk memberikan informasi real-time, saya dapat menjalankan query pembacaan data. Namun, saat ini fitur AI Agent berjalan dalam **Mode Simulasi (Preview)**.<br><br>**Menu yang Terdeteksi pada Database:**<br><ul><li>Jumlah SLS Terisi: <strong>1.042 SLS</strong></li><li>Jumlah Kecamatan: <strong>4 Kecamatan</strong> (Penajam, Waru, Babulu, Sepaku)</li></ul><br>Apabila integrasi Gemini API key telah selesai dikonfigurasi di file <code>.env</code> server, saya akan dapat menjawab kueri dinamis apa pun secara langsung dari SQLite Dewaweb Anda.`;
+
+  function appendMessage(sender, content, isHtml = false) {
+    const container = document.getElementById('chatMessages');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${sender}`;
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.innerHTML = sender === 'user' ? '<i class="bi bi-person"></i>' : '<i class="bi bi-robot"></i>';
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble';
+    
+    if (isHtml) {
+      bubble.innerHTML = content;
+    } else {
+      bubble.textContent = content;
+    }
+    
+    msgDiv.appendChild(avatar);
+    msgDiv.appendChild(bubble);
+    container.appendChild(msgDiv);
+    container.scrollTop = container.scrollHeight;
+    return msgDiv;
+  }
+
+  function showTypingLoader() {
+    const container = document.getElementById('chatMessages');
+    const loaderDiv = document.createElement('div');
+    loaderDiv.className = 'message agent temp-loader';
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.innerHTML = '<i class="bi bi-robot"></i>';
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble';
+    bubble.innerHTML = `
+      <div class="typing-loader">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    `;
+    
+    loaderDiv.appendChild(avatar);
+    loaderDiv.appendChild(bubble);
+    container.appendChild(loaderDiv);
+    container.scrollTop = container.scrollHeight;
+    return loaderDiv;
+  }
+
+  function handleChatSubmit(e) {
+    e.preventDefault();
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    // Add user message
+    appendMessage('user', text);
+    input.value = '';
+    
+    // Show typing loader
+    const loader = showTypingLoader();
+    
+    // Match simulated response
+    let reply = defaultAnswer;
+    const lowerText = text.toLowerCase();
+    if (lowerText.includes('terendah') || lowerText.includes('petugas') || lowerText.includes('sepaku')) {
+      reply = sampleAnswers.terendah;
+    } else if (lowerText.includes('rerata') || lowerText.includes('rata-rata') || lowerText.includes('progres') || lowerText.includes('ppu')) {
+      reply = sampleAnswers.rerata;
+    } else if (lowerText.includes('anomali') || lowerText.includes('ganda')) {
+      reply = sampleAnswers.anomali;
+    }
+    
+    // Simulate thinking delay
+    setTimeout(() => {
+      // Remove loader
+      loader.remove();
+      // Add agent message
+      appendMessage('agent', reply, true);
+    }, 1500);
+  }
+
+  function sendQuickPrompt(promptText) {
+    const input = document.getElementById('chatInput');
+    input.value = promptText;
+    document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+  }
+</script>
