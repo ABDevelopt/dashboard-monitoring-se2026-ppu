@@ -211,6 +211,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!container) return;
 
   function attachListeners() {
+    // Initialize expand buttons for AJAX loaded content
+    if (window.initExpandButtons) {
+      window.initExpandButtons(container);
+    }
+
     // 1. Re-initialize sorting and searching on the table
     makeTableSortable('subslsTable');
     makeTableSearchable('localSearch', 'subslsTable');

@@ -243,8 +243,6 @@
     // Dynamic Expand Table Feature
     const toggleCardExpand = (card, btn, closeOverlayBtn) => {
       const isExpanded = card.classList.contains('card-expanded');
-      const header = card.querySelector('.card-header');
-      const actionsWrap = header ? header.querySelector('.card-actions') : null;
 
       if (isExpanded) {
         // ---- COLLAPSING ----
@@ -254,20 +252,52 @@
         btn.classList.remove('btn-danger');
         btn.classList.add('btn-secondary');
         if (closeOverlayBtn) closeOverlayBtn.style.display = 'none';
+        
+        window.lastExpandedTableId = null;
 
-        // Restore moved filter elements back to their original positions
-        if (card._movedFilters) {
-          card._movedFilters.forEach(({ el, parent, nextSibling }) => {
-            el.classList.remove('expand-filter-el');
-            parent.insertBefore(el, nextSibling);
-          });
-          delete card._movedFilters;
+        // Restore filter form and search wrap if they were moved
+        const expandedRow = card.querySelector('.expanded-filter-row');
+        if (expandedRow) {
+          if (window._expandedFilterData) {
+            const data = window._expandedFilterData;
+            
+            // Remove created search label
+            if (data.createdSearchLabel) {
+              data.createdSearchLabel.remove();
+            }
+
+            // Restore search-wrap
+            if (data.searchWrap && data.searchWrapParent) {
+              if (data.searchWrapNextSibling) {
+                data.searchWrapParent.insertBefore(data.searchWrap, data.searchWrapNextSibling);
+              } else {
+                data.searchWrapParent.appendChild(data.searchWrap);
+              }
+            }
+
+            // Restore filterForm
+            if (data.filterForm && data.filterFormParent) {
+              if (data.filterFormNextSibling) {
+                data.filterFormParent.insertBefore(data.filterForm, data.filterFormNextSibling);
+              } else {
+                data.filterFormParent.appendChild(data.filterForm);
+              }
+            }
+
+            // Restore resetBtn
+            if (data.resetBtn && data.resetBtnParent) {
+              if (data.resetBtnNextSibling) {
+                data.resetBtnParent.insertBefore(data.resetBtn, data.resetBtnNextSibling);
+              } else {
+                data.resetBtnParent.appendChild(data.resetBtn);
+              }
+              data.resetBtn.classList.remove('btn-reset-expanded');
+            }
+
+            window._expandedFilterData = null;
+          }
+          expandedRow.remove();
         }
-
-        // Remove the expand filter bar wrapper if we created one
-        const filterBar = header ? header.querySelector('.expand-filter-bar') : null;
-        if (filterBar) filterBar.remove();
-
       } else {
         // ---- EXPANDING ----
         card.classList.add('card-expanded');
@@ -277,93 +307,146 @@
         btn.classList.add('btn-danger');
         if (closeOverlayBtn) closeOverlayBtn.style.display = 'flex';
 
-        // Create filter bar container to insert into header
-        if (header && actionsWrap) {
-          const filterBar = document.createElement('div');
-          filterBar.className = 'expand-filter-bar';
+        const table = card.querySelector('table');
+        if (table) {
+          window.lastExpandedTableId = table.id;
+        }
 
-          // Find moveable filter elements: .search-wrap and form#filterForm inside card (not in header)
-          const candidates = [];
-          card.querySelectorAll('.search-wrap, form#filterForm').forEach(el => {
-            if (!header.contains(el)) candidates.push(el);
-          });
+        // Check for search wrap and filter form
+        const searchWrap = card.querySelector('.search-wrap');
+        const filterForm = document.getElementById('filterForm');
 
-          const moved = [];
-          candidates.forEach(el => {
-            const parent = el.parentElement;
-            const nextSibling = el.nextSibling;
-            el.classList.add('expand-filter-el');
-            filterBar.appendChild(el);
-            moved.push({ el, parent, nextSibling });
-          });
+        if (searchWrap && filterForm) {
+          // Find the reset button in the filter card
+          const filterCard = filterForm.closest('.card');
+          const resetBtn = filterCard ? filterCard.querySelector('a.btn-secondary') : null;
 
-          if (moved.length > 0) {
-            // Insert filter bar before card-actions (i.e., before the expand button)
-            header.insertBefore(filterBar, actionsWrap);
-            card._movedFilters = moved;
+          // Create the flex row
+          const expandedRow = document.createElement('div');
+          expandedRow.className = 'expanded-filter-row';
+
+          let createdSearchLabel = null;
+          let searchLabel = searchWrap.querySelector('label');
+          if (!searchLabel) {
+            searchLabel = document.createElement('label');
+            const searchInput = searchWrap.querySelector('input');
+            if (searchInput) {
+              searchLabel.htmlFor = searchInput.id;
+            }
+            searchLabel.textContent = 'Cari Petugas';
+            searchLabel.style.display = 'block';
+            searchLabel.style.fontSize = '11px';
+            searchLabel.style.marginBottom = '4px';
+            searchLabel.style.color = 'var(--text-muted)';
+            searchWrap.insertBefore(searchLabel, searchWrap.firstChild);
+            createdSearchLabel = searchLabel;
+          }
+
+          // Store original positions for restoration
+          window._expandedFilterData = {
+            searchWrap: searchWrap,
+            searchWrapParent: searchWrap.parentNode,
+            searchWrapNextSibling: searchWrap.nextSibling,
+            filterForm: filterForm,
+            filterFormParent: filterForm.parentNode,
+            filterFormNextSibling: filterForm.nextSibling,
+            resetBtn: resetBtn,
+            resetBtnParent: resetBtn ? resetBtn.parentNode : null,
+            resetBtnNextSibling: resetBtn ? resetBtn.nextSibling : null,
+            createdSearchLabel: createdSearchLabel
+          };
+
+          // Insert the expanded row before where the searchWrap was
+          searchWrap.parentNode.insertBefore(expandedRow, searchWrap);
+
+          // Move searchWrap into the expanded row
+          expandedRow.appendChild(searchWrap);
+
+          // Move filterForm into the expanded row
+          expandedRow.appendChild(filterForm);
+
+          // Move resetBtn into the expanded row if it exists
+          if (resetBtn) {
+            expandedRow.appendChild(resetBtn);
+            resetBtn.classList.add('btn-reset-expanded');
           }
         }
       }
       window.dispatchEvent(new Event('resize'));
     };
 
-    document.querySelectorAll('.card').forEach(card => {
-      const tableWrap = card.querySelector('.table-wrap');
-      if (!tableWrap) return; // Only apply to cards with tables
-      if (card.querySelector('#kecOverviewTable')) return; // Exclude overview table from expand feature
+    window.initExpandButtons = (container = document) => {
+      container.querySelectorAll('.card').forEach(card => {
+        const tableWrap = card.querySelector('.table-wrap');
+        if (!tableWrap) return; // Only apply to cards with tables
+        if (card.querySelector('#kecOverviewTable')) return; // Exclude overview table from expand feature
 
-      const header = card.querySelector('.card-header');
-      if (header) {
-        if (header.querySelector('.btn-expand-table')) return;
+        const header = card.querySelector('.card-header');
+        if (header) {
+          if (header.querySelector('.btn-expand-table')) return;
 
-        let actionsWrap = header.querySelector('.card-actions');
-        if (!actionsWrap) {
-          actionsWrap = document.createElement('div');
-          actionsWrap.className = 'card-actions';
-          actionsWrap.style.display = 'flex';
-          actionsWrap.style.gap = '8px';
-          actionsWrap.style.alignItems = 'center';
-          actionsWrap.style.marginLeft = 'auto';
+          let actionsWrap = header.querySelector('.card-actions');
+          if (!actionsWrap) {
+            actionsWrap = document.createElement('div');
+            actionsWrap.className = 'card-actions';
+            actionsWrap.style.display = 'flex';
+            actionsWrap.style.gap = '8px';
+            actionsWrap.style.alignItems = 'center';
+            actionsWrap.style.marginLeft = 'auto';
 
-          // Move any children other than the title wrapper (usually first child) to actions wrapper
-          const children = Array.from(header.children);
-          if (children.length > 1) {
-            for (let i = 1; i < children.length; i++) {
-              actionsWrap.appendChild(children[i]);
+            // Move any children other than the title wrapper (usually first child) to actions wrapper
+            const children = Array.from(header.children);
+            if (children.length > 1) {
+              for (let i = 1; i < children.length; i++) {
+                actionsWrap.appendChild(children[i]);
+              }
             }
+            header.appendChild(actionsWrap);
           }
-          header.appendChild(actionsWrap);
+
+          // Create close button for expanded mode
+          let closeOverlayBtn = card.querySelector('.btn-close-expand-overlay');
+          if (!closeOverlayBtn) {
+            closeOverlayBtn = document.createElement('button');
+            closeOverlayBtn.type = 'button';
+            closeOverlayBtn.className = 'btn-close-expand-overlay';
+            closeOverlayBtn.setAttribute('aria-label', 'Tutup Layar Penuh');
+            closeOverlayBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
+            card.appendChild(closeOverlayBtn);
+          }
+
+          const expandBtn = document.createElement('button');
+          expandBtn.type = 'button';
+          expandBtn.className = 'btn btn-secondary btn-sm btn-expand-table';
+          expandBtn.style.padding = '4px 8px';
+          expandBtn.style.fontSize = '12px';
+          expandBtn.style.display = 'inline-flex';
+          expandBtn.style.alignItems = 'center';
+          expandBtn.style.gap = '4px';
+          expandBtn.innerHTML = '<i class="bi bi-arrows-angle-expand"></i> <span>Expand</span>';
+
+          const toggleHandler = (e) => {
+            e.preventDefault();
+            toggleCardExpand(card, expandBtn, closeOverlayBtn);
+          };
+
+          expandBtn.addEventListener('click', toggleHandler);
+          closeOverlayBtn.addEventListener('click', toggleHandler);
+
+          actionsWrap.appendChild(expandBtn);
+
+          // Auto-restore expanded state if needed
+          const table = card.querySelector('table');
+          if (table && document.body.classList.contains('has-expanded-card') && window.lastExpandedTableId === table.id) {
+            setTimeout(() => {
+              toggleCardExpand(card, expandBtn, closeOverlayBtn);
+            }, 50);
+          }
         }
+      });
+    };
 
-        // Create close button for expanded mode
-        const closeOverlayBtn = document.createElement('button');
-        closeOverlayBtn.type = 'button';
-        closeOverlayBtn.className = 'btn-close-expand-overlay';
-        closeOverlayBtn.setAttribute('aria-label', 'Tutup Layar Penuh');
-        closeOverlayBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
-        card.appendChild(closeOverlayBtn);
-
-        const expandBtn = document.createElement('button');
-        expandBtn.type = 'button';
-        expandBtn.className = 'btn btn-secondary btn-sm btn-expand-table';
-        expandBtn.style.padding = '4px 8px';
-        expandBtn.style.fontSize = '12px';
-        expandBtn.style.display = 'inline-flex';
-        expandBtn.style.alignItems = 'center';
-        expandBtn.style.gap = '4px';
-        expandBtn.innerHTML = '<i class="bi bi-arrows-angle-expand"></i> <span>Expand</span>';
-
-        const toggleHandler = (e) => {
-          e.preventDefault();
-          toggleCardExpand(card, expandBtn, closeOverlayBtn);
-        };
-
-        expandBtn.addEventListener('click', toggleHandler);
-        closeOverlayBtn.addEventListener('click', toggleHandler);
-
-        actionsWrap.appendChild(expandBtn);
-      }
-    });
+    window.initExpandButtons(document);
 
 
     // ============================================================
