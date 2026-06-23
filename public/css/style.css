@@ -6,9 +6,9 @@
   --bg-card: #1b1b24;
   --bg-card-hover: #23232f;
   --bg-sidebar: #111116;
-  --accent-blue: #c2410c;
-  --accent-cyan: #d97706;
-  --accent-rgb: 194, 65, 12;
+  --accent-blue: #f97316; /* brighter orange for dark mode contrast */
+  --accent-cyan: #fbbf24; /* brighter amber for dark mode contrast */
+  --accent-rgb: 249, 115, 22;
   --accent-green: #10b981;
   --accent-yellow: #fbbf24;
   --accent-red: #ef4444;
@@ -16,7 +16,7 @@
   --accent-purple: #8b5cf6;
   --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-muted: #8e9eab; /* brighter grey for dark mode readability */
   --border: #292938;
   --border-light: #353549;
   --shadow: 0 4px 24px rgba(0,0,0,0.4);
@@ -40,9 +40,12 @@ body.light-mode {
   --bg-card: #fdfcfb;
   --bg-card-hover: #ebe4d8;
   --bg-sidebar: #eae2d5;
+  --accent-blue: #c2410c; /* original brand dark orange for light mode contrast */
+  --accent-cyan: #d97706; /* original brand dark amber for light mode contrast */
+  --accent-rgb: 194, 65, 12;
   --text-primary: #3c332e;
   --text-secondary: #655951;
-  --text-muted: #91847a;
+  --text-muted: #6f6359; /* darker brown-grey for light mode readability */
   --border: #dfd5c6;
   --border-light: #d3c9b8;
   --shadow: 0 4px 20px rgba(60, 51, 46, 0.04);
@@ -239,7 +242,8 @@ body {
   white-space: nowrap;
   flex-shrink: 0;
 }
-.btn-primary { background: var(--accent-blue); color: white; }
+.btn-primary { background: var(--accent-blue); color: #0f0f12; }
+body.light-mode .btn-primary { color: white; }
 .btn-primary:hover { background: #ea580c; transform: translateY(-1px); }
 .btn-success { background: var(--accent-green); color: white; }
 .btn-success:hover { background: #059669; }
@@ -419,8 +423,11 @@ div.hide-md, div.hide-sm { display: block; }
   white-space: nowrap;
 }
 .badge-green { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+body.light-mode .badge-green { color: #065f46; }
 .badge-red { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+body.light-mode .badge-red { color: #991b1b; }
 .badge-yellow { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+body.light-mode .badge-yellow { color: #9a3412; }
 .badge-blue { background: rgba(var(--accent-rgb), 0.15); color: var(--accent-blue); border: 1px solid rgba(var(--accent-rgb), 0.25); }
 .badge-gray { background: rgba(100,116,139,0.15); color: var(--text-muted); border: 1px solid var(--border); }
 
@@ -668,7 +675,8 @@ body.light-mode .fasih-item-reject .fasih-grid-item-value { color: #dc2626; }
   transition: var(--transition);
 }
 .page-btn:hover { background: var(--bg-card-hover); color: var(--text-primary); }
-.page-btn.active { background: var(--accent-blue); border-color: var(--accent-blue); color: white; }
+.page-btn.active { background: var(--accent-blue); border-color: var(--accent-blue); color: #0f0f12; }
+body.light-mode .page-btn.active { color: white; }
 
 /* ====== PROGRESS RING (Overview) ====== */
 .progress-ring-wrap {

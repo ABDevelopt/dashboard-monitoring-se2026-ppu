@@ -247,8 +247,8 @@
           <div class="form-group">
             <label style="font-size: 12px; font-weight: 500; margin-bottom: 6px; display: block; color: var(--text-secondary);">Tingkat Wilayah</label>
             <div class="map-layer-selector">
-              <button id="btnLayerDesa" class="map-layer-btn active">Batas Desa</button>
-              <button id="btnLayerSls" class="map-layer-btn">Batas SLS</button>
+              <button id="btnLayerDesa" class="map-layer-btn active" aria-pressed="true">Batas Desa</button>
+              <button id="btnLayerSls" class="map-layer-btn" aria-pressed="false">Batas SLS</button>
             </div>
           </div>
         </div>
@@ -693,7 +693,9 @@
         function switchToDesaLayer() {
           activeLayerName = 'desa';
           btnLayerSls.classList.remove('active');
+          btnLayerSls.setAttribute('aria-pressed', 'false');
           btnLayerDesa.classList.add('active');
+          btnLayerDesa.setAttribute('aria-pressed', 'true');
           legendSls.style.display = 'none';
           legendDesa.style.display = 'block';
 
@@ -711,7 +713,9 @@
           }
           activeLayerName = 'sls';
           btnLayerDesa.classList.remove('active');
+          btnLayerDesa.setAttribute('aria-pressed', 'false');
           btnLayerSls.classList.add('active');
+          btnLayerSls.setAttribute('aria-pressed', 'true');
           legendDesa.style.display = 'none';
           legendSls.style.display = 'block';
 

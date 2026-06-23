@@ -21,15 +21,30 @@ function makeTableSortable(tableId) {
   let sortCol = -1, sortDir = 1;
 
   headers.forEach((th, colIdx) => {
+    // Skip super headers with colspan > 1
+    const colSpan = th.getAttribute('colspan');
+    if (colSpan && parseInt(colSpan) > 1) {
+      return;
+    }
+    
     // Add sortable class to show icon cues
     th.classList.add('sortable');
+    th.setAttribute('role', 'button');
+    th.setAttribute('tabindex', '0');
+    th.setAttribute('aria-sort', 'none');
     
-    th.addEventListener('click', () => {
+    const performSort = () => {
       if (sortCol === colIdx) sortDir *= -1;
       else { sortDir = 1; sortCol = colIdx; }
 
-      headers.forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+      headers.forEach(h => {
+        h.classList.remove('sort-asc', 'sort-desc');
+        if (h.getAttribute('role') === 'button') {
+          h.setAttribute('aria-sort', 'none');
+        }
+      });
       th.classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
+      th.setAttribute('aria-sort', sortDir === 1 ? 'ascending' : 'descending');
 
       const tbody = table.querySelector('tbody');
       const rows = Array.from(tbody.querySelectorAll('tr'));
@@ -42,6 +57,14 @@ function makeTableSortable(tableId) {
         return aVal.localeCompare(bVal, 'id') * sortDir;
       });
       rows.forEach(r => tbody.appendChild(r));
+    };
+
+    th.addEventListener('click', performSort);
+    th.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        performSort();
+      }
     });
   });
 }
@@ -336,7 +359,16 @@ function initUploadZone(zoneId, inputId) {
   const input = document.getElementById(inputId);
   if (!zone || !input) return;
 
+  zone.setAttribute('role', 'button');
+  zone.setAttribute('tabindex', '0');
+
   zone.addEventListener('click', () => input.click());
+  zone.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      input.click();
+    }
+  });
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
   zone.addEventListener('drop', e => {

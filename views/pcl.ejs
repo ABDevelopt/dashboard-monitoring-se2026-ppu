@@ -28,8 +28,8 @@
         <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           
           <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
-            <select name="kec"  style="width:100%;">
+            <label for="filterKec" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
+            <select id="filterKec" name="kec"  style="width:100%;">
               <option value="">-- Semua Kecamatan --</option>
               <% kecList.forEach(k => { %>
                 <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
@@ -38,8 +38,8 @@
           </div>
 
           <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
-            <select name="korlap"  style="width:100%;">
+            <label for="filterKorlap" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
+            <select id="filterKorlap" name="korlap"  style="width:100%;">
               <option value="">-- Semua Korlap --</option>
               <% korlapList.forEach(k => { %>
                 <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
@@ -48,8 +48,8 @@
           </div>
 
           <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
-            <select name="pml"  style="width:100%;">
+            <label for="filterPml" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
+            <select id="filterPml" name="pml"  style="width:100%;">
               <option value="">-- Semua PML --</option>
               <% pmlList.forEach(p => { %>
                 <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
@@ -72,7 +72,7 @@
         </div>
 
         <div class="search-wrap mb-4">
-          <input type="search" id="pclSearch" placeholder="Cari nama PCL..." style="width: 100%; max-width: 280px;">
+          <input type="search" id="pclSearch" placeholder="Cari nama PCL..." aria-label="Cari nama Pencacah PCL" style="width: 100%; max-width: 280px;">
         </div>
 
         <% if (pclStats && pclStats.length > 0) { %>
@@ -242,7 +242,7 @@
               </div>
 
               <div class="search-wrap mb-4" style="max-width: 100%; margin-bottom: 12px;">
-                <input type="search" id="detailSubslsSearch" placeholder="Cari nama SLS/kode...">
+                <input type="search" id="detailSubslsSearch" placeholder="Cari nama SLS/kode..." aria-label="Cari nama SLS atau kode wilayah">
               </div>
 
               <div id="detailSubslsList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">

@@ -19,8 +19,8 @@
         <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           
           <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
-            <select name="kec"  style="width:100%;">
+            <label for="filterKec" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
+            <select id="filterKec" name="kec"  style="width:100%;">
               <option value="">-- Semua Kecamatan --</option>
               <% kecList.forEach(k => { %>
                 <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
@@ -29,8 +29,8 @@
           </div>
 
           <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Desa/Kelurahan</label>
-            <select name="desa"  style="width:100%;" <%= !filterKec ? 'disabled' : '' %>>
+            <label for="filterDesa" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Desa/Kelurahan</label>
+            <select id="filterDesa" name="desa"  style="width:100%;" <%= !filterKec ? 'disabled' : '' %>>
               <option value="">-- Semua Desa --</option>
               <% desaList.forEach(d => { %>
                 <option value="<%= d.desa %>" <%= filterDesa === d.desa ? 'selected' : '' %>><%= d.desa %></option>
@@ -39,8 +39,8 @@
           </div>
 
           <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
-            <select name="korlap"  style="width:100%;">
+            <label for="filterKorlap" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
+            <select id="filterKorlap" name="korlap"  style="width:100%;">
               <option value="">-- Semua Korlap --</option>
               <% korlapList.forEach(k => { %>
                 <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
@@ -49,8 +49,8 @@
           </div>
 
           <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
-            <select name="pml"  style="width:100%;">
+            <label for="filterPml" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
+            <select id="filterPml" name="pml"  style="width:100%;">
               <option value="">-- Semua PML --</option>
               <% pmlList.forEach(p => { %>
                 <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
@@ -59,8 +59,8 @@
           </div>
 
           <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PCL (Pencacah)</label>
-            <select name="pcl"  style="width:100%;">
+            <label for="filterPcl" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PCL (Pencacah)</label>
+            <select id="filterPcl" name="pcl"  style="width:100%;">
               <option value="">-- Semua PCL --</option>
               <% pclList.forEach(p => { %>
                 <option value="<%= p.pcl %>" <%= filterPcl === p.pcl ? 'selected' : '' %>><%= p.pcl %></option>
@@ -69,11 +69,11 @@
           </div>
 
           <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">
+            <label id="statusLabel" for="filterStatus" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">
               Status Progres
               <span title="Kriteria Selesai: SubSLS memiliki target muatan > 0 DAN jumlah (Usaha Ditemukan + Baru) >= Muatan" style="cursor: help; margin-left: 4px;"><i class="bi bi-info-circle"></i></span>
             </label>
-            <select name="status" style="width:100%;">
+            <select id="filterStatus" name="status" style="width:100%;">
               <option value="">-- Semua Status --</option>
               <option value="selesai" <%= filterStatus === 'selesai' ? 'selected' : '' %>>Selesai Pencacahan</option>
               <option value="belum" <%= filterStatus === 'belum' ? 'selected' : '' %>>Belum Selesai</option>
@@ -99,7 +99,7 @@
       </div>
 
       <div class="search-wrap mb-4" style="max-width: 300px;">
-        <input type="search" id="localSearch" placeholder="Cari di halaman ini...">
+        <input type="search" id="localSearch" placeholder="Cari di halaman ini..." aria-label="Cari SLS di halaman ini">
       </div>
 
       <% if (data && data.length > 0) { %>

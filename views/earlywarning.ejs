@@ -17,8 +17,8 @@
         <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           
           <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
-            <select name="kec" onchange="this.form.submit();" style="width:100%;">
+            <label for="filterKec" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
+            <select id="filterKec" name="kec" onchange="this.form.submit();" style="width:100%;">
               <option value="">-- Semua Kecamatan --</option>
               <% kecList.forEach(k => { %>
                 <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
@@ -27,8 +27,8 @@
           </div>
 
           <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
-            <select name="korlap" onchange="this.form.submit();" style="width:100%;">
+            <label for="filterKorlap" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
+            <select id="filterKorlap" name="korlap" onchange="this.form.submit();" style="width:100%;">
               <option value="">-- Semua Korlap --</option>
               <% korlapList.forEach(k => { %>
                 <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
@@ -37,8 +37,8 @@
           </div>
 
           <div>
-            <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
-            <select name="pml" onchange="this.form.submit();" style="width:100%;">
+            <label for="filterPml" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
+            <select id="filterPml" name="pml" onchange="this.form.submit();" style="width:100%;">
               <option value="">-- Semua PML --</option>
               <% pmlList.forEach(p => { %>
                 <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>

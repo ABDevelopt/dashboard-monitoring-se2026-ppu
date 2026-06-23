@@ -85,10 +85,10 @@
 
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
       <form action="/master" method="GET" style="display: flex; gap: 8px; flex: 1; min-width: 200px;">
-        <input type="search" name="q" value="<%= q %>" placeholder="Cari Kode, SLS, Petugas, Wilayah..." style="flex: 1; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); min-width: 0;">
-        <button type="submit" class="btn btn-secondary"><i class="bi bi-search"></i></button>
+        <input type="search" name="q" value="<%= q %>" placeholder="Cari Kode, SLS, Petugas, Wilayah..." aria-label="Cari Kode, SLS, Petugas, atau Wilayah" style="flex: 1; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); min-width: 0;">
+        <button type="submit" class="btn btn-secondary" aria-label="Cari data SLS"><i class="bi bi-search"></i></button>
         <% if (q) { %>
-          <a href="/master" class="btn btn-secondary" title="Reset Pencarian"><i class="bi bi-x-lg"></i></a>
+          <a href="/master" class="btn btn-secondary" title="Reset Pencarian" aria-label="Reset pencarian dan tampilkan semua"><i class="bi bi-x-lg"></i></a>
         <% } %>
       </form>
       <div style="font-size: 12px; color: var(--text-secondary);">
@@ -140,14 +140,16 @@
                             data-targetfasih="<%= row.target_fasih %>"
                             data-muatan="<%= row.muatan %>"
                             data-kode2025="<%= row.kode_2025 %>"
-                            title="Edit Record"><i class="bi bi-pencil-fill"></i></button>
+                            title="Edit Record"
+                            aria-label="Edit SLS <%= row.nama_sls %>"><i class="bi bi-pencil-fill"></i></button>
                     <% if (row.has_progress === 0) { %>
                       <form action="/master/delete/<%= row.kode %>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SLS master <%= row.kode %>?');" style="display: inline;">
-                        <button type="submit" class="btn btn-danger btn-xs" title="Hapus"><i class="bi bi-trash-fill"></i></button>
+                        <button type="submit" class="btn btn-danger btn-xs" title="Hapus" aria-label="Hapus SLS <%= row.nama_sls %>"><i class="bi bi-trash-fill"></i></button>
                       </form>
                     <% } else { %>
-                      <button class="btn btn-secondary btn-xs" style="opacity: 0.3; cursor: not-allowed;" title="Tidak dapat dihapus karena memiliki progres pencacahan"><i class="bi bi-trash-fill"></i></button>
+                      <button class="btn btn-secondary btn-xs" disabled style="opacity: 0.3; cursor: not-allowed;" title="Tidak dapat dihapus karena memiliki progres pencacahan" aria-label="Hapus SLS disabled (Memiliki Progres)"><i class="bi bi-trash-fill"></i></button>
                     <% } %>
+
                   </div>
                 </td>
               </tr>
@@ -183,60 +185,60 @@
   <div class="card" style="width: 100%; max-width: 500px; margin: 20px; animation: slideIn 0.2s ease;">
     <div class="card-header" style="margin-bottom: 12px; padding-bottom: 8px;">
       <div class="card-title"><i class="bi bi-plus-circle-fill" style="color: var(--accent-green);"></i> Tambah SLS Baru</div>
-      <button class="btn btn-secondary btn-xs" id="btnCloseAddModal" style="min-width: auto; padding: 4px 8px;"><i class="bi bi-x-lg"></i></button>
+      <button class="btn btn-secondary btn-xs" id="btnCloseAddModal" aria-label="Tutup Dialog Tambah SLS" style="min-width: auto; padding: 4px 8px;"><i class="bi bi-x-lg"></i></button>
     </div>
     <form action="/master/add" method="POST">
       <div style="display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto; padding-right: 4px;">
         
         <div>
-          <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Kode SubSLS (16 digit) *</label>
-          <input type="text" name="kode" required pattern="[0-9]{16}" placeholder="Contoh: 6409010001000100" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+          <label for="addKode" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Kode SubSLS (16 digit) *</label>
+          <input type="text" id="addKode" name="kode" required pattern="[0-9]{16}" placeholder="Contoh: 6409010001000100" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Kecamatan *</label>
-            <input type="text" name="kecamatan" required placeholder="Contoh: Babulu" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+            <label for="addKecamatan" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Kecamatan *</label>
+            <input type="text" id="addKecamatan" name="kecamatan" required placeholder="Contoh: Babulu" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Desa / Kelurahan *</label>
-            <input type="text" name="desa" required placeholder="Contoh: Babulu Darat" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+            <label for="addDesa" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Desa / Kelurahan *</label>
+            <input type="text" id="addDesa" name="desa" required placeholder="Contoh: Babulu Darat" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
         </div>
 
         <div>
-          <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Nama SLS / RT</label>
-          <input type="text" name="nama_sls" placeholder="Contoh: RT 001 DUSUN I" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+          <label for="addNamaSls" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Nama SLS / RT</label>
+          <input type="text" id="addNamaSls" name="nama_sls" placeholder="Contoh: RT 001 DUSUN I" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); gap: 10px;">
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Target FASIH</label>
-            <input type="number" name="target_fasih" value="0" min="0" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+            <label for="addTargetFasih" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Target FASIH</label>
+            <input type="number" id="addTargetFasih" name="target_fasih" value="0" min="0" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Target Muatan</label>
-            <input type="number" name="muatan" value="0" min="0" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+            <label for="addMuatan" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Target Muatan</label>
+            <input type="number" id="addMuatan" name="muatan" value="0" min="0" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Kode SLS 2025</label>
-            <input type="text" name="kode_2025" placeholder="Kosongkan jika sama" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+            <label for="addKode2025" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Kode SLS 2025</label>
+            <input type="text" id="addKode2025" name="kode_2025" placeholder="Kosongkan jika sama" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
         </div>
 
         <div>
-          <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Koordinator Lapangan (Korlap)</label>
-          <input type="text" name="korlap" placeholder="Nama Koordinator Lapangan" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+          <label for="addKorlap" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Koordinator Lapangan (Korlap)</label>
+          <input type="text" id="addKorlap" name="korlap" placeholder="Nama Koordinator Lapangan" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Nama PML (Pengawas)</label>
-            <input type="text" name="pml" placeholder="Nama Pengawas PML" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+            <label for="addPml" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Nama PML (Pengawas)</label>
+            <input type="text" id="addPml" name="pml" placeholder="Nama Pengawas PML" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Nama PCL (Pencacah)</label>
-            <input type="text" name="pcl" placeholder="Nama Pencacah PCL" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+            <label for="addPcl" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Nama PCL (Pencacah)</label>
+            <input type="text" id="addPcl" name="pcl" placeholder="Nama Pencacah PCL" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
         </div>
 
@@ -255,7 +257,7 @@
   <div class="card" style="width: 100%; max-width: 500px; margin: 20px; animation: slideIn 0.2s ease;">
     <div class="card-header" style="margin-bottom: 12px; padding-bottom: 8px;">
       <div class="card-title"><i class="bi bi-pencil-square" style="color: var(--accent-cyan);"></i> Edit Record SLS Master</div>
-      <button class="btn btn-secondary btn-xs" id="btnCloseEditModal" style="min-width: auto; padding: 4px 8px;"><i class="bi bi-x-lg"></i></button>
+      <button class="btn btn-secondary btn-xs" id="btnCloseEditModal" aria-label="Tutup Dialog Edit SLS" style="min-width: auto; padding: 4px 8px;"><i class="bi bi-x-lg"></i></button>
     </div>
     <form action="/master/edit" method="POST">
       <input type="hidden" name="kode" id="editKode">
@@ -263,53 +265,53 @@
       <div style="display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto; padding-right: 4px;">
         
         <div>
-          <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Kode SLS (Terunci)</label>
+          <label for="editKodeDisplay" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Kode SLS (Terunci)</label>
           <input type="text" id="editKodeDisplay" disabled style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: rgba(0,0,0,0.05); color: var(--text-muted);">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Kecamatan *</label>
+            <label for="editKecamatan" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Kecamatan *</label>
             <input type="text" name="kecamatan" id="editKecamatan" required style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Desa / Kelurahan *</label>
+            <label for="editDesa" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Desa / Kelurahan *</label>
             <input type="text" name="desa" id="editDesa" required style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
         </div>
 
         <div>
-          <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Nama SLS / RT</label>
+          <label for="editNama" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Nama SLS / RT</label>
           <input type="text" name="nama_sls" id="editNama" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); gap: 10px;">
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Target FASIH</label>
+            <label for="editTargetFasih" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Target FASIH</label>
             <input type="number" name="target_fasih" id="editTargetFasih" min="0" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Target Muatan</label>
+            <label placeholder="" for="editMuatan" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Target Muatan</label>
             <input type="number" name="muatan" id="editMuatan" min="0" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Kode SLS 2025</label>
+            <label for="editKode2025" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Kode SLS 2025</label>
             <input type="text" name="kode_2025" id="editKode2025" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
         </div>
 
         <div>
-          <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Koordinator Lapangan (Korlap)</label>
+          <label for="editKorlap" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Koordinator Lapangan (Korlap)</label>
           <input type="text" name="korlap" id="editKorlap" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Nama PML (Pengawas)</label>
+            <label for="editPml" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Nama PML (Pengawas)</label>
             <input type="text" name="pml" id="editPml" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Nama PCL (Pencacah)</label>
+            <label for="editPcl" style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Nama PCL (Pencacah)</label>
             <input type="text" name="pcl" id="editPcl" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
         </div>

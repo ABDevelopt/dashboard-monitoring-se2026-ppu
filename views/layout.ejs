@@ -23,8 +23,8 @@
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <!-- SIDEBAR -->
-<aside class="sidebar" id="sidebar">
-  <button class="btn-close-sidebar" id="sidebarClose"><i class="bi bi-x-lg"></i></button>
+<aside class="sidebar" id="sidebar" aria-label="Sidebar Menu">
+  <button class="btn-close-sidebar" id="sidebarClose" aria-label="Tutup Sidebar"><i class="bi bi-x-lg"></i></button>
   <div class="sidebar-logo" style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 16px; border-bottom: 1px solid var(--border);">
     <img src="/logo-vertical.png" alt="Logo SE2026" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
     <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 4px;">Penajam Paser Utara</p>
@@ -101,7 +101,7 @@
 <div class="main-wrapper">
   <!-- TOPBAR -->
   <header class="topbar">
-    <button class="btn-toggle-sidebar" id="sidebarToggle"><i class="bi bi-list"></i></button>
+    <button class="btn-toggle-sidebar" id="sidebarToggle" aria-label="Buka Sidebar" aria-expanded="false"><i class="bi bi-list"></i></button>
     <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; overflow: hidden;">
       <img src="/logo-horizontal.png" alt="Logo SE2026" style="height: 30px; max-width: 110px; object-fit: contain; flex-shrink: 0;">
       <div style="border-left: 1px solid var(--border); padding-left: 12px; min-height: 28px; display: flex; flex-direction: column; justify-content: center; min-width: 0; overflow: hidden;">
@@ -118,7 +118,7 @@
       </div>
     </div>
     <div class="topbar-actions">
-      <button class="btn btn-secondary" id="themeToggle" title="Ubah Tema" style="padding: 8px 12px; min-width: auto;">
+      <button class="btn btn-secondary" id="themeToggle" title="Ubah Tema" aria-label="Ubah Tema" style="padding: 8px 12px; min-width: auto;">
         <i class="bi bi-moon-fill" id="themeIcon"></i>
       </button>
       <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
@@ -161,11 +161,13 @@
       toggleBtn.addEventListener('click', () => {
         sidebar.classList.add('active');
         overlay.classList.add('active');
+        toggleBtn.setAttribute('aria-expanded', 'true');
       });
       
       const closeSidebar = () => {
         sidebar.classList.remove('active');
         overlay.classList.remove('active');
+        toggleBtn.setAttribute('aria-expanded', 'false');
       };
 
       if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
