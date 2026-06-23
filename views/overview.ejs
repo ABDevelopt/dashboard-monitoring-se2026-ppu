@@ -80,42 +80,81 @@
         <!-- Rincian Status Dokumen FASIH -->
         <div style="border-top: 1px dashed var(--border); padding-top: 16px;">
           <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;"><i class="bi bi-info-circle-fill text-purple"></i> Rincian Status Dokumen FASIH</div>
+          
+          <%
+            let draftPct = summary.target_fasih_total ? ((summary.draft_total || 0) / summary.target_fasih_total * 100).toFixed(1) : '0.0';
+            let submittedPct = summary.target_fasih_total ? ((summary.submitted_total || 0) / summary.target_fasih_total * 100).toFixed(1) : '0.0';
+            let approvedPct = summary.target_fasih_total ? ((summary.approved_total || 0) / summary.target_fasih_total * 100).toFixed(1) : '0.0';
+            let rejectedPct = summary.target_fasih_total ? ((summary.rejected_total || 0) / summary.target_fasih_total * 100).toFixed(1) : '0.0';
+          %>
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
             
             <!-- DRAFT -->
-            <div class="status-draft-bg" style="border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-              <div>
-                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">DRAFT</div>
-                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Belum Submit</div>
+            <div class="status-draft-bg" style="border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                <div>
+                  <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">DRAFT</div>
+                  <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Belum Submit</div>
+                </div>
+                <div class="status-draft-text" style="font-size: 14px; font-weight: 800; text-align: right;">
+                  <%= (summary.draft_total || 0).toLocaleString('id-ID') %>
+                  <span style="display: block; font-size: 9px; font-weight: 600; color: var(--text-muted); margin-top: 1px;"><%= draftPct %>%</span>
+                </div>
               </div>
-              <div class="status-draft-text" style="font-size: 14px; font-weight: 800;"><%= (summary.draft_total || 0).toLocaleString('id-ID') %></div>
+              <div style="background: rgba(245, 158, 11, 0.08); height: 6px; border-radius: 3px; overflow: hidden; width: 100%;">
+                <div class="progress-bar" data-width="<%= draftPct %>" style="background: var(--accent-yellow); height: 100%; width: 0%; border-radius: 3px; transition: width 1s ease;"></div>
+              </div>
             </div>
 
             <!-- SUBMITTED BY PCL -->
-            <div class="status-submit-bg" style="border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-              <div>
-                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">SUBMITTED</div>
-                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Oleh PCL</div>
+            <div class="status-submit-bg" style="border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                <div>
+                  <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">SUBMITTED</div>
+                  <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Oleh PCL</div>
+                </div>
+                <div class="status-submit-text" style="font-size: 14px; font-weight: 800; text-align: right;">
+                  <%= (summary.submitted_total || 0).toLocaleString('id-ID') %>
+                  <span style="display: block; font-size: 9px; font-weight: 600; color: var(--text-muted); margin-top: 1px;"><%= submittedPct %>%</span>
+                </div>
               </div>
-              <div class="status-submit-text" style="font-size: 14px; font-weight: 800;"><%= (summary.submitted_total || 0).toLocaleString('id-ID') %></div>
+              <div style="background: rgba(59, 130, 246, 0.08); height: 6px; border-radius: 3px; overflow: hidden; width: 100%;">
+                <div class="progress-bar" data-width="<%= submittedPct %>" style="background: var(--accent-blue); height: 100%; width: 0%; border-radius: 3px; transition: width 1s ease;"></div>
+              </div>
             </div>
 
             <!-- APPROVED -->
-            <div class="status-approve-bg" style="border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-              <div>
-                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">APPROVED</div>
-                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Diterima PML</div>
+            <div class="status-approve-bg" style="border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                <div>
+                  <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">APPROVED</div>
+                  <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Diterima PML</div>
+                </div>
+                <div class="status-approve-text" style="font-size: 14px; font-weight: 800; text-align: right;">
+                  <%= (summary.approved_total || 0).toLocaleString('id-ID') %>
+                  <span style="display: block; font-size: 9px; font-weight: 600; color: var(--text-muted); margin-top: 1px;"><%= approvedPct %>%</span>
+                </div>
               </div>
-              <div class="status-approve-text" style="font-size: 14px; font-weight: 800;"><%= (summary.approved_total || 0).toLocaleString('id-ID') %></div>
+              <div style="background: rgba(16, 185, 129, 0.08); height: 6px; border-radius: 3px; overflow: hidden; width: 100%;">
+                <div class="progress-bar" data-width="<%= approvedPct %>" style="background: var(--accent-green); height: 100%; width: 0%; border-radius: 3px; transition: width 1s ease;"></div>
+              </div>
             </div>
 
             <!-- REJECTED -->
-            <div class="status-reject-bg" style="border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-              <div>
-                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">REJECTED</div>
-                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Ditolak PML</div>
+            <div class="status-reject-bg" style="border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                <div>
+                  <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">REJECTED</div>
+                  <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Ditolak PML</div>
+                </div>
+                <div class="status-reject-text" style="font-size: 14px; font-weight: 800; text-align: right;">
+                  <%= (summary.rejected_total || 0).toLocaleString('id-ID') %>
+                  <span style="display: block; font-size: 9px; font-weight: 600; color: var(--text-muted); margin-top: 1px;"><%= rejectedPct %>%</span>
+                </div>
               </div>
-              <div class="status-reject-text" style="font-size: 14px; font-weight: 800;"><%= (summary.rejected_total || 0).toLocaleString('id-ID') %></div>
+              <div style="background: rgba(239, 68, 68, 0.08); height: 6px; border-radius: 3px; overflow: hidden; width: 100%;">
+                <div class="progress-bar" data-width="<%= rejectedPct %>" style="background: var(--accent-red); height: 100%; width: 0%; border-radius: 3px; transition: width 1s ease;"></div>
+              </div>
             </div>
 
           </div>
