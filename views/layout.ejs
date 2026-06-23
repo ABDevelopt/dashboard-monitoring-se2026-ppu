@@ -38,30 +38,39 @@
   <% } %>
 
   <nav class="sidebar-nav">
-    <div class="nav-section">Ringkasan</div>
+    <div class="nav-section">Utama</div>
     <a href="/" class="nav-item <%= activePage === 'overview' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-house-door"></i></span> Overview
     </a>
     <a href="/map" class="nav-item <%= activePage === 'map' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-map"></i></span> Peta Progres
     </a>
+
+    <div class="nav-section">Evaluasi &amp; Kualitas</div>
     <a href="/early-warning" class="nav-item <%= activePage === 'earlywarning' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-exclamation-octagon"></i></span> Early Warning
     </a>
+    <a href="/deteksi-anomali" class="nav-item <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
+      <span class="nav-icon"><i class="bi bi-shield-exclamation"></i></span> Deteksi Awal Anomali <span class="badge badge-yellow" style="font-size: 8px; padding: 2px 6px; margin-left: auto;">Soon</span>
+    </a>
+
+    <div class="nav-section">Analisis Kinerja</div>
     <a href="/leaderboard" class="nav-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-trophy"></i></span> Performa Terbaik
     </a>
     <a href="/performa-terendah" class="nav-item <%= activePage === 'performa-terendah' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-graph-down"></i></span> Performa Terendah
     </a>
-    <a href="/deteksi-anomali" class="nav-item <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-shield-exclamation"></i></span> Deteksi Awal Anomali <span class="badge badge-yellow" style="font-size: 8px; padding: 2px 6px; margin-left: auto;">Soon</span>
-    </a>
 
-    <div class="nav-section">Drilldown</div>
+    <div class="nav-section">Drilldown Wilayah</div>
     <a href="/kecamatan" class="nav-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-geo-alt"></i></span> Per Kecamatan
     </a>
+    <a href="/subsls" class="nav-item <%= activePage === 'subsls' ? 'active' : '' %>">
+      <span class="nav-icon"><i class="bi bi-box-seam"></i></span> Per SubSLS
+    </a>
+
+    <div class="nav-section">Drilldown Petugas</div>
     <a href="/korlap" class="nav-item <%= activePage === 'korlap' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-person-workspace"></i></span> Per Korlap
     </a>
@@ -71,12 +80,12 @@
     <a href="/pcl" class="nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-person-gear"></i></span> Per PCL
     </a>
-    <a href="/subsls" class="nav-item <%= activePage === 'subsls' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-box-seam"></i></span> Per SubSLS
-    </a>
 
+    <div class="nav-section">Data &amp; Utilitas</div>
+    <a href="/subsls/export" class="nav-item">
+      <span class="nav-icon"><i class="bi bi-download"></i></span> Export CSV
+    </a>
     <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-    <div class="nav-section">Admin</div>
     <a href="/admin/upload" class="nav-item <%= activePage === 'upload' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-upload"></i></span> Upload Data
     </a>
@@ -87,11 +96,6 @@
       <span class="nav-icon"><i class="bi bi-box-arrow-right"></i></span> Logout Admin
     </a>
     <% } %>
-
-    <div class="nav-section">Export</div>
-    <a href="/subsls/export" class="nav-item">
-      <span class="nav-icon"><i class="bi bi-download"></i></span> Export CSV
-    </a>
   </nav>
 
   <div class="sidebar-footer">
