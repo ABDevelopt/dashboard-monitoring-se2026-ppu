@@ -172,7 +172,9 @@
                 <% detailPcl.forEach(item => { %>
                   <div class="detail-item">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                      <span class="fw-bold" style="color: var(--text-primary);"><i class="bi bi-person"></i> <%= item.pcl %></span>
+                      <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" class="fw-bold" style="color: var(--accent-cyan); text-decoration: none;">
+                        <i class="bi bi-person"></i> <%= item.pcl %>
+                      </a>
                       <% if (parseFloat(item.pct) >= 100) { %>
                         <span class="badge badge-green btn-xs">100%</span>
                       <% } else if (parseFloat(item.pct) <= 0) { %>
