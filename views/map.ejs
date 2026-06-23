@@ -380,7 +380,7 @@
         function getDesaColor(iddesa) {
           const stat = desaStats.find(s => s.iddesa === iddesa);
           if (!stat) return '#94a3b8'; // gray for no data
-          const pct = stat.total_muatan ? (stat.usaha_total / stat.total_muatan) * 100 : 0;
+          const pct = stat.total_muatan ? ( (stat.usaha_total + stat.keluarga_total) / stat.total_muatan ) * 100 : 0;
           if (pct === 100) return '#10b981'; // Green
           if (pct >= 75) return '#0284c7';  // Blue
           if (pct >= 25) return '#eab308';  // Yellow

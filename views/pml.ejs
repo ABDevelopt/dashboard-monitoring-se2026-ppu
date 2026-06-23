@@ -164,7 +164,7 @@
                     </div>
                     <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 10px;">
                       <span style="background: rgba(6, 182, 212, 0.08); padding: 2px 6px; border-radius: 4px; color: var(--accent-cyan);">
-                        Muatan: <strong><%= item.usaha_total %></strong> / <%= item.total_muatan %>
+                        Muatan: <strong><%= item.usaha_total + item.keluarga_total %></strong> / <%= item.total_muatan %>
                       </span>
                       <span style="background: rgba(139, 92, 246, 0.08); padding: 2px 6px; border-radius: 4px; color: var(--accent-purple);">
                         FASIH App: <strong><%= item.approved_total %></strong> / <%= item.target_fasih_total %>

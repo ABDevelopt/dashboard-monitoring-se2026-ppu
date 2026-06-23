@@ -125,7 +125,7 @@
             </div>
           </div>
           <div style="text-align: right;">
-            <% let totalPct = summary.muatan_total ? ((summary.usaha_total / summary.muatan_total) * 100).toFixed(2) : '0.00'; %>
+            <% let totalPct = summary.muatan_total ? (( (summary.usaha_total + summary.keluarga_total) / summary.muatan_total ) * 100).toFixed(2) : '0.00'; %>
             <div style="font-size: 22px; font-weight: 900; color: var(--accent-cyan);"><%= totalPct %>%</div>
             <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Capaian Muatan</div>
           </div>
@@ -153,7 +153,7 @@
           </div>
           <div>
             <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Sisa</div>
-            <div style="font-size: 15px; font-weight: 800; color: var(--accent-yellow);"><%= (summary.muatan_total - summary.usaha_total).toLocaleString('id-ID') %></div>
+            <div style="font-size: 15px; font-weight: 800; color: var(--accent-yellow);"><%= (summary.muatan_total - (summary.usaha_total + summary.keluarga_total)).toLocaleString('id-ID') %></div>
           </div>
         </div>
 
@@ -305,7 +305,7 @@
             <tbody>
               <% kecStats.forEach(k => { %>
                 <% let fasihPct = k.target_fasih_total ? ((k.approved_total / k.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
-                <% let muatanPct = k.total_muatan ? ((k.usaha_total / k.total_muatan) * 100).toFixed(2) : '0.00'; %>
+                <% let muatanPct = k.total_muatan ? (( (k.usaha_total + k.keluarga_total) / k.total_muatan ) * 100).toFixed(2) : '0.00'; %>
                 <tr>
                   <td class="td-primary"><a href="/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" style="color: inherit; text-decoration: none;"><i class="bi bi-geo-alt"></i> <%= k.kecamatan %></a></td>
                   <td class="text-right"><%= k.total_subsls %></td>

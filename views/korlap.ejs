@@ -49,7 +49,7 @@
               <tbody>
                 <% korlapStats.forEach(k => { %>
                   <% let fasihPct = k.target_fasih_total ? ((k.approved_total / k.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
-                  <% let muatanPct = k.total_muatan ? ((k.usaha_total / k.total_muatan) * 100).toFixed(2) : '0.00'; %>
+                  <% let muatanPct = k.total_muatan ? (( (k.usaha_total + k.keluarga_total) / k.total_muatan ) * 100).toFixed(2) : '0.00'; %>
                   <tr class="<%= filterKorlap === k.korlap ? 'active' : '' %>" style="<%= filterKorlap === k.korlap ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="td-primary">
                       <a href="/korlap?korlap=<%= encodeURIComponent(k.korlap) %>" style="color: inherit; text-decoration: none; display: block;">
@@ -142,7 +142,7 @@
 
               <div id="detailPmlList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
                 <% detailData.forEach(item => { %>
-                  <% let itemPct = item.total_muatan ? ((item.usaha_total / item.total_muatan) * 100).toFixed(2) : '0.00'; %>
+                  <% let itemPct = item.total_muatan ? (( (item.usaha_total + item.keluarga_total) / item.total_muatan ) * 100).toFixed(2) : '0.00'; %>
                   <div class="detail-item">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                       <a href="/pml?pml=<%= encodeURIComponent(item.pml) %>" class="fw-bold" style="color: var(--accent-cyan); text-decoration: none;">
@@ -161,7 +161,7 @@
                     </div>
                     <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 10px;">
                       <span style="background: rgba(6, 182, 212, 0.08); padding: 2px 6px; border-radius: 4px; color: var(--accent-cyan);">
-                        Muatan: <strong><%= item.usaha_total %></strong> / <%= item.total_muatan %>
+                        Muatan: <strong><%= item.usaha_total + item.keluarga_total %></strong> / <%= item.total_muatan %>
                       </span>
                       <span style="background: rgba(139, 92, 246, 0.08); padding: 2px 6px; border-radius: 4px; color: var(--accent-purple);">
                         FASIH App: <strong><%= item.approved_total %></strong> / <%= item.target_fasih_total %>
