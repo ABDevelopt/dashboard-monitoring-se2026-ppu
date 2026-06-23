@@ -700,20 +700,19 @@ body.light-mode .page-btn.active { color: white; }
 }
 
 /* ====== TABLES SORTABLE ====== */
-th.sortable { cursor: pointer; position: relative; padding-right: 24px !important; }
-th.sortable::after {
+th.sortable { cursor: pointer; }
+th.sortable::before {
   content: '\f127';
   font-family: 'bootstrap-icons' !important;
   color: var(--text-muted);
   opacity: 0.45;
   font-size: 11px;
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
 }
-th.sortable.sort-asc::after { content: '\f235'; font-family: 'bootstrap-icons' !important; color: var(--accent-blue); opacity: 1; }
-th.sortable.sort-desc::after { content: '\f229'; font-family: 'bootstrap-icons' !important; color: var(--accent-blue); opacity: 1; }
+th.sortable.sort-asc::before { content: '\f235'; font-family: 'bootstrap-icons' !important; color: var(--accent-blue); opacity: 1; }
+th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons' !important; color: var(--accent-blue); opacity: 1; }
 
 /* ====== SEARCH ====== */
 .search-wrap { position: relative; }

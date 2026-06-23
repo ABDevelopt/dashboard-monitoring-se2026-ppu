@@ -536,7 +536,7 @@ function getBottomPerformers(uploadId, filters = {}) {
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
-    ORDER BY (usaha_total + keluarga_total) ASC, usaha_total ASC, total_muatan DESC
+    ORDER BY (submitted_total + approved_total + rejected_total) ASC, (usaha_total + keluarga_total) ASC, total_muatan DESC
     LIMIT 5
   `).all(...params);
 
@@ -559,7 +559,7 @@ function getBottomPerformers(uploadId, filters = {}) {
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pml COLLATE NOCASE
-    ORDER BY (usaha_total + keluarga_total) ASC, usaha_total ASC, total_muatan DESC
+    ORDER BY (submitted_total + approved_total + rejected_total) ASC, (usaha_total + keluarga_total) ASC, total_muatan DESC
     LIMIT 5
   `).all(...params);
 
