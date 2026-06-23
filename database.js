@@ -13,6 +13,7 @@ function getDb() {
     db.pragma('foreign_keys = ON');
     initSchema();
     migrateSchema();
+    initSettings();
   }
   return db;
 }
@@ -80,6 +81,12 @@ function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_master_korlap ON subsls_master(korlap);
     CREATE INDEX IF NOT EXISTS idx_master_pml ON subsls_master(pml);
     CREATE INDEX IF NOT EXISTS idx_master_pcl ON subsls_master(pcl);
+
+    -- Tabel pengaturan tampilan halaman/fitur
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
   `);
 }
 
@@ -605,9 +612,53 @@ function getAnomalyStats(uploadId, filters = {}) {
   return getDb().prepare(sql).all(params);
 }
 
+function initSettings() {
+  const defaults = {
+    'page_map': '1',
+    'page_earlywarning': '1',
+    'page_deteksianomali': '1',
+    'page_leaderboard': '1',
+    'page_performatrendah': '1',
+    'page_kecamatan': '1',
+    'page_subsls': '1',
+    'page_korlap': '1',
+    'page_pml': '1',
+    'page_pcl': '1',
+    'page_export': '1',
+    'overview_fasih': '1',
+    'overview_muatan': '1',
+    'overview_tren_muatan': '1',
+    'overview_tren_fasih': '1',
+    'overview_kecamatan': '1',
+    'overview_bangunan': '1'
+  };
+
+  const insert = getDb().prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
+  for (const [k, v] of Object.entries(defaults)) {
+    insert.run(k, v);
+  }
+}
+
+function getSettings() {
+  const rows = getDb().prepare('SELECT key, value FROM settings').all();
+  const settings = {};
+  rows.forEach(r => {
+    settings[r.key] = r.value;
+  });
+  return settings;
+}
+
+function updateSettings(settingsObj) {
+  const update = getDb().prepare('UPDATE settings SET value = ? WHERE key = ?');
+  for (const [k, v] of Object.entries(settingsObj)) {
+    update.run(v, k);
+  }
+}
+
 module.exports = {
   getDb, getLatestUpload, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
-  getBottomPerformers, getAnomalyStats
+  getBottomPerformers, getAnomalyStats,
+  getSettings, updateSettings
 };

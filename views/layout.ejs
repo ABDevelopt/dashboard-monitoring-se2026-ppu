@@ -48,49 +48,80 @@
     <a href="/" class="nav-item <%= activePage === 'overview' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-house-door"></i></span> Overview
     </a>
+    <% if (typeof settings !== 'undefined' && settings.page_map === '1') { %>
     <a href="/map" class="nav-item <%= activePage === 'map' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-map"></i></span> Peta Progres
     </a>
+    <% } %>
 
+    <% if (typeof settings !== 'undefined' && (settings.page_earlywarning === '1' || settings.page_deteksianomali === '1')) { %>
     <div class="nav-section">Evaluasi &amp; Kualitas</div>
+    <% if (settings.page_earlywarning === '1') { %>
     <a href="/early-warning" class="nav-item <%= activePage === 'earlywarning' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-exclamation-octagon"></i></span> Early Warning
     </a>
+    <% } %>
+    <% if (settings.page_deteksianomali === '1') { %>
     <a href="/deteksi-anomali" class="nav-item <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-shield-exclamation"></i></span> Deteksi Awal Anomali <span class="badge badge-yellow" style="font-size: 8px; padding: 2px 6px; margin-left: auto;">Soon</span>
+      <span class="nav-icon"><i class="bi bi-shield-exclamation"></i></span> Deteksi Awal Anomali
     </a>
+    <% } %>
+    <% } %>
 
+    <% if (typeof settings !== 'undefined' && (settings.page_leaderboard === '1' || settings.page_performatrendah === '1')) { %>
     <div class="nav-section">Analisis Kinerja</div>
+    <% if (settings.page_leaderboard === '1') { %>
     <a href="/leaderboard" class="nav-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-trophy"></i></span> Performa Terbaik
     </a>
+    <% } %>
+    <% if (settings.page_performatrendah === '1') { %>
     <a href="/performa-terendah" class="nav-item <%= activePage === 'performa-terendah' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-graph-down"></i></span> Performa Terendah
     </a>
+    <% } %>
+    <% } %>
 
+    <% if (typeof settings !== 'undefined' && (settings.page_kecamatan === '1' || settings.page_subsls === '1')) { %>
     <div class="nav-section">Drilldown Wilayah</div>
+    <% if (settings.page_kecamatan === '1') { %>
     <a href="/kecamatan" class="nav-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-geo-alt"></i></span> Per Kecamatan
     </a>
+    <% } %>
+    <% if (settings.page_subsls === '1') { %>
     <a href="/subsls" class="nav-item <%= activePage === 'subsls' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-box-seam"></i></span> Per SubSLS
     </a>
+    <% } %>
+    <% } %>
 
+    <% if (typeof settings !== 'undefined' && (settings.page_korlap === '1' || settings.page_pml === '1' || settings.page_pcl === '1')) { %>
     <div class="nav-section">Drilldown Petugas</div>
+    <% if (settings.page_korlap === '1') { %>
     <a href="/korlap" class="nav-item <%= activePage === 'korlap' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-person-workspace"></i></span> Per Korlap
     </a>
+    <% } %>
+    <% if (settings.page_pml === '1') { %>
     <a href="/pml" class="nav-item <%= activePage === 'pml' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-clipboard2-data"></i></span> Per PML
     </a>
+    <% } %>
+    <% if (settings.page_pcl === '1') { %>
     <a href="/pcl" class="nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-person-gear"></i></span> Per PCL
     </a>
+    <% } %>
+    <% } %>
 
+    <% if (typeof settings !== 'undefined' && (settings.page_export === '1' || (typeof isAdmin !== 'undefined' && isAdmin))) { %>
     <div class="nav-section">Data &amp; Utilitas</div>
+    <% if (settings.page_export === '1') { %>
     <a href="/subsls/export" class="nav-item">
       <span class="nav-icon"><i class="bi bi-download"></i></span> Export CSV
     </a>
+    <% } %>
     <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
     <a href="/admin/upload" class="nav-item <%= activePage === 'upload' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-upload"></i></span> Upload Data
@@ -98,9 +129,13 @@
     <a href="/admin/master" class="nav-item <%= activePage === 'master' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-database-fill-gear"></i></span> Kelola Master Data
     </a>
+    <a href="/admin/settings" class="nav-item <%= activePage === 'settings' ? 'active' : '' %>">
+      <span class="nav-icon"><i class="bi bi-sliders"></i></span> Pengaturan Tampilan
+    </a>
     <a href="/admin/logout" class="nav-item">
       <span class="nav-icon"><i class="bi bi-box-arrow-right"></i></span> Logout Admin
     </a>
+    <% } %>
     <% } %>
   </nav>
 

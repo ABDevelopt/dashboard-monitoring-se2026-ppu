@@ -3,7 +3,7 @@ const path = require('path');
 const session = require('express-session');
 const flash = require('connect-flash');
 const { loadMasterFromJson } = require('./services/excelParser');
-const { getDb, getLatestUpload } = require('./database');
+const { getDb, getLatestUpload, getSettings, updateSettings } = require('./database');
 
 const app = express();
 const expressLayouts = require('express-ejs-layouts');
@@ -43,6 +43,53 @@ app.use((req, res, next) => {
   res.locals.latestUpload = latest || null;
   res.locals.uploadId = latest ? latest.id : null;
   res.locals.isAdmin = req.session.isAdmin || false;
+
+  // Inject display settings globally
+  res.locals.settings = getSettings() || {};
+  next();
+});
+
+// Route Guard Middleware based on Page Display settings
+const routeSettingsMap = {
+  '/map': 'page_map',
+  '/early-warning': 'page_earlywarning',
+  '/deteksi-anomali': 'page_deteksianomali',
+  '/leaderboard': 'page_leaderboard',
+  '/performa-terendah': 'page_performatrendah',
+  '/kecamatan': 'page_kecamatan',
+  '/subsls': 'page_subsls',
+  '/subsls/export': 'page_export',
+  '/korlap': 'page_korlap',
+  '/pml': 'page_pml',
+  '/pcl': 'page_pcl'
+};
+
+app.use((req, res, next) => {
+  const path = req.path;
+  let settingKey = null;
+
+  if (path === '/subsls/export') {
+    settingKey = 'page_export';
+  } else {
+    for (const [routePrefix, key] of Object.entries(routeSettingsMap)) {
+      if (routePrefix !== '/subsls/export' && (path === routePrefix || path.startsWith(routePrefix + '/'))) {
+        settingKey = key;
+        break;
+      }
+    }
+  }
+
+  if (settingKey) {
+    const settings = res.locals.settings || {};
+    if (settings[settingKey] === '0') {
+      res.status(403);
+      return res.render('error', {
+        title: 'Fitur Dinonaktifkan',
+        message: 'Halaman atau fitur ini sedang dinonaktifkan oleh Administrator.',
+        activePage: ''
+      });
+    }
+  }
   next();
 });
 
@@ -95,6 +142,7 @@ adminRouter.get('/logout', (req, res) => {
 // Protected Admin Routes
 adminRouter.use('/upload', requireAdmin, require('./routes/upload'));
 adminRouter.use('/master', requireAdmin, require('./routes/master'));
+adminRouter.use('/settings', requireAdmin, require('./routes/settings'));
 
 // 404
 app.use((req, res) => {
