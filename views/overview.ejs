@@ -318,7 +318,7 @@
         
         <div class="table-wrap">
           <table id="kecOverviewTable">
-            <thead>
+            <thead class="hide-sm">
               <tr>
                 <th rowspan="2">Kecamatan</th>
                 <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th>
@@ -339,6 +339,15 @@
                 <th class="text-right bg-cyan-soft">Keluarga Total</th>
               </tr>
             </thead>
+            <thead class="show-sm-table-header">
+              <tr>
+                <th>Kecamatan</th>
+                <th class="text-right">Total SLS</th>
+                <th class="text-right">Selesai</th>
+                <th class="text-right bg-purple-soft">FASIH %</th>
+                <th class="text-right bg-cyan-soft">Muatan %</th>
+              </tr>
+            </thead>
             <tbody>
               <% kecStats.forEach(k => { %>
                 <% let fasihPct = k.target_fasih_total ? ((( (k.submitted_total || 0) + (k.approved_total || 0) + (k.rejected_total || 0) ) / k.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
@@ -348,8 +357,8 @@
                   <td class="text-right"><%= k.total_subsls %></td>
                   <td class="text-right fw-bold"><%= k.selesai %></td>
                   
-                  <td class="text-right bg-purple-soft"><%= (k.approved_total || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-purple-soft"><%= (k.target_fasih_total || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-purple-soft hide-sm"><%= (k.approved_total || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-purple-soft hide-sm"><%= (k.target_fasih_total || 0).toLocaleString('id-ID') %></td>
                   <td class="text-right bg-purple-soft">
                     <% if (parseFloat(fasihPct) >= 100) { %>
                       <span class="badge badge-green">100%</span>
@@ -360,8 +369,8 @@
                     <% } %>
                   </td>
                   
-                  <td class="text-right fw-bold bg-cyan-soft"><%= k.usaha_total.toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-cyan-soft"><%= k.total_muatan.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold bg-cyan-soft hide-sm"><%= k.usaha_total.toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft hide-sm"><%= k.total_muatan.toLocaleString('id-ID') %></td>
                   <td class="text-right bg-cyan-soft">
                     <% if (parseFloat(muatanPct) >= 100) { %>
                       <span class="badge badge-green">100%</span>
@@ -371,7 +380,7 @@
                       <span class="badge badge-blue"><%= muatanPct %>%</span>
                     <% } %>
                   </td>
-                  <td class="text-right bg-cyan-soft"><%= k.keluarga_total.toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft hide-sm"><%= k.keluarga_total.toLocaleString('id-ID') %></td>
                 </tr>
               <% }) %>
             </tbody>

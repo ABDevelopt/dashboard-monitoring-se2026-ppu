@@ -107,8 +107,9 @@
           <table id="subslsTable">
             <thead>
               <tr>
-                <th rowspan="2">Kode SLS</th>
+                <th rowspan="2" class="hide-md">Kode SLS</th>
                 <th rowspan="2">Nama SLS</th>
+
                 <th rowspan="2">Wilayah</th>
                 <th rowspan="2">Petugas (PCL/PML/Korlap)</th>
                 <th rowspan="2" class="text-center">Status</th>
@@ -129,7 +130,7 @@
             <tbody>
               <% data.forEach(row => { %>
                 <tr>
-                  <td class="td-code"><%= row.kode %></td>
+                  <td class="td-code hide-md"><%= row.kode %></td>
                   <td class="td-primary" style="font-weight: 600;"><%= row.nama_sls %></td>
                   <td>
                     <div style="font-weight: 600; font-size: 12px;"><%= row.kecamatan %></div>
@@ -137,7 +138,8 @@
                   </td>
                   <td>
                     <div style="font-weight: 500; font-size: 12px;" class="td-primary"><%= row.pcl %></div>
-                    <div style="font-size: 11px; color: var(--text-muted);">PML: <%= row.pml %> · Krl: <%= row.korlap %></div>
+                    <div style="font-size: 11px; color: var(--text-muted);" class="hide-md">PML: <%= row.pml %> · Krl: <%= row.korlap %></div>
+
                   </td>
                   <td class="text-center" data-sort="<%= row.sudah_diisi %>">
                     <% if (row.sudah_diisi) { %>

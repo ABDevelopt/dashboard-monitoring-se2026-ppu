@@ -78,11 +78,11 @@
         <% if (pclStats && pclStats.length > 0) { %>
           <div class="table-wrap" style="max-height: 600px; overflow-y: auto;">
             <table id="pclTable">
-              <thead>
+              <thead class="hide-sm">
                 <tr>
                   <th rowspan="2">Nama PCL</th>
-                  <th rowspan="2">PML</th>
-                  <th rowspan="2">Kecamatan</th>
+                  <th rowspan="2" class="hide-md">PML</th>
+                  <th rowspan="2" class="hide-md">Kecamatan</th>
                   <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th>
                   <th colspan="6" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
                   <th colspan="3" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
@@ -90,17 +90,23 @@
                 <tr>
                   <th class="text-right">Total</th>
                   <th class="text-right">Selesai</th>
-                  
                   <th class="text-right bg-purple-soft">Draft</th>
                   <th class="text-right bg-purple-soft">Submitted</th>
                   <th class="text-right bg-purple-soft">Rejected</th>
                   <th class="text-right bg-purple-soft">Approved</th>
                   <th class="text-right bg-purple-soft">Target</th>
                   <th class="text-right bg-purple-soft">Progres %</th>
-                  
                   <th class="text-right bg-cyan-soft">Usaha Total</th>
                   <th class="text-right bg-cyan-soft">Target Muatan</th>
                   <th class="text-right bg-cyan-soft">Progres %</th>
+                </tr>
+              </thead>
+              <thead class="show-sm-table-header">
+                <tr>
+                  <th>Nama PCL</th>
+                  <th class="text-right">Selesai</th>
+                  <th class="text-right bg-purple-soft">FASIH %</th>
+                  <th class="text-right bg-cyan-soft">Muatan %</th>
                 </tr>
               </thead>
               <tbody>
@@ -113,16 +119,15 @@
                         <i class="bi bi-person"></i> <%= p.pcl %>
                       </a>
                     </td>
-                    <td><%= p.pml %></td>
-                    <td><%= p.kecamatan %></td>
-                    <td class="text-right" data-sort="<%= p.total_subsls %>"><%= p.total_subsls %></td>
+                    <td class="hide-md"><%= p.pml %></td>
+                    <td class="hide-md"><%= p.kecamatan %></td>
+                    <td class="text-right hide-sm" data-sort="<%= p.total_subsls %>"><%= p.total_subsls %></td>
                     <td class="text-right fw-bold" data-sort="<%= p.selesai %>" style="<%= p.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= p.selesai %></td>
-                    
-                    <td class="text-right bg-purple-soft" data-sort="<%= p.draft_total %>"><%= (p.draft_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-purple-soft" data-sort="<%= p.submitted_total %>"><%= (p.submitted_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-purple-soft" data-sort="<%= p.rejected_total %>" style="<%= p.rejected_total > 0 ? 'color: var(--accent-red);' : '' %>"><%= (p.rejected_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-purple-soft fw-bold" data-sort="<%= p.approved_total %>" style="<%= p.approved_total > 0 ? 'color: var(--accent-green);' : '' %>"><%= (p.approved_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-purple-soft" data-sort="<%= p.target_fasih_total %>"><%= (p.target_fasih_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.draft_total %>"><%= (p.draft_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.submitted_total %>"><%= (p.submitted_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.rejected_total %>" style="<%= p.rejected_total > 0 ? 'color: var(--accent-red);' : '' %>"><%= (p.rejected_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.approved_total %>" style="<%= p.approved_total > 0 ? 'color: var(--accent-green);' : '' %>"><%= (p.approved_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.target_fasih_total %>"><%= (p.target_fasih_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>">
                       <% if (parseFloat(fasihPct) >= 100) { %>
                         <span class="badge badge-green">100%</span>
@@ -132,9 +137,8 @@
                         <span class="badge badge-blue"><%= fasihPct %>%</span>
                       <% } %>
                     </td>
-                    
-                    <td class="text-right fw-bold bg-cyan-soft" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-cyan-soft" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
+                    <td class="text-right fw-bold bg-cyan-soft hide-sm" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft hide-sm" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft" data-sort="<%= parseFloat(muatanPct) %>">
                       <% if (parseFloat(muatanPct) >= 100) { %>
                         <span class="badge badge-green">100%</span>
@@ -144,6 +148,7 @@
                         <span class="badge badge-blue"><%= muatanPct %>%</span>
                       <% } %>
                     </td>
+
                   </tr>
                 <% }) %>
               </tbody>

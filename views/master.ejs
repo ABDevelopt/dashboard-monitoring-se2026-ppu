@@ -100,13 +100,14 @@
       <table>
         <thead>
           <tr>
-            <th>Kode SubSLS</th>
+            <th class="hide-md">Kode SubSLS</th>
             <th>Kecamatan</th>
             <th>Desa/Kelurahan</th>
             <th>Nama SLS</th>
-            <th>Korlap</th>
-            <th>PML</th>
-            <th>PCL</th>
+            <th class="hide-md">Korlap</th>
+            <th class="hide-md">PML</th>
+            <th class="hide-md">PCL</th>
+
             <th class="text-right">Target FASIH</th>
             <th class="text-right">Muatan</th>
             <th class="text-center">Aksi</th>
@@ -116,13 +117,14 @@
           <% if (data && data.length > 0) { %>
             <% data.forEach(row => { %>
               <tr>
-                <td class="td-code"><%= row.kode %></td>
+                <td class="td-code hide-md"><%= row.kode %></td>
                 <td><%= row.kecamatan %></td>
                 <td><%= row.desa %></td>
                 <td class="td-primary" style="font-weight: 500;"><%= row.nama_sls %></td>
-                <td><%= row.korlap %></td>
-                <td><%= row.pml %></td>
-                <td><%= row.pcl %></td>
+                <td class="hide-md"><%= row.korlap %></td>
+                <td class="hide-md"><%= row.pml %></td>
+                <td class="hide-md"><%= row.pcl %></td>
+
                 <td class="text-right bg-purple-soft" style="font-weight: 500;"><%= row.target_fasih %></td>
                 <td class="text-right bg-cyan-soft fw-bold"><%= row.muatan %></td>
                 <td class="text-center">

@@ -58,18 +58,19 @@
         <table id="uploadsTable">
           <thead>
             <tr>
-              <th>ID</th>
+              <th class="hide-md">ID</th>
               <th>Nama File</th>
               <th>Tanggal Data</th>
               <th class="text-right">SubSLS Terisi</th>
-              <th>Waktu Upload</th>
+              <th class="hide-md">Waktu Upload</th>
+
               <th style="width: 140px;" class="text-center">Aksi</th>
             </tr>
           </thead>
           <tbody>
             <% uploads.forEach(u => { %>
               <tr>
-                <td class="td-code"><%= u.id %></td>
+                <td class="td-code hide-md"><%= u.id %></td>
                 <td class="td-primary">
                   <div><%= u.filename %></div>
                   <% if (u.status_filename) { %>
@@ -80,7 +81,8 @@
                 </td>
                 <td><span class="badge badge-gray"><%= u.tanggal %></span></td>
                 <td class="text-right fw-bold td-primary"><%= u.total_subsls_terisi.toLocaleString('id-ID') %></td>
-                <td><%= new Date(u.created_at).toLocaleString('id-ID') %></td>
+                <td class="hide-md"><%= new Date(u.created_at).toLocaleString('id-ID') %></td>
+
                 <td class="text-center" style="display: flex; gap: 4px; justify-content: center; align-items: center;">
                   <a href="/admin/upload/download/<%= u.id %>" class="btn btn-secondary" style="padding: 4px 8px;" title="Download File Excel Progres"><i class="bi bi-download"></i></a>
                   <% if (u.status_filename) { %>
