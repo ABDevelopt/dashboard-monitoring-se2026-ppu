@@ -1392,34 +1392,6 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   font-size: 11.5px !important;
 }
 
-/* Close expand overlay button style */
-.btn-close-expand-overlay {
-  position: absolute !important;
-  top: 20px !important;
-  right: 24px !important;
-  background: rgba(239, 68, 68, 0.08) !important;
-  border: 1px solid rgba(239, 68, 68, 0.25) !important;
-  color: var(--accent-red) !important;
-  width: 32px !important;
-  height: 32px !important;
-  border-radius: 50% !important;
-  display: none; /* toggled by JS to flex */
-  align-items: center !important;
-  justify-content: center !important;
-  cursor: pointer !important;
-  z-index: 2010 !important;
-  transition: background-color 0.2s, color 0.2s, transform 0.15s !important;
-  padding: 0 !important;
-}
-.btn-close-expand-overlay:hover {
-  background: var(--accent-red) !important;
-  color: white !important;
-  transform: scale(1.05) !important;
-}
-.btn-close-expand-overlay i {
-  font-size: 14px !important;
-  line-height: 1 !important;
-}
 
 /* Page backdrop lock & layout adjustments when card is expanded */
 body.has-expanded-card {

@@ -255,7 +255,7 @@
     }
 
     // Dynamic Expand Table Feature
-    const toggleCardExpand = (card, btn, closeOverlayBtn) => {
+    const toggleCardExpand = (card, btn) => {
       const isExpanded = card.classList.contains('card-expanded');
 
       if (isExpanded) {
@@ -265,7 +265,6 @@
         btn.innerHTML = '<i class="bi bi-arrows-angle-expand"></i> <span>Expand</span>';
         btn.classList.remove('btn-danger');
         btn.classList.add('btn-secondary');
-        if (closeOverlayBtn) closeOverlayBtn.style.display = 'none';
         
         window.lastExpandedTableId = null;
 
@@ -319,7 +318,6 @@
         btn.innerHTML = '<i class="bi bi-fullscreen-exit"></i> <span>Collapse</span>';
         btn.classList.remove('btn-secondary');
         btn.classList.add('btn-danger');
-        if (closeOverlayBtn) closeOverlayBtn.style.display = 'flex';
 
         const table = card.querySelector('table');
         if (table) {
@@ -418,17 +416,6 @@
             header.appendChild(actionsWrap);
           }
 
-          // Create close button for expanded mode
-          let closeOverlayBtn = card.querySelector('.btn-close-expand-overlay');
-          if (!closeOverlayBtn) {
-            closeOverlayBtn = document.createElement('button');
-            closeOverlayBtn.type = 'button';
-            closeOverlayBtn.className = 'btn-close-expand-overlay';
-            closeOverlayBtn.setAttribute('aria-label', 'Tutup Layar Penuh');
-            closeOverlayBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
-            card.appendChild(closeOverlayBtn);
-          }
-
           const expandBtn = document.createElement('button');
           expandBtn.type = 'button';
           expandBtn.className = 'btn btn-secondary btn-sm btn-expand-table';
@@ -441,11 +428,10 @@
 
           const toggleHandler = (e) => {
             e.preventDefault();
-            toggleCardExpand(card, expandBtn, closeOverlayBtn);
+            toggleCardExpand(card, expandBtn);
           };
 
           expandBtn.addEventListener('click', toggleHandler);
-          closeOverlayBtn.addEventListener('click', toggleHandler);
 
           actionsWrap.appendChild(expandBtn);
 
@@ -453,7 +439,7 @@
           const table = card.querySelector('table');
           if (table && document.body.classList.contains('has-expanded-card') && window.lastExpandedTableId === table.id) {
             setTimeout(() => {
-              toggleCardExpand(card, expandBtn, closeOverlayBtn);
+              toggleCardExpand(card, expandBtn);
             }, 50);
           }
         }
@@ -780,9 +766,8 @@
         const expandedCard = document.querySelector('.card.card-expanded');
         if (expandedCard) {
           const btn = expandedCard.querySelector('.btn-expand-table');
-          const closeOverlayBtn = expandedCard.querySelector('.btn-close-expand-overlay');
           if (btn) {
-            toggleCardExpand(expandedCard, btn, closeOverlayBtn);
+            toggleCardExpand(expandedCard, btn);
           }
         }
       }
