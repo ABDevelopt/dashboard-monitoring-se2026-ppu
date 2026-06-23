@@ -16,6 +16,98 @@
     <!-- PROGRES REALISASI UTAMA & ASSIGNMENT -->
     <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
       
+      <!-- Progres Realisasi & Rincian Status Assignment FASIH -->
+      <div class="card" style="margin: 0; position: relative; overflow: hidden; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(139, 92, 246, 0.02) 100%); border: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(139, 92, 246, 0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-purple); font-size: 18px;">
+                <i class="bi bi-phone"></i>
+              </div>
+              <div>
+                <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary);">Assignment FASIH</h3>
+                <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Realisasi Approved vs Target FASIH Dinamis</p>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <% let fasihPct = summary.target_fasih_total ? (((summary.submitted_total + summary.approved_total + summary.rejected_total) / summary.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
+              <div style="font-size: 18px; font-weight: 800; color: var(--accent-purple);"><%= fasihPct %>%</div>
+              <div style="font-size: 10px; color: var(--text-muted);">Capaian FASIH</div>
+            </div>
+          </div>
+
+          <div style="background: var(--bg-progress-wrap); height: 28px; border-radius: 14px; overflow: hidden; position: relative; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">
+            <div class="progress-bar" data-width="<%= fasihPct %>" style="background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%); height: 20px; width: 0%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);">
+              <% if (parseFloat(fasihPct) > 8) { %>
+                <span style="font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"><%= fasihPct %>%</span>
+              <% } %>
+            </div>
+            <% if (parseFloat(fasihPct) <= 8) { %>
+              <span style="margin-left: 12px; font-size: 11px; font-weight: 800; color: var(--text-primary);"><%= fasihPct %>%</span>
+            <% } %>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); margin-bottom: 20px;">
+            <div>
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Approved</div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);"><%= (summary.approved_total || 0).toLocaleString('id-ID') %></div>
+            </div>
+            <div>
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Target</div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);"><%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></div>
+            </div>
+            <div>
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Sisa</div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--accent-yellow);"><%= Math.max(0, summary.target_fasih_total - (summary.approved_total || 0)).toLocaleString('id-ID') %></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rincian Status Dokumen FASIH -->
+        <div style="border-top: 1px dashed var(--border); padding-top: 16px;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;"><i class="bi bi-info-circle-fill text-purple"></i> Rincian Status Dokumen FASIH</div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+            
+            <!-- DRAFT -->
+            <div style="background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div>
+                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">DRAFT</div>
+                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Belum Submit</div>
+              </div>
+              <div style="font-size: 14px; font-weight: 800; color: var(--accent-yellow);"><%= (summary.draft_total || 0).toLocaleString('id-ID') %></div>
+            </div>
+
+            <!-- SUBMITTED BY PCL -->
+            <div style="background: rgba(59, 130, 246, 0.04); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div>
+                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">SUBMITTED</div>
+                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Oleh PCL</div>
+              </div>
+              <div style="font-size: 14px; font-weight: 800; color: var(--accent-blue);"><%= (summary.submitted_total || 0).toLocaleString('id-ID') %></div>
+            </div>
+
+            <!-- APPROVED -->
+            <div style="background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div>
+                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">APPROVED</div>
+                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Diterima PML</div>
+              </div>
+              <div style="font-size: 14px; font-weight: 800; color: var(--accent-green);"><%= (summary.approved_total || 0).toLocaleString('id-ID') %></div>
+            </div>
+
+            <!-- REJECTED -->
+            <div style="background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div>
+                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">REJECTED</div>
+                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Ditolak PML</div>
+              </div>
+              <div style="font-size: 14px; font-weight: 800; color: var(--accent-red);"><%= (summary.rejected_total || 0).toLocaleString('id-ID') %></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
       <!-- Progres Realisasi Pencacahan Muatan (Perhatian Utama) -->
       <div class="card" style="margin: 0; position: relative; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); padding: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
@@ -24,7 +116,7 @@
               <i class="bi bi-speedometer2"></i>
             </div>
             <div>
-              <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: var(--text-primary);"><i class="bi bi-star-fill text-cyan" style="font-size: 12px; vertical-align: middle; margin-right: 4px;"></i> Progres Realisasi Pencacahan Muatan</h3>
+              <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: var(--text-primary);">Progres Realisasi Pencacahan Muatan</h3>
               <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Realisasi Usaha Total vs Target Muatan Prelist (Fokus Utama Monitoring)</p>
             </div>
           </div>
@@ -158,99 +250,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Progres Realisasi & Rincian Status Assignment FASIH -->
-      <div class="card" style="margin: 0; position: relative; overflow: hidden; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(139, 92, 246, 0.02) 100%); border: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
-        <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(139, 92, 246, 0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-purple); font-size: 18px;">
-                <i class="bi bi-phone"></i>
-              </div>
-              <div>
-                <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary);">Assignment FASIH</h3>
-                <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Realisasi Approved vs Target FASIH Dinamis</p>
-              </div>
-            </div>
-            <div style="text-align: right;">
-              <% let fasihPct = summary.target_fasih_total ? ((summary.approved_total / summary.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
-              <div style="font-size: 18px; font-weight: 800; color: var(--accent-purple);"><%= fasihPct %>%</div>
-              <div style="font-size: 10px; color: var(--text-muted);">Capaian FASIH</div>
-            </div>
-          </div>
-
-          <div style="background: var(--bg-progress-wrap); height: 28px; border-radius: 14px; overflow: hidden; position: relative; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">
-            <div class="progress-bar" data-width="<%= fasihPct %>" style="background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%); height: 20px; width: 0%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);">
-              <% if (parseFloat(fasihPct) > 8) { %>
-                <span style="font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"><%= fasihPct %>%</span>
-              <% } %>
-            </div>
-            <% if (parseFloat(fasihPct) <= 8) { %>
-              <span style="margin-left: 12px; font-size: 11px; font-weight: 800; color: var(--text-primary);"><%= fasihPct %>%</span>
-            <% } %>
-          </div>
-
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); margin-bottom: 20px;">
-            <div>
-              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Approved</div>
-              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);"><%= (summary.approved_total || 0).toLocaleString('id-ID') %></div>
-            </div>
-            <div>
-              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Target</div>
-              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);"><%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></div>
-            </div>
-            <div>
-              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Sisa</div>
-              <div style="font-size: 14px; font-weight: 700; color: var(--accent-yellow);"><%= Math.max(0, summary.target_fasih_total - (summary.approved_total || 0)).toLocaleString('id-ID') %></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Rincian Status Dokumen FASIH -->
-        <div style="border-top: 1px dashed var(--border); padding-top: 16px;">
-          <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;"><i class="bi bi-info-circle-fill text-purple"></i> Rincian Status Dokumen FASIH</div>
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-            
-            <!-- DRAFT -->
-            <div style="background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-              <div>
-                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">DRAFT</div>
-                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Belum Submit</div>
-              </div>
-              <div style="font-size: 14px; font-weight: 800; color: var(--accent-yellow);"><%= (summary.draft_total || 0).toLocaleString('id-ID') %></div>
-            </div>
-
-            <!-- SUBMITTED BY PCL -->
-            <div style="background: rgba(59, 130, 246, 0.04); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-              <div>
-                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">SUBMITTED</div>
-                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Oleh PCL</div>
-              </div>
-              <div style="font-size: 14px; font-weight: 800; color: var(--accent-blue);"><%= (summary.submitted_total || 0).toLocaleString('id-ID') %></div>
-            </div>
-
-            <!-- APPROVED -->
-            <div style="background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-              <div>
-                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">APPROVED</div>
-                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Diterima PML</div>
-              </div>
-              <div style="font-size: 14px; font-weight: 800; color: var(--accent-green);"><%= (summary.approved_total || 0).toLocaleString('id-ID') %></div>
-            </div>
-
-            <!-- REJECTED -->
-            <div style="background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-              <div>
-                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">REJECTED</div>
-                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Ditolak PML</div>
-              </div>
-              <div style="font-size: 14px; font-weight: 800; color: var(--accent-red);"><%= (summary.rejected_total || 0).toLocaleString('id-ID') %></div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
     </div>
 
     <!-- TREN HARIAN (Full Width) -->

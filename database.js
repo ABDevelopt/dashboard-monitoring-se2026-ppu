@@ -97,7 +97,10 @@ function migrateSchema() {
     } catch (err) {}
   });
 
-  // Alter uploads to add status_filename and stored_status_filename
+  // Alter uploads to add status_filename, stored_status_filename, and stored_filename
+  try {
+    db.prepare('ALTER TABLE uploads ADD COLUMN stored_filename TEXT').run();
+  } catch (e) {}
   try {
     db.prepare('ALTER TABLE uploads ADD COLUMN status_filename TEXT').run();
   } catch (e) {}
