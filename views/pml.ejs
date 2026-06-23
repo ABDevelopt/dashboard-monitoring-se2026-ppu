@@ -48,7 +48,7 @@
               </thead>
               <tbody>
                 <% pmlStats.forEach(p => { %>
-                  <% let fasihPct = p.target_fasih_total ? ((p.approved_total / p.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
+                  <% let fasihPct = p.target_fasih_total ? ((( (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0) ) / p.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
                   <% let muatanPct = p.total_muatan ? ((p.usaha_total / p.total_muatan) * 100).toFixed(2) : '0.00'; %>
                   <tr class="<%= filterPml === p.pml ? 'active' : '' %>" style="<%= filterPml === p.pml ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="td-primary">
@@ -114,8 +114,8 @@
                   let totalPct = totalBeban ? ((totalUsaha / totalBeban) * 100).toFixed(2) : '0.00';
 
                   let totalFasihTgt = detailPcl.reduce((acc, c) => acc + (c.target_fasih_total || 0), 0);
-                  let totalFasihApp = detailPcl.reduce((acc, c) => acc + (c.approved_total || 0), 0);
-                  let totalFasihPct = totalFasihTgt ? ((totalFasihApp / totalFasihTgt) * 100).toFixed(2) : '0.00';
+                  let totalFasihDone = detailPcl.reduce((acc, c) => acc + (c.submitted_total || 0) + (c.approved_total || 0) + (c.rejected_total || 0), 0);
+                  let totalFasihPct = totalFasihTgt ? ((totalFasihDone / totalFasihTgt) * 100).toFixed(2) : '0.00';
                 %>
                 <!-- Progress Muatan -->
                 <div style="margin-bottom: 12px;">
@@ -130,8 +130,8 @@
                 <!-- Progress FASIH -->
                 <div style="margin-bottom: 16px;">
                   <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
-                    <span><i class="bi bi-phone"></i> Progres FASIH Tim (Approved)</span>
-                    <span class="fw-bold"><%= totalFasihApp.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihPct %>%)</span>
+                    <span><i class="bi bi-phone"></i> Progres FASIH Tim (Submit + Approve + Reject)</span>
+                    <span class="fw-bold"><%= totalFasihDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihPct %>%)</span>
                   </div>
                   <div class="progress-bar-wrap" style="height: 6px;">
                     <div class="progress-bar <%= parseFloat(totalFasihPct) >= 100 ? 'green' : (parseFloat(totalFasihPct) < 25 ? 'red' : 'purple') %>" data-width="<%= totalFasihPct %>" style="width: 0%;"></div>
@@ -167,10 +167,11 @@
                         Muatan: <strong><%= item.usaha_total + item.keluarga_total %></strong> / <%= item.total_muatan %>
                       </span>
                       <span style="background: rgba(139, 92, 246, 0.08); padding: 2px 6px; border-radius: 4px; color: var(--accent-purple);">
-                        FASIH App: <strong><%= item.approved_total %></strong> / <%= item.target_fasih_total %>
+                        <% let itemFasihDone = (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0); %>
+                        FASIH Progres: <strong><%= itemFasihDone %></strong> / <%= item.target_fasih_total %>
                       </span>
                       <span style="background: rgba(100, 116, 139, 0.08); padding: 2px 6px; border-radius: 4px; color: var(--text-muted);">
-                        Dft: <%= item.draft_total %> · Sub: <%= item.submitted_total %>
+                        Dft: <%= item.draft_total %> · Sub: <%= item.submitted_total %> · App: <%= item.approved_total %> · Rej: <%= item.rejected_total %>
                       </span>
                     </div>
                   </div>
@@ -248,6 +249,7 @@
 
               // Re-bind close handler
               bindCloseDetail();
+              if (window.initProgressBars) window.initProgressBars(detailContainer);
             }
           })
           .catch(err => {
@@ -284,6 +286,7 @@
                 detailContainer.innerHTML = newDetail.innerHTML;
                 detailContainer.style.opacity = '1';
                 window.history.pushState(null, '', url);
+                if (window.initProgressBars) window.initProgressBars(detailContainer);
               }
             })
             .catch(err => {

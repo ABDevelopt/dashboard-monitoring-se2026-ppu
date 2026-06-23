@@ -337,6 +337,8 @@ body {
 .progress-bar.green { background: linear-gradient(90deg, var(--accent-green), #34d399); }
 .progress-bar.yellow { background: linear-gradient(90deg, var(--accent-yellow), #fbbf24); }
 .progress-bar.red { background: linear-gradient(90deg, var(--accent-red), #f87171); }
+.progress-bar.blue { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+.progress-bar.purple { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
 
 /* ====== CARD / SECTION ====== */
 .card {

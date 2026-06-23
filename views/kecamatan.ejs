@@ -68,7 +68,7 @@
               </thead>
               <tbody>
                 <% desaStats.forEach(d => { %>
-                  <% let fasihPct = d.target_fasih_total ? ((d.approved_total / d.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
+                  <% let fasihPct = d.target_fasih_total ? ((( (d.submitted_total || 0) + (d.approved_total || 0) + (d.rejected_total || 0) ) / d.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
                   <% let muatanPct = d.total_muatan ? (( (d.usaha_total + d.keluarga_total) / d.total_muatan ) * 100).toFixed(2) : '0.00'; %>
                   <tr>
                     <td class="td-primary"><a href="/subsls?kec=<%= encodeURIComponent(filterKec) %>&desa=<%= encodeURIComponent(d.desa) %>" style="color: inherit; text-decoration: none;"><i class="bi bi-pin-map"></i> <%= d.desa %></a></td>

@@ -267,11 +267,17 @@ function initUploadZone(zoneId, inputId) {
 }
 
 // ===== PROGRESS BAR ANIMATION =====
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.progress-bar[data-width]').forEach(bar => {
-    setTimeout(() => { bar.style.width = bar.dataset.width + '%'; }, 100);
+window.initProgressBars = function(container = document) {
+  container.querySelectorAll('.progress-bar[data-width]').forEach(bar => {
+    const targetWidth = Math.min(100, parseFloat(bar.dataset.width) || 0);
+    setTimeout(() => { bar.style.width = targetWidth + '%'; }, 100);
   });
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  window.initProgressBars();
 });
+
 
 // ===== THEME CHANGE EVENT LISTENER =====
 window.activeCharts = window.activeCharts || [];

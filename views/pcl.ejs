@@ -96,7 +96,7 @@
               </thead>
               <tbody>
                 <% pclStats.forEach(p => { %>
-                  <% let fasihPct = p.target_fasih_total ? ((p.approved_total / p.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
+                  <% let fasihPct = p.target_fasih_total ? ((( (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0) ) / p.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
                   <% let muatanPct = p.total_muatan ? ((p.usaha_total / p.total_muatan) * 100).toFixed(2) : '0.00'; %>
                   <tr class="<%= filterPcl === p.pcl ? 'active' : '' %>" style="<%= filterPcl === p.pcl ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="td-primary">
@@ -164,13 +164,14 @@
                   let totalMuatan = detailSubsls.reduce((acc, s) => acc + s.muatan, 0);
                   let donePct = totalMuatan ? ((doneMuatan / totalMuatan) * 100).toFixed(2) : '0.00';
 
-                  let doneFasih = detailSubsls.reduce((acc, s) => acc + (s.approved || 0), 0);
+                  let doneFasih = detailSubsls.reduce((acc, s) => acc + (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0), 0);
                   let totalFasih = detailSubsls.reduce((acc, s) => acc + (s.target_fasih || 0), 0);
                   let fasihPct = totalFasih ? ((doneFasih / totalFasih) * 100).toFixed(2) : '0.00';
 
                   let draftFasih = detailSubsls.reduce((acc, s) => acc + (s.draft || 0), 0);
                   let submittedFasih = detailSubsls.reduce((acc, s) => acc + (s.submitted_by_pcl || 0), 0);
                   let rejectedFasih = detailSubsls.reduce((acc, s) => acc + (s.rejected || 0), 0);
+                  let approvedFasih = detailSubsls.reduce((acc, s) => acc + (s.approved || 0), 0);
                 %>
                 <!-- Progress Muatan -->
                 <div style="margin-bottom: 12px;">
@@ -185,7 +186,7 @@
                 <!-- Progress FASIH -->
                 <div style="margin-bottom: 12px;">
                   <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
-                    <span><i class="bi bi-phone"></i> Progres FASIH (Approved)</span>
+                    <span><i class="bi bi-phone"></i> Progres FASIH (Submit + Approve + Reject)</span>
                     <span class="fw-bold"><%= doneFasih.toLocaleString('id-ID') %> / <%= totalFasih.toLocaleString('id-ID') %> (<%= fasihPct %>%)</span>
                   </div>
                   <div class="progress-bar-wrap" style="height: 6px;">
@@ -205,7 +206,7 @@
                   </div>
                   <div class="fasih-grid-item fasih-item-approve">
                     <div class="fasih-grid-item-label">Approve</div>
-                    <div class="fasih-grid-item-value"><%= doneFasih %></div>
+                    <div class="fasih-grid-item-value"><%= approvedFasih %></div>
                   </div>
                   <div class="fasih-grid-item fasih-item-reject">
                     <div class="fasih-grid-item-label">Reject</div>
@@ -238,11 +239,11 @@
                         <span class="fw-bold"><%= s.usaha_total %> / <%= s.muatan %></span>
                       </div>
                       <div style="display: flex; justify-content: space-between;">
-                        <span style="color: var(--text-secondary);"><i class="bi bi-phone"></i> Target FASIH:</span>
-                        <span class="fw-bold"><%= s.approved %> / <%= s.target_fasih %></span>
+                        <span style="color: var(--text-secondary);"><i class="bi bi-phone"></i> Progres FASIH:</span>
+                        <span class="fw-bold"><%= (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0) %> / <%= s.target_fasih %></span>
                       </div>
                       <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 2px;">
-                        <span>Draft: <%= s.draft %> · Sub: <%= s.submitted_by_pcl %> · Rej: <strong class="text-red"><%= s.rejected %></strong></span>
+                        <span>Draft: <%= s.draft %> · Sub: <%= s.submitted_by_pcl %> · App: <%= s.approved %> · Rej: <strong class="text-red"><%= s.rejected %></strong></span>
                         <span>Keluarga: <%= s.keluarga_total %></span>
                       </div>
                     </div>
@@ -331,6 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 detailContainer.style.opacity = '1';
                 window.history.pushState(null, '', url);
                 bindCloseDetail();
+                if (window.initProgressBars) window.initProgressBars(detailContainer);
               }
             })
             .catch(err => {
@@ -380,6 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
               // Re-bind close handler
               bindCloseDetail();
+              if (window.initProgressBars) window.initProgressBars(detailContainer);
             }
           })
           .catch(err => {
@@ -407,6 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ajaxContainer.innerHTML = newContainer.innerHTML;
           history.pushState(null, '', url);
           attachListeners();
+          if (window.initProgressBars) window.initProgressBars(ajaxContainer);
         }
       })
       .catch(err => console.error(err))
