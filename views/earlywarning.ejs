@@ -56,6 +56,14 @@
                     <span class="warning-stat"><i class="bi bi-box-seam"></i> SLS: <strong><%= item.total_subsls %></strong> (Muatan: <strong><%= item.total_muatan %></strong>)</span>
                     <span class="warning-stat text-red">Progres: <strong>0%</strong></span>
                   </div>
+                    <div class="warning-stats" style="margin-top: 8px; font-size: 11px; display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; border-top: 1px dashed var(--border);">
+                      <span style="color: var(--text-secondary);"><i class="bi bi-cloud-arrow-up"></i> FASIH:</span>
+                      <span class="badge badge-blue">Target: <%= item.target_fasih_total %></span>
+                      <span class="badge badge-gray">Draft: <%= item.draft_total %></span>
+                      <span class="badge badge-purple">Submit: <%= item.submitted_total %></span>
+                      <span class="badge badge-green">Approve: <%= item.approved_total %></span>
+                      <span class="badge badge-red">Reject: <%= item.rejected_total %></span>
+                    </div>
                 </div>
               </div>
             <% }) %>
@@ -92,6 +100,14 @@
                     <span class="warning-stat"><i class="bi bi-box-seam"></i> SLS Tim: <strong><%= item.total_subsls %></strong> (Muatan: <strong><%= item.total_muatan %></strong>)</span>
                     <span class="warning-stat text-red">Progres Tim: <strong>0%</strong></span>
                   </div>
+                    <div class="warning-stats" style="margin-top: 8px; font-size: 11px; display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; border-top: 1px dashed var(--border);">
+                      <span style="color: var(--text-secondary);"><i class="bi bi-cloud-arrow-up"></i> FASIH:</span>
+                      <span class="badge badge-blue">Target: <%= item.target_fasih_total %></span>
+                      <span class="badge badge-gray">Draft: <%= item.draft_total %></span>
+                      <span class="badge badge-purple">Submit: <%= item.submitted_total %></span>
+                      <span class="badge badge-green">Approve: <%= item.approved_total %></span>
+                      <span class="badge badge-red">Reject: <%= item.rejected_total %></span>
+                    </div>
                 </div>
               </div>
             <% }) %>
