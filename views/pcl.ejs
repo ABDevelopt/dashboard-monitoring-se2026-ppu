@@ -16,7 +16,7 @@
       </div>
       
       <form action="/pcl" method="GET" id="filterForm">
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+        <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           
           <div>
             <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
@@ -62,8 +62,8 @@
           <span class="badge badge-blue"><%= pclStats.length %> PCL</span>
         </div>
 
-        <div class="search-wrap mb-4" style="max-width: 300px;">
-          <input type="search" id="pclSearch" placeholder="Cari nama PCL...">
+        <div class="search-wrap mb-4">
+          <input type="search" id="pclSearch" placeholder="Cari nama PCL..." style="width: 100%; max-width: 280px;">
         </div>
 
         <% if (pclStats && pclStats.length > 0) { %>
@@ -74,19 +74,30 @@
                   <th rowspan="2">Nama PCL</th>
                   <th rowspan="2">PML</th>
                   <th rowspan="2">Kecamatan</th>
-                  <th rowspan="2" class="text-right">SubSLS</th>
-                  <th rowspan="2" class="text-right">Selesai</th>
-                  <th rowspan="2" class="text-right">Progres %</th>
-                  <th colspan="1" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Blok Usaha</th>
-                  <th colspan="1" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Blok Keluarga</th>
+                  <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th>
+                  <th colspan="6" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                  <th colspan="3" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
                 </tr>
                 <tr>
-                  <th class="text-right bg-cyan-soft">Total Usaha</th>
-                  <th class="text-right bg-purple-soft">Total Keluarga</th>
+                  <th class="text-right">Total</th>
+                  <th class="text-right">Selesai</th>
+                  
+                  <th class="text-right bg-purple-soft">Draft</th>
+                  <th class="text-right bg-purple-soft">Submitted</th>
+                  <th class="text-right bg-purple-soft">Rejected</th>
+                  <th class="text-right bg-purple-soft">Approved</th>
+                  <th class="text-right bg-purple-soft">Target</th>
+                  <th class="text-right bg-purple-soft">Progres %</th>
+                  
+                  <th class="text-right bg-cyan-soft">Usaha Total</th>
+                  <th class="text-right bg-cyan-soft">Target Muatan</th>
+                  <th class="text-right bg-cyan-soft">Progres %</th>
                 </tr>
               </thead>
               <tbody>
                 <% pclStats.forEach(p => { %>
+                  <% let fasihPct = p.target_fasih_total ? ((p.approved_total / p.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
+                  <% let muatanPct = p.total_muatan ? ((p.usaha_total / p.total_muatan) * 100).toFixed(2) : '0.00'; %>
                   <tr class="<%= filterPcl === p.pcl ? 'active' : '' %>" style="<%= filterPcl === p.pcl ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="td-primary">
                       <a href="/pcl?pcl=<%= encodeURIComponent(p.pcl) %>&kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" style="color: inherit; text-decoration: none; display: block;">
@@ -97,19 +108,33 @@
                     <td><%= p.kecamatan %></td>
                     <td class="text-right" data-sort="<%= p.total_subsls %>"><%= p.total_subsls %></td>
                     <td class="text-right fw-bold" data-sort="<%= p.selesai %>" style="<%= p.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= p.selesai %></td>
-                    <td class="text-right" data-sort="<%= p.pct %>">
-                      <% if (parseFloat(p.pct) >= 100) { %>
+                    
+                    <td class="text-right bg-purple-soft" data-sort="<%= p.draft_total %>"><%= (p.draft_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft" data-sort="<%= p.submitted_total %>"><%= (p.submitted_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft" data-sort="<%= p.rejected_total %>" style="<%= p.rejected_total > 0 ? 'color: var(--accent-red);' : '' %>"><%= (p.rejected_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft fw-bold" data-sort="<%= p.approved_total %>" style="<%= p.approved_total > 0 ? 'color: var(--accent-green);' : '' %>"><%= (p.approved_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft" data-sort="<%= p.target_fasih_total %>"><%= (p.target_fasih_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>">
+                      <% if (parseFloat(fasihPct) >= 100) { %>
                         <span class="badge badge-green">100%</span>
-                      <% } else if (parseFloat(p.pct) <= 0) { %>
-                        <span class="badge badge-red">0%</span>
-                      <% } else if (parseFloat(p.pct) < 25) { %>
-                        <span class="badge badge-yellow"><%= parseFloat(p.pct).toFixed(2) %>%</span>
+                      <% } else if (parseFloat(fasihPct) < 25) { %>
+                        <span class="badge badge-red"><%= fasihPct %>%</span>
                       <% } else { %>
-                        <span class="badge badge-blue"><%= parseFloat(p.pct).toFixed(2) %>%</span>
+                        <span class="badge badge-blue"><%= fasihPct %>%</span>
                       <% } %>
                     </td>
-                    <td class="text-right fw-bold td-primary bg-cyan-soft" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
-                    <td class="text-right fw-bold bg-purple-soft" data-sort="<%= p.keluarga_total %>"><%= p.keluarga_total.toLocaleString('id-ID') %></td>
+                    
+                    <td class="text-right fw-bold bg-cyan-soft" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft" data-sort="<%= parseFloat(muatanPct) %>">
+                      <% if (parseFloat(muatanPct) >= 100) { %>
+                        <span class="badge badge-green">100%</span>
+                      <% } else if (parseFloat(muatanPct) < 25) { %>
+                        <span class="badge badge-red"><%= muatanPct %>%</span>
+                      <% } else { %>
+                        <span class="badge badge-blue"><%= muatanPct %>%</span>
+                      <% } %>
+                    </td>
                   </tr>
                 <% }) %>
               </tbody>
@@ -121,7 +146,7 @@
       </div>
 
       <!-- DETAIL OF CHOSEN PCL -->
-      <div>
+      <div id="pclDetailContainer">
         <% if (filterPcl) { %>
           <div class="card" style="margin-bottom: 0; position: sticky; top: 80px;">
             <div class="card-header">
@@ -138,13 +163,54 @@
                   let doneMuatan = detailSubsls.reduce((acc, s) => acc + s.usaha_total, 0);
                   let totalMuatan = detailSubsls.reduce((acc, s) => acc + s.muatan, 0);
                   let donePct = totalMuatan ? ((doneMuatan / totalMuatan) * 100).toFixed(2) : '0.00';
+
+                  let doneFasih = detailSubsls.reduce((acc, s) => acc + (s.approved || 0), 0);
+                  let totalFasih = detailSubsls.reduce((acc, s) => acc + (s.target_fasih || 0), 0);
+                  let fasihPct = totalFasih ? ((doneFasih / totalFasih) * 100).toFixed(2) : '0.00';
+
+                  let draftFasih = detailSubsls.reduce((acc, s) => acc + (s.draft || 0), 0);
+                  let submittedFasih = detailSubsls.reduce((acc, s) => acc + (s.submitted_by_pcl || 0), 0);
+                  let rejectedFasih = detailSubsls.reduce((acc, s) => acc + (s.rejected || 0), 0);
                 %>
-                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
-                  <span>Progres Muatan</span>
-                  <span class="fw-bold"><%= doneMuatan.toLocaleString('id-ID') %> / <%= totalMuatan.toLocaleString('id-ID') %> muatan (<%= donePct %>%)</span>
+                <!-- Progress Muatan -->
+                <div style="margin-bottom: 12px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                    <span><i class="bi bi-briefcase"></i> Progres Muatan</span>
+                    <span class="fw-bold"><%= doneMuatan.toLocaleString('id-ID') %> / <%= totalMuatan.toLocaleString('id-ID') %> (<%= donePct %>%)</span>
+                  </div>
+                  <div class="progress-bar-wrap" style="height: 6px;">
+                    <div class="progress-bar <%= parseFloat(donePct) >= 100 ? 'green' : (parseFloat(donePct) < 25 ? 'red' : 'blue') %>" data-width="<%= donePct %>" style="width: 0%;"></div>
+                  </div>
                 </div>
-                <div class="progress-bar-wrap">
-                  <div class="progress-bar <%= parseFloat(donePct) >= 100 ? 'green' : (parseFloat(donePct) < 25 ? 'red' : 'blue') %>" data-width="<%= donePct %>" style="width: 0%;"></div>
+                <!-- Progress FASIH -->
+                <div style="margin-bottom: 12px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                    <span><i class="bi bi-phone"></i> Progres FASIH (Approved)</span>
+                    <span class="fw-bold"><%= doneFasih.toLocaleString('id-ID') %> / <%= totalFasih.toLocaleString('id-ID') %> (<%= fasihPct %>%)</span>
+                  </div>
+                  <div class="progress-bar-wrap" style="height: 6px;">
+                    <div class="progress-bar <%= parseFloat(fasihPct) >= 100 ? 'green' : (parseFloat(fasihPct) < 25 ? 'red' : 'purple') %>" data-width="<%= fasihPct %>" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <!-- Mini Grid Status FASIH -->
+                <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; text-align: center;">
+                  <div style="background: rgba(255,193,7,0.08); border: 1px solid rgba(255,193,7,0.15); border-radius: 4px; padding: 4px 2px;">
+                    <div style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 500;">Draft</div>
+                    <div style="font-size: 13px; font-weight: bold; color: var(--accent-yellow); margin-top: 2px;"><%= draftFasih %></div>
+                  </div>
+                  <div style="background: rgba(13,110,253,0.08); border: 1px solid rgba(13,110,253,0.15); border-radius: 4px; padding: 4px 2px;">
+                    <div style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 500;">Submit</div>
+                    <div style="font-size: 13px; font-weight: bold; color: var(--accent-blue); margin-top: 2px;"><%= submittedFasih %></div>
+                  </div>
+                  <div style="background: rgba(220,53,69,0.08); border: 1px solid rgba(220,53,69,0.15); border-radius: 4px; padding: 4px 2px;">
+                    <div style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 500;">Reject</div>
+                    <div style="font-size: 13px; font-weight: bold; color: var(--accent-red); margin-top: 2px;"><%= rejectedFasih %></div>
+                  </div>
+                  <div style="background: rgba(40,167,69,0.08); border: 1px solid rgba(40,167,69,0.15); border-radius: 4px; padding: 4px 2px;">
+                    <div style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 500;">Approve</div>
+                    <div style="font-size: 13px; font-weight: bold; color: var(--accent-green); margin-top: 2px;"><%= doneFasih %></div>
+                  </div>
                 </div>
               </div>
 
@@ -154,8 +220,8 @@
 
               <div id="detailSubslsList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
                 <% detailSubsls.forEach(s => { %>
-                  <div class="detail-item" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <div class="detail-item" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                       <span class="td-code"><%= s.kode %></span>
                       <% if (s.sudah_diisi) { %>
                         <span class="badge badge-green btn-xs">Selesai</span>
@@ -164,14 +230,22 @@
                       <% } %>
                     </div>
                     <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;"><%= s.nama_sls %></div>
-                    <div style="font-size: 11px; color: var(--text-muted);"><%= s.kecamatan %> · <%= s.desa %></div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;"><%= s.kecamatan %> · <%= s.desa %></div>
                     
-                    <% if (s.sudah_diisi) { %>
-                      <div style="display: flex; gap: 8px; margin-top: 6px; font-size: 11px;">
-                        <span style="background: rgba(16,185,129,0.1); padding: 2px 8px; border-radius: 4px; color: var(--accent-green);"><i class="bi bi-building"></i> <%= s.usaha_total %> Usaha</span>
-                        <span style="background: rgba(6,182,212,0.1); padding: 2px 8px; border-radius: 4px; color: var(--accent-cyan);"><i class="bi bi-people"></i> <%= s.keluarga_total %> Keluarga</span>
+                    <div style="display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--border); padding-top: 8px; font-size: 11px;">
+                      <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-secondary);"><i class="bi bi-briefcase"></i> Beban Muatan:</span>
+                        <span class="fw-bold"><%= s.usaha_total %> / <%= s.muatan %></span>
                       </div>
-                    <% } %>
+                      <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-secondary);"><i class="bi bi-phone"></i> Target FASIH:</span>
+                        <span class="fw-bold"><%= s.approved %> / <%= s.target_fasih %></span>
+                      </div>
+                      <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 2px;">
+                        <span>Draft: <%= s.draft %> · Sub: <%= s.submitted_by_pcl %> · Rej: <strong class="text-red"><%= s.rejected %></strong></span>
+                        <span>Keluarga: <%= s.keluarga_total %></span>
+                      </div>
+                    </div>
                   </div>
                 <% }) %>
               </div>
@@ -194,21 +268,19 @@
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    makeTableSortable('pclTable');
-    makeTableSearchable('pclSearch', 'pclTable');
-    <% if (filterPcl) { %>
-      makeListSearchable('detailSubslsSearch', 'detailSubslsList', '.detail-item');
-    <% } %>
-  });
-</script>
-
-<script>
 document.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('ajax-container');
   if (!container) return;
 
   function attachListeners() {
+    // 1. Re-bind sorting and searching on the table
+    makeTableSortable('pclTable');
+    makeTableSearchable('pclSearch', 'pclTable');
+
+    // 2. Re-bind search utility for detail items
+    makeListSearchable('detailSubslsSearch', 'detailSubslsList', '.detail-item');
+
+    // 3. Filter form submits (updates the whole container)
     const filterForm = document.getElementById('filterForm');
     if (filterForm) {
       const selects = filterForm.querySelectorAll('select');
@@ -227,14 +299,97 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    const pclLinks = document.querySelectorAll('a[href^="/pcl?pcl="]');
-    pclLinks.forEach(link => {
-      link.addEventListener('click', (e) => {
+    // 4. AJAX Drilldown logic for PCL (updates only the detail segment)
+    const detailContainer = document.getElementById('pclDetailContainer');
+    const table = document.getElementById('pclTable');
+
+    function bindCloseDetail() {
+      if (!detailContainer) return;
+      const closeBtn = detailContainer.querySelector('.btn-secondary');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const url = closeBtn.getAttribute('href');
+
+          // Reset active rows
+          if (table) {
+            table.querySelectorAll('tbody tr').forEach(r => {
+              r.classList.remove('active');
+              r.removeAttribute('style');
+            });
+          }
+
+          detailContainer.style.opacity = '0.5';
+          fetch(url)
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(html, 'text/html');
+              const newDetail = doc.getElementById('pclDetailContainer');
+              if (newDetail) {
+                detailContainer.innerHTML = newDetail.innerHTML;
+                detailContainer.style.opacity = '1';
+                window.history.pushState(null, '', url);
+                bindCloseDetail();
+              }
+            })
+            .catch(err => {
+              console.error(err);
+              detailContainer.style.opacity = '1';
+            });
+        });
+      }
+    }
+
+    if (table && detailContainer) {
+      table.querySelector('tbody').addEventListener('click', (e) => {
+        const link = e.target.closest('td.td-primary a');
+        if (!link) return;
+
         e.preventDefault();
-        const urlObj = new URL(link.href, window.location.origin);
-        fetchAndReplace(urlObj.search);
+        const url = link.getAttribute('href');
+        const row = link.closest('tr');
+
+        // Update active row visual indicator
+        table.querySelectorAll('tbody tr').forEach(r => {
+          r.classList.remove('active');
+          r.removeAttribute('style');
+        });
+        row.classList.add('active');
+        row.style.background = 'var(--bg-card-hover)';
+        row.style.fontWeight = '500';
+
+        // Opacity transition
+        detailContainer.style.opacity = '0.5';
+
+        fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newDetail = doc.getElementById('pclDetailContainer');
+            if (newDetail) {
+              detailContainer.innerHTML = newDetail.innerHTML;
+              detailContainer.style.opacity = '1';
+
+              // Update URL path without refresh
+              window.history.pushState(null, '', url);
+
+              // Re-bind list search utility
+              makeListSearchable('detailSubslsSearch', 'detailSubslsList', '.detail-item');
+
+              // Re-bind close handler
+              bindCloseDetail();
+            }
+          })
+          .catch(err => {
+            console.error(err);
+            detailContainer.style.opacity = '1';
+          });
       });
-    });
+    }
+
+    bindCloseDetail();
   }
 
   function fetchAndReplace(queryString) {

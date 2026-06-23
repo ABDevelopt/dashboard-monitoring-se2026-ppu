@@ -28,6 +28,14 @@ router.get('/', (req, res) => {
         SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
         SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
         SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
+        SUM(COALESCE(p.draft, 0)) AS draft_total,
+        SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
+        SUM(COALESCE(p.approved, 0)) AS approved_total,
+        SUM(COALESCE(p.rejected, 0)) AS rejected_total,
+        SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
+                 THEN 0 
+                 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
+            END) AS target_fasih_total,
         CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) / SUM(m.muatan), 2) ELSE 0.0 END AS pct
       FROM subsls_master m
       LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
@@ -41,6 +49,15 @@ router.get('/', (req, res) => {
         SELECT 
           m.kode, m.kecamatan, m.desa, m.nama_sls,
           m.korlap, m.pml, m.pcl, m.muatan,
+          m.target_fasih AS target_fasih_awal,
+          COALESCE(p.draft, 0) AS draft,
+          COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
+          COALESCE(p.approved, 0) AS approved,
+          COALESCE(p.rejected, 0) AS rejected,
+          CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
+               THEN 0 
+               ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
+          END AS target_fasih,
           CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END AS sudah_diisi,
           COALESCE(p.usaha_ditemukan + p.usaha_baru, 0) AS usaha_total,
           COALESCE(p.ditemukan + p.keluarga_baru, 0) AS keluarga_total

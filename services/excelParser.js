@@ -10,8 +10,8 @@ function loadMasterFromJson(jsonPath) {
 
   const insert = db.prepare(`
     INSERT OR REPLACE INTO subsls_master 
-      (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025, target_fasih)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const insertMany = db.transaction((rows) => {
@@ -37,7 +37,8 @@ function loadMasterFromJson(jsonPath) {
             normalizeName(subsls.nama_pml || ''),
             normalizeName(subsls.nama_pcl || ''),
             subsls.total_muatan_assignment || 0,
-            subsls.id_subsls_2025 || subsls.id_subsls
+            subsls.id_subsls_2025 || subsls.id_subsls,
+            subsls.total_muatan_assignment || 0 // Default target_fasih to muatan
           ]);
         }
       }
@@ -49,7 +50,7 @@ function loadMasterFromJson(jsonPath) {
 }
 
 // Parse Excel dan simpan ke DB
-function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal) {
+function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, statusFilePath = null, statusOriginalFilename = null, statusStoredFilename = null) {
   const db = getDb();
   const wb = XLSX.readFile(filePath, { raw: true });
 
@@ -87,7 +88,8 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal) 
 
   // Insert upload record
   const uploadStmt = db.prepare(`
-    INSERT INTO uploads (filename, stored_filename, tanggal, total_subsls_terisi) VALUES (?, ?, ?, ?)
+    INSERT INTO uploads (filename, stored_filename, tanggal, total_subsls_terisi, status_filename, stored_status_filename) 
+    VALUES (?, ?, ?, ?, ?, ?)
   `);
 
   // Collect data rows
@@ -124,30 +126,122 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal) 
       (upload_id, kode,
        usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
        tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
-       rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
+       draft, submitted_by_pcl, approved, rejected)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
-  const doInsert = db.transaction((uploadId, rows) => {
+  const getPrevStatus = db.prepare(`
+    SELECT 
+      COALESCE(draft, 0) AS draft, 
+      COALESCE(submitted_by_pcl, 0) AS submitted_by_pcl, 
+      COALESCE(approved, 0) AS approved, 
+      COALESCE(rejected, 0) AS rejected
+    FROM progres 
+    WHERE upload_id = ? AND kode = ?
+  `);
+
+  const doInsert = db.transaction((uploadId, prevUploadId, rows) => {
     for (const r of rows) {
+      let draft = 0, submitted = 0, approved = 0, rejected = 0;
+      if (prevUploadId) {
+        const prev = getPrevStatus.get(prevUploadId, r.kode);
+        if (prev) {
+          draft = prev.draft;
+          submitted = prev.submitted_by_pcl;
+          approved = prev.approved;
+          rejected = prev.rejected;
+        }
+      }
       insertProgres.run(
         uploadId, r.kode,
         r.usaha_tidak_ditemukan, r.usaha_ditemukan, r.usaha_baru, r.usaha_tutup, r.usaha_ganda,
         r.tidak_ditemukan, r.ditemukan, r.keluarga_baru, r.meninggal, r.tidak_eligible, r.tidak_dapat_ditemui,
-        r.rumah_tunggal, r.rumah_deret, r.rumah_susun, r.apartemen, r.lainnya
+        r.rumah_tunggal, r.rumah_deret, r.rumah_susun, r.apartemen, r.lainnya,
+        draft, submitted, approved, rejected
       );
     }
   });
 
-  const uploadResult = uploadStmt.run(originalFilename, storedFilename, tanggal, dataRows.length);
+  const uploadResult = uploadStmt.run(originalFilename, storedFilename, tanggal, dataRows.length, statusOriginalFilename, statusStoredFilename);
   const uploadId = uploadResult.lastInsertRowid;
-  doInsert(uploadId, dataRows);
+
+  // Cari upload_id sebelumnya yang memiliki status data non-nol
+  const prevUploadRow = db.prepare(`
+    SELECT u.id 
+    FROM uploads u
+    JOIN progres p ON u.id = p.upload_id
+    WHERE u.id < ? 
+    GROUP BY u.id
+    HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
+    ORDER BY u.id DESC LIMIT 1
+  `).get(uploadId);
+  const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
+
+  doInsert(uploadId, prevUploadId, dataRows);
+
+  // Jika ada file status FASIH, proses pengisian status
+  if (statusFilePath) {
+    parseAndSaveStatusExcel(statusFilePath, uploadId);
+  }
 
   // Update total_subsls_terisi
   const actualCount = db.prepare('SELECT COUNT(*) as n FROM progres WHERE upload_id = ?').get(uploadId).n;
   db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(actualCount, uploadId);
 
   return { uploadId, totalRows: dataRows.length, uniqueSubsls: actualCount };
+}
+
+// Parse file status dan update ke DB
+function parseAndSaveStatusExcel(filePath, uploadId) {
+  const db = getDb();
+  const wb = XLSX.readFile(filePath, { raw: true });
+  const sheetName = wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  if (!ws) throw new Error('Sheet dalam file rekap status tidak ditemukan.');
+
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: 0 });
+  if (rows.length < 2) return;
+
+  const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
+  const colIdx = {
+    kode: headers.indexOf('level_6_full_code'),
+    draft: headers.indexOf('draft'),
+    submitted_by_pcl: headers.indexOf('submitted_by_pcl'),
+    approved: headers.indexOf('approved'),
+    rejected: headers.indexOf('rejected')
+  };
+
+  if (colIdx.kode === -1) throw new Error('Kolom "level_6_full_code" tidak ditemukan dalam file rekap status.');
+
+  const insertStmt = db.prepare(`
+    INSERT OR IGNORE INTO progres (upload_id, kode) VALUES (?, ?)
+  `);
+
+  const updateStmt = db.prepare(`
+    UPDATE progres 
+    SET draft = ?, submitted_by_pcl = ?, approved = ?, rejected = ?
+    WHERE upload_id = ? AND kode = ?
+  `);
+
+  const updateTx = db.transaction((list) => {
+    for (let i = 1; i < list.length; i++) {
+      const row = list[i];
+      const kode = String(row[colIdx.kode] || '').trim();
+      if (!kode || kode.length < 10) continue;
+
+      const draft = toInt(row[colIdx.draft]);
+      const submitted = toInt(row[colIdx.submitted_by_pcl]);
+      const approved = toInt(row[colIdx.approved]);
+      const rejected = toInt(row[colIdx.rejected]);
+
+      // Pastikan baris progres ada untuk upload ini sebelum update status
+      insertStmt.run(uploadId, kode);
+      updateStmt.run(draft, submitted, approved, rejected, uploadId, kode);
+    }
+  });
+
+  updateTx(rows);
 }
 
 function toInt(val) {
@@ -197,7 +291,8 @@ function loadMasterFromExcel(filePath) {
     pml: findCol(['pml', 'nama_pml', 'nama pml', 'pengawas']),
     pcl: findCol(['pcl', 'nama_pcl', 'nama pcl', 'pencacah']),
     muatan: findCol(['muatan', 'total_muatan', 'total_muatan_assignment', 'assignment', 'beban']),
-    kode_2025: findCol(['kode_2025', 'id_subsls_2025', 'id_subsls_2025'])
+    kode_2025: findCol(['kode_2025', 'id_subsls_2025', 'id_subsls_2025']),
+    target_fasih: findCol(['target_fasih', 'total_assignment_fasih', 'total assignment fasih', 'assignment_fasih', 'fasih_target'])
   };
 
   if (colIdx.kode === -1) throw new Error('Kolom "kode" atau "id_subsls" tidak ditemukan.');
@@ -219,6 +314,7 @@ function loadMasterFromExcel(filePath) {
     const pcl = colIdx.pcl !== -1 ? normalizeName(String(row[colIdx.pcl] || '')) : '';
     const muatan = colIdx.muatan !== -1 ? toInt(row[colIdx.muatan]) : 0;
     const kode_2025 = colIdx.kode_2025 !== -1 ? String(row[colIdx.kode_2025] || '').trim() : kode;
+    const target_fasih = colIdx.target_fasih !== -1 ? toInt(row[colIdx.target_fasih]) : muatan; // fallback to muatan
 
     dataRows.push([
       kode,
@@ -230,7 +326,8 @@ function loadMasterFromExcel(filePath) {
       pml,
       pcl,
       muatan,
-      kode_2025
+      kode_2025,
+      target_fasih
     ]);
   }
 
@@ -238,8 +335,8 @@ function loadMasterFromExcel(filePath) {
 
   const insert = db.prepare(`
     INSERT OR REPLACE INTO subsls_master 
-      (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025, target_fasih)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const saveTx = db.transaction((list) => {

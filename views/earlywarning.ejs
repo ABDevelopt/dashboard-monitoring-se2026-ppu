@@ -18,7 +18,7 @@
         <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
         <div class="stat-label">PCL Progres Lambat</div>
         <div class="stat-value"><%= warning.slowPcl.length %></div>
-        <div class="stat-sub">Pencacah di bawah 25% progres</div>
+        <div class="stat-sub">Pencacah < 5 muatan/hari</div>
       </div>
       <div class="stat-card red">
         <div class="stat-icon"><i class="bi bi-clipboard2-data"></i></div>
@@ -105,16 +105,16 @@
 
     </div>
 
-    <!-- PCL DENGAN PROGRES LAMBAT (< 25%) -->
+    <!-- PCL DENGAN PROGRES LAMBAT (< 5 muatan/hari) -->
     <div class="card mt-4">
       <div class="card-header">
         <div class="card-title">
-          <span class="text-yellow"><i class="bi bi-hourglass-split"></i> PCL dengan Progres Lambat (< 25%)</span>
+          <span class="text-yellow"><i class="bi bi-hourglass-split"></i> PCL dengan Progres Lambat (< 5 muatan/hari)</span>
         </div>
         <span class="badge badge-yellow"><%= warning.slowPcl.length %> Petugas</span>
       </div>
 
-      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Daftar PCL yang progresnya lambat atau berada di bawah 25% dari total target muatan (assignment) yang ditugaskan kepada mereka.</p>
+      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Daftar PCL dengan rata-rata progres di bawah 5 muatan per hari sejak awal sensus (Sensus berjalan: <strong><%= warning.diffDays %></strong> hari).</p>
 
       <% if (warning.slowPcl.length > 0) { %>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; max-height: 500px; overflow-y: auto; padding-right: 4px;">
@@ -129,7 +129,7 @@
                 <div class="warning-stats">
                   <span class="warning-stat">SLS: <strong><%= item.total_subsls %></strong> (Muatan: <strong><%= item.total_muatan %></strong>)</span>
                   <span class="warning-stat">Selesai: <strong class="text-yellow"><%= item.selesai %> SLS</strong> (Muatan selesai: <strong><%= item.muatan_selesai %></strong>)</span>
-                  <span class="warning-stat text-yellow">Progres: <strong><%= item.pct %>%</strong></span>
+                  <span class="warning-stat text-yellow">Rata-rata: <strong><%= item.rata_rata %> muatan/hari</strong> (Progres: <%= item.pct %>%)</span>
                 </div>
                 <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
                   <div class="progress-bar yellow" data-width="<%= item.pct %>" style="width: 0%;"></div>
@@ -140,7 +140,7 @@
         </div>
       <% } else { %>
         <div class="no-data">
-          <i class="bi bi-check-circle-fill text-green" style="font-size: 18px; margin-right: 6px;"></i> Tidak ada PCL dengan progres lambat (semua di atas 25% progres). Kerja bagus!
+          <i class="bi bi-check-circle-fill text-green" style="font-size: 18px; margin-right: 6px;"></i> Tidak ada PCL dengan progres lambat (semua di atas 5 muatan/hari). Kerja bagus!
         </div>
       <% } %>
     </div>

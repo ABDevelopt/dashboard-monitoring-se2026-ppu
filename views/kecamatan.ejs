@@ -38,8 +38,8 @@
           <a href="/kecamatan" class="btn btn-secondary btn-xs"><i class="bi bi-x-lg"></i> Tutup Rincian</a>
         </div>
 
-        <div class="search-wrap mb-4" style="max-width: 300px;">
-          <input type="search" id="desaSearch" placeholder="Cari nama desa/kelurahan...">
+        <div class="search-wrap mb-4">
+          <input type="search" id="desaSearch" placeholder="Cari nama desa/kelurahan..." style="width: 100%; max-width: 300px;">
         </div>
 
         <% if (desaStats && desaStats.length > 0) { %>
@@ -48,39 +48,57 @@
               <thead>
                 <tr>
                   <th rowspan="2">Nama Desa/Kelurahan</th>
-                  <th rowspan="2" class="text-right">Total SubSLS</th>
-                  <th rowspan="2" class="text-right">SubSLS Selesai</th>
-                  <th rowspan="2" class="text-right">Progres %</th>
-                  <th rowspan="2" class="text-right">Muatan Target</th>
-                  <th colspan="1" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Blok Usaha</th>
-                  <th colspan="1" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Blok Keluarga</th>
+                  <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th>
+                  <th colspan="3" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                  <th colspan="4" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
                 </tr>
                 <tr>
-                  <th class="text-right bg-cyan-soft">Total Usaha</th>
-                  <th class="text-right bg-purple-soft">Total Keluarga</th>
+                  <th class="text-right">Total</th>
+                  <th class="text-right">Selesai</th>
+                  
+                  <th class="text-right bg-purple-soft">Approved</th>
+                  <th class="text-right bg-purple-soft">Target</th>
+                  <th class="text-right bg-purple-soft">Progres %</th>
+                  
+                  <th class="text-right bg-cyan-soft">Usaha Total</th>
+                  <th class="text-right bg-cyan-soft">Target Muatan</th>
+                  <th class="text-right bg-cyan-soft">Progres %</th>
+                  <th class="text-right bg-cyan-soft">Keluarga Total</th>
                 </tr>
               </thead>
               <tbody>
                 <% desaStats.forEach(d => { %>
-                  <% let dPct = d.total_muatan ? ((d.usaha_total / d.total_muatan) * 100).toFixed(2) : '0.00'; %>
+                  <% let fasihPct = d.target_fasih_total ? ((d.approved_total / d.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
+                  <% let muatanPct = d.total_muatan ? ((d.usaha_total / d.total_muatan) * 100).toFixed(2) : '0.00'; %>
                   <tr>
                     <td class="td-primary"><a href="/subsls?kec=<%= encodeURIComponent(filterKec) %>&desa=<%= encodeURIComponent(d.desa) %>" style="color: inherit; text-decoration: none;"><i class="bi bi-pin-map"></i> <%= d.desa %></a></td>
                     <td class="text-right" data-sort="<%= d.total_subsls %>"><%= d.total_subsls %></td>
                     <td class="text-right fw-bold" data-sort="<%= d.selesai %>"><%= d.selesai %></td>
-                    <td class="text-right" data-sort="<%= parseFloat(dPct) %>">
-                      <% if (parseFloat(dPct) >= 100) { %>
+                    
+                    <td class="text-right bg-purple-soft" data-sort="<%= d.approved_total %>"><%= (d.approved_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft" data-sort="<%= d.target_fasih_total %>"><%= (d.target_fasih_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>">
+                      <% if (parseFloat(fasihPct) >= 100) { %>
                         <span class="badge badge-green">100%</span>
-                      <% } else if (parseFloat(dPct) <= 0) { %>
-                        <span class="badge badge-red">0%</span>
-                      <% } else if (parseFloat(dPct) < 25) { %>
-                        <span class="badge badge-yellow"><%= dPct %>%</span>
+                      <% } else if (parseFloat(fasihPct) < 25) { %>
+                        <span class="badge badge-red"><%= fasihPct %>%</span>
                       <% } else { %>
-                        <span class="badge badge-blue"><%= dPct %>%</span>
+                        <span class="badge badge-blue"><%= fasihPct %>%</span>
                       <% } %>
                     </td>
-                    <td class="text-right" data-sort="<%= d.total_muatan %>"><%= d.total_muatan.toLocaleString('id-ID') %></td>
-                    <td class="text-right fw-bold td-primary bg-cyan-soft" data-sort="<%= d.usaha_total %>"><%= d.usaha_total.toLocaleString('id-ID') %></td>
-                    <td class="text-right fw-bold bg-purple-soft" data-sort="<%= d.keluarga_total %>"><%= d.keluarga_total.toLocaleString('id-ID') %></td>
+                    
+                    <td class="text-right fw-bold bg-cyan-soft" data-sort="<%= d.usaha_total %>"><%= d.usaha_total.toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft" data-sort="<%= d.total_muatan %>"><%= d.total_muatan.toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft" data-sort="<%= parseFloat(muatanPct) %>">
+                      <% if (parseFloat(muatanPct) >= 100) { %>
+                        <span class="badge badge-green">100%</span>
+                      <% } else if (parseFloat(muatanPct) < 25) { %>
+                        <span class="badge badge-red"><%= muatanPct %>%</span>
+                      <% } else { %>
+                        <span class="badge badge-blue"><%= muatanPct %>%</span>
+                      <% } %>
+                    </td>
+                    <td class="text-right bg-cyan-soft" data-sort="<%= d.keluarga_total %>"><%= d.keluarga_total.toLocaleString('id-ID') %></td>
                   </tr>
                 <% }) %>
               </tbody>

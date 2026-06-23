@@ -30,7 +30,6 @@
 
   <!-- MANAGE ROW: UPLOAD & ACTIONS -->
   <div class="overview-grid mt-4">
-    
     <!-- UPLOAD MASTER DATA CARD -->
     <div class="card">
       <div class="card-header">
@@ -84,9 +83,9 @@
       <button class="btn btn-success btn-sm" id="btnOpenAddModal"><i class="bi bi-plus-circle"></i> Tambah SLS Baru</button>
     </div>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px;">
-      <form action="/master" method="GET" style="display: flex; gap: 8px; max-width: 360px; flex: 1;">
-        <input type="search" name="q" value="<%= q %>" placeholder="Cari Kode, SLS, Petugas, Wilayah..." style="flex: 1; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+      <form action="/master" method="GET" style="display: flex; gap: 8px; flex: 1; min-width: 200px;">
+        <input type="search" name="q" value="<%= q %>" placeholder="Cari Kode, SLS, Petugas, Wilayah..." style="flex: 1; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); min-width: 0;">
         <button type="submit" class="btn btn-secondary"><i class="bi bi-search"></i></button>
         <% if (q) { %>
           <a href="/master" class="btn btn-secondary" title="Reset Pencarian"><i class="bi bi-x-lg"></i></a>
@@ -108,6 +107,7 @@
             <th>Korlap</th>
             <th>PML</th>
             <th>PCL</th>
+            <th class="text-right">Target FASIH</th>
             <th class="text-right">Muatan</th>
             <th class="text-center">Aksi</th>
           </tr>
@@ -123,7 +123,8 @@
                 <td><%= row.korlap %></td>
                 <td><%= row.pml %></td>
                 <td><%= row.pcl %></td>
-                <td class="text-right fw-bold"><%= row.muatan %></td>
+                <td class="text-right bg-purple-soft" style="font-weight: 500;"><%= row.target_fasih %></td>
+                <td class="text-right bg-cyan-soft fw-bold"><%= row.muatan %></td>
                 <td class="text-center">
                   <div style="display: flex; justify-content: center; gap: 6px;">
                     <button class="btn btn-secondary btn-xs btn-edit-sls" 
@@ -134,6 +135,7 @@
                             data-korlap="<%= row.korlap %>"
                             data-pml="<%= row.pml %>"
                             data-pcl="<%= row.pcl %>"
+                            data-targetfasih="<%= row.target_fasih %>"
                             data-muatan="<%= row.muatan %>"
                             data-kode2025="<%= row.kode_2025 %>"
                             title="Edit Record"><i class="bi bi-pencil-fill"></i></button>
@@ -205,14 +207,18 @@
           <input type="text" name="nama_sls" placeholder="Contoh: RT 001 DUSUN I" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); gap: 10px;">
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Target Muatan (Assignment)</label>
+            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Target FASIH</label>
+            <input type="number" name="target_fasih" value="0" min="0" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Target Muatan</label>
             <input type="number" name="muatan" value="0" min="0" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
           <div>
             <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Kode SLS 2025</label>
-            <input type="text" name="kode_2025" placeholder="Kosongkan jika sama dengan kode" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+            <input type="text" name="kode_2025" placeholder="Kosongkan jika sama" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
         </div>
 
@@ -275,9 +281,13 @@
           <input type="text" name="nama_sls" id="editNama" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); gap: 10px;">
           <div>
-            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Target Muatan (Assignment)</label>
+            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Target FASIH</label>
+            <input type="number" name="target_fasih" id="editTargetFasih" min="0" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;">Target Muatan</label>
             <input type="number" name="muatan" id="editMuatan" min="0" style="width: 100%; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
           </div>
           <div>
@@ -366,6 +376,7 @@
       korlap: document.getElementById('editKorlap'),
       pml: document.getElementById('editPml'),
       pcl: document.getElementById('editPcl'),
+      targetFasih: document.getElementById('editTargetFasih'),
       muatan: document.getElementById('editMuatan'),
       kode2025: document.getElementById('editKode2025')
     };
@@ -381,6 +392,7 @@
         editFormFields.korlap.value = dataset.korlap;
         editFormFields.pml.value = dataset.pml;
         editFormFields.pcl.value = dataset.pcl;
+        editFormFields.targetFasih.value = dataset.targetfasih;
         editFormFields.muatan.value = dataset.muatan;
         editFormFields.kode2025.value = dataset.kode2025;
 

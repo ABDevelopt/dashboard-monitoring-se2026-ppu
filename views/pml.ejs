@@ -17,8 +17,8 @@
           <span class="badge badge-blue"><%= pmlStats.length %> PML</span>
         </div>
 
-        <div class="search-wrap mb-4" style="max-width: 300px;">
-          <input type="search" id="pmlSearch" placeholder="Cari nama PML...">
+        <div class="search-wrap mb-4">
+          <input type="search" id="pmlSearch" placeholder="Cari nama PML..." style="width: 100%; max-width: 280px;">
         </div>
 
         <% if (pmlStats && pmlStats.length > 0) { %>
@@ -29,20 +29,27 @@
                   <th rowspan="2">Nama PML</th>
                   <th rowspan="2">Korlap</th>
                   <th rowspan="2" class="text-right">Jumlah PCL</th>
-                  <th rowspan="2" class="text-right">SubSLS</th>
-                  <th rowspan="2" class="text-right">Selesai</th>
-                  <th rowspan="2" class="text-right">Progres %</th>
-                  <th colspan="1" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Blok Usaha</th>
-                  <th colspan="1" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Blok Keluarga</th>
+                  <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th>
+                  <th colspan="3" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                  <th colspan="3" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
                 </tr>
                 <tr>
-                  <th class="text-right bg-cyan-soft">Total Usaha</th>
-                  <th class="text-right bg-purple-soft">Total Keluarga</th>
+                  <th class="text-right">Total</th>
+                  <th class="text-right">Selesai</th>
+                  
+                  <th class="text-right bg-purple-soft">Approved</th>
+                  <th class="text-right bg-purple-soft">Target</th>
+                  <th class="text-right bg-purple-soft">Progres %</th>
+                  
+                  <th class="text-right bg-cyan-soft">Usaha Total</th>
+                  <th class="text-right bg-cyan-soft">Target Muatan</th>
+                  <th class="text-right bg-cyan-soft">Progres %</th>
                 </tr>
               </thead>
               <tbody>
                 <% pmlStats.forEach(p => { %>
-                  <% let completionPct = p.total_muatan ? ((p.usaha_total / p.total_muatan) * 100).toFixed(2) : '0.00'; %>
+                  <% let fasihPct = p.target_fasih_total ? ((p.approved_total / p.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
+                  <% let muatanPct = p.total_muatan ? ((p.usaha_total / p.total_muatan) * 100).toFixed(2) : '0.00'; %>
                   <tr class="<%= filterPml === p.pml ? 'active' : '' %>" style="<%= filterPml === p.pml ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="td-primary">
                       <a href="/pml?pml=<%= encodeURIComponent(p.pml) %>" style="color: inherit; text-decoration: none; display: block;">
@@ -53,19 +60,30 @@
                     <td class="text-right" data-sort="<%= p.jumlah_pcl %>"><%= p.jumlah_pcl %> PCL</td>
                     <td class="text-right" data-sort="<%= p.total_subsls %>"><%= p.total_subsls %></td>
                     <td class="text-right fw-bold" data-sort="<%= p.selesai %>" style="<%= p.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= p.selesai %></td>
-                    <td class="text-right" data-sort="<%= parseFloat(completionPct) %>">
-                      <% if (parseFloat(completionPct) >= 100) { %>
+                    
+                    <td class="text-right bg-purple-soft" data-sort="<%= p.approved_total %>"><%= (p.approved_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft" data-sort="<%= p.target_fasih_total %>"><%= (p.target_fasih_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>">
+                      <% if (parseFloat(fasihPct) >= 100) { %>
                         <span class="badge badge-green">100%</span>
-                      <% } else if (parseFloat(completionPct) <= 0) { %>
-                        <span class="badge badge-red">0%</span>
-                      <% } else if (parseFloat(completionPct) < 25) { %>
-                        <span class="badge badge-yellow"><%= completionPct %>%</span>
+                      <% } else if (parseFloat(fasihPct) < 25) { %>
+                        <span class="badge badge-red"><%= fasihPct %>%</span>
                       <% } else { %>
-                        <span class="badge badge-blue"><%= completionPct %>%</span>
+                        <span class="badge badge-blue"><%= fasihPct %>%</span>
                       <% } %>
                     </td>
-                    <td class="text-right fw-bold td-primary bg-cyan-soft" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
-                    <td class="text-right fw-bold bg-purple-soft" data-sort="<%= p.keluarga_total %>"><%= p.keluarga_total.toLocaleString('id-ID') %></td>
+                    
+                    <td class="text-right fw-bold bg-cyan-soft" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft" data-sort="<%= parseFloat(muatanPct) %>">
+                      <% if (parseFloat(muatanPct) >= 100) { %>
+                        <span class="badge badge-green">100%</span>
+                      <% } else if (parseFloat(muatanPct) < 25) { %>
+                        <span class="badge badge-red"><%= muatanPct %>%</span>
+                      <% } else { %>
+                        <span class="badge badge-blue"><%= muatanPct %>%</span>
+                      <% } %>
+                    </td>
                   </tr>
                 <% }) %>
               </tbody>
@@ -94,13 +112,30 @@
                   let totalBeban = detailPcl.reduce((acc, c) => acc + c.total_muatan, 0);
                   let totalUsaha = detailPcl.reduce((acc, c) => acc + c.usaha_total, 0);
                   let totalPct = totalBeban ? ((totalUsaha / totalBeban) * 100).toFixed(2) : '0.00';
+
+                  let totalFasihTgt = detailPcl.reduce((acc, c) => acc + (c.target_fasih_total || 0), 0);
+                  let totalFasihApp = detailPcl.reduce((acc, c) => acc + (c.approved_total || 0), 0);
+                  let totalFasihPct = totalFasihTgt ? ((totalFasihApp / totalFasihTgt) * 100).toFixed(2) : '0.00';
                 %>
-                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
-                  <span>Progres Tim PML</span>
-                  <span class="fw-bold"><%= totalUsaha.toLocaleString('id-ID') %> / <%= totalBeban.toLocaleString('id-ID') %> muatan (<%= totalPct %>%)</span>
+                <!-- Progress Muatan -->
+                <div style="margin-bottom: 12px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                    <span><i class="bi bi-briefcase"></i> Progres Muatan Tim</span>
+                    <span class="fw-bold"><%= totalUsaha.toLocaleString('id-ID') %> / <%= totalBeban.toLocaleString('id-ID') %> (<%= totalPct %>%)</span>
+                  </div>
+                  <div class="progress-bar-wrap" style="height: 6px;">
+                    <div class="progress-bar <%= parseFloat(totalPct) >= 100 ? 'green' : (parseFloat(totalPct) < 25 ? 'red' : 'blue') %>" data-width="<%= totalPct %>" style="width: 0%;"></div>
+                  </div>
                 </div>
-                <div class="progress-bar-wrap">
-                  <div class="progress-bar <%= parseFloat(totalPct) >= 100 ? 'green' : (parseFloat(totalPct) < 25 ? 'red' : 'blue') %>" data-width="<%= totalPct %>" style="width: 0%;"></div>
+                <!-- Progress FASIH -->
+                <div style="margin-bottom: 16px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                    <span><i class="bi bi-phone"></i> Progres FASIH Tim (Approved)</span>
+                    <span class="fw-bold"><%= totalFasihApp.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihPct %>%)</span>
+                  </div>
+                  <div class="progress-bar-wrap" style="height: 6px;">
+                    <div class="progress-bar <%= parseFloat(totalFasihPct) >= 100 ? 'green' : (parseFloat(totalFasihPct) < 25 ? 'red' : 'purple') %>" data-width="<%= totalFasihPct %>" style="width: 0%;"></div>
+                  </div>
                 </div>
               </div>
 
@@ -125,11 +160,18 @@
                       Wilayah Kerja: Kec. <strong><%= item.kecamatan %></strong>
                     </div>
                     <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
-                      SubSLS: <strong><%= item.selesai %> / <%= item.total_subsls %></strong> Selesai
+                      SubSLS Selesai: <strong><%= item.selesai %> / <%= item.total_subsls %></strong>
                     </div>
-                    <div style="display: flex; gap: 8px; margin-top: 6px; font-size: 11px;">
-                      <span style="background: rgba(16,185,129,0.1); padding: 2px 8px; border-radius: 4px; color: var(--accent-green);"><i class="bi bi-building"></i> <%= item.usaha_total %> Usaha</span>
-                      <span style="background: rgba(6,182,212,0.1); padding: 2px 8px; border-radius: 4px; color: var(--accent-cyan);"><i class="bi bi-people"></i> <%= item.keluarga_total %> Keluarga</span>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 10px;">
+                      <span style="background: rgba(6, 182, 212, 0.08); padding: 2px 6px; border-radius: 4px; color: var(--accent-cyan);">
+                        Muatan: <strong><%= item.usaha_total %></strong> / <%= item.total_muatan %>
+                      </span>
+                      <span style="background: rgba(139, 92, 246, 0.08); padding: 2px 6px; border-radius: 4px; color: var(--accent-purple);">
+                        FASIH App: <strong><%= item.approved_total %></strong> / <%= item.target_fasih_total %>
+                      </span>
+                      <span style="background: rgba(100, 116, 139, 0.08); padding: 2px 6px; border-radius: 4px; color: var(--text-muted);">
+                        Dft: <%= item.draft_total %> · Sub: <%= item.submitted_total %>
+                      </span>
                     </div>
                   </div>
                 <% }) %>

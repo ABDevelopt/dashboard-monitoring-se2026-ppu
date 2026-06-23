@@ -135,7 +135,7 @@ router.post('/reset', (req, res) => {
 
 // POST: Add new master SLS
 router.post('/add', (req, res) => {
-  const { kode, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025 } = req.body;
+  const { kode, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, target_fasih, kode_2025 } = req.body;
 
   if (!kode || !kecamatan || !desa) {
     req.flash('error', 'Kode SLS, Kecamatan, dan Desa wajib diisi.');
@@ -153,11 +153,12 @@ router.post('/add', (req, res) => {
 
   const kode_kec = kode.substring(6, 8) || '00';
   const muatanNum = parseInt(muatan) || 0;
+  const targetFasihNum = target_fasih !== undefined && target_fasih !== '' ? parseInt(target_fasih) : muatanNum;
 
   try {
     db.prepare(`
-      INSERT INTO subsls_master (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO subsls_master (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, target_fasih, kode_2025)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       kode.trim(),
       kode_kec,
@@ -168,6 +169,7 @@ router.post('/add', (req, res) => {
       (pml || '').trim().replace(/\s+/g, ' '),
       (pcl || '').trim().replace(/\s+/g, ' '),
       muatanNum,
+      targetFasihNum,
       (kode_2025 || kode).trim()
     );
 
@@ -182,7 +184,7 @@ router.post('/add', (req, res) => {
 
 // POST: Edit master SLS
 router.post('/edit', (req, res) => {
-  const { kode, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025 } = req.body;
+  const { kode, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, target_fasih, kode_2025 } = req.body;
 
   if (!kode) {
     req.flash('error', 'Kode SLS tidak valid.');
@@ -191,12 +193,13 @@ router.post('/edit', (req, res) => {
 
   const db = getDb();
   const muatanNum = parseInt(muatan) || 0;
+  const targetFasihNum = target_fasih !== undefined && target_fasih !== '' ? parseInt(target_fasih) : muatanNum;
   const kode_kec = kode.substring(6, 8) || '00';
 
   try {
     db.prepare(`
       UPDATE subsls_master 
-      SET kecamatan = ?, desa = ?, nama_sls = ?, korlap = ?, pml = ?, pcl = ?, muatan = ?, kode_2025 = ?, kode_kec = ?
+      SET kecamatan = ?, desa = ?, nama_sls = ?, korlap = ?, pml = ?, pcl = ?, muatan = ?, target_fasih = ?, kode_2025 = ?, kode_kec = ?
       WHERE kode = ?
     `).run(
       kecamatan.trim(),
@@ -206,6 +209,7 @@ router.post('/edit', (req, res) => {
       (pml || '').trim().replace(/\s+/g, ' '),
       (pcl || '').trim().replace(/\s+/g, ' '),
       muatanNum,
+      targetFasihNum,
       (kode_2025 || kode).trim(),
       kode_kec,
       kode

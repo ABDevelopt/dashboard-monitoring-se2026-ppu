@@ -11,176 +11,256 @@
     </div>
   <% } else { %>
     
-    <!-- KPI CARDS GRID (4 kartu utama) -->
-    <div class="stats-grid">
 
 
-      <!-- Usaha Ganda — sinyal kualitas data -->
-      <div class="stat-card red">
-        <div class="stat-icon"><i class="bi bi-intersect"></i></div>
-        <div class="stat-label">Usaha Ganda</div>
-        <div class="stat-value"><%= (summary.usaha_ganda || 0).toLocaleString('id-ID') %></div>
-        <div class="stat-sub">Usaha teridentifikasi ganda</div>
-      </div>
-
-      <!-- BLOK USAHA -->
-      <div class="stat-card cyan" style="border: 1px solid rgba(6, 182, 212, 0.3); background-color: rgba(6, 182, 212, 0.03);">
-        <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--accent-cyan); margin-bottom: 8px; letter-spacing: 1px;"><i class="bi bi-briefcase-fill"></i> BLOK USAHA</div>
-        <div class="stat-icon"><i class="bi bi-building-fill"></i></div>
-        <div class="stat-label">Total Usaha Ditemukan</div>
-        <div class="stat-value"><%= summary.usaha_total.toLocaleString('id-ID') %></div>
-        <div class="stat-sub">Ditemukan + Baru (<span style="color: var(--accent-green);">+<%= summary.usaha_baru.toLocaleString('id-ID') %> baru</span>)</div>
-      </div>
-
-      <!-- BLOK KELUARGA -->
-      <div class="stat-card purple" style="border: 1px solid rgba(168, 85, 247, 0.3); background-color: rgba(168, 85, 247, 0.03);">
-        <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--accent-purple); margin-bottom: 8px; letter-spacing: 1px;"><i class="bi bi-house-door-fill"></i> BLOK KELUARGA</div>
-        <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
-        <div class="stat-label">Total Keluarga Ditemukan</div>
-        <div class="stat-value"><%= summary.keluarga_total.toLocaleString('id-ID') %></div>
-        <div class="stat-sub">Ditemukan + Baru (<span style="color: var(--accent-green);">+<%= summary.keluarga_baru.toLocaleString('id-ID') %> baru</span>)</div>
-      </div>
-
-    </div>
-
-    <!-- GRAFIK KHUSUS PROGRES PENCACAHAN MUATAN -->
-
-    <div class="card" style="margin-top: 20px; position: relative; overflow: hidden; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(var(--accent-rgb), 0.02) 100%); border: 1px solid var(--border); padding: 20px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(var(--accent-rgb), 0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-blue); font-size: 18px;">
-            <i class="bi bi-speedometer2"></i>
+    <!-- PROGRES REALISASI UTAMA & ASSIGNMENT -->
+    <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+      
+      <!-- Progres Realisasi Pencacahan Muatan (Perhatian Utama) -->
+      <div class="card" style="margin: 0; position: relative; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); padding: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(6, 182, 212, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-cyan); font-size: 20px;">
+              <i class="bi bi-speedometer2"></i>
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: var(--text-primary);"><i class="bi bi-star-fill text-cyan" style="font-size: 12px; vertical-align: middle; margin-right: 4px;"></i> Progres Realisasi Pencacahan Muatan</h3>
+              <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Realisasi Usaha Total vs Target Muatan Prelist (Fokus Utama Monitoring)</p>
+            </div>
           </div>
-          <div>
-            <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary);">Progres Realisasi Pencacahan Muatan (Beban Target Sensus)</h3>
-            <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Realisasi pencacahan usaha terdata dibandingkan dengan total target muatan prelist</p>
+          <div style="text-align: right;">
+            <% let totalPct = summary.muatan_total ? ((summary.usaha_total / summary.muatan_total) * 100).toFixed(2) : '0.00'; %>
+            <div style="font-size: 22px; font-weight: 900; color: var(--accent-cyan);"><%= totalPct %>%</div>
+            <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Capaian Muatan</div>
           </div>
         </div>
-        <div style="text-align: right;">
-          <div style="font-size: 20px; font-weight: 800; color: var(--accent-cyan);">
-            <%= ((summary.usaha_total / summary.muatan_total) * 100).toFixed(2) %>%
-          </div>
-          <div style="font-size: 11px; color: var(--text-muted);">Capaian Muatan</div>
-        </div>
-      </div>
 
-      <div style="background: var(--bg-progress-wrap); height: 32px; border-radius: 16px; overflow: hidden; position: relative; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">
-        <% let totalPct = summary.muatan_total ? ((summary.usaha_total / summary.muatan_total) * 100).toFixed(2) : '0.00'; %>
-        <div class="progress-bar" data-width="<%= totalPct %>" style="background: linear-gradient(90deg, var(--accent-blue) 0%, var(--accent-cyan) 100%); height: 24px; width: 0%; border-radius: 12px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.25);">
-          <% if (parseFloat(totalPct) > 8) { %>
-            <span style="font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"><%= totalPct %>%</span>
+        <div style="background: var(--bg-progress-wrap); height: 28px; border-radius: 14px; overflow: hidden; position: relative; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">
+          <div class="progress-bar" data-width="<%= totalPct %>" style="background: linear-gradient(90deg, var(--accent-blue) 0%, var(--accent-cyan) 100%); height: 20px; width: 0%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.25);">
+            <% if (parseFloat(totalPct) > 8) { %>
+              <span style="font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"><%= totalPct %>%</span>
+            <% } %>
+          </div>
+          <% if (parseFloat(totalPct) <= 8) { %>
+            <span style="margin-left: 12px; font-size: 11px; font-weight: 800; color: var(--text-primary);"><%= totalPct %>%</span>
           <% } %>
         </div>
-        <% if (parseFloat(totalPct) <= 8) { %>
-          <span style="margin-left: 12px; font-size: 11px; font-weight: 800; color: var(--text-primary);"><%= totalPct %>%</span>
-        <% } %>
-      </div>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <div style="font-size: 24px; color: var(--accent-green);"><i class="bi bi-check-circle-fill"></i></div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
           <div>
-            <div style="font-size: 11px; color: var(--text-muted);">Realisasi Terdata</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">
-              <%= summary.usaha_total.toLocaleString('id-ID') %> <span style="font-size: 12px; font-weight: 500; color: var(--text-secondary);">muatan usaha</span>
-            </div>
+            <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Realisasi</div>
+            <div style="font-size: 15px; font-weight: 800; color: var(--text-primary);"><%= summary.usaha_total.toLocaleString('id-ID') %></div>
           </div>
-        </div>
-        
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <div style="font-size: 24px; color: var(--text-muted);"><i class="bi bi-flag-fill"></i></div>
           <div>
-            <div style="font-size: 11px; color: var(--text-muted);">Beban Target Muatan</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">
-              <%= summary.muatan_total.toLocaleString('id-ID') %> <span style="font-size: 12px; font-weight: 500; color: var(--text-secondary);">muatan</span>
-            </div>
+            <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Target</div>
+            <div style="font-size: 15px; font-weight: 800; color: var(--text-primary);"><%= summary.muatan_total.toLocaleString('id-ID') %></div>
+          </div>
+          <div>
+            <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Sisa</div>
+            <div style="font-size: 15px; font-weight: 800; color: var(--accent-yellow);"><%= (summary.muatan_total - summary.usaha_total).toLocaleString('id-ID') %></div>
           </div>
         </div>
 
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <div style="font-size: 24px; color: var(--accent-yellow);"><i class="bi bi-hourglass-split"></i></div>
-          <div>
-            <div style="font-size: 11px; color: var(--text-muted);">Sisa Beban Muatan</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">
-              <%= (summary.muatan_total - summary.usaha_total).toLocaleString('id-ID') %> <span style="font-size: 12px; font-weight: 500; color: var(--text-secondary);">muatan</span>
+        <!-- Rincian Tambahan Pencacahan Muatan (Dikelompokkan Usaha/Keluarga) -->
+        <div style="border-top: 1px dashed var(--border); padding-top: 16px; margin-top: 16px;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;"><i class="bi bi-info-circle-fill text-cyan"></i> Detail Perubahan & Temuan Lapangan</div>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px;">
+            
+            <!-- KELOMPOK USAHA -->
+            <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: var(--radius-md); padding: 12px;">
+              <div style="font-size: 11px; font-weight: 800; color: var(--accent-cyan); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;"><i class="bi bi-briefcase-fill"></i> Temuan Sektor Usaha</div>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                
+                <!-- Usaha Baru -->
+                <div style="background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                  <div>
+                    <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">USAHA BARU</div>
+                    <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Terdaftar baru</div>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-green);">+<%= summary.usaha_baru.toLocaleString('id-ID') %></div>
+                </div>
+
+                <!-- Usaha Tutup -->
+                <div style="background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                  <div>
+                    <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">USAHA TUTUP</div>
+                    <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Tutup/Pindah</div>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-red);"><%= summary.usaha_tutup.toLocaleString('id-ID') %></div>
+                </div>
+
+                <!-- Usaha Tidak Ditemukan -->
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                  <div>
+                    <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">TDK DITEMUKAN</div>
+                    <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Tidak ada fisik</div>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--text-primary);"><%= summary.usaha_tidak_ditemukan.toLocaleString('id-ID') %></div>
+                </div>
+
+                <!-- Usaha Ganda (Sinyal Kualitas Data) -->
+                <div style="background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                  <div>
+                    <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">USAHA GANDA</div>
+                    <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Teridentifikasi ganda</div>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-red);"><%= (summary.usaha_ganda || 0).toLocaleString('id-ID') %></div>
+                </div>
+
+              </div>
             </div>
+
+            <!-- KELOMPOK KELUARGA -->
+            <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: var(--radius-md); padding: 12px;">
+              <div style="font-size: 11px; font-weight: 800; color: var(--accent-purple); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;"><i class="bi bi-people-fill"></i> Temuan Sektor Keluarga</div>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                
+                <!-- Total Keluarga Ditemukan -->
+                <div style="background: rgba(168, 85, 247, 0.04); border: 1px solid rgba(168, 85, 247, 0.15); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                  <div>
+                    <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">KK DITEMUKAN</div>
+                    <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Total ditemukan</div>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-purple);"><%= summary.keluarga_total.toLocaleString('id-ID') %></div>
+                </div>
+
+                <!-- Keluarga Baru -->
+                <div style="background: rgba(6, 182, 212, 0.04); border: 1px solid rgba(6, 182, 212, 0.15); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                  <div>
+                    <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">KELUARGA BARU</div>
+                    <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Terdaftar baru</div>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-cyan);">+<%= summary.keluarga_baru.toLocaleString('id-ID') %></div>
+                </div>
+
+                <!-- Meninggal -->
+                <div style="background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                  <div>
+                    <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">MENINGGAL</div>
+                    <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Anggota KK</div>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-yellow);"><%= summary.meninggal.toLocaleString('id-ID') %></div>
+                </div>
+
+                <!-- Keluarga Tidak Ditemukan -->
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                  <div>
+                    <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">TDK DITEMUKAN</div>
+                    <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Tidak ditemukan</div>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--text-primary);"><%= summary.keluarga_tidak_ditemukan.toLocaleString('id-ID') %></div>
+                </div>
+
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
+
+      <!-- Progres Realisasi & Rincian Status Assignment FASIH -->
+      <div class="card" style="margin: 0; position: relative; overflow: hidden; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(139, 92, 246, 0.02) 100%); border: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(139, 92, 246, 0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-purple); font-size: 18px;">
+                <i class="bi bi-phone"></i>
+              </div>
+              <div>
+                <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary);">Assignment FASIH</h3>
+                <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Realisasi Approved vs Target FASIH Dinamis</p>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <% let fasihPct = summary.target_fasih_total ? ((summary.approved_total / summary.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
+              <div style="font-size: 18px; font-weight: 800; color: var(--accent-purple);"><%= fasihPct %>%</div>
+              <div style="font-size: 10px; color: var(--text-muted);">Capaian FASIH</div>
+            </div>
+          </div>
+
+          <div style="background: var(--bg-progress-wrap); height: 28px; border-radius: 14px; overflow: hidden; position: relative; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">
+            <div class="progress-bar" data-width="<%= fasihPct %>" style="background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%); height: 20px; width: 0%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);">
+              <% if (parseFloat(fasihPct) > 8) { %>
+                <span style="font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"><%= fasihPct %>%</span>
+              <% } %>
+            </div>
+            <% if (parseFloat(fasihPct) <= 8) { %>
+              <span style="margin-left: 12px; font-size: 11px; font-weight: 800; color: var(--text-primary);"><%= fasihPct %>%</span>
+            <% } %>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); margin-bottom: 20px;">
+            <div>
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Approved</div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);"><%= (summary.approved_total || 0).toLocaleString('id-ID') %></div>
+            </div>
+            <div>
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Target</div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);"><%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></div>
+            </div>
+            <div>
+              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Sisa</div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--accent-yellow);"><%= Math.max(0, summary.target_fasih_total - (summary.approved_total || 0)).toLocaleString('id-ID') %></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rincian Status Dokumen FASIH -->
+        <div style="border-top: 1px dashed var(--border); padding-top: 16px;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;"><i class="bi bi-info-circle-fill text-purple"></i> Rincian Status Dokumen FASIH</div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+            
+            <!-- DRAFT -->
+            <div style="background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div>
+                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">DRAFT</div>
+                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Belum Submit</div>
+              </div>
+              <div style="font-size: 14px; font-weight: 800; color: var(--accent-yellow);"><%= (summary.draft_total || 0).toLocaleString('id-ID') %></div>
+            </div>
+
+            <!-- SUBMITTED BY PCL -->
+            <div style="background: rgba(59, 130, 246, 0.04); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div>
+                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">SUBMITTED</div>
+                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Oleh PCL</div>
+              </div>
+              <div style="font-size: 14px; font-weight: 800; color: var(--accent-blue);"><%= (summary.submitted_total || 0).toLocaleString('id-ID') %></div>
+            </div>
+
+            <!-- APPROVED -->
+            <div style="background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div>
+                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">APPROVED</div>
+                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Diterima PML</div>
+              </div>
+              <div style="font-size: 14px; font-weight: 800; color: var(--accent-green);"><%= (summary.approved_total || 0).toLocaleString('id-ID') %></div>
+            </div>
+
+            <!-- REJECTED -->
+            <div style="background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div>
+                <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">REJECTED</div>
+                <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Ditolak PML</div>
+              </div>
+              <div style="font-size: 14px; font-weight: 800; color: var(--accent-red);"><%= (summary.rejected_total || 0).toLocaleString('id-ID') %></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- MAIN DASHBOARD CONTENT GRID -->
-    <div class="overview-grid">
-      
-      <!-- LEFT: PROGRESS GAUGE & DETAILS -->
-      <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
-        <div class="card-header">
-          <div class="card-title"><i class="bi bi-graph-up-arrow"></i> Progres Penyelesaian Sensus</div>
-          <span class="badge badge-green"><%= ((summary.usaha_total / summary.muatan_total) * 100).toFixed(2) %>%</span>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 20px; align-items: center; padding: 10px 0;">
-          
-          <div class="progress-ring-wrap" style="height: 180px;">
-            <canvas id="progressChart"></canvas>
-            <div class="progress-ring-text">
-              <div class="progress-ring-pct"><%= ((summary.usaha_total / summary.muatan_total) * 100).toFixed(2) %>%</div>
-              <div class="progress-ring-label">Muatan</div>
-            </div>
-          </div>
-
-          <div>
-            <div class="summary-split">
-              <div class="summary-item">
-                <div class="summary-item-label text-green">Usaha Baru</div>
-                <div class="summary-item-value">+<%= summary.usaha_baru.toLocaleString('id-ID') %></div>
-                <div class="summary-item-sub">Usaha terdaftar baru</div>
-              </div>
-              <div class="summary-item">
-                <div class="summary-item-label text-cyan">Keluarga Baru</div>
-                <div class="summary-item-value">+<%= summary.keluarga_baru.toLocaleString('id-ID') %></div>
-                <div class="summary-item-sub">Keluarga terdaftar baru</div>
-              </div>
-            </div>
-            
-            <div class="summary-split mt-4">
-              <div class="summary-item">
-                <div class="summary-item-label text-red">Usaha Tutup</div>
-                <div class="summary-item-value"><%= summary.usaha_tutup.toLocaleString('id-ID') %></div>
-                <div class="summary-item-sub">Usaha tutup / pindah</div>
-              </div>
-              <div class="summary-item">
-                <div class="summary-item-label text-yellow">Meninggal</div>
-                <div class="summary-item-value"><%= summary.meninggal.toLocaleString('id-ID') %></div>
-                <div class="summary-item-sub">Anggota KK meninggal</div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-        
-        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-secondary);">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
-            <span>Realisasi / Target Muatan:</span>
-            <span class="fw-bold"><%= summary.usaha_total.toLocaleString('id-ID') %> / <%= summary.muatan_total.toLocaleString('id-ID') %> (<%= ((summary.usaha_total / summary.muatan_total) * 100).toFixed(2) %>%)</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span>Usaha Tidak Ditemukan: <strong><%= summary.usaha_tidak_ditemukan.toLocaleString('id-ID') %></strong></span>
-            <span>Keluarga Tidak Ditemukan: <strong><%= summary.keluarga_tidak_ditemukan.toLocaleString('id-ID') %></strong></span>
-          </div>
-        </div>
+    <!-- TREN HARIAN (Full Width) -->
+    <div class="card" style="margin-top: 24px;">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-calendar3"></i> Tren Progres Pengumpulan Data Harian</div>
       </div>
-
-      <!-- RIGHT: TREN HARIAN -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title"><i class="bi bi-calendar3"></i> Tren Progres Pengumpulan Data Harian</div>
-        </div>
-        <div style="height: 240px; position: relative;">
-          <canvas id="trenChartCanvas"></canvas>
-        </div>
+      <div style="height: 300px; position: relative;">
+        <canvas id="trenChartCanvas"></canvas>
       </div>
-
     </div>
 
     <!-- BOTTOM ROW: KECAMATAN DETAILS -->
@@ -190,8 +270,8 @@
         <a href="/kecamatan" class="btn btn-secondary btn-sm">Rincian Kecamatan <i class="bi bi-arrow-right-short"></i></a>
       </div>
 
-      <div class="search-wrap mb-4" style="max-width: 240px; margin-bottom: 16px;">
-        <input type="search" id="kecOverviewSearch" placeholder="Cari kecamatan...">
+      <div class="search-wrap mb-4" style="margin-bottom: 16px;">
+        <input type="search" id="kecOverviewSearch" placeholder="Cari kecamatan..." style="width: 100%; max-width: 280px;">
       </div>
 
       <div class="comparison-grid">
@@ -201,44 +281,64 @@
             <thead>
               <tr>
                 <th rowspan="2">Kecamatan</th>
-                <th rowspan="2" class="text-right">Total SubSLS</th>
-                <th rowspan="2" class="text-right">Selesai</th>
-                <th rowspan="2" class="text-right">Progres %</th>
-                <th rowspan="2" class="text-right">Beban Muatan</th>
-                <th colspan="1" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Blok Usaha</th>
-                <th colspan="1" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Blok Keluarga</th>
+                <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th>
+                <th colspan="3" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                <th colspan="4" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
               </tr>
               <tr>
+                <th class="text-right">Total</th>
+                <th class="text-right">Selesai</th>
+                
+                <th class="text-right bg-purple-soft">Approved</th>
+                <th class="text-right bg-purple-soft">Target</th>
+                <th class="text-right bg-purple-soft">Progres %</th>
+                
                 <th class="text-right bg-cyan-soft">Usaha Total</th>
-                <th class="text-right bg-purple-soft">Keluarga Total</th>
+                <th class="text-right bg-cyan-soft">Target Muatan</th>
+                <th class="text-right bg-cyan-soft">Progres %</th>
+                <th class="text-right bg-cyan-soft">Keluarga Total</th>
               </tr>
             </thead>
             <tbody>
               <% kecStats.forEach(k => { %>
-                <% let kPct = k.total_muatan ? ((k.usaha_total / k.total_muatan) * 100).toFixed(2) : '0.00'; %>
+                <% let fasihPct = k.target_fasih_total ? ((k.approved_total / k.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
+                <% let muatanPct = k.total_muatan ? ((k.usaha_total / k.total_muatan) * 100).toFixed(2) : '0.00'; %>
                 <tr>
                   <td class="td-primary"><a href="/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" style="color: inherit; text-decoration: none;"><i class="bi bi-geo-alt"></i> <%= k.kecamatan %></a></td>
                   <td class="text-right"><%= k.total_subsls %></td>
                   <td class="text-right fw-bold"><%= k.selesai %></td>
-                  <td class="text-right">
-                    <% if (kPct == 100) { %>
+                  
+                  <td class="text-right bg-purple-soft"><%= (k.approved_total || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-purple-soft"><%= (k.target_fasih_total || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-purple-soft">
+                    <% if (parseFloat(fasihPct) >= 100) { %>
                       <span class="badge badge-green">100%</span>
-                    <% } else if (parseFloat(kPct) < 25) { %>
-                      <span class="badge badge-red"><%= kPct %>%</span>
+                    <% } else if (parseFloat(fasihPct) < 25) { %>
+                      <span class="badge badge-red"><%= fasihPct %>%</span>
                     <% } else { %>
-                      <span class="badge badge-blue"><%= kPct %>%</span>
+                      <span class="badge badge-blue"><%= fasihPct %>%</span>
                     <% } %>
                   </td>
-                  <td class="text-right"><%= k.total_muatan.toLocaleString('id-ID') %></td>
-                  <td class="text-right fw-bold td-primary bg-cyan-soft"><%= k.usaha_total.toLocaleString('id-ID') %></td>
-                  <td class="text-right fw-bold bg-purple-soft"><%= k.keluarga_total.toLocaleString('id-ID') %></td>
+                  
+                  <td class="text-right fw-bold bg-cyan-soft"><%= k.usaha_total.toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft"><%= k.total_muatan.toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft">
+                    <% if (parseFloat(muatanPct) >= 100) { %>
+                      <span class="badge badge-green">100%</span>
+                    <% } else if (parseFloat(muatanPct) < 25) { %>
+                      <span class="badge badge-red"><%= muatanPct %>%</span>
+                    <% } else { %>
+                      <span class="badge badge-blue"><%= muatanPct %>%</span>
+                    <% } %>
+                  </td>
+                  <td class="text-right bg-cyan-soft"><%= k.keluarga_total.toLocaleString('id-ID') %></td>
                 </tr>
               <% }) %>
             </tbody>
           </table>
         </div>
 
-        <div style="height: 240px; position: relative;">
+        <div style="height: 280px; position: relative; margin-top: 16px;">
           <canvas id="kecBarChartCanvas"></canvas>
         </div>
 
@@ -250,7 +350,7 @@
       <div class="card-header">
         <div class="card-title"><i class="bi bi-house-door"></i> Klasifikasi Tipe Bangunan Tinggal</div>
       </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 12px;">
 
         <div class="bangunan-card">
           <div class="bangunan-img-wrap">
@@ -306,9 +406,6 @@
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     <% if (summary) { %>
-      // Initialize progress donut chart
-      createDonutChart('progressChart', <%= summary.usaha_total %>, <%= summary.muatan_total %>, '#c2410c');
-
       // Initialize tren line chart
       const rawTrenData = <%- tren %>;
       createTrenChart('trenChartCanvas', rawTrenData);

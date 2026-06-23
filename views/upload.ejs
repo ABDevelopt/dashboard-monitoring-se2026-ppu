@@ -13,14 +13,29 @@
         <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Pilih tanggal pelaksanaan sensus yang diwakili oleh data ini (biasanya tanggal hari ini atau kemarin).</p>
       </div>
 
-      <div class="upload-zone" id="uploadZone">
-        <div class="upload-zone-icon"><i class="bi bi-cloud-arrow-up"></i></div>
-        <div class="upload-zone-title">Tarik & Lepas File Excel di Sini</div>
-        <div class="upload-zone-sub">atau klik untuk menelusuri file (.xlsx, .xls)</div>
-        <input type="file" id="excelFile" name="excelFile" accept=".xlsx, .xls" required style="display: none;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; margin-bottom: 20px;">
+        <div>
+          <label style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-file-earmark-excel-fill text-cyan"></i> 1. File Rekap Progres Pencacahan (Utama)</label>
+          <div class="upload-zone" id="uploadZone" style="height: 150px; padding: 15px;">
+            <div class="upload-zone-icon" style="font-size: 28px; margin-bottom: 6px;"><i class="bi bi-cloud-arrow-up"></i></div>
+            <div class="upload-zone-title" style="font-size: 13px; font-weight: 600;">Pilih File Excel Progres Utama</div>
+            <div class="upload-zone-sub" style="font-size: 11px;">atau seret ke sini (.xlsx, .xls)</div>
+            <input type="file" id="excelFile" name="excelFile" accept=".xlsx, .xls" required style="display: none;">
+          </div>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-file-earmark-excel-fill text-purple"></i> 2. File Rekap Status Assignment FASIH (Opsional)</label>
+          <div class="upload-zone" id="uploadZoneStatus" style="height: 150px; padding: 15px; border-color: rgba(139, 92, 246, 0.4);">
+            <div class="upload-zone-icon" style="font-size: 28px; margin-bottom: 6px; color: var(--accent-purple);"><i class="bi bi-cloud-arrow-up"></i></div>
+            <div class="upload-zone-title" style="font-size: 13px; font-weight: 600; color: var(--accent-purple);">Pilih File Excel Status FASIH</div>
+            <div class="upload-zone-sub" style="font-size: 11px;">atau seret ke sini (.xlsx, .xls)</div>
+            <input type="file" id="statusFile" name="statusFile" accept=".xlsx, .xls" style="display: none;">
+          </div>
+        </div>
       </div>
 
-      <div class="mt-4" style="display: flex; justify-content: flex-end;">
+      <div style="display: flex; justify-content: flex-end;">
         <button type="submit" class="btn btn-primary"><i class="bi bi-lightning-charge-fill"></i> Mulai Proses Upload</button>
       </div>
     </form>
@@ -34,9 +49,9 @@
       <span class="badge badge-blue"><%= uploads.length %> Upload</span>
     </div>
 
-    <div class="search-wrap mb-4" style="max-width: 240px; margin-bottom: 16px;">
-      <input type="search" id="uploadsSearch" placeholder="Cari nama file/tanggal...">
-    </div>
+      <div class="search-wrap mb-4">
+        <input type="search" id="uploadsSearch" placeholder="Cari nama file/tanggal..." style="width: 100%; max-width: 280px;">
+      </div>
 
     <% if (uploads && uploads.length > 0) { %>
       <div class="table-wrap">
@@ -48,19 +63,29 @@
               <th>Tanggal Data</th>
               <th class="text-right">SubSLS Terisi</th>
               <th>Waktu Upload</th>
-              <th style="width: 100px;" class="text-center">Aksi</th>
+              <th style="width: 140px;" class="text-center">Aksi</th>
             </tr>
           </thead>
           <tbody>
             <% uploads.forEach(u => { %>
               <tr>
                 <td class="td-code"><%= u.id %></td>
-                <td class="td-primary"><%= u.filename %></td>
+                <td class="td-primary">
+                  <div><%= u.filename %></div>
+                  <% if (u.status_filename) { %>
+                    <div style="font-size: 11px; color: var(--accent-purple); margin-top: 4px; font-weight: 500;">
+                      <i class="bi bi-phone"></i> Status: <%= u.status_filename %>
+                    </div>
+                  <% } %>
+                </td>
                 <td><span class="badge badge-gray"><%= u.tanggal %></span></td>
                 <td class="text-right fw-bold td-primary"><%= u.total_subsls_terisi.toLocaleString('id-ID') %></td>
                 <td><%= new Date(u.created_at).toLocaleString('id-ID') %></td>
-                <td class="text-center" style="display: flex; gap: 4px; justify-content: center;">
-                  <a href="/admin/upload/download/<%= u.id %>" class="btn btn-secondary" style="padding: 4px 8px;" title="Download File Excel"><i class="bi bi-download"></i></a>
+                <td class="text-center" style="display: flex; gap: 4px; justify-content: center; align-items: center;">
+                  <a href="/admin/upload/download/<%= u.id %>" class="btn btn-secondary" style="padding: 4px 8px;" title="Download File Excel Progres"><i class="bi bi-download"></i></a>
+                  <% if (u.status_filename) { %>
+                    <a href="/admin/upload/download-status/<%= u.id %>" class="btn btn-secondary" style="padding: 4px 8px; color: var(--accent-purple); border-color: rgba(139, 92, 246, 0.3);" title="Download File Status FASIH"><i class="bi bi-phone"></i> <i class="bi bi-download"></i></a>
+                  <% } %>
                   <form action="/admin/upload/delete/<%= u.id %>" method="POST" onsubmit="return confirm('Yakin ingin menghapus data rekap ini?');" style="margin: 0;">
                     <button type="submit" class="btn btn-secondary text-red" style="padding: 4px 8px;" title="Hapus"><i class="bi bi-trash"></i></button>
                   </form>
@@ -83,6 +108,7 @@
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     initUploadZone('uploadZone', 'excelFile');
+    initUploadZone('uploadZoneStatus', 'statusFile');
     makeTableSortable('uploadsTable');
     makeTableSearchable('uploadsSearch', 'uploadsTable');
   });

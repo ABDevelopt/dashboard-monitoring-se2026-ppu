@@ -16,7 +16,7 @@
       </div>
       
       <form action="/subsls" method="GET" id="filterForm">
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
+        <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           
           <div>
             <label style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
@@ -85,7 +85,7 @@
     </div>
 
     <!-- MAIN DATA TABLE -->
-    <div class="card mt-4">
+    <div class="card mt-4" id="subslsTableContainer">
       <div class="card-header">
         <div class="card-title">
           <span><i class="bi bi-box-seam"></i> Daftar Rincian SubSLS (Blok Sensus)</span>
@@ -109,34 +109,36 @@
               <tr>
                 <th rowspan="2">Kode SLS</th>
                 <th rowspan="2">Nama SLS</th>
-                <th rowspan="2">Kecamatan</th>
-                <th rowspan="2">Desa</th>
-                <th rowspan="2">PCL</th>
-                <th rowspan="2">PML</th>
-                <th rowspan="2">Korlap</th>
-                <th rowspan="2" class="text-right">Muatan</th>
+                <th rowspan="2">Wilayah</th>
+                <th rowspan="2">Petugas (PCL/PML/Korlap)</th>
                 <th rowspan="2" class="text-center">Status</th>
-                <th colspan="2" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Blok Usaha</th>
-                <th colspan="2" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Blok Keluarga</th>
+                <th colspan="3" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                <th colspan="4" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
               </tr>
               <tr>
-                <th class="text-right bg-cyan-soft">Usaha Baru</th>
+                <th class="text-right bg-purple-soft">App</th>
+                <th class="text-right bg-purple-soft">Tgt</th>
+                <th class="text-center bg-purple-soft">Detail Status (D/S/A/R)</th>
+                
                 <th class="text-right bg-cyan-soft">Usaha Total</th>
-                <th class="text-right bg-purple-soft">Keluarga Baru</th>
-                <th class="text-right bg-purple-soft">Keluarga Total</th>
+                <th class="text-right bg-cyan-soft">Usaha Baru</th>
+                <th class="text-right bg-cyan-soft">Target Muatan</th>
+                <th class="text-right bg-cyan-soft">Keluarga Total</th>
               </tr>
             </thead>
             <tbody>
               <% data.forEach(row => { %>
                 <tr>
                   <td class="td-code"><%= row.kode %></td>
-                  <td class="td-primary"><%= row.nama_sls %></td>
-                  <td><%= row.kecamatan %></td>
-                  <td><%= row.desa %></td>
-                  <td class="td-primary"><%= row.pcl %></td>
-                  <td><%= row.pml %></td>
-                  <td><%= row.korlap %></td>
-                  <td class="text-right fw-bold" data-sort="<%= row.muatan %>"><%= row.muatan.toLocaleString('id-ID') %></td>
+                  <td class="td-primary" style="font-weight: 600;"><%= row.nama_sls %></td>
+                  <td>
+                    <div style="font-weight: 600; font-size: 12px;"><%= row.kecamatan %></div>
+                    <div style="font-size: 11px; color: var(--text-muted);"><%= row.desa %></div>
+                  </td>
+                  <td>
+                    <div style="font-weight: 500; font-size: 12px;" class="td-primary"><%= row.pcl %></div>
+                    <div style="font-size: 11px; color: var(--text-muted);">PML: <%= row.pml %> · Krl: <%= row.korlap %></div>
+                  </td>
                   <td class="text-center" data-sort="<%= row.sudah_diisi %>">
                     <% if (row.sudah_diisi) { %>
                       <span class="badge badge-green">Selesai</span>
@@ -144,10 +146,17 @@
                       <span class="badge badge-red">Belum</span>
                     <% } %>
                   </td>
-                  <td class="text-right bg-cyan-soft text-green" data-sort="<%= row.usaha_baru %>">+<%= (row.usaha_baru || 0).toLocaleString('id-ID') %></td>
+                  
+                  <td class="text-right bg-purple-soft fw-bold" data-sort="<%= row.approved %>"><%= (row.approved || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-purple-soft" data-sort="<%= row.target_fasih %>"><%= (row.target_fasih || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-center bg-purple-soft" style="font-size: 10px;" data-sort="<%= row.draft + row.submitted_by_pcl + row.approved + row.rejected %>">
+                    D:<%= row.draft %> · S:<%= row.submitted_by_pcl %> · A:<%= row.approved %> · R:<span class="text-red fw-bold"><%= row.rejected %></span>
+                  </td>
+                  
                   <td class="text-right fw-bold bg-cyan-soft" data-sort="<%= row.usaha_total %>"><%= (row.usaha_total || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-purple-soft text-cyan" data-sort="<%= row.keluarga_baru %>">+<%= (row.keluarga_baru || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right fw-bold bg-purple-soft" data-sort="<%= row.keluarga_total %>"><%= (row.keluarga_total || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft text-green" data-sort="<%= row.usaha_baru %>">+<%= (row.usaha_baru || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft" data-sort="<%= row.muatan %>"><%= row.muatan.toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft" data-sort="<%= row.keluarga_total %>"><%= (row.keluarga_total || 0).toLocaleString('id-ID') %></td>
                 </tr>
               <% }) %>
             </tbody>
@@ -195,24 +204,34 @@
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    makeTableSortable('subslsTable');
-    makeTableSearchable('localSearch', 'subslsTable');
-  });
-</script>
-
-<script>
 document.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('ajax-container');
   if (!container) return;
 
   function attachListeners() {
+    // 1. Re-initialize sorting and searching on the table
+    makeTableSortable('subslsTable');
+    makeTableSearchable('localSearch', 'subslsTable');
+
+    // 2. Intercept pagination links for partial table refresh
+    const paginationLinks = document.querySelectorAll('.pagination-pages a.page-btn');
+    paginationLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const urlObj = new URL(link.href, window.location.origin);
+        fetchAndReplace(urlObj.search, false); // false = only refresh table container
+      });
+    });
+
+    // 3. Filter form change listeners
     const filterForm = document.getElementById('filterForm');
     if (filterForm) {
       const selects = filterForm.querySelectorAll('select');
       selects.forEach(sel => {
         sel.addEventListener('change', () => {
-          fetchAndReplace(new URLSearchParams(new FormData(filterForm)).toString());
+          const isKecChange = sel.name === 'kec';
+          const queryString = new URLSearchParams(new FormData(filterForm)).toString();
+          fetchAndReplace(queryString, isKecChange); // if kec changes, refresh whole container to update desa options
         });
       });
       
@@ -220,53 +239,47 @@ document.addEventListener('DOMContentLoaded', () => {
       if (resetBtn) {
         resetBtn.addEventListener('click', (e) => {
           e.preventDefault();
-          fetchAndReplace('');
+          fetchAndReplace('', true); // reset, refresh whole container
         });
       }
     }
   }
 
-  function fetchAndReplace(queryString) {
+  function fetchAndReplace(queryString, refreshAll) {
     const url = '/subsls' + (queryString ? (queryString.startsWith('?') ? queryString : '?' + queryString) : '');
-    const ajaxContainer = document.getElementById('ajax-container');
-    ajaxContainer.style.opacity = '0.5';
-    ajaxContainer.style.pointerEvents = 'none';
+    
+    // Choose target container (ajax-container for full page reload, subslsTableContainer for partial table update)
+    const targetId = refreshAll ? 'ajax-container' : 'subslsTableContainer';
+    const targetElement = document.getElementById(targetId);
+    if (!targetElement) return;
+
+    targetElement.style.opacity = '0.5';
+    targetElement.style.pointerEvents = 'none';
     
     fetch(url)
       .then(res => res.text())
       .then(html => {
         const doc = new DOMParser().parseFromString(html, 'text/html');
-        const newContainer = doc.getElementById('ajax-container');
-        if (newContainer) {
-          ajaxContainer.innerHTML = newContainer.innerHTML;
+        const newElement = doc.getElementById(targetId);
+        if (newElement) {
+          targetElement.innerHTML = newElement.innerHTML;
           history.pushState(null, '', url);
           attachListeners();
-          
-          // Re-initialize local search if it exists in the new DOM
-          const localSearch = document.getElementById('localSearch');
-          if (localSearch) {
-             localSearch.addEventListener('keyup', function() {
-                let filter = this.value.toLowerCase();
-                let rows = document.querySelectorAll('#subslsTable tbody tr');
-                rows.forEach(row => {
-                   let text = row.textContent.toLowerCase();
-                   row.style.display = text.includes(filter) ? '' : 'none';
-                });
-             });
-          }
         }
       })
       .catch(err => console.error(err))
       .finally(() => {
-        ajaxContainer.style.opacity = '1';
-        ajaxContainer.style.pointerEvents = 'auto';
+        if (targetElement) {
+          targetElement.style.opacity = '1';
+          targetElement.style.pointerEvents = 'auto';
+        }
       });
   }
 
   attachListeners();
   
   window.addEventListener('popstate', () => {
-    fetchAndReplace(window.location.search);
+    fetchAndReplace(window.location.search, true);
   });
 });
 </script>
