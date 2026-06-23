@@ -30,9 +30,11 @@
               </div>
             </div>
             <div style="text-align: right;">
-              <% let fasihPct = summary.target_fasih_total ? (((summary.submitted_total + summary.approved_total + summary.rejected_total) / summary.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
+              <% let totalPengerjaan = (summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0); %>
+              <% let fasihPct = summary.target_fasih_total ? ((totalPengerjaan / summary.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
               <div style="font-size: 18px; font-weight: 800; color: var(--accent-purple);"><%= fasihPct %>%</div>
-              <div style="font-size: 10px; color: var(--text-muted);">Capaian FASIH</div>
+              <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-top: 2px;"><%= totalPengerjaan.toLocaleString('id-ID') %> <span style="font-weight: 500; font-size: 10px; color: var(--text-muted);">/ <%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></span></div>
+              <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Capaian FASIH</div>
             </div>
           </div>
 
