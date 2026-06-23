@@ -197,6 +197,7 @@ body {
   min-height: 100vh;
   max-width: 100%;
   overflow-x: hidden;
+  transition: margin-left 0.3s ease;
 }
 
 /* ====== TOPBAR ====== */
@@ -214,6 +215,7 @@ body {
   right: 0;
   z-index: 50;
   min-width: 0;
+  transition: left 0.3s ease;
 }
 .topbar::before {
   content: '';
@@ -405,9 +407,6 @@ tbody td { padding: 10px 12px; color: var(--text-secondary); vertical-align: mid
 .td-code { font-family: 'Courier New', monospace; font-size: 11px; color: var(--text-muted) !important; }
 
 /* Responsive Column Utilities */
-.hide-md { display: table-cell; }
-.hide-sm { display: table-cell; }
-div.hide-md, div.hide-sm { display: block; }
 .show-sm-table-header { display: none; }
 
 
@@ -697,7 +696,7 @@ body.light-mode .page-btn.active { color: white; }
 }
 
 /* ====== TABLES SORTABLE ====== */
-th.sortable { cursor: pointer; position: relative; padding-right: 22px !important; }
+th.sortable { cursor: pointer; position: relative; padding-right: 16px !important; }
 th.sortable::after {
   content: '\f127';
   font-family: 'bootstrap-icons' !important;
@@ -705,7 +704,7 @@ th.sortable::after {
   opacity: 0.45;
   font-size: 11px;
   position: absolute;
-  right: 8px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
 }
@@ -756,7 +755,7 @@ th.sortable.sort-desc::after { content: '\f229'; font-family: 'bootstrap-icons' 
 
 /* ====== MOBILE SIDEBAR TOGGLE & BACKDROP ====== */
 .btn-toggle-sidebar {
-  display: none;
+  display: inline-flex;
   background: none;
   border: none;
   color: var(--text-primary);
@@ -767,6 +766,8 @@ th.sortable.sort-desc::after { content: '\f229'; font-family: 'bootstrap-icons' 
   border-radius: var(--radius-sm);
   transition: var(--transition);
   flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
 }
 .btn-toggle-sidebar:hover { background: var(--bg-card); }
 
@@ -1110,3 +1111,211 @@ th.sortable.sort-desc::after { content: '\f229'; font-family: 'bootstrap-icons' 
     width: calc(100vw - 16px) !important;
   }
 }
+
+/* ==========================================
+   EXPAND TABLE & CARD FULLSCREEN FEATURES
+   ========================================== */
+.card.card-expanded {
+  position: fixed !important;
+  top: var(--header-height) !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: calc(100vh - var(--header-height)) !important;
+  max-width: 100% !important;
+  max-height: calc(100vh - var(--header-height)) !important;
+  z-index: 2000 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background: var(--bg-card) !important;
+  box-shadow: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 24px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  animation: cardFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cardFadeIn {
+  from { opacity: 0; transform: scale(0.995); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.card.card-expanded .card-header {
+  flex-shrink: 0 !important;
+  margin-bottom: 20px !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding-bottom: 16px !important;
+  padding-right: 50px !important; /* avoid close button overlap */
+}
+
+.card.card-expanded .search-wrap,
+.card.card-expanded form,
+.card.card-expanded > div:not(.table-wrap):not(.card-header):not(.search-wrap),
+.card.card-expanded .pagination {
+  flex-shrink: 0 !important;
+  margin-bottom: 16px !important;
+}
+
+.card.card-expanded .table-wrap {
+  flex: 1 !important;
+  min-height: 0 !important; /* allows correct flex column scrolling */
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  background: var(--bg-primary) !important;
+}
+
+/* Force showing all columns when table is expanded & Format as Spreadsheet */
+.card.card-expanded .hide-md {
+  display: table-cell !important;
+}
+.card.card-expanded .hide-sm {
+  display: table-cell !important;
+}
+.card.card-expanded thead.hide-sm {
+  display: table-header-group !important;
+}
+.card.card-expanded tr.hide-md, 
+.card.card-expanded tr.hide-sm {
+  display: table-row !important;
+}
+.card.card-expanded div.hide-md, 
+.card.card-expanded div.hide-sm {
+  display: block !important;
+}
+.card.card-expanded .show-sm-table-header {
+  display: none !important;
+}
+
+/* --- Spreadsheet Mode Styling --- */
+.card.card-expanded table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+  font-size: 11.5px !important;
+}
+
+/* Full Gridlines */
+.card.card-expanded th,
+.card.card-expanded td {
+  border-right: 1px solid var(--border) !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 6px 10px !important;
+}
+
+.card.card-expanded th:last-child,
+.card.card-expanded td:last-child {
+  border-right: none !important;
+}
+
+/* Sticky Headers (Freeze Top Row) */
+.card.card-expanded thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 15 !important;
+  background: var(--bg-secondary) !important;
+  box-shadow: inset 0 -1px 0 var(--border) !important;
+}
+
+/* Sticky First Column (Freeze First Column) */
+.card.card-expanded tbody td:first-child,
+.card.card-expanded thead th:first-child {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 10 !important;
+  background: var(--bg-card) !important;
+  box-shadow: inset -1px 0 0 var(--border), inset 0 -1px 0 var(--border) !important;
+}
+
+/* Sticky First Column Header intersection */
+.card.card-expanded thead th:first-child {
+  z-index: 20 !important;
+  background: var(--bg-secondary) !important;
+  box-shadow: inset -1px -1px 0 var(--border) !important;
+}
+
+/* Zebra striping for spreadsheet rows */
+.card.card-expanded tbody tr:nth-child(even) td {
+  background: var(--bg-secondary) !important;
+}
+.card.card-expanded tbody tr:nth-child(even) td:first-child {
+  background: var(--bg-secondary) !important;
+}
+
+/* Hover highlights */
+.card.card-expanded tbody tr:hover td {
+  background: var(--bg-card-hover) !important;
+}
+.card.card-expanded tbody tr:hover td:first-child {
+  background: var(--bg-card-hover) !important;
+}
+
+/* Monospace fonts for numbers to align columns */
+.card.card-expanded td.text-right {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
+  font-size: 11.5px !important;
+}
+
+/* Close expand overlay button style */
+.btn-close-expand-overlay {
+  position: absolute !important;
+  top: 20px !important;
+  right: 24px !important;
+  background: rgba(239, 68, 68, 0.08) !important;
+  border: 1px solid rgba(239, 68, 68, 0.25) !important;
+  color: var(--accent-red) !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  display: none; /* toggled by JS to flex */
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  z-index: 2010 !important;
+  transition: background-color 0.2s, color 0.2s, transform 0.15s !important;
+  padding: 0 !important;
+}
+.btn-close-expand-overlay:hover {
+  background: var(--accent-red) !important;
+  color: white !important;
+  transform: scale(1.05) !important;
+}
+.btn-close-expand-overlay i {
+  font-size: 14px !important;
+  line-height: 1 !important;
+}
+
+/* Page backdrop lock & layout adjustments when card is expanded */
+body.has-expanded-card {
+  overflow: hidden !important;
+}
+body.has-expanded-card .sidebar {
+  transform: translateX(-100%) !important;
+}
+body.has-expanded-card .main-wrapper {
+  margin-left: 0 !important;
+}
+body.has-expanded-card .topbar {
+  left: 0 !important;
+  z-index: 2010 !important;
+}
+
+/* ====== SIDEBAR COLLAPSE ON DESKTOP ====== */
+@media (min-width: 769px) {
+  body.sidebar-collapsed .sidebar {
+    transform: translateX(-100%);
+  }
+  body.sidebar-collapsed .main-wrapper {
+    margin-left: 0;
+  }
+  body.sidebar-collapsed .topbar {
+    left: 0;
+  }
+}
+
+

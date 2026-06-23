@@ -149,6 +149,22 @@
   </main>
 </div>
 
+<!-- GLOBAL DETAIL MODAL -->
+<div class="custom-modal-backdrop" id="globalDetailModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.65); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(6px); padding: 20px;">
+  <div class="card" id="globalDetailModalCard" style="width: 100%; max-width: 520px; max-height: 90vh; margin: 0; display: flex; flex-direction: column; overflow: hidden; animation: slideIn 0.25s ease; border-radius: 16px;">
+    <div class="card-header" style="padding: 20px 20px 0 20px; border-bottom: none; flex-shrink: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+      <div>
+        <div class="card-title" id="globalDetailModalTitle" style="font-size: 15px; font-weight: 700; line-height: 1.3;"><i class="bi bi-person-bounding-box"></i> Rincian Tugas SLS</div>
+        <div id="globalDetailModalSubtitle" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"></div>
+      </div>
+      <button class="btn btn-secondary" id="btnCloseGlobalDetailModal" aria-label="Tutup" style="min-width: auto; padding: 6px 10px; flex-shrink: 0; border-radius: 8px;"><i class="bi bi-x-lg"></i> Tutup</button>
+    </div>
+    <div class="card-body" id="globalDetailModalBody" style="flex: 1; overflow-y: auto; padding: 16px 20px 20px 20px; display: flex; flex-direction: column; gap: 16px;">
+      <!-- Content injected by JS -->
+    </div>
+  </div>
+</div>
+
 <script src="/js/charts.js?v=<%= appVersion %>"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -157,11 +173,30 @@
     const closeBtn = document.getElementById('sidebarClose');
     const overlay = document.getElementById('sidebarOverlay');
 
+    // Load collapsed state from localStorage on startup (desktop only)
+    if (window.innerWidth > 768) {
+      const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+      if (isCollapsed) {
+        document.body.classList.add('sidebar-collapsed');
+        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
+      }
+    }
+
     if (toggleBtn && sidebar && overlay) {
-      toggleBtn.addEventListener('click', () => {
-        sidebar.classList.add('active');
-        overlay.classList.add('active');
-        toggleBtn.setAttribute('aria-expanded', 'true');
+      toggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.innerWidth > 768) {
+          // Desktop collapse logic
+          document.body.classList.toggle('sidebar-collapsed');
+          const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+          localStorage.setItem('sidebar-collapsed', isCollapsed);
+          toggleBtn.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
+        } else {
+          // Mobile slide-out overlay logic
+          sidebar.classList.add('active');
+          overlay.classList.add('active');
+          toggleBtn.setAttribute('aria-expanded', 'true');
+        }
       });
       
       const closeSidebar = () => {
@@ -204,6 +239,403 @@
         window.dispatchEvent(new Event('themechange'));
       });
     }
+
+    // Dynamic Expand Table Feature
+    const toggleCardExpand = (card, btn, closeOverlayBtn) => {
+      const isExpanded = card.classList.contains('card-expanded');
+      if (isExpanded) {
+        card.classList.remove('card-expanded');
+        document.body.classList.remove('has-expanded-card');
+        btn.innerHTML = '<i class="bi bi-arrows-angle-expand"></i> <span>Expand</span>';
+        btn.classList.remove('btn-danger');
+        btn.classList.add('btn-secondary');
+        if (closeOverlayBtn) closeOverlayBtn.style.display = 'none';
+      } else {
+        card.classList.add('card-expanded');
+        document.body.classList.add('has-expanded-card');
+        btn.innerHTML = '<i class="bi bi-fullscreen-exit"></i> <span>Collapse</span>';
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('btn-danger');
+        if (closeOverlayBtn) closeOverlayBtn.style.display = 'flex';
+      }
+      window.dispatchEvent(new Event('resize'));
+    };
+
+    document.querySelectorAll('.card').forEach(card => {
+      const tableWrap = card.querySelector('.table-wrap');
+      if (!tableWrap) return; // Only apply to cards with tables
+      if (card.querySelector('#kecOverviewTable')) return; // Exclude overview table from expand feature
+
+      const header = card.querySelector('.card-header');
+      if (header) {
+        if (header.querySelector('.btn-expand-table')) return;
+
+        let actionsWrap = header.querySelector('.card-actions');
+        if (!actionsWrap) {
+          actionsWrap = document.createElement('div');
+          actionsWrap.className = 'card-actions';
+          actionsWrap.style.display = 'flex';
+          actionsWrap.style.gap = '8px';
+          actionsWrap.style.alignItems = 'center';
+          actionsWrap.style.marginLeft = 'auto';
+
+          // Move any children other than the title wrapper (usually first child) to actions wrapper
+          const children = Array.from(header.children);
+          if (children.length > 1) {
+            for (let i = 1; i < children.length; i++) {
+              actionsWrap.appendChild(children[i]);
+            }
+          }
+          header.appendChild(actionsWrap);
+        }
+
+        // Create close button for expanded mode
+        const closeOverlayBtn = document.createElement('button');
+        closeOverlayBtn.type = 'button';
+        closeOverlayBtn.className = 'btn-close-expand-overlay';
+        closeOverlayBtn.setAttribute('aria-label', 'Tutup Layar Penuh');
+        closeOverlayBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
+        card.appendChild(closeOverlayBtn);
+
+        const expandBtn = document.createElement('button');
+        expandBtn.type = 'button';
+        expandBtn.className = 'btn btn-secondary btn-sm btn-expand-table';
+        expandBtn.style.padding = '4px 8px';
+        expandBtn.style.fontSize = '12px';
+        expandBtn.style.display = 'inline-flex';
+        expandBtn.style.alignItems = 'center';
+        expandBtn.style.gap = '4px';
+        expandBtn.innerHTML = '<i class="bi bi-arrows-angle-expand"></i> <span>Expand</span>';
+
+        const toggleHandler = (e) => {
+          e.preventDefault();
+          toggleCardExpand(card, expandBtn, closeOverlayBtn);
+        };
+
+        expandBtn.addEventListener('click', toggleHandler);
+        closeOverlayBtn.addEventListener('click', toggleHandler);
+
+        actionsWrap.appendChild(expandBtn);
+      }
+    });
+
+    // ============================================================
+    // Modal Detail Renderers — Summary Card Style
+    // ============================================================
+
+    function makeProgressBar(value, total, color) {
+      const pct = total > 0 ? Math.min(100, (value / total) * 100) : 0;
+      const pctText = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+      return `
+        <div style="display:flex; align-items:center; gap:10px; margin-top:6px;">
+          <div style="flex:1; background:var(--bg-tertiary,rgba(255,255,255,0.08)); border-radius:999px; height:10px; overflow:hidden;">
+            <div style="width:${pct}%; height:100%; background:${color}; border-radius:999px; transition:width 0.6s ease;"></div>
+          </div>
+          <span style="font-size:12px; font-weight:600; color:var(--text-primary); min-width:56px; text-align:right;">${value.toLocaleString('id-ID')} / ${total.toLocaleString('id-ID')}</span>
+          <span style="font-size:11px; color:var(--text-muted); min-width:46px;">(${pctText}%)</span>
+        </div>
+      `;
+    }
+
+    function makeFasihCards(draft, submit, approve, reject) {
+      const cards = [
+        { label: 'Draft',   value: draft,   color: '#6b7280', icon: 'bi-pencil' },
+        { label: 'Submit',  value: submit,  color: '#3b82f6', icon: 'bi-send'   },
+        { label: 'Approve', value: approve, color: '#22c55e', icon: 'bi-check-circle' },
+        { label: 'Reject',  value: reject,  color: '#ef4444', icon: 'bi-x-circle' },
+      ];
+      return `<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:8px;">
+        ${cards.map(c => `
+          <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:10px; padding:10px 8px; text-align:center;">
+            <i class="bi ${c.icon}" style="font-size:16px; color:${c.color};"></i>
+            <div style="font-size:18px; font-weight:700; color:var(--text-primary); margin-top:4px;">${c.value.toLocaleString('id-ID')}</div>
+            <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">${c.label}</div>
+          </div>
+        `).join('')}
+      </div>`;
+    }
+
+    function makeSectionHeader(label) {
+      return `<div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--accent-blue); margin-bottom:2px; display:flex; align-items:center; gap:6px;"><span style="display:inline-block; width:3px; height:14px; background:var(--accent-blue); border-radius:2px;"></span>${label}</div>`;
+    }
+
+    const renderKorlapDetails = (rows, name) => {
+      // Aggregate totals from all PML rows under this Korlap
+      const totalSubSLS = rows.reduce((s, r) => s + (r.total_subsls || 0), 0);
+      const totalSelesai = rows.reduce((s, r) => s + (r.selesai || 0), 0);
+      const totalMuatan = rows.reduce((s, r) => s + (r.total_muatan || 0), 0);
+      const totalUsaha = rows.reduce((s, r) => s + (r.usaha_total || 0), 0);
+      const totalFasihTarget = rows.reduce((s, r) => s + (r.target_fasih_total || 0), 0);
+      const totalDraft = rows.reduce((s, r) => s + (r.draft_total || 0), 0);
+      const totalSubmit = rows.reduce((s, r) => s + (r.submitted_total || 0), 0);
+      const totalApprove = rows.reduce((s, r) => s + (r.approved_total || 0), 0);
+      const totalReject = rows.reduce((s, r) => s + (r.rejected_total || 0), 0);
+      const totalFasihAll = totalDraft + totalSubmit + totalApprove + totalReject;
+
+      // Get first row for metadata (PML name for korlap, korlap for all)
+      const firstPml = rows.length > 0 ? rows[0].pml : '-';
+      const korlapName = rows.length > 0 ? rows[0].korlap : name;
+
+      // Update subtitle in modal header
+      const subtitle = document.getElementById('globalDetailModalSubtitle');
+      if (subtitle) subtitle.textContent = `Korlap: ${korlapName} · ${rows.length} PML bawahan`;
+
+      return `
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+          ${makeSectionHeader('Progres Muatan')}
+          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
+            <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
+          </div>
+          ${makeProgressBar(totalUsaha, totalMuatan, 'var(--accent-blue)')}
+        </div>
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+          ${makeSectionHeader('Progres FASIH (Submit + Approve + Reject)')}
+          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
+            <span style="font-size:13px; color:var(--text-muted);">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} entri</span>
+          </div>
+          ${makeProgressBar(totalFasihAll, totalFasihTarget, '#22c55e')}
+          ${makeFasihCards(totalDraft, totalSubmit, totalApprove, totalReject)}
+        </div>
+        ${rows.length > 0 ? `
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+          ${makeSectionHeader('Rincian Per PML')}
+          <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+            ${rows.map(r => {
+              const pct = r.total_muatan > 0 ? ((r.usaha_total / r.total_muatan)*100).toFixed(1) : '0.0';
+              return `<div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
+                <span style="font-size:12px; font-weight:500;">${r.pml}</span>
+                <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">${r.usaha_total}/${r.total_muatan} (${pct}%)</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>` : ''}
+      `;
+    };
+
+    const renderPmlDetails = (rows, name) => {
+      // Aggregate totals from all PCL rows under this PML
+      const totalSubSLS = rows.reduce((s, r) => s + (r.total_subsls || 0), 0);
+      const totalSelesai = rows.reduce((s, r) => s + (r.selesai || 0), 0);
+      const totalMuatan = rows.reduce((s, r) => s + (r.total_muatan || 0), 0);
+      const totalUsaha = rows.reduce((s, r) => s + (r.usaha_total || 0), 0);
+      const totalFasihTarget = rows.reduce((s, r) => s + (r.target_fasih_total || 0), 0);
+      const totalDraft = rows.reduce((s, r) => s + (r.draft_total || 0), 0);
+      const totalSubmit = rows.reduce((s, r) => s + (r.submitted_total || 0), 0);
+      const totalApprove = rows.reduce((s, r) => s + (r.approved_total || 0), 0);
+      const totalReject = rows.reduce((s, r) => s + (r.rejected_total || 0), 0);
+      const totalFasihAll = totalDraft + totalSubmit + totalApprove + totalReject;
+
+      const korlapName = rows.length > 0 ? rows[0].korlap : '-';
+
+      const subtitle = document.getElementById('globalDetailModalSubtitle');
+      if (subtitle) subtitle.textContent = `Korlap: ${korlapName} · PML: ${name} · ${rows.length} PCL bawahan`;
+
+      return `
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+          ${makeSectionHeader('Progres Muatan')}
+          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
+            <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
+          </div>
+          ${makeProgressBar(totalUsaha, totalMuatan, 'var(--accent-blue)')}
+        </div>
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+          ${makeSectionHeader('Progres FASIH (Submit + Approve + Reject)')}
+          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
+            <span style="font-size:13px; color:var(--text-muted);">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} entri</span>
+          </div>
+          ${makeProgressBar(totalFasihAll, totalFasihTarget, '#22c55e')}
+          ${makeFasihCards(totalDraft, totalSubmit, totalApprove, totalReject)}
+        </div>
+        ${rows.length > 0 ? `
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+          ${makeSectionHeader('Rincian Per PCL')}
+          <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+            ${rows.map(r => {
+              const pct = r.total_muatan > 0 ? ((r.usaha_total / r.total_muatan)*100).toFixed(1) : '0.0';
+              return `<div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
+                <div>
+                  <span style="font-size:12px; font-weight:500;">${r.pcl}</span>
+                  <span style="font-size:10px; color:var(--text-muted); margin-left:6px;">${r.kecamatan}</span>
+                </div>
+                <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">${r.usaha_total}/${r.total_muatan} (${pct}%)</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>` : ''}
+      `;
+    };
+
+    const renderPclDetails = (rows, name) => {
+      // Aggregate totals from all SLS rows for this PCL
+      const totalSubSLS = rows.length;
+      const totalSelesai = rows.filter(r => r.sudah_diisi).length;
+      const totalMuatan = rows.reduce((s, r) => s + (r.muatan || 0), 0);
+      const totalUsaha = rows.reduce((s, r) => s + (r.usaha_total || 0), 0);
+      const totalFasihTarget = rows.reduce((s, r) => s + (r.target_fasih || 0), 0);
+      const totalDraft = rows.reduce((s, r) => s + (r.draft || 0), 0);
+      const totalSubmit = rows.reduce((s, r) => s + (r.submitted_by_pcl || 0), 0);
+      const totalApprove = rows.reduce((s, r) => s + (r.approved || 0), 0);
+      const totalReject = rows.reduce((s, r) => s + (r.rejected || 0), 0);
+      const totalFasihAll = totalDraft + totalSubmit + totalApprove + totalReject;
+
+      const pmlName = rows.length > 0 ? rows[0].pml : '-';
+      const korlapName = rows.length > 0 ? rows[0].korlap : '-';
+
+      const subtitle = document.getElementById('globalDetailModalSubtitle');
+      if (subtitle) subtitle.textContent = `PML: ${pmlName} · Korlap: ${korlapName}`;
+
+      return `
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+          ${makeSectionHeader('Progres Muatan')}
+          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
+            <span style="font-size:13px; color:var(--text-muted);">${totalSelesai} / ${totalSubSLS} SubSLS selesai</span>
+          </div>
+          ${makeProgressBar(totalUsaha, totalMuatan, 'var(--accent-blue)')}
+        </div>
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+          ${makeSectionHeader('Progres FASIH (Submit + Approve + Reject)')}
+          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
+            <span style="font-size:13px; color:var(--text-muted);">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} entri</span>
+          </div>
+          ${makeProgressBar(totalFasihAll, totalFasihTarget, '#22c55e')}
+          ${makeFasihCards(totalDraft, totalSubmit, totalApprove, totalReject)}
+        </div>
+        ${rows.length > 0 ? `
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+          ${makeSectionHeader(`Daftar SubSLS (${totalSubSLS} SLS)`)}
+          <div style="overflow-y:auto; max-height:200px; margin-top:8px;">
+            <table style="width:100%; font-size:11px; border-collapse:collapse;">
+              <thead><tr style="color:var(--text-muted); border-bottom:1px solid var(--border);">
+                <th style="padding:4px 6px; text-align:left; font-weight:600;">SLS</th>
+                <th style="padding:4px 6px; text-align:right; font-weight:600;">Muatan</th>
+                <th style="padding:4px 6px; text-align:right; font-weight:600;">FASIH</th>
+                <th style="padding:4px 6px; text-align:center; font-weight:600;">Status</th>
+              </tr></thead>
+              <tbody>
+                ${rows.map((r, i) => `
+                  <tr style="${i%2===1?'background:var(--bg-tertiary,rgba(255,255,255,0.03));':''}">
+                    <td style="padding:4px 6px;">${r.nama_sls}<br><span style="font-size:9px; color:var(--text-muted); font-family:monospace;">${r.kode}</span></td>
+                    <td style="padding:4px 6px; text-align:right; font-family:monospace;">${r.usaha_total}/${r.muatan}</td>
+                    <td style="padding:4px 6px; text-align:right; font-family:monospace;">${r.approved}/${r.target_fasih}</td>
+                    <td style="padding:4px 6px; text-align:center;"><span style="font-size:9px; padding:2px 6px; border-radius:999px; background:${r.sudah_diisi ? 'rgba(34,197,94,0.15)' : 'rgba(107,114,128,0.15)'}; color:${r.sudah_diisi ? '#22c55e' : '#9ca3af'};">${r.sudah_diisi ? 'Selesai' : 'Progres'}</span></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>` : ''}
+      `;
+    };
+
+    // Intercept click on PML/PCL/Korlap links — works inside expanded table or any table on page
+    function openDetailModal(type, name) {
+      const modal = document.getElementById('globalDetailModal');
+      const modalTitle = document.getElementById('globalDetailModalTitle');
+      const modalSubtitle = document.getElementById('globalDetailModalSubtitle');
+      const modalBody = document.getElementById('globalDetailModalBody');
+
+      const typeLabel = type === 'korlap' ? 'Korlap' : type === 'pml' ? 'PML' : 'PCL';
+      modalTitle.innerHTML = `<i class="bi bi-person-bounding-box"></i> Rincian Tugas SLS: ${name}`;
+      if (modalSubtitle) modalSubtitle.textContent = 'Memuat data...';
+      modalBody.innerHTML = `
+        <div style="display:flex; justify-content:center; align-items:center; padding:40px; gap:12px; color:var(--text-muted);">
+          <div style="border:3px solid var(--border); border-top:3px solid var(--accent-blue); border-radius:50%; width:24px; height:24px; animation:gdm-spin 0.8s linear infinite;"></div>
+          <span>Memuat rincian data...</span>
+        </div>
+        <style>@keyframes gdm-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>
+      `;
+      modal.style.display = 'flex';
+
+      fetch(`/api/detail/${type}?name=${encodeURIComponent(name)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            modalBody.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+            return;
+          }
+          if (data.length === 0) {
+            modalBody.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);"><i class="bi bi-inbox" style="font-size:32px;"></i><br><br>Tidak ada data yang ditemukan untuk <strong>${name}</strong>.</div>`;
+            return;
+          }
+          if (type === 'korlap') {
+            modalBody.innerHTML = renderKorlapDetails(data, name);
+          } else if (type === 'pml') {
+            modalBody.innerHTML = renderPmlDetails(data, name);
+          } else if (type === 'pcl') {
+            modalBody.innerHTML = renderPclDetails(data, name);
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          modalBody.innerHTML = `<div class="alert alert-error">Gagal memuat data: ${err.message}</div>`;
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('a');
+      if (!a) return;
+
+      // Works inside expanded table cards
+      const card = a.closest('.card.card-expanded');
+      if (!card) return;
+
+      const href = a.getAttribute('href');
+      if (!href) return;
+
+      let type = '';
+      let name = '';
+
+      if (href.startsWith('/korlap?korlap=')) {
+        type = 'korlap';
+        name = decodeURIComponent(href.split('/korlap?korlap=')[1]);
+      } else if (href.startsWith('/pml?pml=')) {
+        type = 'pml';
+        name = decodeURIComponent(href.split('/pml?pml=')[1]);
+      } else if (href.startsWith('/pcl?pcl=')) {
+        type = 'pcl';
+        name = decodeURIComponent(href.split('/pcl?pcl=')[1]);
+      }
+
+      if (type && name) {
+        e.preventDefault();
+        openDetailModal(type, name);
+      }
+    });
+
+    // Close Modal Events
+    const detailModal = document.getElementById('globalDetailModal');
+    const closeDetailModalBtn = document.getElementById('btnCloseGlobalDetailModal');
+    if (detailModal && closeDetailModalBtn) {
+      const closeDetailModal = () => {
+        detailModal.style.display = 'none';
+      };
+      closeDetailModalBtn.addEventListener('click', closeDetailModal);
+      detailModal.addEventListener('click', (e) => {
+        if (e.target === detailModal) closeDetailModal();
+      });
+    }
+
+    // Close expanded table on ESC key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('globalDetailModal');
+        if (modal && modal.style.display === 'flex') {
+          modal.style.display = 'none';
+          e.stopPropagation();
+          e.preventDefault();
+          return;
+        }
+
+        const expandedCard = document.querySelector('.card.card-expanded');
+        if (expandedCard) {
+          const btn = expandedCard.querySelector('.btn-expand-table');
+          const closeOverlayBtn = expandedCard.querySelector('.btn-close-expand-overlay');
+          if (btn) {
+            toggleCardExpand(expandedCard, btn, closeOverlayBtn);
+          }
+        }
+      }
+    }, true);
   });
 </script>
 <%- typeof scripts !== 'undefined' ? scripts : '' %>
