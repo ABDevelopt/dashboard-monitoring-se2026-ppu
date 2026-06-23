@@ -1470,4 +1470,89 @@ body.light-mode .logo-dark {
   display: none !important;
 }
 
+/* ====== MINIMALIST FILTER BAR ====== */
+.card:has(#filterForm) {
+  padding: 10px 14px !important;
+  margin-bottom: 16px !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.card:has(#filterForm) .card-header {
+  border-bottom: none !important;
+  margin-bottom: 8px !important;
+  padding: 0 0 4px 0 !important;
+  align-items: center !important;
+  min-height: 24px !important;
+}
+
+.card:has(#filterForm) .card-title {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: var(--text-muted) !important;
+}
+
+.card:has(#filterForm) .filter-form-grid {
+  gap: 8px !important;
+}
+
+.card:has(#filterForm) label {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--text-muted) !important;
+  margin-bottom: 3px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.03em !important;
+}
+
+.card:has(#filterForm) select {
+  font-size: 12px !important;
+  padding: 5px 8px !important;
+  height: 30px !important;
+  border-radius: 6px !important;
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.card:has(#filterForm) select:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+.card:has(#filterForm) select:hover:not(:disabled) {
+  border-color: var(--accent-cyan) !important;
+}
+
+.card:has(#filterForm) select:focus {
+  border-color: var(--accent-cyan) !important;
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.1) !important;
+}
+
+.card:has(#filterForm) .btn-secondary.btn-xs {
+  font-size: 11px !important;
+  padding: 2px 8px !important;
+  height: 24px !important;
+  border-radius: 5px !important;
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-secondary) !important;
+  font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  transition: all 0.2s ease !important;
+}
+
+.card:has(#filterForm) .btn-secondary.btn-xs:hover {
+  background: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
 
