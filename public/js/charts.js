@@ -14,6 +14,42 @@ function getThemeColors() {
 }
 
 // ===== TABLE SORT =====
+function cleanNumber(val) {
+  if (!val || val === '-' || val.trim() === '') return NaN;
+  let s = val.trim();
+  if (s.endsWith('%')) {
+    s = s.slice(0, -1).trim();
+  }
+  if (/[a-zA-Z]/g.test(s)) {
+    return NaN;
+  }
+  if (s.replace(/[^0-9]/g, '').length >= 15) {
+    return NaN;
+  }
+  let normalized = s;
+  if (normalized.includes('.') && normalized.includes(',')) {
+    if (normalized.indexOf('.') < normalized.indexOf(',')) {
+      normalized = normalized.replace(/\./g, '').replace(/,/g, '.');
+    } else {
+      normalized = normalized.replace(/,/g, '');
+    }
+  } else if (normalized.includes(',')) {
+    const parts = normalized.split(',');
+    if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3)) {
+      normalized = normalized.replace(/,/g, '');
+    } else {
+      normalized = normalized.replace(/,/g, '.');
+    }
+  } else if (normalized.includes('.')) {
+    const parts = normalized.split('.');
+    if (parts.length > 2 || (parts.length === 2 && parts[1].length === 3)) {
+      normalized = normalized.replace(/\./g, '');
+    }
+  }
+  const parsed = parseFloat(normalized);
+  return isNaN(parsed) ? NaN : parsed;
+}
+
 function makeTableSortable(tableId) {
   const table = document.getElementById(tableId);
   if (!table) return;
@@ -50,10 +86,23 @@ function makeTableSortable(tableId) {
       rows.sort((a, b) => {
         const aVal = a.cells[colIdx]?.dataset.sort || a.cells[colIdx]?.textContent.trim() || '';
         const bVal = b.cells[colIdx]?.dataset.sort || b.cells[colIdx]?.textContent.trim() || '';
-        const aNum = parseFloat(aVal.replace(/[^0-9.-]/g, ''));
-        const bNum = parseFloat(bVal.replace(/[^0-9.-]/g, ''));
-        if (!isNaN(aNum) && !isNaN(bNum)) return (aNum - bNum) * sortDir;
-        return aVal.localeCompare(bVal, 'id') * sortDir;
+        
+        const aNum = cleanNumber(aVal);
+        const bNum = cleanNumber(bVal);
+        
+        const aIsNum = !isNaN(aNum);
+        const bIsNum = !isNaN(bNum);
+        
+        if (aIsNum && bIsNum) {
+          return (aNum - bNum) * sortDir;
+        } else if (aIsNum) {
+          return -1; // Numbers always float above non-numbers
+        } else if (bIsNum) {
+          return 1;  // Non-numbers always float below numbers
+        } else {
+          // Both are non-numbers, sort alphabetically
+          return aVal.localeCompare(bVal, 'id', { numeric: true, sensitivity: 'base' }) * sortDir;
+        }
       });
       rows.forEach(r => tbody.appendChild(r));
     };
