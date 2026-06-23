@@ -314,7 +314,7 @@ function loadMasterFromExcel(filePath) {
     const pcl = colIdx.pcl !== -1 ? normalizeName(String(row[colIdx.pcl] || '')) : '';
     const muatan = colIdx.muatan !== -1 ? toInt(row[colIdx.muatan]) : 0;
     const kode_2025 = colIdx.kode_2025 !== -1 ? String(row[colIdx.kode_2025] || '').trim() : kode;
-    const target_fasih = colIdx.target_fasih !== -1 ? toInt(row[colIdx.target_fasih]) : muatan; // fallback to muatan
+    const target_fasih = colIdx.target_fasih !== -1 ? toInt(row[colIdx.target_fasih]) : 0; // fallback to 0 instead of muatan
 
     dataRows.push([
       kode,
