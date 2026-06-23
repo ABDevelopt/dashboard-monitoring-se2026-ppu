@@ -134,10 +134,7 @@ function getProgresWithMaster(uploadId) {
       COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
       COALESCE(p.approved, 0) AS approved,
       COALESCE(p.rejected, 0) AS rejected,
-      CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-           THEN 0 
-           ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-      END AS target_fasih,
+      COALESCE(m.target_fasih, 0) AS target_fasih,
       CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END AS sudah_diisi
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
@@ -162,10 +159,7 @@ function getKecamatanStats(uploadId) {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-               THEN 0 
-               ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-          END) AS target_fasih_total
+      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     GROUP BY m.kecamatan
@@ -190,10 +184,7 @@ function getKorlapStats(uploadId) {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-               THEN 0 
-               ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-          END) AS target_fasih_total
+      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     GROUP BY m.korlap
@@ -218,10 +209,7 @@ function getPmlStats(uploadId) {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-               THEN 0 
-               ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-          END) AS target_fasih_total
+      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     GROUP BY m.pml, m.korlap
@@ -247,10 +235,7 @@ function getPclStats(uploadId) {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-               THEN 0 
-               ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-          END) AS target_fasih_total
+      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
@@ -298,10 +283,7 @@ function getOverviewSummary(uploadId) {
   `).get().n || 0;
 
   const target_fasih_total = getDb().prepare(`
-    SELECT SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-             THEN 0 
-             ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-        END) AS n
+    SELECT SUM(COALESCE(m.target_fasih, 0)) AS n
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
   `).get(uploadId).n || 0;
