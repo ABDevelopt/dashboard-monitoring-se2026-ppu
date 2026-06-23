@@ -301,7 +301,7 @@ function loadMasterFromExcel(filePath) {
         if (res.changes > 0) updatedCount++;
       }
     })();
-    return; // Selesai update target_fasih, tidak lanjut ke load master normal
+    return updatedCount; // Selesai update target_fasih, tidak lanjut ke load master normal
   }
 
   const colIdx = {
