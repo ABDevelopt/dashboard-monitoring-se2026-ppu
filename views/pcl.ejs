@@ -195,21 +195,21 @@
 
                 <!-- Mini Grid Status FASIH -->
                 <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; text-align: center;">
-                  <div style="background: rgba(255,193,7,0.08); border: 1px solid rgba(255,193,7,0.15); border-radius: 4px; padding: 4px 2px;">
-                    <div style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 500;">Draft</div>
-                    <div style="font-size: 13px; font-weight: bold; color: var(--accent-yellow); margin-top: 2px;"><%= draftFasih %></div>
+                  <div class="fasih-grid-item fasih-item-draft">
+                    <div class="fasih-grid-item-label">Draft</div>
+                    <div class="fasih-grid-item-value"><%= draftFasih %></div>
                   </div>
-                  <div style="background: rgba(13,110,253,0.08); border: 1px solid rgba(13,110,253,0.15); border-radius: 4px; padding: 4px 2px;">
-                    <div style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 500;">Submit</div>
-                    <div style="font-size: 13px; font-weight: bold; color: var(--accent-blue); margin-top: 2px;"><%= submittedFasih %></div>
+                  <div class="fasih-grid-item fasih-item-submit">
+                    <div class="fasih-grid-item-label">Submit</div>
+                    <div class="fasih-grid-item-value"><%= submittedFasih %></div>
                   </div>
-                  <div style="background: rgba(220,53,69,0.08); border: 1px solid rgba(220,53,69,0.15); border-radius: 4px; padding: 4px 2px;">
-                    <div style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 500;">Reject</div>
-                    <div style="font-size: 13px; font-weight: bold; color: var(--accent-red); margin-top: 2px;"><%= rejectedFasih %></div>
+                  <div class="fasih-grid-item fasih-item-approve">
+                    <div class="fasih-grid-item-label">Approve</div>
+                    <div class="fasih-grid-item-value"><%= doneFasih %></div>
                   </div>
-                  <div style="background: rgba(40,167,69,0.08); border: 1px solid rgba(40,167,69,0.15); border-radius: 4px; padding: 4px 2px;">
-                    <div style="font-size: 9px; color: var(--text-secondary); text-transform: uppercase; font-weight: 500;">Approve</div>
-                    <div style="font-size: 13px; font-weight: bold; color: var(--accent-green); margin-top: 2px;"><%= doneFasih %></div>
+                  <div class="fasih-grid-item fasih-item-reject">
+                    <div class="fasih-grid-item-label">Reject</div>
+                    <div class="fasih-grid-item-value"><%= rejectedFasih %></div>
                   </div>
                 </div>
               </div>

@@ -73,39 +73,39 @@
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
             
             <!-- DRAFT -->
-            <div style="background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <div class="status-draft-bg" style="border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
               <div>
                 <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">DRAFT</div>
                 <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Belum Submit</div>
               </div>
-              <div style="font-size: 14px; font-weight: 800; color: var(--accent-yellow);"><%= (summary.draft_total || 0).toLocaleString('id-ID') %></div>
+              <div class="status-draft-text" style="font-size: 14px; font-weight: 800;"><%= (summary.draft_total || 0).toLocaleString('id-ID') %></div>
             </div>
 
             <!-- SUBMITTED BY PCL -->
-            <div style="background: rgba(59, 130, 246, 0.04); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <div class="status-submit-bg" style="border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
               <div>
                 <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">SUBMITTED</div>
                 <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Oleh PCL</div>
               </div>
-              <div style="font-size: 14px; font-weight: 800; color: var(--accent-blue);"><%= (summary.submitted_total || 0).toLocaleString('id-ID') %></div>
+              <div class="status-submit-text" style="font-size: 14px; font-weight: 800;"><%= (summary.submitted_total || 0).toLocaleString('id-ID') %></div>
             </div>
 
             <!-- APPROVED -->
-            <div style="background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <div class="status-approve-bg" style="border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
               <div>
                 <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">APPROVED</div>
                 <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Diterima PML</div>
               </div>
-              <div style="font-size: 14px; font-weight: 800; color: var(--accent-green);"><%= (summary.approved_total || 0).toLocaleString('id-ID') %></div>
+              <div class="status-approve-text" style="font-size: 14px; font-weight: 800;"><%= (summary.approved_total || 0).toLocaleString('id-ID') %></div>
             </div>
 
             <!-- REJECTED -->
-            <div style="background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <div class="status-reject-bg" style="border-radius: var(--radius-sm); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
               <div>
                 <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">REJECTED</div>
                 <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Ditolak PML</div>
               </div>
-              <div style="font-size: 14px; font-weight: 800; color: var(--accent-red);"><%= (summary.rejected_total || 0).toLocaleString('id-ID') %></div>
+              <div class="status-reject-text" style="font-size: 14px; font-weight: 800;"><%= (summary.rejected_total || 0).toLocaleString('id-ID') %></div>
             </div>
 
           </div>

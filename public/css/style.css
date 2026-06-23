@@ -531,53 +531,86 @@ select:focus, input:focus {
   font-weight: 700;
   font-size: 12px;
 }
+/* Unified background/border and text colors matching the overview page */
+.status-draft-bg {
+  background: rgba(245, 158, 11, 0.04) !important;
+  border: 1px solid rgba(245, 158, 11, 0.15) !important;
+}
+.status-draft-text {
+  color: var(--accent-yellow) !important;
+}
+
+.status-submit-bg {
+  background: rgba(59, 130, 246, 0.04) !important;
+  border: 1px solid rgba(59, 130, 246, 0.15) !important;
+}
+.status-submit-text {
+  color: var(--accent-blue) !important;
+}
+body.light-mode .status-submit-text {
+  color: #2563eb !important;
+}
+
+.status-approve-bg {
+  background: rgba(16, 185, 129, 0.04) !important;
+  border: 1px solid rgba(16, 185, 129, 0.15) !important;
+}
+.status-approve-text {
+  color: var(--accent-green) !important;
+}
+body.light-mode .status-approve-text {
+  color: #059669 !important;
+}
+
+.status-reject-bg {
+  background: rgba(239, 68, 68, 0.04) !important;
+  border: 1px solid rgba(239, 68, 68, 0.15) !important;
+}
+.status-reject-text {
+  color: var(--accent-red) !important;
+}
+body.light-mode .status-reject-text {
+  color: #dc2626 !important;
+}
+
 /* Light/Dark mode colors for the grid items */
-/* Draft: Slate/Gray */
+/* Draft: Yellow theme matching overview */
 .fasih-item-draft {
-  background: rgba(148, 163, 184, 0.08);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(245, 158, 11, 0.04);
+  border: 1px solid rgba(245, 158, 11, 0.15);
 }
 .fasih-item-draft .fasih-grid-item-label { color: var(--text-muted); }
-.fasih-item-draft .fasih-grid-item-value { color: var(--text-primary); }
+.fasih-item-draft .fasih-grid-item-value { color: var(--accent-yellow); }
 
-/* Submit: Purple */
+/* Submit: Blue theme matching overview */
 .fasih-item-submit {
-  background: rgba(139, 92, 246, 0.08);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: rgba(59, 130, 246, 0.04);
+  border: 1px solid rgba(59, 130, 246, 0.15);
 }
-body.light-mode .fasih-item-submit {
-  background: rgba(139, 92, 246, 0.06);
-}
-.fasih-item-submit .fasih-grid-item-label { color: #a78bfa; }
-body.light-mode .fasih-item-submit .fasih-grid-item-label { color: #7c3aed; }
-.fasih-item-submit .fasih-grid-item-value { color: #c084fc; }
-body.light-mode .fasih-item-submit .fasih-grid-item-value { color: #6d28d9; }
+.fasih-item-submit .fasih-grid-item-label { color: #60a5fa; }
+body.light-mode .fasih-item-submit .fasih-grid-item-label { color: #1d4ed8; }
+.fasih-item-submit .fasih-grid-item-value { color: var(--accent-blue); }
+body.light-mode .fasih-item-submit .fasih-grid-item-value { color: #2563eb; }
 
-/* Approve: Green */
+/* Approve: Green theme matching overview */
 .fasih-item-approve {
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-body.light-mode .fasih-item-approve {
-  background: rgba(16, 185, 129, 0.06);
+  background: rgba(16, 185, 129, 0.04);
+  border: 1px solid rgba(16, 185, 129, 0.15);
 }
 .fasih-item-approve .fasih-grid-item-label { color: #34d399; }
 body.light-mode .fasih-item-approve .fasih-grid-item-label { color: #059669; }
-.fasih-item-approve .fasih-grid-item-value { color: #6ee7b7; }
-body.light-mode .fasih-item-approve .fasih-grid-item-value { color: #047857; }
+.fasih-item-approve .fasih-grid-item-value { color: var(--accent-green); }
+body.light-mode .fasih-item-approve .fasih-grid-item-value { color: #059669; }
 
-/* Reject: Red */
+/* Reject: Red theme matching overview */
 .fasih-item-reject {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-body.light-mode .fasih-item-reject {
-  background: rgba(239, 68, 68, 0.06);
+  background: rgba(239, 68, 68, 0.04);
+  border: 1px solid rgba(239, 68, 68, 0.15);
 }
 .fasih-item-reject .fasih-grid-item-label { color: #f87171; }
 body.light-mode .fasih-item-reject .fasih-grid-item-label { color: #dc2626; }
-.fasih-item-reject .fasih-grid-item-value { color: #fca5a5; }
-body.light-mode .fasih-item-reject .fasih-grid-item-value { color: #b91c1c; }
+.fasih-item-reject .fasih-grid-item-value { color: var(--accent-red); }
+body.light-mode .fasih-item-reject .fasih-grid-item-value { color: #dc2626; }
 
 /* ====== UPLOAD ZONE ====== */
 .upload-zone {
