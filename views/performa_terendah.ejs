@@ -92,6 +92,14 @@
                       <span class="warning-stat"><i class="bi bi-people text-cyan"></i> Keluarga: <strong><%= item.keluarga_total %></strong></span>
                       <span class="warning-stat">Progres: <strong><%= item.pct %>%</strong></span>
                     </div>
+                    <div class="warning-stats" style="margin-top: 8px; font-size: 11px; display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; border-top: 1px dashed var(--border);">
+                      <span style="color: var(--text-secondary);"><i class="bi bi-cloud-arrow-up"></i> FASIH:</span>
+                      <span class="badge badge-blue">Target: <%= item.target_fasih_total %></span>
+                      <span class="badge badge-gray">Draft: <%= item.draft_total %></span>
+                      <span class="badge badge-purple">Submit: <%= item.submitted_total %></span>
+                      <span class="badge badge-green">Approve: <%= item.approved_total %></span>
+                      <span class="badge badge-red">Reject: <%= item.rejected_total %></span>
+                    </div>
                     <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
                       <div class="progress-bar red" data-width="<%= item.pct %>" style="width: 0%;"></div>
                     </div>
@@ -153,6 +161,14 @@
                       <span class="warning-stat"><i class="bi bi-building text-green"></i> Usaha: <strong><%= item.usaha_total %></strong></span>
                       <span class="warning-stat"><i class="bi bi-people text-cyan"></i> Keluarga: <strong><%= item.keluarga_total %></strong></span>
                       <span class="warning-stat">Progres: <strong><%= item.pct %>%</strong></span>
+                    </div>
+                    <div class="warning-stats" style="margin-top: 8px; font-size: 11px; display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; border-top: 1px dashed var(--border);">
+                      <span style="color: var(--text-secondary);"><i class="bi bi-cloud-arrow-up"></i> FASIH:</span>
+                      <span class="badge badge-blue">Target: <%= item.target_fasih_total %></span>
+                      <span class="badge badge-gray">Draft: <%= item.draft_total %></span>
+                      <span class="badge badge-purple">Submit: <%= item.submitted_total %></span>
+                      <span class="badge badge-green">Approve: <%= item.approved_total %></span>
+                      <span class="badge badge-red">Reject: <%= item.rejected_total %></span>
                     </div>
                     <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
                       <div class="progress-bar red" data-width="<%= item.pct %>" style="width: 0%;"></div>
