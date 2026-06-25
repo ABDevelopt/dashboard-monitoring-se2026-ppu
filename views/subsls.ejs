@@ -71,13 +71,13 @@
           <div>
             <label id="statusLabel" for="filterStatus" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">
               Status Progres
-              <span title="Kriteria Selesai: SubSLS memiliki target muatan > 0 DAN jumlah (Usaha Ditemukan + Baru) >= Muatan" style="cursor: help; margin-left: 4px;"><i class="bi bi-info-circle"></i></span>
+              <!-- <span title="Kriteria Selesai: SubSLS memiliki target muatan > 0 DAN jumlah (Usaha Ditemukan + Baru) >= Muatan" style="cursor: help; margin-left: 4px;"><i class="bi bi-info-circle"></i></span> -->
             </label>
-            <select id="filterStatus" name="status" style="width:100%;">
-              <option value="">-- Semua Status --</option>
-              <option value="selesai" <%= filterStatus === 'selesai' ? 'selected' : '' %>>Selesai Pencacahan</option>
-              <option value="belum" <%= filterStatus === 'belum' ? 'selected' : '' %>>Belum Selesai</option>
-            </select>
+            <!-- <select id="filterStatus" name="status" style="width:100%;"> -->
+              <!-- <option value="">-- Semua Status --</option> -->
+              <!-- <option value="selesai" <%= filterStatus === 'selesai' ? 'selected' : '' %>>Selesai Pencacahan</option> -->
+              <!-- <option value="belum" <%= filterStatus === 'belum' ? 'selected' : '' %>>Belum Selesai</option> -->
+            <!-- </select> -->
           </div>
 
         </div>
@@ -143,13 +143,13 @@
                     <div style="font-size: 11px; color: var(--text-muted);" class="hide-md">PML: <%= row.pml %> · Krl: <%= row.korlap %></div>
 
                   </td>
-                  <td class="text-center" data-sort="<%= row.sudah_diisi %>">
-                    <% if (row.sudah_diisi) { %>
-                      <span class="badge badge-green">Selesai</span>
-                    <% } else { %>
-                      <span class="badge badge-red">Belum</span>
-                    <% } %>
-                  </td>
+                  <!-- <td class="text-center" data-sort="<%= row.sudah_diisi %>"> -->
+                    <!-- <% if (row.sudah_diisi) { %> -->
+                      <!-- <span class="badge badge-green">Selesai</span> -->
+                    <!-- <% } else { %> -->
+                      <!-- <span class="badge badge-red">Belum</span> -->
+                    <!-- <% } %> -->
+                  <!-- </td> -->
                   
                   <td class="text-right bg-purple-soft fw-bold" data-sort="<%= row.approved %>"><%= (row.approved || 0).toLocaleString('id-ID') %></td>
                   <td class="text-right bg-purple-soft" data-sort="<%= row.target_fasih %>"><%= (row.target_fasih || 0).toLocaleString('id-ID') %></td>
