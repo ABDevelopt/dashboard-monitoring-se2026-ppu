@@ -626,7 +626,11 @@ function initSettings() {
     'page_pcl': '1',
     'page_export': '1',
     'page_aiagent': '0',
+    'agent_provider': 'gemini',
     'gemini_api_key': '',
+    'gemini_model': 'gemini-2.5-flash',
+    'openai_api_key': '',
+    'openai_model': 'gpt-5.5',
     'overview_fasih': '1',
     'overview_muatan': '1',
     'overview_tren_muatan': '1',
@@ -638,6 +642,11 @@ function initSettings() {
   const insert = getDb().prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
   for (const [k, v] of Object.entries(defaults)) {
     insert.run(k, v);
+  }
+
+  const geminiModel = getDb().prepare('SELECT value FROM settings WHERE key = ?').get('gemini_model');
+  if (geminiModel && geminiModel.value === 'gemini-1.5-flash') {
+    getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-2.5-flash', 'gemini_model');
   }
 }
 

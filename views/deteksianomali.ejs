@@ -79,6 +79,7 @@
           <table id="anomalyTable">
             <thead>
               <tr>
+                <th rowspan="2" class="text-center" style="font-weight: 600; width: 40px;">No</th>
                 <th rowspan="2">Nama PCL</th>
                 <th rowspan="2">Kecamatan</th>
                 <th rowspan="2" class="hide-md">PML</th>
@@ -93,8 +94,9 @@
               </tr>
             </thead>
             <tbody>
-              <% anomalies.forEach(item => { %>
+              <% anomalies.forEach((item, index) => { %>
                 <tr>
+                  <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                   <td class="td-primary">
                     <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: inherit; text-decoration: none; display: block;">
                       <i class="bi bi-person-exclamation text-yellow"></i> <%= item.pcl %>

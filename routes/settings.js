@@ -15,7 +15,11 @@ const settingKeys = [
   'page_pcl',
   'page_export',
   'page_aiagent',
+  'agent_provider',
   'gemini_api_key',
+  'gemini_model',
+  'openai_api_key',
+  'openai_model',
   'overview_fasih',
   'overview_muatan',
   'overview_tren_muatan',
@@ -35,7 +39,7 @@ router.get('/', (req, res) => {
 router.post('/', (req, res) => {
   const updatedSettings = {};
   for (const key of settingKeys) {
-    if (key === 'gemini_api_key') {
+    if (['agent_provider', 'gemini_api_key', 'gemini_model', 'openai_api_key', 'openai_model'].includes(key)) {
       updatedSettings[key] = req.body[key] ? req.body[key].trim() : '';
     } else {
       updatedSettings[key] = req.body[key] === '1' ? '1' : '0';

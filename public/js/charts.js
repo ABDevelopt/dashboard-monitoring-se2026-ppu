@@ -53,26 +53,54 @@ function cleanNumber(val) {
 function makeTableSortable(tableId) {
   const table = document.getElementById(tableId);
   if (!table) return;
-  const headers = table.querySelectorAll('thead th');
+  const headers = Array.from(table.querySelectorAll('thead th'));
   let sortCol = -1, sortDir = 1;
 
-  headers.forEach((th, colIdx) => {
-    // Skip super headers with colspan > 1
+  const headerToColumnIndex = new Map();
+  const occupied = [];
+  Array.from(table.querySelectorAll('thead tr')).forEach((row, rowIndex) => {
+    let colIndex = 0;
+    Array.from(row.cells).forEach((cell) => {
+      while (occupied[colIndex] && occupied[colIndex] > rowIndex) {
+        colIndex += 1;
+      }
+      const colspan = parseInt(cell.getAttribute('colspan') || '1', 10);
+      const rowspan = parseInt(cell.getAttribute('rowspan') || '1', 10);
+      headerToColumnIndex.set(cell, colIndex);
+      for (let offset = 0; offset < colspan; offset += 1) {
+        if (rowspan > 1) {
+          occupied[colIndex + offset] = rowIndex + rowspan;
+        }
+      }
+      colIndex += colspan;
+    });
+  });
+
+  headers.forEach((th) => {
     const colSpan = th.getAttribute('colspan');
-    if (colSpan && parseInt(colSpan) > 1) {
+    if (colSpan && parseInt(colSpan, 10) > 1) {
       return;
     }
-    
-    // Add sortable class to show icon cues
+
     th.classList.add('sortable');
     th.setAttribute('tabindex', '0');
     th.setAttribute('aria-sort', 'none');
-    
-    const performSort = () => {
-      if (sortCol === colIdx) sortDir *= -1;
-      else { sortDir = 1; sortCol = colIdx; }
 
-      headers.forEach(h => {
+    const actualColIdx = headerToColumnIndex.get(th);
+    const getCellValue = (row) => {
+      const cell = row.cells[actualColIdx];
+      return cell?.dataset.sort ?? cell?.textContent.trim() ?? '';
+    };
+
+    const performSort = () => {
+      if (sortCol === actualColIdx) {
+        sortDir *= -1;
+      } else {
+        sortDir = 1;
+        sortCol = actualColIdx;
+      }
+
+      headers.forEach((h) => {
         h.classList.remove('sort-asc', 'sort-desc');
         if (h.classList.contains('sortable')) {
           h.setAttribute('aria-sort', 'none');
@@ -81,30 +109,29 @@ function makeTableSortable(tableId) {
       th.classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
       th.setAttribute('aria-sort', sortDir === 1 ? 'ascending' : 'descending');
 
-      const tbody = table.querySelector('tbody');
-      const rows = Array.from(tbody.querySelectorAll('tr'));
-      rows.sort((a, b) => {
-        const aVal = a.cells[colIdx]?.dataset.sort || a.cells[colIdx]?.textContent.trim() || '';
-        const bVal = b.cells[colIdx]?.dataset.sort || b.cells[colIdx]?.textContent.trim() || '';
-        
-        const aNum = cleanNumber(aVal);
-        const bNum = cleanNumber(bVal);
-        
-        const aIsNum = !isNaN(aNum);
-        const bIsNum = !isNaN(bNum);
-        
-        if (aIsNum && bIsNum) {
-          return (aNum - bNum) * sortDir;
-        } else if (aIsNum) {
-          return -1; // Numbers always float above non-numbers
-        } else if (bIsNum) {
-          return 1;  // Non-numbers always float below numbers
-        } else {
-          // Both are non-numbers, sort alphabetically
+      table.querySelectorAll('tbody').forEach((tbody) => {
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.sort((a, b) => {
+          const aVal = getCellValue(a);
+          const bVal = getCellValue(b);
+          const aNum = cleanNumber(aVal);
+          const bNum = cleanNumber(bVal);
+          const aIsNum = !Number.isNaN(aNum);
+          const bIsNum = !Number.isNaN(bNum);
+
+          if (aIsNum && bIsNum) {
+            return (aNum - bNum) * sortDir;
+          }
+          if (aIsNum) {
+            return -1;
+          }
+          if (bIsNum) {
+            return 1;
+          }
           return aVal.localeCompare(bVal, 'id', { numeric: true, sensitivity: 'base' }) * sortDir;
-        }
+        });
+        rows.forEach((r) => tbody.appendChild(r));
       });
-      rows.forEach(r => tbody.appendChild(r));
     };
 
     th.addEventListener('click', performSort);

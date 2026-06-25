@@ -6,6 +6,13 @@
   <title><%= typeof title !== 'undefined' ? title + ' — ' : '' %>Dashboard SE2026 PPU</title>
   <meta name="description" content="Dashboard Monitoring Sensus Ekonomi 2026 Kabupaten Penajam Paser Utara">
   <link rel="icon" type="image/png" href="/logo-mark.png">
+  <% if (typeof activePage === 'undefined') { activePage = ''; } %>
+  <% if (typeof appVersion === 'undefined') { appVersion = ''; } %>
+  <% if (typeof settings === 'undefined') { settings = {}; } %>
+  <% if (typeof latestUpload === 'undefined') { latestUpload = null; } %>
+  <% if (typeof isAdmin === 'undefined') { isAdmin = false; } %>
+  <% if (typeof success === 'undefined') { success = []; } %>
+  <% if (typeof error === 'undefined') { error = []; } %>
   <% if (activePage === 'admin') { %>
     <link rel="preload" href="/logo-vertical-dark.png" as="image" fetchpriority="high">
   <% } else { %>

@@ -4,9 +4,6 @@ const { getDb } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
-  const page = parseInt(req.query.page) || 1;
-  const limit = 50;
-  const offset = (page - 1) * limit;
 
   const filterKec = req.query.kec || '';
   const filterDesa = req.query.desa || '';
@@ -72,8 +69,7 @@ router.get('/', (req, res) => {
       LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
       WHERE 1=1 ${where}
       ORDER BY m.kecamatan, m.desa, m.kode
-      LIMIT ? OFFSET ?
-    `).all(...params, limit, offset);
+    `).all(...params);
   }
 
   // Filter lists
@@ -85,16 +81,14 @@ router.get('/', (req, res) => {
   const pmlList = getDb().prepare('SELECT DISTINCT pml FROM subsls_master ORDER BY pml').all();
   const pclList = getDb().prepare('SELECT DISTINCT pcl FROM subsls_master ORDER BY pcl').all();
 
-  const totalPages = Math.ceil(total / limit);
-
   res.render('subsls', {
     title: 'Per SubSLS',
     activePage: 'subsls',
     data,
     total,
-    page,
-    totalPages,
-    limit,
+    page: 1,
+    totalPages: 1,
+    limit: total || 50,
     filterKec, filterDesa, filterKorlap, filterPml, filterPcl, filterStatus,
     kecList, desaList, korlapList, pmlList, pclList,
   });

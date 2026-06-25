@@ -103,10 +103,11 @@
       </div>
 
       <% if (data && data.length > 0) { %>
-        <div class="table-wrap">
+        <div class="table-wrap" style="max-height: 800px; overflow-y: auto;">
           <table id="subslsTable">
             <thead>
               <tr>
+                <th rowspan="2" class="text-center" style="font-weight: 600; width: 40px;">No</th>
                 <th rowspan="2" class="hide-md">Kode SLS</th>
                 <th rowspan="2">Nama SLS</th>
 
@@ -128,8 +129,9 @@
               </tr>
             </thead>
             <tbody>
-              <% data.forEach(row => { %>
+              <% data.forEach((row, index) => { %>
                 <tr>
+                  <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                   <td class="td-code hide-md"><%= row.kode %></td>
                   <td class="td-primary" style="font-weight: 600;"><%= row.nama_sls %></td>
                   <td>
@@ -165,37 +167,6 @@
           </table>
         </div>
 
-        <!-- PAGINATION -->
-        <% if (totalPages > 1) { %>
-          <div class="pagination">
-            <div>
-              Halaman <strong><%= page %></strong> dari <strong><%= totalPages %></strong> (Total <%= total.toLocaleString('id-ID') %> record)
-            </div>
-            <div class="pagination-pages">
-              <!-- First Page -->
-              <% if (page > 1) { %>
-                <a href="/subsls?page=1&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="page-btn"><i class="bi bi-chevron-double-left"></i> Pertama</a>
-                <a href="/subsls?page=<%= page - 1 %>&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="page-btn"><i class="bi bi-chevron-left"></i> Seb.</a>
-              <% } %>
-
-              <!-- Page range -->
-              <% 
-                let startPage = Math.max(1, page - 2);
-                let endPage = Math.min(totalPages, page + 2);
-                for (let i = startPage; i <= endPage; i++) {
-              %>
-                <a href="/subsls?page=<%= i %>&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="page-btn <%= page === i ? 'active' : '' %>"><%= i %></a>
-              <% } %>
-
-              <!-- Next page -->
-              <% if (page < totalPages) { %>
-                <a href="/subsls?page=<%= page + 1 %>&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="page-btn">Ber. <i class="bi bi-chevron-right"></i></a>
-                <a href="/subsls?page=<%= totalPages %>&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="page-btn">Terakhir <i class="bi bi-chevron-double-right"></i></a>
-              <% } %>
-            </div>
-          </div>
-        <% } %>
-
       <% } else { %>
         <div class="no-data">
           <i class="bi bi-slash-circle-fill text-red" style="font-size: 18px; margin-right: 6px;"></i> Tidak ditemukan data SubSLS yang sesuai dengan kriteria filter Anda.
@@ -220,17 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     makeTableSortable('subslsTable');
     makeTableSearchable('localSearch', 'subslsTable');
 
-    // 2. Intercept pagination links for partial table refresh
-    const paginationLinks = document.querySelectorAll('.pagination-pages a.page-btn');
-    paginationLinks.forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const urlObj = new URL(link.href, window.location.origin);
-        fetchAndReplace(urlObj.search, false); // false = only refresh table container
-      });
-    });
-
-    // 3. Filter form change listeners
+    // 2. Filter form change listeners
     const filterForm = document.getElementById('filterForm');
     if (filterForm) {
       const selects = filterForm.querySelectorAll('select');

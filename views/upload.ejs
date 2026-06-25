@@ -58,6 +58,7 @@
         <table id="uploadsTable">
           <thead>
             <tr>
+              <th class="text-center" style="font-weight: 600; width: 40px;">No</th>
               <th class="hide-md">ID</th>
               <th>Nama File</th>
               <th>Tanggal Data</th>
@@ -68,8 +69,9 @@
             </tr>
           </thead>
           <tbody>
-            <% uploads.forEach(u => { %>
+            <% uploads.forEach((u, index) => { %>
               <tr>
+                <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);\"><%= index + 1 %></td>
                 <td class="td-code hide-md"><%= u.id %></td>
                 <td class="td-primary">
                   <div><%= u.filename %></div>

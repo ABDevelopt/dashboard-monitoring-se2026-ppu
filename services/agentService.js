@@ -1,10 +1,105 @@
-const { getDb, getSettings } = require('../database');
+const { getDb, getSettings, getLatestUpload, getOverviewSummary, getKecamatanStats, getPclStats, getPmlStats, getKorlapStats, getTrenHarian, getTopPerformers, getBottomPerformers, getAnomalyStats, getEarlyWarning } = require('../database');
 const { dbSchemaDescription } = require('./dbSchema');
+
+const SYSTEM_INSTRUCTION = dbSchemaDescription + "\n\nSelalu berikan respons dalam Bahasa Indonesia yang profesional, ramah, dan solutif. Gunakan tabel markdown jika menyajikan data numerik agar rapi dan mudah dibaca. Jika perlu, gunakan tool fetch_page_data untuk mengambil konteks internal dari rute aplikasi seperti /overview, /pcl, /pml, /kecamatan, /leaderboard, /performa-terendah, /early-warning, /deteksi-anomali, atau /subsls.";
+
+const TOOL_DECLARATION = {
+  name: "run_read_only_query",
+  description: "Execute a read-only SELECT SQL query on the SQLite database to fetch data about SE2026 monitoring.",
+  parameters: {
+    type: "object",
+    properties: {
+      query: {
+        type: "string",
+        description: "The SQLite query starting with SELECT. e.g. 'SELECT * FROM progres JOIN subsls_master ON ... LIMIT 5'"
+      }
+    },
+    required: ["query"],
+    additionalProperties: false
+  }
+};
+
+const PAGE_DATA_TOOL_DECLARATION = {
+  name: "fetch_page_data",
+  description: "Fetch summarized internal data for a given website route such as /overview, /pcl, /pml, /kecamatan, /leaderboard, /performa-terendah, /early-warning, /deteksi-anomali, or /subsls.",
+  parameters: {
+    type: "object",
+    properties: {
+      route: {
+        type: "string",
+        description: "Internal route path such as /overview, /pcl, or /kecamatan."
+      },
+      queryParams: {
+        type: "object",
+        description: "Optional additional parameters to narrow the route data, e.g. name or filters."
+      }
+    },
+    required: ["route"],
+    additionalProperties: false
+  }
+};
+
+const GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash';
+const OPENAI_DEFAULT_MODEL = 'gpt-5.5';
+const AGENT_API_TIMEOUT_MS = 15000; // 8 seconds - faster timeout for better UX
+const AGENT_API_QUICK_RESPONSE_MS = 5000; // Try fast simulation first
+const GEMINI_USER_MODELS = [
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-3.5-flash'
+];
+const OPENAI_USER_MODELS = [
+  'gpt-5.5'
+];
+const LEGACY_GEMINI_MODELS = new Set([
+  'gemini-1.5-flash'
+]);
+
+function getAllowedModels(provider, settings) {
+  const configuredModel = provider === 'openai' ? settings.openai_model : settings.gemini_model;
+  const baseModels = provider === 'openai' ? OPENAI_USER_MODELS : GEMINI_USER_MODELS;
+  return Array.from(new Set([...baseModels, configuredModel].filter(Boolean)));
+}
+
+function resolveAgentSelection(settings, options = {}) {
+  const selectedProvider = options.provider === 'openai' || options.provider === 'gemini'
+    ? options.provider
+    : settings.agent_provider;
+  const provider = selectedProvider === 'openai' ? 'openai' : 'gemini';
+  const fallbackModel = provider === 'openai'
+    ? (settings.openai_model || OPENAI_DEFAULT_MODEL)
+    : (settings.gemini_model || GEMINI_DEFAULT_MODEL);
+  const allowedModels = getAllowedModels(provider, settings);
+  let model = allowedModels.includes(options.model) ? options.model : fallbackModel;
+
+  if (provider === 'gemini' && LEGACY_GEMINI_MODELS.has(model)) {
+    model = GEMINI_DEFAULT_MODEL;
+  }
+
+  return { provider, model };
+}
 
 /**
  * Executes a SELECT query safely on the database.
  * Enforces read-only check and scanners.
  */
+function timeoutPromise(promise, ms, errorMessage) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(errorMessage)), ms))
+  ]);
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = AGENT_API_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function executeQuery(sql) {
   const cleanSql = sql.trim();
   const isSelect = /^select\s/i.test(cleanSql);
@@ -24,6 +119,69 @@ function executeQuery(sql) {
 
   const db = getDb();
   return db.prepare(cleanSql).all();
+}
+
+function fetchPageData(route, queryParams = {}) {
+  const upload = getLatestUpload();
+  if (!upload) {
+    return { error: 'Belum ada data upload dalam sistem.' };
+  }
+
+  const normalizedRoute = String(route || '').trim().replace(/\/+$|\?.*$/, '').toLowerCase();
+  const page = normalizedRoute === '' || normalizedRoute === '/' ? '/overview' : normalizedRoute;
+  switch (page) {
+    case '/overview':
+      return {
+        route: '/overview',
+        summary: getOverviewSummary(upload.id),
+        kecamatanStats: getKecamatanStats(upload.id),
+        tren: getTrenHarian()
+      };
+    case '/pcl':
+      return {
+        route: '/pcl',
+        pclStats: getPclStats(upload.id)
+      };
+    case '/pml':
+      return {
+        route: '/pml',
+        pmlStats: getPmlStats(upload.id)
+      };
+    case '/kecamatan':
+      return {
+        route: '/kecamatan',
+        kecamatanStats: getKecamatanStats(upload.id)
+      };
+    case '/leaderboard':
+      return {
+        route: '/leaderboard',
+        topPerformers: getTopPerformers(upload.id)
+      };
+    case '/performa-terendah':
+      return {
+        route: '/performa-terendah',
+        bottomPerformers: getBottomPerformers(upload.id)
+      };
+    case '/early-warning':
+      return {
+        route: '/early-warning',
+        earlyWarning: getEarlyWarning(upload.id, queryParams)
+      };
+    case '/deteksi-anomali':
+      return {
+        route: '/deteksi-anomali',
+        anomalyStats: getAnomalyStats(upload.id, queryParams)
+      };
+    case '/subsls':
+      return {
+        route: '/subsls',
+        pclStats: getPclStats(upload.id),
+        pmlStats: getPmlStats(upload.id),
+        kecamatanStats: getKecamatanStats(upload.id)
+      };
+    default:
+      return { error: `Rute tidak dikenali: ${route}` };
+  }
 }
 
 /**
@@ -250,41 +408,84 @@ function runSimulation(userMessage, chatHistory) {
   }
 }
 
-/**
- * Sends a chat message to Gemini AI Agent (with SQLite Function Calling tool)
- * Or falls back to simulation mode if API key is not set.
- */
-async function sendMessageToAgent(userMessage, chatHistory = []) {
+async function sendMessageToAgent(userMessage, chatHistory = [], options = {}) {
   const settings = getSettings();
-  const apiKey = settings.gemini_api_key;
+  const { provider, model } = resolveAgentSelection(settings, options);
+  const apiKey = provider === 'openai' ? settings.openai_api_key : settings.gemini_api_key;
 
   if (!apiKey || apiKey.trim() === '') {
     return runSimulation(userMessage, chatHistory);
   }
 
+  if (provider === 'openai') {
+    return timeoutPromise(
+      sendMessageToOpenAI(userMessage, chatHistory, settings, model),
+      AGENT_API_TIMEOUT_MS,
+      'OpenAI request timed out.'
+    ).catch(err => {
+      console.error('Agent OpenAI timeout/error:', err.message);
+      const simulated = runSimulation(userMessage, chatHistory);
+      return simulated;
+    });
+  }
+
+  return timeoutPromise(
+    sendMessageToGemini(userMessage, chatHistory, settings, model),
+    AGENT_API_TIMEOUT_MS,
+    'Gemini request timed out.'
+  ).catch(err => {
+    console.error('Agent Gemini timeout/error:', err.message);
+    const simulated = runSimulation(userMessage, chatHistory);
+    return simulated;
+  });
+}
+
+async function sendMessageToGemini(userMessage, chatHistory, settings, selectedModel) {
   try {
     const { GoogleGenerativeAI } = require("@google/generative-ai");
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const genAI = new GoogleGenerativeAI(settings.gemini_api_key);
+    const configuredModel = selectedModel || settings.gemini_model || GEMINI_DEFAULT_MODEL;
+    const geminiModel = LEGACY_GEMINI_MODELS.has(configuredModel) ? GEMINI_DEFAULT_MODEL : configuredModel;
 
     // Initializing Gemini Model
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      systemInstruction: dbSchemaDescription + "\n\nSelalu berikan respons dalam Bahasa Indonesia yang profesional, ramah, dan solutif. Gunakan tabel markdown jika menyajikan data numerik agar rapi dan mudah dibaca.",
+      model: geminiModel,
+      systemInstruction: SYSTEM_INSTRUCTION,
       tools: [{
-        functionDeclarations: [{
-          name: "run_read_only_query",
-          description: "Execute a read-only SELECT SQL query on the SQLite database to fetch data about SE2026 monitoring.",
-          parameters: {
-            type: "OBJECT",
-            properties: {
-              query: {
-                type: "STRING",
-                description: "The SQLite query starting with SELECT. e.g. 'SELECT * FROM progres JOIN subsls_master ON ... LIMIT 5'"
-              }
-            },
-            required: ["query"]
+        functionDeclarations: [
+          {
+            name: TOOL_DECLARATION.name,
+            description: TOOL_DECLARATION.description,
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                query: {
+                  type: "STRING",
+                  description: TOOL_DECLARATION.parameters.properties.query.description
+                }
+              },
+              required: ["query"]
+            }
+          },
+          {
+            name: PAGE_DATA_TOOL_DECLARATION.name,
+            description: PAGE_DATA_TOOL_DECLARATION.description,
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                route: {
+                  type: "STRING",
+                  description: PAGE_DATA_TOOL_DECLARATION.parameters.properties.route.description
+                },
+                queryParams: {
+                  type: "OBJECT",
+                  description: PAGE_DATA_TOOL_DECLARATION.parameters.properties.queryParams.description
+                }
+              },
+              required: ["route"]
+            }
           }
-        }]
+        ]
       }]
     });
 
@@ -305,29 +506,54 @@ async function sendMessageToAgent(userMessage, chatHistory = []) {
       history: formattedHistory
     });
 
-    let response = await chat.sendMessage(userMessage);
+    async function sendGeminiChatMessage(payload) {
+      return timeoutPromise(
+        chat.sendMessage(payload),
+        AGENT_API_QUICK_RESPONSE_MS,
+        'Gemini API call timed out'
+      );
+    }
+
+    let response = await sendGeminiChatMessage(userMessage);
     let functionCalls = response.response.functionCalls;
 
     let loopCount = 0;
     // Execute function calling loops if the model requested database queries
-    while (functionCalls && functionCalls.length > 0 && loopCount < 3) {
+    // Limit to 2 iterations to avoid long waits
+    while (functionCalls && functionCalls.length > 0 && loopCount < 2) {
       loopCount++;
       const functionCall = functionCalls[0];
+
       if (functionCall.name === "run_read_only_query") {
         const query = functionCall.args.query;
         let queryResult;
         try {
           const data = executeQuery(query);
-          queryResult = { status: "success", data: data };
+          queryResult = { status: "success", data };
         } catch (err) {
           queryResult = { status: "error", message: err.message };
         }
 
-        // Send function result back to model
-        response = await chat.sendMessage([{
+        response = await sendGeminiChatMessage([{
           functionResponse: {
             name: "run_read_only_query",
             response: queryResult
+          }
+        }]);
+        functionCalls = response.response.functionCalls;
+      } else if (functionCall.name === PAGE_DATA_TOOL_DECLARATION.name) {
+        const { route, queryParams } = functionCall.args;
+        let pageResult;
+        try {
+          pageResult = fetchPageData(route, queryParams || {});
+        } catch (err) {
+          pageResult = { error: err.message };
+        }
+
+        response = await sendGeminiChatMessage([{
+          functionResponse: {
+            name: PAGE_DATA_TOOL_DECLARATION.name,
+            response: pageResult
           }
         }]);
         functionCalls = response.response.functionCalls;
@@ -348,6 +574,160 @@ async function sendMessageToAgent(userMessage, chatHistory = []) {
     simulated.content = `⚠️ **Gemini API Error:** ${error.message}\n\n*Beralih sementara ke Mode Simulasi:*\n\n` + simulated.content;
     return simulated;
   }
+}
+
+async function sendMessageToOpenAI(userMessage, chatHistory, settings, selectedModel) {
+  const apiKey = settings.openai_api_key;
+  const model = selectedModel || settings.openai_model || OPENAI_DEFAULT_MODEL;
+  const input = [
+    ...chatHistory.slice(-10).map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'assistant',
+      content: msg.content
+    })),
+    { role: 'user', content: userMessage }
+  ];
+  const tools = [
+    {
+      type: 'function',
+      name: TOOL_DECLARATION.name,
+      description: TOOL_DECLARATION.description,
+      parameters: TOOL_DECLARATION.parameters
+    },
+    {
+      type: 'function',
+      name: PAGE_DATA_TOOL_DECLARATION.name,
+      description: PAGE_DATA_TOOL_DECLARATION.description,
+      parameters: PAGE_DATA_TOOL_DECLARATION.parameters
+    }
+  ];
+
+  try {
+    let response = await createOpenAIResponse(apiKey, {
+      model,
+      instructions: SYSTEM_INSTRUCTION,
+      input,
+      tools,
+      tool_choice: 'auto'
+    });
+
+    let loopCount = 0;
+    while (loopCount < 2) {
+      const functionCalls = (response.output || []).filter(item => item.type === 'function_call');
+      if (functionCalls.length === 0) break;
+
+      loopCount++;
+      const outputs = functionCalls.map(call => {
+        let args = {};
+        try {
+          args = JSON.parse(call.arguments || '{}');
+        } catch (err) {
+          args = {};
+        }
+
+        let toolResult;
+        if (call.name === TOOL_DECLARATION.name) {
+          try {
+            const data = executeQuery(args.query || '');
+            toolResult = { status: 'success', data };
+          } catch (err) {
+            toolResult = { status: 'error', message: err.message };
+          }
+        } else if (call.name === PAGE_DATA_TOOL_DECLARATION.name) {
+          try {
+            toolResult = fetchPageData(args.route, args.queryParams || {});
+          } catch (err) {
+            toolResult = { status: 'error', message: err.message };
+          }
+        } else {
+          toolResult = { status: 'error', message: `Unknown function ${call.name}` };
+        }
+
+        return {
+          type: 'function_call_output',
+          call_id: call.call_id,
+          output: JSON.stringify(toolResult)
+        };
+      });
+
+      response = await createOpenAIResponse(apiKey, {
+        model,
+        instructions: SYSTEM_INSTRUCTION,
+        previous_response_id: response.id,
+        input: outputs,
+        tools,
+        tool_choice: 'auto'
+      });
+    }
+
+    return {
+      role: 'model',
+      content: extractOpenAIText(response),
+      isSimulation: false
+    };
+  } catch (error) {
+    console.error("OpenAI API Error:", error && error.message ? error.message : error);
+    const simulated = runSimulation(userMessage, chatHistory);
+    // Detect abort/timeout errors and normalize message
+    const isAbort = error && (error.name === 'AbortError' || /aborted|timeout/i.test(String(error.message || '')));
+    const prefix = isAbort
+      ? `⚠️ **OpenAI API Timeout / Abort:** Permintaan dibatalkan atau melewati batas waktu (${error.message || 'timeout'}).\n\n`
+      : `⚠️ **OpenAI API Error:** ${error.message || 'Terjadi kesalahan pada layanan OpenAI.'}\n\n`;
+    simulated.content = prefix + '*Beralih sementara ke Mode Simulasi:*\n\n' + simulated.content;
+    return simulated;
+  }
+}
+
+async function createOpenAIResponse(apiKey, payload) {
+  if (typeof fetch !== 'function') {
+    throw new Error('Runtime Node.js belum menyediakan fetch global. Gunakan Node.js 18+ atau tambahkan fetch polyfill.');
+  }
+
+  // Add shorter timeout for initial response check
+  const timeoutMs = payload.previous_response_id ? AGENT_API_TIMEOUT_MS : AGENT_API_QUICK_RESPONSE_MS;
+  
+  try {
+    const response = await fetchWithTimeout('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    }, timeoutMs);
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = data.error && data.error.message ? data.error.message : `HTTP ${response.status}`;
+      throw new Error(message);
+    }
+    return data;
+  } catch (err) {
+    // Normalize abort/timeout errors so callers can detect them easily
+    if (err && (err.name === 'AbortError' || /aborted|timeout/i.test(String(err.message || '')))) {
+      const e = new Error('OpenAI request timed out or was aborted');
+      e.name = 'AbortError';
+      throw e;
+    }
+    throw err;
+  }
+}
+
+function extractOpenAIText(response) {
+  if (response.output_text) return response.output_text;
+
+  const parts = [];
+  for (const item of response.output || []) {
+    if (item.type !== 'message') continue;
+    for (const content of item.content || []) {
+      if (content.type === 'output_text' && content.text) {
+        parts.push(content.text);
+      } else if (content.type === 'text' && content.text) {
+        parts.push(content.text);
+      }
+    }
+  }
+
+  return parts.join('\n').trim() || 'Maaf, model tidak mengembalikan teks jawaban.';
 }
 
 module.exports = {
