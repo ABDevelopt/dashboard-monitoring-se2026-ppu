@@ -106,6 +106,7 @@ app.use('/early-warning', require('./routes/earlywarning'));
 app.use('/leaderboard', require('./routes/leaderboard'));
 app.use('/performa-terendah', require('./routes/performa-terendah'));
 app.use('/deteksi-anomali', require('./routes/deteksianomali'));
+app.use('/agent', require('./routes/agent'));
 app.use('/api', require('./routes/api'));
 
 // Admin Auth Middleware
@@ -144,7 +145,7 @@ adminRouter.get('/logout', (req, res) => {
 adminRouter.use('/upload', requireAdmin, require('./routes/upload'));
 adminRouter.use('/master', requireAdmin, require('./routes/master'));
 adminRouter.use('/settings', requireAdmin, require('./routes/settings'));
-adminRouter.use('/agent', requireAdmin, require('./routes/agent'));
+// adminRouter.use('/agent', requireAdmin, require('./routes/agent'));
 
 // 404
 app.use((req, res) => {

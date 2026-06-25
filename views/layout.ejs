@@ -144,13 +144,13 @@
     <a href="/admin/settings" class="nav-item <%= activePage === 'settings' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-sliders"></i></span> Pengaturan Tampilan
     </a>
+    <a href="/admin/logout" class="nav-item">
+      <span class="nav-icon"><i class="bi bi-box-arrow-right"></i></span> Logout Admin
+    </a>
+    <% } %>
     <% if (typeof settings !== 'undefined' && settings.page_aiagent === '1') { %>
     <a href="/agent" class="nav-item <%= activePage === 'agent' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-robot"></i></span> Asisten AI Chat
-    </a>
-    <% } %>
-    <a href="/admin/logout" class="nav-item">
-      <span class="nav-icon"><i class="bi bi-box-arrow-right"></i></span> Logout Admin
     </a>
     <% } %>
     <% } %>
