@@ -62,7 +62,7 @@ const routeSettingsMap = {
   '/korlap': 'page_korlap',
   '/pml': 'page_pml',
   '/pcl': 'page_pcl',
-  '/admin/agent': 'page_aiagent'
+  '/agent': 'page_aiagent'
 };
 
 app.use((req, res, next) => {

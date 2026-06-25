@@ -15,6 +15,7 @@ const settingKeys = [
   'page_pcl',
   'page_export',
   'page_aiagent',
+  'gemini_api_key',
   'overview_fasih',
   'overview_muatan',
   'overview_tren_muatan',
@@ -34,8 +35,11 @@ router.get('/', (req, res) => {
 router.post('/', (req, res) => {
   const updatedSettings = {};
   for (const key of settingKeys) {
-    // Checkbox sends '1' if checked, otherwise it is omitted from request body.
-    updatedSettings[key] = req.body[key] === '1' ? '1' : '0';
+    if (key === 'gemini_api_key') {
+      updatedSettings[key] = req.body[key] ? req.body[key].trim() : '';
+    } else {
+      updatedSettings[key] = req.body[key] === '1' ? '1' : '0';
+    }
   }
 
   try {
