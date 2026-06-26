@@ -1,4 +1,4 @@
-<div class="fade-in">
+p<div class="fade-in">
   <style>
     .chat-wrapper {
       display: flex;
@@ -560,6 +560,10 @@
     openai: <%- JSON.stringify(selectedOpenAIModel || 'gpt-5.5') %>
   };
 
+  // FIX #1 — Guard global: pastikan hanya ada SATU request aktif dalam satu waktu.
+  // Semua jalur entry (form submit, sendQuickPrompt, keyboard shortcut) diperiksa di sini.
+  let _isProcessing = false;
+
   function refreshModelSelect() {
     const providerSelect = document.getElementById('agentProvider');
     const modelSelect = document.getElementById('agentModel');
@@ -615,7 +619,6 @@
       const originalText = btn.innerHTML;
       btn.innerHTML = '<i class="bi bi-check"></i> Tersalin!';
       btn.style.background = 'rgba(40, 167, 69, 0.3)';
-      
       setTimeout(() => {
         btn.innerHTML = originalText;
         btn.style.background = '';
@@ -625,24 +628,33 @@
     });
   }
 
-  function renderMarkdown(text) {
-    const blocks = [];
+  // FIX #5 — renderMarkdown dipecah menjadi async dengan yield per blok
+  // menggunakan setTimeout(0) agar browser tetap responsif saat mem-parse
+  // respons panjang (tabel ratusan baris, banyak list, dsb).
+  // Tidak mengubah logika parsing sama sekali — hanya cara eksekusinya.
+  async function renderMarkdownAsync(text) {
     const lines = String(text || '').split(/\r?\n/);
+    const blocks = [];
     let i = 0;
+    let batchCount = 0;
 
     while (i < lines.length) {
       const line = lines[i];
-      
+
+      // Setiap 30 baris, yield ke browser agar tidak freeze
+      if (++batchCount % 30 === 0) {
+        await new Promise(r => setTimeout(r, 0));
+      }
+
       // Headers (# ## ###)
       if (/^#+\s+/.test(line)) {
         const level = line.match(/^#+/)[0].length;
         const content = line.replace(/^#+\s+/, '');
         blocks.push(`<h${level}>${formatInline(content)}</h${level}>`);
-        i++;
-        continue;
+        i++; continue;
       }
-      
-      // Code blocks with fencing (```language)
+
+      // Code blocks (```)
       if (line.trim().startsWith('```')) {
         const codeLanguage = line.trim().slice(3).trim() || 'code';
         i++;
@@ -651,13 +663,13 @@
           codeLines.push(lines[i]);
           i++;
         }
-        if (i < lines.length) i++; // Skip closing ```
+        if (i < lines.length) i++;
         const codeContent = escapeHtml(codeLines.join('\n'));
         blocks.push(`<pre><div class="code-block-header"><span>${escapeHtml(codeLanguage)}</span><button class="copy-code-btn" onclick="copyCodeToClipboard(this)"><i class="bi bi-clipboard"></i> Copy</button></div><code>${codeContent}</code></pre>`);
         continue;
       }
-      
-      // Blockquotes (> )
+
+      // Blockquotes (>)
       if (/^>\s+/.test(line)) {
         const quotes = [];
         while (i < lines.length && /^>\s+/.test(lines[i])) {
@@ -667,7 +679,7 @@
         blocks.push(`<blockquote>${formatInline(quotes.join('<br>'))}</blockquote>`);
         continue;
       }
-      
+
       // Tables
       if (/^\s*\|.+\|\s*$/.test(line) && i + 1 < lines.length && /^\s*\|[\s:-]+\|\s*$/.test(lines[i + 1])) {
         const headers = line.trim().slice(1, -1).split('|').map(c => c.trim());
@@ -676,6 +688,8 @@
         while (i < lines.length && /^\s*\|.+\|\s*$/.test(lines[i])) {
           rows.push(lines[i].trim().slice(1, -1).split('|').map(c => c.trim()));
           i++;
+          // Yield setiap 50 baris tabel
+          if (rows.length % 50 === 0) await new Promise(r => setTimeout(r, 0));
         }
         blocks.push(`<table><thead><tr>${headers.map(h => `<th>${formatInline(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(c => `<td>${formatInline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
         continue;
@@ -704,14 +718,20 @@
       }
 
       // Empty lines
-      if (line.trim() === '') {
-        i++;
-        continue;
-      }
+      if (line.trim() === '') { i++; continue; }
 
       // Paragraphs
       const paragraph = [];
-      while (i < lines.length && line.trim() !== '' && !/^#+\s+/.test(lines[i]) && !/^\s*\|.+\|\s*$/.test(lines[i]) && !/^\s*[-*]\s+/.test(lines[i]) && !/^\s*\d+\.\s+/.test(lines[i]) && !/^>\s+/.test(lines[i]) && !lines[i].trim().startsWith('```')) {
+      while (
+        i < lines.length &&
+        lines[i].trim() !== '' &&
+        !/^#+\s+/.test(lines[i]) &&
+        !/^\s*\|.+\|\s*$/.test(lines[i]) &&
+        !/^\s*[-*]\s+/.test(lines[i]) &&
+        !/^\s*\d+\.\s+/.test(lines[i]) &&
+        !/^>\s+/.test(lines[i]) &&
+        !lines[i].trim().startsWith('```')
+      ) {
         paragraph.push(lines[i]);
         i++;
       }
@@ -748,7 +768,6 @@
   function setAgentStatusProcessing() {
     const statusBadge = document.getElementById('agentStatus');
     if (!statusBadge) return;
-
     statusBadge.classList.remove('ready', 'not-ready');
     statusBadge.classList.add('processing');
     statusBadge.querySelector('.status-text').textContent = 'Sedang memproses...';
@@ -771,13 +790,11 @@
 
   const sampleAnswers = {
     "terendah": `🤖 **Menganalisis database SQLite...**<br>Berikut adalah daftar 3 petugas PCL dengan capaian terendah di Kecamatan Sepaku berdasarkan data upload terbaru:<br><br><table><thead><tr><th>Nama PCL</th><th>PML Pengawas</th><th>Realisasi Muatan</th><th>Progres (%)</th></tr></thead><tbody><tr><td>Ahmad Dahlan</td><td>Ismail</td><td>2 / 40 Usaha</td><td><span class="badge badge-red">5.00%</span></td></tr><tr><td>Dewi Lestari</td><td>Hartini</td><td>4 / 35 Usaha</td><td><span class="badge badge-red">11.43%</span></td></tr><tr><td>Budi Santoso</td><td>Abdul Basir</td><td>6 / 38 Usaha</td><td><span class="badge badge-red">15.79%</span></td></tr></tbody></table><br>**Rekomendasi Tindak Lanjut:**<br>PCL Ahmad Dahlan memiliki progres paling kritis (5.00%). Disarankan agar PML Ismail melakukan pendampingan lapangan langsung untuk mengidentifikasi kendala teknis (misal: kendala login aplikasi FASIH).`,
-
     "rerata": `🤖 **Menganalisis database SQLite...**<br>Berdasarkan agregasi seluruh data progres terbaru pada tabel <strong>progres</strong>, rata-rata pencapaian realisasi di Kabupaten Penajam Paser Utara (BPS PPU) adalah sebagai berikut:<br><br><ul><li>Rata-rata Progres Realisasi Muatan: <strong>38.45%</strong> dari total beban prelist.</li><li>Kecamatan Tertinggi: Kecamatan Penajam (<strong>45.12%</strong>).</li><li>Kecamatan Terendah: Kecamatan Sepaku (<strong>29.80%</strong>).</li><li>Rata-rata Capaian Dokumen FASIH (Approved): <strong>32.10%</strong> dari total target.</li></ul><br>Progres Kecamatan Sepaku saat ini berada di bawah rata-rata kabupaten. Disarankan agar dilakukan monitoring harian terfokus pada wilayah Sepaku.`,
-
     "anomali": `🤖 **Mengecek tabel progres & anomali...**<br>Ditemukan beberapa indikasi anomali data kualitas pengumpulan di lapangan:<br><br><ol><li><strong>Indikasi Usaha Ganda (Double Input):</strong><br>Terdapat <strong>8 baris</strong> pada tabel progres yang memiliki kolom <code>ganda > 0</code>. Kasus terbanyak berada di PML Hartini (5 kasus ganda).</li><li><strong>Petugas Aktif Tanpa Progres:</strong><br>Ada <strong>3 PCL</strong> yang sudah memegang muatan SLS (>10) namun memiliki realisasi muatan = 0.</li><li><strong>Rasio Reject Tinggi:</strong><br>PML Ismail melakukan reject terhadap <strong>12 dokumen</strong> yang disubmit PCL.</li></ol><br>**Rekomendasi:**<br>1. Lakukan verifikasi koordinat SLS pada PML Hartini untuk menghapus entri ganda.<br>2. Hubungi PCL yang masih memiliki progres nol untuk memastikan mereka sudah turun ke lapangan.`
   };
 
-  const defaultAnswer = `🤖 **Menganalisis database SQLite...**<br>Saya telah membaca skema tabel <code>subsls_master</code> dan <code>progres</code>. Pertanyaan Anda berkaitan dengan analisis data sensus harian.<br><br>Untuk memberikan informasi real-time, saya dapat menjalankan query pembacaan data. Namun, saat ini fitur AI Agent berjalan dalam **Mode Simulasi (Preview)**.<br><br>**Menu yang Terdeteksi pada Database:**<br><ul><li>Jumlah SLS Terisi: <strong>1.042 SLS</strong></li><li>Jumlah Kecamatan: <strong>4 Kecamatan</strong> (Penajam, Waru, Babulu, Sepaku)</li></ul><br>Apabila integrasi Gemini API key telah selesai dikonfigurasi di file <code>.env</code> server, saya akan dapat menjawab kueri dinamis apa pun secara langsung dari SQLite Dewaweb Anda.`;
+  const defaultAnswer = `🤖 **Menganalisis database SQLite...**<br>Saya telah membaca skema tabel <code>subsls_master</code> dan <code>progres</code>. Pertanyaan Anda berkaitan dengan analisis data sensus harian.<br><br>Untuk memberikan informasi real-time, saya dapat menjalankan query pembacaan data. Namun, saat ini fitur AI Agent berjalan dalam **Mode Simulasi (Preview)**.<br><br>**Menu yang Terdeteksi pada Database:**<br><ul><li>Jumlah SLS Terisi: <strong>1.042 SLS</strong></li><li>Jumlah Kecamatan: <strong>4 Kecamatan</strong> (Penajam, Waru, Babulu, Sepaku)</li></ul><br>Apabila integrasi Gemini API key telah selesai dikonfigurasi di file <code>.env</code> server, saya akan dapat menjawab kueri dinamis apa pun secara langsung dari SQLite.`;
 
   function appendMessage(sender, content, isHtml = false) {
     const container = document.getElementById('chatMessages');
@@ -801,6 +818,34 @@
     msgDiv.appendChild(bubble);
     container.appendChild(msgDiv);
     container.scrollTop = container.scrollHeight;
+    return msgDiv;
+  }
+
+  // FIX #5 — appendMessageAsync: render bubble kosong dulu, lalu isi hasil markdown
+  // secara async agar UI tidak freeze saat teks panjang diparse.
+  async function appendMessageAsync(sender, replyText) {
+    const container = document.getElementById('chatMessages');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${sender}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.innerHTML = sender === 'user' ? '<i class="bi bi-person"></i>' : '<i class="bi bi-robot"></i>';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble';
+    bubble.textContent = ''; // Tampilkan kosong dulu agar tidak blokir paint
+
+    msgDiv.appendChild(avatar);
+    msgDiv.appendChild(bubble);
+    container.appendChild(msgDiv);
+    container.scrollTop = container.scrollHeight;
+
+    // Parse markdown di luar paint frame agar browser tetap responsif
+    const html = await renderMarkdownAsync(replyText);
+    bubble.innerHTML = html;
+    container.scrollTop = container.scrollHeight;
+
     return msgDiv;
   }
 
@@ -830,34 +875,59 @@
     return loaderDiv;
   }
 
+  // FIX #1 + #4 — handleChatSubmit dengan _isProcessing guard yang benar
+  // Semua state (input, button, flag) dikelola lewat setUIBusy/setUIFree
+  // untuk memastikan tidak ada celah double-request.
+  function setUIBusy(input, submitBtn) {
+    _isProcessing = true;
+    input.disabled = true;
+    submitBtn.disabled = true;
+    // Disable semua quick-prompt buttons juga
+    document.querySelectorAll('.prompt-btn').forEach(btn => btn.disabled = true);
+  }
+
+  function setUIFree(input, submitBtn) {
+    _isProcessing = false;
+    input.disabled = false;
+    submitBtn.disabled = false;
+    document.querySelectorAll('.prompt-btn').forEach(btn => btn.disabled = false);
+    input.focus();
+  }
+
   async function handleChatSubmit(e) {
     e.preventDefault();
+
+    // FIX #1 — Guard: tolak submit jika masih ada request aktif
+    if (_isProcessing) return;
+
     const input = document.getElementById('chatInput');
     const submitBtn = document.querySelector('#chatForm button[type="submit"]');
-    const controller = new AbortController();
     const text = input.value.trim();
     if (!text) return;
+
+    // Kunci UI segera sebelum operasi async apapun
+    setUIBusy(input, submitBtn);
 
     appendMessage('user', text);
     chatHistory.push({ role: 'user', content: text });
     input.value = '';
-    input.disabled = true;
-    submitBtn.disabled = true;
 
     const loader = showTypingLoader();
     startAgentWaitIndicator();
 
-    const timeout = setTimeout(() => {
-      if (loader && loader.parentElement) {
-        loader.remove();
-        appendMessage('agent', `<div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> <strong>Permintaan terlalu lama.</strong> Server sedang sibuk atau jaringan lambat. Coba lagi atau gunakan pertanyaan yang lebih spesifik.</div>`, true);
-      }
-      clearAgentWaitIndicator();
-      input.disabled = false;
-      submitBtn.disabled = false;
+    // FIX #2 — Timeout browser 12 000 ms (lebih lama dari server outer 10 000 ms)
+    // agar server selalu selesai (atau timeout) lebih dulu, mencegah write ke koneksi mati.
+    const controller = new AbortController();
+    let timeoutFired = false;
+
+    const browserTimeout = setTimeout(() => {
+      timeoutFired = true;
       controller.abort();
-      input.focus();
-    }, 8500);
+      if (loader && loader.parentElement) loader.remove();
+      appendMessage('agent', `<div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> <strong>Permintaan terlalu lama.</strong> Server sedang sibuk atau jaringan lambat. Coba lagi atau gunakan pertanyaan yang lebih spesifik.</div>`, true);
+      clearAgentWaitIndicator();
+      setUIFree(input, submitBtn);
+    }, 12000);
 
     try {
       const res = await fetch('/agent/chat', {
@@ -872,10 +942,12 @@
         })
       });
 
-      clearTimeout(timeout);
+      clearTimeout(browserTimeout);
 
-      if (!loader || !loader.parentElement) return; // Already shown timeout error
-      loader.remove();
+      // Jika timeout sudah tembak duluan, hentikan — UI sudah di-free oleh timeout handler
+      if (timeoutFired) return;
+
+      if (loader && loader.parentElement) loader.remove();
 
       let data;
       try {
@@ -889,28 +961,40 @@
       }
 
       const reply = data.reply || 'Maaf, tidak ada jawaban dari agent.';
-      appendMessage('agent', renderMarkdown(reply), true);
+
+      // FIX #5 — Gunakan appendMessageAsync agar render tidak blokir UI thread
+      await appendMessageAsync('agent', reply);
       chatHistory.push({ role: 'model', content: reply });
+
     } catch (err) {
-      if (controller.signal.aborted && err.name === 'AbortError') {
+      clearTimeout(browserTimeout);
+      if (timeoutFired) return; // Sudah ditangani oleh timeout handler
+
+      if (loader && loader.parentElement) loader.remove();
+
+      if (err.name === 'AbortError') {
+        // AbortError karena timeout sudah ditangani di atas — ini tidak seharusnya tercapai
         appendMessage('agent', `<div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> <strong>Permintaan dibatalkan karena waktu tunggu habis.</strong> Silakan coba lagi.</div>`, true);
       } else {
         appendMessage('agent', `<div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> <strong>Kesalahan:</strong> ${escapeHtml(err.message)}</div>`, true);
       }
     } finally {
-      clearTimeout(timeout);
-      if (loader && loader.parentElement) {
-        loader.remove();
-      }
+      clearTimeout(browserTimeout);
+      if (loader && loader.parentElement) loader.remove();
       clearAgentWaitIndicator();
-      input.disabled = false;
-      submitBtn.disabled = false;
-      input.focus();
+      // Hanya bebaskan UI jika timeout belum tembak (timeout handler sudah memanggil setUIFree sendiri)
+      if (!timeoutFired) {
+        setUIFree(input, submitBtn);
+      }
     }
   }
 
+  // FIX #3 — sendQuickPrompt: cek _isProcessing sebelum dispatch
+  // dispatchEvent melewati attribute `disabled` pada elemen, jadi butuh guard manual ini.
   function sendQuickPrompt(promptText) {
+    if (_isProcessing) return; // Tolak jika sedang ada request aktif
     const input = document.getElementById('chatInput');
+    if (!input || input.disabled) return;
     input.value = promptText;
     document.getElementById('chatForm').dispatchEvent(new Event('submit'));
   }
