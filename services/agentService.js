@@ -60,9 +60,11 @@ const PAGE_DATA_TOOL_DECLARATION = {
 
 const GEMINI_DEFAULT_MODEL        = 'gemini-2.5-flash';
 const OPENAI_DEFAULT_MODEL        = 'gpt-5.5';
-const AGENT_API_TIMEOUT_MS        = 10000; // outer server total
-const AGENT_API_QUICK_RESPONSE_MS =  4000; // per satu API call
-const DB_WORKER_TIMEOUT_MS        =  8000; // max query SQLite di worker
+const AGENT_API_TIMEOUT_MS          = 120000; // outer server total  (120s — beri ruang 2x tool-call loop)
+const AGENT_API_QUICK_RESPONSE_MS   =  25000; // call PERTAMA ke AI  (pertanyaan awal, biasanya cepat)
+const AGENT_API_TOOLRESULT_MS       =  90000; // call KEDUA+ ke AI   (setelah tool-result bisa berisi ratusan baris)
+const DB_WORKER_TIMEOUT_MS          =   8000; // max query SQLite di worker
+const TOOL_RESULT_MAX_ROWS          =     40; // batas baris tool-result yang dikirim ke model
 
 const GEMINI_USER_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.5-flash'];
 const OPENAI_USER_MODELS = ['gpt-5.5'];
@@ -401,10 +403,21 @@ async function runToolCall(functionCall) {
     try {
       const data = await executeQueryAsync(sql);
       log.info(`SQL selesai: ${data.length} baris dikembalikan.`);
+
+      // Batasi baris yang dikirim ke model agar payload tidak terlalu besar.
+      // Baris berlebih menyebabkan call ke-2 Gemini timeout karena context window besar.
+      const totalRows = data.length;
+      const truncated = totalRows > TOOL_RESULT_MAX_ROWS;
+      const rows      = truncated ? data.slice(0, TOOL_RESULT_MAX_ROWS) : data;
+
       return {
-        status : 'success',
-        rowCount: data.length,
-        data
+        status   : 'success',
+        rowCount : totalRows,
+        returned : rows.length,
+        truncated: truncated
+          ? `PERINGATAN: Hanya ${rows.length} dari ${totalRows} baris ditampilkan. Gunakan WHERE/LIMIT untuk mempersempit hasil, atau minta agregasi (COUNT/SUM/GROUP BY) agar data lebih ringkas.`
+          : undefined,
+        data: rows
       };
     } catch (err) {
       // ROOT CAUSE #3 FIX — jangan sembunyikan error dari model.
@@ -523,15 +536,16 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
 
     const chat = model.startChat({ history: formattedHistory });
 
-    async function callGemini(payload) {
+    async function callGemini(payload, isToolResult = false) {
       if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
-      log.debug('Gemini sendMessage…');
-      const resp = await timeoutPromise(chat.sendMessage(payload), AGENT_API_QUICK_RESPONSE_MS, 'Gemini API call timed out');
+      const timeoutMs = isToolResult ? AGENT_API_TOOLRESULT_MS : AGENT_API_QUICK_RESPONSE_MS;
+      log.debug(`Gemini sendMessage… (timeout: ${timeoutMs / 1000}s, isToolResult: ${isToolResult})`);
+      const resp = await timeoutPromise(chat.sendMessage(payload), timeoutMs, `Gemini API call timed out (${timeoutMs / 1000}s)`);
       log.debug('Gemini response finish_reason:', resp.response.candidates?.[0]?.finishReason);
       return resp;
     }
 
-    let response    = await callGemini(userMessage);
+    let response    = await callGemini(userMessage, false);
     let loopCount   = 0;
     const MAX_LOOPS = 2;
 
@@ -569,7 +583,7 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
         })
       );
 
-      response = await callGemini(toolResponses);
+      response = await callGemini(toolResponses, true);
     }
 
     if (loopCount >= MAX_LOOPS) {
@@ -668,7 +682,7 @@ async function createOpenAIResponse(apiKey, payload) {
   if (typeof fetch !== 'function') {
     throw new Error('fetch tidak tersedia. Gunakan Node.js 18+ atau tambahkan node-fetch.');
   }
-  const timeoutMs = payload.previous_response_id ? AGENT_API_TIMEOUT_MS : AGENT_API_QUICK_RESPONSE_MS;
+  const timeoutMs = payload.previous_response_id ? AGENT_API_TOOLRESULT_MS : AGENT_API_QUICK_RESPONSE_MS;
   log.debug('OpenAI API call, timeout:', timeoutMs, 'ms, previous_id:', payload.previous_response_id || '-');
 
   const response = await fetchWithTimeout('https://api.openai.com/v1/responses', {

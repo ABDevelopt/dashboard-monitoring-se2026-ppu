@@ -775,9 +775,9 @@ p<div class="fade-in">
 
   function startAgentWaitIndicator() {
     clearAgentWaitIndicator();
-    agentStatusTimer = setTimeout(() => {
-      setAgentStatusProcessing();
-    }, 5000);
+    // Tampilkan status "Sedang memproses" LANGSUNG saat request dikirim
+    // (sebelumnya delay 5 detik menyebabkan badge tidak terupdate jika response cepat)
+    setAgentStatusProcessing();
   }
 
   function clearAgentWaitIndicator() {
@@ -785,6 +785,7 @@ p<div class="fade-in">
       clearTimeout(agentStatusTimer);
       agentStatusTimer = null;
     }
+    // updateAgentStatus selalu dipanggil — terlepas apakah timer sudah tembak atau belum
     updateAgentStatus();
   }
 
@@ -915,7 +916,7 @@ p<div class="fade-in">
     const loader = showTypingLoader();
     startAgentWaitIndicator();
 
-    // FIX #2 — Timeout browser 12 000 ms (lebih lama dari server outer 10 000 ms)
+    // FIX #2 — Timeout browser 125 000 ms (lebih lama dari server outer 120 000 ms)
     // agar server selalu selesai (atau timeout) lebih dulu, mencegah write ke koneksi mati.
     const controller = new AbortController();
     let timeoutFired = false;
@@ -927,7 +928,7 @@ p<div class="fade-in">
       appendMessage('agent', `<div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> <strong>Permintaan terlalu lama.</strong> Server sedang sibuk atau jaringan lambat. Coba lagi atau gunakan pertanyaan yang lebih spesifik.</div>`, true);
       clearAgentWaitIndicator();
       setUIFree(input, submitBtn);
-    }, 12000);
+    }, 125000);
 
     try {
       const res = await fetch('/agent/chat', {
@@ -980,9 +981,12 @@ p<div class="fade-in">
       }
     } finally {
       clearTimeout(browserTimeout);
+      // Hapus loader jika masih ada — bisa terjadi jika exception terlempar sebelum loader.remove() di try
       if (loader && loader.parentElement) loader.remove();
       clearAgentWaitIndicator();
-      // Hanya bebaskan UI jika timeout belum tembak (timeout handler sudah memanggil setUIFree sendiri)
+      // Bebaskan UI: panggil setUIFree SELALU kecuali timeout handler sudah menanganinya.
+      // timeoutFired diset true HANYA di dalam setTimeout callback, jadi jika kita tiba
+      // di sini karena alasan lain (error, success), _isProcessing masih true dan perlu dibebaskan.
       if (!timeoutFired) {
         setUIFree(input, submitBtn);
       }
