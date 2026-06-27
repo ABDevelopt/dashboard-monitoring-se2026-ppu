@@ -52,6 +52,35 @@ function loadMasterFromJson(jsonPath) {
 // Parse Excel dan simpan ke DB
 function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, statusFilePath = null, statusOriginalFilename = null, statusStoredFilename = null) {
   const db = getDb();
+
+  // If rekap file (filePath) is missing, but status file is present:
+  if (!filePath && statusFilePath) {
+    const uploadStmt = db.prepare(`
+      INSERT INTO uploads (filename, stored_filename, tanggal, total_subsls_terisi, status_filename, stored_status_filename) 
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    const finalFilename = originalFilename || statusOriginalFilename || 'status_only';
+    const uploadResult = uploadStmt.run(finalFilename, storedFilename, tanggal, 0, statusOriginalFilename, statusStoredFilename);
+    const uploadId = uploadResult.lastInsertRowid;
+
+    // Find previous upload_id
+    const prevUploadRow = db.prepare('SELECT id FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(uploadId);
+    const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
+
+    // Process status file
+    parseAndSaveStatusExcelOnly(statusFilePath, uploadId, prevUploadId);
+
+    // Update total_subsls_terisi
+    const actualCount = db.prepare('SELECT COUNT(*) as n FROM progres WHERE upload_id = ?').get(uploadId).n;
+    db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(actualCount, uploadId);
+
+    // Rebuild summary cache
+    const { rebuildSummaryCache } = require('../database');
+    rebuildSummaryCache(uploadId);
+
+    return { uploadId, totalRows: 0, uniqueSubsls: actualCount };
+  }
+
   const wb = XLSX.readFile(filePath, { raw: true });
 
   // Ambil sheet query
@@ -189,6 +218,10 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
   const actualCount = db.prepare('SELECT COUNT(*) as n FROM progres WHERE upload_id = ?').get(uploadId).n;
   db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(actualCount, uploadId);
 
+  // Rebuild summary cache
+  const { rebuildSummaryCache } = require('../database');
+  rebuildSummaryCache(uploadId);
+
   return { uploadId, totalRows: dataRows.length, uniqueSubsls: actualCount };
 }
 
@@ -237,6 +270,105 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
 
       // Pastikan baris progres ada untuk upload ini sebelum update status
       insertStmt.run(uploadId, kode);
+      updateStmt.run(draft, submitted, approved, rejected, uploadId, kode);
+    }
+  });
+
+  updateTx(rows);
+}
+
+function parseAndSaveStatusExcelOnly(filePath, uploadId, prevUploadId = null) {
+  const db = getDb();
+  const wb = XLSX.readFile(filePath, { raw: true });
+  const sheetName = wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  if (!ws) throw new Error('Sheet dalam file rekap status tidak ditemukan.');
+
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: 0 });
+  if (rows.length < 2) return;
+
+  const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
+  const colIdx = {
+    kode: headers.indexOf('level_6_full_code'),
+    draft: headers.indexOf('draft'),
+    submitted_by_pcl: headers.indexOf('submitted_by_pcl'),
+    approved: headers.indexOf('approved'),
+    rejected: headers.indexOf('rejected')
+  };
+
+  if (colIdx.kode === -1) throw new Error('Kolom "level_6_full_code" tidak ditemukan dalam file rekap status.');
+
+  const insertStmt = db.prepare(`
+    INSERT OR IGNORE INTO progres (
+      upload_id, kode,
+      usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
+      tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
+      rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
+      draft, submitted_by_pcl, approved, rejected
+    ) VALUES (
+      ?, ?,
+      ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?,
+      ?, ?, ?, ?
+    )
+  `);
+
+  const getPrevRecord = db.prepare(`
+    SELECT * FROM progres WHERE upload_id = ? AND kode = ?
+  `);
+
+  const updateStmt = db.prepare(`
+    UPDATE progres 
+    SET draft = ?, submitted_by_pcl = ?, approved = ?, rejected = ?
+    WHERE upload_id = ? AND kode = ?
+  `);
+
+  const updateTx = db.transaction((list) => {
+    for (let i = 1; i < list.length; i++) {
+      const row = list[i];
+      const kode = String(row[colIdx.kode] || '').trim();
+      if (!kode || kode.length < 10) continue;
+
+      const draft = toInt(row[colIdx.draft]);
+      const submitted = toInt(row[colIdx.submitted_by_pcl]);
+      const approved = toInt(row[colIdx.approved]);
+      const rejected = toInt(row[colIdx.rejected]);
+
+      let usaha_tidak_ditemukan = 0, usaha_ditemukan = 0, usaha_baru = 0, usaha_tutup = 0, usaha_ganda = 0;
+      let tidak_ditemukan = 0, ditemukan = 0, keluarga_baru = 0, meninggal = 0, tidak_eligible = 0, tidak_dapat_ditemui = 0;
+      let rumah_tunggal = 0, rumah_deret = 0, rumah_susun = 0, apartemen = 0, lainnya = 0;
+
+      if (prevUploadId) {
+        const prev = getPrevRecord.get(prevUploadId, kode);
+        if (prev) {
+          usaha_tidak_ditemukan = prev.usaha_tidak_ditemukan || 0;
+          usaha_ditemukan = prev.usaha_ditemukan || 0;
+          usaha_baru = prev.usaha_baru || 0;
+          usaha_tutup = prev.usaha_tutup || 0;
+          usaha_ganda = prev.usaha_ganda || 0;
+          tidak_ditemukan = prev.tidak_ditemukan || 0;
+          ditemukan = prev.ditemukan || 0;
+          keluarga_baru = prev.keluarga_baru || 0;
+          meninggal = prev.meninggal || 0;
+          tidak_eligible = prev.tidak_eligible || 0;
+          tidak_dapat_ditemui = prev.tidak_dapat_ditemui || 0;
+          rumah_tunggal = prev.rumah_tunggal || 0;
+          rumah_deret = prev.rumah_deret || 0;
+          rumah_susun = prev.rumah_susun || 0;
+          apartemen = prev.apartemen || 0;
+          lainnya = prev.lainnya || 0;
+        }
+      }
+
+      insertStmt.run(
+        uploadId, kode,
+        usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
+        tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
+        rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
+        draft, submitted, approved, rejected
+      );
+
       updateStmt.run(draft, submitted, approved, rejected, uploadId, kode);
     }
   });

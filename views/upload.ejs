@@ -15,12 +15,12 @@
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; margin-bottom: 20px;">
         <div>
-          <label for="excelFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-file-earmark-excel-fill text-cyan"></i> 1. File Rekap Progres Pencacahan (Utama)</label>
+          <label for="excelFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-file-earmark-excel-fill text-cyan"></i> 1. File Rekap Progres Pencacahan (Utama - Opsional)</label>
           <div class="upload-zone" id="uploadZone" style="height: 150px; padding: 15px;">
             <div class="upload-zone-icon" style="font-size: 28px; margin-bottom: 6px;"><i class="bi bi-cloud-arrow-up"></i></div>
             <div class="upload-zone-title" style="font-size: 13px; font-weight: 600;">Pilih File Excel Progres Utama</div>
             <div class="upload-zone-sub" style="font-size: 11px;">atau seret ke sini (.xlsx, .xls)</div>
-            <input type="file" id="excelFile" name="excelFile" accept=".xlsx, .xls" required style="display: none;">
+            <input type="file" id="excelFile" name="excelFile" accept=".xlsx, .xls" multiple style="display: none;">
           </div>
         </div>
 
@@ -30,7 +30,7 @@
             <div class="upload-zone-icon" style="font-size: 28px; margin-bottom: 6px; color: var(--accent-purple);"><i class="bi bi-cloud-arrow-up"></i></div>
             <div class="upload-zone-title" style="font-size: 13px; font-weight: 600; color: var(--accent-purple);">Pilih File Excel Status FASIH</div>
             <div class="upload-zone-sub" style="font-size: 11px;">atau seret ke sini (.xlsx, .xls)</div>
-            <input type="file" id="statusFile" name="statusFile" accept=".xlsx, .xls" style="display: none;">
+            <input type="file" id="statusFile" name="statusFile" accept=".xlsx, .xls" multiple style="display: none;">
           </div>
         </div>
       </div>
@@ -111,10 +111,84 @@
 </div>
 
 <script>
+  function extractDateFromFilename(filename) {
+    if (!filename) return null;
+    const name = filename.toLowerCase();
+
+    // Pattern 1: YYYY-MM-DD
+    const ymd = name.match(/(?<!\d)(20\d{2})[-/._](0[1-9]|1[0-2])[-/._](0[1-9]|[12]\d|3[01])(?!\d)/);
+    if (ymd) {
+      return `${ymd[1]}-${ymd[2]}-${ymd[3]}`;
+    }
+
+    // Pattern 2: DD-MM-YYYY
+    const dmy = name.match(/(?<!\d)(0[1-9]|[12]\d|3[01])[-/._](0[1-9]|1[0-2])[-/._](20\d{2})(?!\d)/);
+    if (dmy) {
+      return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
+    }
+
+    // Pattern 3: Textual Month (e.g. "19 juni" or "19 juni 2026")
+    const months = {
+      jan: '01', januari: '01', january: '01',
+      feb: '02', februari: '02', february: '02',
+      mar: '03', maret: '03', march: '03',
+      apr: '04', april: '04',
+      mei: '05', may: '05',
+      jun: '06', juni: '06', june: '06',
+      jul: '07', juli: '07', july: '07',
+      agu: '08', agustus: '08', august: '08',
+      sep: '09', september: '09',
+      okt: '10', oktober: '10', october: '10',
+      nov: '11', november: '11',
+      des: '12', desember: '12', december: '12'
+    };
+
+    const monthKeys = Object.keys(months).sort((a,b) => b.length - a.length);
+    const monthRegex = monthKeys.join('|');
+    const txtDatePattern = new RegExp(`(?<!\\d)(0?[1-9]|[12]\\d|3[01])[-_\\s]+(${monthRegex})([-_\\s]+(20\\d{2}))?(?!\\d)`, 'i');
+    const txtMatch = name.match(txtDatePattern);
+    if (txtMatch) {
+      const day = txtMatch[1].padStart(2, '0');
+      const month = months[txtMatch[2].toLowerCase()];
+      const year = txtMatch[4] || new Date().getFullYear().toString();
+      return `${year}-${month}-${day}`;
+    }
+
+    return null;
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     initUploadZone('uploadZone', 'excelFile');
     initUploadZone('uploadZoneStatus', 'statusFile');
     makeTableSortable('uploadsTable');
     makeTableSearchable('uploadsSearch', 'uploadsTable');
+
+    const excelInput = document.getElementById('excelFile');
+    const statusInput = document.getElementById('statusFile');
+    const tanggalInput = document.getElementById('tanggal');
+
+    function handleFileSelect(file) {
+      if (!file) return;
+      const detectedDate = extractDateFromFilename(file.name);
+      if (detectedDate) {
+        tanggalInput.value = detectedDate;
+      }
+    }
+
+    excelInput.addEventListener('change', () => {
+      if (excelInput.files[0]) handleFileSelect(excelInput.files[0]);
+    });
+    statusInput.addEventListener('change', () => {
+      if (statusInput.files[0]) handleFileSelect(statusInput.files[0]);
+    });
+
+    document.getElementById('uploadForm').addEventListener('submit', (e) => {
+      const excel = document.getElementById('excelFile');
+      const status = document.getElementById('statusFile');
+      if (!excel.files[0] && !status.files[0]) {
+        e.preventDefault();
+        alert('Silakan pilih setidaknya satu file Excel (File Progres Utama atau File Status FASIH) untuk diupload.');
+      }
+    });
   });
 </script>

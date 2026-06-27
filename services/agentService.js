@@ -1,5 +1,6 @@
 const { getDb, getSettings, getLatestUpload, getOverviewSummary, getKecamatanStats, getPclStats, getPmlStats, getKorlapStats, getTrenHarian, getTopPerformers, getBottomPerformers, getAnomalyStats, getEarlyWarning } = require('../database');
 const { dbSchemaDescription } = require('./dbSchema');
+const { QUERY_HINTS } = require('./queryHints');
 const { Worker } = require('worker_threads');
 const path = require('path');
 
@@ -22,6 +23,10 @@ const log = {
 // ─────────────────────────────────────────────
 // const SYSTEM_INSTRUCTION = dbSchemaDescription + "\n\nSelalu berikan respons dalam Bahasa Indonesia yang profesional, ramah, dan solutif. Gunakan tabel markdown jika menyajikan data numerik agar rapi dan mudah dibaca. Jika perlu, gunakan tool fetch_page_data untuk mengambil konteks internal dari rute aplikasi seperti /overview, /pcl, /pml, /kecamatan, /leaderboard, /performa-terendah, /early-warning, /deteksi-anomali, atau /subsls.";
 
+const hintsText = Object.entries(QUERY_HINTS)
+  .map(([key, h]) => `- **${key}**: ${h.description}\n  SQL:\n  \`\`\`sql\n  ${h.sql.trim()}\n  \`\`\``)
+  .join('\n');
+
 const SYSTEM_INSTRUCTION = dbSchemaDescription + `
 
 ## Strategi Pengambilan Data — WAJIB DIIKUTI
@@ -37,10 +42,21 @@ Gunakan fetch_page_data SEBELUM mencoba run_read_only_query untuk:
 - Pertanyaan anomali atau kualitas data → /deteksi-anomali
 - Pertanyaan early warning → /early-warning
 
+#### Filtering & Sorting dengan fetch_page_data:
+Anda dapat menyaring dan mengurutkan data secara langsung melalui parameter 'queryParams' saat memanggil 'fetch_page_data':
+- **Filter**: Gunakan parameter penyaringan seperti 'kecamatan', 'desa', 'pcl', 'pml', atau 'korlap'.
+- **Sorting**: Gunakan 'sortField' (misal: 'pct' untuk persentase FASIH, 'pct_muatan' untuk persentase muatan, 'selesai', 'total_subsls', 'target_fasih_total') dan 'sortOrder' ('asc' atau 'desc').
+  Contoh: Untuk mencari PCL di kecamatan Sepaku dengan persentase FASIH terkecil, gunakan fetch_page_data('/pcl', { kecamatan: 'Sepaku', sortField: 'pct', sortOrder: 'asc' }).
+
 ### PRIORITAS 2: Gunakan run_read_only_query HANYA jika:
 - fetch_page_data tidak memiliki data yang dibutuhkan
-- Pertanyaan membutuhkan filter atau agregasi yang sangat spesifik
+- Pertanyaan membutuhkan filter atau agregasi yang sangat spesifik yang tidak dapat dilakukan oleh fetch_page_data
 - User meminta data lintas beberapa entitas sekaligus
+- Untuk sorting dan filtering tingkat lanjut di database: tulis query SQL dengan klausa WHERE dan ORDER BY.
+
+## Query Hints yang Tersedia
+Gunakan template query di bawah ini sebagai dasar penulisan query SQL Anda jika menggunakan 'run_read_only_query'. Ganti parameter seperti ':uploadId', ':kecamatan', atau ':limit' dengan nilai riil sebelum menjalankan query:
+${hintsText}
 
 ### DILARANG:
 - Jangan gunakan run_read_only_query untuk pertanyaan yang bisa dijawab fetch_page_data
@@ -75,7 +91,7 @@ const PAGE_DATA_TOOL_DECLARATION = {
       },
       queryParams: {
         type: "object",
-        description: "Optional additional parameters to narrow the route data, e.g. name or filters."
+        description: "Optional parameters to filter and sort the returned data tables. Supported keys: 'kecamatan', 'desa', 'pcl', 'pml', 'korlap' (for filtering), 'sortField' (field to sort by, e.g. 'pct', 'pct_muatan', 'selesai', 'total_subsls', 'target_fasih_total'), and 'sortOrder' ('asc' or 'desc')."
       }
     },
     required: ["route"],
@@ -330,15 +346,17 @@ function fetchPageData(route, queryParams = {}) {
   log.debug('fetchPageData:', page, queryParams);
 
   const db = getDb();
+  let rawResult;
 
   switch (page) {
     case '/overview':
-      return { 
+      rawResult = { 
         route: '/overview', 
         summary: getOverviewSummary(upload.id), 
         kecamatanStats: getKecamatanStats(upload.id), 
         tren: getTrenHarian() 
       };
+      break;
       
     case '/pcl': {
       const filterPcl = queryParams.pcl || queryParams.name || '';
@@ -402,7 +420,8 @@ function fetchPageData(route, queryParams = {}) {
         `).all(upload.id, filterPcl);
       }
 
-      return { route: '/pcl', pclStats, detailSubsls, filterPcl, filterKec, filterKorlap, filterPml };
+      rawResult = { route: '/pcl', pclStats, detailSubsls, filterPcl, filterKec, filterKorlap, filterPml };
+      break;
     }
 
     case '/pml': {
@@ -431,7 +450,8 @@ function fetchPageData(route, queryParams = {}) {
         `).all(upload.id, filterPml);
       }
 
-      return { route: '/pml', pmlStats, detailPcl, filterPml };
+      rawResult = { route: '/pml', pmlStats, detailPcl, filterPml };
+      break;
     }
 
     case '/korlap': {
@@ -461,26 +481,140 @@ function fetchPageData(route, queryParams = {}) {
         `).all(upload.id, filterKorlap);
       }
 
-      return { route: '/korlap', korlapStats, detailData, filterKorlap };
+      rawResult = { route: '/korlap', korlapStats, detailData, filterKorlap };
+      break;
     }
 
     case '/kecamatan':
-      return { route: '/kecamatan', kecamatanStats: getKecamatanStats(upload.id) };
+      rawResult = { route: '/kecamatan', kecamatanStats: getKecamatanStats(upload.id) };
+      break;
     case '/leaderboard':
-      return { route: '/leaderboard', topPerformers: getTopPerformers(upload.id) };
+      rawResult = { route: '/leaderboard', topPerformers: getTopPerformers(upload.id) };
+      break;
     case '/performa-terendah':
-      return { route: '/performa-terendah', bottomPerformers: getBottomPerformers(upload.id, queryParams) };
+      rawResult = { route: '/performa-terendah', bottomPerformers: getBottomPerformers(upload.id, queryParams) };
+      break;
     case '/early-warning':
-      return { route: '/early-warning', earlyWarning: getEarlyWarning(upload.id, queryParams) };
+      rawResult = { route: '/early-warning', earlyWarning: getEarlyWarning(upload.id, queryParams) };
+      break;
     case '/deteksi-anomali':
-      return { route: '/deteksi-anomali', anomalyStats: getAnomalyStats(upload.id, queryParams) };
+      rawResult = { route: '/deteksi-anomali', anomalyStats: getAnomalyStats(upload.id, queryParams) };
+      break;
     case '/subsls':
-      return { route: '/subsls', pclStats: getPclStats(upload.id), pmlStats: getPmlStats(upload.id), kecamatanStats: getKecamatanStats(upload.id) };
+      rawResult = { route: '/subsls', pclStats: getPclStats(upload.id), pmlStats: getPmlStats(upload.id), kecamatanStats: getKecamatanStats(upload.id) };
+      break;
     case '/map':
-      return { route: '/map', totalSls: db.prepare('SELECT COUNT(*) as n FROM subsls_master').get().n };
+      rawResult = { route: '/map', totalSls: db.prepare('SELECT COUNT(*) as n FROM subsls_master').get().n };
+      break;
     default:
-      return { error: `Rute tidak dikenali: ${route}` };
+      rawResult = { error: `Rute tidak dikenali: ${route}` };
+      break;
   }
+
+  // Helper function to decorate row with percentage calculations
+  function decorateRowWithPct(row) {
+    if (!row || typeof row !== 'object') return;
+
+    // FASIH percentage calculation
+    if ('target_fasih_total' in row || 'target_fasih' in row) {
+      const targetFasih = row.target_fasih_total !== undefined ? row.target_fasih_total : row.target_fasih;
+      const submitted = row.submitted_total !== undefined ? row.submitted_total : (row.submitted_by_pcl || 0);
+      const approved = row.approved_total !== undefined ? row.approved_total : (row.approved || 0);
+      const rejected = row.rejected_total !== undefined ? row.rejected_total : (row.rejected || 0);
+
+      const realisasiFasih = (submitted || 0) + (approved || 0) + (rejected || 0);
+      row.pct = targetFasih > 0 
+        ? parseFloat((100 * realisasiFasih / targetFasih).toFixed(2)) 
+        : 0.0;
+    }
+    
+    // Muatan percentage calculation
+    if ('total_muatan' in row || 'muatan' in row) {
+      const totalMuatan = row.total_muatan !== undefined ? row.total_muatan : row.muatan;
+      const muatanSelesai = row.muatan_selesai !== undefined ? row.muatan_selesai : (row.usaha_total || 0);
+      row.pct_muatan = totalMuatan > 0 
+        ? parseFloat((100 * muatanSelesai / totalMuatan).toFixed(2)) 
+        : 0.0;
+    }
+  }
+
+  // Helper function to sort arrays of objects
+  function sortDataArray(array, sortField, sortOrder = 'asc') {
+    if (!Array.isArray(array) || !sortField) return array;
+    const order = String(sortOrder).toLowerCase() === 'desc' ? -1 : 1;
+    return array.sort((a, b) => {
+      let valA = a[sortField];
+      let valB = b[sortField];
+
+      if (valA === undefined || valA === null) valA = 0;
+      if (valB === undefined || valB === null) valB = 0;
+
+      const numA = Number(valA);
+      const numB = Number(valB);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return (numA - numB) * order;
+      }
+
+      const strA = String(valA).toLowerCase();
+      const strB = String(valB).toLowerCase();
+      if (strA < strB) return -1 * order;
+      if (strA > strB) return 1 * order;
+      return 0;
+    });
+  }
+
+  // Recursive post-processor to decorate, filter, sort and limit
+  function postProcessResult(obj, qParams) {
+    if (!obj || typeof obj !== 'object') return obj;
+
+    if (Array.isArray(obj)) {
+      // First, decorate all rows in the array
+      obj.forEach(decorateRowWithPct);
+
+      // Apply filtering
+      const filterKeys = ['kecamatan', 'desa', 'pcl', 'pml', 'korlap'];
+      let filteredArray = [...obj];
+      for (const key of filterKeys) {
+        const filterVal = qParams[key] || qParams[key.toLowerCase()];
+        if (filterVal) {
+          filteredArray = filteredArray.filter(row => {
+            const rowVal = row[key];
+            if (rowVal === undefined || rowVal === null) return false;
+            return String(rowVal).toLowerCase().includes(String(filterVal).toLowerCase());
+          });
+        }
+      }
+
+      // Apply sorting
+      const sortField = qParams.sortField || qParams.sort || qParams.orderBy || qParams.order;
+      const sortOrder = qParams.sortOrder || qParams.dir || 'asc';
+      if (sortField) {
+        filteredArray = sortDataArray(filteredArray, sortField, sortOrder);
+      }
+
+      // Apply limit
+      if (qParams.limit) {
+        const lim = parseInt(qParams.limit, 10);
+        if (!isNaN(lim)) {
+          filteredArray = filteredArray.slice(0, lim);
+        }
+      }
+
+      // Recursively process items
+      return filteredArray.map(item => postProcessResult(item, qParams));
+    }
+
+    // Process nested object properties
+    const newObj = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        newObj[key] = postProcessResult(obj[key], qParams);
+      }
+    }
+    return newObj;
+  }
+
+  return postProcessResult(rawResult, queryParams);
 }
 
 
@@ -1273,4 +1407,4 @@ async function callOpenRouterAPI(apiKey, payload, isToolResult = false) {
   return data;
 }
 
-module.exports = { sendMessageToAgent };
+module.exports = { sendMessageToAgent, fetchPageData };

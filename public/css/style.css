@@ -1029,6 +1029,15 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   /* Overview dual-progress: stacked on mobile */
   .overview-grid { grid-template-columns: 1fr; gap: 12px; }
 
+  /* Adjust progress timeline layout to give target texts more space and hide redundant text on very narrow screen widths if needed */
+  .progress-timeline-container {
+    margin-top: 24px !important;
+    margin-bottom: 18px !important;
+  }
+  .target-marker-text {
+    font-size: 7.5px !important;
+  }
+
   /* Summary splits: 1 column on mobile */
   .summary-split { grid-template-columns: 1fr 1fr; gap: 8px; }
   .summary-item { padding: 10px; }
@@ -1042,6 +1051,54 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   .filter-form-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px !important;
+  }
+
+  /* Collapsible mobile filter panel inside card */
+  .card:has(#filterForm) {
+    position: relative;
+    border-radius: var(--radius-sm) !important;
+  }
+  .card:has(#filterForm) form {
+    display: none;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+    margin-top: 8px;
+  }
+  .card:has(#filterForm).filter-expanded form {
+    display: block !important;
+  }
+  
+  /* Add toggle button to filter header */
+  .card:has(#filterForm) .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card:has(#filterForm) .card-header::after {
+    content: '\F3E5'; /* Bootstrap icons filter icon */
+    font-family: "bootstrap-icons";
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--accent-cyan);
+    background: rgba(var(--accent-rgb), 0.1);
+    border: 1px solid rgba(var(--accent-rgb), 0.2);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .card:has(#filterForm).filter-expanded .card-header::after {
+    content: '\F2E6'; /* Bootstrap icons close/x-circle icon */
+    color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+  }
+  
+  /* Make header clickable to toggle */
+  .card:has(#filterForm) .card-header {
+    cursor: pointer;
   }
 
   /* Warning cards */
@@ -1079,7 +1136,21 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   .pagination-pages { flex-wrap: wrap; }
 
   /* Drilldown: stacked */
-  .drilldown-grid { grid-template-columns: 1fr; gap: 12px; }
+  .drilldown-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  .drilldown-grid.has-selection > *:first-child {
+    display: none !important;
+  }
+  .drilldown-grid.has-selection > *:last-child {
+    display: block !important;
+    width: 100% !important;
+  }
+  .drilldown-grid.no-selection > *:last-child {
+    display: none !important;
+  }
+  
   .comparison-grid { grid-template-columns: 1fr; gap: 12px; }
 }
 

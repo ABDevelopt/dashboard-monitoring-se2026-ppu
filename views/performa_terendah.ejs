@@ -63,7 +63,7 @@
           </div>
           
           <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
-            Peringkat PCL ditentukan berdasarkan gabungan total muatan usaha (usaha ditemukan + baru) dan keluarga (keluarga ditemukan + baru) yang dicatat (diurutkan dari yang paling sedikit).
+            Peringkat PCL ditentukan berdasarkan rata-rata persentase progres status dokumen FASIH selesai dikerjakan (diurutkan dari yang paling sedikit).
           </p>
 
           <% if (performers.bottomPcl && performers.bottomPcl.length > 0) { %>
@@ -93,7 +93,7 @@
                   <div class="warning-body" style="width: 100%;">
                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                       <span class="warning-name">Posisi <%= index + 1 %>: <%= item.pcl %></span>
-                      <span class="badge badge-red"><%= (item.usaha_total + item.keluarga_total).toLocaleString('id-ID') %> (Usaha + Kel)</span>
+                      <span class="badge badge-red" style="background: rgba(124, 58, 237, 0.15); color: var(--accent-purple); border: 1px solid rgba(124, 58, 237, 0.25);"><%= ((item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0)).toLocaleString('id-ID') %> / <%= (item.target_fasih_total || 0).toLocaleString('id-ID') %> FASIH</span>
                     </div>
                     <div class="warning-meta">
                       Kec. <strong><%= item.kecamatan %></strong> · PML: <strong><%= item.pml %></strong> · Korlap: <strong><%= item.korlap %></strong>
@@ -149,7 +149,7 @@
           </div>
 
           <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
-            Peringkat PML ditentukan berdasarkan gabungan total muatan usaha dan keluarga yang dicatat oleh tim PCL di bawah pengawasannya (diurutkan dari yang paling sedikit).
+            Peringkat PML ditentukan berdasarkan rata-rata persentase progres status dokumen FASIH selesai dikerjakan oleh tim PCL di bawah pengawasannya (diurutkan dari yang paling sedikit).
           </p>
 
           <% if (performers.bottomPml && performers.bottomPml.length > 0) { %>
@@ -179,7 +179,7 @@
                   <div class="warning-body" style="width: 100%;">
                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                       <span class="warning-name">Posisi <%= index + 1 %>: <%= item.pml %></span>
-                      <span class="badge badge-red"><%= (item.usaha_total + item.keluarga_total).toLocaleString('id-ID') %> (Usaha + Kel)</span>
+                      <span class="badge badge-red" style="background: rgba(124, 58, 237, 0.15); color: var(--accent-purple); border: 1px solid rgba(124, 58, 237, 0.25);"><%= ((item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0)).toLocaleString('id-ID') %> / <%= (item.target_fasih_total || 0).toLocaleString('id-ID') %> FASIH</span>
                     </div>
                     <div class="warning-meta">
                       Tim Korlap: <strong><%= item.korlap %></strong>
@@ -249,12 +249,12 @@
           Urutan petugas dengan performa terendah dihitung dan diurutkan menggunakan kriteria berikut:
         </p>
         <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
-          <li><strong>Metrik Utama:</strong> Diurutkan mulai dari total volume gabungan hasil pencacahan terkecil, yaitu: <code style="background: var(--bg-warning-stat); border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; font-family: monospace;">(Usaha Ditemukan + Usaha Baru) + (Keluarga Ditemukan + Keluarga Baru)</code>.</li>
+          <li><strong>Metrik Utama:</strong> Diurutkan berdasarkan rata-rata persentase progres status dokumen FASIH selesai dikerjakan yang paling kecil terhadap target FASIH masing-masing.</li>
           <li><strong>Konsolidasi Petugas:</strong> Pengelompokan data petugas bersifat <em>case-insensitive</em> (mengabaikan perbedaan huruf besar/kecil) untuk memastikan data petugas dengan variasi penulisan nama tetap teragregasi menjadi satu.</li>
-          <li><strong>Aturan Pemecah Seri (Tie-Breaker):</strong> Jika dua atau lebih petugas memiliki total volume gabungan yang sama, posisi terendah (teratas pada daftar ini) ditentukan berturut-turut berdasarkan:
+          <li><strong>Aturan Pemecah Seri (Tie-Breaker):</strong> Jika dua atau lebih petugas memiliki persentase progres FASIH yang sama, posisi terendah (teratas pada daftar ini) ditentukan berturut-turut berdasarkan:
             <ol style="margin-top: 4px; padding-left: 16px; list-style-type: decimal;">
-              <li>Jumlah volume usaha terkecil (usaha_total paling sedikit).</li>
-              <li>Jumlah target/beban muatan awal <code style="background: var(--bg-warning-stat); border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; font-family: monospace;">total_muatan</code> terbesar (beban kerja terbesar dengan hasil pencacahan terkecil dianggap performa lebih rendah).</li>
+              <li>Jumlah volume dokumen FASIH selesai dikerjakan (Draft + Submitted + Approved + Rejected) paling sedikit.</li>
+              <li>Jumlah beban target FASIH awal <code style="background: var(--bg-warning-stat); border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; font-family: monospace;">target_fasih_total</code> terbesar (beban kerja terbesar dengan persentase terkecil dianggap performa lebih rendah).</li>
             </ol>
           </li>
         </ul>

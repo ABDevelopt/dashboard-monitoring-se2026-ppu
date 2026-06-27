@@ -450,14 +450,23 @@ function initUploadZone(zoneId, inputId) {
     e.preventDefault();
     zone.classList.remove('drag-over');
     const files = e.dataTransfer.files;
-    if (files[0]) {
+    if (files.length > 0) {
       input.files = files;
-      zone.querySelector('.upload-zone-sub').textContent = `${files[0].name} (${(files[0].size/1024/1024).toFixed(1)} MB)`;
+      if (files.length > 1) {
+        zone.querySelector('.upload-zone-sub').textContent = `${files.length} file terpilih`;
+      } else {
+        zone.querySelector('.upload-zone-sub').textContent = `${files[0].name} (${(files[0].size/1024/1024).toFixed(1)} MB)`;
+      }
+      input.dispatchEvent(new Event('change'));
     }
   });
   input.addEventListener('change', () => {
-    if (input.files[0]) {
-      zone.querySelector('.upload-zone-sub').textContent = `${input.files[0].name}`;
+    if (input.files.length > 0) {
+      if (input.files.length > 1) {
+        zone.querySelector('.upload-zone-sub').textContent = `${input.files.length} file terpilih`;
+      } else {
+        zone.querySelector('.upload-zone-sub').textContent = `${input.files[0].name}`;
+      }
     }
   });
 }
@@ -469,6 +478,121 @@ window.initProgressBars = function(container = document) {
     setTimeout(() => { bar.style.width = targetWidth + '%'; }, 100);
   });
 };
+
+// ===== KECAMATAN FASIH BAR CHART =====
+function createKecFasihBarChart(canvasId, labels, dataSelesai, dataTotal, title = '') {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+  const theme = getThemeColors();
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Selesai FASIH',
+          data: dataSelesai,
+          backgroundColor: 'rgba(124, 58, 237, 0.8)',
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+        {
+          label: 'Belum',
+          data: dataTotal.map((t, i) => Math.max(0, t - dataSelesai[i])),
+          backgroundColor: theme.isLight ? 'rgba(45, 39, 36, 0.05)' : 'rgba(255, 255, 255, 0.06)',
+          borderRadius: 6,
+          borderSkipped: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: theme.text, font: { size: 11, family: 'Inter' } } },
+        title: { display: !!title, text: title, color: theme.title, font: { size: 13, weight: '700' } },
+        tooltip: {
+          backgroundColor: theme.bgCard,
+          borderColor: theme.border,
+          borderWidth: 1,
+          titleColor: theme.title,
+          bodyColor: theme.text,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('id-ID')}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: theme.text, font: { size: 11 } },
+          grid: { color: theme.grid }
+        },
+        y: {
+          stacked: true,
+          ticks: { color: theme.text, font: { size: 11 } },
+          grid: { color: theme.grid }
+        }
+      }
+    }
+  });
+  window.activeCharts = window.activeCharts || [];
+  window.activeCharts.push(chart);
+  return chart;
+}
+
+// ===== DAILY INCREMENT BAR CHART =====
+function createDailyBarChart(canvasId, labels, data, title = '', color = '#7c3aed') {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+  const theme = getThemeColors();
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Penambahan Dokumen',
+          data: data,
+          backgroundColor: color,
+          borderRadius: 6,
+          borderSkipped: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        title: { display: !!title, text: title, color: theme.title, font: { size: 13, weight: '700' } },
+        tooltip: {
+          backgroundColor: theme.bgCard,
+          borderColor: theme.border,
+          borderWidth: 1,
+          titleColor: theme.title,
+          bodyColor: theme.text,
+          callbacks: {
+            label: ctx => ` Penambahan: ${ctx.parsed.y.toLocaleString('id-ID')} dokumen`
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: theme.text, font: { size: 11 } },
+          grid: { color: theme.grid }
+        },
+        y: {
+          ticks: { color: theme.text, font: { size: 11 } },
+          grid: { color: theme.grid }
+        }
+      }
+    }
+  });
+  window.activeCharts = window.activeCharts || [];
+  window.activeCharts.push(chart);
+  return chart;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   window.initProgressBars();

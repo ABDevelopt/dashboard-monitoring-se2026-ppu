@@ -51,6 +51,24 @@ You have read-only access to a SQLite database with the following schema:
    - approved: INTEGER (FASIH document approved by PML - count of completed documents)
    - rejected: INTEGER (FASIH document rejected by PML - count of documents returned to PCL)
 
+4. Table: summary_cache (Stores pre-computed summarized progress data grouped by upload, kecamatan, korlap, pml, pcl)
+   - upload_id: INTEGER REFERENCES uploads(id) ON DELETE CASCADE
+   - kecamatan: TEXT (Kecamatan name)
+   - korlap: TEXT (Korlap name)
+   - pml: TEXT (PML name)
+   - pcl: TEXT (PCL name)
+   - total_sls: INTEGER (Count of SubSLS assigned)
+   - selesai: INTEGER (Count of completed SubSLS)
+   - total_muatan: INTEGER (Prelist muatan target count)
+   - muatan_selesai: INTEGER (Realized muatan count)
+   - usaha_total: INTEGER (Total realized businesses)
+   - keluarga_total: INTEGER (Total realized families)
+   - draft_total: INTEGER (FASIH document draft count)
+   - submitted_total: INTEGER (FASIH document submitted count)
+   - approved_total: INTEGER (FASIH document approved count)
+   - rejected_total: INTEGER (FASIH document rejected count)
+   - target_fasih_total: INTEGER (Target count of family documents to be completed in FASIH app)
+
 Relationships & Calculations:
 - Connect "progres" to "subsls_master" on "kode".
 - Connect "progres" to "uploads" on "upload_id".
@@ -64,10 +82,11 @@ Relationships & Calculations:
 - Anomalies include: usaha_ganda > 0, tidak_dapat_ditemui > 0, rejected > 0.
 - Performa Rendah indicators:
   * Zero progress PCLs: total progress (draft + submitted + approved + rejected) = 0 across all assigned SubSLS.
-  * Slow progress PCLs: average daily progress (realisasi muatan / elapsed days since start) < 5.0.
+  * Slow progress PCLs: average daily progress (FASIH realisasi / elapsed days since start) < 1.0.
 
 Guidelines for queries:
 - Always query the latest upload_id unless asked otherwise. To get the latest upload_id: (SELECT id FROM uploads ORDER BY id DESC LIMIT 1) or join with the latest upload.
+- Use the pre-computed summary_cache table whenever you need aggregated statistics (e.g. per PCL, PML, Korlap, or Kecamatan) to speed up execution.
 - Use case-insensitive matching where appropriate (e.g. UPPER(pcl) = UPPER('name') or using LIKE).
 - Ensure queries are valid SQLite queries and execute within a read-only sandboxed function.
 `;

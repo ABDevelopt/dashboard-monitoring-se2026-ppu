@@ -34,49 +34,137 @@ router.get('/', (req, res) => {
   });
 });
 
+function extractDateFromFilename(filename) {
+  if (!filename) return null;
+  const name = filename.toLowerCase();
+
+  // Pattern 1: YYYY-MM-DD
+  const ymd = name.match(/(?<!\d)(20\d{2})[-/._](0[1-9]|1[0-2])[-/._](0[1-9]|[12]\d|3[01])(?!\d)/);
+  if (ymd) {
+    return `${ymd[1]}-${ymd[2]}-${ymd[3]}`;
+  }
+
+  // Pattern 2: DD-MM-YYYY
+  const dmy = name.match(/(?<!\d)(0[1-9]|[12]\d|3[01])[-/._](0[1-9]|1[0-2])[-/._](20\d{2})(?!\d)/);
+  if (dmy) {
+    return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
+  }
+
+  // Pattern 3: Textual Month (e.g. "19 juni" or "19 juni 2026")
+  const months = {
+    jan: '01', januari: '01', january: '01',
+    feb: '02', februari: '02', february: '02',
+    mar: '03', maret: '03', march: '03',
+    apr: '04', april: '04',
+    mei: '05', may: '05',
+    jun: '06', juni: '06', june: '06',
+    jul: '07', juli: '07', july: '07',
+    agu: '08', agustus: '08', august: '08',
+    sep: '09', september: '09',
+    okt: '10', oktober: '10', october: '10',
+    nov: '11', november: '11',
+    des: '12', desember: '12', december: '12'
+  };
+
+  const monthKeys = Object.keys(months).sort((a,b) => b.length - a.length);
+  const monthRegex = monthKeys.join('|');
+  const txtDatePattern = new RegExp(`(?<!\\d)(0?[1-9]|[12]\\d|3[01])[-_\\s]+(${monthRegex})([-_\\s]+(20\\d{2}))?(?!\\d)`, 'i');
+  const txtMatch = name.match(txtDatePattern);
+  if (txtMatch) {
+    const day = txtMatch[1].padStart(2, '0');
+    const month = months[txtMatch[2].toLowerCase()];
+    const year = txtMatch[4] || new Date().getFullYear().toString();
+    return `${year}-${month}-${day}`;
+  }
+
+  return null;
+}
+
 // POST: Process upload
 router.post('/', upload.fields([
-  { name: 'excelFile', maxCount: 1 },
-  { name: 'statusFile', maxCount: 1 }
+  { name: 'excelFile', maxCount: 100 },
+  { name: 'statusFile', maxCount: 100 }
 ]), (req, res) => {
-  const excelFile = req.files && req.files['excelFile'] ? req.files['excelFile'][0] : null;
-  const statusFile = req.files && req.files['statusFile'] ? req.files['statusFile'][0] : null;
+  const excelFiles = req.files && req.files['excelFile'] ? req.files['excelFile'] : [];
+  const statusFiles = req.files && req.files['statusFile'] ? req.files['statusFile'] : [];
 
-  if (!excelFile) {
-    req.flash('error', 'File progres tidak ditemukan. Pastikan memilih file Excel Utama.');
+  if (excelFiles.length === 0 && statusFiles.length === 0) {
+    req.flash('error', 'Silakan pilih setidaknya satu file Excel untuk diupload.');
     return res.redirect('/admin/upload');
   }
 
-  const tanggal = req.body.tanggal || new Date().toISOString().slice(0, 10);
+  const defaultTanggal = req.body.tanggal || new Date().toISOString().slice(0, 10);
 
-  try {
-    const result = parseAndSaveExcel(
-      excelFile.path, 
-      excelFile.originalname, 
-      excelFile.filename, 
-      tanggal,
-      statusFile ? statusFile.path : null,
-      statusFile ? statusFile.originalname : null,
-      statusFile ? statusFile.filename : null
-    );
+  // Group files by date
+  const groups = {};
 
-    let msg = `Upload progres berhasil! File: ${excelFile.originalname} | Tanggal: ${tanggal} | SubSLS terproses: ${result.uniqueSubsls}`;
-    if (statusFile) {
-      msg += ` | File Status FASIH: ${statusFile.originalname} berhasil diproses.`;
+  function addToGroup(date, type, file) {
+    if (!groups[date]) {
+      groups[date] = { excelFile: null, statusFile: null };
     }
-    req.flash('success', msg);
-    res.redirect('/');
-  } catch (err) {
-    console.error('Upload error:', err);
-    if (excelFile && fs.existsSync(excelFile.path)) {
-      try { fs.unlinkSync(excelFile.path); } catch (e) {}
-    }
-    if (statusFile && fs.existsSync(statusFile.path)) {
-      try { fs.unlinkSync(statusFile.path); } catch (e) {}
-    }
-    req.flash('error', `Gagal memproses file: ${err.message}`);
-    res.redirect('/admin/upload');
+    groups[date][type] = file;
   }
+
+  // Process excel files (Utama)
+  for (const f of excelFiles) {
+    const d = extractDateFromFilename(f.originalname) || defaultTanggal;
+    addToGroup(d, 'excelFile', f);
+  }
+
+  // Process status files (FASIH)
+  for (const f of statusFiles) {
+    const d = extractDateFromFilename(f.originalname) || defaultTanggal;
+    addToGroup(d, 'statusFile', f);
+  }
+
+  // Sort dates chronologically ascending
+  const sortedDates = Object.keys(groups).sort();
+
+  const successMessages = [];
+  const errors = [];
+
+  for (const date of sortedDates) {
+    const g = groups[date];
+    const excelFile = g.excelFile;
+    const statusFile = g.statusFile;
+
+    try {
+      const result = parseAndSaveExcel(
+        excelFile ? excelFile.path : null, 
+        excelFile ? excelFile.originalname : (statusFile ? statusFile.originalname : null), 
+        excelFile ? excelFile.filename : null, 
+        date,
+        statusFile ? statusFile.path : null,
+        statusFile ? statusFile.originalname : null,
+        statusFile ? statusFile.filename : null
+      );
+
+      let msg = `Tanggal ${date}: `;
+      if (excelFile) msg += `Progres (${excelFile.originalname}) `;
+      if (statusFile) msg += `Status FASIH (${statusFile.originalname}) `;
+      msg += `berhasil diproses (SubSLS: ${result.uniqueSubsls})`;
+      successMessages.push(msg);
+    } catch (err) {
+      console.error(`Error processing date ${date}:`, err);
+      // Clean up uploaded files for this date
+      if (excelFile && fs.existsSync(excelFile.path)) {
+        try { fs.unlinkSync(excelFile.path); } catch (e) {}
+      }
+      if (statusFile && fs.existsSync(statusFile.path)) {
+        try { fs.unlinkSync(statusFile.path); } catch (e) {}
+      }
+      errors.push(`Tanggal ${date} gagal: ${err.message}`);
+    }
+  }
+
+  if (successMessages.length > 0) {
+    req.flash('success', `Berhasil memproses ${successMessages.length} upload data:<br>- ${successMessages.join('<br>- ')}`);
+  }
+  if (errors.length > 0) {
+    req.flash('error', `Gagal memproses beberapa file:<br>- ${errors.join('<br>- ')}`);
+  }
+
+  res.redirect('/admin/upload');
 });
 
 // DELETE: hapus upload

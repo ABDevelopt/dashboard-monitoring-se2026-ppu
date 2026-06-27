@@ -41,6 +41,10 @@ function getDb() {
   if (!db) {
     db = new Database(DB_PATH);
     db.pragma('journal_mode = WAL');
+    db.pragma('synchronous = NORMAL');
+    db.pragma('cache_size = -32000');
+    db.pragma('temp_store = MEMORY');
+    db.pragma('mmap_size = 134217728');
     db.pragma('foreign_keys = ON');
     initSchema();
     migrateSchema();
@@ -107,12 +111,37 @@ function initSchema() {
       UNIQUE(upload_id, kode)
     );
 
-    CREATE INDEX IF NOT EXISTS idx_progres_upload ON progres(upload_id);
+     CREATE INDEX IF NOT EXISTS idx_progres_upload ON progres(upload_id);
     CREATE INDEX IF NOT EXISTS idx_progres_kode ON progres(kode);
     CREATE INDEX IF NOT EXISTS idx_master_kecamatan ON subsls_master(kecamatan);
     CREATE INDEX IF NOT EXISTS idx_master_korlap ON subsls_master(korlap);
     CREATE INDEX IF NOT EXISTS idx_master_pml ON subsls_master(pml);
     CREATE INDEX IF NOT EXISTS idx_master_pcl ON subsls_master(pcl);
+
+    -- Tabel summary_cache untuk optimasi chatbot & fetchPageData
+    CREATE TABLE IF NOT EXISTS summary_cache (
+      upload_id INTEGER NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
+      kecamatan TEXT,
+      korlap TEXT,
+      pml TEXT,
+      pcl TEXT,
+      total_sls INTEGER,
+      selesai INTEGER,
+      total_muatan INTEGER,
+      muatan_selesai INTEGER,
+      usaha_total INTEGER,
+      keluarga_total INTEGER,
+      draft_total INTEGER,
+      submitted_total INTEGER,
+      approved_total INTEGER,
+      rejected_total INTEGER,
+      target_fasih_total INTEGER,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (upload_id, pcl)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_summary_upload ON summary_cache(upload_id);
+    CREATE INDEX IF NOT EXISTS idx_summary_pcl ON summary_cache(pcl);
 
     -- Tabel pengaturan tampilan halaman/fitur
     CREATE TABLE IF NOT EXISTS settings (
@@ -146,6 +175,21 @@ function migrateSchema() {
   try {
     db.prepare('ALTER TABLE uploads ADD COLUMN stored_status_filename TEXT').run();
   } catch (e) {}
+
+  // Rebuild summary cache for all uploads if empty
+  try {
+    const uploadCount = db.prepare('SELECT COUNT(*) as n FROM uploads').get().n;
+    const cacheCount = db.prepare('SELECT COUNT(*) as n FROM summary_cache').get().n;
+    if (uploadCount > 0 && cacheCount === 0) {
+      console.log('Populating summary_cache for existing uploads...');
+      const uploadsList = db.prepare('SELECT id FROM uploads').all();
+      for (const u of uploadsList) {
+        rebuildSummaryCache(u.id);
+      }
+    }
+  } catch (err) {
+    console.error('Error migrating/populating summary_cache:', err);
+  }
 }
 
 // Ambil upload terakhir
@@ -413,7 +457,7 @@ function getEarlyWarning(uploadId, filters = {}) {
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
-    HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) = 0
+    HAVING SUM(COALESCE(m.target_fasih, 0)) > 0 AND SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) = 0
     ORDER BY total_subsls DESC
   `).all(...paramsZeroPcl);
 
@@ -427,9 +471,9 @@ function getEarlyWarning(uploadId, filters = {}) {
       SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
       SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_selesai,
-      CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) / SUM(m.muatan), 2) ELSE 0.0 END AS pct,
-      SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_realisasi,
-      ROUND(SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) * 1.0 / ?, 2) AS rata_rata,
+      CASE WHEN SUM(COALESCE(m.target_fasih, 0)) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(COALESCE(m.target_fasih, 0)), 2) ELSE 100.0 END AS pct,
+      SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS muatan_realisasi,
+      ROUND(SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) * 1.0 / ?, 2) AS rata_rata,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
@@ -439,7 +483,7 @@ function getEarlyWarning(uploadId, filters = {}) {
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
-    HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0 AND rata_rata < 5.0
+    HAVING SUM(COALESCE(m.target_fasih, 0)) > 0 AND SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0 AND rata_rata < 1.0
     ORDER BY rata_rata ASC
   `).all(...paramsSlowPcl);
 
@@ -460,7 +504,7 @@ function getEarlyWarning(uploadId, filters = {}) {
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pml COLLATE NOCASE
-    HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) = 0
+    HAVING SUM(COALESCE(m.target_fasih, 0)) > 0 AND SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) = 0
     ORDER BY total_subsls DESC
   `).all(...paramsZeroPml);
 
@@ -494,7 +538,7 @@ function getTopPerformers(uploadId, filters = {}) {
       COUNT(m.kode) AS total_subsls,
       SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) / SUM(m.muatan), 2) ELSE 0.0 END AS pct,
+      CASE WHEN SUM(COALESCE(m.target_fasih, 0)) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(COALESCE(m.target_fasih, 0)), 2) ELSE 0.0 END AS pct,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
@@ -506,7 +550,7 @@ function getTopPerformers(uploadId, filters = {}) {
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
-    ORDER BY (usaha_total + keluarga_total) DESC, usaha_total DESC, total_muatan DESC
+    ORDER BY pct DESC, (submitted_total + approved_total + rejected_total) DESC, target_fasih_total DESC
     LIMIT 5
   `).all(...params);
 
@@ -517,7 +561,7 @@ function getTopPerformers(uploadId, filters = {}) {
       COUNT(m.kode) AS total_subsls,
       SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) / SUM(m.muatan), 2) ELSE 0.0 END AS pct,
+      CASE WHEN SUM(COALESCE(m.target_fasih, 0)) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(COALESCE(m.target_fasih, 0)), 2) ELSE 0.0 END AS pct,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
@@ -529,7 +573,7 @@ function getTopPerformers(uploadId, filters = {}) {
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pml COLLATE NOCASE
-    ORDER BY (usaha_total + keluarga_total) DESC, usaha_total DESC, total_muatan DESC
+    ORDER BY pct DESC, (submitted_total + approved_total + rejected_total) DESC, target_fasih_total DESC
     LIMIT 5
   `).all(...params);
 
@@ -563,7 +607,7 @@ function getBottomPerformers(uploadId, filters = {}) {
       COUNT(m.kode) AS total_subsls,
       SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) / SUM(m.muatan), 2) ELSE 0.0 END AS pct,
+      CASE WHEN SUM(COALESCE(m.target_fasih, 0)) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(COALESCE(m.target_fasih, 0)), 2) ELSE 100.0 END AS pct,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
@@ -575,7 +619,7 @@ function getBottomPerformers(uploadId, filters = {}) {
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
-    ORDER BY (submitted_total + approved_total + rejected_total) ASC, (usaha_total + keluarga_total) ASC, total_muatan DESC
+    ORDER BY pct ASC, (submitted_total + approved_total + rejected_total) ASC, target_fasih_total DESC
     LIMIT 5
   `).all(...params);
 
@@ -586,7 +630,7 @@ function getBottomPerformers(uploadId, filters = {}) {
       COUNT(m.kode) AS total_subsls,
       SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      CASE WHEN SUM(m.muatan) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) / SUM(m.muatan), 2) ELSE 0.0 END AS pct,
+      CASE WHEN SUM(COALESCE(m.target_fasih, 0)) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(COALESCE(m.target_fasih, 0)), 2) ELSE 100.0 END AS pct,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
@@ -598,7 +642,7 @@ function getBottomPerformers(uploadId, filters = {}) {
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pml COLLATE NOCASE
-    ORDER BY (submitted_total + approved_total + rejected_total) ASC, (usaha_total + keluarga_total) ASC, total_muatan DESC
+    ORDER BY pct ASC, (submitted_total + approved_total + rejected_total) ASC, target_fasih_total DESC
     LIMIT 5
   `).all(...params);
 
@@ -704,10 +748,46 @@ function updateSettings(settingsObj) {
   }
 }
 
+function rebuildSummaryCache(uploadId) {
+  const db = getDb();
+  db.prepare('DELETE FROM summary_cache WHERE upload_id = ?').run(uploadId);
+  
+  db.prepare(`
+    INSERT INTO summary_cache (
+      upload_id, kecamatan, korlap, pml, pcl,
+      total_sls, selesai, total_muatan, muatan_selesai,
+      usaha_total, keluarga_total, draft_total, submitted_total, approved_total, rejected_total, target_fasih_total
+    )
+    SELECT 
+      ? as upload_id,
+      m.kecamatan,
+      m.korlap,
+      m.pml,
+      m.pcl,
+      COUNT(m.kode) AS total_sls,
+      SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
+      SUM(m.muatan) AS total_muatan,
+      SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_selesai,
+      SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
+      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
+      SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
+      SUM(COALESCE(p.approved, 0)) AS approved_total,
+      SUM(COALESCE(p.rejected, 0)) AS rejected_total,
+      SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
+               THEN 0 
+               ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
+          END) AS target_fasih_total
+    FROM subsls_master m
+    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
+  `).run(uploadId, uploadId);
+}
+
 module.exports = {
   getDb, getLatestUpload, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
   getBottomPerformers, getAnomalyStats,
-  getSettings, updateSettings, getUserByUsername, hashPassword
+  getSettings, updateSettings, getUserByUsername, hashPassword, rebuildSummaryCache
 };

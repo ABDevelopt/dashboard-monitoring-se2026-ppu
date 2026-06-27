@@ -72,7 +72,7 @@
       <span class="nav-icon"><i class="bi bi-map"></i></span> Peta Progres
     </a>
     <% } %>
-    <% if (typeof settings !== 'undefined' && settings.page_aiagent === '1' && typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'korlap')) { %>
+    <% if (typeof settings !== 'undefined' && settings.page_aiagent === '1') { %>
     <a href="/agent" class="nav-item <%= activePage === 'agent' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-robot"></i></span> Asisten AI Chat
     </a>
@@ -304,6 +304,21 @@
         themeIcon.classList.add('bi-sun-fill');
       }
     }
+
+    // Toggle Collapsible Filter Cards on Mobile
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth > 768) return; // Desktop is expanded by default
+      const header = e.target.closest('.card:has(#filterForm) .card-header');
+      if (!header) return;
+      
+      // Prevent resetting when clicking reset link inside header
+      if (e.target.closest('a')) return;
+
+      const card = header.closest('.card');
+      if (card) {
+        card.classList.toggle('filter-expanded');
+      }
+    });
 
     if (themeToggleBtn && themeIcon) {
       themeToggleBtn.addEventListener('click', () => {

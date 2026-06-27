@@ -3,17 +3,17 @@ const router  = express.Router();
 const { sendMessageToAgent } = require('../services/agentService');
 const { getSettings } = require('../database');
 
-// Auth Middleware for Agent chatbot (allows Admin and Korlap accounts only)
+// Auth Middleware for Agent chatbot (allows any authenticated accounts)
 function requireLogin(req, res, next) {
-  if (req.session && req.session.user && (req.session.user.role === 'admin' || req.session.user.role === 'korlap')) {
+  if (req.session && req.session.user) {
     return next();
   }
   
   if (req.xhr || (req.headers.accept && req.headers.accept.includes('json')) || req.path === '/chat') {
-    return res.status(403).json({ error: 'Akses ditolak. Hanya akun Admin dan Korlap yang dapat mengakses Asisten AI.' });
+    return res.status(401).json({ error: 'Akses ditolak. Silakan login terlebih dahulu untuk mengakses Asisten AI.' });
   }
   
-  req.flash('error', 'Akses ditolak. Hanya akun Admin dan Korlap yang dapat mengakses Asisten AI.');
+  req.flash('error', 'Silakan login terlebih dahulu untuk mengakses Asisten AI.');
   res.redirect('/login');
 }
 

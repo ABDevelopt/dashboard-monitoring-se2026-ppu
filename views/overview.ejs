@@ -38,7 +38,7 @@
               </div>
               <div>
                 <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary);">Assignment FASIH</h3>
-                <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Realisasi Approved vs Target FASIH</p>
+                <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Realisasi Approved vs Target FASIH (Fokus Utama Monitoring)</p>
               </div>
             </div>
             <div style="text-align: right;">
@@ -46,18 +46,18 @@
               <% let fasihPct = summary.target_fasih_total ? ((totalPengerjaan / summary.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
               <div style="font-size: 18px; font-weight: 800; color: var(--accent-purple);"><%= fasihPct %>%</div>
               <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-top: 2px;"><%= totalPengerjaan.toLocaleString('id-ID') %> <span style="font-weight: 500; font-size: 10px; color: var(--text-muted);">/ <%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></span></div>
-              <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Capaian FASIH</div>
+              <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Capaian Utama FASIH</div>
             </div>
           </div>
 
           <div style="background: var(--bg-progress-wrap); height: 28px; border-radius: 14px; overflow: hidden; position: relative; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">
-            <div class="progress-bar" data-width="<%= fasihPct %>" style="background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%); height: 20px; width: 0%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);">
-              <% if (parseFloat(fasihPct) > 8) { %>
+            <div class="progress-bar" data-width="<%= fasihPct %>" style="background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%); height: 20px; width: 0%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; min-width: 24px; box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);">
+              <% if (parseFloat(fasihPct) >= 15) { %>
                 <span style="font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"><%= fasihPct %>%</span>
               <% } %>
             </div>
-            <% if (parseFloat(fasihPct) <= 8) { %>
-              <span style="margin-left: 12px; font-size: 11px; font-weight: 800; color: var(--text-primary);"><%= fasihPct %>%</span>
+            <% if (parseFloat(fasihPct) < 15) { %>
+              <span style="margin-left: 12px; font-size: 11px; font-weight: 800; color: var(--text-primary); white-space: nowrap;"><%= fasihPct %>%</span>
             <% } %>
           </div>
 
@@ -164,7 +164,7 @@
       </div>
       <% } %>
 
-      <!-- Progres Realisasi Pencacahan Muatan (Perhatian Utama) -->
+      <!-- Progres Realisasi Pencacahan Muatan (Opsional) -->
       <% if (settings.overview_muatan === '1') { %>
       <div class="card" style="margin: 0; position: relative; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); padding: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
@@ -174,7 +174,7 @@
             </div>
             <div>
               <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: var(--text-primary);">Progres Realisasi Pencacahan Muatan</h3>
-              <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Realisasi Usaha Total vs Target Muatan Prelist (Fokus Utama Monitoring)</p>
+              <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Realisasi Usaha Total vs Target Muatan Prelist (Indikator Opsional Monitoring)</p>
             </div>
           </div>
           <div style="text-align: right;">
@@ -184,27 +184,27 @@
           </div>
         </div>
 
-        <div style="position: relative; height: 28px; margin-top: 14px; margin-bottom: 14px;">
+        <div class="progress-timeline-container" style="position: relative; height: 28px; margin-top: 22px; margin-bottom: 14px;">
           <!-- Track & Progress Bar -->
           <div style="background: var(--bg-progress-wrap); height: 28px; border-radius: 14px; overflow: hidden; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">
-            <div class="progress-bar" data-width="<%= totalPct %>" style="background: linear-gradient(90deg, var(--accent-blue) 0%, var(--accent-cyan) 100%); height: 20px; width: 0%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.25);">
-              <% if (parseFloat(totalPct) > 8) { %>
+            <div class="progress-bar" data-width="<%= totalPct %>" style="background: linear-gradient(90deg, var(--accent-blue) 0%, var(--accent-cyan) 100%); height: 20px; width: 0%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; min-width: 24px; box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.25);">
+              <% if (parseFloat(totalPct) >= 15) { %>
                 <span style="font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"><%= totalPct %>%</span>
               <% } %>
             </div>
-            <% if (parseFloat(totalPct) <= 8) { %>
-              <span style="margin-left: 12px; font-size: 11px; font-weight: 800; color: var(--text-primary);"><%= totalPct %>%</span>
+            <% if (parseFloat(totalPct) < 15) { %>
+              <span style="margin-left: 12px; font-size: 11px; font-weight: 800; color: var(--text-primary); white-space: nowrap;"><%= totalPct %>%</span>
             <% } %>
           </div>
 
           <!-- Marker 25% (Juni) -->
-          <div style="position: absolute; left: 25%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--border)' %>; z-index: 2; pointer-events: none;">
-            <span style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">Target Juni: 25%</span>
+          <div class="target-marker" style="position: absolute; left: 25%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--border)' %>; z-index: 2; pointer-events: none;">
+            <span class="target-marker-text" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">Target Juni: 25%</span>
           </div>
 
           <!-- Marker 50% (Juli) -->
-          <div style="position: absolute; left: 50%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--border)' %>; z-index: 2; pointer-events: none;">
-            <span style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">Target Juli: 50%</span>
+          <div class="target-marker" style="position: absolute; left: 50%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--border)' %>; z-index: 2; pointer-events: none;">
+            <span class="target-marker-text" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">Target Juli: 50%</span>
           </div>
         </div>
 
@@ -350,6 +350,16 @@
           <canvas id="trenFasihChartCanvas"></canvas>
         </div>
       </div>
+
+      <!-- PENAMBAHAN HARIAN FASIH (BATANG) -->
+      <div class="card" style="margin: 0;">
+        <div class="card-header">
+          <div class="card-title"><i class="bi bi-bar-chart-fill text-purple"></i> Penambahan Harian FASIH</div>
+        </div>
+        <div style="height: 300px; position: relative;">
+          <canvas id="fasihDailyIncrementChartCanvas"></canvas>
+        </div>
+      </div>
       <% } %>
 
     </div>
@@ -474,8 +484,13 @@
           </table>
         </div>
 
-        <div style="height: 280px; position: relative; margin-top: 16px;">
-          <canvas id="kecBarChartCanvas"></canvas>
+        <div style="display: flex; flex-direction: column; gap: 20px; width: 100%; margin-top: 16px;">
+          <div style="height: 280px; position: relative;">
+            <canvas id="kecBarChartCanvas"></canvas>
+          </div>
+          <div style="height: 280px; position: relative; border-top: 1px dashed var(--border); padding-top: 16px;">
+            <canvas id="kecFasihBarChartCanvas"></canvas>
+          </div>
         </div>
 
       </div>
@@ -570,6 +585,23 @@
       // Initialize FASIH assignment trend line chart
       <% if (settings.overview_tren_fasih === '1') { %>
       createFasihTrenChart('trenFasihChartCanvas', rawTrenData);
+
+      // Hitung dan inisialisasi penambahan harian FASIH (Daily Increment)
+      const dailyIncrementLabels = [];
+      const dailyIncrements = [];
+      for (let i = 0; i < rawTrenData.length; i++) {
+        const current = rawTrenData[i];
+        const currentTotal = (current.draft_total || 0) + (current.submitted_total || 0) + (current.approved_total || 0) + (current.rejected_total || 0);
+        dailyIncrementLabels.push(current.tanggal);
+        if (i === 0) {
+          dailyIncrements.push(currentTotal);
+        } else {
+          const prev = rawTrenData[i - 1];
+          const prevTotal = (prev.draft_total || 0) + (prev.submitted_total || 0) + (prev.approved_total || 0) + (prev.rejected_total || 0);
+          dailyIncrements.push(Math.max(0, currentTotal - prevTotal));
+        }
+      }
+      createDailyBarChart('fasihDailyIncrementChartCanvas', dailyIncrementLabels, dailyIncrements, 'Penambahan Harian FASIH (Daily Increment)', 'rgba(124, 58, 237, 0.8)');
       <% } %>
 
       // Initialize kecamatan comparison bar chart
@@ -577,13 +609,18 @@
       const kecLabels = [];
       const kecSelesai = [];
       const kecTotal = [];
+      const kecFasihSelesai = [];
+      const kecFasihTotal = [];
       <% kecStats.forEach(k => { %>
         kecLabels.push("<%= k.kecamatan %>");
         kecSelesai.push(<%= k.usaha_total %>);
         kecTotal.push(<%= k.total_muatan %>);
+        kecFasihSelesai.push(<%= (k.submitted_total || 0) + (k.approved_total || 0) + (k.rejected_total || 0) %>);
+        kecFasihTotal.push(<%= k.target_fasih_total || 0 %>);
       <% }) %>
 
       createBarChart('kecBarChartCanvas', kecLabels, kecSelesai, kecTotal, 'Progres Per Kecamatan (Muatan)');
+      createKecFasihBarChart('kecFasihBarChartCanvas', kecLabels, kecFasihSelesai, kecFasihTotal, 'Progres Per Kecamatan (FASIH)');
 
       // Initialize table sorting and searching
       makeTableSortable('kecOverviewTable');
