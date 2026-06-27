@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getSettings, updateSettings } = require('../database');
 
-const settingKeys = [
+const generalSettingKeys = [
   'page_map',
   'page_earlywarning',
   'page_deteksianomali',
@@ -15,11 +15,6 @@ const settingKeys = [
   'page_pcl',
   'page_export',
   'page_aiagent',
-  'agent_provider',
-  'gemini_api_key',
-  'gemini_model',
-  'openai_api_key',
-  'openai_model',
   'overview_fasih',
   'overview_muatan',
   'overview_tren_muatan',
@@ -28,6 +23,23 @@ const settingKeys = [
   'overview_bangunan'
 ];
 
+const chatbotSettingKeys = [
+  'agent_provider',
+  'gemini_api_key',
+  'gemini_model',
+  'gemini_models_list',
+  'openai_api_key',
+  'openai_model',
+  'openai_models_list',
+  'openrouter_api_key',
+  'openrouter_model',
+  'openrouter_models_list',
+  'chatbot_smart_switch'
+];
+
+// ─────────────────────────────────────────────
+// GENERAL DISPLAY SETTINGS
+// ─────────────────────────────────────────────
 router.get('/', (req, res) => {
   res.render('settings', {
     title: 'Pengaturan Tampilan',
@@ -37,13 +49,11 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const updatedSettings = {};
-  for (const key of settingKeys) {
-    if (['agent_provider', 'gemini_api_key', 'gemini_model', 'openai_api_key', 'openai_model'].includes(key)) {
-      updatedSettings[key] = req.body[key] ? req.body[key].trim() : '';
-    } else {
-      updatedSettings[key] = req.body[key] === '1' ? '1' : '0';
-    }
+  const settings = getSettings();
+  const updatedSettings = { ...settings };
+
+  for (const key of generalSettingKeys) {
+    updatedSettings[key] = req.body[key] === '1' ? '1' : '0';
   }
 
   try {
@@ -54,6 +64,39 @@ router.post('/', (req, res) => {
   }
 
   res.redirect('/admin/settings');
+});
+
+// ─────────────────────────────────────────────
+// CHATBOT CONFIGURATION SETTINGS
+// ─────────────────────────────────────────────
+router.get('/chatbot', (req, res) => {
+  res.render('settings_chatbot', {
+    title: 'Pengaturan Chatbot AI',
+    activePage: 'chatbot-settings',
+    settings: getSettings()
+  });
+});
+
+router.post('/chatbot', (req, res) => {
+  const settings = getSettings();
+  const updatedSettings = { ...settings };
+
+  for (const key of chatbotSettingKeys) {
+    if (key === 'chatbot_smart_switch') {
+      updatedSettings[key] = req.body[key] === '1' ? '1' : '0';
+    } else {
+      updatedSettings[key] = req.body[key] ? req.body[key].trim() : '';
+    }
+  }
+
+  try {
+    updateSettings(updatedSettings);
+    req.flash('success', 'Pengaturan Chatbot AI berhasil diperbarui.');
+  } catch (err) {
+    req.flash('error', `Gagal memperbarui pengaturan chatbot: ${err.message}`);
+  }
+
+  res.redirect('/admin/settings/chatbot');
 });
 
 module.exports = router;

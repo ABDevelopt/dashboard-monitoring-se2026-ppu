@@ -6,6 +6,37 @@ const DB_PATH = path.join(__dirname, 'data', 'se2026.db');
 
 let db;
 
+const crypto = require('crypto');
+
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+function initUsers() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Clean up legacy petugas user
+  try {
+    db.prepare('DELETE FROM users WHERE username = ?').run('petugas');
+  } catch (_) {}
+
+  const stmt = db.prepare('INSERT OR IGNORE INTO users (username, password, role) VALUES (?, ?, ?)');
+  stmt.run('admin', hashPassword('adminse2026'), 'admin');
+  stmt.run('korlap', hashPassword('korlapse2026'), 'korlap');
+}
+
+function getUserByUsername(username) {
+  return getDb().prepare('SELECT * FROM users WHERE username = ?').get(username);
+}
+
 function getDb() {
   if (!db) {
     db = new Database(DB_PATH);
@@ -14,6 +45,7 @@ function getDb() {
     initSchema();
     migrateSchema();
     initSettings();
+    initUsers();
   }
   return db;
 }
@@ -510,16 +542,16 @@ function getBottomPerformers(uploadId, filters = {}) {
   const params = [uploadId];
 
   if (filters.kec) {
-    where += ' AND m.kecamatan = ?';
-    params.push(filters.kec);
+    where += ' AND LOWER(m.kecamatan) LIKE ?';
+    params.push(`%${filters.kec.toLowerCase()}%`);
   }
   if (filters.korlap) {
-    where += ' AND m.korlap = ?';
-    params.push(filters.korlap);
+    where += ' AND LOWER(m.korlap) LIKE ?';
+    params.push(`%${filters.korlap.toLowerCase()}%`);
   }
   if (filters.pml) {
-    where += ' AND m.pml = ?';
-    params.push(filters.pml);
+    where += ' AND LOWER(m.pml) LIKE ?';
+    params.push(`%${filters.pml.toLowerCase()}%`);
   }
 
   const bottomPcl = getDb().prepare(`
@@ -629,8 +661,14 @@ function initSettings() {
     'agent_provider': 'gemini',
     'gemini_api_key': '',
     'gemini_model': 'gemini-2.5-flash',
+    'gemini_models_list': 'gemini-2.5-flash, gemini-2.5-flash-lite, gemini-3.5-flash',
     'openai_api_key': '',
     'openai_model': 'gpt-5.5',
+    'openai_models_list': 'gpt-5.5, gpt-4o',
+    'openrouter_api_key': '',
+    'openrouter_model': 'meta-llama/llama-3.3-70b-instruct:free',
+    'openrouter_models_list': 'meta-llama/llama-3.3-70b-instruct:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free, deepseek/deepseek-chat, qwen/qwen-2.5-72b-instruct, meta-llama/llama-3.1-405b-instruct, moonshotai/moonshot-v1-8k, moonshotai/moonshot-v1-32k, moonshotai/moonshot-v1-128k',
+    'chatbot_smart_switch': '1',
     'overview_fasih': '1',
     'overview_muatan': '1',
     'overview_tren_muatan': '1',
@@ -671,5 +709,5 @@ module.exports = {
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
   getBottomPerformers, getAnomalyStats,
-  getSettings, updateSettings
+  getSettings, updateSettings, getUserByUsername, hashPassword
 };

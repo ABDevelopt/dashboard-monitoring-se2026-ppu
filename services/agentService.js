@@ -20,7 +20,32 @@ const log = {
 // ─────────────────────────────────────────────
 //  KONSTANTA
 // ─────────────────────────────────────────────
-const SYSTEM_INSTRUCTION = dbSchemaDescription + "\n\nSelalu berikan respons dalam Bahasa Indonesia yang profesional, ramah, dan solutif. Gunakan tabel markdown jika menyajikan data numerik agar rapi dan mudah dibaca. Jika perlu, gunakan tool fetch_page_data untuk mengambil konteks internal dari rute aplikasi seperti /overview, /pcl, /pml, /kecamatan, /leaderboard, /performa-terendah, /early-warning, /deteksi-anomali, atau /subsls.";
+// const SYSTEM_INSTRUCTION = dbSchemaDescription + "\n\nSelalu berikan respons dalam Bahasa Indonesia yang profesional, ramah, dan solutif. Gunakan tabel markdown jika menyajikan data numerik agar rapi dan mudah dibaca. Jika perlu, gunakan tool fetch_page_data untuk mengambil konteks internal dari rute aplikasi seperti /overview, /pcl, /pml, /kecamatan, /leaderboard, /performa-terendah, /early-warning, /deteksi-anomali, atau /subsls.";
+
+const SYSTEM_INSTRUCTION = dbSchemaDescription + `
+
+## Strategi Pengambilan Data — WAJIB DIIKUTI
+
+### PRIORITAS 1: Gunakan fetch_page_data (SELALU coba ini dulu)
+Halaman website sudah memiliki data yang dihitung dan diagregasi.
+Gunakan fetch_page_data SEBELUM mencoba run_read_only_query untuk:
+- Pertanyaan tentang progres, capaian, realisasi → /overview atau /kecamatan
+- Pertanyaan tentang PCL → /pcl (tambah queryParams.name jika nama spesifik)
+- Pertanyaan tentang PML → /pml
+- Pertanyaan peringkat terbaik → /leaderboard
+- Pertanyaan peringkat terendah → /performa-terendah
+- Pertanyaan anomali atau kualitas data → /deteksi-anomali
+- Pertanyaan early warning → /early-warning
+
+### PRIORITAS 2: Gunakan run_read_only_query HANYA jika:
+- fetch_page_data tidak memiliki data yang dibutuhkan
+- Pertanyaan membutuhkan filter atau agregasi yang sangat spesifik
+- User meminta data lintas beberapa entitas sekaligus
+
+### DILARANG:
+- Jangan gunakan run_read_only_query untuk pertanyaan yang bisa dijawab fetch_page_data
+- Jangan membuat estimasi atau mengarang angka jika tool gagal
+`;
 
 const TOOL_DECLARATION = {
   name: "run_read_only_query",
@@ -60,14 +85,38 @@ const PAGE_DATA_TOOL_DECLARATION = {
 
 const GEMINI_DEFAULT_MODEL        = 'gemini-2.5-flash';
 const OPENAI_DEFAULT_MODEL        = 'gpt-5.5';
-const AGENT_API_TIMEOUT_MS          = 120000; // outer server total  (120s — beri ruang 2x tool-call loop)
-const AGENT_API_QUICK_RESPONSE_MS   =  25000; // call PERTAMA ke AI  (pertanyaan awal, biasanya cepat)
-const AGENT_API_TOOLRESULT_MS       =  90000; // call KEDUA+ ke AI   (setelah tool-result bisa berisi ratusan baris)
-const DB_WORKER_TIMEOUT_MS          =   8000; // max query SQLite di worker
-const TOOL_RESULT_MAX_ROWS          =     40; // batas baris tool-result yang dikirim ke model
+const OPENROUTER_DEFAULT_MODEL    = 'meta-llama/llama-3.3-70b-instruct:free';
+// Hirarki timeout wajib — JANGAN dibalik urutannya:
+//
+//   browser abort (60 000ms)              ← diset di agent.ejs
+//     > server outer per-provider (18 000ms)   = AGENT_API_TIMEOUT_MS
+//       > call pertama ke AI  (14 000ms)        = AGENT_API_QUICK_RESPONSE_MS
+//       > call tool-result    (16 000ms)        = AGENT_API_TOOLRESULT_MS
+//         > query SQLite      (10 000ms)        = DB_WORKER_TIMEOUT_MS
+//
+// SmartSwitch worst-case: MAX_SWITCH_TRIES × AGENT_API_TIMEOUT_MS
+//   = 3 × 18s = 54s  <  browser 60s  ✓
+// Server selalu habis sebelum browser abort → tidak ada ECONNRESET.
+const AGENT_API_TIMEOUT_MS          = 18000; // outer server per-provider
+const AGENT_API_QUICK_RESPONSE_MS   = 14000; // call PERTAMA ke AI
+const AGENT_API_TOOLRESULT_MS       = 16000; // call KEDUA+ ke AI (setelah tool-result)
+const DB_WORKER_TIMEOUT_MS          = 10000; // max query SQLite (harus < QUICK_RESPONSE_MS)
+const TOOL_RESULT_MAX_ROWS          =    40; // batas baris tool-result yang dikirim ke model
+const MAX_SWITCH_TRIES              =     3; // batas total percobaan SmartSwitch
 
 const GEMINI_USER_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.5-flash'];
 const OPENAI_USER_MODELS = ['gpt-5.5'];
+const OPENROUTER_USER_MODELS = [
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'deepseek/deepseek-r1:free',
+  'qwen/qwen-2.5-coder-32b-instruct:free',
+  'qwen/qwen-2.5-72b-instruct',
+  'meta-llama/llama-3.1-405b-instruct',
+  'deepseek/deepseek-chat',
+  'moonshotai/moonshot-v1-8k',
+  'moonshotai/moonshot-v1-32k',
+  'moonshotai/moonshot-v1-128k'
+];
 const LEGACY_GEMINI_MODELS = new Set(['gemini-1.5-flash']);
 
 // ─────────────────────────────────────────────
@@ -97,18 +146,34 @@ function clearActiveRequest(provider) {
 //  HELPERS
 // ─────────────────────────────────────────────
 function getAllowedModels(provider, settings) {
-  const configuredModel = provider === 'openai' ? settings.openai_model : settings.gemini_model;
-  const baseModels = provider === 'openai' ? OPENAI_USER_MODELS : GEMINI_USER_MODELS;
-  return Array.from(new Set([...baseModels, configuredModel].filter(Boolean)));
+  if (provider === 'openrouter') {
+    const listStr = settings.openrouter_models_list || 'meta-llama/llama-3.3-70b-instruct:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
+    const models = listStr.split(',').map(m => m.trim()).filter(Boolean);
+    if (settings.openrouter_model) models.push(settings.openrouter_model);
+    return Array.from(new Set(models));
+  }
+  if (provider === 'openai') {
+    const listStr = settings.openai_models_list || 'gpt-5.5';
+    const models = listStr.split(',').map(m => m.trim()).filter(Boolean);
+    if (settings.openai_model) models.push(settings.openai_model);
+    return Array.from(new Set(models));
+  }
+  // gemini
+  const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-2.5-flash-lite, gemini-3.5-flash';
+  const models = listStr.split(',').map(m => m.trim()).filter(Boolean);
+  if (settings.gemini_model) models.push(settings.gemini_model);
+  return Array.from(new Set(models));
 }
 
 function resolveAgentSelection(settings, options = {}) {
-  const selectedProvider = options.provider === 'openai' || options.provider === 'gemini'
+  const selectedProvider = options.provider === 'openai' || options.provider === 'gemini' || options.provider === 'openrouter'
     ? options.provider
     : settings.agent_provider;
-  const provider = selectedProvider === 'openai' ? 'openai' : 'gemini';
+  const provider = selectedProvider === 'openai' ? 'openai' : selectedProvider === 'openrouter' ? 'openrouter' : 'gemini';
   const fallbackModel = provider === 'openai'
     ? (settings.openai_model || OPENAI_DEFAULT_MODEL)
+    : provider === 'openrouter'
+    ? (settings.openrouter_model || OPENROUTER_DEFAULT_MODEL)
     : (settings.gemini_model || GEMINI_DEFAULT_MODEL);
   const allowedModels = getAllowedModels(provider, settings);
   let model = allowedModels.includes(options.model) ? options.model : fallbackModel;
@@ -176,33 +241,62 @@ function validateSql(sql) {
   return cleanSql;
 }
 
-/**
- * executeQueryAsync — non-blocking via setImmediate.
- *
- * Membungkus query synchronous better-sqlite3 ke dalam Promise+setImmediate
- * sehingga event loop Node.js tidak diblokir pada tick saat ini.
- * Query tetap berjalan di main thread (aman untuk better-sqlite3),
- * namun dijalankan di idle tick berikutnya.
- *
- * Untuk query yang benar-benar berat (>500ms), aktifkan WAL mode
- * dan pertimbangkan worker-thread dengan file .js terpisah.
- */
+// FIX #5 — executeQueryAsync: setImmediate BUKAN solusi non-blocking.
+// setImmediate hanya defer 1 tick; query JOIN berat tetap memblokir event loop
+// selama durasi query → semua HTTP request lain tertahan → halaman beku.
+//
+// Solusi berlapis:
+//   1. WAL mode: aktifkan di getDb() agar reader tidak blokir writer.
+//      Tambahkan di database.js: db.pragma('journal_mode = WAL');
+//   2. LIMIT wajib: inject LIMIT jika query belum punya, cegah full-scan.
+//   3. killTimer: batalkan jika melewati DB_WORKER_TIMEOUT_MS.
+//
+// Catatan: better-sqlite3 memang synchronous by design dan tidak bisa
+// dijalankan di worker_threads tanpa membuka koneksi baru (risiko SQLITE_BUSY).
+// Solusi terbaik jangka panjang adalah migrasi ke better-sqlite3-multiple-ciphers
+// atau @databases/sqlite yang mendukung async. Untuk sekarang, WAL + LIMIT
+// adalah mitigation paling aman tanpa refactor besar.
+
+const QUERY_DEFAULT_LIMIT = 200; // baris maksimum jika query tidak ada LIMIT sendiri
+
+function injectLimit(sql, limit = QUERY_DEFAULT_LIMIT) {
+  // Jika query sudah punya LIMIT, biarkan
+  if (/\blimit\s+\d+/i.test(sql)) return sql;
+  return `${sql.trimEnd().replace(/;+$/, '')} LIMIT ${limit}`;
+}
+
 function executeQueryAsync(sql) {
   return new Promise((resolve, reject) => {
     let cleanSql;
     try {
-      cleanSql = validateSql(sql);
+      cleanSql = injectLimit(validateSql(sql));
     } catch (err) {
       return reject(err);
     }
 
+    // killTimer: jika query melebihi batas waktu, reject segera.
+    // Node.js akan tetap menyelesaikan query di background, tapi
+    // result-nya sudah tidak dihiraukan — tidak ada memory leak karena
+    // better-sqlite3 bekerja synchronously dalam satu call stack.
     const killTimer = setTimeout(() => {
-      reject(new Error(`Query timeout setelah ${DB_WORKER_TIMEOUT_MS / 1000}s: ${cleanSql.slice(0, 80)}...`));
+      log.error('executeQueryAsync TIMEOUT:', cleanSql.slice(0, 120));
+      reject(new Error(
+        `Query timeout setelah ${DB_WORKER_TIMEOUT_MS / 1000}s. ` +
+        `Coba tambahkan WHERE/LIMIT untuk mempersempit hasil.`
+      ));
     }, DB_WORKER_TIMEOUT_MS);
 
+    // setImmediate tetap dipakai untuk defer dari tick saat ini,
+    // sehingga response HTTP yang sedang antri bisa diproses dulu
+    // sebelum query berat dimulai.
     setImmediate(() => {
+      // Jika killTimer sudah meletus, jangan lanjutkan
       try {
         const db = getDb();
+
+        // Aktifkan WAL jika belum — aman dipanggil berulang kali
+        try { db.pragma('journal_mode = WAL'); } catch (_) {}
+
         const rows = db.prepare(cleanSql).all();
         clearTimeout(killTimer);
         log.debug(`Query OK (${rows.length} baris): ${cleanSql.slice(0, 100)}`);
@@ -235,29 +329,160 @@ function fetchPageData(route, queryParams = {}) {
 
   log.debug('fetchPageData:', page, queryParams);
 
+  const db = getDb();
+
   switch (page) {
     case '/overview':
-      return { route: '/overview', summary: getOverviewSummary(upload.id), kecamatanStats: getKecamatanStats(upload.id), tren: getTrenHarian() };
-    case '/pcl':
-      return { route: '/pcl', pclStats: getPclStats(upload.id) };
-    case '/pml':
-      return { route: '/pml', pmlStats: getPmlStats(upload.id) };
+      return { 
+        route: '/overview', 
+        summary: getOverviewSummary(upload.id), 
+        kecamatanStats: getKecamatanStats(upload.id), 
+        tren: getTrenHarian() 
+      };
+      
+    case '/pcl': {
+      const filterPcl = queryParams.pcl || queryParams.name || '';
+      const filterKec = queryParams.kec || queryParams.kecamatan || '';
+      const filterKorlap = queryParams.korlap || '';
+      const filterPml = queryParams.pml || '';
+      
+      let pclStats = [];
+      let detailSubsls = [];
+      
+      let where = 'WHERE 1=1';
+      const params = [upload.id];
+      if (filterKec) { where += ' AND LOWER(m.kecamatan) = ?'; params.push(filterKec.toLowerCase()); }
+      if (filterKorlap) { where += ' AND m.korlap = ?'; params.push(filterKorlap); }
+      if (filterPml) { where += ' AND m.pml = ?'; params.push(filterPml); }
+
+      pclStats = db.prepare(`
+        SELECT 
+          m.pcl, m.pml, m.korlap, m.kecamatan,
+          COUNT(m.kode) AS total_subsls,
+          SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+          SUM(m.muatan) AS total_muatan,
+          SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
+          SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
+          SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
+          SUM(COALESCE(p.draft, 0)) AS draft_total,
+          SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
+          SUM(COALESCE(p.approved, 0)) AS approved_total,
+          SUM(COALESCE(p.rejected, 0)) AS rejected_total,
+          SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
+                   THEN 0 
+                   ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
+              END) AS target_fasih_total
+        FROM subsls_master m
+        LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+        ${where}
+        GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
+        ORDER BY selesai ASC
+      `).all(...params);
+
+      if (queryParams.limit) {
+        pclStats = pclStats.slice(0, parseInt(queryParams.limit, 10));
+      }
+
+      if (filterPcl) {
+        detailSubsls = db.prepare(`
+          SELECT 
+            m.kode, m.kecamatan, m.desa, m.nama_sls,
+            m.korlap, m.pml, m.pcl, m.muatan,
+            m.target_fasih AS target_fasih_awal,
+            COALESCE(p.draft, 0) AS draft,
+            COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
+            COALESCE(p.approved, 0) AS approved,
+            COALESCE(p.rejected, 0) AS rejected,
+            COALESCE(p.usaha_ditemukan + p.usaha_baru, 0) AS usaha_total,
+            COALESCE(p.ditemukan + p.keluarga_baru, 0) AS keluarga_total
+          FROM subsls_master m
+          LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+          WHERE m.pcl = ?
+          ORDER BY m.kecamatan, m.desa, m.kode
+        `).all(upload.id, filterPcl);
+      }
+
+      return { route: '/pcl', pclStats, detailSubsls, filterPcl, filterKec, filterKorlap, filterPml };
+    }
+
+    case '/pml': {
+      const filterPml = queryParams.pml || queryParams.name || '';
+      let pmlStats = getPmlStats(upload.id);
+      let detailPcl = [];
+
+      if (queryParams.limit) {
+        pmlStats = pmlStats.slice(0, parseInt(queryParams.limit, 10));
+      }
+
+      if (filterPml) {
+        detailPcl = db.prepare(`
+          SELECT 
+            m.pcl, m.pml, m.korlap, m.kecamatan,
+            COUNT(m.kode) AS total_subsls,
+            SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+            SUM(m.muatan) AS total_muatan,
+            SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
+            SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
+          FROM subsls_master m
+          LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+          WHERE m.pml = ?
+          GROUP BY m.pcl, m.kecamatan
+          ORDER BY selesai ASC
+        `).all(upload.id, filterPml);
+      }
+
+      return { route: '/pml', pmlStats, detailPcl, filterPml };
+    }
+
+    case '/korlap': {
+      const filterKorlap = queryParams.korlap || queryParams.name || '';
+      let korlapStats = getKorlapStats(upload.id);
+      let detailData = [];
+
+      if (queryParams.limit) {
+        korlapStats = korlapStats.slice(0, parseInt(queryParams.limit, 10));
+      }
+
+      if (filterKorlap) {
+        detailData = db.prepare(`
+          SELECT 
+            m.pml, m.korlap,
+            COUNT(DISTINCT m.pcl) AS jumlah_pcl,
+            COUNT(m.kode) AS total_subsls,
+            SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
+            SUM(m.muatan) AS total_muatan,
+            SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
+            SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
+          FROM subsls_master m
+          LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+          WHERE m.korlap = ?
+          GROUP BY m.pml
+          ORDER BY selesai ASC
+        `).all(upload.id, filterKorlap);
+      }
+
+      return { route: '/korlap', korlapStats, detailData, filterKorlap };
+    }
+
     case '/kecamatan':
       return { route: '/kecamatan', kecamatanStats: getKecamatanStats(upload.id) };
     case '/leaderboard':
       return { route: '/leaderboard', topPerformers: getTopPerformers(upload.id) };
     case '/performa-terendah':
-      return { route: '/performa-terendah', bottomPerformers: getBottomPerformers(upload.id) };
+      return { route: '/performa-terendah', bottomPerformers: getBottomPerformers(upload.id, queryParams) };
     case '/early-warning':
       return { route: '/early-warning', earlyWarning: getEarlyWarning(upload.id, queryParams) };
     case '/deteksi-anomali':
       return { route: '/deteksi-anomali', anomalyStats: getAnomalyStats(upload.id, queryParams) };
     case '/subsls':
       return { route: '/subsls', pclStats: getPclStats(upload.id), pmlStats: getPmlStats(upload.id), kecamatanStats: getKecamatanStats(upload.id) };
+    case '/map':
+      return { route: '/map', totalSls: db.prepare('SELECT COUNT(*) as n FROM subsls_master').get().n };
     default:
       return { error: `Rute tidak dikenali: ${route}` };
   }
 }
+
 
 // ─────────────────────────────────────────────
 //  SIMULATION FALLBACK
@@ -280,10 +505,22 @@ function runSimulation(userMessage, chatHistory) {
   try {
     if (lowerMsg.includes('terendah') || lowerMsg.includes('rendah') || lowerMsg.includes('buruk')) {
       let filterKec = '', kecLabel = 'Seluruh Wilayah';
-      if      (lowerMsg.includes('sepaku'))   { filterKec = "AND m.kecamatan = 'SEPAKU'";  kecLabel = 'Kecamatan Sepaku'; }
-      else if (lowerMsg.includes('penajam'))  { filterKec = "AND m.kecamatan = 'PENAJAM'"; kecLabel = 'Kecamatan Penajam'; }
-      else if (lowerMsg.includes('babulu'))   { filterKec = "AND m.kecamatan = 'BABULU'";  kecLabel = 'Kecamatan Babulu'; }
-      else if (lowerMsg.includes('waru'))     { filterKec = "AND m.kecamatan = 'WARU'";    kecLabel = 'Kecamatan Waru'; }
+      
+      // Match kecamatan name if any
+      if      (lowerMsg.includes('sepaku'))   { filterKec = "AND LOWER(m.kecamatan) = 'sepaku'";  kecLabel = 'Kecamatan Sepaku'; }
+      else if (lowerMsg.includes('penajam'))  { filterKec = "AND LOWER(m.kecamatan) = 'penajam'"; kecLabel = 'Kecamatan Penajam'; }
+      else if (lowerMsg.includes('babulu'))   { filterKec = "AND LOWER(m.kecamatan) = 'babulu'";  kecLabel = 'Kecamatan Babulu'; }
+      else if (lowerMsg.includes('waru'))     { filterKec = "AND LOWER(m.kecamatan) = 'waru'";    kecLabel = 'Kecamatan Waru'; }
+
+      // Match korlap name if any (e.g. 'baihaqi')
+      let filterKorlap = '';
+      if (lowerMsg.includes('korlap')) {
+        const korlapMatch = lowerMsg.match(/korlap\s+(\w+)/);
+        if (korlapMatch && korlapMatch[1]) {
+          filterKorlap = `AND LOWER(m.korlap) = '${korlapMatch[1].toLowerCase()}'`;
+          kecLabel += ` (Korlap: ${korlapMatch[1]})`;
+        }
+      }
 
       const rows = db.prepare(`
         SELECT m.pcl, MAX(m.pml) AS pml, MAX(m.kecamatan) AS kecamatan,
@@ -291,9 +528,17 @@ function runSimulation(userMessage, chatHistory) {
           SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0)+COALESCE(p.ditemukan+p.keluarga_baru,0)) AS muatan_selesai
         FROM subsls_master m
         LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-        WHERE 1=1 ${filterKec}
+        WHERE 1=1 ${filterKec} ${filterKorlap}
         GROUP BY m.pcl ORDER BY muatan_selesai ASC, total_muatan DESC LIMIT 3
       `).all(uploadId);
+
+      if (rows.length === 0) {
+        return {
+          role: 'model',
+          content: `🤖 **Mode Simulasi**\n\nTidak ditemukan data petugas sensus untuk **${kecLabel}** pada data upload terbaru.`,
+          isSimulation: true
+        };
+      }
 
       let content = `🤖 **Mode Simulasi**\n\nBerikut 3 PCL capaian terendah di **${kecLabel}** (upload *${latestUpload.tanggal}*):\n\n`;
       content += `| Nama PCL | PML Pengawas | Kecamatan | Realisasi | Progres (%) |\n| :--- | :--- | :--- | :--- | :--- |\n`;
@@ -301,7 +546,7 @@ function runSimulation(userMessage, chatHistory) {
         const pct = r.total_muatan > 0 ? ((r.muatan_selesai / r.total_muatan) * 100).toFixed(2) : '0.00';
         content += `| ${r.pcl} | ${r.pml} | ${r.kecamatan} | ${r.muatan_selesai} / ${r.total_muatan} | **${pct}%** |\n`;
       });
-      if (rows.length > 0) content += `\n**Rekomendasi:** PML disarankan mendampingi **${rows[0].pcl}** secara langsung.\n`;
+      content += `\n**Rekomendasi:** PML disarankan mendampingi **${rows[0].pcl}** secara langsung.\n`;
       content += `\n*Tip: Konfigurasikan API Key untuk analisis bebas dengan bahasa alami.*`;
       return { role: 'model', content, isSimulation: true };
     }
@@ -382,6 +627,57 @@ function runSimulation(userMessage, chatHistory) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+//  FIX #6 — capPageDataResult
+//  Memangkas array-array besar di dalam hasil fetchPageData sebelum
+//  dikirim ke model. Ini mencegah context window overflow dan mencegah
+//  JSON.stringify dari objek besar yang memblokir event loop.
+// ─────────────────────────────────────────────────────────────────────────
+const PAGE_DATA_MAX_ROWS = 40; // sama dengan TOOL_RESULT_MAX_ROWS
+
+function capArray(arr, label) {
+  if (!Array.isArray(arr) || arr.length <= PAGE_DATA_MAX_ROWS) return { data: arr };
+  return {
+    data: arr.slice(0, PAGE_DATA_MAX_ROWS),
+    truncated: `PERINGATAN: Hanya ${PAGE_DATA_MAX_ROWS} dari ${arr.length} baris ditampilkan untuk ${label}. ` +
+               `Gunakan queryParams.limit atau queryParams.name untuk mempersempit data.`
+  };
+}
+
+function capPageDataResult(result) {
+  if (!result || typeof result !== 'object') return result;
+
+  const out = { ...result };
+
+  // Field-field yang bisa besar — periksa dan cap masing-masing
+  const arrayFields = [
+    'pclStats', 'pmlStats', 'korlapStats', 'kecamatanStats',
+    'topPerformers', 'bottomPerformers', 'earlyWarning',
+    'anomalyStats', 'detailSubsls', 'detailPcl', 'detailData', 'tren'
+  ];
+
+  for (const field of arrayFields) {
+    if (Array.isArray(out[field])) {
+      const capped = capArray(out[field], field);
+      out[field] = capped.data;
+      if (capped.truncated) out[`${field}_truncated`] = capped.truncated;
+    }
+  }
+
+  // summary bisa berisi sub-array dari getOverviewSummary
+  if (out.summary && typeof out.summary === 'object') {
+    for (const [k, v] of Object.entries(out.summary)) {
+      if (Array.isArray(v) && v.length > PAGE_DATA_MAX_ROWS) {
+        const capped = capArray(v, `summary.${k}`);
+        out.summary = { ...out.summary, [k]: capped.data };
+        if (capped.truncated) out[`summary_${k}_truncated`] = capped.truncated;
+      }
+    }
+  }
+
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 //  TOOL-CALL EXECUTOR — dipakai oleh Gemini & OpenAI
 //
 //  ROOT CAUSE #3 — Error query ditelan diam-diam.
@@ -436,7 +732,13 @@ async function runToolCall(functionCall) {
     try {
       const result = fetchPageData(args.route, args.queryParams || {});
       log.debug('fetchPageData selesai:', args.route);
-      return { status: 'success', ...result };
+
+      // FIX #6 — Batasi ukuran payload sebelum dikirim ke model.
+      // fetchPageData bisa mengembalikan ratusan baris (pclStats, pmlStats, dsb).
+      // JSON.stringify dari payload besar: (a) blokir event loop, (b) overflow
+      // context window model → API error atau respons terpotong.
+      const capped = capPageDataResult(result);
+      return { status: 'success', ...capped };
     } catch (err) {
       log.error('fetchPageData error:', err.message);
       return {
@@ -451,38 +753,136 @@ async function runToolCall(functionCall) {
 }
 
 // ─────────────────────────────────────────────
-//  ENTRY POINT
+//  ENTRY POINT & SMART SWITCH
 // ─────────────────────────────────────────────
+function isQuotaOrRateLimitError(error) {
+  if (!error) return false;
+  const msg = (error.message || '').toLowerCase();
+  return /429|403|503|rate.limit|quota|billing|credit|exhausted|demand|limit/i.test(msg);
+}
+
+function getApiKeyForProvider(provider, settings) {
+  const key = provider === 'openai' ? settings.openai_api_key : provider === 'openrouter' ? settings.openrouter_api_key : settings.gemini_api_key;
+  return key && key.trim() ? key.trim() : null;
+}
+
+async function executeSingleProviderCall(provider, model, userMessage, chatHistory, settings, signal) {
+  const task = provider === 'openai'
+    ? sendMessageToOpenAI(userMessage, chatHistory, settings, model, signal)
+    : provider === 'openrouter'
+    ? sendMessageToOpenRouter(userMessage, chatHistory, settings, model, signal)
+    : sendMessageToGemini(userMessage, chatHistory, settings, model, signal);
+
+  return await timeoutPromise(task, AGENT_API_TIMEOUT_MS, `${provider} request timed out.`);
+}
+
 async function sendMessageToAgent(userMessage, chatHistory = [], options = {}) {
   const settings = getSettings();
-  const { provider, model } = resolveAgentSelection(settings, options);
-  const apiKey = provider === 'openai' ? settings.openai_api_key : settings.gemini_api_key;
+  const initialSelection = resolveAgentSelection(settings, options);
+  
+  const tries = [{ provider: initialSelection.provider, model: initialSelection.model }];
+  
+  if (settings.chatbot_smart_switch === '1') {
+    // FIX #1 — Bangun tries[] dengan batas MAX_SWITCH_TRIES.
+    // Urutan fallback: provider utama → OpenRouter free → Gemini → OpenAI paid.
+    // Kita BERHENTI mengisi tries begitu sudah mencapai MAX_SWITCH_TRIES entri
+    // agar total waktu tunggu terkendali (MAX_SWITCH_TRIES × AGENT_API_TIMEOUT_MS).
 
-  log.info(`sendMessageToAgent — provider:${provider} model:${model} msg:"${userMessage.slice(0,60)}"`);
-
-  if (!apiKey || apiKey.trim() === '') {
-    log.info('Tidak ada API key — fallback ke simulasi.');
-    return runSimulation(userMessage, chatHistory);
+    // 1. OpenRouter free models (cost=0, prioritas sebagai fallback cepat)
+    if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
+      const listStr = settings.openrouter_models_list || 'meta-llama/llama-3.3-70b-instruct:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
+      for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+        if (tries.length >= MAX_SWITCH_TRIES) break;
+        if (m.includes(':free')) tries.push({ provider: 'openrouter', model: m });
+      }
+    }
+    // 2. Gemini models
+    if (settings.gemini_api_key && settings.gemini_api_key.trim() && tries.length < MAX_SWITCH_TRIES) {
+      const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-2.5-flash-lite, gemini-3.5-flash';
+      for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+        if (tries.length >= MAX_SWITCH_TRIES) break;
+        tries.push({ provider: 'gemini', model: m });
+      }
+    }
+    // 3. OpenAI models (paid — hanya jika slot masih ada)
+    if (settings.openai_api_key && settings.openai_api_key.trim() && tries.length < MAX_SWITCH_TRIES) {
+      const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
+      for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+        if (tries.length >= MAX_SWITCH_TRIES) break;
+        tries.push({ provider: 'openai', model: m });
+      }
+    }
   }
 
-  abortPreviousRequest(provider);
-  const serverController = registerActiveRequest(provider);
-
-  try {
-    const task = provider === 'openai'
-      ? sendMessageToOpenAI(userMessage, chatHistory, settings, model, serverController.signal)
-      : sendMessageToGemini(userMessage, chatHistory, settings, model, serverController.signal);
-
-    return await timeoutPromise(task, AGENT_API_TIMEOUT_MS, `${provider} request timed out.`)
-      .catch(err => {
-        log.error(`Outer timeout/error (${provider}):`, err.message);
-        const sim = runSimulation(userMessage, chatHistory);
-        sim.content = `⚠️ **Timeout:** ${err.message}\n\n` + sim.content;
-        return sim;
-      });
-  } finally {
-    clearActiveRequest(provider);
+  // Deduplicate — tetap dipertahankan sebagai safety net
+  const uniqueTries = [];
+  const seen = new Set();
+  for (const t of tries) {
+    const key = `${t.provider}:${t.model}`;
+    if (!seen.has(key)) { seen.add(key); uniqueTries.push(t); }
   }
+
+  log.info(`[SmartSwitch] Urutan percobaan (${uniqueTries.length}):`, uniqueTries.map(t => `${t.provider}/${t.model}`).join(' → '));
+
+  // FIX #2 — Batalkan SEMUA request aktif di semua provider sebelum iterasi baru.
+  // Versi lama hanya abort provider yang sama, sehingga saat switch dari gemini
+  // ke openrouter, controller gemini tetap hidup dan keduanya jalan paralel.
+  function abortAllActive() {
+    for (const [prov, ctrl] of _activeControllers.entries()) {
+      log.warn(`[SmartSwitch] Abort request aktif: ${prov}`);
+      try { ctrl.abort(); } catch (_) {}
+    }
+    _activeControllers.clear();
+  }
+
+  let lastError = null;
+  
+  for (let i = 0; i < uniqueTries.length; i++) {
+    const current = uniqueTries[i];
+    const apiKey = getApiKeyForProvider(current.provider, settings);
+    
+    if (!apiKey) {
+      log.warn(`[SmartSwitch] Skip ${current.provider}/${current.model}: tidak ada API key`);
+      continue;
+    }
+    
+    log.info(`[SmartSwitch] Mencoba (${i + 1}/${uniqueTries.length}): ${current.provider} (${current.model})`);
+    
+    // FIX #2 — Abort semua sebelum mulai, bukan hanya provider yang sama
+    abortAllActive();
+    const serverController = registerActiveRequest(current.provider);
+    
+    try {
+      const result = await executeSingleProviderCall(
+        current.provider, current.model, userMessage, chatHistory, settings, serverController.signal
+      );
+      
+      if (i > 0) {
+        result.content =
+          `🤖 *Smart Switch: ${initialSelection.provider}/${initialSelection.model} tidak tersedia. ` +
+          `Dialihkan ke ${current.provider}/${current.model}.*\n\n` + result.content;
+      }
+      
+      return result;
+    } catch (err) {
+      lastError = err;
+      log.error(`[SmartSwitch] Gagal pada ${current.provider}/${current.model}:`, err.message);
+      
+      if (settings.chatbot_smart_switch !== '1' || !isQuotaOrRateLimitError(err)) {
+        break;
+      }
+      
+      log.warn(`[SmartSwitch] Kuota/rate-limit terdeteksi. Mencoba berikutnya...`);
+    } finally {
+      clearActiveRequest(current.provider);
+    }
+  }
+
+  log.info('Semua provider/model gagal — fallback ke simulasi.');
+  const sim = runSimulation(userMessage, chatHistory);
+  const errMsg = lastError ? lastError.message : 'API key tidak terkonfigurasi';
+  sim.content = `⚠️ **AI Provider Error:** ${errMsg}\n\n*Fallback ke simulasi lokal:*\n\n` + sim.content;
+  return sim;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -533,6 +933,12 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
       role : msg.role === 'user' ? 'user' : 'model',
       parts: [{ text: msg.content }]
     }));
+
+    // Gemini startChat history MUST start with a 'user' role message.
+    // If the first message in the sliced history is 'model', discard it.
+    if (formattedHistory.length > 0 && formattedHistory[0].role === 'model') {
+      formattedHistory.shift();
+    }
 
     const chat = model.startChat({ history: formattedHistory });
 
@@ -711,6 +1117,160 @@ function extractOpenAIText(response) {
     }
   }
   return parts.join('\n').trim() || 'Model tidak mengembalikan teks jawaban.';
+}
+
+async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selectedModel, abortSignal) {
+  const apiKey = settings.openrouter_api_key;
+  const model = selectedModel || settings.openrouter_model || OPENROUTER_DEFAULT_MODEL;
+
+  const messages = [
+    { role: 'system', content: SYSTEM_INSTRUCTION },
+    ...chatHistory.slice(-10).map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'assistant',
+      content: msg.content
+    })),
+    { role: 'user', content: userMessage }
+  ];
+
+  // FIX #4 — Model OpenRouter :free (llama, deepseek via :free tier) sering
+  // tidak mendukung tool/function calling dan mengembalikan choices:[] atau
+  // choices[0].message = null ketika menerima tool declarations.
+  // Solusi: jangan kirim tools untuk model :free — biarkan model menjawab
+  // berdasarkan SYSTEM_INSTRUCTION + konteks saja (sudah ada dbSchemaDescription).
+  const modelSupportsTool = !model.includes(':free');
+  log.debug(`OpenRouter model: ${model} | tool-call support: ${modelSupportsTool}`);
+
+  const tools = modelSupportsTool ? [
+    {
+      type: 'function',
+      function: {
+        name: TOOL_DECLARATION.name,
+        description: TOOL_DECLARATION.description,
+        parameters: TOOL_DECLARATION.parameters
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: PAGE_DATA_TOOL_DECLARATION.name,
+        description: PAGE_DATA_TOOL_DECLARATION.description,
+        parameters: PAGE_DATA_TOOL_DECLARATION.parameters
+      }
+    }
+  ] : undefined; // FIX #4 — tidak kirim tools ke model :free
+
+  let loopCount = 0;
+  const MAX_LOOPS = modelSupportsTool ? 2 : 0; // :free langsung ke ekstrak teks
+
+  try {
+    if (abortSignal?.aborted) throw new Error('Request dibatalkan sebelum dikirim ke OpenRouter.');
+
+    log.debug('OpenRouter request pertama...');
+
+    const payload = { model, messages };
+    if (tools) payload.tools = tools;
+
+    let response = await callOpenRouterAPI(apiKey, payload, false);
+
+    // FIX #4 — Validasi choices sebelum akses apapun
+    if (!response.choices || response.choices.length === 0) {
+      // Cek apakah ada error dari OpenRouter (misal model overloaded)
+      const orError = response.error?.message || response.message;
+      if (orError) throw new Error(`OpenRouter: ${orError}`);
+      throw new Error('OpenRouter mengembalikan choices kosong. Model mungkin tidak tersedia atau tidak kompatibel.');
+    }
+
+    while (loopCount < MAX_LOOPS) {
+      if (abortSignal?.aborted) throw new Error('Request dibatalkan saat loop tool-call OpenRouter.');
+
+      const choice = response.choices?.[0];
+      // FIX #4 — guard: choice atau message bisa null pada beberapa model
+      if (!choice || !choice.message) {
+        log.warn('OpenRouter: choice atau message null di iterasi tool-call', loopCount);
+        break;
+      }
+
+      const assistantMessage = choice.message;
+      const toolCalls = assistantMessage?.tool_calls;
+
+      if (!toolCalls || toolCalls.length === 0) break;
+
+      loopCount++;
+      log.info(`OpenRouter tool-call loop ${loopCount}/${MAX_LOOPS}: ${toolCalls.map(f => f.function.name).join(', ')}`);
+
+      messages.push(assistantMessage);
+
+      const toolOutputs = await Promise.all(toolCalls.map(async call => {
+        let args = {};
+        try { args = JSON.parse(call.function.arguments || '{}'); } catch (_) {}
+        const result = await runToolCall({ name: call.function.name, args });
+        return {
+          role: 'tool',
+          tool_call_id: call.id,
+          name: call.function.name,
+          content: JSON.stringify(result)
+        };
+      }));
+
+      messages.push(...toolOutputs);
+
+      const nextPayload = { model, messages };
+      if (tools) nextPayload.tools = tools;
+      response = await callOpenRouterAPI(apiKey, nextPayload, true);
+
+      // FIX #4 — Validasi choices juga di iterasi berikutnya
+      if (!response.choices || response.choices.length === 0) {
+        log.warn('OpenRouter: choices kosong pada iterasi tool-call', loopCount);
+        break;
+      }
+    }
+
+    const choice = response.choices?.[0];
+    // FIX #4 — Ekstrak teks dengan fallback berlapis
+    const finalText =
+      choice?.message?.content ||
+      choice?.text ||
+      (response.choices || []).map(c => c?.message?.content || c?.text || '').filter(Boolean).join('\n') ||
+      'Model tidak mengembalikan teks. Coba gunakan model lain atau ulangi pertanyaan.';
+
+    if (!choice?.message?.content) {
+      log.warn('OpenRouter: finalText fallback digunakan. choice:', JSON.stringify(choice).slice(0, 200));
+    }
+
+    log.info('OpenRouter selesai — panjang respons:', finalText.length, 'karakter');
+    return { role: 'model', content: finalText, isSimulation: false };
+
+  } catch (error) {
+    log.error('sendMessageToOpenRouter error:', error.message);
+    const sim = runSimulation(userMessage, chatHistory);
+    const isAbort = error.name === 'AbortError' || /aborted|timeout/i.test(error.message || '');
+    sim.content = `⚠️ **OpenRouter ${isAbort ? 'Timeout' : 'Error'}:** ${error.message}\n\n*Fallback ke simulasi:*\n\n` + sim.content;
+    return sim;
+  }
+}
+
+async function callOpenRouterAPI(apiKey, payload, isToolResult = false) {
+  const timeoutMs = isToolResult ? AGENT_API_TOOLRESULT_MS : AGENT_API_QUICK_RESPONSE_MS;
+  log.debug('OpenRouter API call, timeout:', timeoutMs, 'ms, model:', payload.model);
+
+  const response = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': 'http://localhost:3000',
+      'X-Title': 'SE2026 Monitoring',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  }, timeoutMs);
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const msg = data?.error?.message || `HTTP ${response.status}`;
+    log.error('OpenRouter HTTP error:', response.status, msg, JSON.stringify(data).slice(0, 300));
+    throw new Error(msg);
+  }
+  return data;
 }
 
 module.exports = { sendMessageToAgent };

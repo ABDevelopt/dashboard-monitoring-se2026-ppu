@@ -3,27 +3,67 @@ const router  = express.Router();
 const { sendMessageToAgent } = require('../services/agentService');
 const { getSettings } = require('../database');
 
+// Auth Middleware for Agent chatbot (allows Admin and Korlap accounts only)
+function requireLogin(req, res, next) {
+  if (req.session && req.session.user && (req.session.user.role === 'admin' || req.session.user.role === 'korlap')) {
+    return next();
+  }
+  
+  if (req.xhr || (req.headers.accept && req.headers.accept.includes('json')) || req.path === '/chat') {
+    return res.status(403).json({ error: 'Akses ditolak. Hanya akun Admin dan Korlap yang dapat mengakses Asisten AI.' });
+  }
+  
+  req.flash('error', 'Akses ditolak. Hanya akun Admin dan Korlap yang dapat mengakses Asisten AI.');
+  res.redirect('/login');
+}
+
+router.use(requireLogin);
+
 // ─────────────────────────────────────────────────────────────────
 //  GET / — render halaman agent
 // ─────────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
-  const settings     = getSettings();
+  const settings = getSettings();
+  const geminiEnabled = !!(settings.gemini_api_key && settings.gemini_api_key.trim());
   const openaiEnabled = !!(settings.openai_api_key && settings.openai_api_key.trim());
-  const provider      = settings.agent_provider === 'openai' || openaiEnabled ? 'openai' : 'gemini';
-  const selectedKey   = provider === 'openai' ? settings.openai_api_key : settings.gemini_api_key;
-  const hasKey        = !!(selectedKey && selectedKey.trim());
+  const openrouterEnabled = !!(settings.openrouter_api_key && settings.openrouter_api_key.trim());
 
-  const geminiModels = Array.from(new Set([
-    'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',
-    'gemini-3.5-flash',
-    settings.gemini_model
-  ].filter(Boolean)));
+  let provider = settings.agent_provider || 'gemini';
+  if (provider === 'openai' && !openaiEnabled) {
+    provider = openrouterEnabled ? 'openrouter' : 'gemini';
+  } else if (provider === 'openrouter' && !openrouterEnabled) {
+    provider = openaiEnabled ? 'openai' : 'gemini';
+  } else if (provider === 'gemini' && !geminiEnabled) {
+    provider = openrouterEnabled ? 'openrouter' : (openaiEnabled ? 'openai' : 'gemini');
+  }
 
-  const openaiModels = Array.from(new Set([
-    'gpt-5.5',
-    settings.openai_model
-  ].filter(Boolean)));
+  const selectedKey = provider === 'openai'
+    ? settings.openai_api_key
+    : provider === 'openrouter'
+    ? settings.openrouter_api_key
+    : settings.gemini_api_key;
+  const hasKey = !!(selectedKey && selectedKey.trim());
+
+  const geminiModels = settings.gemini_models_list
+    ? settings.gemini_models_list.split(',').map(m => m.trim()).filter(Boolean)
+    : ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.5-flash'];
+  if (settings.gemini_model && !geminiModels.includes(settings.gemini_model)) {
+    geminiModels.push(settings.gemini_model);
+  }
+
+  const openaiModels = settings.openai_models_list
+    ? settings.openai_models_list.split(',').map(m => m.trim()).filter(Boolean)
+    : ['gpt-5.5'];
+  if (settings.openai_model && !openaiModels.includes(settings.openai_model)) {
+    openaiModels.push(settings.openai_model);
+  }
+
+  const openrouterModels = settings.openrouter_models_list
+    ? settings.openrouter_models_list.split(',').map(m => m.trim()).filter(Boolean)
+    : ['meta-llama/llama-3.3-70b-instruct:free', 'deepseek/deepseek-r1:free', 'qwen/qwen-2.5-coder-32b-instruct:free'];
+  if (settings.openrouter_model && !openrouterModels.includes(settings.openrouter_model)) {
+    openrouterModels.push(settings.openrouter_model);
+  }
 
   res.render('agent', {
     title              : 'Asisten AI Chat',
@@ -32,10 +72,13 @@ router.get('/', (req, res) => {
     provider,
     selectedGeminiModel: settings.gemini_model || 'gemini-2.5-flash',
     selectedOpenAIModel: settings.openai_model || 'gpt-5.5',
+    selectedOpenRouterModel: settings.openrouter_model || 'meta-llama/llama-3.3-70b-instruct:free',
     geminiModels,
     openaiModels,
-    hasGeminiKey       : !!(settings.gemini_api_key && settings.gemini_api_key.trim()),
-    hasOpenAIKey       : !!(settings.openai_api_key && settings.openai_api_key.trim())
+    openrouterModels,
+    hasGeminiKey       : geminiEnabled,
+    hasOpenAIKey       : openaiEnabled,
+    hasOpenRouterKey   : openrouterEnabled
   });
 });
 
@@ -63,7 +106,7 @@ router.post('/chat', async (req, res) => {
     : [];
 
   // Validasi provider & model (whitelist)
-  const ALLOWED_PROVIDERS = ['gemini', 'openai'];
+  const ALLOWED_PROVIDERS = ['gemini', 'openai', 'openrouter'];
   const safeProvider = ALLOWED_PROVIDERS.includes(provider) ? provider : undefined;
 
   // ── Eksekusi ─────────────────────────────────────────────────
@@ -88,23 +131,26 @@ router.post('/chat', async (req, res) => {
     });
 
   } catch (err) {
+    const errorObj = err || new Error('Unknown error');
+    const errMsg = errorObj.message || 'Unknown error';
+    const errStack = errorObj.stack || '';
     const duration = Date.now() - startTime;
 
     // ── Klasifikasi error ─────────────────────────────────────
     //  Jenis error menentukan status HTTP dan pesan ke client.
     //  Di production semua detail internal disembunyikan.
-    const isTimeout  = /timed out|timeout|abort/i.test(err.message);
-    const isApiAuth  = /api key|unauthorized|authentication|invalid_api_key/i.test(err.message);
-    const isRateLimit = /rate.?limit|quota|429/i.test(err.message);
+    const isTimeout  = /timed out|timeout|abort/i.test(errMsg);
+    const isApiAuth  = /api key|unauthorized|authentication|invalid_api_key/i.test(errMsg);
+    const isRateLimit = /rate.?limit|quota|429/i.test(errMsg);
 
     console.error(
       `[AGENT:ROUTE] ERROR — ${safeProvider || 'auto'} — ${duration}ms —`,
-      err.message,
+      errMsg,
       isTimeout ? '[TIMEOUT]' : isApiAuth ? '[AUTH]' : isRateLimit ? '[RATE_LIMIT]' : '[UNKNOWN]'
     );
 
     // Stack trace hanya di log server, TIDAK dikirim ke client
-    if (err.stack) console.error('[AGENT:ROUTE] Stack:', err.stack);
+    if (errStack) console.error('[AGENT:ROUTE] Stack:', errStack);
 
     // Status HTTP yang tepat per jenis error
     const httpStatus = isTimeout   ? 504
@@ -126,7 +172,7 @@ router.post('/chat', async (req, res) => {
       // Detail teknis hanya di non-production untuk memudahkan debug
       ...(process.env.NODE_ENV !== 'production' && {
         _debug: {
-          originalMessage: err.message,
+          originalMessage: errMsg,
           durationMs     : duration,
           type           : isTimeout ? 'TIMEOUT' : isApiAuth ? 'AUTH' : isRateLimit ? 'RATE_LIMIT' : 'UNKNOWN'
         }

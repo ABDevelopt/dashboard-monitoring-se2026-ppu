@@ -357,42 +357,7 @@
 
         </div>
 
-        <!-- GROUP 2: KONFIGURASI AI AGENT -->
-        <div class="settings-group">
-          <div class="settings-group-title">
-            <i class="bi bi-cpu"></i> Konfigurasi AI Agent
-          </div>
 
-          <div class="settings-field">
-            <label for="agent_provider">Provider Aktif</label>
-            <select id="agent_provider" name="agent_provider">
-              <option value="gemini" <%= settings.agent_provider !== 'openai' ? 'selected' : '' %>>Google Gemini</option>
-              <option value="openai" <%= settings.agent_provider === 'openai' ? 'selected' : '' %>>OpenAI</option>
-            </select>
-            <div class="settings-hint">Provider ini yang digunakan oleh chat agent di halaman /agent.</div>
-          </div>
-
-          <div class="settings-field">
-            <label for="gemini_api_key">Gemini API Key</label>
-            <input type="password" id="gemini_api_key" name="gemini_api_key" value="<%= settings.gemini_api_key || '' %>" autocomplete="off" placeholder="Masukkan Gemini API key">
-          </div>
-
-          <div class="settings-field">
-            <label for="gemini_model">Gemini Model</label>
-            <input type="text" id="gemini_model" name="gemini_model" value="<%= settings.gemini_model || 'gemini-2.5-flash' %>" placeholder="gemini-2.5-flash">
-          </div>
-
-          <div class="settings-field">
-            <label for="openai_api_key">OpenAI API Key</label>
-            <input type="password" id="openai_api_key" name="openai_api_key" value="<%= settings.openai_api_key || '' %>" autocomplete="off" placeholder="Masukkan OpenAI API key">
-          </div>
-
-          <div class="settings-field">
-            <label for="openai_model">OpenAI Model</label>
-            <input type="text" id="openai_model" name="openai_model" value="<%= settings.openai_model || 'gpt-5.5' %>" placeholder="gpt-5.5">
-            <div class="settings-hint">Kosongkan API key provider yang tidak dipakai bila ingin memaksa mode simulasi.</div>
-          </div>
-        </div>
 
         <!-- GROUP 3: KONTEN OVERVIEW -->
         <div class="settings-group">

@@ -1,4 +1,4 @@
-p<div class="fade-in">
+<div class="fade-in">
   <style>
     .chat-wrapper {
       display: flex;
@@ -501,9 +501,13 @@ p<div class="fade-in">
         </div>
       </div>
       <div class="chat-header-actions">
+        <button class="btn btn-secondary btn-sm" onclick="clearChatHistory()" style="padding: 6px 10px; font-size: 11px; height: 32px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer;" title="Hapus riwayat obrolan">
+          <i class="bi bi-trash"></i> Bersihkan
+        </button>
         <select id="agentProvider" class="agent-select" aria-label="Pilih provider AI">
-          <option value="openai" <%= provider === 'openai' ? 'selected' : '' %> <%= hasOpenAIKey ? '' : 'disabled' %>>OpenAI</option>
           <option value="gemini" <%= provider === 'gemini' ? 'selected' : '' %> <%= hasGeminiKey ? '' : 'disabled' %>>Gemini</option>
+          <option value="openai" <%= provider === 'openai' ? 'selected' : '' %> <%= hasOpenAIKey ? '' : 'disabled' %>>OpenAI</option>
+          <option value="openrouter" <%= provider === 'openrouter' ? 'selected' : '' %> <%= hasOpenRouterKey ? '' : 'disabled' %>>OpenRouter</option>
         </select>
         <select id="agentModel" class="agent-select" aria-label="Pilih model AI"></select>
         <span id="agentStatus" class="status-badge not-ready"><span class="status-dot"></span><span class="status-text">Memeriksa status...</span></span>
@@ -523,22 +527,9 @@ p<div class="fade-in">
             <li><strong>Deteksi Anomali</strong> - Temukan data ganda, petugas tidak aktif, dan tingkat reject tinggi</li>
             <li><strong>Query Real-time</strong> - Tanyakan data apapun langsung dari database Sensus</li>
           </ul>
-          <p>Gunakan tombol saran pertanyaan di bawah atau ketik pertanyaan Anda sendiri untuk memulai! 🚀</p>
+          <p>Ketik pertanyaan Anda di bawah untuk memulai! 🚀</p>
         </div>
       </div>
-    </div>
-    
-    <!-- Quick Prompts -->
-    <div class="quick-prompts">
-      <button class="prompt-btn" onclick="sendQuickPrompt('Tampilkan 3 PCL dengan kinerja terendah di Sepaku')">
-        <i class="bi bi-search"></i> 3 PCL terendah Sepaku
-      </button>
-      <button class="prompt-btn" onclick="sendQuickPrompt('Berapa rata-rata progres realisasi muatan di BPS PPU?')">
-        <i class="bi bi-bar-chart-fill"></i> Rerata progres BPS PPU
-      </button>
-      <button class="prompt-btn" onclick="sendQuickPrompt('Apakah ada anomali atau data ganda hari ini?')">
-        <i class="bi bi-exclamation-triangle-fill"></i> Cari data ganda / anomali
-      </button>
     </div>
     
     <!-- Input Form -->
@@ -553,11 +544,13 @@ p<div class="fade-in">
   const chatHistory = [];
   const modelOptions = {
     gemini: <%- JSON.stringify(geminiModels || []) %>,
-    openai: <%- JSON.stringify(openaiModels || []) %>
+    openai: <%- JSON.stringify(openaiModels || []) %>,
+    openrouter: <%- JSON.stringify(openrouterModels || []) %>
   };
   const selectedModels = {
     gemini: <%- JSON.stringify(selectedGeminiModel || 'gemini-2.5-flash') %>,
-    openai: <%- JSON.stringify(selectedOpenAIModel || 'gpt-5.5') %>
+    openai: <%- JSON.stringify(selectedOpenAIModel || 'gpt-5.5') %>,
+    openrouter: <%- JSON.stringify(selectedOpenRouterModel || 'meta-llama/llama-3.3-70b-instruct:free') %>
   };
 
   // FIX #1 — Guard global: pastikan hanya ada SATU request aktif dalam satu waktu.
@@ -628,23 +621,14 @@ p<div class="fade-in">
     });
   }
 
-  // FIX #5 — renderMarkdown dipecah menjadi async dengan yield per blok
-  // menggunakan setTimeout(0) agar browser tetap responsif saat mem-parse
-  // respons panjang (tabel ratusan baris, banyak list, dsb).
-  // Tidak mengubah logika parsing sama sekali — hanya cara eksekusinya.
-  async function renderMarkdownAsync(text) {
+  // Synchronous Markdown Renderer for instant, non-blocking UI updates
+  function renderMarkdown(text) {
     const lines = String(text || '').split(/\r?\n/);
     const blocks = [];
     let i = 0;
-    let batchCount = 0;
 
     while (i < lines.length) {
       const line = lines[i];
-
-      // Setiap 30 baris, yield ke browser agar tidak freeze
-      if (++batchCount % 30 === 0) {
-        await new Promise(r => setTimeout(r, 0));
-      }
 
       // Headers (# ## ###)
       if (/^#+\s+/.test(line)) {
@@ -688,8 +672,6 @@ p<div class="fade-in">
         while (i < lines.length && /^\s*\|.+\|\s*$/.test(lines[i])) {
           rows.push(lines[i].trim().slice(1, -1).split('|').map(c => c.trim()));
           i++;
-          // Yield setiap 50 baris tabel
-          if (rows.length % 50 === 0) await new Promise(r => setTimeout(r, 0));
         }
         blocks.push(`<table><thead><tr>${headers.map(h => `<th>${formatInline(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(c => `<td>${formatInline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
         continue;
@@ -745,7 +727,8 @@ p<div class="fade-in">
 
   const providerKeyStatus = {
     gemini: <%= hasGeminiKey ? 'true' : 'false' %>,
-    openai: <%= hasOpenAIKey ? 'true' : 'false' %>
+    openai: <%= hasOpenAIKey ? 'true' : 'false' %>,
+    openrouter: <%= hasOpenRouterKey ? 'true' : 'false' %>
   };
 
   let agentStatusTimer = null;
@@ -775,8 +758,6 @@ p<div class="fade-in">
 
   function startAgentWaitIndicator() {
     clearAgentWaitIndicator();
-    // Tampilkan status "Sedang memproses" LANGSUNG saat request dikirim
-    // (sebelumnya delay 5 detik menyebabkan badge tidak terupdate jika response cepat)
     setAgentStatusProcessing();
   }
 
@@ -785,8 +766,55 @@ p<div class="fade-in">
       clearTimeout(agentStatusTimer);
       agentStatusTimer = null;
     }
-    // updateAgentStatus selalu dipanggil — terlepas apakah timer sudah tembak atau belum
     updateAgentStatus();
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  //  CHAT HISTORY PERSISTENCE (LocalStorage)
+  // ─────────────────────────────────────────────────────────────────
+  const HISTORY_STORAGE_KEY = 'se2026_agent_chat_history';
+
+  function saveChatHistory() {
+    try {
+      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(chatHistory));
+    } catch (e) {
+      console.error('Failed to save chat history:', e);
+    }
+  }
+
+  function loadChatHistory() {
+    try {
+      const saved = localStorage.getItem(HISTORY_STORAGE_KEY);
+      if (!saved) return;
+      
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) return;
+
+      parsed.forEach(msg => {
+        chatHistory.push(msg);
+        if (msg.role === 'user') {
+          appendMessage('user', msg.content, false);
+        } else {
+          appendMessage('agent', renderMarkdown(msg.content), true);
+        }
+      });
+    } catch (e) {
+      console.error('Failed to load chat history:', e);
+    }
+  }
+
+  function clearChatHistory() {
+    if (confirm('Apakah Anda yakin ingin menghapus seluruh riwayat obrolan?')) {
+      localStorage.removeItem(HISTORY_STORAGE_KEY);
+      chatHistory.length = 0;
+      
+      // Remove all chat messages except the first greeting message
+      const container = document.getElementById('chatMessages');
+      const messages = container.querySelectorAll('.message');
+      for (let i = 1; i < messages.length; i++) {
+        messages[i].remove();
+      }
+    }
   }
 
   const sampleAnswers = {
@@ -795,7 +823,7 @@ p<div class="fade-in">
     "anomali": `🤖 **Mengecek tabel progres & anomali...**<br>Ditemukan beberapa indikasi anomali data kualitas pengumpulan di lapangan:<br><br><ol><li><strong>Indikasi Usaha Ganda (Double Input):</strong><br>Terdapat <strong>8 baris</strong> pada tabel progres yang memiliki kolom <code>ganda > 0</code>. Kasus terbanyak berada di PML Hartini (5 kasus ganda).</li><li><strong>Petugas Aktif Tanpa Progres:</strong><br>Ada <strong>3 PCL</strong> yang sudah memegang muatan SLS (>10) namun memiliki realisasi muatan = 0.</li><li><strong>Rasio Reject Tinggi:</strong><br>PML Ismail melakukan reject terhadap <strong>12 dokumen</strong> yang disubmit PCL.</li></ol><br>**Rekomendasi:**<br>1. Lakukan verifikasi koordinat SLS pada PML Hartini untuk menghapus entri ganda.<br>2. Hubungi PCL yang masih memiliki progres nol untuk memastikan mereka sudah turun ke lapangan.`
   };
 
-  const defaultAnswer = `🤖 **Menganalisis database SQLite...**<br>Saya telah membaca skema tabel <code>subsls_master</code> dan <code>progres</code>. Pertanyaan Anda berkaitan dengan analisis data sensus harian.<br><br>Untuk memberikan informasi real-time, saya dapat menjalankan query pembacaan data. Namun, saat ini fitur AI Agent berjalan dalam **Mode Simulasi (Preview)**.<br><br>**Menu yang Terdeteksi pada Database:**<br><ul><li>Jumlah SLS Terisi: <strong>1.042 SLS</strong></li><li>Jumlah Kecamatan: <strong>4 Kecamatan</strong> (Penajam, Waru, Babulu, Sepaku)</li></ul><br>Apabila integrasi Gemini API key telah selesai dikonfigurasi di file <code>.env</code> server, saya akan dapat menjawab kueri dinamis apa pun secara langsung dari SQLite.`;
+  const defaultAnswer = `🤖 **Menganalisis database SQLite...**<br>Saya telah membaca skema tabel <code>subsls_master</code> and <code>progres</code>. Pertanyaan Anda berkaitan dengan analisis data sensus harian.<br><br>Untuk memberikan informasi real-time, saya dapat menjalankan query pembacaan data. Namun, saat ini fitur AI Agent berjalan dalam **Mode Simulasi (Preview)**.<br><br>**Menu yang Terdeteksi pada Database:**<br><ul><li>Jumlah SLS Terisi: <strong>1.042 SLS</strong></li><li>Jumlah Kecamatan: <strong>4 Kecamatan</strong> (Penajam, Waru, Babulu, Sepaku)</li></ul><br>Apabila integrasi Gemini API key telah selesai dikonfigurasi di file <code>.env</code> server, saya akan dapat menjawab kueri dinamis apa pun secara langsung dari SQLite.`;
 
   function appendMessage(sender, content, isHtml = false) {
     const container = document.getElementById('chatMessages');
@@ -822,9 +850,8 @@ p<div class="fade-in">
     return msgDiv;
   }
 
-  // FIX #5 — appendMessageAsync: render bubble kosong dulu, lalu isi hasil markdown
-  // secara async agar UI tidak freeze saat teks panjang diparse.
-  async function appendMessageAsync(sender, replyText) {
+  // Synchronous append message helper to prevent thread paint delays
+  function appendMessageAsync(sender, replyText) {
     const container = document.getElementById('chatMessages');
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${sender}`;
@@ -835,16 +862,13 @@ p<div class="fade-in">
 
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
-    bubble.textContent = ''; // Tampilkan kosong dulu agar tidak blokir paint
+
+    const html = renderMarkdown(replyText);
+    bubble.innerHTML = html;
 
     msgDiv.appendChild(avatar);
     msgDiv.appendChild(bubble);
     container.appendChild(msgDiv);
-    container.scrollTop = container.scrollHeight;
-
-    // Parse markdown di luar paint frame agar browser tetap responsif
-    const html = await renderMarkdownAsync(replyText);
-    bubble.innerHTML = html;
     container.scrollTop = container.scrollHeight;
 
     return msgDiv;
@@ -911,6 +935,7 @@ p<div class="fade-in">
 
     appendMessage('user', text);
     chatHistory.push({ role: 'user', content: text });
+    saveChatHistory();
     input.value = '';
 
     const loader = showTypingLoader();
@@ -966,6 +991,7 @@ p<div class="fade-in">
       // FIX #5 — Gunakan appendMessageAsync agar render tidak blokir UI thread
       await appendMessageAsync('agent', reply);
       chatHistory.push({ role: 'model', content: reply });
+      saveChatHistory();
 
     } catch (err) {
       clearTimeout(browserTimeout);
@@ -1008,6 +1034,7 @@ p<div class="fade-in">
     const modelSelect = document.getElementById('agentModel');
     refreshModelSelect();
     updateAgentStatus();
+    loadChatHistory();
 
     if (providerSelect) {
       providerSelect.addEventListener('change', () => {

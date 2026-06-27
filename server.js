@@ -42,6 +42,7 @@ app.use((req, res, next) => {
   const latest = getLatestUpload();
   res.locals.latestUpload = latest || null;
   res.locals.uploadId = latest ? latest.id : null;
+  res.locals.user = req.session.user || null;
   res.locals.isAdmin = req.session.isAdmin || false;
 
   // Inject display settings globally
@@ -96,6 +97,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/', require('./routes/index'));
+app.use('/', require('./routes/auth'));
 app.use('/map', require('./routes/map'));
 app.use('/kecamatan', require('./routes/kecamatan'));
 app.use('/korlap', require('./routes/korlap'));
@@ -121,24 +123,11 @@ const adminRouter = express.Router();
 app.use('/admin', adminRouter);
 
 adminRouter.get('/', (req, res) => {
-  if (req.session.isAdmin) return res.redirect('/admin/upload');
-  res.render('login', { title: 'Login Admin', activePage: 'admin' });
-});
-
-adminRouter.post('/login', (req, res) => {
-  const { password } = req.body;
-  if (password === 'adminse2026') {
-    req.session.isAdmin = true;
-    res.redirect('/admin/upload');
-  } else {
-    req.flash('error', 'Password salah.');
-    res.redirect('/admin');
-  }
+  res.redirect('/login');
 });
 
 adminRouter.get('/logout', (req, res) => {
-  req.session.destroy();
-  res.redirect('/');
+  res.redirect('/logout');
 });
 
 // Protected Admin Routes

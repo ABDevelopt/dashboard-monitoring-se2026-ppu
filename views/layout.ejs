@@ -72,7 +72,7 @@
       <span class="nav-icon"><i class="bi bi-map"></i></span> Peta Progres
     </a>
     <% } %>
-    <% if (typeof settings !== 'undefined' && settings.page_aiagent === '1') { %>
+    <% if (typeof settings !== 'undefined' && settings.page_aiagent === '1' && typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'korlap')) { %>
     <a href="/agent" class="nav-item <%= activePage === 'agent' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-robot"></i></span> Asisten AI Chat
     </a>
@@ -156,11 +156,21 @@
     <a href="/admin/settings" class="nav-item <%= activePage === 'settings' ? 'active' : '' %>">
       <span class="nav-icon"><i class="bi bi-sliders"></i></span> Pengaturan Tampilan
     </a>
-    <a href="/admin/logout" class="nav-item">
-      <span class="nav-icon"><i class="bi bi-box-arrow-right"></i></span> Logout Admin
+    <a href="/admin/settings/chatbot" class="nav-item <%= activePage === 'chatbot-settings' ? 'active' : '' %>">
+      <span class="nav-icon"><i class="bi bi-chat-left-dots-fill"></i></span> Pengaturan Chatbot AI
     </a>
     <% } %>
-    
+    <% } %>
+
+    <div class="nav-section">Sesi Pengguna</div>
+    <% if (typeof user !== 'undefined' && user) { %>
+    <a href="/logout" class="nav-item">
+      <span class="nav-icon"><i class="bi bi-box-arrow-right"></i></span> Logout (<%= user.username %>)
+    </a>
+    <% } else { %>
+    <a href="/login" class="nav-item">
+      <span class="nav-icon"><i class="bi bi-box-arrow-in-right"></i></span> Login
+    </a>
     <% } %>
   </nav>
 
