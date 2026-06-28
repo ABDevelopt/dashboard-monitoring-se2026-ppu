@@ -58,6 +58,9 @@ Anda dapat menyaring dan mengurutkan data secara langsung melalui parameter 'que
 Gunakan template query di bawah ini sebagai dasar penulisan query SQL Anda jika menggunakan 'run_read_only_query'. Ganti parameter seperti ':uploadId', ':kecamatan', atau ':limit' dengan nilai riil sebelum menjalankan query:
 ${hintsText}
 
+### ATURAN PEMBATASAN & TAUTAN (TRUNCATION & LINKING):
+- Jika data yang diterima dari tool memiliki penanda terpotong ('truncated'), Anda WAJIB memberitahukan kepada user secara sopan bahwa data dibatasi demi kenyamanan chat, lalu berikan link markdown ke halaman data lengkap website yang bersangkutan (misal: [Halaman PCL](/pcl), [Halaman PML](/pml), [Halaman Korlap](/korlap), [Halaman Kecamatan](/kecamatan), [Halaman SubSLS](/subsls), [Halaman Early Warning](/earlywarning), [Halaman Deteksi Anomali](/deteksianomali), [Halaman Leaderboard](/leaderboard)).
+
 ### DILARANG:
 - Jangan gunakan run_read_only_query untuk pertanyaan yang bisa dijawab fetch_page_data
 - Jangan membuat estimasi atau mengarang angka jika tool gagal
@@ -101,7 +104,7 @@ const PAGE_DATA_TOOL_DECLARATION = {
 
 const GEMINI_DEFAULT_MODEL        = 'gemini-2.5-flash';
 const OPENAI_DEFAULT_MODEL        = 'gpt-5.5';
-const OPENROUTER_DEFAULT_MODEL    = 'meta-llama/llama-3.3-70b-instruct:free';
+const OPENROUTER_DEFAULT_MODEL    = 'openrouter/free';
 // Hirarki timeout wajib — JANGAN dibalik urutannya:
 //
 //   browser abort (60 000ms)              ← diset di agent.ejs
@@ -113,11 +116,11 @@ const OPENROUTER_DEFAULT_MODEL    = 'meta-llama/llama-3.3-70b-instruct:free';
 // SmartSwitch worst-case: MAX_SWITCH_TRIES × AGENT_API_TIMEOUT_MS
 //   = 3 × 18s = 54s  <  browser 60s  ✓
 // Server selalu habis sebelum browser abort → tidak ada ECONNRESET.
-const AGENT_API_TIMEOUT_MS          = 18000; // outer server per-provider
-const AGENT_API_QUICK_RESPONSE_MS   = 14000; // call PERTAMA ke AI
-const AGENT_API_TOOLRESULT_MS       = 16000; // call KEDUA+ ke AI (setelah tool-result)
+const AGENT_API_TIMEOUT_MS          = 120000; // outer server per-provider
+const AGENT_API_QUICK_RESPONSE_MS   = 110000; // call PERTAMA ke AI
+const AGENT_API_TOOLRESULT_MS       = 110000; // call KEDUA+ ke AI (setelah tool-result)
 const DB_WORKER_TIMEOUT_MS          = 10000; // max query SQLite (harus < QUICK_RESPONSE_MS)
-const TOOL_RESULT_MAX_ROWS          =    40; // batas baris tool-result yang dikirim ke model
+const TOOL_RESULT_MAX_ROWS          =    20; // batas baris tool-result yang dikirim ke model
 const MAX_SWITCH_TRIES              =     3; // batas total percobaan SmartSwitch
 
 const GEMINI_USER_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.5-flash'];
@@ -244,7 +247,7 @@ const SQL_FORBIDDEN = ['insert','update','delete','drop','alter','create','repla
 
 function validateSql(sql) {
   const cleanSql = sql.trim();
-  if (!/^select\s/i.test(cleanSql)) {
+  if (!/^(select|with)\s/i.test(cleanSql)) {
     throw new Error('Security Alert: Only SELECT queries are permitted.');
   }
   const tokens = cleanSql.toLowerCase().split(/\s+/);
@@ -367,33 +370,29 @@ function fetchPageData(route, queryParams = {}) {
       let pclStats = [];
       let detailSubsls = [];
       
-      let where = 'WHERE 1=1';
+      let where = 'WHERE upload_id = ?';
       const params = [upload.id];
-      if (filterKec) { where += ' AND LOWER(m.kecamatan) = ?'; params.push(filterKec.toLowerCase()); }
-      if (filterKorlap) { where += ' AND m.korlap = ?'; params.push(filterKorlap); }
-      if (filterPml) { where += ' AND m.pml = ?'; params.push(filterPml); }
+      if (filterKec) { where += ' AND LOWER(kecamatan) = ?'; params.push(filterKec.toLowerCase()); }
+      if (filterKorlap) { where += ' AND korlap = ?'; params.push(filterKorlap); }
+      if (filterPml) { where += ' AND pml = ?'; params.push(filterPml); }
 
       pclStats = db.prepare(`
         SELECT 
-          m.pcl, m.pml, m.korlap, m.kecamatan,
-          COUNT(m.kode) AS total_subsls,
-          SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
-          SUM(m.muatan) AS total_muatan,
-          SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
-          SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-          SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
-          SUM(COALESCE(p.draft, 0)) AS draft_total,
-          SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
-          SUM(COALESCE(p.approved, 0)) AS approved_total,
-          SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-          SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-                   THEN 0 
-                   ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-              END) AS target_fasih_total
-        FROM subsls_master m
-        LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+          pcl, pml, korlap, kecamatan,
+          SUM(total_sls) AS total_subsls,
+          SUM(selesai) AS selesai,
+          SUM(total_muatan) AS total_muatan,
+          SUM(muatan_selesai) AS muatan_selesai,
+          SUM(usaha_total) AS usaha_total,
+          SUM(keluarga_total) AS keluarga_total,
+          SUM(draft_total) AS draft_total,
+          SUM(submitted_total) AS submitted_total,
+          SUM(approved_total) AS approved_total,
+          SUM(rejected_total) AS rejected_total,
+          SUM(target_fasih_total) AS target_fasih_total
+        FROM summary_cache
         ${where}
-        GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
+        GROUP BY pcl, pml, korlap, kecamatan
         ORDER BY selesai ASC
       `).all(...params);
 
@@ -436,16 +435,15 @@ function fetchPageData(route, queryParams = {}) {
       if (filterPml) {
         detailPcl = db.prepare(`
           SELECT 
-            m.pcl, m.pml, m.korlap, m.kecamatan,
-            COUNT(m.kode) AS total_subsls,
-            SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
-            SUM(m.muatan) AS total_muatan,
-            SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-            SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
-          FROM subsls_master m
-          LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-          WHERE m.pml = ?
-          GROUP BY m.pcl, m.kecamatan
+            pcl, pml, korlap, kecamatan,
+            SUM(total_sls) AS total_subsls,
+            SUM(selesai) AS selesai,
+            SUM(total_muatan) AS total_muatan,
+            SUM(usaha_total) AS usaha_total,
+            SUM(keluarga_total) AS keluarga_total
+          FROM summary_cache
+          WHERE upload_id = ? AND pml = ?
+          GROUP BY pcl, kecamatan
           ORDER BY selesai ASC
         `).all(upload.id, filterPml);
       }
@@ -466,17 +464,16 @@ function fetchPageData(route, queryParams = {}) {
       if (filterKorlap) {
         detailData = db.prepare(`
           SELECT 
-            m.pml, m.korlap,
-            COUNT(DISTINCT m.pcl) AS jumlah_pcl,
-            COUNT(m.kode) AS total_subsls,
-            SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
-            SUM(m.muatan) AS total_muatan,
-            SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-            SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total
-          FROM subsls_master m
-          LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-          WHERE m.korlap = ?
-          GROUP BY m.pml
+            pml, korlap,
+            COUNT(DISTINCT pcl) AS jumlah_pcl,
+            SUM(total_sls) AS total_subsls,
+            SUM(selesai) AS selesai,
+            SUM(total_muatan) AS total_muatan,
+            SUM(usaha_total) AS usaha_total,
+            SUM(keluarga_total) AS keluarga_total
+          FROM summary_cache
+          WHERE upload_id = ? AND korlap = ?
+          GROUP BY pml
           ORDER BY selesai ASC
         `).all(upload.id, filterKorlap);
       }
@@ -500,9 +497,56 @@ function fetchPageData(route, queryParams = {}) {
     case '/deteksi-anomali':
       rawResult = { route: '/deteksi-anomali', anomalyStats: getAnomalyStats(upload.id, queryParams) };
       break;
-    case '/subsls':
-      rawResult = { route: '/subsls', pclStats: getPclStats(upload.id), pmlStats: getPmlStats(upload.id), kecamatanStats: getKecamatanStats(upload.id) };
+    case '/subsls': {
+      const cond = [];
+      const params = [upload.id];
+      
+      const filterKec = queryParams.kecamatan || queryParams.kec || '';
+      const filterDesa = queryParams.desa || queryParams.kelurahan || '';
+      const filterPcl = queryParams.pcl || queryParams.nama_pcl || '';
+      const filterPml = queryParams.pml || queryParams.nama_pml || '';
+      const filterKorlap = queryParams.korlap || '';
+      const filterName = queryParams.name || queryParams.nama_sls || '';
+
+      if (filterKec) { cond.push('m.kecamatan = ?'); params.push(filterKec); }
+      if (filterDesa) { cond.push('m.desa = ?'); params.push(filterDesa); }
+      if (filterPcl) { cond.push('m.pcl = ?'); params.push(filterPcl); }
+      if (filterPml) { cond.push('m.pml = ?'); params.push(filterPml); }
+      if (filterKorlap) { cond.push('m.korlap = ?'); params.push(filterKorlap); }
+      if (filterName) { cond.push('m.nama_sls LIKE ?'); params.push(`%${filterName}%`); }
+
+      const where = cond.length ? 'AND ' + cond.join(' AND ') : '';
+      
+      const sql = `
+        SELECT 
+          m.kode, m.kecamatan, m.desa, m.nama_sls,
+          m.korlap, m.pml, m.pcl, m.muatan,
+          COALESCE(p.draft, 0) AS draft,
+          COALESCE(p.submitted_by_pcl, 0) AS submitted,
+          COALESCE(p.approved, 0) AS approved,
+          COALESCE(p.rejected, 0) AS rejected,
+          CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
+               THEN 0 
+               ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
+          END AS target_fasih_total
+        FROM subsls_master m
+        LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+        WHERE 1=1 ${where}
+      `;
+
+      const rows = db.prepare(sql).all(...params);
+      rows.forEach(decorateRowWithPct);
+
+      const sortField = queryParams.sortField || 'pct';
+      const sortOrder = queryParams.sortOrder || 'desc';
+      sortDataArray(rows, sortField, sortOrder);
+
+      rawResult = {
+        route: '/subsls',
+        subslsStats: rows
+      };
       break;
+    }
     case '/map':
       rawResult = { route: '/map', totalSls: db.prepare('SELECT COUNT(*) as n FROM subsls_master').get().n };
       break;
@@ -766,13 +810,29 @@ function runSimulation(userMessage, chatHistory) {
 //  dikirim ke model. Ini mencegah context window overflow dan mencegah
 //  JSON.stringify dari objek besar yang memblokir event loop.
 // ─────────────────────────────────────────────────────────────────────────
-const PAGE_DATA_MAX_ROWS = 40; // sama dengan TOOL_RESULT_MAX_ROWS
+const PAGE_DATA_MAX_ROWS = 20; // sama dengan TOOL_RESULT_MAX_ROWS
+
+function getPageLinkForLabel(label) {
+  const lbl = String(label || '').toLowerCase();
+  if (lbl.includes('pcl')) return '/pcl';
+  if (lbl.includes('pml')) return '/pml';
+  if (lbl.includes('korlap')) return '/korlap';
+  if (lbl.includes('kecamatan')) return '/kecamatan';
+  if (lbl.includes('earlywarning') || lbl.includes('early_warning')) return '/earlywarning';
+  if (lbl.includes('anomaly') || lbl.includes('anomali')) return '/deteksianomali';
+  if (lbl.includes('topperformers') || lbl.includes('leaderboard')) return '/leaderboard';
+  if (lbl.includes('bottomperformers') || lbl.includes('performaterendah') || lbl.includes('performa-terendah')) return '/performa-terendah';
+  if (lbl.includes('subsls')) return '/subsls';
+  return null;
+}
 
 function capArray(arr, label) {
   if (!Array.isArray(arr) || arr.length <= PAGE_DATA_MAX_ROWS) return { data: arr };
+  const link = getPageLinkForLabel(label);
+  const linkMsg = link ? ` Silakan kunjungi [Halaman ${label.replace('Stats', '')} Lengkap](${link}) untuk melihat seluruh data.` : '';
   return {
     data: arr.slice(0, PAGE_DATA_MAX_ROWS),
-    truncated: `PERINGATAN: Hanya ${PAGE_DATA_MAX_ROWS} dari ${arr.length} baris ditampilkan untuk ${label}. ` +
+    truncated: `PERINGATAN: Hanya ${PAGE_DATA_MAX_ROWS} dari ${arr.length} baris ditampilkan untuk ${label}.${linkMsg} ` +
                `Gunakan queryParams.limit atau queryParams.name untuk mempersempit data.`
   };
 }
@@ -845,7 +905,16 @@ async function runToolCall(functionCall) {
         rowCount : totalRows,
         returned : rows.length,
         truncated: truncated
-          ? `PERINGATAN: Hanya ${rows.length} dari ${totalRows} baris ditampilkan. Gunakan WHERE/LIMIT untuk mempersempit hasil, atau minta agregasi (COUNT/SUM/GROUP BY) agar data lebih ringkas.`
+          ? (() => {
+              const sqlLower = sql.toLowerCase();
+              let suggestLink = '';
+              if (sqlLower.includes('pcl')) suggestLink = ' Silakan kunjungi [Halaman PCL Lengkap](/pcl) untuk melihat seluruh data.';
+              else if (sqlLower.includes('pml')) suggestLink = ' Silakan kunjungi [Halaman PML Lengkap](/pml) untuk melihat seluruh data.';
+              else if (sqlLower.includes('korlap')) suggestLink = ' Silakan kunjungi [Halaman Korlap Lengkap](/korlap) untuk melihat seluruh data.';
+              else if (sqlLower.includes('kecamatan')) suggestLink = ' Silakan kunjungi [Halaman Kecamatan Lengkap](/kecamatan) untuk melihat seluruh data.';
+              else if (sqlLower.includes('progres') || sqlLower.includes('subsls')) suggestLink = ' Silakan kunjungi [Halaman SubSLS Lengkap](/subsls) untuk melihat seluruh data.';
+              return `PERINGATAN: Hanya ${rows.length} dari ${totalRows} baris ditampilkan.${suggestLink} Gunakan WHERE/LIMIT untuk mempersempit hasil, atau minta agregasi (COUNT/SUM/GROUP BY) agar data lebih ringkas.`;
+            })()
           : undefined,
         data: rows
       };
@@ -892,7 +961,7 @@ async function runToolCall(functionCall) {
 function isQuotaOrRateLimitError(error) {
   if (!error) return false;
   const msg = (error.message || '').toLowerCase();
-  return /429|403|503|rate.limit|quota|billing|credit|exhausted|demand|limit/i.test(msg);
+  return /http\s+\d+|rate.limit|quota|billing|credit|exhausted|demand|limit|timeout|aborted/i.test(msg);
 }
 
 function getApiKeyForProvider(provider, settings) {
@@ -1149,9 +1218,7 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
 
   } catch (error) {
     log.error('sendMessageToGemini error:', error.message);
-    const sim = runSimulation(userMessage, chatHistory);
-    sim.content = `⚠️ **Gemini Error:** ${error.message}\n\n*Fallback ke simulasi:*\n\n` + sim.content;
-    return sim;
+    throw error;
   }
 }
 
@@ -1211,10 +1278,7 @@ async function sendMessageToOpenAI(userMessage, chatHistory, settings, selectedM
 
   } catch (error) {
     log.error('sendMessageToOpenAI error:', error.message);
-    const sim    = runSimulation(userMessage, chatHistory);
-    const isAbort = error.name === 'AbortError' || /aborted|timeout/i.test(error.message || '');
-    sim.content  = `⚠️ **OpenAI ${isAbort ? 'Timeout' : 'Error'}:** ${error.message}\n\n*Fallback ke simulasi:*\n\n` + sim.content;
-    return sim;
+    throw error;
   }
 }
 
@@ -1233,10 +1297,10 @@ async function createOpenAIResponse(apiKey, payload) {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const msg = data?.error?.message || `HTTP ${response.status}`;
-    // Log body lengkap untuk debug rate-limit / auth error
-    log.error('OpenAI HTTP error:', response.status, msg, JSON.stringify(data).slice(0, 300));
-    throw new Error(msg);
+    const msg = data?.error?.message || '';
+    const fullMsg = `[HTTP ${response.status}] ${msg}`.trim();
+    log.error('OpenAI HTTP error:', response.status, fullMsg, JSON.stringify(data).slice(0, 300));
+    throw new Error(fullMsg);
   }
   return data;
 }
@@ -1294,7 +1358,7 @@ async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selec
   ] : undefined; // FIX #4 — tidak kirim tools ke model :free
 
   let loopCount = 0;
-  const MAX_LOOPS = modelSupportsTool ? 2 : 0; // :free langsung ke ekstrak teks
+  const MAX_LOOPS = 2; // Allow fallback parser to scan all models' text JSON outputs
 
   try {
     if (abortSignal?.aborted) throw new Error('Request dibatalkan sebelum dikirim ke OpenRouter.');
@@ -1327,9 +1391,71 @@ async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selec
       const assistantMessage = choice.message;
       const toolCalls = assistantMessage?.tool_calls;
 
-      if (!toolCalls || toolCalls.length === 0) break;
+      // --- TEXT JSON TOOL CALL FALLBACK PARSER ---
+      let isTextToolCall = false;
+      let parsedTextTool = null;
+      if ((!toolCalls || toolCalls.length === 0) && assistantMessage.content) {
+        const text = assistantMessage.content.trim();
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            let toolName = parsed.tool || parsed.name || parsed.function || parsed.action;
+            
+            // Implicit tool detection
+            if (!toolName) {
+              if (parsed.route || parsed.endpoint) {
+                toolName = 'fetch_page_data';
+              } else if (parsed.query || parsed.sql || parsed.params?.query || parsed.params?.sql || parsed.arguments?.query || parsed.arguments?.sql) {
+                toolName = 'run_read_only_query';
+              }
+            }
+
+            if (toolName === 'run_read_only_query' || toolName === 'fetch_page_data') {
+              log.info('[JSON Fallback] Detected text-based tool call:', toolName);
+              let args = {};
+              if (toolName === 'run_read_only_query') {
+                const queryVal = parsed.query || parsed.sql || parsed.params?.query || parsed.params?.sql || parsed.arguments?.query || parsed.arguments?.sql || parsed.arguments || parsed.params || '';
+                args = { query: typeof queryVal === 'string' ? queryVal : JSON.stringify(queryVal) };
+              } else if (toolName === 'fetch_page_data') {
+                const routeVal = parsed.route || parsed.endpoint || parsed.params?.route || parsed.params?.endpoint || parsed.arguments?.route || parsed.arguments?.endpoint || '';
+                const qParams = parsed.queryParams || parsed.params?.queryParams || parsed.arguments?.queryParams || parsed.params || {};
+                args = { route: routeVal, queryParams: typeof qParams === 'object' ? qParams : {} };
+              }
+              parsedTextTool = { name: toolName, args };
+              isTextToolCall = true;
+            }
+          } catch (e) {
+            log.debug('[JSON Fallback] Brace matching but failed to parse JSON:', e.message);
+          }
+        }
+      }
+
+      if (!toolCalls && !isTextToolCall) break;
+      if (toolCalls && toolCalls.length === 0 && !isTextToolCall) break;
 
       loopCount++;
+
+      if (isTextToolCall) {
+        log.info(`[JSON Fallback] Loop ${loopCount}/${MAX_LOOPS}: executing ${parsedTextTool.name}`);
+        const result = await runToolCall({ name: parsedTextTool.name, args: parsedTextTool.args });
+        
+        messages.push({ role: 'assistant', content: JSON.stringify(parsedTextTool) });
+        messages.push({
+          role: 'user',
+          content: `[SISTEM] Hasil eksekusi tool ${parsedTextTool.name}:\n${JSON.stringify(result)}`
+        });
+
+        const nextPayload = { model, messages };
+        if (tools) nextPayload.tools = tools;
+        response = await callOpenRouterAPI(apiKey, nextPayload, true);
+        if (!response.choices || response.choices.length === 0) {
+          log.warn('OpenRouter: choices kosong setelah text tool-call', loopCount);
+          break;
+        }
+        continue;
+      }
+
       log.info(`OpenRouter tool-call loop ${loopCount}/${MAX_LOOPS}: ${toolCalls.map(f => f.function.name).join(', ')}`);
 
       messages.push(assistantMessage);
@@ -1376,10 +1502,7 @@ async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selec
 
   } catch (error) {
     log.error('sendMessageToOpenRouter error:', error.message);
-    const sim = runSimulation(userMessage, chatHistory);
-    const isAbort = error.name === 'AbortError' || /aborted|timeout/i.test(error.message || '');
-    sim.content = `⚠️ **OpenRouter ${isAbort ? 'Timeout' : 'Error'}:** ${error.message}\n\n*Fallback ke simulasi:*\n\n` + sim.content;
-    return sim;
+    throw error;
   }
 }
 
@@ -1400,9 +1523,10 @@ async function callOpenRouterAPI(apiKey, payload, isToolResult = false) {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const msg = data?.error?.message || `HTTP ${response.status}`;
-    log.error('OpenRouter HTTP error:', response.status, msg, JSON.stringify(data).slice(0, 300));
-    throw new Error(msg);
+    const msg = data?.error?.message || '';
+    const fullMsg = `[HTTP ${response.status}] ${msg}`.trim();
+    log.error('OpenRouter HTTP error:', response.status, fullMsg, JSON.stringify(data).slice(0, 300));
+    throw new Error(fullMsg);
   }
   return data;
 }

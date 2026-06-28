@@ -46,6 +46,33 @@ function loadMasterFromJson(jsonPath) {
   }
 
   insertMany(rows);
+
+  // Override target_fasih dari rancangan alokasi jika file excel ada
+  try {
+    const alokasiPath = path.join(__dirname, '../rancangan-muatan-se2026-ppu.xlsx');
+    if (fs.existsSync(alokasiPath)) {
+      console.log('Applying target_fasih from rancangan-muatan-se2026-ppu.xlsx...');
+      const wb = XLSX.readFile(alokasiPath);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const excelRows = XLSX.utils.sheet_to_json(ws);
+      const updateStmt = db.prepare('UPDATE subsls_master SET target_fasih = ? WHERE kode = ?');
+      let updatedCount = 0;
+      db.transaction(() => {
+        for (const row of excelRows) {
+          const code = String(row['IDSUBSLS beneran'] || row['IDSUBSLS_beneran'] || '').trim();
+          const targetFasih = parseInt(row['TOTAL ASSIGNMENT FASIH'] || row['total_assignment_fasih'] || 0, 10);
+          if (code) {
+            updateStmt.run(targetFasih, code);
+            updatedCount++;
+          }
+        }
+      })();
+      console.log(`✅ Applied target_fasih from Excel for ${updatedCount} records.`);
+    }
+  } catch (err) {
+    console.error('⚠️ Warning: Failed to apply target_fasih from Excel:', err.message);
+  }
+
   return rows.length;
 }
 

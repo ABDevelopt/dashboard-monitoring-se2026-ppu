@@ -122,6 +122,7 @@ function initSchema() {
     CREATE TABLE IF NOT EXISTS summary_cache (
       upload_id INTEGER NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
       kecamatan TEXT,
+      desa TEXT,
       korlap TEXT,
       pml TEXT,
       pcl TEXT,
@@ -136,8 +137,22 @@ function initSchema() {
       approved_total INTEGER,
       rejected_total INTEGER,
       target_fasih_total INTEGER,
+      usaha_ditemukan INTEGER DEFAULT 0,
+      usaha_baru INTEGER DEFAULT 0,
+      ditemukan INTEGER DEFAULT 0,
+      keluarga_baru INTEGER DEFAULT 0,
+      usaha_tidak_ditemukan INTEGER DEFAULT 0,
+      tidak_ditemukan INTEGER DEFAULT 0,
+      usaha_tutup INTEGER DEFAULT 0,
+      meninggal INTEGER DEFAULT 0,
+      usaha_ganda INTEGER DEFAULT 0,
+      rumah_tunggal INTEGER DEFAULT 0,
+      rumah_deret INTEGER DEFAULT 0,
+      rumah_susun INTEGER DEFAULT 0,
+      apartemen INTEGER DEFAULT 0,
+      lainnya INTEGER DEFAULT 0,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (upload_id, pcl)
+      PRIMARY KEY (upload_id, pcl, desa)
     );
 
     CREATE INDEX IF NOT EXISTS idx_summary_upload ON summary_cache(upload_id);
@@ -176,8 +191,59 @@ function migrateSchema() {
     db.prepare('ALTER TABLE uploads ADD COLUMN stored_status_filename TEXT').run();
   } catch (e) {}
 
-  // Rebuild summary cache for all uploads if empty
+  // Rebuild summary cache for all uploads if empty or missing 'desa' or 'usaha_baru' columns
   try {
+    try {
+      const tableInfo = db.prepare("PRAGMA table_info(summary_cache)").all();
+      const hasDesa = tableInfo.some(col => col.name === 'desa');
+      const hasUsahaBaru = tableInfo.some(col => col.name === 'usaha_baru');
+      if (tableInfo.length > 0 && (!hasDesa || !hasUsahaBaru)) {
+        console.log('summary_cache is missing required columns. Recreating summary_cache table...');
+        db.exec(`
+          DROP TABLE IF EXISTS summary_cache;
+          CREATE TABLE summary_cache (
+            upload_id INTEGER NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
+            kecamatan TEXT,
+            desa TEXT,
+            korlap TEXT,
+            pml TEXT,
+            pcl TEXT,
+            total_sls INTEGER,
+            selesai INTEGER,
+            total_muatan INTEGER,
+            muatan_selesai INTEGER,
+            usaha_total INTEGER,
+            keluarga_total INTEGER,
+            draft_total INTEGER,
+            submitted_total INTEGER,
+            approved_total INTEGER,
+            rejected_total INTEGER,
+            target_fasih_total INTEGER,
+            usaha_ditemukan INTEGER DEFAULT 0,
+            usaha_baru INTEGER DEFAULT 0,
+            ditemukan INTEGER DEFAULT 0,
+            keluarga_baru INTEGER DEFAULT 0,
+            usaha_tidak_ditemukan INTEGER DEFAULT 0,
+            tidak_ditemukan INTEGER DEFAULT 0,
+            usaha_tutup INTEGER DEFAULT 0,
+            meninggal INTEGER DEFAULT 0,
+            usaha_ganda INTEGER DEFAULT 0,
+            rumah_tunggal INTEGER DEFAULT 0,
+            rumah_deret INTEGER DEFAULT 0,
+            rumah_susun INTEGER DEFAULT 0,
+            apartemen INTEGER DEFAULT 0,
+            lainnya INTEGER DEFAULT 0,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (upload_id, pcl, desa)
+          );
+          CREATE INDEX IF NOT EXISTS idx_summary_upload ON summary_cache(upload_id);
+          CREATE INDEX IF NOT EXISTS idx_summary_pcl ON summary_cache(pcl);
+        `);
+      }
+    } catch (tblErr) {
+      console.error('Error checking summary_cache structure:', tblErr);
+    }
+
     const uploadCount = db.prepare('SELECT COUNT(*) as n FROM uploads').get().n;
     const cacheCount = db.prepare('SELECT COUNT(*) as n FROM summary_cache').get().n;
     if (uploadCount > 0 && cacheCount === 0) {
@@ -229,24 +295,24 @@ function getProgresWithMaster(uploadId) {
 function getKecamatanStats(uploadId) {
   return getDb().prepare(`
     SELECT 
-      m.kecamatan,
-      COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
-      SUM(m.muatan) AS total_muatan,
-      SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_selesai,
-      SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
-      SUM(COALESCE(p.usaha_tidak_ditemukan, 0)) AS usaha_tidak_ditemukan,
-      SUM(COALESCE(p.tidak_ditemukan, 0)) AS tidak_ditemukan,
-      SUM(COALESCE(p.draft, 0)) AS draft_total,
-      SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
-      SUM(COALESCE(p.approved, 0)) AS approved_total,
-      SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.kecamatan
-    ORDER BY m.kecamatan
+      kecamatan,
+      SUM(total_sls) AS total_subsls,
+      SUM(selesai) AS selesai,
+      SUM(total_muatan) AS total_muatan,
+      SUM(muatan_selesai) AS muatan_selesai,
+      SUM(usaha_total) AS usaha_total,
+      SUM(keluarga_total) AS keluarga_total,
+      SUM(usaha_tidak_ditemukan) AS usaha_tidak_ditemukan,
+      SUM(tidak_ditemukan) AS tidak_ditemukan,
+      SUM(draft_total) AS draft_total,
+      SUM(submitted_total) AS submitted_total,
+      SUM(approved_total) AS approved_total,
+      SUM(rejected_total) AS rejected_total,
+      SUM(target_fasih_total) AS target_fasih_total
+    FROM summary_cache
+    WHERE upload_id = ?
+    GROUP BY kecamatan
+    ORDER BY kecamatan
   `).all(uploadId);
 }
 
@@ -254,23 +320,23 @@ function getKecamatanStats(uploadId) {
 function getKorlapStats(uploadId) {
   return getDb().prepare(`
     SELECT 
-      m.korlap,
-      COUNT(DISTINCT m.pcl) AS jumlah_pcl,
-      COUNT(DISTINCT m.pml) AS jumlah_pml,
-      COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
-      SUM(m.muatan) AS total_muatan,
-      SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_selesai,
-      SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
-      SUM(COALESCE(p.draft, 0)) AS draft_total,
-      SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
-      SUM(COALESCE(p.approved, 0)) AS approved_total,
-      SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.korlap
+      korlap,
+      COUNT(DISTINCT pcl) AS jumlah_pcl,
+      COUNT(DISTINCT pml) AS jumlah_pml,
+      SUM(total_sls) AS total_subsls,
+      SUM(selesai) AS selesai,
+      SUM(total_muatan) AS total_muatan,
+      SUM(muatan_selesai) AS muatan_selesai,
+      SUM(usaha_total) AS usaha_total,
+      SUM(keluarga_total) AS keluarga_total,
+      SUM(draft_total) AS draft_total,
+      SUM(submitted_total) AS submitted_total,
+      SUM(approved_total) AS approved_total,
+      SUM(rejected_total) AS rejected_total,
+      SUM(target_fasih_total) AS target_fasih_total
+    FROM summary_cache
+    WHERE upload_id = ?
+    GROUP BY korlap
     ORDER BY selesai ASC
   `).all(uploadId);
 }
@@ -279,23 +345,23 @@ function getKorlapStats(uploadId) {
 function getPmlStats(uploadId) {
   return getDb().prepare(`
     SELECT 
-      m.pml,
-      m.korlap,
-      COUNT(DISTINCT m.pcl) AS jumlah_pcl,
-      COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
-      SUM(m.muatan) AS total_muatan,
-      SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_selesai,
-      SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
-      SUM(COALESCE(p.draft, 0)) AS draft_total,
-      SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
-      SUM(COALESCE(p.approved, 0)) AS approved_total,
-      SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.pml, m.korlap
+      pml,
+      korlap,
+      COUNT(DISTINCT pcl) AS jumlah_pcl,
+      SUM(total_sls) AS total_subsls,
+      SUM(selesai) AS selesai,
+      SUM(total_muatan) AS total_muatan,
+      SUM(muatan_selesai) AS muatan_selesai,
+      SUM(usaha_total) AS usaha_total,
+      SUM(keluarga_total) AS keluarga_total,
+      SUM(draft_total) AS draft_total,
+      SUM(submitted_total) AS submitted_total,
+      SUM(approved_total) AS approved_total,
+      SUM(rejected_total) AS rejected_total,
+      SUM(target_fasih_total) AS target_fasih_total
+    FROM summary_cache
+    WHERE upload_id = ?
+    GROUP BY pml, korlap
     ORDER BY selesai ASC
   `).all(uploadId);
 }
@@ -304,24 +370,24 @@ function getPmlStats(uploadId) {
 function getPclStats(uploadId) {
   return getDb().prepare(`
     SELECT 
-      m.pcl,
-      m.pml,
-      m.korlap,
-      m.kecamatan,
-      COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
-      SUM(m.muatan) AS total_muatan,
-      SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_selesai,
-      SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
-      SUM(COALESCE(p.draft, 0)) AS draft_total,
-      SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
-      SUM(COALESCE(p.approved, 0)) AS approved_total,
-      SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
+      pcl,
+      pml,
+      korlap,
+      kecamatan,
+      SUM(total_sls) AS total_subsls,
+      SUM(selesai) AS selesai,
+      SUM(total_muatan) AS total_muatan,
+      SUM(muatan_selesai) AS muatan_selesai,
+      SUM(usaha_total) AS usaha_total,
+      SUM(keluarga_total) AS keluarga_total,
+      SUM(draft_total) AS draft_total,
+      SUM(submitted_total) AS submitted_total,
+      SUM(approved_total) AS approved_total,
+      SUM(rejected_total) AS rejected_total,
+      SUM(target_fasih_total) AS target_fasih_total
+    FROM summary_cache
+    WHERE upload_id = ?
+    GROUP BY pcl, pml, korlap, kecamatan
     ORDER BY selesai ASC
   `).all(uploadId);
 }
@@ -332,16 +398,15 @@ function getTrenHarian() {
     SELECT 
       u.tanggal,
       u.filename,
-      COUNT(DISTINCT CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN p.kode ELSE NULL END) AS subsls_selesai,
-      SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
-      SUM(COALESCE(p.draft, 0)) AS draft_total,
-      SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
-      SUM(COALESCE(p.approved, 0)) AS approved_total,
-      SUM(COALESCE(p.rejected, 0)) AS rejected_total
+      SUM(COALESCE(s.selesai, 0)) AS subsls_selesai,
+      SUM(COALESCE(s.usaha_total, 0)) AS usaha_total,
+      SUM(COALESCE(s.keluarga_total, 0)) AS keluarga_total,
+      SUM(COALESCE(s.draft_total, 0)) AS draft_total,
+      SUM(COALESCE(s.submitted_total, 0)) AS submitted_total,
+      SUM(COALESCE(s.approved_total, 0)) AS approved_total,
+      SUM(COALESCE(s.rejected_total, 0)) AS rejected_total
     FROM uploads u
-    LEFT JOIN progres p ON p.upload_id = u.id
-    LEFT JOIN subsls_master m ON p.kode = m.kode
+    LEFT JOIN summary_cache s ON s.upload_id = u.id
     GROUP BY u.id
     ORDER BY u.tanggal ASC
   `).all();
@@ -351,31 +416,16 @@ function getTrenHarian() {
 function getOverviewSummary(uploadId) {
   if (!uploadId) return null;
   const total = getDb().prepare('SELECT COUNT(*) as n FROM subsls_master').get().n;
-  const selesai = getDb().prepare(`
-    SELECT COUNT(DISTINCT p.kode) as n 
-    FROM progres p
-    JOIN subsls_master m ON p.kode = m.kode
-    WHERE p.upload_id = ? AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih
-  `).get(uploadId).n;
+  const target_awal_total = getDb().prepare('SELECT SUM(target_fasih) AS n FROM subsls_master').get().n || 0;
   const muatan_total = getDb().prepare('SELECT SUM(muatan) as n FROM subsls_master').get().n || 0;
-  const muatan_selesai = getDb().prepare(`
-    SELECT SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) as n FROM progres p WHERE p.upload_id = ?
-  `).get(uploadId).n || 0;
-
-  const target_awal_total = getDb().prepare(`
-    SELECT SUM(target_fasih) AS n FROM subsls_master
-  `).get().n || 0;
-
-  const target_fasih_total = getDb().prepare(`
-    SELECT SUM(COALESCE(m.target_fasih, 0)) AS n
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-  `).get(uploadId).n || 0;
 
   const stats = getDb().prepare(`
     SELECT 
-      SUM(usaha_ditemukan + usaha_baru) AS usaha_total,
-      SUM(ditemukan + keluarga_baru) AS keluarga_total,
+      SUM(selesai) AS selesai,
+      SUM(muatan_selesai) AS muatan_selesai,
+      SUM(target_fasih_total) AS target_fasih_total,
+      SUM(usaha_total) AS usaha_total,
+      SUM(keluarga_total) AS keluarga_total,
       SUM(usaha_tidak_ditemukan) AS usaha_tidak_ditemukan,
       SUM(tidak_ditemukan) AS keluarga_tidak_ditemukan,
       SUM(usaha_baru) AS usaha_baru,
@@ -390,14 +440,27 @@ function getOverviewSummary(uploadId) {
       SUM(rumah_susun) AS rumah_susun,
       SUM(apartemen) AS apartemen,
       SUM(lainnya) AS lainnya,
-      SUM(draft) AS draft_total,
-      SUM(submitted_by_pcl) AS submitted_total,
-      SUM(approved) AS approved_total,
-      SUM(rejected) AS rejected_total
-    FROM progres WHERE upload_id = ?
+      SUM(draft_total) AS draft_total,
+      SUM(submitted_total) AS submitted_total,
+      SUM(approved_total) AS approved_total,
+      SUM(rejected_total) AS rejected_total
+    FROM summary_cache WHERE upload_id = ?
   `).get(uploadId);
 
-  return { total, selesai, belum: total - selesai, muatan_total, muatan_selesai, target_awal_total, target_fasih_total, ...stats };
+  const selesai = stats.selesai || 0;
+  const muatan_selesai = stats.muatan_selesai || 0;
+  const target_fasih_total = stats.target_fasih_total || 0;
+
+  return { 
+    total, 
+    selesai, 
+    belum: total - selesai, 
+    muatan_total, 
+    muatan_selesai, 
+    target_awal_total, 
+    target_fasih_total, 
+    ...stats 
+  };
 }
 
 // Early warning: PCL dengan 0 progres
@@ -710,8 +773,8 @@ function initSettings() {
     'openai_model': 'gpt-5.5',
     'openai_models_list': 'gpt-5.5, gpt-4o',
     'openrouter_api_key': '',
-    'openrouter_model': 'meta-llama/llama-3.3-70b-instruct:free',
-    'openrouter_models_list': 'meta-llama/llama-3.3-70b-instruct:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free, deepseek/deepseek-chat, qwen/qwen-2.5-72b-instruct, meta-llama/llama-3.1-405b-instruct, moonshotai/moonshot-v1-8k, moonshotai/moonshot-v1-32k, moonshotai/moonshot-v1-128k',
+    'openrouter_model': 'openrouter/free',
+    'openrouter_models_list': 'openrouter/free, openrouter/owl-alpha, meta-llama/llama-3.3-70b-instruct:free, nvidia/nemotron-3-ultra-550b-a55b:free',
     'chatbot_smart_switch': '1',
     'overview_fasih': '1',
     'overview_muatan': '1',
@@ -724,6 +787,16 @@ function initSettings() {
   const insert = getDb().prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
   for (const [k, v] of Object.entries(defaults)) {
     insert.run(k, v);
+  }
+
+  // Force update openrouter_models_list to new set of models
+  const openrouterModelsStr = 'openrouter/free, openrouter/owl-alpha, meta-llama/llama-3.3-70b-instruct:free, nvidia/nemotron-3-ultra-550b-a55b:free';
+  getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run(openrouterModelsStr, 'openrouter_models_list');
+
+  // If the current active model is not in the new list, reset it to openrouter/free
+  const currentModelRow = getDb().prepare('SELECT value FROM settings WHERE key = ?').get('openrouter_model');
+  if (!currentModelRow || !openrouterModelsStr.includes(currentModelRow.value) || currentModelRow.value.includes('owl-alpha:free')) {
+    getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run('openrouter/free', 'openrouter_model');
   }
 
   const geminiModel = getDb().prepare('SELECT value FROM settings WHERE key = ?').get('gemini_model');
@@ -754,13 +827,17 @@ function rebuildSummaryCache(uploadId) {
   
   db.prepare(`
     INSERT INTO summary_cache (
-      upload_id, kecamatan, korlap, pml, pcl,
+      upload_id, kecamatan, desa, korlap, pml, pcl,
       total_sls, selesai, total_muatan, muatan_selesai,
-      usaha_total, keluarga_total, draft_total, submitted_total, approved_total, rejected_total, target_fasih_total
+      usaha_total, keluarga_total, draft_total, submitted_total, approved_total, rejected_total, target_fasih_total,
+      usaha_ditemukan, usaha_baru, ditemukan, keluarga_baru,
+      usaha_tidak_ditemukan, tidak_ditemukan, usaha_tutup, meninggal, usaha_ganda,
+      rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya
     )
     SELECT 
       ? as upload_id,
       m.kecamatan,
+      m.desa,
       m.korlap,
       m.pml,
       m.pcl,
@@ -777,10 +854,24 @@ function rebuildSummaryCache(uploadId) {
       SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
                THEN 0 
                ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-          END) AS target_fasih_total
+          END) AS target_fasih_total,
+      SUM(COALESCE(p.usaha_ditemukan, 0)) AS usaha_ditemukan,
+      SUM(COALESCE(p.usaha_baru, 0)) AS usaha_baru,
+      SUM(COALESCE(p.ditemukan, 0)) AS ditemukan,
+      SUM(COALESCE(p.keluarga_baru, 0)) AS keluarga_baru,
+      SUM(COALESCE(p.usaha_tidak_ditemukan, 0)) AS usaha_tidak_ditemukan,
+      SUM(COALESCE(p.tidak_ditemukan, 0)) AS tidak_ditemukan,
+      SUM(COALESCE(p.usaha_tutup, 0)) AS usaha_tutup,
+      SUM(COALESCE(p.meninggal, 0)) AS meninggal,
+      SUM(COALESCE(p.usaha_ganda, 0)) AS usaha_ganda,
+      SUM(COALESCE(p.rumah_tunggal, 0)) AS rumah_tunggal,
+      SUM(COALESCE(p.rumah_deret, 0)) AS rumah_deret,
+      SUM(COALESCE(p.rumah_susun, 0)) AS rumah_susun,
+      SUM(COALESCE(p.apartemen, 0)) AS apartemen,
+      SUM(COALESCE(p.lainnya, 0)) AS lainnya
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
+    GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan, m.desa
   `).run(uploadId, uploadId);
 }
 

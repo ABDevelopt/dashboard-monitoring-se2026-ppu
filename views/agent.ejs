@@ -622,7 +622,7 @@
   }
 
   // Synchronous Markdown Renderer for instant, non-blocking UI updates
-  function renderMarkdown(text) {
+  function renderMarkdownBlocks(text) {
     const lines = String(text || '').split(/\r?\n/);
     const blocks = [];
     let i = 0;
@@ -722,7 +722,12 @@
       }
     }
 
-    return blocks.join('');
+    return blocks;
+  }
+
+  // Synchronous Markdown Renderer for instant, non-blocking UI updates
+  function renderMarkdown(text) {
+    return renderMarkdownBlocks(text).join('');
   }
 
   const providerKeyStatus = {
@@ -852,26 +857,60 @@
 
   // Synchronous append message helper to prevent thread paint delays
   function appendMessageAsync(sender, replyText) {
-    const container = document.getElementById('chatMessages');
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `message ${sender}`;
+    return new Promise((resolve) => {
+      const container = document.getElementById('chatMessages');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${sender}`;
 
-    const avatar = document.createElement('div');
-    avatar.className = 'message-avatar';
-    avatar.innerHTML = sender === 'user' ? '<i class="bi bi-person"></i>' : '<i class="bi bi-robot"></i>';
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.innerHTML = sender === 'user' ? '<i class="bi bi-person"></i>' : '<i class="bi bi-robot"></i>';
 
-    const bubble = document.createElement('div');
-    bubble.className = 'message-bubble';
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
 
-    const html = renderMarkdown(replyText);
-    bubble.innerHTML = html;
+      msgDiv.appendChild(avatar);
+      msgDiv.appendChild(bubble);
+      container.appendChild(msgDiv);
+      container.scrollTop = container.scrollHeight;
 
-    msgDiv.appendChild(avatar);
-    msgDiv.appendChild(bubble);
-    container.appendChild(msgDiv);
-    container.scrollTop = container.scrollHeight;
+      if (sender === 'user') {
+        bubble.innerHTML = renderMarkdown(replyText);
+        resolve(msgDiv);
+        return;
+      }
 
-    return msgDiv;
+      // Pre-render blocks to avoid repeating O(N^2) Markdown parsing in animation frames
+      const blocksHtml = renderMarkdownBlocks(replyText);
+      let blockIndex = 0;
+
+      // Append blocks progressively with a smooth transition, completely lag-free
+      function appendNextBlock() {
+        if (blockIndex < blocksHtml.length) {
+          const block = document.createElement('div');
+          block.style.opacity = '0';
+          block.style.transition = 'opacity 0.15s ease-out';
+          block.innerHTML = blocksHtml[blockIndex];
+          
+          bubble.appendChild(block);
+          
+          // Trigger reflow
+          block.offsetHeight;
+          block.style.opacity = '1';
+          
+          container.scrollTop = container.scrollHeight;
+          blockIndex++;
+          
+          // Dynamic delay (shorter if there are many blocks to complete in reasonable time)
+          const delay = Math.max(30, Math.min(100, Math.ceil(800 / blocksHtml.length)));
+          setTimeout(appendNextBlock, delay);
+        } else {
+          resolve(msgDiv);
+        }
+      }
+
+      appendNextBlock();
+    });
   }
 
   function showTypingLoader() {
@@ -886,10 +925,15 @@
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
     bubble.innerHTML = `
-      <div class="typing-loader">
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
+      <div class="typing-loader-container" style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 4px 0;">
+          <div class="typing-loader" style="flex-shrink: 0;">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+          <span class="agent-step-text" style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500; opacity: 1; transition: opacity 0.3s ease; white-space: nowrap;">🔍 Menganalisis pertanyaan...</span>
+        </div>
       </div>
     `;
     
@@ -897,7 +941,45 @@
     loaderDiv.appendChild(bubble);
     container.appendChild(loaderDiv);
     container.scrollTop = container.scrollHeight;
+
+    const timers = [];
+    const steps = [
+      { delay: 3000, text: '⚙️ Menghubungkan ke basis data SQLite...' },
+      { delay: 8000, text: '📊 Mengambil data progres kabupaten...' },
+      { delay: 15000, text: '🧠 Melakukan penalaran & perbandingan data...' },
+      { delay: 25000, text: '📋 Memeriksa target alokasi & realisasi...' },
+      { delay: 35000, text: '🔍 Mencari potensi anomali & kualitas data...' },
+      { delay: 50000, text: '✍️ Memformat tabel laporan akhir...' }
+    ];
+    
+    steps.forEach(step => {
+      const t = setTimeout(() => {
+        const textEl = loaderDiv.querySelector('.agent-step-text');
+        if (textEl) {
+          textEl.style.opacity = '0';
+          setTimeout(() => {
+            textEl.textContent = step.text;
+            textEl.style.opacity = '1';
+          }, 300);
+        }
+      }, step.delay);
+      timers.push(t);
+    });
+
+    loaderDiv.cleanup = () => {
+      timers.forEach(t => clearTimeout(t));
+    };
+    
     return loaderDiv;
+  }
+
+  function removeLoader(loader) {
+    if (loader) {
+      if (typeof loader.cleanup === 'function') {
+        try { loader.cleanup(); } catch (e) {}
+      }
+      if (loader.parentElement) loader.remove();
+    }
   }
 
   // FIX #1 + #4 — handleChatSubmit dengan _isProcessing guard yang benar
@@ -949,7 +1031,7 @@
     const browserTimeout = setTimeout(() => {
       timeoutFired = true;
       controller.abort();
-      if (loader && loader.parentElement) loader.remove();
+      removeLoader(loader);
       appendMessage('agent', `<div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> <strong>Permintaan terlalu lama.</strong> Server sedang sibuk atau jaringan lambat. Coba lagi atau gunakan pertanyaan yang lebih spesifik.</div>`, true);
       clearAgentWaitIndicator();
       setUIFree(input, submitBtn);
@@ -973,7 +1055,7 @@
       // Jika timeout sudah tembak duluan, hentikan — UI sudah di-free oleh timeout handler
       if (timeoutFired) return;
 
-      if (loader && loader.parentElement) loader.remove();
+      removeLoader(loader);
 
       let data;
       try {
@@ -997,7 +1079,7 @@
       clearTimeout(browserTimeout);
       if (timeoutFired) return; // Sudah ditangani oleh timeout handler
 
-      if (loader && loader.parentElement) loader.remove();
+      removeLoader(loader);
 
       if (err.name === 'AbortError') {
         // AbortError karena timeout sudah ditangani di atas — ini tidak seharusnya tercapai
@@ -1008,7 +1090,7 @@
     } finally {
       clearTimeout(browserTimeout);
       // Hapus loader jika masih ada — bisa terjadi jika exception terlempar sebelum loader.remove() di try
-      if (loader && loader.parentElement) loader.remove();
+      removeLoader(loader);
       clearAgentWaitIndicator();
       // Bebaskan UI: panggil setUIFree SELALU kecuali timeout handler sudah menanganinya.
       // timeoutFired diset true HANYA di dalam setTimeout callback, jadi jika kita tiba

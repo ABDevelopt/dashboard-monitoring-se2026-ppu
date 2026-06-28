@@ -60,7 +60,7 @@ router.get('/', (req, res) => {
 
   const openrouterModels = settings.openrouter_models_list
     ? settings.openrouter_models_list.split(',').map(m => m.trim()).filter(Boolean)
-    : ['meta-llama/llama-3.3-70b-instruct:free', 'deepseek/deepseek-r1:free', 'qwen/qwen-2.5-coder-32b-instruct:free'];
+    : ['openrouter/free', 'openrouter/owl-alpha', 'meta-llama/llama-3.3-70b-instruct:free', 'nvidia/nemotron-3-ultra-550b-a55b:free'];
   if (settings.openrouter_model && !openrouterModels.includes(settings.openrouter_model)) {
     openrouterModels.push(settings.openrouter_model);
   }
@@ -72,7 +72,7 @@ router.get('/', (req, res) => {
     provider,
     selectedGeminiModel: settings.gemini_model || 'gemini-2.5-flash',
     selectedOpenAIModel: settings.openai_model || 'gpt-5.5',
-    selectedOpenRouterModel: settings.openrouter_model || 'meta-llama/llama-3.3-70b-instruct:free',
+    selectedOpenRouterModel: settings.openrouter_model || 'openrouter/free',
     geminiModels,
     openaiModels,
     openrouterModels,

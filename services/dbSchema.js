@@ -51,9 +51,10 @@ You have read-only access to a SQLite database with the following schema:
    - approved: INTEGER (FASIH document approved by PML - count of completed documents)
    - rejected: INTEGER (FASIH document rejected by PML - count of documents returned to PCL)
 
-4. Table: summary_cache (Stores pre-computed summarized progress data grouped by upload, kecamatan, korlap, pml, pcl)
+4. Table: summary_cache (Stores pre-computed summarized progress data grouped by upload, kecamatan, desa, korlap, pml, pcl)
    - upload_id: INTEGER REFERENCES uploads(id) ON DELETE CASCADE
    - kecamatan: TEXT (Kecamatan name)
+   - desa: TEXT (Desa name)
    - korlap: TEXT (Korlap name)
    - pml: TEXT (PML name)
    - pcl: TEXT (PCL name)
