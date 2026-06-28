@@ -37,6 +37,7 @@ app.use((req, res, next) => {
   res.locals.error = req.flash('error');
   res.locals.activePage = ''; // default value
   res.locals.appVersion = APP_VERSION;
+  res.locals.packageVersion = require('./package.json').version;
 
   // Inject upload info globally
   const latest = getLatestUpload();
