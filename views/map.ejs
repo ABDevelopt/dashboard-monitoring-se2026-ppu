@@ -273,18 +273,18 @@
           </div>
           
           <div id="legendDesa">
-            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Persentase Progres SLS Selesai:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span>100% Selesai</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span>75% - 99% Selesai</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #eab308;"></div><span>25% - 74% Selesai</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span>1% - 24% Selesai</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span>0% Selesai / Belum Ada Progres</span></div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Persentase Progres Capaian FASIH:</div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span>100% FASIH</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span>75% - 99% FASIH</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #eab308;"></div><span>25% - 74% FASIH</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span>1% - 24% FASIH</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span>0% FASIH / Belum Ada Progres</span></div>
           </div>
 
           <div id="legendSls" style="display: none;">
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Status SLS/SubSLS:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span>Selesai Pencacahan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span>Belum Selesai</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span>Target FASIH Tercapai</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span>Target FASIH Belum Tercapai</span></div>
           </div>
         </div>
 
@@ -380,7 +380,7 @@
         function getDesaColor(iddesa) {
           const stat = desaStats.find(s => s.iddesa === iddesa);
           if (!stat) return '#94a3b8'; // gray for no data
-          const pct = stat.total_muatan ? ( (stat.usaha_total + stat.keluarga_total) / stat.total_muatan ) * 100 : 0;
+          const pct = stat.target_fasih_total ? ( (stat.submitted_total + stat.approved_total + stat.rejected_total) / stat.target_fasih_total ) * 100 : 0;
           if (pct === 100) return '#10b981'; // Green
           if (pct >= 75) return '#0284c7';  // Blue
           if (pct >= 25) return '#eab308';  // Yellow
@@ -476,6 +476,14 @@
           const pct = totalMuatan ? ((usaha / totalMuatan) * 100).toFixed(2) : '0.00';
           const keluarga = stat ? stat.keluarga_total : 0;
 
+          // FASIH Capaian
+          const targetFasih = stat ? stat.target_fasih_total : 0;
+          const submitted = stat ? stat.submitted_total : 0;
+          const approved = stat ? stat.approved_total : 0;
+          const rejected = stat ? stat.rejected_total : 0;
+          const totalRealisasiFasih = submitted + approved + rejected;
+          const fasihPct = targetFasih ? ((totalRealisasiFasih / targetFasih) * 100).toFixed(2) : '0.00';
+
           sidebarStats.innerHTML = `
             <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--accent-blue);"><i class="bi bi-geo-alt-fill"></i> Desa/Kel. ${properties.nmdesa}</div>
             <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 12px;">Kecamatan ${properties.nmkec}</div>
@@ -485,22 +493,26 @@
               <span class="map-card-value">${total} SLS</span>
             </div>
             <div class="map-card-stat">
-              <span class="map-card-label">Selesai Pencacahan</span>
+              <span class="map-card-label">Target FASIH Tercapai</span>
               <span class="map-card-value">${selesai} SLS</span>
             </div>
             <div class="map-card-stat">
-              <span class="map-card-label">Progres Capaian</span>
-               <span class="map-card-value" style="color: ${parseFloat(pct) >= 100 ? 'var(--accent-green)' : 'inherit'}">${pct}%</span>
+              <span class="map-card-label">Progres Capaian FASIH</span>
+               <span class="map-card-value" style="color: ${parseFloat(fasihPct) >= 100 ? 'var(--accent-green)' : 'inherit'}">${fasihPct}% (${totalRealisasiFasih.toLocaleString('id-ID')} / ${targetFasih.toLocaleString('id-ID')})</span>
             </div>
-            <div class="map-card-stat">
+            <div class="map-card-stat muatan-col">
+              <span class="map-card-label">Progres Muatan</span>
+               <span class="map-card-value">${pct}%</span>
+            </div>
+            <div class="map-card-stat muatan-col">
               <span class="map-card-label">Muatan Target</span>
               <span class="map-card-value">${totalMuatan.toLocaleString('id-ID')}</span>
             </div>
-            <div class="map-card-stat">
+            <div class="map-card-stat muatan-col">
               <span class="map-card-label">Total Usaha Terdata</span>
               <span class="map-card-value">${usaha.toLocaleString('id-ID')}</span>
             </div>
-            <div class="map-card-stat">
+            <div class="map-card-stat muatan-col">
               <span class="map-card-label">Total Keluarga Terdata</span>
               <span class="map-card-value">${keluarga.toLocaleString('id-ID')}</span>
             </div>
@@ -541,6 +553,14 @@
           const pml = stat ? stat.pml : 'Belum Ditentukan';
           const korlap = stat ? stat.korlap : 'Belum Ditentukan';
 
+          const targetFasih = stat ? stat.target_fasih : 0;
+          const draft = stat ? stat.draft : 0;
+          const submitted = stat ? stat.submitted_by_pcl : 0;
+          const approved = stat ? stat.approved : 0;
+          const rejected = stat ? stat.rejected : 0;
+          const realisasiFasih = submitted + approved + rejected;
+          const fasihPct = targetFasih ? ((realisasiFasih / targetFasih) * 100).toFixed(2) : '0.00';
+
           sidebarStats.innerHTML = `
             <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--accent-blue);"><i class="bi bi-box-seam"></i> SLS: ${properties.nmsls}</div>
             <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 12px;">Desa ${properties.nmdesa}, Kec. ${properties.nmkec}</div>
@@ -550,8 +570,8 @@
               <span class="map-card-value" style="font-family: monospace; font-size: 11px;">${properties.kode}</span>
             </div>
             <div class="map-card-stat">
-              <span class="map-card-label">Status Pencacahan</span>
-              <span class="map-card-value">${isSelesai ? '<span class="badge badge-green btn-xs">Selesai</span>' : '<span class="badge badge-red btn-xs">Belum Selesai</span>'}</span>
+              <span class="map-card-label">Status Target FASIH</span>
+              <span class="map-card-value">${isSelesai ? '<span class="badge badge-green btn-xs">Tercapai</span>' : '<span class="badge badge-red btn-xs">Belum Tercapai</span>'}</span>
             </div>
             <div class="map-card-stat">
               <span class="map-card-label">Petugas PCL</span>
@@ -566,14 +586,26 @@
               <span class="map-card-value">${korlap}</span>
             </div>
             <div class="map-card-stat">
+              <span class="map-card-label">Target FASIH</span>
+              <span class="map-card-value">${targetFasih.toLocaleString('id-ID')}</span>
+            </div>
+            <div class="map-card-stat">
+              <span class="map-card-label">Realisasi FASIH</span>
+              <span class="map-card-value">${realisasiFasih.toLocaleString('id-ID')} (${fasihPct}%)</span>
+            </div>
+            <div class="map-card-stat">
+              <span class="map-card-label">Rincian FASIH</span>
+              <span class="map-card-value" style="font-size: 11px;">D: ${draft} | S: ${submitted} | A: ${approved} | R: ${rejected}</span>
+            </div>
+            <div class="map-card-stat muatan-col">
               <span class="map-card-label">Target Muatan</span>
               <span class="map-card-value">${muatan}</span>
             </div>
-            <div class="map-card-stat">
+            <div class="map-card-stat muatan-col">
               <span class="map-card-label">Usaha Terdata</span>
               <span class="map-card-value">${usaha.toLocaleString('id-ID')}</span>
             </div>
-            <div class="map-card-stat">
+            <div class="map-card-stat muatan-col">
               <span class="map-card-label">Keluarga Terdata</span>
               <span class="map-card-value">${keluarga.toLocaleString('id-ID')}</span>
             </div>
@@ -595,17 +627,24 @@
                   const stat = desaStats.find(s => s.iddesa === feature.properties.iddesa);
                   const total = stat ? stat.total_subsls : 0;
                   const selesai = stat ? stat.selesai : 0;
+                  const targetFasih = stat ? stat.target_fasih_total : 0;
+                  const submitted = stat ? stat.submitted_total : 0;
+                  const approved = stat ? stat.approved_total : 0;
+                  const rejected = stat ? stat.rejected_total : 0;
+                  const totalRealisasiFasih = submitted + approved + rejected;
+                  const fasihPct = targetFasih ? ((totalRealisasiFasih / targetFasih) * 100).toFixed(2) : '0.00';
                   const totalMuatan = stat ? stat.total_muatan : 0;
                   const usaha = stat ? stat.usaha_total : 0;
                   const pct = totalMuatan ? ((usaha / totalMuatan) * 100).toFixed(2) : '0.00';
                   
                   const popupHtml = `
-                    <div style="font-family: 'Inter', sans-serif; min-width: 160px;">
+                    <div style="font-family: 'Inter', sans-serif; min-width: 170px;">
                       <strong style="font-size: 13px; color: var(--text-primary);">Desa ${feature.properties.nmdesa}</strong><br>
                       <span style="font-size: 11px; color: var(--text-secondary);">Kec. ${feature.properties.nmkec}</span>
                       <table class="info-table">
-                        <tr><td class="label">Progres SLS</td><td class="value">${selesai} / ${total} SLS</td></tr>
-                        <tr><td class="label">Progres Muatan</td><td class="value">${pct}%</td></tr>
+                        <tr><td class="label">Target FASIH</td><td class="value">${selesai} / ${total} SLS</td></tr>
+                        <tr><td class="label">Progres FASIH</td><td class="value">${fasihPct}%</td></tr>
+                        <tr class="muatan-col"><td class="label">Progres Muatan</td><td class="value">${pct}%</td></tr>
                       </table>
                     </div>
                   `;
@@ -627,16 +666,24 @@
                   showSlsDetails(feature.properties);
                   
                   const stat = slsStats.find(s => s.kode === feature.properties.kode);
-                  const status = stat && stat.selesai === 1 ? 'Selesai' : 'Belum Selesai';
+                  const status = stat && stat.selesai === 1 ? 'Target Tercapai' : 'Belum Tercapai';
+                  const targetFasih = stat ? stat.target_fasih : 0;
+                  const draft = stat ? stat.draft : 0;
+                  const submitted = stat ? stat.submitted_by_pcl : 0;
+                  const approved = stat ? stat.approved : 0;
+                  const rejected = stat ? stat.rejected : 0;
+                  const realisasiFasih = submitted + approved + rejected;
+                  const fasihPct = targetFasih ? ((realisasiFasih / targetFasih) * 100).toFixed(2) : '0.00';
                   
                   const popupHtml = `
-                    <div style="font-family: 'Inter', sans-serif; min-width: 180px;">
+                    <div style="font-family: 'Inter', sans-serif; min-width: 190px;">
                       <strong style="font-size: 13px; color: var(--text-primary);">${feature.properties.nmsls}</strong><br>
                       <span style="font-size: 11px; color: var(--text-secondary);">${feature.properties.nmdesa}, ${feature.properties.nmkec}</span>
                       <table class="info-table">
                         <tr><td class="label">PCL</td><td class="value">${stat ? stat.pcl : '-'}</td></tr>
-                        <tr><td class="label">Status</td><td class="value" style="color: ${status === 'Selesai' ? 'var(--accent-green)' : 'var(--accent-red)'}">${status}</td></tr>
-                        <tr><td class="label">Usaha</td><td class="value">${stat ? stat.usaha_total : 0}</td></tr>
+                        <tr><td class="label">Target FASIH</td><td class="value" style="color: ${status === 'Target Tercapai' ? 'var(--accent-green)' : 'var(--accent-red)'}">${status}</td></tr>
+                        <tr><td class="label">FASIH %</td><td class="value">${fasihPct}% (${realisasiFasih}/${targetFasih})</td></tr>
+                        <tr class="muatan-col"><td class="label">Usaha</td><td class="value">${stat ? stat.usaha_total : 0}</td></tr>
                       </table>
                     </div>
                   `;
