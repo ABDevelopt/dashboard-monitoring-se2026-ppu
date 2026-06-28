@@ -246,6 +246,8 @@ router.get('/download-status/:id', (req, res) => {
     req.flash('error', 'File status fisik tidak ditemukan di server.');
     res.redirect('/admin/upload');
   }
+});
+
 // POST: Import local workspace file
 router.post('/import-local', (req, res) => {
   const { filename, tanggal, type } = req.body;
