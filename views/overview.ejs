@@ -20,8 +20,13 @@
       <a href="/upload" class="btn btn-primary"><i class="bi bi-lightning-charge-fill"></i> Upload Data Rekap Pertama</a>
     </div>
   <% } else { %>
-    
-
+    <!-- DISCLAIMER DATA SCRAPING -->
+    <div style="background: rgba(59, 130, 246, 0.07); border-left: 4px solid var(--accent-blue); padding: 12px 16px; border-radius: 4px 8px 8px 4px; margin-top: 12px; margin-bottom: 4px; display: flex; align-items: flex-start; gap: 10px; border-top: 1px solid rgba(59, 130, 246, 0.1); border-right: 1px solid rgba(59, 130, 246, 0.1); border-bottom: 1px solid rgba(59, 130, 246, 0.1);">
+      <i class="bi bi-info-circle-fill" style="color: var(--accent-blue); font-size: 16px; margin-top: 1px; flex-shrink: 0;"></i>
+      <div style="font-size: 12px; line-height: 1.5; color: var(--text-primary);">
+        <strong>Info Pengambilan Data:</strong> Data berasal dari metode scraping website sehingga data yang terekam hanya yang tersimpan di server FASIH. Mungkin terdapat perbedaan sementara dengan data aktual di lapangan (aplikasi FASIH masing-masing petugas).
+      </div>
+    </div>
 
     <!-- PROGRES REALISASI UTAMA & ASSIGNMENT -->
     <% if (settings.overview_fasih === '1' || settings.overview_muatan === '1') { %>
