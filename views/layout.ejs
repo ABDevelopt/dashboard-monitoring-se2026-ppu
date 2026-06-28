@@ -62,107 +62,162 @@
   </div>
   <% } %>
 
+  <div class="sidebar-search" style="padding: 8px 16px; border-bottom: 1px solid var(--border);">
+    <div style="position: relative;">
+      <input type="text" id="sidebarMenuSearch" placeholder="Cari menu..." style="width: 100%; padding: 6px 10px 6px 28px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-subtle); color: var(--text-primary); transition: all 0.2s;">
+      <i class="bi bi-search" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-muted);"></i>
+    </div>
+  </div>
+
   <nav class="sidebar-nav">
-    <div class="nav-section">Utama</div>
-    <a href="/" class="nav-item <%= activePage === 'overview' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-house-door"></i></span> Overview
-    </a>
-    <% if (typeof settings !== 'undefined' && settings.page_map === '1') { %>
-    <a href="/map" class="nav-item <%= activePage === 'map' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-map"></i></span> Peta Progres
-    </a>
-    <% } %>
-    <% if (typeof settings !== 'undefined' && settings.page_aiagent === '1') { %>
-    <a href="/agent" class="nav-item <%= activePage === 'agent' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-robot"></i></span> Asisten AI Chat
-    </a>
-    <% } %>
+    <!-- Section 1: Utama -->
+    <div class="nav-section-wrapper" data-section="utama">
+      <div class="nav-section-header">
+        <span>Utama</span>
+        <i class="bi bi-chevron-down section-toggle"></i>
+      </div>
+      <div class="nav-section-content">
+        <a href="/" class="nav-item <%= activePage === 'overview' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-house-door"></i></span> Overview
+        </a>
+        <% if (typeof settings !== 'undefined' && settings.page_map === '1') { %>
+        <a href="/map" class="nav-item <%= activePage === 'map' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-map"></i></span> Peta Progres
+        </a>
+        <% } %>
+        <% if (typeof settings !== 'undefined' && settings.page_aiagent === '1') { %>
+        <a href="/agent" class="nav-item <%= activePage === 'agent' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-robot"></i></span> Asisten AI Chat
+        </a>
+        <% } %>
+      </div>
+    </div>
 
+    <!-- Section 2: Evaluasi & Kualitas -->
     <% if (typeof settings !== 'undefined' && (settings.page_earlywarning === '1' || settings.page_deteksianomali === '1')) { %>
-    <div class="nav-section">Evaluasi &amp; Kualitas</div>
-    <% if (settings.page_earlywarning === '1') { %>
-    <a href="/early-warning" class="nav-item <%= activePage === 'earlywarning' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-exclamation-octagon"></i></span> Early Warning
-    </a>
-    <% } %>
-    <% if (settings.page_deteksianomali === '1') { %>
-    <a href="/deteksi-anomali" class="nav-item <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-shield-exclamation"></i></span> Deteksi Awal Anomali
-    </a>
-    <% } %>
+    <div class="nav-section-wrapper" data-section="evaluasi">
+      <div class="nav-section-header">
+        <span>Evaluasi &amp; Kualitas</span>
+        <i class="bi bi-chevron-down section-toggle"></i>
+      </div>
+      <div class="nav-section-content">
+        <% if (settings.page_earlywarning === '1') { %>
+        <a href="/early-warning" class="nav-item <%= activePage === 'earlywarning' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-exclamation-octagon"></i></span> Early Warning
+        </a>
+        <% } %>
+        <% if (settings.page_deteksianomali === '1') { %>
+        <a href="/deteksi-anomali" class="nav-item <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-shield-exclamation"></i></span> Deteksi Awal Anomali
+        </a>
+        <% } %>
+      </div>
+    </div>
     <% } %>
 
+    <!-- Section 3: Analisis Kinerja -->
     <% if (typeof settings !== 'undefined' && (settings.page_leaderboard === '1' || settings.page_performatrendah === '1')) { %>
-    <div class="nav-section">Analisis Kinerja</div>
-    <% if (settings.page_leaderboard === '1') { %>
-    <a href="/leaderboard" class="nav-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-trophy"></i></span> Performa Terbaik
-    </a>
-    <% } %>
-    <% if (settings.page_performatrendah === '1') { %>
-    <a href="/performa-terendah" class="nav-item <%= activePage === 'performa-terendah' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-graph-down"></i></span> Performa Terendah
-    </a>
-    <% } %>
+    <div class="nav-section-wrapper" data-section="analisis">
+      <div class="nav-section-header">
+        <span>Analisis Kinerja</span>
+        <i class="bi bi-chevron-down section-toggle"></i>
+      </div>
+      <div class="nav-section-content">
+        <% if (settings.page_leaderboard === '1') { %>
+        <a href="/leaderboard" class="nav-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-trophy"></i></span> Performa Terbaik
+        </a>
+        <% } %>
+        <% if (settings.page_performatrendah === '1') { %>
+        <a href="/performa-terendah" class="nav-item <%= activePage === 'performa-terendah' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-graph-down"></i></span> Performa Terendah
+        </a>
+        <% } %>
+      </div>
+    </div>
     <% } %>
 
+    <!-- Section 4: Drilldown Wilayah -->
     <% if (typeof settings !== 'undefined' && (settings.page_kecamatan === '1' || settings.page_subsls === '1')) { %>
-    <div class="nav-section">Drilldown Wilayah</div>
-    <% if (settings.page_kecamatan === '1') { %>
-    <a href="/kecamatan" class="nav-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-geo-alt"></i></span> Per Kecamatan
-    </a>
-    <% } %>
-    <% if (settings.page_subsls === '1') { %>
-    <a href="/subsls" class="nav-item <%= activePage === 'subsls' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-box-seam"></i></span> Per SubSLS
-    </a>
-    <% } %>
-    <a href="/pbi" class="nav-item <%= activePage === 'pbi' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-heart-pulse"></i></span> Kawasan PBI
-    </a>
+    <div class="nav-section-wrapper" data-section="wilayah">
+      <div class="nav-section-header">
+        <span>Drilldown Wilayah</span>
+        <i class="bi bi-chevron-down section-toggle"></i>
+      </div>
+      <div class="nav-section-content">
+        <% if (settings.page_kecamatan === '1') { %>
+        <a href="/kecamatan" class="nav-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-geo-alt"></i></span> Per Kecamatan
+        </a>
+        <% } %>
+        <% if (settings.page_subsls === '1') { %>
+        <a href="/subsls" class="nav-item <%= activePage === 'subsls' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-box-seam"></i></span> Per SubSLS
+        </a>
+        <% } %>
+        <a href="/pbi" class="nav-item <%= activePage === 'pbi' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-heart-pulse"></i></span> Kawasan PBI
+        </a>
+      </div>
+    </div>
     <% } %>
 
+    <!-- Section 5: Drilldown Petugas -->
     <% if (typeof settings !== 'undefined' && (settings.page_korlap === '1' || settings.page_pml === '1' || settings.page_pcl === '1')) { %>
-    <div class="nav-section">Drilldown Petugas</div>
-    <% if (settings.page_korlap === '1') { %>
-    <a href="/korlap" class="nav-item <%= activePage === 'korlap' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-person-workspace"></i></span> Per Korlap
-    </a>
-    <% } %>
-    <% if (settings.page_pml === '1') { %>
-    <a href="/pml" class="nav-item <%= activePage === 'pml' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-clipboard2-data"></i></span> Per PML
-    </a>
-    <% } %>
-    <% if (settings.page_pcl === '1') { %>
-    <a href="/pcl" class="nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-person-gear"></i></span> Per PCL
-    </a>
-    <% } %>
+    <div class="nav-section-wrapper" data-section="petugas">
+      <div class="nav-section-header">
+        <span>Drilldown Petugas</span>
+        <i class="bi bi-chevron-down section-toggle"></i>
+      </div>
+      <div class="nav-section-content">
+        <% if (settings.page_korlap === '1') { %>
+        <a href="/korlap" class="nav-item <%= activePage === 'korlap' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-person-workspace"></i></span> Per Korlap
+        </a>
+        <% } %>
+        <% if (settings.page_pml === '1') { %>
+        <a href="/pml" class="nav-item <%= activePage === 'pml' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-clipboard2-data"></i></span> Per PML
+        </a>
+        <% } %>
+        <% if (settings.page_pcl === '1') { %>
+        <a href="/pcl" class="nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-person-gear"></i></span> Per PCL
+        </a>
+        <% } %>
+      </div>
+    </div>
     <% } %>
 
+    <!-- Section 6: Data & Utilitas -->
     <% if (typeof settings !== 'undefined' && (settings.page_export === '1' || (typeof isAdmin !== 'undefined' && isAdmin))) { %>
-    <div class="nav-section">Data &amp; Utilitas</div>
-    <% if (settings.page_export === '1') { %>
-    <a href="/subsls/export" class="nav-item">
-      <span class="nav-icon"><i class="bi bi-download"></i></span> Export CSV
-    </a>
-    <% } %>
-    <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-    <a href="/admin/upload" class="nav-item <%= activePage === 'upload' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-upload"></i></span> Upload Data
-    </a>
-    <a href="/admin/master" class="nav-item <%= activePage === 'master' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-database-fill-gear"></i></span> Kelola Master Data
-    </a>
-    <a href="/admin/settings" class="nav-item <%= activePage === 'settings' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-sliders"></i></span> Pengaturan Tampilan
-    </a>
-    <a href="/admin/settings/chatbot" class="nav-item <%= activePage === 'chatbot-settings' ? 'active' : '' %>">
-      <span class="nav-icon"><i class="bi bi-chat-left-dots-fill"></i></span> Pengaturan Chatbot AI
-    </a>
-    <% } %>
+    <div class="nav-section-wrapper" data-section="data">
+      <div class="nav-section-header">
+        <span>Data &amp; Utilitas</span>
+        <i class="bi bi-chevron-down section-toggle"></i>
+      </div>
+      <div class="nav-section-content">
+        <% if (settings.page_export === '1') { %>
+        <a href="/subsls/export" class="nav-item">
+          <span class="nav-icon"><i class="bi bi-download"></i></span> Export CSV
+        </a>
+        <% } %>
+        <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+        <a href="/admin/upload" class="nav-item <%= activePage === 'upload' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-upload"></i></span> Upload Data
+        </a>
+        <a href="/admin/master" class="nav-item <%= activePage === 'master' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-database-fill-gear"></i></span> Kelola Master Data
+        </a>
+        <a href="/admin/settings" class="nav-item <%= activePage === 'settings' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-sliders"></i></span> Pengaturan Tampilan
+        </a>
+        <a href="/admin/settings/chatbot" class="nav-item <%= activePage === 'chatbot-settings' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-chat-left-dots-fill"></i></span> Pengaturan Chatbot AI
+        </a>
+        <% } %>
+      </div>
+    </div>
     <% } %>
 
     <div class="nav-section">Sesi Pengguna</div>
@@ -294,6 +349,71 @@
 
       if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
       overlay.addEventListener('click', closeSidebar);
+    }
+
+    // ====== COLLAPSIBLE SIDEBAR SECTIONS JS ======
+    const wrappers = document.querySelectorAll('.nav-section-wrapper');
+    wrappers.forEach(wrapper => {
+      const header = wrapper.querySelector('.nav-section-header');
+      if (header) {
+        header.addEventListener('click', () => {
+          wrapper.classList.toggle('open');
+        });
+      }
+    });
+
+    // Expand section that has the active page on load
+    const activeItem = document.querySelector('.nav-item.active');
+    if (activeItem) {
+      const parentWrapper = activeItem.closest('.nav-section-wrapper');
+      if (parentWrapper) {
+        parentWrapper.classList.add('open', 'has-active');
+      }
+    } else {
+      const firstWrapper = document.querySelector('.nav-section-wrapper');
+      if (firstWrapper) {
+        firstWrapper.classList.add('open');
+      }
+    }
+
+    // ====== SIDEBAR MENU FILTER/SEARCH ======
+    const searchInput = document.getElementById('sidebarMenuSearch');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        
+        wrappers.forEach(wrapper => {
+          const items = wrapper.querySelectorAll('.nav-item');
+          let hasMatch = false;
+          
+          items.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            if (text.includes(query)) {
+              item.style.display = 'flex';
+              hasMatch = true;
+            } else {
+              item.style.display = 'none';
+            }
+          });
+          
+          if (query.length > 0) {
+            if (hasMatch) {
+              wrapper.style.display = 'block';
+              wrapper.classList.add('open');
+            } else {
+              wrapper.style.display = 'none';
+            }
+          } else {
+            wrapper.style.display = 'block';
+            if (wrapper.classList.contains('has-active')) {
+              wrapper.classList.add('open');
+            } else {
+              wrapper.classList.remove('open');
+            }
+            items.forEach(item => item.style.display = 'flex');
+          }
+        });
+      });
     }
 
     // Theme Toggle Logic
