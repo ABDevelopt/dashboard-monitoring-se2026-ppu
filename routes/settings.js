@@ -20,7 +20,8 @@ const generalSettingKeys = [
   'overview_tren_muatan',
   'overview_tren_fasih',
   'overview_kecamatan',
-  'overview_bangunan'
+  'overview_bangunan',
+  'show_progres_muatan'
 ];
 
 const chatbotSettingKeys = [

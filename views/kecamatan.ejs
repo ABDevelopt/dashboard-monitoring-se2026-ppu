@@ -72,7 +72,7 @@
                   <th rowspan="2">Nama Desa/Kelurahan</th>
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
                   <th colspan="6" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
-                  <th colspan="4" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
+                  <th colspan="4" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
                 </tr>
                 <tr>
                   <th class="text-right bg-purple-soft">Draft</th>
@@ -82,10 +82,10 @@
                   <th class="text-right bg-purple-soft">Target</th>
                   <th class="text-right bg-purple-soft">Progres %</th>
                   
-                  <th class="text-right bg-cyan-soft">Usaha Total</th>
-                  <th class="text-right bg-cyan-soft">Target Muatan</th>
-                  <th class="text-right bg-cyan-soft">Progres %</th>
-                  <th class="text-right bg-cyan-soft">Keluarga Total</th>
+                  <th class="text-right bg-cyan-soft muatan-col">Usaha Total</th>
+                  <th class="text-right bg-cyan-soft muatan-col">Target Muatan</th>
+                  <th class="text-right bg-cyan-soft muatan-col">Progres %</th>
+                  <th class="text-right bg-cyan-soft muatan-col">Keluarga Total</th>
                 </tr>
               </thead>
               <thead class="show-sm-table-header">
@@ -95,7 +95,7 @@
                   <!-- <th class="text-right">Total SLS</th> -->
                   <!-- <th class="text-right">Selesai</th> -->
                   <th class="text-right bg-purple-soft" data-column-idx="7">FASIH %</th>
-                  <th class="text-right bg-cyan-soft" data-column-idx="10">Muatan %</th>
+                  <th class="text-right bg-cyan-soft muatan-col" data-column-idx="10">Muatan %</th>
                 </tr>
               </thead>
               <tbody>
@@ -123,9 +123,9 @@
                       <% } %>
                     </td>
                     
-                    <td class="text-right fw-bold bg-cyan-soft hide-sm" data-sort="<%= d.usaha_total %>"><%= d.usaha_total.toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-cyan-soft hide-sm" data-sort="<%= d.total_muatan %>"><%= d.total_muatan.toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-cyan-soft" data-sort="<%= parseFloat(muatanPct) %>">
+                    <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= d.usaha_total %>"><%= d.usaha_total.toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= d.total_muatan %>"><%= d.total_muatan.toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>">
                       <% if (parseFloat(muatanPct) >= 100) { %>
                         <span class="badge badge-green">100%</span>
                       <% } else if (parseFloat(muatanPct) < activeTargetPct) { %>
@@ -134,7 +134,7 @@
                         <span class="badge badge-blue"><%= muatanPct %>%</span>
                       <% } %>
                     </td>
-                    <td class="text-right bg-cyan-soft hide-sm" data-sort="<%= d.keluarga_total %>"><%= d.keluarga_total.toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= d.keluarga_total %>"><%= d.keluarga_total.toLocaleString('id-ID') %></td>
                   </tr>
                 <% }) %>
               </tbody>

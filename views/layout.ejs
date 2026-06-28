@@ -34,6 +34,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+  <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') { %>
+    <style>
+      .muatan-col { display: none !important; }
+    </style>
+  <% } %>
 </head>
 <body>
 <script>

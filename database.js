@@ -781,7 +781,8 @@ function initSettings() {
     'overview_tren_muatan': '1',
     'overview_tren_fasih': '1',
     'overview_kecamatan': '1',
-    'overview_bangunan': '1'
+    'overview_bangunan': '1',
+    'show_progres_muatan': '1'
   };
 
   const insert = getDb().prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');

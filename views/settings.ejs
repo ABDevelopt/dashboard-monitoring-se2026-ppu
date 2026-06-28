@@ -359,6 +359,30 @@
 
 
 
+        <!-- GROUP 2: VISIBILITAS DATA GLOBAL -->
+        <div class="settings-group">
+          <div class="settings-group-title">
+            <i class="bi bi-eye-slash-fill"></i> Visibilitas Data Global
+          </div>
+
+          <!-- Tampilkan Data Progres Muatan -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: var(--accent-cyan);"><i class="bi bi-box-seam"></i></span>
+              <div style="min-width: 0;">
+                <label for="show_progres_muatan" class="switch-label-text">Tampilkan Data Progres Muatan</label>
+                <div class="switch-desc">Menampilkan atau menyembunyikan kolom dan grafik terkait Beban Muatan di seluruh halaman</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="show_progres_muatan" name="show_progres_muatan" value="1" <%= settings.show_progres_muatan === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+
+
         <!-- GROUP 3: KONTEN OVERVIEW -->
         <div class="settings-group">
           <div class="settings-group-title">

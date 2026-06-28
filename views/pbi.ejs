@@ -64,7 +64,7 @@
       </div>
 
       <!-- Card 2: Progress Beban Muatan -->
-      <div class="card" style="margin-bottom: 0;">
+      <div class="card muatan-col" style="margin-bottom: 0;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
             <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Progres Beban Muatan</div>
@@ -188,7 +188,7 @@
                 <th rowspan="2">Wilayah</th>
                 <th rowspan="2">Petugas (PCL/PML/Korlap)</th>
                 <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
-                <th colspan="4" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
+                <th colspan="4" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
               </tr>
               <tr>
                 <th class="text-right bg-purple-soft">Draft</th>
@@ -197,10 +197,10 @@
                 <th class="text-right bg-purple-soft">Rejected</th>
                 <th class="text-right bg-purple-soft">Target</th>
                 
-                <th class="text-right bg-cyan-soft">Usaha Total</th>
-                <th class="text-right bg-cyan-soft">Usaha Baru</th>
-                <th class="text-right bg-cyan-soft">Target Muatan</th>
-                <th class="text-right bg-cyan-soft">Keluarga Total</th>
+                <th class="text-right bg-cyan-soft muatan-col">Usaha Total</th>
+                <th class="text-right bg-cyan-soft muatan-col">Usaha Baru</th>
+                <th class="text-right bg-cyan-soft muatan-col">Target Muatan</th>
+                <th class="text-right bg-cyan-soft muatan-col">Keluarga Total</th>
               </tr>
             </thead>
             <tbody>
@@ -224,10 +224,10 @@
                   <td class="text-right bg-purple-soft" data-sort="<%= row.rejected %>" style="<%= row.rejected > 0 ? 'color: var(--accent-red); font-weight: bold;' : '' %>"><%= (row.rejected || 0).toLocaleString('id-ID') %></td>
                   <td class="text-right bg-purple-soft" data-sort="<%= row.target_fasih %>"><%= (row.target_fasih || 0).toLocaleString('id-ID') %></td>
                   
-                  <td class="text-right fw-bold bg-cyan-soft" data-sort="<%= row.usaha_total %>"><%= (row.usaha_total || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-cyan-soft text-green" data-sort="<%= row.usaha_baru %>">+<%= (row.usaha_baru || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-cyan-soft" data-sort="<%= row.muatan %>"><%= row.muatan.toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-cyan-soft" data-sort="<%= row.keluarga_total %>"><%= (row.keluarga_total || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold bg-cyan-soft muatan-col" data-sort="<%= row.usaha_total %>"><%= (row.usaha_total || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft text-green muatan-col" data-sort="<%= row.usaha_baru %>">+<%= (row.usaha_baru || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= row.muatan %>"><%= row.muatan.toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= row.keluarga_total %>"><%= (row.keluarga_total || 0).toLocaleString('id-ID') %></td>
                 </tr>
               <% }) %>
             </tbody>
