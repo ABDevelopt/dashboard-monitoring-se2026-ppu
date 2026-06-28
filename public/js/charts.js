@@ -57,22 +57,25 @@ function makeTableSortable(tableId) {
   let sortCol = -1, sortDir = 1;
 
   const headerToColumnIndex = new Map();
-  const occupied = [];
-  Array.from(table.querySelectorAll('thead tr')).forEach((row, rowIndex) => {
-    let colIndex = 0;
-    Array.from(row.cells).forEach((cell) => {
-      while (occupied[colIndex] && occupied[colIndex] > rowIndex) {
-        colIndex += 1;
-      }
-      const colspan = parseInt(cell.getAttribute('colspan') || '1', 10);
-      const rowspan = parseInt(cell.getAttribute('rowspan') || '1', 10);
-      headerToColumnIndex.set(cell, colIndex);
-      for (let offset = 0; offset < colspan; offset += 1) {
-        if (rowspan > 1) {
-          occupied[colIndex + offset] = rowIndex + rowspan;
+  
+  table.querySelectorAll('thead').forEach((thead) => {
+    const occupied = [];
+    Array.from(thead.querySelectorAll('tr')).forEach((row, rowIndex) => {
+      let colIndex = 0;
+      Array.from(row.cells).forEach((cell) => {
+        while (occupied[colIndex] && occupied[colIndex] > rowIndex) {
+          colIndex += 1;
         }
-      }
-      colIndex += colspan;
+        const colspan = parseInt(cell.getAttribute('colspan') || '1', 10);
+        const rowspan = parseInt(cell.getAttribute('rowspan') || '1', 10);
+        headerToColumnIndex.set(cell, colIndex);
+        for (let offset = 0; offset < colspan; offset += 1) {
+          if (rowspan > 1) {
+            occupied[colIndex + offset] = rowIndex + rowspan;
+          }
+        }
+        colIndex += colspan;
+      });
     });
   });
 
@@ -86,7 +89,8 @@ function makeTableSortable(tableId) {
     th.setAttribute('tabindex', '0');
     th.setAttribute('aria-sort', 'none');
 
-    const actualColIdx = headerToColumnIndex.get(th);
+    const customIdx = th.getAttribute('data-column-idx');
+    const actualColIdx = customIdx ? parseInt(customIdx, 10) : headerToColumnIndex.get(th);
     const getCellValue = (row) => {
       const cell = row.cells[actualColIdx];
       return cell?.dataset.sort ?? cell?.textContent.trim() ?? '';
