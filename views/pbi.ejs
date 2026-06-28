@@ -187,13 +187,15 @@
                 <th rowspan="2">Nama SLS</th>
                 <th rowspan="2">Wilayah</th>
                 <th rowspan="2">Petugas (PCL/PML/Korlap)</th>
-                <th colspan="3" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
                 <th colspan="4" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
               </tr>
               <tr>
+                <th class="text-right bg-purple-soft">Draft</th>
+                <th class="text-right bg-purple-soft">Submitted</th>
                 <th class="text-right bg-purple-soft">Approved</th>
+                <th class="text-right bg-purple-soft">Rejected</th>
                 <th class="text-right bg-purple-soft">Target</th>
-                <th class="text-center bg-purple-soft">Detail Status (D/S/A/R)</th>
                 
                 <th class="text-right bg-cyan-soft">Usaha Total</th>
                 <th class="text-right bg-cyan-soft">Usaha Baru</th>
@@ -216,11 +218,11 @@
                     <div style="font-size: 11px; color: var(--text-muted);" class="hide-md">PML: <%= row.pml %> · Krl: <%= row.korlap %></div>
                   </td>
                   
+                  <td class="text-right bg-purple-soft" data-sort="<%= row.draft %>"><%= (row.draft || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-purple-soft" data-sort="<%= row.submitted_by_pcl %>"><%= (row.submitted_by_pcl || 0).toLocaleString('id-ID') %></td>
                   <td class="text-right bg-purple-soft fw-bold" data-sort="<%= row.approved %>"><%= (row.approved || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-purple-soft" data-sort="<%= row.rejected %>" style="<%= row.rejected > 0 ? 'color: var(--accent-red); font-weight: bold;' : '' %>"><%= (row.rejected || 0).toLocaleString('id-ID') %></td>
                   <td class="text-right bg-purple-soft" data-sort="<%= row.target_fasih %>"><%= (row.target_fasih || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-center bg-purple-soft" style="font-size: 10px;" data-sort="<%= row.draft + row.submitted_by_pcl + row.approved + row.rejected %>">
-                    D:<%= row.draft %> · S:<%= row.submitted_by_pcl %> · A:<%= row.approved %> · R:<span class="text-red fw-bold"><%= row.rejected %></span>
-                  </td>
                   
                   <td class="text-right fw-bold bg-cyan-soft" data-sort="<%= row.usaha_total %>"><%= (row.usaha_total || 0).toLocaleString('id-ID') %></td>
                   <td class="text-right bg-cyan-soft text-green" data-sort="<%= row.usaha_baru %>">+<%= (row.usaha_baru || 0).toLocaleString('id-ID') %></td>
