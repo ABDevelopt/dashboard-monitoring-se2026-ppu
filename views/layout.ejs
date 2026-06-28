@@ -155,12 +155,25 @@
           <span class="nav-icon"><i class="bi bi-box-seam"></i></span> Per SubSLS
         </a>
         <% } %>
-        <a href="/pbi" class="nav-item <%= activePage === 'pbi' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-heart-pulse"></i></span> Kawasan PBI
-        </a>
       </div>
     </div>
     <% } %>
+
+    <!-- Section: Pendataan Khusus -->
+    <div class="nav-section-wrapper" data-section="khusus">
+      <div class="nav-section-header">
+        <span>Pendataan Khusus</span>
+        <i class="bi bi-chevron-down section-toggle"></i>
+      </div>
+      <div class="nav-section-content">
+        <a href="/kipp" class="nav-item <%= activePage === 'kipp' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-building"></i></span> Pendataan Wilayah KIPP
+        </a>
+        <a href="/pbi" class="nav-item <%= activePage === 'pbi' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-heart-pulse"></i></span> Pendataan PBI
+        </a>
+      </div>
+    </div>
 
     <!-- Section 5: Drilldown Petugas -->
     <% if (typeof settings !== 'undefined' && (settings.page_korlap === '1' || settings.page_pml === '1' || settings.page_pcl === '1')) { %>
