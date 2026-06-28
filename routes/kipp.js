@@ -49,7 +49,7 @@ router.get('/', (req, res) => {
              THEN 0 
              ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
         END AS target_fasih,
-        COALESCE(p.sudah_diisi, 0) AS sudah_diisi,
+        CASE WHEN p.kode IS NOT NULL AND m.target_fasih > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END AS sudah_diisi,
         COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
         COALESCE(p.usaha_ditemukan, 0) AS usaha_ditemukan,
         COALESCE(p.usaha_baru, 0) AS usaha_baru,
