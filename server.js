@@ -59,6 +59,7 @@ const routeSettingsMap = {
   '/performa-terendah': 'page_performatrendah',
   '/kecamatan': 'page_kecamatan',
   '/subsls': 'page_subsls',
+  '/pbi': 'page_subsls',
   '/subsls/export': 'page_export',
   '/korlap': 'page_korlap',
   '/pml': 'page_pml',
@@ -104,6 +105,7 @@ app.use('/korlap', require('./routes/korlap'));
 app.use('/pml', require('./routes/pml'));
 app.use('/pcl', require('./routes/pcl'));
 app.use('/subsls', require('./routes/subsls'));
+app.use('/pbi', require('./routes/pbi'));
 app.use('/early-warning', require('./routes/earlywarning'));
 app.use('/leaderboard', require('./routes/leaderboard'));
 app.use('/performa-terendah', require('./routes/performa-terendah'));

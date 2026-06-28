@@ -1,0 +1,289 @@
+<div class="fade-in">
+  <% if (!uploadId) { %>
+    <div class="card empty-state text-center">
+      <div class="empty-state-icon"><i class="bi bi-bar-chart-steps"></i></div>
+      <div class="empty-state-title">Belum Ada Data Terupload</div>
+      <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/admin/upload">Upload Data</a>.</div>
+    </div>
+  <% } else { %>
+    <div id="ajax-container">
+    
+    <% 
+      let totalTargetFasih = data.reduce((sum, row) => sum + (row.target_fasih || 0), 0);
+      let totalApprovedFasih = data.reduce((sum, row) => sum + (row.approved || 0), 0);
+      let totalSubmittedFasih = data.reduce((sum, row) => sum + (row.submitted_by_pcl || 0), 0);
+      let totalDraftFasih = data.reduce((sum, row) => sum + (row.draft || 0), 0);
+      let totalRejectedFasih = data.reduce((sum, row) => sum + (row.rejected || 0), 0);
+      let totalRealisasiFasih = totalApprovedFasih + totalSubmittedFasih + totalRejectedFasih;
+      let fasihPct = totalTargetFasih ? ((totalRealisasiFasih / totalTargetFasih) * 100).toFixed(2) : '0.00';
+      
+      let totalMuatan = data.reduce((sum, row) => sum + (row.muatan || 0), 0);
+      let totalUsaha = data.reduce((sum, row) => sum + (row.usaha_total || 0), 0);
+      let totalKeluarga = data.reduce((sum, row) => sum + (row.keluarga_total || 0), 0);
+      let totalRealisasiMuatan = totalUsaha + totalKeluarga;
+      let muatanPct = totalMuatan ? ((totalRealisasiMuatan / totalMuatan) * 100).toFixed(2) : '0.00';
+    %>
+
+    <!-- PBI MONITORING HEADER STATS -->
+    <div class="grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 20px;">
+      <!-- Card 1: Progress FASIH -->
+      <div class="card" style="margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Progres Kinerja FASIH</div>
+            <div style="font-size: 24px; font-weight: 700; color: var(--accent-purple); margin: 4px 0;"><%= fasihPct %>%</div>
+            <div style="font-size: 11px; color: var(--text-secondary);">
+              Realisasi: <strong><%= totalRealisasiFasih.toLocaleString('id-ID') %></strong> / <%= totalTargetFasih.toLocaleString('id-ID') %> dok
+            </div>
+          </div>
+          <div style="font-size: 32px; color: var(--accent-purple); opacity: 0.8;"><i class="bi bi-heart-pulse"></i></div>
+        </div>
+        <div style="margin-top: 12px; font-size: 11px; display: flex; justify-content: space-between; color: var(--text-muted); background: var(--bg-subtle); padding: 6px; border-radius: 4px;">
+          <span>Draft: <%= totalDraftFasih %></span>
+          <span>Submitted: <%= totalSubmittedFasih %></span>
+          <span>Approved: <%= totalApprovedFasih %></span>
+        </div>
+      </div>
+
+      <!-- Card 2: Progress Beban Muatan -->
+      <div class="card" style="margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Progres Beban Muatan</div>
+            <div style="font-size: 24px; font-weight: 700; color: var(--accent-cyan); margin: 4px 0;"><%= muatanPct %>%</div>
+            <div style="font-size: 11px; color: var(--text-secondary);">
+              Realisasi: <strong><%= totalRealisasiMuatan.toLocaleString('id-ID') %></strong> / <%= totalMuatan.toLocaleString('id-ID') %> usaha
+            </div>
+          </div>
+          <div style="font-size: 32px; color: var(--accent-cyan); opacity: 0.8;"><i class="bi bi-bar-chart-steps"></i></div>
+        </div>
+        <div style="margin-top: 12px; font-size: 11px; display: flex; justify-content: space-between; color: var(--text-muted); background: var(--bg-subtle); padding: 6px; border-radius: 4px;">
+          <span>Usaha: <%= totalUsaha %></span>
+          <span>Keluarga: <%= totalKeluarga %></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="card">
+      <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
+        <div class="card-title"><i class="bi bi-search"></i> Filter Kawasan PBI</div>
+        <a href="/pbi" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
+      </div>
+      
+      <form action="/pbi" method="GET" id="filterForm">
+        <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
+          
+          <div>
+            <label for="filterKec" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
+            <select id="filterKec" name="kec" style="width:100%;">
+              <option value="">-- Semua Kecamatan --</option>
+              <% kecList.forEach(k => { %>
+                <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterDesa" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Desa/Kelurahan</label>
+            <select id="filterDesa" name="desa" style="width:100%;" <%= !filterKec ? 'disabled' : '' %>>
+              <option value="">-- Semua Desa --</option>
+              <% desaList.forEach(d => { %>
+                <option value="<%= d.desa %>" <%= filterDesa === d.desa ? 'selected' : '' %>><%= d.desa %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterKorlap" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
+            <select id="filterKorlap" name="korlap" style="width:100%;">
+              <option value="">-- Semua Korlap --</option>
+              <% korlapList.forEach(k => { %>
+                <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterPml" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
+            <select id="filterPml" name="pml" style="width:100%;">
+              <option value="">-- Semua PML --</option>
+              <% pmlList.forEach(p => { %>
+                <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterPcl" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PCL (Pencacah)</label>
+            <select id="filterPcl" name="pcl" style="width:100%;">
+              <option value="">-- Semua PCL --</option>
+              <% pclList.forEach(p => { %>
+                <option value="<%= p.pcl %>" <%= filterPcl === p.pcl ? 'selected' : '' %>><%= p.pcl %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterStatus" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Status Progres</label>
+            <select id="filterStatus" name="status" style="width:100%;">
+              <option value="">-- Semua Status --</option>
+              <option value="selesai" <%= filterStatus === 'selesai' ? 'selected' : '' %>>Selesai</option>
+              <option value="belum" <%= filterStatus === 'belum' ? 'selected' : '' %>>Belum Selesai</option>
+            </select>
+          </div>
+
+        </div>
+      </form>
+    </div>
+
+    <!-- MAIN DATA TABLE -->
+    <div class="card mt-4" id="subslsTableContainer">
+      <div class="card-header">
+        <div class="card-title">
+          <span><i class="bi bi-box-seam"></i> Rincian SubSLS di Kawasan PBI</span>
+        </div>
+        <div>
+          <span style="font-size:12px; color:var(--text-secondary);">
+            Menampilkan <%= data.length %> SubSLS PBI
+          </span>
+        </div>
+      </div>
+
+      <div class="search-wrap mb-4" style="max-width: 300px;">
+        <input type="search" id="localSearch" placeholder="Cari di halaman ini..." aria-label="Cari SLS di halaman ini">
+      </div>
+
+      <% if (data && data.length > 0) { %>
+        <div class="table-wrap" style="max-height: 800px; overflow-y: auto;">
+          <table id="subslsTable">
+            <thead>
+              <tr>
+                <th rowspan="2" class="text-center" style="font-weight: 600; width: 40px;">No</th>
+                <th rowspan="2" class="hide-md">Kode SLS</th>
+                <th rowspan="2">Nama SLS</th>
+                <th rowspan="2">Wilayah</th>
+                <th rowspan="2">Petugas (PCL/PML/Korlap)</th>
+                <th colspan="3" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                <th colspan="4" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
+              </tr>
+              <tr>
+                <th class="text-right bg-purple-soft">App</th>
+                <th class="text-right bg-purple-soft">Tgt</th>
+                <th class="text-center bg-purple-soft">Detail Status (D/S/A/R)</th>
+                
+                <th class="text-right bg-cyan-soft">Usaha Total</th>
+                <th class="text-right bg-cyan-soft">Usaha Baru</th>
+                <th class="text-right bg-cyan-soft">Target Muatan</th>
+                <th class="text-right bg-cyan-soft">Keluarga Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% data.forEach((row, index) => { %>
+                <tr>
+                  <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
+                  <td class="td-code hide-md"><%= row.kode %></td>
+                  <td class="td-primary" style="font-weight: 600;"><%= row.nama_sls %></td>
+                  <td>
+                    <div style="font-weight: 600; font-size: 12px;"><%= row.kecamatan %></div>
+                    <div style="font-size: 11px; color: var(--text-muted);"><%= row.desa %></div>
+                  </td>
+                  <td>
+                    <div style="font-weight: 500; font-size: 12px;" class="td-primary"><%= row.pcl %></div>
+                    <div style="font-size: 11px; color: var(--text-muted);" class="hide-md">PML: <%= row.pml %> · Krl: <%= row.korlap %></div>
+                  </td>
+                  
+                  <td class="text-right bg-purple-soft fw-bold" data-sort="<%= row.approved %>"><%= (row.approved || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-purple-soft" data-sort="<%= row.target_fasih %>"><%= (row.target_fasih || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-center bg-purple-soft" style="font-size: 10px;" data-sort="<%= row.draft + row.submitted_by_pcl + row.approved + row.rejected %>">
+                    D:<%= row.draft %> · S:<%= row.submitted_by_pcl %> · A:<%= row.approved %> · R:<span class="text-red fw-bold"><%= row.rejected %></span>
+                  </td>
+                  
+                  <td class="text-right fw-bold bg-cyan-soft" data-sort="<%= row.usaha_total %>"><%= (row.usaha_total || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft text-green" data-sort="<%= row.usaha_baru %>">+<%= (row.usaha_baru || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft" data-sort="<%= row.muatan %>"><%= row.muatan.toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft" data-sort="<%= row.keluarga_total %>"><%= (row.keluarga_total || 0).toLocaleString('id-ID') %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="no-data">
+          <i class="bi bi-slash-circle-fill text-red" style="font-size: 18px; margin-right: 6px;"></i> Tidak ditemukan data SubSLS PBI yang sesuai dengan kriteria filter Anda.
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('ajax-container');
+  if (!container) return;
+
+  function attachListeners() {
+    if (window.initExpandButtons) {
+      window.initExpandButtons(container);
+    }
+
+    makeTableSortable('subslsTable');
+    makeTableSearchable('localSearch', 'subslsTable');
+
+    const filterForm = document.getElementById('filterForm');
+    if (filterForm) {
+      const selects = filterForm.querySelectorAll('select');
+      selects.forEach(sel => {
+        sel.addEventListener('change', () => {
+          const isKecChange = sel.name === 'kec';
+          const queryString = new URLSearchParams(new FormData(filterForm)).toString();
+          fetchAndReplace(queryString, isKecChange);
+        });
+      });
+      
+      const resetBtn = document.querySelector('a[href="/pbi"]');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          fetchAndReplace('', true);
+        });
+      }
+    }
+  }
+
+  function fetchAndReplace(queryString, refreshAll) {
+    const url = '/pbi' + (queryString ? (queryString.startsWith('?') ? queryString : '?' + queryString) : '');
+    const targetId = refreshAll ? 'ajax-container' : 'subslsTableContainer';
+    const targetElement = document.getElementById(targetId);
+    if (!targetElement) return;
+
+    targetElement.style.opacity = '0.5';
+    targetElement.style.pointerEvents = 'none';
+    
+    fetch(url)
+      .then(res => res.text())
+      .then(html => {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const newElement = doc.getElementById(targetId);
+        if (newElement) {
+          targetElement.innerHTML = newElement.innerHTML;
+          history.pushState(null, '', url);
+          attachListeners();
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => {
+        if (targetElement) {
+          targetElement.style.opacity = '1';
+          targetElement.style.pointerEvents = 'auto';
+        }
+      });
+  }
+
+  attachListeners();
+  
+  window.addEventListener('popstate', () => {
+    fetchAndReplace(window.location.search, true);
+  });
+});
+</script>
