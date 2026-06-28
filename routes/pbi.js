@@ -109,7 +109,7 @@ router.get('/', (req, res) => {
 
   if (uploadId) {
     let cond = ['m.kode IN (' + PBI_CODES.map(() => '?').join(',') + ')'];
-    let params = [...PBI_CODES, uploadId];
+    let params = [uploadId, ...PBI_CODES];
 
     if (filterKec) { cond.push('m.kecamatan = ?'); params.push(filterKec); }
     if (filterDesa) { cond.push('m.desa = ?'); params.push(filterDesa); }
