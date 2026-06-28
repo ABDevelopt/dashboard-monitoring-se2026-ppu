@@ -22,6 +22,19 @@
       let totalKeluarga = data.reduce((sum, row) => sum + (row.keluarga_total || 0), 0);
       let totalRealisasiMuatan = totalUsaha + totalKeluarga;
       let muatanPct = totalMuatan ? ((totalRealisasiMuatan / totalMuatan) * 100).toFixed(2) : '0.00';
+
+      // Overall PBI comparison stats
+      let overallFasihPct = '0.00';
+      let overallMuatanPct = '0.00';
+      if (typeof overallStats !== 'undefined' && overallStats) {
+        let overallTargetFasih = overallStats.target_fasih || 0;
+        let overallRealisasiFasih = (overallStats.approved || 0) + (overallStats.submitted || 0) + (overallStats.rejected || 0);
+        overallFasihPct = overallTargetFasih ? ((overallRealisasiFasih / overallTargetFasih) * 100).toFixed(2) : '0.00';
+
+        let overallMuatan = overallStats.muatan || 0;
+        let overallRealisasiMuatan = (overallStats.usaha_total || 0) + (overallStats.keluarga_total || 0);
+        overallMuatanPct = overallMuatan ? ((overallRealisasiMuatan / overallMuatan) * 100).toFixed(2) : '0.00';
+      }
     %>
 
     <!-- PBI MONITORING HEADER STATS -->
@@ -31,7 +44,12 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
             <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Progres Kinerja FASIH</div>
-            <div style="font-size: 24px; font-weight: 700; color: var(--accent-purple); margin: 4px 0;"><%= fasihPct %>%</div>
+            <div style="font-size: 24px; font-weight: 700; color: var(--accent-purple); margin: 4px 0; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
+              <span><%= fasihPct %>%</span>
+              <span style="font-size: 11px; font-weight: 500; color: var(--text-muted);">
+                (PBI Total: <%= overallFasihPct %>%)
+              </span>
+            </div>
             <div style="font-size: 11px; color: var(--text-secondary);">
               Realisasi: <strong><%= totalRealisasiFasih.toLocaleString('id-ID') %></strong> / <%= totalTargetFasih.toLocaleString('id-ID') %> dok
             </div>
@@ -50,7 +68,12 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
             <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Progres Beban Muatan</div>
-            <div style="font-size: 24px; font-weight: 700; color: var(--accent-cyan); margin: 4px 0;"><%= muatanPct %>%</div>
+            <div style="font-size: 24px; font-weight: 700; color: var(--accent-cyan); margin: 4px 0; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
+              <span><%= muatanPct %>%</span>
+              <span style="font-size: 11px; font-weight: 500; color: var(--text-muted);">
+                (PBI Total: <%= overallMuatanPct %>%)
+              </span>
+            </div>
             <div style="font-size: 11px; color: var(--text-secondary);">
               Realisasi: <strong><%= totalRealisasiMuatan.toLocaleString('id-ID') %></strong> / <%= totalMuatan.toLocaleString('id-ID') %> usaha
             </div>
@@ -168,8 +191,8 @@
                 <th colspan="4" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
               </tr>
               <tr>
-                <th class="text-right bg-purple-soft">App</th>
-                <th class="text-right bg-purple-soft">Tgt</th>
+                <th class="text-right bg-purple-soft">Approved</th>
+                <th class="text-right bg-purple-soft">Target</th>
                 <th class="text-center bg-purple-soft">Detail Status (D/S/A/R)</th>
                 
                 <th class="text-right bg-cyan-soft">Usaha Total</th>

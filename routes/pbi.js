@@ -174,11 +174,34 @@ router.get('/', (req, res) => {
   const pmlList = getDb().prepare(`SELECT DISTINCT pml FROM subsls_master WHERE kode IN (${pbiPlaceholders}) ORDER BY pml`).all(...PBI_CODES);
   const pclList = getDb().prepare(`SELECT DISTINCT pcl FROM subsls_master WHERE kode IN (${pbiPlaceholders}) ORDER BY pcl`).all(...PBI_CODES);
 
+  let overallStats = null;
+  if (uploadId) {
+    overallStats = getDb().prepare(`
+      SELECT 
+        SUM(COALESCE(p.draft, 0)) AS draft,
+        SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted,
+        SUM(COALESCE(p.approved, 0)) AS approved,
+        SUM(COALESCE(p.rejected, 0)) AS rejected,
+        SUM(m.target_fasih) AS target_fasih_awal,
+        SUM(m.muatan) AS muatan,
+        SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) AS usaha_total,
+        SUM(COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS keluarga_total,
+        SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
+                 THEN 0 
+                 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
+            END) AS target_fasih
+      FROM subsls_master m
+      LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+      WHERE m.kode IN (${pbiPlaceholders})
+    `).get(uploadId, ...PBI_CODES);
+  }
+
   res.render('pbi', {
     title: 'Kawasan PBI',
     activePage: 'pbi',
     data,
     total,
+    overallStats,
     page: 1,
     totalPages: 1,
     limit: total || 50,
