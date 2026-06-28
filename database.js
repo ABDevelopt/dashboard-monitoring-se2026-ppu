@@ -546,7 +546,7 @@ function getEarlyWarning(uploadId, filters = {}) {
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
-    HAVING SUM(COALESCE(m.target_fasih, 0)) > 0 AND SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0 AND rata_rata < 1.0
+    HAVING SUM(COALESCE(m.target_fasih, 0)) > 0 AND SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0 AND rata_rata < 5.0
     ORDER BY rata_rata ASC
   `).all(...paramsSlowPcl);
 

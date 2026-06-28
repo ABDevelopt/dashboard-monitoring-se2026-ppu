@@ -83,7 +83,7 @@ Relationships & Calculations:
 - Anomalies include: usaha_ganda > 0, tidak_dapat_ditemui > 0, rejected > 0.
 - Performa Rendah indicators:
   * Zero progress PCLs: total progress (draft + submitted + approved + rejected) = 0 across all assigned SubSLS.
-  * Slow progress PCLs: average daily progress (FASIH realisasi / elapsed days since start) < 1.0.
+  * Slow progress PCLs: average daily progress (FASIH realisasi / elapsed days since start) < 5.0.
 
 Guidelines for queries:
 - Always query the latest upload_id unless asked otherwise. To get the latest upload_id: (SELECT id FROM uploads ORDER BY id DESC LIMIT 1) or join with the latest upload.

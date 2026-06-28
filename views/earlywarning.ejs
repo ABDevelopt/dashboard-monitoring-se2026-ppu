@@ -197,16 +197,16 @@
 
     </div>
 
-    <!-- PCL DENGAN PROGRES LAMBAT (< 1.0 dokumen/hari) -->
+    <!-- PCL DENGAN PROGRES LAMBAT (< 5.0 dokumen/hari) -->
     <div class="card mt-4">
       <div class="card-header">
         <div class="card-title">
-          <span class="text-yellow"><i class="bi bi-hourglass-split"></i> PCL dengan Progres Lambat (< 1.0 dokumen/hari)</span>
+          <span class="text-yellow"><i class="bi bi-hourglass-split"></i> PCL dengan Progres Lambat (< 5.0 dokumen/hari)</span>
         </div>
         <span class="badge badge-yellow"><%= warning.slowPcl.length %> Petugas</span>
       </div>
 
-      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Daftar PCL dengan rata-rata progres di bawah 1.0 dokumen FASIH per hari sejak awal sensus (Sensus berjalan: <strong><%= warning.diffDays %></strong> hari).</p>
+      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Daftar PCL dengan rata-rata progres di bawah 5.0 dokumen FASIH per hari sejak awal sensus (Sensus berjalan: <strong><%= warning.diffDays %></strong> hari).</p>
 
       <% if (warning.slowPcl.length > 0) { %>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; max-height: 500px; overflow-y: auto; padding-right: 4px;">
