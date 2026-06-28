@@ -27,10 +27,35 @@ const upload = multer({
 // GET: Upload page
 router.get('/', (req, res) => {
   const uploads = getAllUploads();
+  
+  // Scan workspace for Excel files
+  let workspaceFiles = [];
+  const wsDir = path.join(__dirname, '../');
+  try {
+    const items = fs.readdirSync(wsDir);
+    workspaceFiles = items
+      .filter(item => {
+        const ext = path.extname(item).toLowerCase();
+        return (ext === '.xlsx' || ext === '.xls') && !item.startsWith('~');
+      })
+      .map(item => {
+        const stats = fs.statSync(path.join(wsDir, item));
+        return {
+          filename: item,
+          size: stats.size,
+          mtime: stats.mtime
+        };
+      })
+      .sort((a, b) => b.mtime - a.mtime);
+  } catch (err) {
+    console.error('Error scanning workspace files:', err);
+  }
+
   res.render('upload', {
     title: 'Upload Data',
     activePage: 'upload',
     uploads,
+    workspaceFiles
   });
 });
 
@@ -221,6 +246,51 @@ router.get('/download-status/:id', (req, res) => {
     req.flash('error', 'File status fisik tidak ditemukan di server.');
     res.redirect('/admin/upload');
   }
+// POST: Import local workspace file
+router.post('/import-local', (req, res) => {
+  const { filename, tanggal, type } = req.body;
+  if (!filename) {
+    req.flash('error', 'Nama file tidak boleh kosong.');
+    return res.redirect('/admin/upload');
+  }
+
+  const sourcePath = path.join(__dirname, '../', filename);
+  if (!fs.existsSync(sourcePath)) {
+    req.flash('error', 'File tidak ditemukan di folder workspace.');
+    return res.redirect('/admin/upload');
+  }
+
+  // Generate stored filename to persist in uploads folder
+  const ts = Date.now();
+  const storedFilename = `${ts}_${filename}`;
+  const destDir = path.join(__dirname, '../uploads');
+  if (!fs.existsSync(destDir)) {
+    fs.mkdirSync(destDir, { recursive: true });
+  }
+  const destPath = path.join(destDir, storedFilename);
+
+  try {
+    // Copy the file to persist it
+    fs.copyFileSync(sourcePath, destPath);
+
+    // Process the copied file
+    let result;
+    if (type === 'excel') {
+      result = parseAndSaveExcel(destPath, filename, storedFilename, tanggal, null, null, null);
+    } else {
+      result = parseAndSaveExcel(null, null, null, tanggal, destPath, filename, storedFilename);
+    }
+
+    req.flash('success', `File local "${filename}" berhasil diimport sebagai ${type === 'excel' ? 'File Progres Utama' : 'File Status FASIH'} untuk tanggal ${tanggal} (SubSLS: ${result.uniqueSubsls})`);
+  } catch (err) {
+    console.error('Error importing local file:', err);
+    if (fs.existsSync(destPath)) {
+      try { fs.unlinkSync(destPath); } catch (e) {}
+    }
+    req.flash('error', `Gagal memproses file local: ${err.message}`);
+  }
+
+  res.redirect('/admin/upload');
 });
 
 module.exports = router;

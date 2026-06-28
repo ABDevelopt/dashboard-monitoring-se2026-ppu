@@ -252,6 +252,45 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
   return { uploadId, totalRows: dataRows.length, uniqueSubsls: actualCount };
 }
 
+function findStatusColumnIndexes(headers) {
+  const findIndex = (possibleNames) => {
+    for (const name of possibleNames) {
+      const idx = headers.findIndex(h => h.includes(name));
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  const findMultipleIndexes = (possibleNames) => {
+    const indexes = [];
+    headers.forEach((h, idx) => {
+      for (const name of possibleNames) {
+        if (h.includes(name)) {
+          indexes.push(idx);
+          break;
+        }
+      }
+    });
+    return indexes;
+  };
+
+  const kodeIdx = findIndex(['level_6_full_code', 'smallcode', 'kode', 'code']);
+  const draftIdx = findIndex(['draft']);
+  const approvedIdx = findIndex(['approved', 'approved by pengawas']);
+  const rejectedIdx = findIndex(['rejected', 'rejected by pengawas']);
+  
+  // Look for submitted columns
+  const submittedIdxs = findMultipleIndexes(['submitted_by_pcl', 'submitted by pencacah', 'submitted respondent', 'submitted']);
+
+  return {
+    kode: kodeIdx,
+    draft: draftIdx,
+    submittedIdxs: submittedIdxs,
+    approved: approvedIdx,
+    rejected: rejectedIdx
+  };
+}
+
 // Parse file status dan update ke DB
 function parseAndSaveStatusExcel(filePath, uploadId) {
   const db = getDb();
@@ -264,15 +303,9 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
   if (rows.length < 2) return;
 
   const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
-  const colIdx = {
-    kode: headers.indexOf('level_6_full_code'),
-    draft: headers.indexOf('draft'),
-    submitted_by_pcl: headers.indexOf('submitted_by_pcl'),
-    approved: headers.indexOf('approved'),
-    rejected: headers.indexOf('rejected')
-  };
+  const colIdx = findStatusColumnIndexes(headers);
 
-  if (colIdx.kode === -1) throw new Error('Kolom "level_6_full_code" tidak ditemukan dalam file rekap status.');
+  if (colIdx.kode === -1) throw new Error('Kolom identitas wilayah/SLS ("level_6_full_code" atau "smallcode") tidak ditemukan dalam file rekap status.');
 
   const insertStmt = db.prepare(`
     INSERT OR IGNORE INTO progres (upload_id, kode) VALUES (?, ?)
@@ -290,10 +323,10 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
       const kode = String(row[colIdx.kode] || '').trim();
       if (!kode || kode.length < 10) continue;
 
-      const draft = toInt(row[colIdx.draft]);
-      const submitted = toInt(row[colIdx.submitted_by_pcl]);
-      const approved = toInt(row[colIdx.approved]);
-      const rejected = toInt(row[colIdx.rejected]);
+      const draft = colIdx.draft !== -1 ? toInt(row[colIdx.draft]) : 0;
+      const submitted = colIdx.submittedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
+      const approved = colIdx.approved !== -1 ? toInt(row[colIdx.approved]) : 0;
+      const rejected = colIdx.rejected !== -1 ? toInt(row[colIdx.rejected]) : 0;
 
       // Pastikan baris progres ada untuk upload ini sebelum update status
       insertStmt.run(uploadId, kode);
@@ -315,15 +348,9 @@ function parseAndSaveStatusExcelOnly(filePath, uploadId, prevUploadId = null) {
   if (rows.length < 2) return;
 
   const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
-  const colIdx = {
-    kode: headers.indexOf('level_6_full_code'),
-    draft: headers.indexOf('draft'),
-    submitted_by_pcl: headers.indexOf('submitted_by_pcl'),
-    approved: headers.indexOf('approved'),
-    rejected: headers.indexOf('rejected')
-  };
+  const colIdx = findStatusColumnIndexes(headers);
 
-  if (colIdx.kode === -1) throw new Error('Kolom "level_6_full_code" tidak ditemukan dalam file rekap status.');
+  if (colIdx.kode === -1) throw new Error('Kolom identitas wilayah/SLS ("level_6_full_code" atau "smallcode") tidak ditemukan dalam file rekap status.');
 
   const insertStmt = db.prepare(`
     INSERT OR IGNORE INTO progres (
@@ -357,10 +384,10 @@ function parseAndSaveStatusExcelOnly(filePath, uploadId, prevUploadId = null) {
       const kode = String(row[colIdx.kode] || '').trim();
       if (!kode || kode.length < 10) continue;
 
-      const draft = toInt(row[colIdx.draft]);
-      const submitted = toInt(row[colIdx.submitted_by_pcl]);
-      const approved = toInt(row[colIdx.approved]);
-      const rejected = toInt(row[colIdx.rejected]);
+      const draft = colIdx.draft !== -1 ? toInt(row[colIdx.draft]) : 0;
+      const submitted = colIdx.submittedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
+      const approved = colIdx.approved !== -1 ? toInt(row[colIdx.approved]) : 0;
+      const rejected = colIdx.rejected !== -1 ? toInt(row[colIdx.rejected]) : 0;
 
       let usaha_tidak_ditemukan = 0, usaha_ditemukan = 0, usaha_baru = 0, usaha_tutup = 0, usaha_ganda = 0;
       let tidak_ditemukan = 0, ditemukan = 0, keluarga_baru = 0, meninggal = 0, tidak_eligible = 0, tidak_dapat_ditemui = 0;
