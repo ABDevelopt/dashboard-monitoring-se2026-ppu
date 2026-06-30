@@ -118,6 +118,41 @@
                         <span class="warning-stat"><i class="bi bi-people text-cyan"></i> Keluarga: <strong><%= item.keluarga_total %></strong></span>
                         <span class="warning-stat">Progres: <strong><%= item.pct %>%</strong></span>
                       </div>
+                      <% 
+                        let totalFasihProgress = (item.draft_total || 0) + (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0);
+                        let runrate = (totalFasihProgress / (diffDays || 1)).toFixed(2);
+                        let remainingFasih = (item.target_fasih_total || 0) - totalFasihProgress;
+                        let statusText = '';
+                        let statusColor = '';
+                        let iconClass = '';
+
+                        if (remainingFasih <= 0) {
+                          statusText = 'Selesai';
+                          statusColor = 'var(--accent-green)';
+                          iconClass = 'bi-check-circle-fill';
+                        } else if (parseFloat(runrate) <= 0) {
+                          statusText = 'Stagnan (0/hari)';
+                          statusColor = 'var(--accent-red)';
+                          iconClass = 'bi-exclamation-circle-fill';
+                        } else {
+                          let daysNeeded = Math.ceil(remainingFasih / parseFloat(runrate));
+                          if (daysNeeded <= daysRemaining) {
+                            statusText = `Mampu Selesai (${daysNeeded} hari)`;
+                            statusColor = 'var(--accent-cyan)';
+                            iconClass = 'bi-check-circle';
+                          } else {
+                            statusText = `Tdk Mampu (+${daysNeeded - daysRemaining} hari)`;
+                            statusColor = 'var(--accent-red)';
+                            iconClass = 'bi-exclamation-triangle-fill';
+                          }
+                        }
+                      %>
+                      <div class="warning-stats" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border);">
+                        <span class="warning-stat"><i class="bi bi-speedometer2 text-purple"></i> Laju: <strong><%= runrate %> FASIH/hari</strong></span>
+                        <span class="warning-stat" style="color: <%= statusColor %>; font-weight: 600;">
+                          <i class="bi <%= iconClass %>"></i> <%= statusText %>
+                        </span>
+                      </div>
                       <div class="fasih-grid-container">
                         <div class="fasih-grid-header">
                           <span class="fasih-grid-title"><i class="bi bi-phone"></i> FASIH</span>
@@ -297,6 +332,41 @@
                         <span class="warning-stat"><i class="bi bi-building text-green"></i> Usaha: <strong><%= item.usaha_total %></strong></span>
                         <span class="warning-stat"><i class="bi bi-people text-cyan"></i> Keluarga: <strong><%= item.keluarga_total %></strong></span>
                         <span class="warning-stat">Progres: <strong><%= item.pct %>%</strong></span>
+                      </div>
+                      <% 
+                        let totalFasihProgressBottom = (item.draft_total || 0) + (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0);
+                        let runrateBottom = (totalFasihProgressBottom / (diffDays || 1)).toFixed(2);
+                        let remainingFasihBottom = (item.target_fasih_total || 0) - totalFasihProgressBottom;
+                        let statusTextBottom = '';
+                        let statusColorBottom = '';
+                        let iconClassBottom = '';
+
+                        if (remainingFasihBottom <= 0) {
+                          statusTextBottom = 'Selesai';
+                          statusColorBottom = 'var(--accent-green)';
+                          iconClassBottom = 'bi-check-circle-fill';
+                        } else if (parseFloat(runrateBottom) <= 0) {
+                          statusTextBottom = 'Stagnan (0/hari)';
+                          statusColorBottom = 'var(--accent-red)';
+                          iconClassBottom = 'bi-exclamation-circle-fill';
+                        } else {
+                          let daysNeededBottom = Math.ceil(remainingFasihBottom / parseFloat(runrateBottom));
+                          if (daysNeededBottom <= daysRemaining) {
+                            statusTextBottom = `Mampu Selesai (${daysNeededBottom} hari)`;
+                            statusColorBottom = 'var(--accent-cyan)';
+                            iconClassBottom = 'bi-check-circle';
+                          } else {
+                            statusTextBottom = `Tdk Mampu (+${daysNeededBottom - daysRemaining} hari)`;
+                            statusColorBottom = 'var(--accent-red)';
+                            iconClassBottom = 'bi-exclamation-triangle-fill';
+                          }
+                        }
+                      %>
+                      <div class="warning-stats" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border);">
+                        <span class="warning-stat"><i class="bi bi-speedometer2 text-purple"></i> Laju: <strong><%= runrateBottom %> FASIH/hari</strong></span>
+                        <span class="warning-stat" style="color: <%= statusColorBottom %>; font-weight: 600;">
+                          <i class="bi <%= iconClassBottom %>"></i> <%= statusTextBottom %>
+                        </span>
                       </div>
                       <div class="fasih-grid-container">
                         <div class="fasih-grid-header">
