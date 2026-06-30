@@ -934,5 +934,5 @@ module.exports = {
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
   getBottomPerformers, getAnomalyStats,
-  getSettings, updateSettings, getUserByUsername, hashPassword, rebuildSummaryCache
+  getSettings, updateSettings, getUserByUsername, hashPassword, rebuildSummaryCache, rebuildAllSummaryCaches
 };
