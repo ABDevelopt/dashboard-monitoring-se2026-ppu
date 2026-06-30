@@ -86,8 +86,7 @@
                   <th rowspan="2" class="hide-md">Kecamatan</th>
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
                   <th colspan="6" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
-                  <th colspan="2" class="text-center bg-green-soft hide-sm" style="border-bottom: 1px solid var(--border);">Keluarga</th>
-                  <th colspan="3" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
+                  <th colspan="5" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
                 </tr>
                 <tr>
                   <!-- <th class="text-right">Total</th> -->
@@ -98,11 +97,11 @@
                   <th class="text-right bg-green-soft">Approved</th>
                   <th class="text-right bg-purple-soft">Target</th>
                   <th class="text-right bg-purple-soft">Progres %</th>
-                  <th class="text-right bg-green-soft hide-sm">Ditemukan</th>
-                  <th class="text-right bg-green-soft hide-sm">Baru</th>
                   <th class="text-right bg-cyan-soft muatan-col">Usaha Total</th>
                   <th class="text-right bg-cyan-soft muatan-col">Target Muatan</th>
                   <th class="text-right bg-cyan-soft muatan-col">Progres %</th>
+                  <th class="text-right bg-green-soft hide-sm muatan-col">Ditemukan</th>
+                  <th class="text-right bg-green-soft hide-sm muatan-col">Baru</th>
                 </tr>
               </thead>
               <thead class="show-sm-table-header">
@@ -143,8 +142,6 @@
                         <span class="badge badge-blue"><%= fasihPct %>%</span>
                       <% } %>
                     </td>
-                    <td class="text-right bg-green-soft hide-sm" data-sort="<%= p.keluarga_ditemukan_total %>"><%= (p.keluarga_ditemukan_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-green-soft hide-sm" data-sort="<%= p.keluarga_baru_total %>"><%= (p.keluarga_baru_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>">
@@ -156,6 +153,8 @@
                         <span class="badge badge-blue"><%= muatanPct %>%</span>
                       <% } %>
                     </td>
+                    <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.keluarga_ditemukan_total %>"><%= (p.keluarga_ditemukan_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.keluarga_baru_total %>"><%= (p.keluarga_baru_total || 0).toLocaleString('id-ID') %></td>
 
                   </tr>
                 <% }) %>
