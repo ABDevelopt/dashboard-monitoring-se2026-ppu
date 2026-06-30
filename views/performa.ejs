@@ -6,327 +6,170 @@
       <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/upload">Upload Data</a>.</div>
     </div>
   <% } else { %>
-    
+
     <!-- FILTER BAR -->
     <div class="card" style="margin-bottom: 20px;">
       <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
-        <div class="card-title"><i class="bi bi-search"></i> Filter Pencarian Performa Petugas</div>
-        <a href="/performa?tab=<%= activeTab %>" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
+        <div class="card-title"><i class="bi bi-search"></i> Filter Performa Petugas</div>
+        <a href="/performa" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset</a>
       </div>
-      
       <form action="/performa" method="GET" id="filterForm">
-        <!-- Hidden tab parameter to preserve active tab on form submit -->
-        <input type="hidden" name="tab" id="activeTabInput" value="<%= activeTab %>">
-        
         <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
-          
           <div>
             <label for="performaKec" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
             <select id="performaKec" name="kec" onchange="this.form.submit();" style="width:100%;">
-              <option value="">-- Semua Kecamatan --</option>
+              <option value="">-- Semua --</option>
               <% kecList.forEach(k => { %>
                 <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
               <% }) %>
             </select>
           </div>
-
           <div>
             <label for="performaKorlap" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
             <select id="performaKorlap" name="korlap" onchange="this.form.submit();" style="width:100%;">
-              <option value="">-- Semua Korlap --</option>
+              <option value="">-- Semua --</option>
               <% korlapList.forEach(k => { %>
                 <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
               <% }) %>
             </select>
           </div>
-
           <div>
             <label for="performaPml" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
             <select id="performaPml" name="pml" onchange="this.form.submit();" style="width:100%;">
-              <option value="">-- Semua PML --</option>
+              <option value="">-- Semua --</option>
               <% pmlList.forEach(p => { %>
                 <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
               <% }) %>
             </select>
           </div>
-          
         </div>
       </form>
     </div>
 
-    <!-- TABS CONTROLLER -->
-    <div style="display: flex; gap: 8px; margin-bottom: 20px; background: var(--bg-card); padding: 8px; border-radius: var(--border-radius); border: 1px solid var(--border);">
-      <button type="button" id="tabBtnTerbaik" class="btn btn-sm" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 10px 16px; border-radius: 6px; transition: all 0.2s;" onclick="setActiveTab('terbaik')">
-        <i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Performa Terbaik (Urutan Tertinggi)
-      </button>
-      <button type="button" id="tabBtnTerendah" class="btn btn-sm" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 10px 16px; border-radius: 6px; transition: all 0.2s;" onclick="setActiveTab('terendah')">
-        <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red);"></i> Performa Terendah (Urutan Terendah)
-      </button>
-    </div>
-
-    <!-- TAB CONTENT: PERFORMA TERBAIK -->
-    <div id="tabContentTerbaik" class="tab-pane" style="display: none;">
-      <div class="drilldown-grid">
-        
-        <!-- KOLOM KIRI: TABEL TOP 5 PCL -->
-        <div>
-          <div class="card" style="margin-bottom: 20px;">
-            <div class="card-header" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px;">
-              <div class="card-title"><i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Daftar PCL Berperforma Terbaik (Urutan Tertinggi)</div>
-              <span class="badge badge-green">Pencacah Lapangan</span>
-            </div>
-            
-            <div class="table-wrap" style="overflow-x: auto; max-height: 520px;">
-              <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                  <tr style="border-bottom: 2px solid var(--border); position: sticky; top: 0; background: var(--bg-card); z-index: 10;">
-                    <th class="text-center" style="padding: 10px 8px; width: 40px;">No</th>
-                    <th>Nama PCL / Informasi Tim</th>
-                    <th class="text-right bg-purple-soft" style="width: 80px;">Target</th>
-                    <th class="text-right bg-purple-soft" style="width: 90px;">Progres %</th>
-                    <th class="text-right bg-blue-soft" style="width: 80px;">Laju/Hr</th>
-                    <th class="text-center bg-blue-soft" style="width: 120px;">Perkiraan</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% if (performers.topPcl && performers.topPcl.length > 0) { %>
-                    <% performers.topPcl.forEach((item, index) => { %>
-                      <% 
-                        let totalFasihProgress = (item.draft_total || 0) + (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0);
-                        let runrate = (totalFasihProgress / (diffDays || 1)).toFixed(2);
-                        let remainingFasih = (item.target_fasih_total || 0) - totalFasihProgress;
-                        let statusBadge = '';
-                        let statusText = '';
-
-                        if (remainingFasih <= 0) {
-                          statusBadge = 'badge-green';
-                          statusText = 'Selesai';
-                        } else if (parseFloat(runrate) <= 0) {
-                          statusBadge = 'badge-red';
-                          statusText = 'Stagnan';
-                        } else {
-                          let daysNeeded = Math.ceil(remainingFasih / parseFloat(runrate));
-                          if (daysNeeded <= daysRemaining) {
-                            statusBadge = 'badge-blue';
-                            statusText = `Mampu (${daysNeeded} hr)`;
-                          } else {
-                            statusBadge = 'badge-red';
-                            statusText = `Tdk Mampu (+${daysNeeded - daysRemaining})`;
-                          }
-                        }
-                      %>
-                      <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s; background: <%= index === 0 ? 'rgba(251,191,36,0.03)' : 'inherit' %>;">
-                        <td class="text-center" style="padding: 12px 8px; font-weight: 700; color: <%= index === 0 ? '#fbbf24' : (index === 1 ? '#cbd5e1' : (index === 2 ? '#f97316' : 'inherit')) %>;">
-                          <%= index + 1 %>
-                        </td>
-                        <td style="padding: 12px 8px;">
-                          <strong style="color: var(--text-primary);"><%= item.pcl %></strong>
-                          <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">
-                            Kec. <%= item.kecamatan %> · PML: <%= item.pml %> · Korlap: <%= item.korlap %>
-                          </div>
-                        </td>
-                        <td class="text-right bg-purple-soft" style="padding: 12px 8px;"><%= (item.target_fasih_total || 0).toLocaleString('id-ID') %></td>
-                        <td class="text-right bg-purple-soft fw-bold" style="padding: 12px 8px;">
-                          <span class="badge badge-green" style="font-size: 11px;"><%= item.pct %>%</span>
-                        </td>
-                        <td class="text-right bg-blue-soft" style="padding: 12px 8px; font-weight: 500;"><%= runrate %></td>
-                        <td class="text-center bg-blue-soft" style="padding: 12px 8px;">
-                          <span class="badge <%= statusBadge %>" style="font-size: 10px; font-weight: 600; padding: 3px 8px;"><%= statusText %></span>
-                        </td>
-                      </tr>
-                    <% }) %>
-                  <% } else { %>
-                    <tr>
-                      <td colspan="6" class="text-center" style="padding: 20px; color: var(--text-muted);">Tidak ada data PCL.</td>
-                    </tr>
-                  <% } %>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- KOLOM KANAN: TABEL TOP 5 PML -->
-        <div>
-          <div class="card" style="margin-bottom: 20px;">
-            <div class="card-header" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px;">
-              <div class="card-title"><i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Daftar PML Berperforma Terbaik (Urutan Tertinggi)</div>
-              <span class="badge badge-blue">Pengawas Lapangan</span>
-            </div>
-
-            <div class="table-wrap" style="overflow-x: auto; max-height: 520px;">
-              <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                  <tr style="border-bottom: 2px solid var(--border); position: sticky; top: 0; background: var(--bg-card); z-index: 10;">
-                    <th class="text-center" style="padding: 10px 8px; width: 40px;">No</th>
-                    <th>Nama PML / Tim</th>
-                    <th class="text-right bg-purple-soft" style="width: 100px;">Target Tim</th>
-                    <th class="text-right bg-purple-soft" style="width: 110px;">Progres Tim %</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% if (performers.topPml && performers.topPml.length > 0) { %>
-                    <% performers.topPml.forEach((item, index) => { %>
-                      <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s; background: <%= index === 0 ? 'rgba(251,191,36,0.03)' : 'inherit' %>;">
-                        <td class="text-center" style="padding: 12px 8px; font-weight: 700; color: <%= index === 0 ? '#fbbf24' : (index === 1 ? '#cbd5e1' : (index === 2 ? '#f97316' : 'inherit')) %>;">
-                          <%= index + 1 %>
-                        </td>
-                        <td style="padding: 12px 8px;">
-                          <strong style="color: var(--text-primary);"><%= item.pml %></strong>
-                          <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">
-                            Korlap: <%= item.korlap %> · Tim: <%= item.jumlah_pcl %> PCL
-                          </div>
-                        </td>
-                        <td class="text-right bg-purple-soft" style="padding: 12px 8px;"><%= (item.target_fasih_total || 0).toLocaleString('id-ID') %></td>
-                        <td class="text-right bg-purple-soft fw-bold" style="padding: 12px 8px;">
-                          <span class="badge badge-blue" style="font-size: 11px;"><%= item.pct %>%</span>
-                        </td>
-                      </tr>
-                    <% }) %>
-                  <% } else { %>
-                    <tr>
-                      <td colspan="4" class="text-center" style="padding: 20px; color: var(--text-muted);">Tidak ada data PML.</td>
-                    </tr>
-                  <% } %>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
+    <!-- TABEL PCL -->
+    <div class="card">
+      <div class="card-header" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 0;">
+        <div class="card-title"><i class="bi bi-speedometer2"></i> Performa Petugas Pencacah Lapangan (PCL)</div>
+        <span class="badge badge-green" style="font-size: 11px;"><%= performers.topPcl ? performers.topPcl.length : 0 %> PCL</span>
       </div>
-    </div>
+      <p style="font-size: 11px; color: var(--text-muted); padding: 10px 16px 0; margin: 0;">
+        Progres dihitung dari: <strong>(Submitted + Approved + Rejected) / Target Assignment FASIH</strong> &mdash; tanpa menghitung status Open dan Draft.
+        Klik header kolom untuk mengurutkan.
+      </p>
+      <div class="table-wrap" style="overflow-x: auto;">
+        <table id="performa-pcl-table" class="sortable-table" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border);">
+              <th class="text-center" style="padding: 10px 8px; width: 44px;">No</th>
+              <th style="padding: 10px 8px; min-width: 140px;">Nama PCL</th>
+              <th style="padding: 10px 8px; min-width: 100px;">Kecamatan</th>
+              <th style="padding: 10px 8px; min-width: 120px;">PML</th>
+              <th style="padding: 10px 8px; min-width: 110px;">Korlap</th>
+              <th class="text-right bg-yellow-soft" style="padding: 10px 8px; width: 72px;">Draft</th>
+              <th class="text-right bg-blue-soft" style="padding: 10px 8px; width: 72px;">Submit</th>
+              <th class="text-right bg-red-soft" style="padding: 10px 8px; width: 72px;">Reject</th>
+              <th class="text-right bg-green-soft" style="padding: 10px 8px; width: 72px;">Approve</th>
+              <th class="text-right bg-purple-soft" style="padding: 10px 8px; width: 72px;">Target</th>
+              <th class="text-right bg-purple-soft" style="padding: 10px 8px; width: 82px;">Progres %</th>
+              <th class="text-right bg-blue-soft" style="padding: 10px 8px; width: 80px;">Laju/Hari</th>
+              <th class="text-center bg-blue-soft" style="padding: 10px 8px; width: 130px;">Perkiraan Selesai</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (performers.topPcl && performers.topPcl.length > 0) { %>
+              <% performers.topPcl.forEach((item, index) => { %>
+                <%
+                  // Progres: semua status kecuali open & draft
+                  let fasihSelesai = (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0);
+                  let pct = item.target_fasih_total > 0 ? Math.min(100, parseFloat((100 * fasihSelesai / item.target_fasih_total).toFixed(2))) : 0;
 
-    <!-- TAB CONTENT: PERFORMA TERENDAH -->
-    <div id="tabContentTerendah" class="tab-pane" style="display: none;">
-      <div class="drilldown-grid">
-        
-        <!-- KOLOM KIRI: TABEL BOTTOM 5 PCL -->
-        <div>
-          <div class="card" style="margin-bottom: 20px;">
-            <div class="card-header" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px;">
-              <div class="card-title"><i class="bi bi-arrow-down-circle-fill" style="color: var(--accent-red);"></i> Daftar PCL Performa Terendah (Urutan Terendah)</div>
-              <span class="badge badge-red">Pencacah Lapangan</span>
-            </div>
-            
-            <div class="table-wrap" style="overflow-x: auto; max-height: 520px;">
-              <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                  <tr style="border-bottom: 2px solid var(--border); position: sticky; top: 0; background: var(--bg-card); z-index: 10;">
-                    <th class="text-center" style="padding: 10px 8px; width: 40px;">No</th>
-                    <th>Nama PCL / Informasi Tim</th>
-                    <th class="text-right bg-purple-soft" style="width: 80px;">Target</th>
-                    <th class="text-right bg-purple-soft" style="width: 90px;">Progres %</th>
-                    <th class="text-right bg-blue-soft" style="width: 80px;">Laju/Hr</th>
-                    <th class="text-center bg-blue-soft" style="width: 120px;">Perkiraan</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% if (performers.bottomPcl && performers.bottomPcl.length > 0) { %>
-                    <% performers.bottomPcl.forEach((item, index) => { %>
-                      <% 
-                        let totalFasihProgressBottom = (item.draft_total || 0) + (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0);
-                        let runrateBottom = (totalFasihProgressBottom / (diffDays || 1)).toFixed(2);
-                        let remainingFasihBottom = (item.target_fasih_total || 0) - totalFasihProgressBottom;
-                        let statusBadge = '';
-                        let statusText = '';
+                  // Laju & Perkiraan
+                  let totalProgress = (item.draft_total || 0) + fasihSelesai;
+                  let runrate = diffDays > 0 ? parseFloat((fasihSelesai / diffDays).toFixed(2)) : 0;
+                  let remainingFasih = (item.target_fasih_total || 0) - fasihSelesai;
 
-                        if (remainingFasihBottom <= 0) {
-                          statusBadge = 'badge-green';
-                          statusText = 'Selesai';
-                        } else if (parseFloat(runrateBottom) <= 0) {
-                          statusBadge = 'badge-red';
-                          statusText = 'Stagnan';
-                        } else {
-                          let daysNeededBottom = Math.ceil(remainingFasihBottom / parseFloat(runrateBottom));
-                          if (daysNeededBottom <= daysRemaining) {
-                            statusBadge = 'badge-blue';
-                            statusText = `Mampu (${daysNeededBottom} hr)`;
-                          } else {
-                            statusBadge = 'badge-red';
-                            statusText = `Tdk Mampu (+${daysNeededBottom - daysRemaining})`;
-                          }
-                        }
-                      %>
-                      <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s; background: <%= index === 0 ? 'rgba(239,68,68,0.03)' : 'inherit' %>;">
-                        <td class="text-center" style="padding: 12px 8px; font-weight: 700; color: var(--accent-red);">
-                          <%= index + 1 %>
-                        </td>
-                        <td style="padding: 12px 8px;">
-                          <strong style="color: var(--text-primary);"><%= item.pcl %></strong>
-                          <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">
-                            Kec. <%= item.kecamatan %> · PML: <%= item.pml %> · Korlap: <%= item.korlap %>
-                          </div>
-                        </td>
-                        <td class="text-right bg-purple-soft" style="padding: 12px 8px;"><%= (item.target_fasih_total || 0).toLocaleString('id-ID') %></td>
-                        <td class="text-right bg-purple-soft fw-bold" style="padding: 12px 8px;">
-                          <span class="badge badge-red" style="font-size: 11px;"><%= item.pct %>%</span>
-                        </td>
-                        <td class="text-right bg-blue-soft" style="padding: 12px 8px; font-weight: 500;"><%= runrateBottom %></td>
-                        <td class="text-center bg-blue-soft" style="padding: 12px 8px;">
-                          <span class="badge <%= statusBadge %>" style="font-size: 10px; font-weight: 600; padding: 3px 8px;"><%= statusText %></span>
-                        </td>
-                      </tr>
-                    <% }) %>
-                  <% } else { %>
-                    <tr>
-                      <td colspan="6" class="text-center" style="padding: 20px; color: var(--text-muted);">Tidak ada data PCL.</td>
-                    </tr>
-                  <% } %>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+                  let statusBadge = '';
+                  let statusText = '';
+                  let statusSortVal = 999;
 
-        <!-- KOLOM KANAN: TABEL BOTTOM 5 PML -->
-        <div>
-          <div class="card" style="margin-bottom: 20px;">
-            <div class="card-header" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px;">
-              <div class="card-title"><i class="bi bi-arrow-down-circle-fill" style="color: var(--accent-red);"></i> Daftar PML Performa Terendah (Urutan Terendah)</div>
-              <span class="badge badge-red">Pengawas Lapangan</span>
-            </div>
-
-            <div class="table-wrap" style="overflow-x: auto; max-height: 520px;">
-              <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                  <tr style="border-bottom: 2px solid var(--border); position: sticky; top: 0; background: var(--bg-card); z-index: 10;">
-                    <th class="text-center" style="padding: 10px 8px; width: 40px;">No</th>
-                    <th>Nama PML / Tim</th>
-                    <th class="text-right bg-purple-soft" style="width: 100px;">Target Tim</th>
-                    <th class="text-right bg-purple-soft" style="width: 110px;">Progres Tim %</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% if (performers.bottomPml && performers.bottomPml.length > 0) { %>
-                    <% performers.bottomPml.forEach((item, index) => { %>
-                      <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s; background: <%= index === 0 ? 'rgba(239,68,68,0.03)' : 'inherit' %>;">
-                        <td class="text-center" style="padding: 12px 8px; font-weight: 700; color: var(--accent-red);">
-                          <%= index + 1 %>
-                        </td>
-                        <td style="padding: 12px 8px;">
-                          <strong style="color: var(--text-primary);"><%= item.pml %></strong>
-                          <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">
-                            Korlap: <%= item.korlap %> · Tim: <%= item.jumlah_pcl %> PCL
-                          </div>
-                        </td>
-                        <td class="text-right bg-purple-soft" style="padding: 12px 8px;"><%= (item.target_fasih_total || 0).toLocaleString('id-ID') %></td>
-                        <td class="text-right bg-purple-soft fw-bold" style="padding: 12px 8px;">
-                          <span class="badge badge-red" style="font-size: 11px;"><%= item.pct %>%</span>
-                        </td>
-                      </tr>
-                    <% }) %>
-                  <% } else { %>
-                    <tr>
-                      <td colspan="4" class="text-center" style="padding: 20px; color: var(--text-muted);">Tidak ada data PML.</td>
-                    </tr>
-                  <% } %>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
+                  if (remainingFasih <= 0) {
+                    statusBadge = 'badge-green';
+                    statusText = 'Selesai';
+                    statusSortVal = 0;
+                  } else if (runrate <= 0) {
+                    statusBadge = 'badge-red';
+                    statusText = 'Stagnan';
+                    statusSortVal = 9999;
+                  } else {
+                    let daysNeeded = Math.ceil(remainingFasih / runrate);
+                    statusSortVal = daysNeeded;
+                    if (daysNeeded <= daysRemaining) {
+                      statusBadge = 'badge-blue';
+                      statusText = `Mampu (${daysNeeded} hr)`;
+                    } else {
+                      statusBadge = 'badge-red';
+                      statusText = `Tdk Mampu (+${daysNeeded - daysRemaining} hr)`;
+                    }
+                  }
+                %>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td class="text-center" data-sort="<%= index + 1 %>" style="padding: 10px 8px; font-size: 12px; color: var(--text-muted);">
+                    <%= index + 1 %>
+                  </td>
+                  <td data-sort="<%= item.pcl %>" style="padding: 10px 8px; font-weight: 600; font-size: 13px;">
+                    <%= item.pcl %>
+                  </td>
+                  <td data-sort="<%= item.kecamatan %>" style="padding: 10px 8px; font-size: 12px;">
+                    <%= item.kecamatan %>
+                  </td>
+                  <td data-sort="<%= item.pml %>" style="padding: 10px 8px; font-size: 12px;">
+                    <%= item.pml %>
+                  </td>
+                  <td data-sort="<%= item.korlap %>" style="padding: 10px 8px; font-size: 12px;">
+                    <%= item.korlap %>
+                  </td>
+                  <td class="text-right bg-yellow-soft" data-sort="<%= item.draft_total || 0 %>" style="padding: 10px 8px;">
+                    <%= (item.draft_total || 0).toLocaleString('id-ID') %>
+                  </td>
+                  <td class="text-right bg-blue-soft" data-sort="<%= item.submitted_total || 0 %>" style="padding: 10px 8px;">
+                    <%= (item.submitted_total || 0).toLocaleString('id-ID') %>
+                  </td>
+                  <td class="text-right bg-red-soft" data-sort="<%= item.rejected_total || 0 %>" style="padding: 10px 8px; font-weight: 600;">
+                    <%= (item.rejected_total || 0).toLocaleString('id-ID') %>
+                  </td>
+                  <td class="text-right bg-green-soft" data-sort="<%= item.approved_total || 0 %>" style="padding: 10px 8px; font-weight: 600;">
+                    <%= (item.approved_total || 0).toLocaleString('id-ID') %>
+                  </td>
+                  <td class="text-right bg-purple-soft" data-sort="<%= item.target_fasih_total || 0 %>" style="padding: 10px 8px;">
+                    <%= (item.target_fasih_total || 0).toLocaleString('id-ID') %>
+                  </td>
+                  <td class="text-right bg-purple-soft" data-sort="<%= pct %>" style="padding: 10px 8px;">
+                    <% if (pct >= 100) { %>
+                      <span class="badge badge-green" style="font-size: 11px;"><%= pct %>%</span>
+                    <% } else if (pct >= 50) { %>
+                      <span class="badge badge-blue" style="font-size: 11px;"><%= pct %>%</span>
+                    <% } else { %>
+                      <span class="badge badge-red" style="font-size: 11px;"><%= pct %>%</span>
+                    <% } %>
+                  </td>
+                  <td class="text-right bg-blue-soft" data-sort="<%= runrate %>" style="padding: 10px 8px; font-weight: 500;">
+                    <%= runrate.toFixed(2) %>
+                  </td>
+                  <td class="text-center bg-blue-soft" data-sort="<%= statusSortVal %>" style="padding: 10px 8px;">
+                    <span class="badge <%= statusBadge %>" style="font-size: 10px; padding: 3px 8px;"><%= statusText %></span>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr>
+                <td colspan="13" class="text-center" style="padding: 24px; color: var(--text-muted);">
+                  <i class="bi bi-inbox" style="font-size: 24px; display: block; margin-bottom: 8px;"></i>
+                  Tidak ada data PCL ditemukan.
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -334,39 +177,9 @@
 </div>
 
 <script>
-function setActiveTab(tab) {
-  // 1. Update UI tabs styling
-  const tabBtnTerbaik = document.getElementById('tabBtnTerbaik');
-  const tabBtnTerendah = document.getElementById('tabBtnTerendah');
-  const tabContentTerbaik = document.getElementById('tabContentTerbaik');
-  const tabContentTerendah = document.getElementById('tabContentTerendah');
-  const activeTabInput = document.getElementById('activeTabInput');
-
-  if (tab === 'terbaik') {
-    tabBtnTerbaik.className = 'btn btn-primary btn-sm';
-    tabBtnTerendah.className = 'btn btn-secondary btn-sm';
-    tabContentTerbaik.style.display = 'block';
-    tabContentTerendah.style.display = 'none';
-  } else {
-    tabBtnTerbaik.className = 'btn btn-secondary btn-sm';
-    tabBtnTerendah.className = 'btn btn-primary btn-sm';
-    tabContentTerbaik.style.display = 'none';
-    tabContentTerendah.style.display = 'block';
-  }
-
-  // 2. Set hidden input value
-  if (activeTabInput) {
-    activeTabInput.value = tab;
-  }
-
-  // 3. Update URL without refreshing the page
-  const currentUrl = new URL(window.location.href);
-  currentUrl.searchParams.set('tab', tab);
-  window.history.replaceState({}, '', currentUrl.toString());
-}
-
 document.addEventListener('DOMContentLoaded', () => {
-  // Set default active tab based on variable
-  setActiveTab('<%= activeTab %>');
+  if (typeof makeTableSortable === 'function') {
+    makeTableSortable('performa-pcl-table');
+  }
 });
 </script>
