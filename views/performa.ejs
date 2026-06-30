@@ -71,8 +71,10 @@
               <th class="text-right bg-green-soft" style="padding: 10px 8px; width: 72px;">Approve</th>
               <th class="text-right bg-purple-soft" style="padding: 10px 8px; width: 72px;">Target</th>
               <th class="text-right bg-purple-soft" style="padding: 10px 8px; width: 82px;">Progres %</th>
-              <th class="text-right bg-blue-soft" style="padding: 10px 8px; width: 80px;">Laju/Hari</th>
-              <th class="text-center bg-blue-soft" style="padding: 10px 8px; width: 130px;">Perkiraan Selesai</th>
+              <th class="text-right bg-blue-soft" style="padding: 10px 8px; width: 80px;">Laju Saat Ini</th>
+              <th class="text-right bg-orange-soft" style="padding: 10px 8px; width: 90px;">Kec. Perlu/Hr</th>
+              <th class="text-right bg-orange-soft" style="padding: 10px 8px; width: 80px;">Perlu (Hari)</th>
+              <th class="text-center bg-blue-soft" style="padding: 10px 8px; width: 110px;">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -83,14 +85,26 @@
                   let fasihSelesai = (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0);
                   let pct = item.target_fasih_total > 0 ? Math.min(100, parseFloat((100 * fasihSelesai / item.target_fasih_total).toFixed(2))) : 0;
 
-                  // Laju & Perkiraan
-                  let totalProgress = (item.draft_total || 0) + fasihSelesai;
+                  // Laju saat ini (berdasarkan progres nyata: submit+approve+reject / hari berjalan)
                   let runrate = diffDays > 0 ? parseFloat((fasihSelesai / diffDays).toFixed(2)) : 0;
                   let remainingFasih = (item.target_fasih_total || 0) - fasihSelesai;
 
+                  // Kecepatan yang perlu dicapai agar selesai tepat waktu
+                  let requiredRate = (remainingFasih > 0 && daysRemaining > 0)
+                    ? parseFloat((remainingFasih / daysRemaining).toFixed(2))
+                    : (remainingFasih <= 0 ? 0 : null);
+
+                  // Perkiraan hari selesai dengan laju saat ini
+                  let daysNeededVal = null;
+                  if (remainingFasih <= 0) {
+                    daysNeededVal = 0;
+                  } else if (runrate > 0) {
+                    daysNeededVal = Math.ceil(remainingFasih / runrate);
+                  }
+
                   let statusBadge = '';
                   let statusText = '';
-                  let statusSortVal = 999;
+                  let statusSortVal = 9999;
 
                   if (remainingFasih <= 0) {
                     statusBadge = 'badge-green';
@@ -100,16 +114,14 @@
                     statusBadge = 'badge-red';
                     statusText = 'Stagnan';
                     statusSortVal = 9999;
+                  } else if (daysNeededVal <= daysRemaining) {
+                    statusBadge = 'badge-blue';
+                    statusText = 'On Track';
+                    statusSortVal = daysNeededVal;
                   } else {
-                    let daysNeeded = Math.ceil(remainingFasih / runrate);
-                    statusSortVal = daysNeeded;
-                    if (daysNeeded <= daysRemaining) {
-                      statusBadge = 'badge-blue';
-                      statusText = `On Track (${daysNeeded} hr)`;
-                    } else {
-                      statusBadge = 'badge-red';
-                      statusText = `Off Track (+${daysNeeded - daysRemaining} hr)`;
-                    }
+                    statusBadge = 'badge-red';
+                    statusText = 'Off Track';
+                    statusSortVal = daysNeededVal;
                   }
                 %>
                 <tr style="border-bottom: 1px solid var(--border);">
@@ -155,6 +167,28 @@
                   <td class="text-right bg-blue-soft" data-sort="<%= runrate %>" style="padding: 10px 8px; font-weight: 500;">
                     <%= runrate.toFixed(2) %>
                   </td>
+                  <td class="text-right bg-orange-soft" data-sort="<%= requiredRate !== null ? requiredRate : 9999 %>" style="padding: 10px 8px; font-weight: 500;">
+                    <% if (remainingFasih <= 0) { %>
+                      <span style="color: var(--accent-green);">—</span>
+                    <% } else if (daysRemaining <= 0) { %>
+                      <span style="color: var(--accent-red); font-weight:700;">∞</span>
+                    <% } else { %>
+                      <span style="color: <%= requiredRate > runrate ? 'var(--accent-red)' : 'var(--accent-cyan)' %>; font-weight: 600;">
+                        <%= requiredRate.toFixed(2) %>
+                      </span>
+                    <% } %>
+                  </td>
+                  <td class="text-right bg-orange-soft" data-sort="<%= daysNeededVal !== null ? daysNeededVal : 9999 %>" style="padding: 10px 8px;">
+                    <% if (remainingFasih <= 0) { %>
+                      <span style="color: var(--accent-green);">—</span>
+                    <% } else if (daysNeededVal === null) { %>
+                      <span style="color: var(--accent-red); font-weight:700;">∞</span>
+                    <% } else { %>
+                      <span style="color: <%= daysNeededVal > daysRemaining ? 'var(--accent-red)' : 'var(--text-primary)' %>; font-weight: 500;">
+                        <%= daysNeededVal %>
+                      </span>
+                    <% } %>
+                  </td>
                   <td class="text-center bg-blue-soft" data-sort="<%= statusSortVal %>" style="padding: 10px 8px;">
                     <span class="badge <%= statusBadge %>" style="font-size: 10px; padding: 3px 8px;"><%= statusText %></span>
                   </td>
@@ -162,7 +196,7 @@
               <% }) %>
             <% } else { %>
               <tr>
-                <td colspan="13" class="text-center" style="padding: 24px; color: var(--text-muted);">
+                <td colspan="15" class="text-center" style="padding: 24px; color: var(--text-muted);">
                   <i class="bi bi-inbox" style="font-size: 24px; display: block; margin-bottom: 8px;"></i>
                   Tidak ada data PCL ditemukan.
                 </td>

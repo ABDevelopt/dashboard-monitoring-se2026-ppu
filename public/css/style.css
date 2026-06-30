@@ -957,6 +957,7 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
 .bg-blue-soft { background-color: rgba(59, 130, 246, 0.05) !important; }
 .bg-green-soft { background-color: rgba(16, 185, 129, 0.05) !important; }
 .bg-red-soft { background-color: rgba(239, 68, 68, 0.05) !important; }
+.bg-orange-soft { background-color: rgba(249, 115, 22, 0.05) !important; }
 
 
 /* ====================================================

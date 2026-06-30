@@ -103,8 +103,10 @@
                   <th class="text-right bg-cyan-soft muatan-col">Progres %</th>
                   <th class="text-right bg-green-soft hide-sm muatan-col">Ditemukan</th>
                   <th class="text-right bg-green-soft hide-sm muatan-col">Baru</th>
-                  <th class="text-right bg-blue-soft hide-sm">Laju (FASIH/Hari)</th>
-                  <th class="text-center bg-blue-soft hide-sm" style="min-width: 130px;">Perkiraan</th>
+                  <th class="text-right bg-blue-soft hide-sm">Laju Saat Ini</th>
+                  <th class="text-right bg-orange-soft hide-sm" style="min-width: 90px;">Kec. Perlu/Hr</th>
+                  <th class="text-right bg-orange-soft hide-sm" style="min-width: 80px;">Perlu (Hari)</th>
+                  <th class="text-center bg-blue-soft hide-sm" style="min-width: 90px;">Status</th>
                 </tr>
               </thead>
               <thead class="show-sm-table-header">
@@ -158,35 +160,70 @@
                     </td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.keluarga_ditemukan_total %>"><%= (p.keluarga_ditemukan_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.keluarga_baru_total %>"><%= (p.keluarga_baru_total || 0).toLocaleString('id-ID') %></td>
-                    <% 
-                      let totalFasihProgress = (p.draft_total || 0) + (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
-                      let runrate = (totalFasihProgress / (diffDays || 1)).toFixed(2);
-                      let remainingFasih = (p.target_fasih_total || 0) - totalFasihProgress;
+                    <%
+                      let fasihSelesaiPcl = (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
+                      let totalFasihProgress = (p.draft_total || 0) + fasihSelesaiPcl;
+                      let runrate = diffDays > 0 ? parseFloat((fasihSelesaiPcl / diffDays).toFixed(2)) : 0;
+                      let remainingFasih = (p.target_fasih_total || 0) - fasihSelesaiPcl;
+
+                      // Kecepatan yang perlu dicapai agar selesai tepat waktu
+                      let requiredRatePcl = (remainingFasih > 0 && daysRemaining > 0)
+                        ? parseFloat((remainingFasih / daysRemaining).toFixed(2))
+                        : (remainingFasih <= 0 ? 0 : null);
+
+                      // Perkiraan hari selesai dengan laju saat ini
+                      let daysNeededPcl = null;
+                      if (remainingFasih <= 0) {
+                        daysNeededPcl = 0;
+                      } else if (runrate > 0) {
+                        daysNeededPcl = Math.ceil(remainingFasih / runrate);
+                      }
+
                       let statusBadge = '';
                       let statusText = '';
-                      let sortValue = 0;
+                      let sortValue = 9999;
 
                       if (remainingFasih <= 0) {
                         statusBadge = 'badge-green';
                         statusText = 'Selesai';
                         sortValue = 0;
-                      } else if (parseFloat(runrate) <= 0) {
+                      } else if (runrate <= 0) {
                         statusBadge = 'badge-red';
-                        statusText = 'Stagnan (0/hr)';
+                        statusText = 'Stagnan';
                         sortValue = 999999;
+                      } else if (daysNeededPcl <= daysRemaining) {
+                        statusBadge = 'badge-blue';
+                        statusText = 'On Track';
+                        sortValue = daysNeededPcl;
                       } else {
-                        let daysNeeded = Math.ceil(remainingFasih / parseFloat(runrate));
-                        sortValue = daysNeeded;
-                        if (daysNeeded <= daysRemaining) {
-                          statusBadge = 'badge-blue';
-                          statusText = `On Track (${daysNeeded} hr)`;
-                        } else {
-                          statusBadge = 'badge-red';
-                          statusText = `Off Track (+${daysNeeded - daysRemaining} hr)`;
-                        }
+                        statusBadge = 'badge-red';
+                        statusText = 'Off Track';
+                        sortValue = daysNeededPcl;
                       }
                     %>
-                    <td class="text-right bg-blue-soft hide-sm" data-sort="<%= parseFloat(runrate) %>" style="font-weight: 500;"><%= runrate %></td>
+                    <td class="text-right bg-blue-soft hide-sm" data-sort="<%= runrate %>" style="font-weight: 500;"><%= runrate.toFixed(2) %></td>
+                    <td class="text-right bg-orange-soft hide-sm" data-sort="<%= requiredRatePcl !== null ? requiredRatePcl : 9999 %>" style="font-weight: 500;">
+                      <% if (remainingFasih <= 0) { %>
+                        <span style="color: var(--accent-green);">—</span>
+                      <% } else if (daysRemaining <= 0) { %>
+                        <span style="color: var(--accent-red); font-weight:700;">∞</span>
+                      <% } else { %>
+                        <span style="color: <%= requiredRatePcl > runrate ? 'var(--accent-red)' : 'var(--accent-cyan)' %>; font-weight: 600;">
+                          <%= requiredRatePcl.toFixed(2) %>
+                        </span>
+                      <% } %>
+                    </td>
+                    <td class="text-right bg-orange-soft hide-sm" data-sort="<%= daysNeededPcl !== null ? daysNeededPcl : 9999 %>">
+                      <% if (remainingFasih <= 0) { %>
+                        <span style="color: var(--accent-green);">—</span>
+                      <% } else if (daysNeededPcl === null) { %>
+                        <span style="color: var(--accent-red); font-weight:700;">∞</span>
+                      <% } else { %>
+                        <span style="color: <%= daysNeededPcl > daysRemaining ? 'var(--accent-red)' : 'var(--text-primary)' %>; font-weight: 500;">
+                          <%= daysNeededPcl %>
+                        </span>
+                      <% } %>
+                    </td>
                     <td class="text-center bg-blue-soft hide-sm" data-sort="<%= sortValue %>">
                       <span class="badge <%= statusBadge %>"><%= statusText %></span>
                     </td>
