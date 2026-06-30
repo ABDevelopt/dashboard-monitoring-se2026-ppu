@@ -65,12 +65,7 @@
               <th style="padding: 10px 8px; min-width: 100px;">Kecamatan</th>
               <th style="padding: 10px 8px; min-width: 120px;">PML</th>
               <th style="padding: 10px 8px; min-width: 110px;">Korlap</th>
-              <th class="text-right bg-yellow-soft" style="padding: 10px 8px; width: 72px;">Draft</th>
-              <th class="text-right bg-blue-soft" style="padding: 10px 8px; width: 72px;">Submit</th>
-              <th class="text-right bg-red-soft" style="padding: 10px 8px; width: 72px;">Reject</th>
-              <th class="text-right bg-green-soft" style="padding: 10px 8px; width: 72px;">Approve</th>
               <th class="text-right bg-purple-soft" style="padding: 10px 8px; width: 72px;">Target</th>
-              <th class="text-right bg-purple-soft" style="padding: 10px 8px; width: 82px;">Progres %</th>
               <th class="text-right bg-blue-soft" style="padding: 10px 8px; width: 80px;">Laju Saat Ini</th>
               <th class="text-right bg-orange-soft" style="padding: 10px 8px; width: 90px;">Kec. Perlu/Hr</th>
               <th class="text-right bg-orange-soft" style="padding: 10px 8px; width: 80px;">Perlu (Hari)</th>
@@ -140,29 +135,8 @@
                   <td data-sort="<%= item.korlap %>" style="padding: 10px 8px; font-size: 12px;">
                     <%= item.korlap %>
                   </td>
-                  <td class="text-right bg-yellow-soft" data-sort="<%= item.draft_total || 0 %>" style="padding: 10px 8px;">
-                    <%= (item.draft_total || 0).toLocaleString('id-ID') %>
-                  </td>
-                  <td class="text-right bg-blue-soft" data-sort="<%= item.submitted_total || 0 %>" style="padding: 10px 8px;">
-                    <%= (item.submitted_total || 0).toLocaleString('id-ID') %>
-                  </td>
-                  <td class="text-right bg-red-soft" data-sort="<%= item.rejected_total || 0 %>" style="padding: 10px 8px; font-weight: 600;">
-                    <%= (item.rejected_total || 0).toLocaleString('id-ID') %>
-                  </td>
-                  <td class="text-right bg-green-soft" data-sort="<%= item.approved_total || 0 %>" style="padding: 10px 8px; font-weight: 600;">
-                    <%= (item.approved_total || 0).toLocaleString('id-ID') %>
-                  </td>
                   <td class="text-right bg-purple-soft" data-sort="<%= item.target_fasih_total || 0 %>" style="padding: 10px 8px;">
                     <%= (item.target_fasih_total || 0).toLocaleString('id-ID') %>
-                  </td>
-                  <td class="text-right bg-purple-soft" data-sort="<%= pct %>" style="padding: 10px 8px;">
-                    <% if (pct >= 100) { %>
-                      <span class="badge badge-green" style="font-size: 11px;"><%= pct %>%</span>
-                    <% } else if (pct >= 50) { %>
-                      <span class="badge badge-blue" style="font-size: 11px;"><%= pct %>%</span>
-                    <% } else { %>
-                      <span class="badge badge-red" style="font-size: 11px;"><%= pct %>%</span>
-                    <% } %>
                   </td>
                   <td class="text-right bg-blue-soft" data-sort="<%= runrate %>" style="padding: 10px 8px; font-weight: 500;">
                     <%= runrate.toFixed(2) %>
@@ -196,7 +170,7 @@
               <% }) %>
             <% } else { %>
               <tr>
-                <td colspan="15" class="text-center" style="padding: 24px; color: var(--text-muted);">
+                <td colspan="10" class="text-center" style="padding: 24px; color: var(--text-muted);">
                   <i class="bi bi-inbox" style="font-size: 24px; display: block; margin-bottom: 8px;"></i>
                   Tidak ada data PCL ditemukan.
                 </td>
