@@ -3,5 +3,18 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home/username/path/to/your/app
     - /bin/mkdir -p $DEPLOYPATH
-    - /usr/bin/rsync -arv --exclude='.git' --exclude='node_modules' --exclude='uploads' --exclude='.gemini' --exclude='.agents' --exclude='scratch' --exclude='*.xlsx' --exclude='*.xls' * $DEPLOYPATH
+    # Deploy folders explicitly (avoiding wildcard * to prevent deploying internal git directories)
+    - /usr/bin/rsync -arv routes $DEPLOYPATH
+    - /usr/bin/rsync -arv services $DEPLOYPATH
+    - /usr/bin/rsync -arv views $DEPLOYPATH
+    - /usr/bin/rsync -arv public $DEPLOYPATH
+    - /usr/bin/rsync -arv data $DEPLOYPATH
+    # Deploy configuration and startup files
+    - /bin/cp package.json $DEPLOYPATH
+    - /bin/cp package-lock.json $DEPLOYPATH
+    - /bin/cp server.js $DEPLOYPATH
+    - /bin/cp database.js $DEPLOYPATH
+    - /bin/cp rancangan-muatan-se2026-ppu.xlsx $DEPLOYPATH
+    # Ensure uploads directory is created
     - /bin/mkdir -p $DEPLOYPATH/uploads
+
