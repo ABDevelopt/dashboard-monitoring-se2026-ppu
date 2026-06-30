@@ -87,6 +87,7 @@
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
                   <th colspan="6" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
                   <th colspan="5" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
+                  <th colspan="2" class="text-center bg-blue-soft hide-sm" style="border-bottom: 1px solid var(--border);">Proyeksi (Deadline: 31 Agt)</th>
                 </tr>
                 <tr>
                   <!-- <th class="text-right">Total</th> -->
@@ -102,6 +103,8 @@
                   <th class="text-right bg-cyan-soft muatan-col">Progres %</th>
                   <th class="text-right bg-green-soft hide-sm muatan-col">Ditemukan</th>
                   <th class="text-right bg-green-soft hide-sm muatan-col">Baru</th>
+                  <th class="text-right bg-blue-soft hide-sm">Laju (FASIH/Hari)</th>
+                  <th class="text-center bg-blue-soft hide-sm" style="min-width: 130px;">Perkiraan</th>
                 </tr>
               </thead>
               <thead class="show-sm-table-header">
@@ -155,6 +158,38 @@
                     </td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.keluarga_ditemukan_total %>"><%= (p.keluarga_ditemukan_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.keluarga_baru_total %>"><%= (p.keluarga_baru_total || 0).toLocaleString('id-ID') %></td>
+                    <% 
+                      let totalFasihProgress = (p.draft_total || 0) + (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
+                      let runrate = (totalFasihProgress / (diffDays || 1)).toFixed(2);
+                      let remainingFasih = (p.target_fasih_total || 0) - totalFasihProgress;
+                      let statusBadge = '';
+                      let statusText = '';
+                      let sortValue = 0;
+
+                      if (remainingFasih <= 0) {
+                        statusBadge = 'badge-green';
+                        statusText = 'Selesai';
+                        sortValue = 0;
+                      } else if (parseFloat(runrate) <= 0) {
+                        statusBadge = 'badge-red';
+                        statusText = 'Stagnan (0/hr)';
+                        sortValue = 999999;
+                      } else {
+                        let daysNeeded = Math.ceil(remainingFasih / parseFloat(runrate));
+                        sortValue = daysNeeded;
+                        if (daysNeeded <= daysRemaining) {
+                          statusBadge = 'badge-blue';
+                          statusText = `Mampu (${daysNeeded} hr)`;
+                        } else {
+                          statusBadge = 'badge-red';
+                          statusText = `Tdk Mampu (+${daysNeeded - daysRemaining} hr)`;
+                        }
+                      }
+                    %>
+                    <td class="text-right bg-blue-soft hide-sm" data-sort="<%= parseFloat(runrate) %>" style="font-weight: 500;"><%= runrate %></td>
+                    <td class="text-center bg-blue-soft hide-sm" data-sort="<%= sortValue %>">
+                      <span class="badge <%= statusBadge %>"><%= statusText %></span>
+                    </td>
 
                   </tr>
                 <% }) %>
