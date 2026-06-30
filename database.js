@@ -610,6 +610,11 @@ function getTopPerformers(uploadId, filters = {}) {
     params.push(filters.pml);
   }
 
+  let limit = typeof filters.limit !== 'undefined' ? filters.limit : 5;
+  if (limit === null || limit === false) {
+    limit = -1; // SQLite uses -1 for no limit
+  }
+
   const settings = getSettings();
   const isStatic = settings.target_fasih_mode === 'static';
 
@@ -641,8 +646,8 @@ function getTopPerformers(uploadId, filters = {}) {
     WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
     ORDER BY pct DESC, (submitted_total + approved_total + rejected_total) DESC, target_fasih_total DESC
-    LIMIT 5
-  `).all(...params);
+    LIMIT ?
+  `).all(...params, limit);
 
   const topPml = getDb().prepare(`
     SELECT 
@@ -664,8 +669,8 @@ function getTopPerformers(uploadId, filters = {}) {
     WHERE 1=1 ${where}
     GROUP BY m.pml COLLATE NOCASE
     ORDER BY pct DESC, (submitted_total + approved_total + rejected_total) DESC, target_fasih_total DESC
-    LIMIT 5
-  `).all(...params);
+    LIMIT ?
+  `).all(...params, limit);
 
   return { topPcl, topPml };
 }
@@ -686,6 +691,11 @@ function getBottomPerformers(uploadId, filters = {}) {
   if (filters.pml) {
     where += ' AND LOWER(m.pml) LIKE ?';
     params.push(`%${filters.pml.toLowerCase()}%`);
+  }
+
+  let limit = typeof filters.limit !== 'undefined' ? filters.limit : 5;
+  if (limit === null || limit === false) {
+    limit = -1; // SQLite uses -1 for no limit
   }
 
   const settings = getSettings();
@@ -719,8 +729,8 @@ function getBottomPerformers(uploadId, filters = {}) {
     WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
     ORDER BY pct ASC, (submitted_total + approved_total + rejected_total) ASC, target_fasih_total DESC
-    LIMIT 5
-  `).all(...params);
+    LIMIT ?
+  `).all(...params, limit);
 
   const bottomPml = getDb().prepare(`
     SELECT 
@@ -742,8 +752,8 @@ function getBottomPerformers(uploadId, filters = {}) {
     WHERE 1=1 ${where}
     GROUP BY m.pml COLLATE NOCASE
     ORDER BY pct ASC, (submitted_total + approved_total + rejected_total) ASC, target_fasih_total DESC
-    LIMIT 5
-  `).all(...params);
+    LIMIT ?
+  `).all(...params, limit);
 
   return { bottomPcl, bottomPml };
 }

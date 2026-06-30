@@ -57,10 +57,10 @@
     <!-- TABS CONTROLLER -->
     <div style="display: flex; gap: 8px; margin-bottom: 20px; background: var(--bg-card); padding: 8px; border-radius: var(--border-radius); border: 1px solid var(--border);">
       <button type="button" id="tabBtnTerbaik" class="btn btn-sm" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 10px 16px; border-radius: 6px; transition: all 0.2s;" onclick="setActiveTab('terbaik')">
-        <i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Performa Terbaik (Top 5)
+        <i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Performa Terbaik (Urutan Tertinggi)
       </button>
       <button type="button" id="tabBtnTerendah" class="btn btn-sm" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 10px 16px; border-radius: 6px; transition: all 0.2s;" onclick="setActiveTab('terendah')">
-        <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red);"></i> Performa Terendah (Bottom 5)
+        <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red);"></i> Performa Terendah (Urutan Terendah)
       </button>
     </div>
 
@@ -72,14 +72,14 @@
         <div>
           <div class="card" style="margin-bottom: 20px;">
             <div class="card-header" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px;">
-              <div class="card-title"><i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Top 5 PCL Berperforma Terbaik</div>
+              <div class="card-title"><i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Daftar PCL Berperforma Terbaik (Urutan Tertinggi)</div>
               <span class="badge badge-green">Pencacah Lapangan</span>
             </div>
             
-            <div class="table-wrap" style="overflow-x: auto;">
+            <div class="table-wrap" style="overflow-x: auto; max-height: 520px;">
               <table style="width: 100%; border-collapse: collapse;">
                 <thead>
-                  <tr style="border-bottom: 2px solid var(--border);">
+                  <tr style="border-bottom: 2px solid var(--border); position: sticky; top: 0; background: var(--bg-card); z-index: 10;">
                     <th class="text-center" style="padding: 10px 8px; width: 40px;">No</th>
                     <th>Nama PCL / Informasi Tim</th>
                     <th class="text-right bg-purple-soft" style="width: 80px;">Target</th>
@@ -150,14 +150,14 @@
         <div>
           <div class="card" style="margin-bottom: 20px;">
             <div class="card-header" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px;">
-              <div class="card-title"><i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Top 5 PML Berperforma Terbaik</div>
+              <div class="card-title"><i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Daftar PML Berperforma Terbaik (Urutan Tertinggi)</div>
               <span class="badge badge-blue">Pengawas Lapangan</span>
             </div>
 
-            <div class="table-wrap" style="overflow-x: auto;">
+            <div class="table-wrap" style="overflow-x: auto; max-height: 520px;">
               <table style="width: 100%; border-collapse: collapse;">
                 <thead>
-                  <tr style="border-bottom: 2px solid var(--border);">
+                  <tr style="border-bottom: 2px solid var(--border); position: sticky; top: 0; background: var(--bg-card); z-index: 10;">
                     <th class="text-center" style="padding: 10px 8px; width: 40px;">No</th>
                     <th>Nama PML / Tim</th>
                     <th class="text-right bg-purple-soft" style="width: 100px;">Target Tim</th>
@@ -205,14 +205,14 @@
         <div>
           <div class="card" style="margin-bottom: 20px;">
             <div class="card-header" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px;">
-              <div class="card-title"><i class="bi bi-arrow-down-circle-fill" style="color: var(--accent-red);"></i> 5 PCL Performa Terendah</div>
+              <div class="card-title"><i class="bi bi-arrow-down-circle-fill" style="color: var(--accent-red);"></i> Daftar PCL Performa Terendah (Urutan Terendah)</div>
               <span class="badge badge-red">Pencacah Lapangan</span>
             </div>
             
-            <div class="table-wrap" style="overflow-x: auto;">
+            <div class="table-wrap" style="overflow-x: auto; max-height: 520px;">
               <table style="width: 100%; border-collapse: collapse;">
                 <thead>
-                  <tr style="border-bottom: 2px solid var(--border);">
+                  <tr style="border-bottom: 2px solid var(--border); position: sticky; top: 0; background: var(--bg-card); z-index: 10;">
                     <th class="text-center" style="padding: 10px 8px; width: 40px;">No</th>
                     <th>Nama PCL / Informasi Tim</th>
                     <th class="text-right bg-purple-soft" style="width: 80px;">Target</th>
@@ -283,14 +283,14 @@
         <div>
           <div class="card" style="margin-bottom: 20px;">
             <div class="card-header" style="border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px;">
-              <div class="card-title"><i class="bi bi-arrow-down-circle-fill" style="color: var(--accent-red);"></i> 5 PML Performa Terendah</div>
+              <div class="card-title"><i class="bi bi-arrow-down-circle-fill" style="color: var(--accent-red);"></i> Daftar PML Performa Terendah (Urutan Terendah)</div>
               <span class="badge badge-red">Pengawas Lapangan</span>
             </div>
 
-            <div class="table-wrap" style="overflow-x: auto;">
+            <div class="table-wrap" style="overflow-x: auto; max-height: 520px;">
               <table style="width: 100%; border-collapse: collapse;">
                 <thead>
-                  <tr style="border-bottom: 2px solid var(--border);">
+                  <tr style="border-bottom: 2px solid var(--border); position: sticky; top: 0; background: var(--bg-card); z-index: 10;">
                     <th class="text-center" style="padding: 10px 8px; width: 40px;">No</th>
                     <th>Nama PML / Tim</th>
                     <th class="text-right bg-purple-soft" style="width: 100px;">Target Tim</th>

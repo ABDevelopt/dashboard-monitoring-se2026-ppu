@@ -12,8 +12,8 @@ router.get('/', (req, res) => {
   let performers = { topPcl: [], topPml: [], bottomPcl: [], bottomPml: [] };
 
   if (uploadId) {
-    const top = getTopPerformers(uploadId, { kec: filterKec, korlap: filterKorlap, pml: filterPml });
-    const bottom = getBottomPerformers(uploadId, { kec: filterKec, korlap: filterKorlap, pml: filterPml });
+    const top = getTopPerformers(uploadId, { kec: filterKec, korlap: filterKorlap, pml: filterPml, limit: null });
+    const bottom = getBottomPerformers(uploadId, { kec: filterKec, korlap: filterKorlap, pml: filterPml, limit: null });
     performers = {
       topPcl: top.topPcl || [],
       topPml: top.topPml || [],
