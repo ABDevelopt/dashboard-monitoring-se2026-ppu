@@ -76,6 +76,56 @@ function loadMasterFromJson(jsonPath) {
   return rows.length;
 }
 
+function findCol(headers, aliases) {
+  for (const alias of aliases) {
+    const idx = headers.indexOf(alias);
+    if (idx !== -1) return idx;
+  }
+  for (const alias of aliases) {
+    const idx = headers.findIndex(h => h.includes(alias));
+    if (idx !== -1) return idx;
+  }
+  return -1;
+}
+
+function findDataSheet(wb) {
+  const priorityNames = ['query', 'sheet1', wb.SheetNames[0]];
+  for (const name of priorityNames) {
+    if (!name) continue;
+    const actualName = wb.SheetNames.find(s => s.toLowerCase().trim() === name.toLowerCase().trim());
+    if (actualName) {
+      const ws = wb.Sheets[actualName];
+      if (ws) {
+        const tempRows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
+        if (tempRows.length > 0) {
+          const tempHeaders = tempRows[0].map(h => String(h || '').toLowerCase().trim());
+          const hasKode = tempHeaders.some(h => ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls'].some(alias => h.includes(alias)));
+          if (hasKode) return ws;
+        }
+      }
+    }
+  }
+
+  for (const name of wb.SheetNames) {
+    const isPriority = priorityNames.some(p => p && p.toLowerCase().trim() === name.toLowerCase().trim());
+    if (isPriority) continue;
+    const ws = wb.Sheets[name];
+    if (ws) {
+      const tempRows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
+      if (tempRows.length > 0) {
+        const tempHeaders = tempRows[0].map(h => String(h || '').toLowerCase().trim());
+        const hasKode = tempHeaders.some(h => ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls'].some(alias => h.includes(alias)));
+        if (hasKode) return ws;
+      }
+    }
+  }
+
+  if (wb.SheetNames.length > 0) {
+    return wb.Sheets[wb.SheetNames[0]];
+  }
+  return null;
+}
+
 // Parse Excel dan simpan ke DB
 function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, statusFilePath = null, statusOriginalFilename = null, statusStoredFilename = null) {
   const db = getDb();
@@ -110,37 +160,40 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
 
   const wb = XLSX.readFile(filePath, { raw: true });
 
-  // Ambil sheet query
-  const ws = wb.Sheets['query'];
-  if (!ws) throw new Error('Sheet "query" tidak ditemukan dalam file Excel.');
+  const ws = findDataSheet(wb);
+  if (!ws) throw new Error('File Excel kosong atau tidak memiliki sheet data yang valid.');
 
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: 0 });
-  if (rows.length < 2) throw new Error('Sheet "query" kosong.');
+  if (rows.length < 2) throw new Error('Sheet data kosong.');
 
   // Header row index 0
   const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
 
   // Cari index kolom
   const colIdx = {
-    desa: headers.indexOf('desa'),
-    kode: headers.indexOf('level_6_full_code'),
-    usaha_tidak_ditemukan: headers.indexOf('usaha_tidak_ditemukan'),
-    usaha_ditemukan: headers.indexOf('usaha_ditemukan'),
-    usaha_baru: headers.indexOf('usaha_baru'),
-    usaha_tutup: headers.indexOf('usaha_tutup'),
-    usaha_ganda: headers.indexOf('usaha_ganda'),
-    tidak_ditemukan: headers.indexOf('tidak_ditemukan'),
-    ditemukan: headers.indexOf('ditemukan'),
-    keluarga_baru: headers.indexOf('keluarga_baru'),
-    meninggal: headers.indexOf('meninggal'),
-    tidak_eligible: headers.indexOf('tidak_eligible'),
-    tidak_dapat_ditemui: headers.indexOf('tidak_dapat_ditemui'),
-    rumah_tunggal: headers.indexOf('rumah_tunggal'),
-    rumah_deret: headers.indexOf('rumah_deret'),
-    rumah_susun: headers.indexOf('rumah_susun'),
-    apartemen: headers.indexOf('apartemen'),
-    lainnya: headers.indexOf('lainnya'),
+    desa: findCol(headers, ['desa', 'nama_desa', 'kelurahan']),
+    kode: findCol(headers, ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls']),
+    usaha_tidak_ditemukan: findCol(headers, ['usaha_tidak_ditemukan', 'usaha tidak ditemukan', 'usaha_tutup_sementara']),
+    usaha_ditemukan: findCol(headers, ['usaha_ditemukan', 'usaha ditemukan']),
+    usaha_baru: findCol(headers, ['usaha_baru', 'usaha baru']),
+    usaha_tutup: findCol(headers, ['usaha_tutup', 'usaha tutup', 'usaha_tutup_permanen']),
+    usaha_ganda: findCol(headers, ['usaha_ganda', 'usaha ganda']),
+    tidak_ditemukan: findCol(headers, ['tidak_ditemukan', 'tidak ditemukan', 'kk_tidak_ditemukan', 'keluarga_tidak_ditemukan']),
+    ditemukan: findCol(headers, ['ditemukan', 'kk_ditemukan', 'keluarga_ditemukan']),
+    keluarga_baru: findCol(headers, ['keluarga_baru', 'keluarga baru', 'kk_baru', 'kk baru']),
+    meninggal: findCol(headers, ['meninggal', 'kk_meninggal', 'kk meninggal', 'keluarga_meninggal']),
+    tidak_eligible: findCol(headers, ['tidak_eligible', 'kk_tidak_eligible', 'kk tidak eligible', 'keluarga_tidak_eligible', 'tidak eligible']),
+    tidak_dapat_ditemui: findCol(headers, ['tidak_dapat_ditemui', 'kk_tidak_dapat_ditemui', 'kk tidak dapat ditemui', 'keluarga_tidak_dapat_ditemui', 'tidak dapat ditemui']),
+    rumah_tunggal: findCol(headers, ['rumah_tunggal', 'rumah tunggal', 'tunggal']),
+    rumah_deret: findCol(headers, ['rumah_deret', 'rumah deret', 'deret']),
+    rumah_susun: findCol(headers, ['rumah_susun', 'rumah susun', 'susun']),
+    apartemen: findCol(headers, ['apartemen', 'apartment']),
+    lainnya: findCol(headers, ['lainnya', 'lain'])
   };
+
+  if (colIdx.kode === -1) {
+    throw new Error('Kolom identitas wilayah/SLS ("level_6_full_code" atau "smallcode") tidak ditemukan dalam file Excel.');
+  }
 
   // Insert upload record
   const uploadStmt = db.prepare(`
@@ -295,8 +348,7 @@ function findStatusColumnIndexes(headers) {
 function parseAndSaveStatusExcel(filePath, uploadId) {
   const db = getDb();
   const wb = XLSX.readFile(filePath, { raw: true });
-  const sheetName = wb.SheetNames[0];
-  const ws = wb.Sheets[sheetName];
+  const ws = findDataSheet(wb);
   if (!ws) throw new Error('Sheet dalam file rekap status tidak ditemukan.');
 
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: 0 });
@@ -340,8 +392,7 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
 function parseAndSaveStatusExcelOnly(filePath, uploadId, prevUploadId = null) {
   const db = getDb();
   const wb = XLSX.readFile(filePath, { raw: true });
-  const sheetName = wb.SheetNames[0];
-  const ws = wb.Sheets[sheetName];
+  const ws = findDataSheet(wb);
   if (!ws) throw new Error('Sheet dalam file rekap status tidak ditemukan.');
 
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: 0 });

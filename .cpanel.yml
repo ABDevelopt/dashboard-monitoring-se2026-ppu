@@ -1,0 +1,7 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/username/path/to/your/app
+    - /bin/mkdir -p $DEPLOYPATH
+    - /usr/bin/rsync -arv --exclude='.git' --exclude='node_modules' --exclude='uploads' --exclude='.gemini' --exclude='.agents' --exclude='scratch' --exclude='*.xlsx' --exclude='*.xls' * $DEPLOYPATH
+    - /bin/mkdir -p $DEPLOYPATH/uploads
