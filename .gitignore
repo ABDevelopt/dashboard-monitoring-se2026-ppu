@@ -21,3 +21,9 @@ uploads/*
 # Temporary Office lock files
 ~$*.xlsx
 ~$*.xls
+
+# Untracked spreadsheets and scratch folder
+*.xlsx
+*.xls
+!rancangan-muatan-se2026-ppu.xlsx
+scratch/
