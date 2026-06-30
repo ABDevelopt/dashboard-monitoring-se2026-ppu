@@ -16,25 +16,20 @@ router.get('/', (req, res) => {
     performers = { topPcl: top.topPcl || [] };
   }
 
-  // Hitung hari berjalan & sisa hari menuju deadline 31 Agustus 2026
+  // Hitung hari berjalan dari tanggal mulai pendataan (15 Juni 2026) & sisa hari menuju deadline
+  const START_DATE = new Date('2026-06-15');
   let diffDays = 1;
   let daysRemaining = 0;
   if (uploadId) {
     const currentUpload = getDb().prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
-    const firstUpload = getDb().prepare('SELECT MIN(tanggal) as min_tanggal FROM uploads').get();
-
-    if (currentUpload && firstUpload && firstUpload.min_tanggal) {
-      const d1 = new Date(firstUpload.min_tanggal);
-      const d2 = new Date(currentUpload.tanggal);
-      const diffTime = d2 - d1;
-      diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
-    }
 
     if (currentUpload) {
       const d2 = new Date(currentUpload.tanggal);
+      const diffTime = d2 - START_DATE;
+      diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+
       const deadline = new Date('2026-08-31');
-      const diffTime = deadline - d2;
-      daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+      daysRemaining = Math.max(0, Math.ceil((deadline - d2) / (1000 * 60 * 60 * 24)));
     }
   }
 
