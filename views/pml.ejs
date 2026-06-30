@@ -44,10 +44,10 @@
                   <th colspan="3" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
                 </tr>
                 <tr>
-                  <th class="text-right bg-purple-soft">Draft</th>
-                  <th class="text-right bg-purple-soft">Submitted</th>
-                  <th class="text-right bg-purple-soft">Rejected</th>
-                  <th class="text-right bg-purple-soft">Approved</th>
+                  <th class="text-right bg-yellow-soft">Draft</th>
+                  <th class="text-right bg-blue-soft">Submitted</th>
+                  <th class="text-right bg-red-soft">Rejected</th>
+                  <th class="text-right bg-green-soft">Approved</th>
                   <th class="text-right bg-purple-soft">Target</th>
                   <th class="text-right bg-purple-soft">Progres %</th>
                   <th class="text-right bg-cyan-soft muatan-col">Usaha Total</th>
@@ -79,10 +79,10 @@
                     <td class="text-right hide-sm" data-sort="<%= p.jumlah_pcl %>"><%= p.jumlah_pcl %> PCL</td>
                     <!-- <td class="text-right hide-sm" data-sort="<%= p.total_subsls %>"><%= p.total_subsls %></td> -->
                     <!-- <td class="text-right fw-bold" data-sort="<%= p.selesai %>" style="<%= p.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= p.selesai %></td> -->
-                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.draft_total %>"><%= (p.draft_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.submitted_total %>"><%= (p.submitted_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.rejected_total %>" style="<%= p.rejected_total > 0 ? 'color: var(--accent-red);' : '' %>"><%= (p.rejected_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.approved_total %>" style="<%= p.approved_total > 0 ? 'color: var(--accent-green);' : '' %>"><%= (p.approved_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-yellow-soft hide-sm status-draft-text" data-sort="<%= p.draft_total %>"><%= (p.draft_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-blue-soft hide-sm status-submit-text" data-sort="<%= p.submitted_total %>"><%= (p.submitted_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-red-soft hide-sm status-reject-text" data-sort="<%= p.rejected_total %>" style="font-weight: 600;"><%= (p.rejected_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-green-soft hide-sm status-approve-text" data-sort="<%= p.approved_total %>" style="font-weight: 600;"><%= (p.approved_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.target_fasih_total %>"><%= (p.target_fasih_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>">
                       <% if (parseFloat(fasihPct) >= 100) { %>

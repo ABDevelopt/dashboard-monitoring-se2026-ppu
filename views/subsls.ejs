@@ -118,10 +118,10 @@
                 <th colspan="4" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
               </tr>
               <tr>
-                <th class="text-right bg-purple-soft">Draft</th>
-                <th class="text-right bg-purple-soft">Submitted</th>
-                <th class="text-right bg-purple-soft">Approved</th>
-                <th class="text-right bg-purple-soft">Rejected</th>
+                <th class="text-right bg-yellow-soft">Draft</th>
+                <th class="text-right bg-blue-soft">Submitted</th>
+                <th class="text-right bg-green-soft">Approved</th>
+                <th class="text-right bg-red-soft">Rejected</th>
                 <th class="text-right bg-purple-soft">Target</th>
                 
                 <th class="text-right bg-cyan-soft muatan-col">Usaha Total</th>
@@ -153,10 +153,10 @@
                     <!-- <% } %> -->
                   <!-- </td> -->
                   
-                  <td class="text-right bg-purple-soft" data-sort="<%= row.draft %>"><%= (row.draft || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-purple-soft" data-sort="<%= row.submitted_by_pcl %>"><%= (row.submitted_by_pcl || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-purple-soft fw-bold" data-sort="<%= row.approved %>"><%= (row.approved || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-purple-soft" data-sort="<%= row.rejected %>" style="<%= row.rejected > 0 ? 'color: var(--accent-red); font-weight: bold;' : '' %>"><%= (row.rejected || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-yellow-soft status-draft-text" data-sort="<%= row.draft %>"><%= (row.draft || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-blue-soft status-submit-text" data-sort="<%= row.submitted_by_pcl %>"><%= (row.submitted_by_pcl || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-green-soft status-approve-text fw-bold" data-sort="<%= row.approved %>"><%= (row.approved || 0).toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-red-soft status-reject-text" data-sort="<%= row.rejected %>" style="font-weight: 600;"><%= (row.rejected || 0).toLocaleString('id-ID') %></td>
                   <td class="text-right bg-purple-soft" data-sort="<%= row.target_fasih %>"><%= (row.target_fasih || 0).toLocaleString('id-ID') %></td>
                   
                   <td class="text-right fw-bold bg-cyan-soft muatan-col" data-sort="<%= row.usaha_total %>"><%= (row.usaha_total || 0).toLocaleString('id-ID') %></td>
