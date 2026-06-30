@@ -68,6 +68,7 @@ router.get('/', (req, res) => {
         WHERE m.pcl = ?
         ORDER BY m.kecamatan, m.desa, m.kode
       `).all(uploadId, filterPcl);
+    }
   }
 
   // Calculate elapsed days of census and remaining days until August 31, 2026
