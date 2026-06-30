@@ -270,6 +270,15 @@ function getAllUploads() {
 
 // Ambil data progres gabungan dengan master untuk upload tertentu
 function getProgresWithMaster(uploadId) {
+  const settings = getSettings();
+  const isStatic = settings.target_fasih_mode === 'static';
+
+  const singleTargetFormula = isStatic 
+    ? 'COALESCE(m.target_fasih, 0)'
+    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+
+  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
+
   return getDb().prepare(`
     SELECT 
       m.kode, m.kode_kec, m.kecamatan, m.desa, m.nama_sls,
@@ -283,8 +292,8 @@ function getProgresWithMaster(uploadId) {
       COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
       COALESCE(p.approved, 0) AS approved,
       COALESCE(p.rejected, 0) AS rejected,
-      COALESCE(m.target_fasih, 0) AS target_fasih,
-      CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END AS sudah_diisi
+      (${singleTargetFormula}) AS target_fasih,
+      (${singleSelesaiFormula}) AS sudah_diisi
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     ORDER BY m.kecamatan, m.desa, m.kode
@@ -477,6 +486,15 @@ function getEarlyWarning(uploadId, filters = {}) {
     diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
   }
 
+  const settings = getSettings();
+  const isStatic = settings.target_fasih_mode === 'static';
+
+  const singleTargetFormula = isStatic 
+    ? 'COALESCE(m.target_fasih, 0)'
+    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+
+  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
+
   let where = '';
   const paramsZeroPcl = [uploadId];
   const paramsSlowPcl = [diffDays, uploadId];
@@ -508,19 +526,19 @@ function getEarlyWarning(uploadId, filters = {}) {
       MAX(m.korlap) AS korlap, 
       MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
+      SUM(${singleSelesaiFormula}) AS selesai,
       SUM(m.muatan) AS total_muatan,
       SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_selesai,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
-    HAVING SUM(COALESCE(m.target_fasih, 0)) > 0 AND SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) = 0
+    HAVING SUM(${singleTargetFormula}) > 0 AND SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) = 0
     ORDER BY total_subsls DESC
   `).all(...paramsZeroPcl);
 
@@ -531,22 +549,22 @@ function getEarlyWarning(uploadId, filters = {}) {
       MAX(m.korlap) AS korlap, 
       MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
+      SUM(${singleSelesaiFormula}) AS selesai,
       SUM(m.muatan) AS total_muatan,
       SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_selesai,
-      CASE WHEN SUM(COALESCE(m.target_fasih, 0)) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(COALESCE(m.target_fasih, 0)), 2) ELSE 100.0 END AS pct,
+      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 100.0 END AS pct,
       SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS muatan_realisasi,
       ROUND(SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) * 1.0 / ?, 2) AS rata_rata,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
-    HAVING SUM(COALESCE(m.target_fasih, 0)) > 0 AND SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0 AND rata_rata < 5.0
+    HAVING SUM(${singleTargetFormula}) > 0 AND SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0 AND rata_rata < 5.0
     ORDER BY rata_rata ASC
   `).all(...paramsSlowPcl);
 
@@ -555,19 +573,19 @@ function getEarlyWarning(uploadId, filters = {}) {
       m.pml, 
       MAX(m.korlap) AS korlap,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
+      SUM(${singleSelesaiFormula}) AS selesai,
       SUM(m.muatan) AS total_muatan,
       SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_selesai,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pml COLLATE NOCASE
-    HAVING SUM(COALESCE(m.target_fasih, 0)) > 0 AND SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) = 0
+    HAVING SUM(${singleTargetFormula}) > 0 AND SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) = 0
     ORDER BY total_subsls DESC
   `).all(...paramsZeroPml);
 
@@ -592,6 +610,15 @@ function getTopPerformers(uploadId, filters = {}) {
     params.push(filters.pml);
   }
 
+  const settings = getSettings();
+  const isStatic = settings.target_fasih_mode === 'static';
+
+  const singleTargetFormula = isStatic 
+    ? 'COALESCE(m.target_fasih, 0)'
+    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+
+  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
+
   const topPcl = getDb().prepare(`
     SELECT 
       m.pcl, 
@@ -599,16 +626,16 @@ function getTopPerformers(uploadId, filters = {}) {
       MAX(m.korlap) AS korlap, 
       MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
+      SUM(${singleSelesaiFormula}) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      CASE WHEN SUM(COALESCE(m.target_fasih, 0)) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(COALESCE(m.target_fasih, 0)), 2) ELSE 0.0 END AS pct,
+      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 0.0 END AS pct,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
@@ -622,16 +649,16 @@ function getTopPerformers(uploadId, filters = {}) {
       m.pml, 
       MAX(m.korlap) AS korlap,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
+      SUM(${singleSelesaiFormula}) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      CASE WHEN SUM(COALESCE(m.target_fasih, 0)) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(COALESCE(m.target_fasih, 0)), 2) ELSE 0.0 END AS pct,
+      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 0.0 END AS pct,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
@@ -661,6 +688,15 @@ function getBottomPerformers(uploadId, filters = {}) {
     params.push(`%${filters.pml.toLowerCase()}%`);
   }
 
+  const settings = getSettings();
+  const isStatic = settings.target_fasih_mode === 'static';
+
+  const singleTargetFormula = isStatic 
+    ? 'COALESCE(m.target_fasih, 0)'
+    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+
+  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
+
   const bottomPcl = getDb().prepare(`
     SELECT 
       m.pcl, 
@@ -668,16 +704,16 @@ function getBottomPerformers(uploadId, filters = {}) {
       MAX(m.korlap) AS korlap, 
       MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
+      SUM(${singleSelesaiFormula}) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      CASE WHEN SUM(COALESCE(m.target_fasih, 0)) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(COALESCE(m.target_fasih, 0)), 2) ELSE 100.0 END AS pct,
+      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 100.0 END AS pct,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
@@ -691,16 +727,16 @@ function getBottomPerformers(uploadId, filters = {}) {
       m.pml, 
       MAX(m.korlap) AS korlap,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
+      SUM(${singleSelesaiFormula}) AS selesai,
       SUM(m.muatan) AS total_muatan,
-      CASE WHEN SUM(COALESCE(m.target_fasih, 0)) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(COALESCE(m.target_fasih, 0)), 2) ELSE 100.0 END AS pct,
+      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 100.0 END AS pct,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
       SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
@@ -782,7 +818,8 @@ function initSettings() {
     'overview_tren_fasih': '1',
     'overview_kecamatan': '1',
     'overview_bangunan': '1',
-    'show_progres_muatan': '1'
+    'show_progres_muatan': '1',
+    'target_fasih_mode': 'dynamic'
   };
 
   const insert = getDb().prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
@@ -815,10 +852,20 @@ function getSettings() {
   return settings;
 }
 
+function rebuildAllSummaryCaches() {
+  const uploads = getDb().prepare('SELECT id FROM uploads').all();
+  uploads.forEach(u => rebuildSummaryCache(u.id));
+}
+
 function updateSettings(settingsObj) {
+  const currentSettings = getSettings();
   const update = getDb().prepare('UPDATE settings SET value = ? WHERE key = ?');
   for (const [k, v] of Object.entries(settingsObj)) {
     update.run(v, k);
+  }
+  // Rebuild cache if target_fasih_mode changed
+  if (currentSettings.target_fasih_mode !== settingsObj.target_fasih_mode) {
+    rebuildAllSummaryCaches();
   }
 }
 
@@ -826,6 +873,15 @@ function rebuildSummaryCache(uploadId) {
   const db = getDb();
   db.prepare('DELETE FROM summary_cache WHERE upload_id = ?').run(uploadId);
   
+  const settings = getSettings();
+  const isStatic = settings.target_fasih_mode === 'static';
+
+  const singleTargetFormula = isStatic 
+    ? 'COALESCE(m.target_fasih, 0)'
+    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+
+  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
+
   db.prepare(`
     INSERT INTO summary_cache (
       upload_id, kecamatan, desa, korlap, pml, pcl,
@@ -843,7 +899,7 @@ function rebuildSummaryCache(uploadId) {
       m.pml,
       m.pcl,
       COUNT(m.kode) AS total_sls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
+      SUM(${singleSelesaiFormula}) AS selesai,
       SUM(m.muatan) AS total_muatan,
       SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_selesai,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
@@ -852,10 +908,7 @@ function rebuildSummaryCache(uploadId) {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-               THEN 0 
-               ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-          END) AS target_fasih_total,
+      SUM(${singleTargetFormula}) AS target_fasih_total,
       SUM(COALESCE(p.usaha_ditemukan, 0)) AS usaha_ditemukan,
       SUM(COALESCE(p.usaha_baru, 0)) AS usaha_baru,
       SUM(COALESCE(p.ditemukan, 0)) AS ditemukan,

@@ -57,6 +57,10 @@ router.post('/', (req, res) => {
     updatedSettings[key] = req.body[key] === '1' ? '1' : '0';
   }
 
+  if (req.body.target_fasih_mode === 'static' || req.body.target_fasih_mode === 'dynamic') {
+    updatedSettings.target_fasih_mode = req.body.target_fasih_mode;
+  }
+
   try {
     updateSettings(updatedSettings);
     req.flash('success', 'Pengaturan tampilan berhasil diperbarui.');

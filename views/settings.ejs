@@ -153,6 +153,36 @@
       color: var(--text-muted);
       line-height: 1.45;
     }
+    
+    /* Premium radio-card styling */
+    .radio-card {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+      background: rgba(255, 255, 255, 0.015);
+    }
+    body.light-mode .radio-card {
+      background: rgba(0, 0, 0, 0.01);
+    }
+    .radio-card:hover {
+      background: rgba(255, 255, 255, 0.035);
+      border-color: var(--border-light);
+    }
+    body.light-mode .radio-card:hover {
+      background: rgba(0, 0, 0, 0.025);
+    }
+    .radio-card input[type="radio"]:checked + div strong {
+      color: var(--accent-blue) !important;
+    }
+    .radio-card:has(input[type="radio"]:checked) {
+      border-color: var(--accent-blue) !important;
+      background: rgba(30, 144, 255, 0.08) !important;
+    }
   </style>
 
   <div class="card">
@@ -377,6 +407,31 @@
             <label class="toggle-switch">
               <input type="checkbox" id="show_progres_muatan" name="show_progres_muatan" value="1" <%= settings.show_progres_muatan === '1' ? 'checked' : '' %>>
               <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- GROUP 2B: METODE TARGET FASIH -->
+        <div class="settings-group">
+          <div class="settings-group-title">
+            <i class="bi bi-bullseye"></i> Metode Target FASIH
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+            <label class="radio-card">
+              <input type="radio" name="target_fasih_mode" value="dynamic" <%= settings.target_fasih_mode !== 'static' ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
+              <div style="min-width: 0;">
+                <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 1: Target Lapangan Dinamis (Default)</strong>
+                <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target = Target Awal + Temuan Baru (Usaha &amp; Keluarga Baru) - Objek Tutup &amp; Tidak Ditemukan. Sangat adil karena mengikuti beban kerja riil petugas di lapangan.</span>
+              </div>
+            </label>
+
+            <label class="radio-card">
+              <input type="radio" name="target_fasih_mode" value="static" <%= settings.target_fasih_mode === 'static' ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
+              <div style="min-width: 0;">
+                <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 2: Target Alokasi Statis (Rancangan Murni)</strong>
+                <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target dikunci mutlak berdasarkan alokasi rancangan awal. Target tidak akan pernah berubah, namun progres petugas bisa melebihi 100% jika ada temuan baru.</span>
+              </div>
             </label>
           </div>
         </div>

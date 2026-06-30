@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getTrenHarian, getKecamatanStats, getPclStats, getDb } = require('../database');
+const { getTrenHarian, getKecamatanStats, getPclStats, getDb, getSettings } = require('../database');
 
 // Tren harian (untuk Chart.js)
 router.get('/tren', (req, res) => {
@@ -47,12 +47,21 @@ router.get('/map-stats', (req, res) => {
 
   const db = getDb();
   
+  const settings = getSettings();
+  const isStatic = settings.target_fasih_mode === 'static';
+
+  const singleTargetFormula = isStatic 
+    ? 'COALESCE(m.target_fasih, 0)'
+    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+
+  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
+
   const desaStats = db.prepare(`
     SELECT 
       SUBSTR(m.kode, 1, 10) AS iddesa,
       m.kecamatan, m.desa,
       COUNT(m.kode) AS total_subsls,
-      SUM(CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END) AS selesai,
+      SUM(${singleSelesaiFormula}) AS selesai,
       SUM(m.muatan) AS total_muatan,
       SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
       SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
@@ -61,10 +70,7 @@ router.get('/map-stats', (req, res) => {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-               THEN 0 
-               ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-          END) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     GROUP BY m.kecamatan, m.desa
@@ -80,17 +86,14 @@ router.get('/map-stats', (req, res) => {
       m.pml,
       m.pcl,
       m.muatan,
-      CASE WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END AS selesai,
+      (${singleSelesaiFormula}) AS selesai,
       COALESCE(p.usaha_ditemukan + p.usaha_baru, 0) AS usaha_total,
       COALESCE(p.ditemukan + p.keluarga_baru, 0) AS keluarga_total,
       COALESCE(p.draft, 0) AS draft,
       COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
       COALESCE(p.approved, 0) AS approved,
       COALESCE(p.rejected, 0) AS rejected,
-      CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-           THEN 0 
-           ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-      END AS target_fasih
+      (${singleTargetFormula}) AS target_fasih
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
   `).all(uploadId);
@@ -103,6 +106,13 @@ router.get('/detail/korlap', (req, res) => {
   const uploadId = res.locals.uploadId;
   const name = req.query.name;
   if (!uploadId || !name) return res.json({ error: 'Parameter uploadId atau nama Korlap tidak ditemukan.' });
+
+  const settings = getSettings();
+  const isStatic = settings.target_fasih_mode === 'static';
+
+  const singleTargetFormula = isStatic 
+    ? 'COALESCE(m.target_fasih, 0)'
+    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
 
   const data = getDb().prepare(`
     SELECT 
@@ -118,10 +128,7 @@ router.get('/detail/korlap', (req, res) => {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-               THEN 0 
-               ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-          END) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE m.korlap = ?
@@ -138,6 +145,13 @@ router.get('/detail/pml', (req, res) => {
   const name = req.query.name;
   if (!uploadId || !name) return res.json({ error: 'Parameter uploadId atau nama PML tidak ditemukan.' });
 
+  const settings = getSettings();
+  const isStatic = settings.target_fasih_mode === 'static';
+
+  const singleTargetFormula = isStatic 
+    ? 'COALESCE(m.target_fasih, 0)'
+    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+
   const data = getDb().prepare(`
     SELECT 
       m.pcl, m.pml, m.korlap, m.kecamatan,
@@ -151,10 +165,7 @@ router.get('/detail/pml', (req, res) => {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-               THEN 0 
-               ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-          END) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE m.pml = ?
@@ -171,6 +182,13 @@ router.get('/detail/pcl', (req, res) => {
   const name = req.query.name;
   if (!uploadId || !name) return res.json({ error: 'Parameter uploadId atau nama PCL tidak ditemukan.' });
 
+  const settings = getSettings();
+  const isStatic = settings.target_fasih_mode === 'static';
+
+  const singleTargetFormula = isStatic 
+    ? 'COALESCE(m.target_fasih, 0)'
+    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+
   const data = getDb().prepare(`
     SELECT 
       m.kode, m.kecamatan, m.desa, m.nama_sls,
@@ -180,10 +198,7 @@ router.get('/detail/pcl', (req, res) => {
       COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
       COALESCE(p.approved, 0) AS approved,
       COALESCE(p.rejected, 0) AS rejected,
-      CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-           THEN 0 
-           ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-      END AS target_fasih,
+      (${singleTargetFormula}) AS target_fasih,
       CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END AS sudah_diisi,
       COALESCE(p.usaha_ditemukan + p.usaha_baru, 0) AS usaha_total,
       COALESCE(p.ditemukan + p.keluarga_baru, 0) AS keluarga_total
