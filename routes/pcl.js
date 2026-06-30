@@ -27,6 +27,8 @@ router.get('/', (req, res) => {
         SUM(m.muatan) AS total_muatan,
         SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
         SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
+        SUM(COALESCE(p.ditemukan, 0)) AS keluarga_ditemukan_total,
+        SUM(COALESCE(p.keluarga_baru, 0)) AS keluarga_baru_total,
         SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
         SUM(COALESCE(p.draft, 0)) AS draft_total,
         SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
