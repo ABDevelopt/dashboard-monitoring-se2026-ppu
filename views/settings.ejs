@@ -315,6 +315,21 @@
             </label>
           </div>
 
+          <!-- Performa Petugas -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon"><i class="bi bi-speedometer2"></i></span>
+              <div style="min-width: 0;">
+                <label for="page_performa" class="switch-label-text">Performa Petugas</label>
+                <div class="switch-desc">Dashboard gabungan performa terbaik & terendah (Rekomendasi)</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="page_performa" name="page_performa" value="1" <%= settings.page_performa === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
           <!-- Per Kecamatan -->
           <div class="switch-item">
             <div class="switch-info">

@@ -794,6 +794,7 @@ function initSettings() {
     'page_deteksianomali': '1',
     'page_leaderboard': '1',
     'page_performatrendah': '1',
+    'page_performa': '1',
     'page_kecamatan': '1',
     'page_subsls': '1',
     'page_korlap': '1',

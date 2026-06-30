@@ -58,6 +58,7 @@ const routeSettingsMap = {
   '/deteksi-anomali': 'page_deteksianomali',
   '/leaderboard': 'page_leaderboard',
   '/performa-terendah': 'page_performatrendah',
+  '/performa': 'page_performa',
   '/kecamatan': 'page_kecamatan',
   '/subsls': 'page_subsls',
   '/pbi': 'page_subsls',
@@ -112,6 +113,7 @@ app.use('/kipp', require('./routes/kipp'));
 app.use('/early-warning', require('./routes/earlywarning'));
 app.use('/leaderboard', require('./routes/leaderboard'));
 app.use('/performa-terendah', require('./routes/performa-terendah'));
+app.use('/performa', require('./routes/performa'));
 app.use('/deteksi-anomali', require('./routes/deteksianomali'));
 app.use('/agent', require('./routes/agent'));
 app.use('/api', require('./routes/api'));

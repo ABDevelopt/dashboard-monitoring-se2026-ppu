@@ -1,0 +1,471 @@
+<div class="fade-in">
+  <% if (!uploadId) { %>
+    <div class="card empty-state text-center">
+      <div class="empty-state-icon"><i class="bi bi-bar-chart-steps"></i></div>
+      <div class="empty-state-title">Belum Ada Data Terupload</div>
+      <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/upload">Upload Data</a>.</div>
+    </div>
+  <% } else { %>
+    
+    <!-- FILTER BAR -->
+    <div class="card" style="margin-bottom: 20px;">
+      <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
+        <div class="card-title"><i class="bi bi-search"></i> Filter Pencarian Performa Petugas</div>
+        <a href="/performa?tab=<%= activeTab %>" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
+      </div>
+      
+      <form action="/performa" method="GET" id="filterForm">
+        <!-- Hidden tab parameter to preserve active tab on form submit -->
+        <input type="hidden" name="tab" id="activeTabInput" value="<%= activeTab %>">
+        
+        <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
+          
+          <div>
+            <label for="performaKec" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
+            <select id="performaKec" name="kec" onchange="this.form.submit();" style="width:100%;">
+              <option value="">-- Semua Kecamatan --</option>
+              <% kecList.forEach(k => { %>
+                <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label for="performaKorlap" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
+            <select id="performaKorlap" name="korlap" onchange="this.form.submit();" style="width:100%;">
+              <option value="">-- Semua Korlap --</option>
+              <% korlapList.forEach(k => { %>
+                <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label for="performaPml" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
+            <select id="performaPml" name="pml" onchange="this.form.submit();" style="width:100%;">
+              <option value="">-- Semua PML --</option>
+              <% pmlList.forEach(p => { %>
+                <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
+              <% }) %>
+            </select>
+          </div>
+          
+        </div>
+      </form>
+    </div>
+
+    <!-- TABS CONTROLLER -->
+    <div style="display: flex; gap: 8px; margin-bottom: 20px; background: var(--bg-card); padding: 8px; border-radius: var(--border-radius); border: 1px solid var(--border);">
+      <button type="button" id="tabBtnTerbaik" class="btn btn-sm" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 10px 16px; border-radius: 6px; transition: all 0.2s;" onclick="setActiveTab('terbaik')">
+        <i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Performa Terbaik (Top 5)
+      </button>
+      <button type="button" id="tabBtnTerendah" class="btn btn-sm" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 10px 16px; border-radius: 6px; transition: all 0.2s;" onclick="setActiveTab('terendah')">
+        <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red);"></i> Performa Terendah (Bottom 5)
+      </button>
+    </div>
+
+    <!-- TAB CONTENT: PERFORMA TERBAIK -->
+    <div id="tabContentTerbaik" class="tab-pane" style="display: none;">
+      <div class="drilldown-grid">
+        
+        <!-- KOLOM KIRI: TOP 5 PCL -->
+        <div>
+          <div class="card" style="margin-bottom: 20px;">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Top 5 PCL Berperforma Terbaik</div>
+              <span class="badge badge-green">Pencacah Lapangan</span>
+            </div>
+            
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; padding: 0 4px;">
+              Peringkat PCL ditentukan berdasarkan rata-rata persentase progres status dokumen FASIH selesai dikerjakan (submitted + approved + rejected) terhadap target FASIH.
+            </p>
+
+            <% if (performers.topPcl && performers.topPcl.length > 0) { %>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <% performers.topPcl.forEach((item, index) => { %>
+                  <% 
+                    let borderClass = '';
+                    let medalIcon = '<i class="bi bi-award"></i>';
+                    let medalColor = 'var(--text-muted)';
+                    
+                    if (index === 0) { 
+                      borderClass = 'border: 1px solid #fbbf24; background: rgba(251,191,36,0.03);'; 
+                      medalIcon = '<i class="bi bi-trophy-fill"></i>';
+                      medalColor = '#fbbf24';
+                    } else if (index === 1) { 
+                      borderClass = 'border: 1px solid #94a3b8; background: rgba(148,163,184,0.03);'; 
+                      medalIcon = '<i class="bi bi-award-fill"></i>';
+                      medalColor = '#cbd5e1';
+                    } else if (index === 2) { 
+                      borderClass = 'border: 1px solid #f97316; background: rgba(249,115,22,0.03);'; 
+                      medalIcon = '<i class="bi bi-award-fill"></i>';
+                      medalColor = '#f97316';
+                    }
+                  %>
+                  
+                  <div class="warning-card" style="<%= borderClass %> margin-bottom: 0;">
+                    <div class="warning-icon" style="font-size: 26px; color: <%= medalColor %>;"><%- medalIcon %></div>
+                    <div class="warning-body" style="width: 100%;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <span class="warning-name">Rank <%= index + 1 %>: <%= item.pcl %></span>
+                        <span class="badge badge-green" style="background: rgba(124, 58, 237, 0.15); color: var(--accent-purple); border: 1px solid rgba(124, 58, 237, 0.25);"><%= ((item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0)).toLocaleString('id-ID') %> / <%= (item.target_fasih_total || 0).toLocaleString('id-ID') %> FASIH</span>
+                      </div>
+                      <div class="warning-meta">
+                        Kec. <strong><%= item.kecamatan %></strong> · PML: <strong><%= item.pml %></strong> · Korlap: <strong><%= item.korlap %></strong>
+                      </div>
+                      <div class="warning-stats">
+                        <span class="warning-stat"><i class="bi bi-building text-green"></i> Usaha: <strong><%= item.usaha_total %></strong></span>
+                        <span class="warning-stat"><i class="bi bi-people text-cyan"></i> Keluarga: <strong><%= item.keluarga_total %></strong></span>
+                        <span class="warning-stat">Progres: <strong><%= item.pct %>%</strong></span>
+                      </div>
+                      <div class="fasih-grid-container">
+                        <div class="fasih-grid-header">
+                          <span class="fasih-grid-title"><i class="bi bi-phone"></i> FASIH</span>
+                          <span class="badge badge-blue">Target: <%= item.target_fasih_total %></span>
+                        </div>
+                        <div class="fasih-grid">
+                          <div class="fasih-grid-item fasih-item-draft">
+                            <div class="fasih-grid-item-label">Draft</div>
+                            <div class="fasih-grid-item-value"><%= item.draft_total %></div>
+                          </div>
+                          <div class="fasih-grid-item fasih-item-submit">
+                            <div class="fasih-grid-item-label">Submit</div>
+                            <div class="fasih-grid-item-value"><%= item.submitted_total %></div>
+                          </div>
+                          <div class="fasih-grid-item fasih-item-approve">
+                            <div class="fasih-grid-item-label">Approve</div>
+                            <div class="fasih-grid-item-value"><%= item.approved_total %></div>
+                          </div>
+                          <div class="fasih-grid-item fasih-item-reject">
+                            <div class="fasih-grid-item-label">Reject</div>
+                            <div class="fasih-grid-item-value"><%= item.rejected_total %></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
+                        <div class="progress-bar green" data-width="<%= item.pct %>" style="width: 0%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <div class="no-data">Belum ada data performa PCL.</div>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- KOLOM KANAN: TOP 5 PML -->
+        <div>
+          <div class="card" style="margin-bottom: 20px;">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-trophy-fill" style="color: #fbbf24;"></i> Top 5 PML Berperforma Terbaik</div>
+              <span class="badge badge-blue">Pengawas Lapangan</span>
+            </div>
+
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; padding: 0 4px;">
+              Peringkat PML ditentukan berdasarkan rata-rata persentase progres status dokumen FASIH selesai dikerjakan oleh tim PCL di bawah pengawasannya terhadap target FASIH.
+            </p>
+
+            <% if (performers.topPml && performers.topPml.length > 0) { %>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <% performers.topPml.forEach((item, index) => { %>
+                  <% 
+                    let borderClass = '';
+                    let medalIcon = '<i class="bi bi-award"></i>';
+                    let medalColor = 'var(--text-muted)';
+                    
+                    if (index === 0) { 
+                      borderClass = 'border: 1px solid #fbbf24; background: rgba(251,191,36,0.03);'; 
+                      medalIcon = '<i class="bi bi-trophy-fill"></i>';
+                      medalColor = '#fbbf24';
+                    } else if (index === 1) { 
+                      borderClass = 'border: 1px solid #94a3b8; background: rgba(148,163,184,0.03);'; 
+                      medalIcon = '<i class="bi bi-award-fill"></i>';
+                      medalColor = '#cbd5e1';
+                    } else if (index === 2) { 
+                      borderClass = 'border: 1px solid #f97316; background: rgba(249,115,22,0.03);'; 
+                      medalIcon = '<i class="bi bi-award-fill"></i>';
+                      medalColor = '#f97316';
+                    }
+                  %>
+                  
+                  <div class="warning-card" style="<%= borderClass %> margin-bottom: 0;">
+                    <div class="warning-icon" style="font-size: 26px; color: <%= medalColor %>;"><%- medalIcon %></div>
+                    <div class="warning-body" style="width: 100%;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <span class="warning-name">Rank <%= index + 1 %>: <%= item.pml %></span>
+                        <span class="badge badge-blue" style="background: rgba(124, 58, 237, 0.15); color: var(--accent-purple); border: 1px solid rgba(124, 58, 237, 0.25);"><%= ((item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0)).toLocaleString('id-ID') %> / <%= (item.target_fasih_total || 0).toLocaleString('id-ID') %> FASIH</span>
+                      </div>
+                      <div class="warning-meta">
+                        Tim Korlap: <strong><%= item.korlap %></strong>
+                      </div>
+                      <div class="warning-stats">
+                        <span class="warning-stat"><i class="bi bi-building text-green"></i> Usaha: <strong><%= item.usaha_total %></strong></span>
+                        <span class="warning-stat"><i class="bi bi-people text-cyan"></i> Keluarga: <strong><%= item.keluarga_total %></strong></span>
+                        <span class="warning-stat">Progres: <strong><%= item.pct %>%</strong></span>
+                      </div>
+                      <div class="fasih-grid-container">
+                        <div class="fasih-grid-header">
+                          <span class="fasih-grid-title"><i class="bi bi-phone"></i> FASIH</span>
+                          <span class="badge badge-blue">Target: <%= item.target_fasih_total %></span>
+                        </div>
+                        <div class="fasih-grid">
+                          <div class="fasih-grid-item fasih-item-draft">
+                            <div class="fasih-grid-item-label">Draft</div>
+                            <div class="fasih-grid-item-value"><%= item.draft_total %></div>
+                          </div>
+                          <div class="fasih-grid-item fasih-item-submit">
+                            <div class="fasih-grid-item-label">Submit</div>
+                            <div class="fasih-grid-item-value"><%= item.submitted_total %></div>
+                          </div>
+                          <div class="fasih-grid-item fasih-item-approve">
+                            <div class="fasih-grid-item-label">Approve</div>
+                            <div class="fasih-grid-item-value"><%= item.approved_total %></div>
+                          </div>
+                          <div class="fasih-grid-item fasih-item-reject">
+                            <div class="fasih-grid-item-label">Reject</div>
+                            <div class="fasih-grid-item-value"><%= item.rejected_total %></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
+                        <div class="progress-bar green" data-width="<%= item.pct %>" style="width: 0%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <div class="no-data">Belum ada data performa PML.</div>
+            <% } %>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB CONTENT: PERFORMA TERENDAH -->
+    <div id="tabContentTerendah" class="tab-pane" style="display: none;">
+      <div class="drilldown-grid">
+        
+        <!-- KOLOM KIRI: BOTTOM 5 PCL -->
+        <div>
+          <div class="card" style="margin-bottom: 20px;">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-arrow-down-circle-fill" style="color: var(--accent-red);"></i> 5 PCL Performa Terendah</div>
+              <span class="badge badge-red">Pencacah Lapangan</span>
+            </div>
+            
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; padding: 0 4px;">
+              Peringkat PCL ditentukan berdasarkan rata-rata persentase progres status dokumen FASIH selesai dikerjakan (diurutkan dari yang paling sedikit).
+            </p>
+
+            <% if (performers.bottomPcl && performers.bottomPcl.length > 0) { %>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <% performers.bottomPcl.forEach((item, index) => { %>
+                  <% 
+                    let borderClass = 'border: 1px solid var(--border);';
+                    let statusIcon = '<i class="bi bi-arrow-down-circle"></i>';
+                    let iconColor = 'var(--accent-red)';
+                    
+                    if (index === 0) { 
+                      borderClass = 'border: 1px solid #ef4444; background: rgba(239,68,68,0.03);'; 
+                      statusIcon = '<i class="bi bi-exclamation-triangle-fill"></i>';
+                    } else if (index === 1) { 
+                      borderClass = 'border: 1px solid #f97316; background: rgba(249,115,22,0.03);'; 
+                      statusIcon = '<i class="bi bi-exclamation-circle-fill"></i>';
+                      iconColor = '#f97316';
+                    } else if (index === 2) { 
+                      borderClass = 'border: 1px solid #eab308; background: rgba(234,179,8,0.03);'; 
+                      statusIcon = '<i class="bi bi-exclamation-circle-fill"></i>';
+                      iconColor = '#eab308';
+                    }
+                  %>
+                  
+                  <div class="warning-card danger" style="<%= borderClass %> margin-bottom: 0;">
+                    <div class="warning-icon" style="font-size: 26px; color: <%= iconColor %>;"><%- statusIcon %></div>
+                    <div class="warning-body" style="width: 100%;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <span class="warning-name">Posisi <%= index + 1 %>: <%= item.pcl %></span>
+                        <span class="badge badge-red" style="background: rgba(124, 58, 237, 0.15); color: var(--accent-purple); border: 1px solid rgba(124, 58, 237, 0.25);"><%= ((item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0)).toLocaleString('id-ID') %> / <%= (item.target_fasih_total || 0).toLocaleString('id-ID') %> FASIH</span>
+                      </div>
+                      <div class="warning-meta">
+                        Kec. <strong><%= item.kecamatan %></strong> · PML: <strong><%= item.pml %></strong> · Korlap: <strong><%= item.korlap %></strong>
+                      </div>
+                      <div class="warning-stats">
+                        <span class="warning-stat"><i class="bi bi-building text-green"></i> Usaha: <strong><%= item.usaha_total %></strong></span>
+                        <span class="warning-stat"><i class="bi bi-people text-cyan"></i> Keluarga: <strong><%= item.keluarga_total %></strong></span>
+                        <span class="warning-stat">Progres: <strong><%= item.pct %>%</strong></span>
+                      </div>
+                      <div class="fasih-grid-container">
+                        <div class="fasih-grid-header">
+                          <span class="fasih-grid-title"><i class="bi bi-phone"></i> FASIH</span>
+                          <span class="badge badge-blue">Target: <%= item.target_fasih_total %></span>
+                        </div>
+                        <div class="fasih-grid">
+                          <div class="fasih-grid-item fasih-item-draft">
+                            <div class="fasih-grid-item-label">Draft</div>
+                            <div class="fasih-grid-item-value"><%= item.draft_total %></div>
+                          </div>
+                          <div class="fasih-grid-item fasih-item-submit">
+                            <div class="fasih-grid-item-label">Submit</div>
+                            <div class="fasih-grid-item-value"><%= item.submitted_total %></div>
+                          </div>
+                          <div class="fasih-grid-item fasih-item-approve">
+                            <div class="fasih-grid-item-label">Approve</div>
+                            <div class="fasih-grid-item-value"><%= item.approved_total %></div>
+                          </div>
+                          <div class="fasih-grid-item fasih-item-reject">
+                            <div class="fasih-grid-item-label">Reject</div>
+                            <div class="fasih-grid-item-value"><%= item.rejected_total %></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
+                        <div class="progress-bar red" data-width="<%= item.pct %>" style="width: 0%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <div class="no-data">Belum ada data performa PCL.</div>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- KOLOM KANAN: BOTTOM 5 PML -->
+        <div>
+          <div class="card" style="margin-bottom: 20px;">
+            <div class="card-header">
+              <div class="card-title"><i class="bi bi-arrow-down-circle-fill" style="color: var(--accent-red);"></i> 5 PML Performa Terendah</div>
+              <span class="badge badge-red">Pengawas Lapangan</span>
+            </div>
+
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; padding: 0 4px;">
+              Peringkat PML ditentukan berdasarkan rata-rata persentase progres status dokumen FASIH selesai dikerjakan oleh tim PCL di bawah pengawasannya (diurutkan dari yang paling sedikit).
+            </p>
+
+            <% if (performers.bottomPml && performers.bottomPml.length > 0) { %>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <% performers.bottomPml.forEach((item, index) => { %>
+                  <% 
+                    let borderClass = 'border: 1px solid var(--border);';
+                    let statusIcon = '<i class="bi bi-arrow-down-circle"></i>';
+                    let iconColor = 'var(--accent-red)';
+                    
+                    if (index === 0) { 
+                      borderClass = 'border: 1px solid #ef4444; background: rgba(239,68,68,0.03);'; 
+                      statusIcon = '<i class="bi bi-exclamation-triangle-fill"></i>';
+                    } else if (index === 1) { 
+                      borderClass = 'border: 1px solid #f97316; background: rgba(249,115,22,0.03);'; 
+                      statusIcon = '<i class="bi bi-exclamation-circle-fill"></i>';
+                      iconColor = '#f97316';
+                    } else if (index === 2) { 
+                      borderClass = 'border: 1px solid #eab308; background: rgba(234,179,8,0.03);'; 
+                      statusIcon = '<i class="bi bi-exclamation-circle-fill"></i>';
+                      iconColor = '#eab308';
+                    }
+                  %>
+                  
+                  <div class="warning-card danger" style="<%= borderClass %> margin-bottom: 0;">
+                    <div class="warning-icon" style="font-size: 26px; color: <%= iconColor %>;"><%- statusIcon %></div>
+                    <div class="warning-body" style="width: 100%;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <span class="warning-name">Posisi <%= index + 1 %>: <%= item.pml %></span>
+                        <span class="badge badge-red" style="background: rgba(124, 58, 237, 0.15); color: var(--accent-purple); border: 1px solid rgba(124, 58, 237, 0.25);"><%= ((item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0)).toLocaleString('id-ID') %> / <%= (item.target_fasih_total || 0).toLocaleString('id-ID') %> FASIH</span>
+                      </div>
+                      <div class="warning-meta">
+                        Tim Korlap: <strong><%= item.korlap %></strong>
+                      </div>
+                      <div class="warning-stats">
+                        <span class="warning-stat"><i class="bi bi-building text-green"></i> Usaha: <strong><%= item.usaha_total %></strong></span>
+                        <span class="warning-stat"><i class="bi bi-people text-cyan"></i> Keluarga: <strong><%= item.keluarga_total %></strong></span>
+                        <span class="warning-stat">Progres: <strong><%= item.pct %>%</strong></span>
+                      </div>
+                      <div class="fasih-grid-container">
+                        <div class="fasih-grid-header">
+                          <span class="fasih-grid-title"><i class="bi bi-phone"></i> FASIH</span>
+                          <span class="badge badge-blue">Target: <%= item.target_fasih_total %></span>
+                        </div>
+                        <div class="fasih-grid">
+                          <div class="fasih-grid-item fasih-item-draft">
+                            <div class="fasih-grid-item-label">Draft</div>
+                            <div class="fasih-grid-item-value"><%= item.draft_total %></div>
+                          </div>
+                          <div class="fasih-grid-item fasih-item-submit">
+                            <div class="fasih-grid-item-label">Submit</div>
+                            <div class="fasih-grid-item-value"><%= item.submitted_total %></div>
+                          </div>
+                          <div class="fasih-grid-item fasih-item-approve">
+                            <div class="fasih-grid-item-label">Approve</div>
+                            <div class="fasih-grid-item-value"><%= item.approved_total %></div>
+                          </div>
+                          <div class="fasih-grid-item fasih-item-reject">
+                            <div class="fasih-grid-item-label">Reject</div>
+                            <div class="fasih-grid-item-value"><%= item.rejected_total %></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
+                        <div class="progress-bar red" data-width="<%= item.pct %>" style="width: 0%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <div class="no-data">Belum ada data performa PML.</div>
+            <% } %>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  <% } %>
+</div>
+
+<script>
+function setActiveTab(tab) {
+  // 1. Update UI tabs styling
+  const tabBtnTerbaik = document.getElementById('tabBtnTerbaik');
+  const tabBtnTerendah = document.getElementById('tabBtnTerendah');
+  const tabContentTerbaik = document.getElementById('tabContentTerbaik');
+  const tabContentTerendah = document.getElementById('tabContentTerendah');
+  const activeTabInput = document.getElementById('activeTabInput');
+
+  if (tab === 'terbaik') {
+    tabBtnTerbaik.className = 'btn btn-primary btn-sm';
+    tabBtnTerendah.className = 'btn btn-secondary btn-sm';
+    tabContentTerbaik.style.display = 'block';
+    tabContentTerendah.style.display = 'none';
+  } else {
+    tabBtnTerbaik.className = 'btn btn-secondary btn-sm';
+    tabBtnTerendah.className = 'btn btn-primary btn-sm';
+    tabContentTerbaik.style.display = 'none';
+    tabContentTerendah.style.display = 'block';
+  }
+
+  // 2. Set hidden input value
+  if (activeTabInput) {
+    activeTabInput.value = tab;
+  }
+
+  // 3. Update URL without refreshing the page
+  const currentUrl = new URL(window.location.href);
+  currentUrl.searchParams.set('tab', tab);
+  window.history.replaceState({}, '', currentUrl.toString());
+
+  // 4. Trigger progress bars initialization in the visible tab
+  if (window.initProgressBars) {
+    window.initProgressBars(tab === 'terbaik' ? tabContentTerbaik : tabContentTerendah);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Set default active tab based on variable
+  setActiveTab('<%= activeTab %>');
+});
+</script>

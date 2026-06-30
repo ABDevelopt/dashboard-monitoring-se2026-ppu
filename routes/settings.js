@@ -8,6 +8,7 @@ const generalSettingKeys = [
   'page_deteksianomali',
   'page_leaderboard',
   'page_performatrendah',
+  'page_performa',
   'page_kecamatan',
   'page_subsls',
   'page_korlap',

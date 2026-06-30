@@ -119,12 +119,17 @@
     <% } %>
 
     <!-- Section 3: Analisis Kinerja -->
-    <% if (typeof settings !== 'undefined' && (settings.page_leaderboard === '1' || settings.page_performatrendah === '1')) { %>
+    <% if (typeof settings !== 'undefined' && (settings.page_performa === '1' || settings.page_leaderboard === '1' || settings.page_performatrendah === '1')) { %>
     <div class="nav-section-wrapper" data-section="analisis">
       <div class="nav-section-header">
         <span>Analisis Kinerja</span>
       </div>
       <div class="nav-section-content">
+        <% if (settings.page_performa === '1') { %>
+        <a href="/performa" class="nav-item <%= activePage === 'performa' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-speedometer2"></i></span> Performa Petugas
+        </a>
+        <% } %>
         <% if (settings.page_leaderboard === '1') { %>
         <a href="/leaderboard" class="nav-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-trophy"></i></span> Performa Terbaik
