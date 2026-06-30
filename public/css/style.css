@@ -1596,9 +1596,9 @@ body.light-mode .logo-dark {
   color: var(--text-primary) !important;
 }
 
-/* ====== COLLAPSIBLE SIDEBAR SECTIONS ====== */
+/* ====== FLAT SIDEBAR SECTIONS ====== */
 .nav-section-wrapper {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 .nav-section-header {
   display: flex;
@@ -1606,41 +1606,23 @@ body.light-mode .logo-dark {
   align-items: center;
   padding: 8px 16px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
-  cursor: pointer;
+  cursor: default;
   border-radius: 8px;
   transition: all 0.2s ease;
   user-select: none;
 }
-.nav-section-header:hover {
-  background: var(--bg-subtle);
-  color: var(--text-primary);
-}
 .nav-section-content {
-  overflow: hidden;
-  max-height: 0;
-  display: none;
-  opacity: 0;
-  transition: max-height 0.25s ease-out, opacity 0.2s ease;
-}
-.nav-section-wrapper.open .nav-section-content {
+  overflow: visible;
+  max-height: none;
   display: block;
-  max-height: 500px;
   opacity: 1;
-}
-.section-toggle {
-  font-size: 10px;
-  transition: transform 0.2s ease;
-}
-.nav-section-wrapper.open .section-toggle {
-  transform: rotate(180deg);
 }
 .nav-section-wrapper.has-active .nav-section-header {
   color: var(--text-primary);
-  font-weight: 700;
 }
 
 

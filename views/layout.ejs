@@ -79,7 +79,6 @@
     <div class="nav-section-wrapper" data-section="utama">
       <div class="nav-section-header">
         <span>Utama</span>
-        <i class="bi bi-chevron-down section-toggle"></i>
       </div>
       <div class="nav-section-content">
         <a href="/" class="nav-item <%= activePage === 'overview' ? 'active' : '' %>">
@@ -103,7 +102,6 @@
     <div class="nav-section-wrapper" data-section="evaluasi">
       <div class="nav-section-header">
         <span>Evaluasi &amp; Kualitas</span>
-        <i class="bi bi-chevron-down section-toggle"></i>
       </div>
       <div class="nav-section-content">
         <% if (settings.page_earlywarning === '1') { %>
@@ -125,7 +123,6 @@
     <div class="nav-section-wrapper" data-section="analisis">
       <div class="nav-section-header">
         <span>Analisis Kinerja</span>
-        <i class="bi bi-chevron-down section-toggle"></i>
       </div>
       <div class="nav-section-content">
         <% if (settings.page_leaderboard === '1') { %>
@@ -147,7 +144,6 @@
     <div class="nav-section-wrapper" data-section="wilayah">
       <div class="nav-section-header">
         <span>Drilldown Wilayah</span>
-        <i class="bi bi-chevron-down section-toggle"></i>
       </div>
       <div class="nav-section-content">
         <% if (settings.page_kecamatan === '1') { %>
@@ -168,7 +164,6 @@
     <div class="nav-section-wrapper" data-section="khusus">
       <div class="nav-section-header">
         <span>Pendataan Khusus</span>
-        <i class="bi bi-chevron-down section-toggle"></i>
       </div>
       <div class="nav-section-content">
         <a href="/kipp" class="nav-item <%= activePage === 'kipp' ? 'active' : '' %>">
@@ -185,7 +180,6 @@
     <div class="nav-section-wrapper" data-section="petugas">
       <div class="nav-section-header">
         <span>Drilldown Petugas</span>
-        <i class="bi bi-chevron-down section-toggle"></i>
       </div>
       <div class="nav-section-content">
         <% if (settings.page_korlap === '1') { %>
@@ -212,7 +206,6 @@
     <div class="nav-section-wrapper" data-section="data">
       <div class="nav-section-header">
         <span>Data &amp; Utilitas</span>
-        <i class="bi bi-chevron-down section-toggle"></i>
       </div>
       <div class="nav-section-content">
         <% if (settings.page_export === '1') { %>
@@ -377,30 +370,7 @@
       overlay.addEventListener('click', closeSidebar);
     }
 
-    // ====== COLLAPSIBLE SIDEBAR SECTIONS JS ======
     const wrappers = document.querySelectorAll('.nav-section-wrapper');
-    wrappers.forEach(wrapper => {
-      const header = wrapper.querySelector('.nav-section-header');
-      if (header) {
-        header.addEventListener('click', () => {
-          wrapper.classList.toggle('open');
-        });
-      }
-    });
-
-    // Expand section that has the active page on load
-    const activeItem = document.querySelector('.nav-item.active');
-    if (activeItem) {
-      const parentWrapper = activeItem.closest('.nav-section-wrapper');
-      if (parentWrapper) {
-        parentWrapper.classList.add('open', 'has-active');
-      }
-    } else {
-      const firstWrapper = document.querySelector('.nav-section-wrapper');
-      if (firstWrapper) {
-        firstWrapper.classList.add('open');
-      }
-    }
 
     // ====== SIDEBAR MENU FILTER/SEARCH ======
     const searchInput = document.getElementById('sidebarMenuSearch');
@@ -425,17 +395,11 @@
           if (query.length > 0) {
             if (hasMatch) {
               wrapper.style.display = 'block';
-              wrapper.classList.add('open');
             } else {
               wrapper.style.display = 'none';
             }
           } else {
             wrapper.style.display = 'block';
-            if (wrapper.classList.contains('has-active')) {
-              wrapper.classList.add('open');
-            } else {
-              wrapper.classList.remove('open');
-            }
             items.forEach(item => item.style.display = 'flex');
           }
         });
