@@ -249,15 +249,18 @@
       <!-- DETAIL OF CHOSEN PCL -->
       <div id="pclDetailContainer">
         <% if (filterPcl) { %>
-          <div class="card" style="margin-bottom: 0; position: sticky; top: 80px;">
-            <div class="card-header">
-              <div class="card-title">
+          <div class="card" id="pclDetailCard" style="margin-bottom: 0; position: sticky; top: 80px;">
+            <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
+              <div class="card-title" style="margin-bottom: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
                 <i class="bi bi-search"></i> Rincian Tugas SLS: <%= filterPcl %>
                 <% if (kippPcls.includes(filterPcl.toUpperCase())) { %>
                   <span class="badge badge-orange" style="padding: 2px 5px; font-size: 9px; vertical-align: middle; margin-left: 6px;">KIPP</span>
                 <% } %>
               </div>
-              <a href="/pcl?kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="btn btn-secondary btn-xs"><i class="bi bi-x-lg"></i> Tutup</a>
+              <div style="display: flex; gap: 6px; align-items: center; margin-left: auto;">
+                <button onclick="window.copyElementAsImage('pclDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin sebagai gambar ke clipboard"><i class="bi bi-copy"></i> Salin Gambar</button>
+                <a href="/pcl?kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="btn btn-secondary btn-xs"><i class="bi bi-x-lg"></i> Tutup</a>
+              </div>
             </div>
 
             <% if (detailSubsls && detailSubsls.length > 0) { %>

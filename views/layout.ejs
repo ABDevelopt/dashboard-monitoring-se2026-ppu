@@ -37,6 +37,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
   <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') { %>
     <style>
       .muatan-col { display: none !important; }
@@ -1182,6 +1183,98 @@
         }
       }
     }, true);
+
+    window.copyElementAsImage = async (elementId, event) => {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+
+      const btn = event ? event.currentTarget : null;
+      const originalHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 10px; height: 10px; border-width: 1.5px; margin-right: 4px;"></span>...';
+      }
+
+      try {
+        const canvas = await html2canvas(element, {
+          backgroundColor: window.getComputedStyle(document.body).getPropertyValue('--bg-card') || '#ffffff',
+          scale: 2.2, // Ultra sharp image quality for crystal clear sharing!
+          useCORS: true,
+          logging: false,
+          allowTaint: true,
+          onclone: (clonedDoc) => {
+            // Hide export buttons or any unwanted icons in the cloned element
+            const clonedEl = clonedDoc.getElementById(elementId);
+            if (clonedEl) {
+              const exportBtns = clonedEl.querySelectorAll('.table-export-buttons, .btn-secondary, .btn-expand-table');
+              exportBtns.forEach(el => el.style.display = 'none');
+            }
+          }
+        });
+
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            throw new Error('Gagal membuat blob gambar.');
+          }
+
+          try {
+            const item = new ClipboardItem({ 'image/png': blob });
+            await navigator.clipboard.write([item]);
+
+            if (btn) {
+              btn.innerHTML = '<i class="bi bi-check-lg"></i> Disalin!';
+              btn.classList.remove('btn-secondary');
+              btn.classList.add('btn-success');
+              setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-secondary');
+                btn.disabled = false;
+              }, 2000);
+            } else {
+              Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: 'Detail card disalin ke clipboard sebagai gambar.',
+                timer: 1500,
+                showConfirmButton: false
+              });
+            }
+          } catch (err) {
+            console.error('Clipboard write failed, falling back to download:', err);
+            const link = document.createElement('a');
+            link.download = `${elementId || 'detail_card'}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+            if (btn) {
+              btn.innerHTML = '<i class="bi bi-download"></i> Unduh';
+              btn.classList.remove('btn-secondary');
+              btn.classList.add('btn-warning');
+              setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-secondary');
+                btn.disabled = false;
+              }, 2000);
+            }
+          }
+        }, 'image/png');
+      } catch (error) {
+        console.error('Error copying element as image:', error);
+        if (btn) {
+          btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Gagal';
+          btn.classList.remove('btn-secondary');
+          btn.classList.add('btn-danger');
+          setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-secondary');
+            btn.disabled = false;
+          }, 2000);
+        }
+      }
+    };
   });
 </script>
 <%- typeof scripts !== 'undefined' ? scripts : '' %>

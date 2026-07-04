@@ -120,10 +120,13 @@
       <!-- KORLAP'S PML TEAM DETAILS -->
       <div id="korlapDetailContainer">
         <% if (filterKorlap) { %>
-          <div class="card" style="margin-bottom: 0; position: sticky; top: 80px;">
-            <div class="card-header">
-              <div class="card-title"><i class="bi bi-clipboard2-data"></i> Anggota Tim PML: <%= filterKorlap %></div>
-              <a href="/korlap" class="btn btn-secondary btn-xs"><i class="bi bi-x-lg"></i> Tutup</a>
+          <div class="card" id="korlapDetailCard" style="margin-bottom: 0; position: sticky; top: 80px;">
+            <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
+              <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-clipboard2-data"></i> Anggota Tim PML: <%= filterKorlap %></div>
+              <div style="display: flex; gap: 6px; align-items: center; margin-left: auto;">
+                <button onclick="window.copyElementAsImage('korlapDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin sebagai gambar ke clipboard"><i class="bi bi-copy"></i> Salin Gambar</button>
+                <a href="/korlap" class="btn btn-secondary btn-xs"><i class="bi bi-x-lg"></i> Tutup</a>
+              </div>
             </div>
 
             <% if (detailData && detailData.length > 0) { %>
