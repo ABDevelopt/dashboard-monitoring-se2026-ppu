@@ -422,30 +422,29 @@
 
               <div id="detailSubslsList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
                 <% detailSubsls.forEach(s => { %>
-                  <div class="detail-item" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px; margin-bottom: 6px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-                      <span class="td-code"><%= s.kode %></span>
+                  <div class="detail-item" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 4px; font-size: 11px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <div style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%;">
+                        <span class="td-code" style="font-size: 9px; padding: 1px 3px; font-weight: normal; margin-right: 4px;"><%= s.kode %></span>
+                        <%= s.nama_sls %>
+                      </div>
                       <% if (s.sudah_diisi) { %>
-                        <span class="badge badge-green btn-xs">Selesai</span>
+                        <span class="badge badge-green btn-xs" style="font-size: 8px; padding: 1px 4px;">Selesai</span>
                       <% } else { %>
-                        <span class="badge badge-red btn-xs">Belum</span>
+                        <span class="badge badge-red btn-xs" style="font-size: 8px; padding: 1px 4px;">Belum</span>
                       <% } %>
                     </div>
-                    <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;"><%= s.nama_sls %></div>
-                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;"><%= s.kecamatan %> · <%= s.desa %></div>
                     
-                    <div style="display: flex; flex-direction: column; gap: 2px; border-top: 1px solid var(--border); padding-top: 4px; font-size: 11px;">
-                      <div style="display: flex; justify-content: space-between;" class="muatan-col">
-                        <span style="color: var(--text-secondary);"><i class="bi bi-briefcase"></i> Beban Muatan:</span>
-                        <span class="fw-bold"><%= s.usaha_total %> / <%= s.muatan %></span>
-                      </div>
-                      <div style="display: flex; justify-content: space-between;">
-                        <span style="color: var(--text-secondary);"><i class="bi bi-phone"></i> Progres FASIH:</span>
-                        <span class="fw-bold"><%= (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0) %> / <%= s.target_fasih %></span>
-                      </div>
-                      <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 1px;">
-                        <span>Draft: <%= s.draft %> · Sub: <%= s.submitted_by_pcl %> · App: <%= s.approved %> · Rej: <strong class="text-red"><%= s.rejected %></strong></span>
-                        <span class="muatan-col">Keluarga: <%= s.keluarga_total %></span>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); flex-wrap: wrap; gap: 4px;">
+                      <div><%= s.desa %></div>
+                      <div style="display: flex; gap: 6px; align-items: center;">
+                        <span class="muatan-col" style="color: var(--accent-cyan);">
+                          Muatan: <strong><%= s.usaha_total %></strong>/<%= s.muatan %>
+                        </span>
+                        <span style="color: var(--accent-purple);">
+                          FASIH: <strong><%= (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0) %></strong>/<%= s.target_fasih %> 
+                          <span style="font-size: 9px; color: var(--text-muted);">(D<%= s.draft %> S<%= s.submitted_by_pcl %> A<%= s.approved %> R<%= s.rejected %>)</span>
+                        </span>
                       </div>
                     </div>
                   </div>

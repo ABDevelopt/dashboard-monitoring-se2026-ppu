@@ -184,39 +184,36 @@
 
               <div id="detailPclList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
                 <% detailPcl.forEach(item => { %>
-                  <div class="detail-item">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                      <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" class="fw-bold" style="color: var(--accent-cyan); text-decoration: none; display: inline-block;">
-                        <i class="bi bi-person"></i> <%= item.pcl %>
-                      </a>
-                      <% if (kippPcls.includes(item.pcl.toUpperCase())) { %>
-                        <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px;">KIPP</span>
-                      <% } %>
+                  <div class="detail-item" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 4px; font-size: 11px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                      <div style="font-weight: 600; color: var(--text-primary);">
+                        <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: var(--accent-cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                          <i class="bi bi-person"></i> <%= item.pcl %>
+                        </a>
+                        <% if (kippPcls.includes(item.pcl.toUpperCase())) { %>
+                          <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
+                        <% } %>
+                      </div>
                       <% if (parseFloat(item.pct) >= 100) { %>
-                        <span class="badge badge-green btn-xs">100%</span>
+                        <span class="badge badge-green btn-xs" style="font-size: 8px; padding: 1px 4px;">100%</span>
                       <% } else if (parseFloat(item.pct) <= 0) { %>
-                        <span class="badge badge-red btn-xs">0%</span>
+                        <span class="badge badge-red btn-xs" style="font-size: 8px; padding: 1px 4px;">0%</span>
                       <% } else { %>
-                        <span class="badge badge-blue btn-xs"><%= parseFloat(item.pct).toFixed(2) %>%</span>
+                        <span class="badge badge-blue btn-xs" style="font-size: 8px; padding: 1px 4px;"><%= parseFloat(item.pct).toFixed(2) %>%</span>
                       <% } %>
                     </div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">
-                      Wilayah Kerja: Kec. <strong><%= item.kecamatan %></strong>
-                    </div>
-                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
-                      <!-- SubSLS Selesai: <strong><%= item.selesai %> / <%= item.total_subsls %></strong> -->
-                    </div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 10px;">
-                      <span class="muatan-col" style="background: rgba(6, 182, 212, 0.08); padding: 2px 6px; border-radius: 4px; color: var(--accent-cyan);">
-                        Muatan: <strong><%= item.usaha_total + item.keluarga_total %></strong> / <%= item.total_muatan %>
-                      </span>
-                      <span style="background: rgba(139, 92, 246, 0.08); padding: 2px 6px; border-radius: 4px; color: var(--accent-purple);">
-                        <% let itemFasihDone = (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0); %>
-                        FASIH Progres: <strong><%= itemFasihDone %></strong> / <%= item.target_fasih_total %>
-                      </span>
-                      <span style="background: rgba(100, 116, 139, 0.08); padding: 2px 6px; border-radius: 4px; color: var(--text-muted);">
-                        Dft: <%= item.draft_total %> · Sub: <%= item.submitted_total %> · App: <%= item.approved_total %> · Rej: <%= item.rejected_total %>
-                      </span>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); flex-wrap: wrap; gap: 4px;">
+                      <div>Kec. <%= item.kecamatan %></div>
+                      <div style="display: flex; gap: 6px; align-items: center;">
+                        <span class="muatan-col" style="color: var(--accent-cyan);">
+                          Muatan: <strong><%= item.usaha_total + item.keluarga_total %></strong>/<%= item.total_muatan %>
+                        </span>
+                        <span style="color: var(--accent-purple);">
+                          FASIH: <strong><%= (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0) %></strong>/<%= item.target_fasih_total %>
+                          <span style="font-size: 9px; color: var(--text-muted);">(D<%= item.draft_total %> S<%= item.submitted_total %> A<%= item.approved_total %> R<%= item.rejected_total %>)</span>
+                        </span>
+                      </div>
                     </div>
                   </div>
                 <% }) %>
