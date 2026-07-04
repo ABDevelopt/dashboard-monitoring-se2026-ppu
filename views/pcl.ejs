@@ -337,6 +337,67 @@
                   </div>
                 </div>
 
+                <!-- Analisis Kecepatan & Estimasi Pendataan -->
+                <%
+                  let remainingFasih = Math.max(0, totalFasih - doneFasih);
+                  let currentSpeed = doneFasih / diffDays; // dokumen per hari
+                  let currentSpeedText = currentSpeed.toFixed(2);
+                  
+                  let estDaysToFinish = currentSpeed > 0 ? (remainingFasih / currentSpeed) : null;
+                  let isOfftrack = (currentSpeed === 0 && remainingFasih > 0) || (estDaysToFinish !== null && estDaysToFinish > daysRemaining);
+                  
+                  let reqSpeed = daysRemaining > 0 ? (remainingFasih / daysRemaining) : remainingFasih;
+                %>
+                <div style="margin-top: 18px; padding: 14px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px;">
+                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-cyan); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <i class="bi bi-speedometer2" style="font-size: 14px;"></i> Analisis Kecepatan & Sisa Waktu
+                  </div>
+                  
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+                      <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Kecepatan Saat Ini</div>
+                      <div style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-top: 2px;"><%= currentSpeedText %> <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);">dok/hari</span></div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+                      <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Status Target</div>
+                      <div style="font-size: 12px; font-weight: 700; margin-top: 4px;">
+                        <% if (remainingFasih === 0) { %>
+                          <span class="badge badge-green" style="font-size: 10px; padding: 3px 8px;">Selesai 100%</span>
+                        <% } else if (isOfftrack) { %>
+                          <span class="badge badge-red" style="font-size: 10px; padding: 3px 8px;"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
+                        <% } else { %>
+                          <span class="badge badge-blue" style="font-size: 10px; padding: 3px 8px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
+                        <% } %>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style="font-size: 11px; line-height: 1.5; color: var(--text-secondary);">
+                    <% if (remainingFasih === 0) { %>
+                      Petugas <strong><%= filterPcl %></strong> telah menyelesaikan seluruh target pengisian dokumen FASIH sebanyak <strong><%= totalFasih %></strong> dokumen. Kinerja luar biasa!
+                    <% } else { %>
+                      Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak 15 Juni). Sisa hari menuju deadline (31 Agustus): <strong><%= daysRemaining %> hari</strong>.<br>
+                      Sisa beban kerja: <strong><%= remainingFasih %> dokumen</strong>. 
+                      Dengan kecepatan saat ini (<strong><%= currentSpeedText %> dok/hari</strong>), 
+                      <% if (currentSpeed === 0) { %>
+                        petugas belum merealisasikan dokumen FASIH sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.
+                      <% } else { %>
+                        petugas diprediksi akan menyelesaikan sisa dokumen dalam waktu sekitar <strong><%= Math.ceil(estDaysToFinish) %> hari</strong>.
+                      <% } %>
+                      
+                      <% if (isOfftrack) { %>
+                        <div style="margin-top: 8px; padding: 8px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--accent-red); border-radius: 4px; color: var(--text-primary);">
+                          ⚠️ <strong>Off-Track:</strong> Petugas diprediksi terlambat/tidak selesai tepat waktu. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeed.toFixed(2) %> dok/hari</strong> agar selesai sesuai target pada 31 Agustus 2026.
+                        </div>
+                      <% } else { %>
+                        <div style="margin-top: 8px; padding: 8px; background: rgba(34, 197, 94, 0.08); border-left: 3px solid var(--accent-green); border-radius: 4px; color: var(--text-primary);">
+                          ✅ <strong>On-Track:</strong> Kecepatan petugas sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum 31 Agustus 2026).
+                        </div>
+                      <% } %>
+                    <% } %>
+                  </div>
+                </div>
+
                 <!-- Daily Progress Chart -->
                 <div style="margin-top: 20px; margin-bottom: 20px; border-top: 1px solid var(--border); padding-top: 16px; margin-left: -20px; margin-right: -20px;">
                   <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; padding-left: 20px; padding-right: 20px;">
