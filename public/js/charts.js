@@ -661,7 +661,9 @@ function createPclHistoryChart(canvasId, historyData) {
   const theme = getThemeColors();
   const labels = historyData.map(d => d.tanggal);
   const dataDraft = historyData.map(d => d.draft_total || 0);
-  const dataSelesai = historyData.map(d => d.selesai_total || 0);
+  const dataSubmitted = historyData.map(d => d.submitted_total || 0);
+  const dataApproved = historyData.map(d => d.approved_total || 0);
+  const dataRejected = historyData.map(d => d.rejected_total || 0);
   const dataTarget = historyData.map(d => d.target_fasih_total || 0);
 
   const chart = new Chart(ctx, {
@@ -670,8 +672,8 @@ function createPclHistoryChart(canvasId, historyData) {
       labels,
       datasets: [
         {
-          label: 'Selesai (Sub+App+Rej)',
-          data: dataSelesai,
+          label: 'Approved',
+          data: dataApproved,
           borderColor: '#10b981',
           backgroundColor: 'rgba(16, 185, 129, 0.08)',
           fill: true,
@@ -679,6 +681,26 @@ function createPclHistoryChart(canvasId, historyData) {
           pointRadius: 4,
           pointHoverRadius: 6,
           pointBackgroundColor: '#10b981'
+        },
+        {
+          label: 'Submitted',
+          data: dataSubmitted,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.04)',
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#3b82f6'
+        },
+        {
+          label: 'Rejected',
+          data: dataRejected,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.04)',
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#ef4444'
         },
         {
           label: 'Draft',
