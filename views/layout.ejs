@@ -37,10 +37,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
   <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') { %>
     <style>
       .muatan-col { display: none !important; }
@@ -387,6 +383,31 @@
   const globalSettings = <%- JSON.stringify(typeof settings !== 'undefined' ? settings : {}) %>;
   const activeTargetPct = new Date().getMonth() >= 6 ? 50 : 25; // 6 is July
 
+  // Dynamic script loader for performance optimization
+  window._scriptPromises = {};
+  function loadScript(url) {
+    if (window._scriptPromises[url]) {
+      return window._scriptPromises[url];
+    }
+    window._scriptPromises[url] = new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[src="${url}"]`);
+      if (existing) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = url;
+      script.defer = true;
+      script.onload = resolve;
+      script.onerror = (err) => {
+        window._scriptPromises[url] = null; // allow retry
+        reject(err);
+      };
+      document.head.appendChild(script);
+    });
+    return window._scriptPromises[url];
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     const sidebar = document.getElementById('sidebar');
     const toggleBtn = document.getElementById('sidebarToggle');
@@ -709,46 +730,97 @@
       return clone;
     };
 
-    window.exportTableToXLSX = (tableId, title) => {
-      const cleanTable = window.getCleanTableClone(tableId);
-      if (!cleanTable) return;
+    window.exportTableToXLSX = async (tableId, title) => {
+      Swal.fire({
+        title: 'Menyiapkan Export...',
+        text: 'Sedang memproses file Excel, harap tunggu.',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+      try {
+        await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+        const cleanTable = window.getCleanTableClone(tableId);
+        if (!cleanTable) {
+          Swal.close();
+          return;
+        }
 
-      const wb = XLSX.utils.table_to_book(cleanTable, { raw: true });
-      const filename = title.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_').toLowerCase();
-      XLSX.writeFile(wb, `${filename}.xlsx`);
+        const wb = XLSX.utils.table_to_book(cleanTable, { raw: true });
+        const filename = title.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_').toLowerCase();
+        XLSX.writeFile(wb, `${filename}.xlsx`);
+        Swal.close();
+      } catch (err) {
+        console.error(err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Export',
+          text: 'Gagal memuat pustaka XLSX.',
+          confirmButtonText: 'Tutup'
+        });
+      }
     };
 
-    window.exportTableToPDF = (tableId, title) => {
-      const cleanTable = window.getCleanTableClone(tableId);
-      if (!cleanTable) return;
-
-      const { jsPDF } = window.jspdf;
-      const colCount = cleanTable.querySelector('tr') ? cleanTable.querySelector('tr').querySelectorAll('th, td').length : 0;
-      const orientation = colCount > 6 ? 'l' : 'p';
-      
-      const doc = new jsPDF(orientation, 'pt', 'a4');
-      
-      doc.setFontSize(14);
-      doc.text(title, 20, 30);
-
-      doc.autoTable({
-        html: cleanTable,
-        startY: 45,
-        theme: 'striped',
-        styles: {
-          fontSize: 8,
-          cellPadding: 4,
-        },
-        headStyles: {
-          fillColor: [59, 130, 246],
-          textColor: 255,
-          fontStyle: 'bold'
-        },
-        margin: { top: 40, bottom: 40, left: 20, right: 20 }
+    window.exportTableToPDF = async (tableId, title) => {
+      Swal.fire({
+        title: 'Menyiapkan Export...',
+        text: 'Sedang memproses dokumen PDF, harap tunggu.',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
       });
+      try {
+        await Promise.all([
+          loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'),
+          loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js')
+        ]);
+        const cleanTable = window.getCleanTableClone(tableId);
+        if (!cleanTable) {
+          Swal.close();
+          return;
+        }
 
-      const filename = title.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_').toLowerCase();
-      doc.save(`${filename}.pdf`);
+        const { jsPDF } = window.jspdf;
+        const colCount = cleanTable.querySelector('tr') ? cleanTable.querySelector('tr').querySelectorAll('th, td').length : 0;
+        const orientation = colCount > 6 ? 'l' : 'p';
+        
+        const doc = new jsPDF(orientation, 'pt', 'a4');
+        
+        doc.setFontSize(14);
+        doc.text(title, 20, 30);
+
+        doc.autoTable({
+          html: cleanTable,
+          startY: 45,
+          theme: 'striped',
+          styles: {
+            fontSize: 8,
+            cellPadding: 4,
+          },
+          headStyles: {
+            fillColor: [59, 130, 246],
+            textColor: 255,
+            fontStyle: 'bold'
+          },
+          margin: { top: 40, bottom: 40, left: 20, right: 20 }
+        });
+
+        const filename = title.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_').toLowerCase();
+        doc.save(`${filename}.pdf`);
+        Swal.close();
+      } catch (err) {
+        console.error(err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Export',
+          text: 'Gagal memuat pustaka PDF.',
+          confirmButtonText: 'Tutup'
+        });
+      }
     };
 
     window.initTableExport = (container = document) => {
@@ -1404,6 +1476,7 @@
       });
 
       try {
+        await loadScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
         const canvas = await html2canvas(element, {
           backgroundColor: window.getComputedStyle(document.body).getPropertyValue('--bg-card') || '#ffffff',
           scale: 1.3,
@@ -1536,6 +1609,7 @@
       });
 
       try {
+        await loadScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
         const canvas = await html2canvas(element, {
           backgroundColor: window.getComputedStyle(document.body).getPropertyValue('--bg-card') || '#ffffff',
           scale: 1.3,
