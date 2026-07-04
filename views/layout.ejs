@@ -1184,7 +1184,7 @@
       }
     }, true);
 
-    window.shareOrCopyElementAsImage = async (elementId, event) => {
+    window.shareElementAsImage = async (elementId, event) => {
       const element = document.getElementById(elementId);
       if (!element) return;
 
@@ -1198,12 +1198,11 @@
       try {
         const canvas = await html2canvas(element, {
           backgroundColor: window.getComputedStyle(document.body).getPropertyValue('--bg-card') || '#ffffff',
-          scale: 1.5, // Optimized scale: fast rendering, low memory footprint, still highly readable!
+          scale: 1.5,
           useCORS: true,
           logging: false,
           allowTaint: true,
           onclone: (clonedDoc) => {
-            // Hide export buttons, expand buttons, search forms, and close buttons to keep the card clean
             const clonedEl = clonedDoc.getElementById(elementId);
             if (clonedEl) {
               const elementsToHide = clonedEl.querySelectorAll(
@@ -1211,7 +1210,6 @@
               );
               elementsToHide.forEach(el => el.style.display = 'none');
 
-              // Expand scrollable list containers fully so that all rows are rendered (no scroll clipping!)
               const scrollContainers = clonedEl.querySelectorAll(
                 '#detailSubslsList, #detailPclList, #detailPmlList'
               );
@@ -1247,7 +1245,6 @@
           };
 
           try {
-            // 1. Try Web Share API (native share on mobile)
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
               await navigator.share({
                 files: [file],
@@ -1255,17 +1252,15 @@
                 text: 'Berikut laporan progres kinerja petugas SE2026 PPU.'
               });
               resetBtn('<i class="bi bi-share"></i> Bagikan!', 'btn-success');
-              return;
+            } else {
+              const link = document.createElement('a');
+              link.download = `${elementId}.png`;
+              link.href = canvas.toDataURL('image/png');
+              link.click();
+              resetBtn('<i class="bi bi-download"></i> Unduh!', 'btn-warning');
             }
-
-            // 2. Fallback to Clipboard Copy (desktop)
-            const item = new ClipboardItem({ 'image/png': blob });
-            await navigator.clipboard.write([item]);
-            resetBtn('<i class="bi bi-check-lg"></i> Disalin!', 'btn-success');
           } catch (err) {
-            console.error('Share or Clipboard failed, falling back to download:', err);
-            
-            // 3. Fallback to Automatic Download
+            console.error('Share failed, downloading instead:', err);
             const link = document.createElement('a');
             link.download = `${elementId}.png`;
             link.href = canvas.toDataURL('image/png');
@@ -1275,6 +1270,93 @@
         }, 'image/png');
       } catch (error) {
         console.error('Error sharing element as image:', error);
+        if (btn) {
+          btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Gagal';
+          btn.classList.remove('btn-secondary');
+          btn.classList.add('btn-danger');
+          setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-secondary');
+            btn.disabled = false;
+          }, 2000);
+        }
+      }
+    };
+
+    window.copyElementAsImage = async (elementId, event) => {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+
+      const btn = event ? event.currentTarget : null;
+      const originalHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 10px; height: 10px; border-width: 1.5px; margin-right: 4px;"></span>...';
+      }
+
+      try {
+        const canvas = await html2canvas(element, {
+          backgroundColor: window.getComputedStyle(document.body).getPropertyValue('--bg-card') || '#ffffff',
+          scale: 1.5,
+          useCORS: true,
+          logging: false,
+          allowTaint: true,
+          onclone: (clonedDoc) => {
+            const clonedEl = clonedDoc.getElementById(elementId);
+            if (clonedEl) {
+              const elementsToHide = clonedEl.querySelectorAll(
+                '.table-export-buttons, .btn-secondary, .btn-expand-table, .search-wrap, input, button, .btn'
+              );
+              elementsToHide.forEach(el => el.style.display = 'none');
+
+              const scrollContainers = clonedEl.querySelectorAll(
+                '#detailSubslsList, #detailPclList, #detailPmlList'
+              );
+              scrollContainers.forEach(container => {
+                container.style.maxHeight = 'none';
+                container.style.overflowY = 'visible';
+                container.style.overflow = 'visible';
+                container.style.height = 'auto';
+              });
+            }
+          }
+        });
+
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            throw new Error('Gagal membuat blob gambar.');
+          }
+
+          const resetBtn = (status, btnClass) => {
+            if (btn) {
+              btn.innerHTML = status;
+              btn.classList.remove('btn-secondary');
+              btn.classList.add(btnClass);
+              setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove(btnClass);
+                btn.classList.add('btn-secondary');
+                btn.disabled = false;
+              }, 2000);
+            }
+          };
+
+          try {
+            const item = new ClipboardItem({ 'image/png': blob });
+            await navigator.clipboard.write([item]);
+            resetBtn('<i class="bi bi-check-lg"></i> Disalin!', 'btn-success');
+          } catch (err) {
+            console.error('Clipboard copy failed, downloading instead:', err);
+            const link = document.createElement('a');
+            link.download = `${elementId}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            resetBtn('<i class="bi bi-download"></i> Unduh!', 'btn-warning');
+          }
+        }, 'image/png');
+      } catch (error) {
+        console.error('Error copying element as image:', error);
         if (btn) {
           btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Gagal';
           btn.classList.remove('btn-secondary');

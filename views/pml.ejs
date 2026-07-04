@@ -124,7 +124,8 @@
             <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
               <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-people"></i> Anggota Tim PCL: <%= filterPml %></div>
               <div style="display: flex; gap: 6px; align-items: center; margin-left: auto;">
-                <button onclick="window.shareOrCopyElementAsImage('pmlDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan atau salin gambar detail card"><i class="bi bi-share"></i> Bagikan</button>
+                <button onclick="window.shareElementAsImage('pmlDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i> Bagikan</button>
+                <button onclick="window.copyElementAsImage('pmlDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i> Salin</button>
                 <a href="/pml" class="btn btn-secondary btn-xs"><i class="bi bi-x-lg"></i> Tutup</a>
               </div>
             </div>
