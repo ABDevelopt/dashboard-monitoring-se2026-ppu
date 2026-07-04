@@ -1195,6 +1195,16 @@
         btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 10px; height: 10px; border-width: 1.5px; margin-right: 4px;"></span>...';
       }
 
+      Swal.fire({
+        title: 'Menyiapkan Gambar...',
+        text: 'Sedang merender data tugas SLS untuk dibagikan.',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
       try {
         const canvas = await html2canvas(element, {
           backgroundColor: window.getComputedStyle(document.body).getPropertyValue('--bg-card') || '#ffffff',
@@ -1251,12 +1261,20 @@
                 title: 'Kinerja Petugas SE2026 PPU',
                 text: 'Berikut laporan progres kinerja petugas SE2026 PPU.'
               });
+              Swal.close();
               resetBtn('<i class="bi bi-share"></i> Bagikan!', 'btn-success');
             } else {
               const link = document.createElement('a');
               link.download = `${elementId}.png`;
               link.href = canvas.toDataURL('image/png');
               link.click();
+              Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: 'Gambar rincian tugas berhasil diunduh.',
+                timer: 1500,
+                showConfirmButton: false
+              });
               resetBtn('<i class="bi bi-download"></i> Unduh!', 'btn-warning');
             }
           } catch (err) {
@@ -1265,11 +1283,24 @@
             link.download = `${elementId}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
+            Swal.fire({
+              icon: 'success',
+              title: 'Berhasil!',
+              text: 'Gambar rincian tugas berhasil diunduh.',
+              timer: 1500,
+              showConfirmButton: false
+            });
             resetBtn('<i class="bi bi-download"></i> Unduh!', 'btn-warning');
           }
         }, 'image/png');
       } catch (error) {
         console.error('Error sharing element as image:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal!',
+          text: 'Terjadi kesalahan saat menyiapkan gambar.',
+          confirmButtonText: 'Tutup'
+        });
         if (btn) {
           btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Gagal';
           btn.classList.remove('btn-secondary');
@@ -1294,6 +1325,16 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 10px; height: 10px; border-width: 1.5px; margin-right: 4px;"></span>...';
       }
+
+      Swal.fire({
+        title: 'Menyiapkan Gambar...',
+        text: 'Sedang merender data tugas SLS untuk disalin.',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
 
       try {
         const canvas = await html2canvas(element, {
@@ -1345,6 +1386,13 @@
           try {
             const item = new ClipboardItem({ 'image/png': blob });
             await navigator.clipboard.write([item]);
+            Swal.fire({
+              icon: 'success',
+              title: 'Tersalin!',
+              text: 'Gambar rincian tugas disalin ke clipboard.',
+              timer: 1500,
+              showConfirmButton: false
+            });
             resetBtn('<i class="bi bi-check-lg"></i> Disalin!', 'btn-success');
           } catch (err) {
             console.error('Clipboard copy failed, downloading instead:', err);
@@ -1352,11 +1400,24 @@
             link.download = `${elementId}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
+            Swal.fire({
+              icon: 'success',
+              title: 'Berhasil!',
+              text: 'Gambar rincian tugas berhasil diunduh.',
+              timer: 1500,
+              showConfirmButton: false
+            });
             resetBtn('<i class="bi bi-download"></i> Unduh!', 'btn-warning');
           }
         }, 'image/png');
       } catch (error) {
         console.error('Error copying element as image:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal!',
+          text: 'Terjadi kesalahan saat menyalin gambar.',
+          confirmButtonText: 'Tutup'
+        });
         if (btn) {
           btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Gagal';
           btn.classList.remove('btn-secondary');
