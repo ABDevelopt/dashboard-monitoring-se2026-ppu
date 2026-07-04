@@ -71,9 +71,12 @@
                   <tr class="<%= filterPml === p.pml ? 'active' : '' %>" style="<%= filterPml === p.pml ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                     <td class="td-primary">
-                      <a href="/pml?pml=<%= encodeURIComponent(p.pml) %>" style="color: inherit; text-decoration: none; display: block;">
+                      <a href="/pml?pml=<%= encodeURIComponent(p.pml) %>" style="color: inherit; text-decoration: none; display: inline-block;">
                         <i class="bi bi-clipboard2-data"></i> <%= p.pml %>
                       </a>
+                      <% if (kippPmls.includes(p.pml.toUpperCase())) { %>
+                        <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px;">KIPP</span>
+                      <% } %>
                     </td>
                     <td class="hide-md"><%= p.korlap %></td>
                     <td class="text-right hide-sm" data-sort="<%= p.jumlah_pcl %>"><%= p.jumlah_pcl %> PCL</td>
@@ -179,9 +182,12 @@
                 <% detailPcl.forEach(item => { %>
                   <div class="detail-item">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                      <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" class="fw-bold" style="color: var(--accent-cyan); text-decoration: none;">
+                      <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" class="fw-bold" style="color: var(--accent-cyan); text-decoration: none; display: inline-block;">
                         <i class="bi bi-person"></i> <%= item.pcl %>
                       </a>
+                      <% if (kippPcls.includes(item.pcl.toUpperCase())) { %>
+                        <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px;">KIPP</span>
+                      <% } %>
                       <% if (parseFloat(item.pct) >= 100) { %>
                         <span class="badge badge-green btn-xs">100%</span>
                       <% } else if (parseFloat(item.pct) <= 0) { %>

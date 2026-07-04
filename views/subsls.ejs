@@ -141,8 +141,22 @@
                     <div style="font-size: 11px; color: var(--text-muted);"><%= row.desa %></div>
                   </td>
                   <td>
-                    <div style="font-weight: 500; font-size: 12px;" class="td-primary"><%= row.pcl %></div>
-                    <div style="font-size: 11px; color: var(--text-muted);" class="hide-md">PML: <%= row.pml %> · Krl: <%= row.korlap %></div>
+                    <div style="font-weight: 500; font-size: 12px;" class="td-primary">
+                      <%= row.pcl %>
+                      <% if (row.pcl && kippPcls.includes(row.pcl.toUpperCase())) { %>
+                        <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
+                      <% } %>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted);" class="hide-md">
+                      PML: <%= row.pml %>
+                      <% if (row.pml && kippPmls.includes(row.pml.toUpperCase())) { %>
+                        <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 1px;">KIPP</span>
+                      <% } %>
+                      · Krl: <%= row.korlap %>
+                      <% if (row.korlap && kippKorlaps.includes(row.korlap.toUpperCase())) { %>
+                        <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 1px;">KIPP</span>
+                      <% } %>
+                    </div>
 
                   </td>
                   <!-- <td class="text-center" data-sort="<%= row.sudah_diisi %>"> -->

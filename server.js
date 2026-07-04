@@ -3,7 +3,7 @@ const path = require('path');
 const session = require('express-session');
 const flash = require('connect-flash');
 const { loadMasterFromJson } = require('./services/excelParser');
-const { getDb, getLatestUpload, getSettings, updateSettings } = require('./database');
+const { getDb, getLatestUpload, getSettings, updateSettings, getKippOfficers } = require('./database');
 
 const app = express();
 const expressLayouts = require('express-ejs-layouts');
@@ -48,6 +48,13 @@ app.use((req, res, next) => {
 
   // Inject display settings globally
   res.locals.settings = getSettings() || {};
+
+  // Inject KIPP lists globally
+  const kipp = getKippOfficers();
+  res.locals.kippPcls = kipp.pcls;
+  res.locals.kippPmls = kipp.pmls;
+  res.locals.kippKorlaps = kipp.korlaps;
+
   next();
 });
 

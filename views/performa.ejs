@@ -125,12 +125,18 @@
                   </td>
                   <td data-sort="<%= item.pcl %>" style="padding: 10px 8px; font-weight: 600; font-size: 13px;">
                     <%= item.pcl %>
+                    <% if (kippPcls.includes(item.pcl.toUpperCase())) { %>
+                      <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px;">KIPP</span>
+                    <% } %>
                   </td>
                   <td data-sort="<%= item.kecamatan %>" style="padding: 10px 8px; font-size: 12px;">
                     <%= item.kecamatan %>
                   </td>
                   <td data-sort="<%= item.pml %>" style="padding: 10px 8px; font-size: 12px;">
                     <%= item.pml %>
+                    <% if (kippPmls.includes(item.pml.toUpperCase())) { %>
+                      <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
+                    <% } %>
                   </td>
                   <td data-sort="<%= item.korlap %>" style="padding: 10px 8px; font-size: 12px;">
                     <%= item.korlap %>

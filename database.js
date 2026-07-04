@@ -1000,10 +1000,24 @@ function rebuildSummaryCache(uploadId) {
   `).run(uploadId, uploadId);
 }
 
+function getKippOfficers() {
+  try {
+    const db = getDb();
+    const pcls = db.prepare("SELECT DISTINCT pcl FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pcl IS NOT NULL").all().map(r => r.pcl.toUpperCase());
+    const pmls = db.prepare("SELECT DISTINCT pml FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pml IS NOT NULL").all().map(r => r.pml.toUpperCase());
+    const korlaps = db.prepare("SELECT DISTINCT korlap FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND korlap IS NOT NULL").all().map(r => r.korlap.toUpperCase());
+    return { pcls, pmls, korlaps };
+  } catch (err) {
+    console.error("Error fetching KIPP officers:", err);
+    return { pcls: [], pmls: [], korlaps: [] };
+  }
+}
+
 module.exports = {
   getDb, getLatestUpload, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
   getBottomPerformers, getAnomalyStats,
-  getSettings, updateSettings, getUserByUsername, hashPassword, rebuildSummaryCache, rebuildAllSummaryCaches
+  getSettings, updateSettings, getUserByUsername, hashPassword, rebuildSummaryCache, rebuildAllSummaryCaches,
+  getKippOfficers
 };
