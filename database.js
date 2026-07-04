@@ -615,37 +615,53 @@ function getEarlyWarning(uploadId, filters = {}) {
       if (filters.pml) { stagnanWhere += ' AND m.pml = ?'; stagnanParamsFilters.push(filters.pml); }
 
       stagnanPcl = getDb().prepare(`
-        SELECT
-          cur.pcl,
-          MAX(m.pml) AS pml,
-          MAX(m.korlap) AS korlap,
-          MAX(m.kecamatan) AS kecamatan,
-          SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total,
-          SUM(COALESCE(cur.submitted_total, 0) + COALESCE(cur.approved_total, 0) + COALESCE(cur.rejected_total, 0)) AS selesai_sekarang,
-          SUM(COALESCE(prev.submitted_total, 0) + COALESCE(prev.approved_total, 0) + COALESCE(prev.rejected_total, 0)) AS selesai_lama,
-          SUM(COALESCE(cur.submitted_total, 0) + COALESCE(cur.approved_total, 0) + COALESCE(cur.rejected_total, 0))
-            - SUM(COALESCE(prev.submitted_total, 0) + COALESCE(prev.approved_total, 0) + COALESCE(prev.rejected_total, 0)) AS delta_selesai,
+        WITH cur_stats AS (
+          SELECT 
+            m.pcl,
+            MAX(m.pml) AS pml,
+            MAX(m.korlap) AS korlap,
+            MAX(m.kecamatan) AS kecamatan,
+            SUM(${singleTargetFormula}) AS target_fasih_total,
+            SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS selesai_sekarang,
+            SUM(COALESCE(p.draft, 0)) AS draft_total,
+            SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
+            SUM(COALESCE(p.approved, 0)) AS approved_total,
+            SUM(COALESCE(p.rejected, 0)) AS rejected_total
+          FROM subsls_master m
+          LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+          WHERE 1=1 ${stagnanWhere}
+          GROUP BY m.pcl COLLATE NOCASE
+        ),
+        prev_stats AS (
+          SELECT 
+            m.pcl,
+            SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS selesai_lama
+          FROM subsls_master m
+          LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+          GROUP BY m.pcl COLLATE NOCASE
+        )
+        SELECT 
+          c.pcl,
+          c.pml,
+          c.korlap,
+          c.kecamatan,
+          c.target_fasih_total,
+          c.selesai_sekarang,
+          COALESCE(pr.selesai_lama, 0) AS selesai_lama,
+          c.selesai_sekarang - COALESCE(pr.selesai_lama, 0) AS delta_selesai,
           ? AS tanggal_ref,
           ? AS tanggal_prev,
-          SUM(COALESCE(cur.draft_total, 0)) AS draft_total,
-          SUM(COALESCE(cur.submitted_total, 0)) AS submitted_total,
-          SUM(COALESCE(cur.approved_total, 0)) AS approved_total,
-          SUM(COALESCE(cur.rejected_total, 0)) AS rejected_total
-        FROM summary_cache cur
-        LEFT JOIN summary_cache prev ON prev.pcl = cur.pcl AND prev.upload_id = ?
-        JOIN subsls_master m ON m.pcl = cur.pcl COLLATE NOCASE
-        WHERE cur.upload_id = ? ${stagnanWhere}
-        GROUP BY cur.pcl COLLATE NOCASE
-        HAVING
-          SUM(COALESCE(m.target_fasih, 0)) > 0
-          AND SUM(COALESCE(cur.submitted_total, 0) + COALESCE(cur.approved_total, 0) + COALESCE(cur.rejected_total, 0))
-              < SUM(COALESCE(m.target_fasih, 0))
-          AND (
-            SUM(COALESCE(cur.submitted_total, 0) + COALESCE(cur.approved_total, 0) + COALESCE(cur.rejected_total, 0))
-            - SUM(COALESCE(prev.submitted_total, 0) + COALESCE(prev.approved_total, 0) + COALESCE(prev.rejected_total, 0))
-          ) <= 0
-        ORDER BY selesai_sekarang DESC
-      `).all(currentUpload.tanggal, prevUpload.tanggal, prevUpload.id, uploadId, ...stagnanParamsFilters);
+          c.draft_total,
+          c.submitted_total,
+          c.approved_total,
+          c.rejected_total
+        FROM cur_stats c
+        LEFT JOIN prev_stats pr ON pr.pcl = c.pcl COLLATE NOCASE
+        WHERE c.target_fasih_total > 0
+          AND c.selesai_sekarang < c.target_fasih_total
+          AND (c.selesai_sekarang - COALESCE(pr.selesai_lama, 0)) <= 0
+        ORDER BY c.selesai_sekarang DESC
+      `).all(uploadId, ...stagnanParamsFilters, prevUpload.id, currentUpload.tanggal, prevUpload.tanggal);
     }
   }
 
