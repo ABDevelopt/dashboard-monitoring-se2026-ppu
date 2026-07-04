@@ -1257,7 +1257,7 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   box-shadow: none !important;
   display: flex !important;
   flex-direction: column !important;
-  padding: 24px !important;
+  padding: 16px !important; /* Reduced padding from 24px */
   box-sizing: border-box !important;
   overflow: hidden !important;
   animation: cardFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -1272,10 +1272,11 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   flex-shrink: 0 !important;
   margin-bottom: 0 !important;
   border-bottom: 1px solid var(--border) !important;
-  padding-bottom: 12px !important;
-  padding-right: 50px !important; /* avoid close button overlap */
-  flex-wrap: wrap !important;
-  gap: 10px !important;
+  padding-bottom: 8px !important; /* Reduced padding from 12px */
+  padding-top: 4px !important;
+  padding-right: 0 !important;
+  flex-wrap: nowrap !important; /* No-wrap for single row */
+  gap: 8px !important;
   align-items: center !important;
 }
 
@@ -1705,6 +1706,41 @@ body.light-mode .logo-dark {
   
   .page-content {
     padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* Responsive card-header & title optimization */
+  .card-header {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    padding-bottom: 6px !important;
+    margin-bottom: 8px !important;
+  }
+  .card-title {
+    font-size: 11px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 60% !important;
+  }
+  .card-actions {
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    gap: 4px !important;
+  }
+  .card.card-expanded {
+    padding: 10px !important;
+    height: calc(100vh - var(--header-height) - 56px - env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(100vh - var(--header-height) - 56px - env(safe-area-inset-bottom, 0px)) !important;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .card.card-expanded .card-header {
+    padding-right: 0 !important;
+    padding-bottom: 6px !important;
+    padding-top: 4px !important;
   }
 }
 

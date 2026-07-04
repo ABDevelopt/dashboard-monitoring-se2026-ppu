@@ -504,7 +504,7 @@
         // ---- COLLAPSING ----
         card.classList.remove('card-expanded');
         document.body.classList.remove('has-expanded-card');
-        btn.innerHTML = '<i class="bi bi-arrows-angle-expand"></i> <span>Expand</span>';
+        btn.innerHTML = '<i class="bi bi-arrows-angle-expand"></i> <span class="btn-text-desktop">Expand</span>';
         btn.classList.remove('btn-danger');
         btn.classList.add('btn-secondary');
         
@@ -557,7 +557,7 @@
         // ---- EXPANDING ----
         card.classList.add('card-expanded');
         document.body.classList.add('has-expanded-card');
-        btn.innerHTML = '<i class="bi bi-fullscreen-exit"></i> <span>Collapse</span>';
+        btn.innerHTML = '<i class="bi bi-fullscreen-exit"></i> <span class="btn-text-desktop">Collapse</span>';
         btn.classList.remove('btn-secondary');
         btn.classList.add('btn-danger');
 
@@ -766,7 +766,7 @@
         btnXlsx.type = 'button';
         btnXlsx.style.padding = '3px 8px';
         btnXlsx.style.fontSize = '11px';
-        btnXlsx.innerHTML = '<i class="bi bi-file-earmark-excel"></i> XLSX';
+        btnXlsx.innerHTML = '<i class="bi bi-file-earmark-excel"></i><span class="btn-text-desktop"> XLSX</span>';
         btnXlsx.onclick = (e) => {
           e.preventDefault();
           window.exportTableToXLSX(table.id, title);
@@ -777,7 +777,7 @@
         btnPdf.type = 'button';
         btnPdf.style.padding = '3px 8px';
         btnPdf.style.fontSize = '11px';
-        btnPdf.innerHTML = '<i class="bi bi-file-pdf"></i> PDF';
+        btnPdf.innerHTML = '<i class="bi bi-file-pdf"></i><span class="btn-text-desktop"> PDF</span>';
         btnPdf.onclick = (e) => {
           e.preventDefault();
           window.exportTableToPDF(table.id, title);
@@ -864,7 +864,7 @@
           expandBtn.style.display = 'inline-flex';
           expandBtn.style.alignItems = 'center';
           expandBtn.style.gap = '4px';
-          expandBtn.innerHTML = '<i class="bi bi-arrows-angle-expand"></i> <span>Expand</span>';
+          expandBtn.innerHTML = '<i class="bi bi-arrows-angle-expand"></i> <span class="btn-text-desktop">Expand</span>';
 
           const toggleHandler = (e) => {
             e.preventDefault();
