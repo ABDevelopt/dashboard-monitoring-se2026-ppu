@@ -527,13 +527,41 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // 4. AJAX Drilldown logic for PCL (updates only the detail segment)
+    // 4. AJAX Drilldown logic for PCL (updates only the detail segment with Caching & Loading Spinner)
     const detailContainer = document.getElementById('pclDetailContainer');
     const table = document.getElementById('pclTable');
 
+    function renderDetail(html, url) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const newDetail = doc.getElementById('pclDetailContainer');
+      if (newDetail) {
+        detailContainer.innerHTML = newDetail.innerHTML;
+        detailContainer.style.opacity = '1';
+
+        // Toggle grid selection classes
+        const grid = document.querySelector('.drilldown-grid');
+        if (grid) {
+          grid.classList.remove('no-selection');
+          grid.classList.add('has-selection');
+        }
+
+        // Update URL path without refresh
+        window.history.pushState(null, '', url);
+
+        // Re-bind list search utility
+        makeListSearchable('detailSubslsSearch', 'detailSubslsList', '.detail-item');
+
+        // Re-bind close handler
+        bindCloseDetail();
+        if (window.initProgressBars) window.initProgressBars(detailContainer);
+        initPclHistoryChart();
+      }
+    }
+
     function bindCloseDetail() {
       if (!detailContainer) return;
-      const closeBtn = detailContainer.querySelector('.btn-secondary');
+      const closeBtn = detailContainer.querySelector('a[href*="/pcl"]');
       if (closeBtn) {
         closeBtn.addEventListener('click', (e) => {
           e.preventDefault();
@@ -547,33 +575,41 @@ document.addEventListener('DOMContentLoaded', () => {
             });
           }
 
-          detailContainer.style.opacity = '0.5';
-          fetch(url)
-            .then(res => res.text())
-            .then(html => {
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(html, 'text/html');
-              const newDetail = doc.getElementById('pclDetailContainer');
-              if (newDetail) {
-                detailContainer.innerHTML = newDetail.innerHTML;
-                detailContainer.style.opacity = '1';
-                window.history.pushState(null, '', url);
+          if (window.detailHtmlCache && window.detailHtmlCache[url]) {
+            renderDetail(window.detailHtmlCache[url], url);
+            const grid = document.querySelector('.drilldown-grid');
+            if (grid) {
+              grid.classList.remove('has-selection');
+              grid.classList.add('no-selection');
+            }
+          } else {
+            detailContainer.innerHTML = `
+              <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 350px; text-align: center; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 24px; position: sticky; top: 80px;">
+                <div class="spinner-border text-cyan" role="status" style="width: 2.5rem; height: 2.5rem; border-width: 3px; color: var(--accent-cyan);">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <div style="margin-top: 16px; font-size: 13px; color: var(--text-muted); font-weight: 500;">Menutup Detail...</div>
+              </div>
+            `;
+            detailContainer.style.opacity = '1';
 
-                // Toggle grid selection classes
+            fetch(url)
+              .then(res => res.text())
+              .then(html => {
+                if (!window.detailHtmlCache) window.detailHtmlCache = {};
+                window.detailHtmlCache[url] = html;
+                renderDetail(html, url);
                 const grid = document.querySelector('.drilldown-grid');
                 if (grid) {
                   grid.classList.remove('has-selection');
                   grid.classList.add('no-selection');
                 }
-                bindCloseDetail();
-                if (window.initProgressBars) window.initProgressBars(detailContainer);
-                initPclHistoryChart();
-              }
-            })
-            .catch(err => {
-              console.error(err);
-              detailContainer.style.opacity = '1';
-            });
+              })
+              .catch(err => {
+                console.error(err);
+                detailContainer.style.opacity = '1';
+              });
+          }
         });
       }
     }
@@ -596,42 +632,32 @@ document.addEventListener('DOMContentLoaded', () => {
         row.style.background = 'var(--bg-card-hover)';
         row.style.fontWeight = '500';
 
-        // Opacity transition
-        detailContainer.style.opacity = '0.5';
+        if (window.detailHtmlCache && window.detailHtmlCache[url]) {
+          renderDetail(window.detailHtmlCache[url], url);
+        } else {
+          // Loading spinner animation card
+          detailContainer.innerHTML = `
+            <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 350px; text-align: center; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 24px; position: sticky; top: 80px;">
+              <div class="spinner-border text-cyan" role="status" style="width: 2.5rem; height: 2.5rem; border-width: 3px; color: var(--accent-cyan);">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <div style="margin-top: 16px; font-size: 13px; color: var(--text-muted); font-weight: 500;">Memuat Rincian Tugas...</div>
+            </div>
+          `;
+          detailContainer.style.opacity = '1';
 
-        fetch(url)
-          .then(res => res.text())
-          .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const newDetail = doc.getElementById('pclDetailContainer');
-            if (newDetail) {
-              detailContainer.innerHTML = newDetail.innerHTML;
+          fetch(url)
+            .then(res => res.text())
+            .then(html => {
+              if (!window.detailHtmlCache) window.detailHtmlCache = {};
+              window.detailHtmlCache[url] = html;
+              renderDetail(html, url);
+            })
+            .catch(err => {
+              console.error(err);
               detailContainer.style.opacity = '1';
-
-              // Toggle grid selection classes
-              const grid = document.querySelector('.drilldown-grid');
-              if (grid) {
-                grid.classList.remove('no-selection');
-                grid.classList.add('has-selection');
-              }
-
-              // Update URL path without refresh
-              window.history.pushState(null, '', url);
-
-              // Re-bind list search utility
-              makeListSearchable('detailSubslsSearch', 'detailSubslsList', '.detail-item');
-
-              // Re-bind close handler
-              bindCloseDetail();
-              if (window.initProgressBars) window.initProgressBars(detailContainer);
-              initPclHistoryChart();
-            }
-          })
-          .catch(err => {
-            console.error(err);
-            detailContainer.style.opacity = '1';
-          });
+            });
+        }
       });
     }
 
@@ -639,6 +665,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function fetchAndReplace(queryString) {
+    // Clear cache on filter updates to avoid stale state
+    if (window.detailHtmlCache) {
+      for (let key in window.detailHtmlCache) delete window.detailHtmlCache[key];
+    }
     const url = '/pcl' + (queryString ? (queryString.startsWith('?') ? queryString : '?' + queryString) : '');
     const ajaxContainer = document.getElementById('ajax-container');
     ajaxContainer.style.opacity = '0.5';
