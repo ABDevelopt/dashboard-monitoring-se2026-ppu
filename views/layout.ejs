@@ -1268,7 +1268,7 @@
       const modalBody = document.getElementById('globalDetailModalBody');
 
       const typeLabel = type === 'korlap' ? 'Korlap' : type === 'pml' ? 'PML' : 'PCL';
-      modalTitle.innerHTML = `<i class="bi bi-person-bounding-box"></i> Rincian Tugas SLS: ${name}`;
+      modalTitle.innerHTML = `<i class="bi bi-person-bounding-box"></i> Rincian Tugas SLS: <mark class="highlight-name">${name}</mark>`;
       if (modalSubtitle) modalSubtitle.textContent = 'Memuat data...';
       modalBody.innerHTML = `
         <div style="display:flex; justify-content:center; align-items:center; padding:40px; gap:12px; color:var(--text-muted);">

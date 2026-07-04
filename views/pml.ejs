@@ -122,7 +122,7 @@
         <% if (filterPml) { %>
           <div class="card" id="pmlDetailCard" style="margin-bottom: 0; position: sticky; top: 80px;">
             <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
-              <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-people"></i> Anggota Tim PCL: <%= filterPml %></div>
+              <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-people"></i> Anggota Tim PCL: <mark class="highlight-name"><%= filterPml %></mark></div>
               <div style="display: flex; gap: 6px; align-items: center; margin-left: auto;">
                 <button onclick="window.shareElementAsImage('pmlDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
                 <button onclick="window.copyElementAsImage('pmlDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>

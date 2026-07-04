@@ -252,7 +252,7 @@
           <div class="card" id="pclDetailCard" style="margin-bottom: 0; position: sticky; top: 80px;">
             <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
               <div class="card-title" style="margin-bottom: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
-                <i class="bi bi-search"></i> Rincian Tugas SLS: <%= filterPcl %>
+                <i class="bi bi-search"></i> Rincian Tugas SLS: <mark class="highlight-name"><%= filterPcl %></mark>
                 <% if (kippPcls.includes(filterPcl.toUpperCase())) { %>
                   <span class="badge badge-orange" style="padding: 2px 5px; font-size: 9px; vertical-align: middle; margin-left: 6px;">KIPP</span>
                 <% } %>
