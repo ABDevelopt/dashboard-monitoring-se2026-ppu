@@ -118,13 +118,36 @@
                     statusText = 'Off Track';
                     statusSortVal = daysNeededVal;
                   }
+
+                  // Narasi Kecepatan & Estimasi Selesai (Tooltip Hover)
+                  let hoverNarrative = '';
+                  if (remainingFasih <= 0) {
+                    hoverNarrative = `Petugas ${item.pcl} telah menyelesaikan seluruh target pendataan (${item.target_fasih_total} dokumen). Status: Selesai 100%!`;
+                  } else {
+                    let speedText = runrate.toFixed(2);
+                    let estText = runrate > 0 ? `${daysNeededVal} hari` : 'Tidak dapat diprediksi (stagnan)';
+                    let trackText = (runrate <= 0 || daysNeededVal > daysRemaining) ? 'Off-Track' : 'On-Track';
+                    
+                    hoverNarrative = `Petugas: ${item.pcl}\n` +
+                      `Kecepatan Saat Ini: ${speedText} dok/hari\n` +
+                      `Prediksi Selesai: ${estText} (Sisa target: ${remainingFasih} dok)\n` +
+                      `Sisa Hari Tersedia: ${daysRemaining} hari\n` +
+                      `Status Kinerja: ${trackText}`;
+
+                    if (runrate <= 0 || daysNeededVal > daysRemaining) {
+                      let speedNeed = requiredRate !== null ? requiredRate.toFixed(2) : remainingFasih;
+                      hoverNarrative += `\n[Off-Track] Diperlukan peningkatan kecepatan minimal ${speedNeed} dok/hari agar selesai tepat waktu pada 31 Agustus 2026.`;
+                    } else {
+                      hoverNarrative += `\n[On-Track] Kecepatan kerja sudah memadai untuk selesai tepat waktu sebelum 31 Agustus 2026.`;
+                    }
+                  }
                 %>
-                <tr style="border-bottom: 1px solid var(--border);">
+                <tr style="border-bottom: 1px solid var(--border);" title="<%= hoverNarrative %>">
                   <td class="text-center" data-sort="<%= index + 1 %>" style="padding: 10px 8px; font-size: 12px; color: var(--text-muted);">
                     <%= index + 1 %>
                   </td>
-                  <td data-sort="<%= item.pcl %>" style="padding: 10px 8px; font-weight: 600; font-size: 13px;">
-                    <%= item.pcl %>
+                  <td data-sort="<%= item.pcl %>" style="padding: 10px 8px; font-weight: 600; font-size: 13px; cursor: help;" title="<%= hoverNarrative %>">
+                    <%= item.pcl %> <i class="bi bi-info-circle text-muted" style="font-size: 10px; margin-left: 2px;"></i>
                     <% if (kippPcls.includes(item.pcl.toUpperCase())) { %>
                       <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px;">KIPP</span>
                     <% } %>
