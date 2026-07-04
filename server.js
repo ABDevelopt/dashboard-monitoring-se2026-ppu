@@ -15,8 +15,15 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(expressLayouts);
 app.set('layout', 'layout');
 
-// Static files
-app.use(express.static(path.join(__dirname, 'public')));
+// Static files with 1 year cache and immutable headers for optimized caching
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: 31536000000, // 1 year in ms
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.css') || filePath.endsWith('.js') || filePath.endsWith('.png') || filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') || filePath.endsWith('.svg') || filePath.endsWith('.woff2')) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 

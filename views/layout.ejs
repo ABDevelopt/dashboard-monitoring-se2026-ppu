@@ -24,9 +24,9 @@
   <link rel="preload" href="/css/style.css?v=<%= appVersion %>" as="style">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/fonts/bootstrap-icons.woff2?dd67030b3554cc196c09893d9b049688" as="font" type="font/woff2" crossorigin>
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
   <noscript>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=optional" rel="stylesheet">
   </noscript>
 
   <link rel="stylesheet" href="/css/style.css?v=<%= appVersion %>" media="print" onload="this.media='all'">
@@ -65,8 +65,8 @@
 <aside class="sidebar" id="sidebar" aria-label="Sidebar Menu">
   <button class="btn-close-sidebar" id="sidebarClose" aria-label="Tutup Sidebar"><i class="bi bi-x-lg"></i></button>
   <div class="sidebar-logo" style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 16px; border-bottom: 1px solid var(--border);">
-    <img src="/logo-vertical.png" alt="Logo SE2026" class="logo-light" loading="eager" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
-    <img src="/logo-vertical-dark.png" alt="Logo SE2026" class="logo-dark" fetchpriority="high" loading="eager" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
+    <img src="/logo-vertical.png" alt="Logo SE2026" class="logo-light" width="140" height="90" loading="eager" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
+    <img src="/logo-vertical-dark.png" alt="Logo SE2026" class="logo-dark" width="140" height="90" fetchpriority="high" loading="eager" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
     <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 4px;">Penajam Paser Utara</p>
   </div>
 
@@ -294,8 +294,8 @@
   <header class="topbar">
     <button class="btn-toggle-sidebar" id="sidebarToggle" aria-label="Buka Sidebar" aria-expanded="false"><i class="bi bi-list"></i></button>
     <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; overflow: hidden;">
-      <img src="/logo-horizontal.png" alt="Logo SE2026" class="logo-light" loading="eager" style="height: 30px; max-width: 110px; object-fit: contain; flex-shrink: 0;">
-      <img src="/logo-horizontal-dark.png" alt="Logo SE2026" class="logo-dark" fetchpriority="high" loading="eager" style="height: 30px; max-width: 110px; object-fit: contain; flex-shrink: 0;">
+      <img src="/logo-horizontal.png" alt="Logo SE2026" class="logo-light" width="110" height="30" loading="eager" style="height: 30px; max-width: 110px; object-fit: contain; flex-shrink: 0;">
+      <img src="/logo-horizontal-dark.png" alt="Logo SE2026" class="logo-dark" width="110" height="30" fetchpriority="high" loading="eager" style="height: 30px; max-width: 110px; object-fit: contain; flex-shrink: 0;">
       <div style="border-left: 1px solid var(--border); padding-left: 12px; min-height: 28px; display: flex; flex-direction: column; justify-content: center; min-width: 0; overflow: hidden;">
         <div class="topbar-title" style="line-height: 1.2;"><%= typeof title !== 'undefined' ? title : 'Dashboard' %></div>
         <div class="topbar-subtitle" style="font-size: 11px; margin-top: 2px; color: var(--text-muted);">
