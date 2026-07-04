@@ -258,6 +258,30 @@
   </div>
 </aside>
 
+<!-- BOTTOM NAVIGATION BAR (MOBILE ONLY) -->
+<nav class="bottom-nav" aria-label="Mobile Navigation">
+  <a href="/" class="bottom-nav-item <%= activePage === 'overview' ? 'active' : '' %>">
+    <i class="bi bi-house-door"></i>
+    <span>Home</span>
+  </a>
+  <a href="/kecamatan" class="bottom-nav-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
+    <i class="bi bi-geo-alt"></i>
+    <span>Wilayah</span>
+  </a>
+  <a href="/pcl" class="bottom-nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
+    <i class="bi bi-person-gear"></i>
+    <span>Petugas</span>
+  </a>
+  <a href="/agent" class="bottom-nav-item <%= activePage === 'agent' ? 'active' : '' %>">
+    <i class="bi bi-robot"></i>
+    <span>Chat AI</span>
+  </a>
+  <button id="bottomNavMenuBtn" class="bottom-nav-item" aria-label="Buka Menu Lainnya">
+    <i class="bi bi-grid"></i>
+    <span>Menu</span>
+  </button>
+</nav>
+
 <!-- MAIN WRAPPER -->
 <div class="main-wrapper">
   <!-- TOPBAR -->
@@ -377,6 +401,17 @@
 
       if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
       overlay.addEventListener('click', closeSidebar);
+
+      // Mobile bottom nav menu toggle logic
+      const bottomNavMenuBtn = document.getElementById('bottomNavMenuBtn');
+      if (bottomNavMenuBtn) {
+        bottomNavMenuBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          sidebar.classList.add('active');
+          overlay.classList.add('active');
+          toggleBtn.setAttribute('aria-expanded', 'true');
+        });
+      }
     }
 
     const wrappers = document.querySelectorAll('.nav-section-wrapper');
