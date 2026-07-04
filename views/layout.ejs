@@ -593,6 +593,18 @@
       window.dispatchEvent(new Event('resize'));
     };
 
+    window.isElementHidden = (el) => {
+      let current = el;
+      while (current && current.tagName !== 'BODY') {
+        const style = window.getComputedStyle(current);
+        if (style && (style.display === 'none' || style.visibility === 'hidden')) {
+          return true;
+        }
+        current = current.parentElement;
+      }
+      return false;
+    };
+
     window.getCleanTableClone = (tableId) => {
       const original = document.getElementById(tableId);
       if (!original) return null;
@@ -605,7 +617,7 @@
         const origRow = origRows[r];
         const cloneRow = cloneRows[r];
 
-        if (window.getComputedStyle(origRow).display === 'none') {
+        if (window.isElementHidden(origRow)) {
           cloneRow.remove();
           continue;
         }
@@ -619,7 +631,7 @@
           
           if (!cloneCell) continue;
 
-          if (window.getComputedStyle(origCell).display === 'none') {
+          if (window.isElementHidden(origCell)) {
             cloneCell.remove();
           } else {
             // Remove export action buttons if any got cloned
