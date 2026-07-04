@@ -723,15 +723,15 @@ function createPclHistoryChart(canvasId, historyData) {
           pointHoverRadius: 6,
           pointBackgroundColor: '#eab308'
         },
-        {
-          label: 'Target FASIH',
-          data: dataTarget,
-          borderColor: '#a855f7',
-          borderDash: [5, 5],
-          pointRadius: 0,
-          fill: false,
-          tension: 0
-        }
+        // {
+        //   label: 'Target FASIH',
+        //   data: dataTarget,
+        //   borderColor: '#a855f7',
+        //   borderDash: [5, 5],
+        //   pointRadius: 0,
+        //   fill: false,
+        //   tension: 0
+        // }
       ]
     },
     options: {
