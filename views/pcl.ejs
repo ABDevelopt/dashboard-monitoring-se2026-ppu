@@ -285,7 +285,7 @@
                   let approvedFasih = detailSubsls.reduce((acc, s) => acc + (s.approved || 0), 0);
                 %>
                 <!-- Progress Muatan -->
-                <div style="margin-bottom: 12px;">
+                <div style="margin-bottom: 12px;" class="muatan-col">
                   <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
                     <span><i class="bi bi-briefcase"></i> Progres Muatan</span>
                     <span class="fw-bold"><%= doneMuatan.toLocaleString('id-ID') %> / <%= totalMuatan.toLocaleString('id-ID') %> (<%= donePct %>%)</span>
@@ -372,7 +372,7 @@
                     <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;"><%= s.kecamatan %> · <%= s.desa %></div>
                     
                     <div style="display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--border); padding-top: 8px; font-size: 11px;">
-                      <div style="display: flex; justify-content: space-between;">
+                      <div style="display: flex; justify-content: space-between;" class="muatan-col">
                         <span style="color: var(--text-secondary);"><i class="bi bi-briefcase"></i> Beban Muatan:</span>
                         <span class="fw-bold"><%= s.usaha_total %> / <%= s.muatan %></span>
                       </div>
@@ -382,7 +382,7 @@
                       </div>
                       <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-top: 2px;">
                         <span>Draft: <%= s.draft %> · Sub: <%= s.submitted_by_pcl %> · App: <%= s.approved %> · Rej: <strong class="text-red"><%= s.rejected %></strong></span>
-                        <span>Keluarga: <%= s.keluarga_total %></span>
+                        <span class="muatan-col">Keluarga: <%= s.keluarga_total %></span>
                       </div>
                     </div>
                   </div>

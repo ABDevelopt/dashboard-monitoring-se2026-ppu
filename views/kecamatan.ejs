@@ -19,7 +19,16 @@
     <!-- KECAMATAN CARDS GRID -->
     <div class="kec-grid">
       <% kecStats.forEach(k => { %>
-        <% let pctVal = k.total_muatan ? (( (k.usaha_total + k.keluarga_total) / k.total_muatan ) * 100).toFixed(2) : '0.00'; %>
+        <% 
+          let pctVal;
+          if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') {
+            let doneFasih = (k.submitted_total || 0) + (k.approved_total || 0) + (k.rejected_total || 0);
+            let totalFasih = k.target_fasih_total || 0;
+            pctVal = totalFasih ? ((doneFasih / totalFasih) * 100).toFixed(2) : '0.00';
+          } else {
+            pctVal = k.total_muatan ? (( (k.usaha_total + k.keluarga_total) / k.total_muatan ) * 100).toFixed(2) : '0.00';
+          }
+        %>
         <a href="/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" class="kec-card <%= filterKec === k.kecamatan ? 'active' : '' %>">
           <div class="kec-name"><i class="bi bi-geo-alt"></i> Kec. <%= k.kecamatan %></div>
           <div class="kec-pct"><%= pctVal %>%</div>
@@ -41,10 +50,15 @@
           </div>
           
           <div class="kec-detail">
-            <!-- SubSLS: <strong><%= k.selesai %> / <%= k.total_subsls %></strong> Selesai<br> -->
-            Total Muatan: <strong><%= k.total_muatan.toLocaleString('id-ID') %></strong><br>
-            Total Usaha: <strong><%= k.usaha_total.toLocaleString('id-ID') %></strong><br>
-            Total Keluarga: <strong><%= k.keluarga_total.toLocaleString('id-ID') %></strong>
+            <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') { %>
+              Target FASIH: <strong><%= k.target_fasih_total.toLocaleString('id-ID') %></strong><br>
+              Approved: <strong><%= k.approved_total.toLocaleString('id-ID') %></strong> · Rejected: <strong><%= k.rejected_total.toLocaleString('id-ID') %></strong><br>
+              Submitted: <strong><%= k.submitted_total.toLocaleString('id-ID') %></strong> · Draft: <strong><%= k.draft_total.toLocaleString('id-ID') %></strong>
+            <% } else { %>
+              Total Muatan: <strong><%= k.total_muatan.toLocaleString('id-ID') %></strong><br>
+              Total Usaha: <strong><%= k.usaha_total.toLocaleString('id-ID') %></strong><br>
+              Total Keluarga: <strong><%= k.keluarga_total.toLocaleString('id-ID') %></strong>
+            <% } %>
           </div>
         </a>
       <% }) %>
