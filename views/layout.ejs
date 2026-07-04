@@ -52,6 +52,10 @@
   if (localStorage.getItem('theme') === 'light') {
     document.body.classList.add('light-mode');
   }
+  // Apply saved sidebar state immediately to prevent layout shift (CLS)
+  if (window.innerWidth > 768 && localStorage.getItem('sidebar-collapsed') === 'true') {
+    document.body.classList.add('sidebar-collapsed');
+  }
 </script>
 
 <!-- SIDEBAR OVERLAY -->
@@ -417,11 +421,9 @@
     const closeBtn = document.getElementById('sidebarClose');
     const overlay = document.getElementById('sidebarOverlay');
 
-    // Load collapsed state from localStorage on startup (desktop only)
+    // Sync collapsed state ARIA attribute on startup (desktop only)
     if (window.innerWidth > 768) {
-      const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-      if (isCollapsed) {
-        document.body.classList.add('sidebar-collapsed');
+      if (document.body.classList.contains('sidebar-collapsed')) {
         if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
       }
     }
