@@ -917,8 +917,8 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   background: var(--bg-summary);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 10px;
-  margin-bottom: 8px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
 }
 
 /* ====== BANGUNAN CARD ====== */
