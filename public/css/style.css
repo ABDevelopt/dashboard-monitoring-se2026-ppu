@@ -1636,5 +1636,11 @@ body.light-mode .logo-dark {
   color: var(--text-primary);
 }
 
+@media (max-width: 768px) {
+  .btn-text-desktop {
+    display: none !important;
+  }
+}
+
 
 
