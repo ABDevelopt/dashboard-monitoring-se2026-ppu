@@ -1,5 +1,6 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const { rebuildAllSummaryCaches } = require('./database');
 
 // Connect to SQLite database in the project data folder
 const dbPath = path.join(__dirname, 'data', 'se2026.db');
@@ -55,7 +56,9 @@ const runMigration = db.transaction(() => {
 
 try {
   runMigration();
-  console.log('\n✅ Database normalization completed successfully!');
+  console.log('\nRebuilding all summary caches...');
+  rebuildAllSummaryCaches();
+  console.log('\n✅ Database normalization and cache rebuild completed successfully!');
 } catch (error) {
   console.error('❌ Migration failed:', error);
 } finally {
