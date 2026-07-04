@@ -1285,13 +1285,13 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   display: flex !important;
   flex-direction: row !important;
   align-items: flex-end !important;
-  gap: 16px !important;
+  gap: 8px !important; /* Reduced from 16px */
   width: 100% !important;
-  margin-bottom: 16px !important;
+  margin-bottom: 8px !important; /* Reduced from 16px */
   flex-wrap: wrap !important;
   background: var(--bg-secondary) !important;
-  padding: 12px 16px !important;
-  border-radius: 8px !important;
+  padding: 6px 10px !important; /* Reduced from 12px 16px */
+  border-radius: 6px !important; /* Reduced from 8px */
   border: 1px solid var(--border) !important;
   box-sizing: border-box !important;
   flex-shrink: 0 !important;
@@ -1299,15 +1299,15 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
 
 .card.card-expanded .expanded-filter-row .search-wrap {
   margin-bottom: 0 !important;
-  flex: 1 1 240px !important;
-  max-width: 320px !important;
+  flex: 1 1 200px !important;
+  max-width: 240px !important; /* Reduced from 320px */
   position: relative !important;
 }
 
 .card.card-expanded .expanded-filter-row .search-wrap label {
   display: block !important;
-  font-size: 11px !important;
-  margin-bottom: 4px !important;
+  font-size: 10px !important; /* Reduced from 11px */
+  margin-bottom: 2px !important; /* Reduced from 4px */
   color: var(--text-muted) !important;
   font-weight: 500 !important;
 }
@@ -1315,51 +1315,52 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
 .card.card-expanded .expanded-filter-row .search-wrap input {
   width: 100% !important;
   max-width: none !important;
-  height: 36px !important;
-  padding-left: 32px !important;
-  font-size: 12px !important;
+  height: 30px !important; /* Reduced from 36px */
+  padding-left: 26px !important; /* Reduced from 32px */
+  font-size: 11px !important; /* Reduced from 12px */
+  border-radius: 5px !important;
 }
 
 .card.card-expanded .expanded-filter-row #filterForm {
   margin-bottom: 0 !important;
-  flex: 3 1 450px !important;
+  flex: 3 1 380px !important; /* Reduced from 450px */
   width: 100% !important;
 }
 
 .card.card-expanded .expanded-filter-row .filter-form-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)) !important;
-  gap: 10px !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 130px), 1fr)) !important;
+  gap: 8px !important;
 }
 
 .card.card-expanded .expanded-filter-row .filter-form-grid label {
   display: block !important;
-  font-size: 11px !important;
-  margin-bottom: 4px !important;
+  font-size: 10px !important; /* Reduced from 11px */
+  margin-bottom: 2px !important; /* Reduced from 4px */
   color: var(--text-muted) !important;
   font-weight: 500 !important;
 }
 
 .card.card-expanded .expanded-filter-row .filter-form-grid select {
-  font-size: 12px !important;
-  padding: 6px 12px !important;
-  height: 36px !important;
+  font-size: 11px !important; /* Reduced from 12px */
+  padding: 4px 8px !important; /* Reduced from 6px 12px */
+  height: 30px !important; /* Reduced from 36px */
   background-color: var(--bg-primary) !important;
   border: 1px solid var(--border) !important;
-  border-radius: 6px !important;
+  border-radius: 5px !important;
   color: var(--text-primary) !important;
   width: 100% !important;
 }
 
 .card.card-expanded .expanded-filter-row .btn-reset-expanded {
   margin-bottom: 0 !important;
-  height: 36px !important;
+  height: 30px !important; /* Reduced from 36px */
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 0 16px !important;
-  font-size: 12px !important;
-  border-radius: 6px !important;
+  padding: 0 12px !important; /* Reduced from 16px */
+  font-size: 11px !important; /* Reduced from 12px */
+  border-radius: 5px !important;
   white-space: nowrap !important;
 }
 
