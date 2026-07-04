@@ -1203,13 +1203,24 @@
           logging: false,
           allowTaint: true,
           onclone: (clonedDoc) => {
-            // Hide export buttons, expand buttons, search forms, and massive data tables to keep the shareable card compact, clear, and extremely fast to render!
+            // Hide export buttons, expand buttons, search forms, and close buttons to keep the card clean
             const clonedEl = clonedDoc.getElementById(elementId);
             if (clonedEl) {
               const elementsToHide = clonedEl.querySelectorAll(
-                '.table-export-buttons, .btn-secondary, .btn-expand-table, .search-wrap, .table-wrap, input[type="search"], table, button, .btn'
+                '.table-export-buttons, .btn-secondary, .btn-expand-table, .search-wrap, input, button, .btn'
               );
               elementsToHide.forEach(el => el.style.display = 'none');
+
+              // Expand scrollable list containers fully so that all rows are rendered (no scroll clipping!)
+              const scrollContainers = clonedEl.querySelectorAll(
+                '#detailSubslsList, #detailPclList, #detailPmlList'
+              );
+              scrollContainers.forEach(container => {
+                container.style.maxHeight = 'none';
+                container.style.overflowY = 'visible';
+                container.style.overflow = 'visible';
+                container.style.height = 'auto';
+              });
             }
           }
         });
