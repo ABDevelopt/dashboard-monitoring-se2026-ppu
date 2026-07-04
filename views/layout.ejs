@@ -346,12 +346,16 @@
 <!-- GLOBAL DETAIL MODAL -->
 <div class="custom-modal-backdrop" id="globalDetailModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.65); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(6px); padding: 20px;">
   <div class="card" id="globalDetailModalCard" style="width: 100%; max-width: 520px; max-height: 90vh; margin: 0; display: flex; flex-direction: column; overflow: hidden; animation: slideIn 0.25s ease; border-radius: 16px;">
-    <div class="card-header" style="padding: 20px 20px 0 20px; border-bottom: none; flex-shrink: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+    <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: none; flex-shrink: 0;">
       <div>
-        <div class="card-title" id="globalDetailModalTitle" style="font-size: 15px; font-weight: 700; line-height: 1.3;"><i class="bi bi-person-bounding-box"></i> Rincian Tugas SLS</div>
+        <div class="card-title" id="globalDetailModalTitle" style="font-size: 15px; font-weight: 700; line-height: 1.3; margin-bottom: 0;"><i class="bi bi-person-bounding-box"></i> Rincian Tugas SLS</div>
         <div id="globalDetailModalSubtitle" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"></div>
       </div>
-      <button class="btn btn-secondary" id="btnCloseGlobalDetailModal" aria-label="Tutup" style="min-width: auto; padding: 6px 10px; flex-shrink: 0; border-radius: 8px;"><i class="bi bi-x-lg"></i> Tutup</button>
+      <div style="display: flex; gap: 6px; align-items: center; margin-left: auto;">
+        <button onclick="window.shareElementAsImage('globalDetailModalCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
+        <button onclick="window.copyElementAsImage('globalDetailModalCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
+        <button class="btn btn-secondary btn-xs" id="btnCloseGlobalDetailModal" aria-label="Tutup" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></button>
+      </div>
     </div>
     <div class="card-body" id="globalDetailModalBody" style="flex: 1; overflow-y: auto; padding: 16px 20px 20px 20px; display: flex; flex-direction: column; gap: 16px;">
       <!-- Content injected by JS -->
@@ -361,6 +365,25 @@
 
 <script src="/js/charts.js?v=<%= appVersion %>" defer></script>
 <script>
+  // Injected EJS variables for global client-side calculations
+  const latestUploadTanggal = "<%= latestUpload ? latestUpload.tanggal : '' %>";
+  const startSensusDate = new Date('2026-06-15');
+  let diffDays = 1;
+  let daysRemaining = 0;
+  if (latestUploadTanggal) {
+    const d2 = new Date(latestUploadTanggal);
+    const diffTime = d2 - startSensusDate;
+    diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+    const deadline = new Date('2026-08-31');
+    daysRemaining = Math.max(0, Math.ceil((deadline - d2) / (1000 * 60 * 60 * 24)));
+  }
+
+  const kippPcls = <%- JSON.stringify(typeof kippPcls !== 'undefined' ? kippPcls : []) %>;
+  const kippPmls = <%- JSON.stringify(typeof kippPmls !== 'undefined' ? kippPmls : []) %>;
+  const kippKorlaps = <%- JSON.stringify(typeof kippKorlaps !== 'undefined' ? kippKorlaps : []) %>;
+  const globalSettings = <%- JSON.stringify(typeof settings !== 'undefined' ? settings : {}) %>;
+  const activeTargetPct = new Date().getMonth() >= 6 ? 50 : 25; // 6 is July
+
   document.addEventListener('DOMContentLoaded', () => {
     const sidebar = document.getElementById('sidebar');
     const toggleBtn = document.getElementById('sidebarToggle');
@@ -1049,55 +1072,192 @@
       const totalSubmit = rows.reduce((s, r) => s + (r.submitted_by_pcl || 0), 0);
       const totalApprove = rows.reduce((s, r) => s + (r.approved || 0), 0);
       const totalReject = rows.reduce((s, r) => s + (r.rejected || 0), 0);
-      const totalFasihAll = totalDraft + totalSubmit + totalApprove + totalReject;
+      const totalFasihAll = totalSubmit + totalApprove + totalReject; // Exclude Draft, match page logic
 
       const pmlName = rows.length > 0 ? rows[0].pml : '-';
       const korlapName = rows.length > 0 ? rows[0].korlap : '-';
 
       const subtitle = document.getElementById('globalDetailModalSubtitle');
-      if (subtitle) subtitle.textContent = `PML: ${pmlName} · Korlap: ${korlapName}`;
+      if (subtitle) {
+        const isKippPml = kippPmls.includes(pmlName.toUpperCase());
+        const isKippKorlap = kippKorlaps.includes(korlapName.toUpperCase());
+        subtitle.innerHTML = `
+          PML: <strong>${pmlName}</strong>${isKippPml ? ' <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle;">KIPP</span>' : ''} · 
+          Korlap: <strong>${korlapName}</strong>${isKippKorlap ? ' <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle;">KIPP</span>' : ''}
+        `;
+      }
 
-      return `
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
-          ${makeSectionHeader('Progres Muatan')}
-          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
-            <span style="font-size:13px; color:var(--text-muted);">${totalSelesai} / ${totalSubSLS} SubSLS selesai</span>
+      // Calculations for Speed Analysis
+      const remainingFasih = Math.max(0, totalFasihTarget - totalFasihAll);
+      const currentSpeed = diffDays > 0 ? (totalFasihAll / diffDays) : 0;
+      const currentSpeedText = currentSpeed.toFixed(2);
+      const estDaysToFinish = currentSpeed > 0 ? (remainingFasih / currentSpeed) : null;
+      const isOfftrack = (currentSpeed === 0 && remainingFasih > 0) || (estDaysToFinish !== null && estDaysToFinish > daysRemaining);
+      const reqSpeed = daysRemaining > 0 ? (remainingFasih / daysRemaining) : remainingFasih;
+
+      const donePct = totalMuatan ? ((totalUsaha / totalMuatan) * 100).toFixed(2) : '0.00';
+      const fasihPct = totalFasihTarget ? ((totalFasihAll / totalFasihTarget) * 100).toFixed(2) : '0.00';
+
+      const showMuatan = typeof globalSettings !== 'undefined' && globalSettings.show_progres_muatan !== '0';
+
+      let html = `
+        <div class="mb-4">
+          <!-- Progress Muatan -->
+          ${showMuatan ? `
+          <div style="margin-bottom: 12px; text-align: left;" class="muatan-col">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+              <span><i class="bi bi-briefcase"></i> Progres Muatan</span>
+              <span class="fw-bold">${totalUsaha.toLocaleString('id-ID')} / ${totalMuatan.toLocaleString('id-ID')} (${donePct}%)</span>
+            </div>
+            <div class="progress-bar-target-wrap" style="position: relative; height: 6px; margin-top: 16px; margin-bottom: 8px;">
+              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
+                <div class="progress-bar ${parseFloat(donePct) >= 100 ? 'green' : (parseFloat(donePct) < activeTargetPct ? 'red' : 'blue')}" style="width: ${donePct}%; height: 100%; border-radius: 99px;"></div>
+              </div>
+              <!-- Marker 25% (Juni) -->
+              <div style="position: absolute; left: 25%; top: -3px; height: 12px; border-left: 1px dashed ${activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; opacity: ${activeTargetPct === 25 ? '1' : '0.5'}; z-index: 2; pointer-events: none;">
+                <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: ${activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; white-space: nowrap;">Jun: 25%</span>
+              </div>
+              <!-- Marker 50% (Juli) -->
+              <div style="position: absolute; left: 50%; top: -3px; height: 12px; border-left: 1px dashed ${activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; opacity: ${activeTargetPct === 50 ? '1' : '0.5'}; z-index: 2; pointer-events: none;">
+                <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: ${activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; white-space: nowrap;">Jul: 50%</span>
+              </div>
+            </div>
           </div>
-          ${makeProgressBar(totalUsaha, totalMuatan, 'var(--accent-blue)')}
+          ` : ''}
+
+          <!-- Progress FASIH -->
+          <div style="margin-bottom: 12px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+              <span><i class="bi bi-phone"></i> Progres FASIH (Submit + Approve + Reject)</span>
+              <span class="fw-bold">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} (${fasihPct}%)</span>
+            </div>
+            <div class="progress-bar-wrap" style="height: 6px;">
+              <div class="progress-bar ${parseFloat(fasihPct) >= 100 ? 'green' : (parseFloat(fasihPct) < 25 ? 'red' : 'purple')}" style="width: ${fasihPct}%;"></div>
+            </div>
+          </div>
+
+          <!-- Mini Grid Status FASIH -->
+          <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; text-align: center;">
+            <div class="fasih-grid-item fasih-item-draft">
+              <div class="fasih-grid-item-label">Draft</div>
+              <div class="fasih-grid-item-value">${totalDraft}</div>
+            </div>
+            <div class="fasih-grid-item fasih-item-submit">
+              <div class="fasih-grid-item-label">Submit</div>
+              <div class="fasih-grid-item-value">${totalSubmit}</div>
+            </div>
+            <div class="fasih-grid-item fasih-item-approve">
+              <div class="fasih-grid-item-label">Approve</div>
+              <div class="fasih-grid-item-value">${totalApprove}</div>
+            </div>
+            <div class="fasih-grid-item fasih-item-reject">
+              <div class="fasih-grid-item-label">Reject</div>
+              <div class="fasih-grid-item-value">${totalReject}</div>
+            </div>
+          </div>
+
+          <!-- Analisis Kecepatan & Estimasi Pendataan -->
+          <div style="margin-top: 18px; padding: 14px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; text-align: left;">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-cyan); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+              <i class="bi bi-speedometer2" style="font-size: 14px;"></i> Analisis Kecepatan & Sisa Waktu
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+                <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Kecepatan Saat Ini</div>
+                <div style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-top: 2px;">${currentSpeedText} <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);">dok/hari</span></div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+                <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Status Target</div>
+                <div style="font-size: 12px; font-weight: 700; margin-top: 4px;">
+                  ${remainingFasih === 0 ? `
+                    <span class="badge badge-green" style="font-size: 10px; padding: 3px 8px;">Selesai 100%</span>
+                  ` : isOfftrack ? `
+                    <span class="badge badge-red" style="font-size: 10px; padding: 3px 8px;"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
+                  ` : `
+                    <span class="badge badge-blue" style="font-size: 10px; padding: 3px 8px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
+                  `}
+                </div>
+              </div>
+            </div>
+            
+            <div style="font-size: 11px; line-height: 1.5; color: var(--text-secondary);">
+              ${remainingFasih === 0 ? `
+                Petugas <strong>${name}</strong> telah menyelesaikan seluruh target pengisian dokumen FASIH sebanyak <strong>${totalFasihTarget}</strong> dokumen. Kinerja luar biasa!
+              ` : `
+                Hari berjalan pendataan: <strong>${diffDays} hari</strong> (sejak 15 Juni). Sisa hari menuju deadline (31 Agustus): <strong>${daysRemaining} hari</strong>.<br>
+                Sisa beban kerja: <strong>${remainingFasih} dokumen</strong>. 
+                Dengan kecepatan saat ini (<strong>${currentSpeedText} dok/hari</strong>), 
+                ${currentSpeed === 0 ? `
+                  petugas belum merealisasikan dokumen FASIH sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.
+                ` : `
+                  petugas diprediksi akan menyelesaikan sisa dokumen dalam waktu sekitar <strong>${Math.ceil(estDaysToFinish)} hari</strong>.
+                `}
+                
+                ${isOfftrack ? `
+                  <div style="margin-top: 8px; padding: 8px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--accent-red); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
+                    <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red); font-size: 13px; margin-top: 1px;"></i>
+                    <div><strong>Off-Track:</strong> Petugas diprediksi terlambat/tidak selesai tepat waktu. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong>${reqSpeed.toFixed(2)} dok/hari</strong> agar selesai sesuai target pada 31 Agustus 2026.</div>
+                  </div>
+                ` : `
+                  <div style="margin-top: 8px; padding: 8px; background: rgba(34, 197, 94, 0.08); border-left: 3px solid var(--accent-green); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
+                    <i class="bi bi-check-circle-fill" style="color: var(--accent-green); font-size: 13px; margin-top: 1px;"></i>
+                    <div><strong>On-Track:</strong> Kecepatan petugas sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum 31 Agustus 2026).</div>
+                  </div>
+                `}
+              `}
+            </div>
+          </div>
         </div>
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
-          ${makeSectionHeader('Progres FASIH (Submit + Approve + Reject)')}
-          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
-            <span style="font-size:13px; color:var(--text-muted);">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} entri</span>
-          </div>
-          ${makeProgressBar(totalFasihAll, totalFasihTarget, '#22c55e')}
-          ${makeFasihCards(totalDraft, totalSubmit, totalApprove, totalReject)}
+
+        <!-- Search box for SLS -->
+        <div class="search-wrap mb-4" style="max-width: 100%; margin-bottom: 12px; margin-top: 16px;">
+          <input type="search" id="modalSubslsSearch" placeholder="Cari nama SLS/kode..." aria-label="Cari nama SLS atau kode wilayah">
         </div>
-        ${rows.length > 0 ? `
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
-          ${makeSectionHeader(`Daftar SubSLS (${totalSubSLS} SLS)`)}
-          <div style="overflow-y:auto; max-height:200px; margin-top:8px;">
-            <table style="width:100%; font-size:11px; border-collapse:collapse;">
-              <thead><tr style="color:var(--text-muted); border-bottom:1px solid var(--border);">
-                <th style="padding:4px 6px; text-align:left; font-weight:600;">SLS</th>
-                <th style="padding:4px 6px; text-align:right; font-weight:600;">Muatan</th>
-                <th style="padding:4px 6px; text-align:right; font-weight:600;">FASIH</th>
-                <th style="padding:4px 6px; text-align:center; font-weight:600;">Status</th>
-              </tr></thead>
-              <tbody>
-                ${rows.map((r, i) => `
-                  <tr style="${i%2===1?'background:var(--bg-tertiary,rgba(255,255,255,0.03));':''}">
-                    <td style="padding:4px 6px;">${r.nama_sls}<br><span style="font-size:9px; color:var(--text-muted); font-family:monospace;">${r.kode}</span></td>
-                    <td style="padding:4px 6px; text-align:right; font-family:monospace;">${r.usaha_total}/${r.muatan}</td>
-                    <td style="padding:4px 6px; text-align:right; font-family:monospace;">${r.approved}/${r.target_fasih}</td>
-                    <td style="padding:4px 6px; text-align:center;"><span style="font-size:9px; padding:2px 6px; border-radius:999px; background:${r.sudah_diisi ? 'rgba(34,197,94,0.15)' : 'rgba(107,114,128,0.15)'}; color:${r.sudah_diisi ? '#22c55e' : '#9ca3af'};">${r.sudah_diisi ? 'Selesai' : 'Progres'}</span></td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>` : ''}
+
+        <!-- List of SLS -->
+        <div id="modalSubslsList" style="max-height: 250px; overflow-y: auto; padding-right: 4px; text-align: left;">
+          ${rows.map(s => `
+            <div class="detail-item" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 4px; font-size: 11px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <div style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%;">
+                  <span class="td-code" style="font-size: 9px; padding: 1px 3px; font-weight: normal; margin-right: 4px;">${s.kode}</span>
+                  ${s.nama_sls}
+                </div>
+                ${s.sudah_diisi ? `
+                  <span class="badge badge-green btn-xs" style="font-size: 8px; padding: 1px 4px;">Selesai</span>
+                ` : `
+                  <span class="badge badge-red btn-xs" style="font-size: 8px; padding: 1px 4px;">Belum</span>
+                `}
+              </div>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); flex-wrap: wrap; gap: 4px;">
+                <div>${s.desa}</div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  ${showMuatan ? `
+                  <span class="muatan-col" style="color: var(--accent-cyan);">
+                    Muatan: <strong>${s.usaha_total}</strong>/${s.muatan}
+                  </span>
+                  ` : ''}
+                  <span style="color: var(--accent-purple);">
+                    FASIH: <strong>${(s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0)}</strong>/${s.target_fasih} 
+                    <span style="font-size: 9px; color: var(--text-muted);">(D${s.draft} S${s.submitted_by_pcl} A${s.approved} R${s.rejected})</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
       `;
+
+      // Set timeout to initialize search filtering on modal list load
+      setTimeout(() => {
+        if (typeof makeListSearchable === 'function') {
+          makeListSearchable('modalSubslsSearch', 'modalSubslsList', '.detail-item');
+        }
+      }, 50);
+
+      return html;
     };
 
     // Intercept click on PML/PCL/Korlap links — works inside expanded table or any table on page
