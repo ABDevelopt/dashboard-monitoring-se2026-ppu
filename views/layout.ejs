@@ -34,6 +34,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
   <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') { %>
     <style>
       .muatan-col { display: none !important; }
@@ -590,11 +593,198 @@
       window.dispatchEvent(new Event('resize'));
     };
 
+    window.getCleanTableClone = (tableId) => {
+      const original = document.getElementById(tableId);
+      if (!original) return null;
+
+      const clone = original.cloneNode(true);
+      const origRows = original.querySelectorAll('tr');
+      const cloneRows = clone.querySelectorAll('tr');
+
+      for (let r = 0; r < origRows.length; r++) {
+        const origRow = origRows[r];
+        const cloneRow = cloneRows[r];
+
+        if (window.getComputedStyle(origRow).display === 'none') {
+          cloneRow.remove();
+          continue;
+        }
+
+        const origCells = origRow.querySelectorAll('th, td');
+        const cloneCells = cloneRow.querySelectorAll('th, td');
+
+        for (let c = 0; c < origCells.length; c++) {
+          const origCell = origCells[c];
+          const cloneCell = cloneCells[c];
+          
+          if (!cloneCell) continue;
+
+          if (window.getComputedStyle(origCell).display === 'none') {
+            cloneCell.remove();
+          } else {
+            // Remove export action buttons if any got cloned
+            const exportActions = cloneCell.querySelector('.table-export-buttons');
+            if (exportActions) exportActions.remove();
+
+            let text = origCell.innerText || origCell.textContent || '';
+            text = text.trim().replace(/\n+/g, ' ').replace(/\s+/g, ' ');
+            cloneCell.textContent = text;
+          }
+        }
+      }
+      return clone;
+    };
+
+    window.exportTableToXLSX = (tableId, title) => {
+      const cleanTable = window.getCleanTableClone(tableId);
+      if (!cleanTable) return;
+
+      const wb = XLSX.utils.table_to_book(cleanTable, { raw: true });
+      const filename = title.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_').toLowerCase();
+      XLSX.writeFile(wb, `${filename}.xlsx`);
+    };
+
+    window.exportTableToPDF = (tableId, title) => {
+      const cleanTable = window.getCleanTableClone(tableId);
+      if (!cleanTable) return;
+
+      const { jsPDF } = window.jspdf;
+      const colCount = cleanTable.querySelector('tr') ? cleanTable.querySelector('tr').querySelectorAll('th, td').length : 0;
+      const orientation = colCount > 6 ? 'l' : 'p';
+      
+      const doc = new jsPDF(orientation, 'pt', 'a4');
+      
+      doc.setFontSize(14);
+      doc.text(title, 20, 30);
+
+      doc.autoTable({
+        html: cleanTable,
+        startY: 45,
+        theme: 'striped',
+        styles: {
+          fontSize: 8,
+          cellPadding: 4,
+        },
+        headStyles: {
+          fillColor: [59, 130, 246],
+          textColor: 255,
+          fontStyle: 'bold'
+        },
+        margin: { top: 40, bottom: 40, left: 20, right: 20 }
+      });
+
+      const filename = title.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_').toLowerCase();
+      doc.save(`${filename}.pdf`);
+    };
+
+    window.initTableExport = (container = document) => {
+      const tables = container.querySelectorAll('table');
+      tables.forEach(table => {
+        const tableWrap = table.closest('.table-wrap');
+        const card = table.closest('.card');
+        if (!tableWrap && !card) return;
+
+        if (table.dataset.exportInit === 'true') return;
+        table.dataset.exportInit = 'true';
+
+        if (!table.id) {
+          table.id = 'table_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        let title = 'data_export';
+        if (card) {
+          const cardTitleEl = card.querySelector('.card-title');
+          if (cardTitleEl) {
+            title = cardTitleEl.textContent.trim();
+          }
+        } else {
+          const modal = table.closest('#globalDetailModal');
+          if (modal) {
+            const modalTitle = document.getElementById('globalDetailModalTitle');
+            if (modalTitle) {
+              title = modalTitle.textContent.trim();
+            }
+          }
+        }
+
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'btn-group table-export-buttons';
+        btnGroup.style.display = 'inline-flex';
+        btnGroup.style.gap = '4px';
+        btnGroup.style.alignItems = 'center';
+
+        const btnXlsx = document.createElement('button');
+        btnXlsx.className = 'btn btn-secondary btn-xs';
+        btnXlsx.type = 'button';
+        btnXlsx.style.padding = '3px 8px';
+        btnXlsx.style.fontSize = '11px';
+        btnXlsx.innerHTML = '<i class="bi bi-file-earmark-excel"></i> XLSX';
+        btnXlsx.onclick = (e) => {
+          e.preventDefault();
+          window.exportTableToXLSX(table.id, title);
+        };
+
+        const btnPdf = document.createElement('button');
+        btnPdf.className = 'btn btn-secondary btn-xs';
+        btnPdf.type = 'button';
+        btnPdf.style.padding = '3px 8px';
+        btnPdf.style.fontSize = '11px';
+        btnPdf.innerHTML = '<i class="bi bi-file-pdf"></i> PDF';
+        btnPdf.onclick = (e) => {
+          e.preventDefault();
+          window.exportTableToPDF(table.id, title);
+        };
+
+        btnGroup.appendChild(btnXlsx);
+        btnGroup.appendChild(btnPdf);
+
+        if (card) {
+          const header = card.querySelector('.card-header');
+          if (header) {
+            let actionsWrap = header.querySelector('.card-actions');
+            if (!actionsWrap) {
+              actionsWrap = document.createElement('div');
+              actionsWrap.className = 'card-actions';
+              actionsWrap.style.display = 'flex';
+              actionsWrap.style.gap = '8px';
+              actionsWrap.style.alignItems = 'center';
+              actionsWrap.style.marginLeft = 'auto';
+
+              const children = Array.from(header.children);
+              if (children.length > 1) {
+                for (let i = 1; i < children.length; i++) {
+                  actionsWrap.appendChild(children[i]);
+                }
+              }
+              header.appendChild(actionsWrap);
+            }
+            actionsWrap.insertBefore(btnGroup, actionsWrap.firstChild);
+          } else {
+            const target = tableWrap || table;
+            const wrap = document.createElement('div');
+            wrap.style.display = 'flex';
+            wrap.style.justifyContent = 'flex-end';
+            wrap.style.marginBottom = '8px';
+            wrap.appendChild(btnGroup);
+            target.parentNode.insertBefore(wrap, target);
+          }
+        } else {
+          const target = tableWrap || table;
+          const wrap = document.createElement('div');
+          wrap.style.display = 'flex';
+          wrap.style.justifyContent = 'flex-end';
+          wrap.style.marginBottom = '8px';
+          wrap.appendChild(btnGroup);
+          target.parentNode.insertBefore(wrap, target);
+        }
+      });
+    };
+
     window.initExpandButtons = (container = document) => {
       container.querySelectorAll('.card').forEach(card => {
         const tableWrap = card.querySelector('.table-wrap');
-        if (!tableWrap) return; // Only apply to cards with tables
-        if (card.querySelector('#kecOverviewTable')) return; // Exclude overview table from expand feature
+        if (!tableWrap) return;
+        if (card.querySelector('#kecOverviewTable')) return;
 
         const header = card.querySelector('.card-header');
         if (header) {
@@ -609,7 +799,6 @@
             actionsWrap.style.alignItems = 'center';
             actionsWrap.style.marginLeft = 'auto';
 
-            // Move any children other than the title wrapper (usually first child) to actions wrapper
             const children = Array.from(header.children);
             if (children.length > 1) {
               for (let i = 1; i < children.length; i++) {
@@ -638,7 +827,6 @@
 
           actionsWrap.appendChild(expandBtn);
 
-          // Auto-restore expanded state if needed
           const table = card.querySelector('table');
           if (table && document.body.classList.contains('has-expanded-card') && window.lastExpandedTableId === table.id) {
             setTimeout(() => {
@@ -647,6 +835,10 @@
           }
         }
       });
+
+      if (window.initTableExport) {
+        window.initTableExport(container);
+      }
     };
 
     window.initExpandButtons(document);
@@ -896,6 +1088,9 @@
             modalBody.innerHTML = renderPmlDetails(data, name);
           } else if (type === 'pcl') {
             modalBody.innerHTML = renderPclDetails(data, name);
+          }
+          if (window.initTableExport) {
+            window.initTableExport(modalBody);
           }
         })
         .catch(err => {
