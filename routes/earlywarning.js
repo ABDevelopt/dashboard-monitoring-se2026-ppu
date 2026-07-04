@@ -8,7 +8,7 @@ router.get('/', (req, res) => {
   const filterKorlap = req.query.korlap || '';
   const filterPml = req.query.pml || '';
 
-  let warning = { zeroPcl: [], slowPcl: [], zeroPml: [] };
+  let warning = { zeroPcl: [], slowPcl: [], zeroPml: [], stagnanPcl: [] };
 
   if (uploadId) {
     warning = getEarlyWarning(uploadId, { kec: filterKec, korlap: filterKorlap, pml: filterPml });

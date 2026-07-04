@@ -589,7 +589,67 @@ function getEarlyWarning(uploadId, filters = {}) {
     ORDER BY total_subsls DESC
   `).all(...paramsZeroPml);
 
-  return { zeroPcl, slowPcl, zeroPml, diffDays };
+  // Stagnan 2 hari: PCL yang tidak ada penambahan selesai (submit+approve+reject) antara upload 2 hari lalu dan upload sekarang
+  // Cari upload yang tanggalnya >= 2 hari sebelum upload saat ini
+  let stagnanPcl = [];
+  if (currentUpload) {
+    const currentDate = new Date(currentUpload.tanggal);
+    const twoDaysAgo = new Date(currentDate);
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const twoDaysAgoStr = twoDaysAgo.toISOString().slice(0, 10);
+
+    // Cari upload terbaru yang tanggalnya <= 2 hari sebelum upload saat ini
+    const prevUpload = getDb().prepare(
+      `SELECT id, tanggal FROM uploads WHERE tanggal <= ? AND id != ? ORDER BY tanggal DESC LIMIT 1`
+    ).get(twoDaysAgoStr, uploadId);
+
+    if (prevUpload) {
+      // Bandingkan summary_cache antara upload sekarang dan upload lama
+      // PCL stagnan = selesai_sekarang - selesai_lama <= 0, dan target > 0, dan belum selesai
+      let stagnanWhere = '';
+      const stagnanParams = [uploadId, prevUpload.id];
+      const stagnanParamsFilters = [];
+
+      if (filters.kec) { stagnanWhere += ' AND m.kecamatan = ?'; stagnanParamsFilters.push(filters.kec); }
+      if (filters.korlap) { stagnanWhere += ' AND m.korlap = ?'; stagnanParamsFilters.push(filters.korlap); }
+      if (filters.pml) { stagnanWhere += ' AND m.pml = ?'; stagnanParamsFilters.push(filters.pml); }
+
+      stagnanPcl = getDb().prepare(`
+        SELECT
+          cur.pcl,
+          MAX(m.pml) AS pml,
+          MAX(m.korlap) AS korlap,
+          MAX(m.kecamatan) AS kecamatan,
+          SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_total,
+          SUM(COALESCE(cur.submitted_total, 0) + COALESCE(cur.approved_total, 0) + COALESCE(cur.rejected_total, 0)) AS selesai_sekarang,
+          SUM(COALESCE(prev.submitted_total, 0) + COALESCE(prev.approved_total, 0) + COALESCE(prev.rejected_total, 0)) AS selesai_lama,
+          SUM(COALESCE(cur.submitted_total, 0) + COALESCE(cur.approved_total, 0) + COALESCE(cur.rejected_total, 0))
+            - SUM(COALESCE(prev.submitted_total, 0) + COALESCE(prev.approved_total, 0) + COALESCE(prev.rejected_total, 0)) AS delta_selesai,
+          ? AS tanggal_ref,
+          ? AS tanggal_prev,
+          SUM(COALESCE(cur.draft_total, 0)) AS draft_total,
+          SUM(COALESCE(cur.submitted_total, 0)) AS submitted_total,
+          SUM(COALESCE(cur.approved_total, 0)) AS approved_total,
+          SUM(COALESCE(cur.rejected_total, 0)) AS rejected_total
+        FROM summary_cache cur
+        LEFT JOIN summary_cache prev ON prev.pcl = cur.pcl AND prev.upload_id = ?
+        JOIN subsls_master m ON m.pcl = cur.pcl COLLATE NOCASE
+        WHERE cur.upload_id = ? ${stagnanWhere}
+        GROUP BY cur.pcl COLLATE NOCASE
+        HAVING
+          SUM(COALESCE(m.target_fasih, 0)) > 0
+          AND SUM(COALESCE(cur.submitted_total, 0) + COALESCE(cur.approved_total, 0) + COALESCE(cur.rejected_total, 0))
+              < SUM(COALESCE(m.target_fasih, 0))
+          AND (
+            SUM(COALESCE(cur.submitted_total, 0) + COALESCE(cur.approved_total, 0) + COALESCE(cur.rejected_total, 0))
+            - SUM(COALESCE(prev.submitted_total, 0) + COALESCE(prev.approved_total, 0) + COALESCE(prev.rejected_total, 0))
+          ) <= 0
+        ORDER BY selesai_sekarang DESC
+      `).all(currentUpload.tanggal, prevUpload.tanggal, prevUpload.id, uploadId, ...stagnanParamsFilters);
+    }
+  }
+
+  return { zeroPcl, slowPcl, zeroPml, stagnanPcl, diffDays };
 }
 
 // Top performers

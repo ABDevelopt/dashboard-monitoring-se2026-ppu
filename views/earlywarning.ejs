@@ -70,6 +70,12 @@
         <div class="stat-value"><%= warning.zeroPml.length %></div>
         <div class="stat-sub">Pengawas tanpa progres FASIH</div>
       </div>
+      <div class="stat-card orange">
+        <div class="stat-icon"><i class="bi bi-pause-circle"></i></div>
+        <div class="stat-label">PCL Stagnan 2 Hari</div>
+        <div class="stat-value"><%= warning.stagnanPcl.length %></div>
+        <div class="stat-sub">Tidak ada penambahan dokumen FASIH</div>
+      </div>
     </div>
 
     <!-- PENGUMUMAN EARLY WARNING -->
@@ -258,6 +264,87 @@
         <div class="no-data">
           <i class="bi bi-check-circle-fill text-green" style="font-size: 18px; margin-right: 6px;"></i> Tidak ada PCL dengan progres lambat (semua di atas 1.0 dokumen/hari). Kerja bagus!
         </div>
+      <% } %>
+    </div>
+
+    <!-- PCL STAGNAN (TIDAK ADA PENAMBAHAN SELAMA 2 HARI) -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="text-orange"><i class="bi bi-pause-circle"></i> PCL Stagnan — Tidak Ada Penambahan Dokumen FASIH selama 2 Hari</span>
+        </div>
+        <span class="badge badge-orange"><%= warning.stagnanPcl.length %> Petugas</span>
+      </div>
+
+      <% if (warning.stagnanPcl.length > 0) { %>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+          PCL berikut tidak memiliki penambahan dokumen FASIH (Submit + Approve + Reject) selama 2 hari terakhir.
+          <% if (warning.stagnanPcl[0] && warning.stagnanPcl[0].tanggal_prev) { %>
+            Pembanding: upload tanggal <strong><%= warning.stagnanPcl[0].tanggal_prev %></strong> vs upload sekarang.
+          <% } %>
+        </p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; max-height: 500px; overflow-y: auto; padding-right: 4px;">
+          <% warning.stagnanPcl.forEach(item => { %>
+            <div class="warning-card stagnan">
+              <div class="warning-icon"><i class="bi bi-pause-circle-fill text-orange"></i></div>
+              <div class="warning-body">
+                <div class="warning-name"><%= item.pcl %></div>
+                <div class="warning-meta">
+                  Kec. <strong><%= item.kecamatan %></strong> · PML: <strong><%= item.pml %></strong> · Korlap: <strong><%= item.korlap %></strong>
+                </div>
+                <div class="warning-stats">
+                  <span class="warning-stat">Target FASIH: <strong><%= item.target_fasih_total %></strong></span>
+                  <span class="warning-stat">Selesai saat ini: <strong class="text-orange"><%= item.selesai_sekarang %></strong></span>
+                  <span class="warning-stat">Selesai 2 hari lalu: <strong><%= item.selesai_lama %></strong></span>
+                  <span class="warning-stat text-orange">Δ Penambahan: <strong><%= item.delta_selesai %></strong> dokumen (stagnan)</span>
+                </div>
+                <div class="fasih-grid-container">
+                  <div class="fasih-grid-header">
+                    <span class="fasih-grid-title"><i class="bi bi-phone"></i> Status FASIH Sekarang</span>
+                    <span class="badge badge-blue">Target: <%= item.target_fasih_total %></span>
+                  </div>
+                  <div class="fasih-grid">
+                    <div class="fasih-grid-item fasih-item-draft">
+                      <div class="fasih-grid-item-label">Draft</div>
+                      <div class="fasih-grid-item-value"><%= item.draft_total %></div>
+                    </div>
+                    <div class="fasih-grid-item fasih-item-submit">
+                      <div class="fasih-grid-item-label">Submit</div>
+                      <div class="fasih-grid-item-value"><%= item.submitted_total %></div>
+                    </div>
+                    <div class="fasih-grid-item fasih-item-approve">
+                      <div class="fasih-grid-item-label">Approve</div>
+                      <div class="fasih-grid-item-value"><%= item.approved_total %></div>
+                    </div>
+                    <div class="fasih-grid-item fasih-item-reject">
+                      <div class="fasih-grid-item-label">Reject</div>
+                      <div class="fasih-grid-item-value"><%= item.rejected_total %></div>
+                    </div>
+                  </div>
+                </div>
+                <% const pctStagnan = item.target_fasih_total > 0 ? Math.round(100 * item.selesai_sekarang / item.target_fasih_total) : 0; %>
+                <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
+                  <div class="progress-bar orange" data-width="<%= pctStagnan %>" style="width: 0%;"></div>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; text-align: right;"><%= pctStagnan %>%</div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <% if (warning.stagnanPcl !== undefined && warning.stagnanPcl.length === 0) { %>
+          <div class="no-data">
+            <i class="bi bi-check-circle-fill text-green" style="font-size: 18px; margin-right: 6px;"></i>
+            Semua PCL memiliki penambahan dokumen FASIH dalam 2 hari terakhir.
+            <% if (warning.diffDays < 2) { %>
+              <em style="margin-left: 4px; color: var(--text-muted);">(Data < 2 hari, deteksi stagnan belum aktif)</em>
+            <% } %>
+          </div>
+        <% } else { %>
+          <div class="no-data">
+            <i class="bi bi-info-circle text-yellow" style="font-size: 18px; margin-right: 6px;"></i> Tidak cukup data historis untuk mendeteksi petugas stagnan.
+          </div>
+        <% } %>
       <% } %>
     </div>
   <% } %>
