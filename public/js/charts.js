@@ -652,3 +652,81 @@ window.addEventListener('themechange', () => {
     chart.update();
   });
 });
+
+// ===== LINE CHART (PCL History) =====
+function createPclHistoryChart(canvasId, historyData) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx || !historyData || !historyData.length) return null;
+
+  const theme = getThemeColors();
+  const labels = historyData.map(d => d.tanggal);
+  const dataDraft = historyData.map(d => d.draft_total || 0);
+  const dataSelesai = historyData.map(d => d.selesai_total || 0);
+  const dataTarget = historyData.map(d => d.target_fasih_total || 0);
+
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Selesai (Sub+App+Rej)',
+          data: dataSelesai,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#10b981'
+        },
+        {
+          label: 'Draft',
+          data: dataDraft,
+          borderColor: '#eab308',
+          backgroundColor: 'rgba(234, 179, 8, 0.04)',
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#eab308'
+        },
+        {
+          label: 'Target FASIH',
+          data: dataTarget,
+          borderColor: '#a855f7',
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false,
+          tension: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: theme.text, font: { size: 10, family: 'Inter' } } },
+        tooltip: {
+          backgroundColor: theme.bgCard,
+          borderColor: theme.border,
+          borderWidth: 1,
+          titleColor: theme.title,
+          bodyColor: theme.text,
+          mode: 'index',
+          intersect: false,
+        }
+      },
+      scales: {
+        x: { ticks: { color: theme.text, font: { size: 9 } }, grid: { color: theme.grid } },
+        y: {
+          ticks: { color: theme.text, font: { size: 9 } },
+          grid: { color: theme.grid },
+          title: { display: true, text: 'Dokumen', color: theme.text, font: { size: 9 } }
+        }
+      }
+    }
+  });
+  window.activeCharts = window.activeCharts || [];
+  window.activeCharts.push(chart);
+  return chart;
+}

@@ -830,7 +830,7 @@ function initSettings() {
     'overview_kecamatan': '1',
     'overview_bangunan': '1',
     'show_progres_muatan': '1',
-    'target_fasih_mode': 'dynamic'
+    'target_fasih_mode': 'static'
   };
 
   const insert = getDb().prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');

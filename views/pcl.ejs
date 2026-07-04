@@ -316,8 +316,22 @@
                   <div class="fasih-grid-item fasih-item-reject">
                     <div class="fasih-grid-item-label">Reject</div>
                     <div class="fasih-grid-item-value"><%= rejectedFasih %></div>
+                </div>
+
+                <!-- Daily Progress Chart -->
+                <div style="margin-top: 20px; margin-bottom: 20px; border-top: 1px solid var(--border); padding-top: 16px;">
+                  <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">
+                    <i class="bi bi-graph-up"></i> Tren Progres Harian (FASIH)
+                  </div>
+                  <div style="height: 180px; position: relative; width: 100%;">
+                    <canvas id="pclHistoryChartCanvas"></canvas>
                   </div>
                 </div>
+
+                <!-- JSON data script tag -->
+                <script id="pclHistoryData" type="application/json">
+                  <%- JSON.stringify(pclHistory) %>
+                </script>
               </div>
 
               <div class="search-wrap mb-4" style="max-width: 100%; margin-bottom: 12px;">
@@ -378,6 +392,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('ajax-container');
   if (!container) return;
 
+  function initPclHistoryChart() {
+    const dataEl = document.getElementById('pclHistoryData');
+    if (!dataEl) return;
+    try {
+      const data = JSON.parse(dataEl.textContent);
+      if (data && data.length) {
+        if (typeof Chart !== 'undefined') {
+          const existingChart = Chart.getChart("pclHistoryChartCanvas");
+          if (existingChart) {
+            existingChart.destroy();
+          }
+        }
+        if (typeof createPclHistoryChart === 'function') {
+          createPclHistoryChart('pclHistoryChartCanvas', data);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to init PCL history chart:', e);
+    }
+  }
+
   function attachListeners() {
     // Initialize expand buttons for AJAX loaded content
     if (window.initExpandButtons) {
@@ -390,6 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Re-bind search utility for detail items
     makeListSearchable('detailSubslsSearch', 'detailSubslsList', '.detail-item');
+    initPclHistoryChart();
 
     // 3. Filter form submits (updates the whole container)
     const filterForm = document.getElementById('filterForm');
@@ -450,6 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 bindCloseDetail();
                 if (window.initProgressBars) window.initProgressBars(detailContainer);
+                initPclHistoryChart();
               }
             })
             .catch(err => {
@@ -507,6 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
               // Re-bind close handler
               bindCloseDetail();
               if (window.initProgressBars) window.initProgressBars(detailContainer);
+              initPclHistoryChart();
             }
           })
           .catch(err => {
