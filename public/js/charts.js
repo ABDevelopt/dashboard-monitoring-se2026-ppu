@@ -664,6 +664,7 @@ function createPclHistoryChart(canvasId, historyData) {
   const dataSubmitted = historyData.map(d => d.submitted_total || 0);
   const dataApproved = historyData.map(d => d.approved_total || 0);
   const dataRejected = historyData.map(d => d.rejected_total || 0);
+  const dataProgres = historyData.map(d => d.selesai_total || 0);
   const dataTarget = historyData.map(d => d.target_fasih_total || 0);
 
   const chart = new Chart(ctx, {
@@ -672,11 +673,21 @@ function createPclHistoryChart(canvasId, historyData) {
       labels,
       datasets: [
         {
+          label: 'Progres (Sub+App+Rej)',
+          data: dataProgres,
+          borderColor: '#06b6d4',
+          backgroundColor: 'rgba(6, 182, 212, 0.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#06b6d4'
+        },
+        {
           label: 'Approved',
           data: dataApproved,
           borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.08)',
-          fill: true,
+          backgroundColor: 'rgba(16, 185, 129, 0.04)',
           tension: 0.3,
           pointRadius: 4,
           pointHoverRadius: 6,
