@@ -1766,5 +1766,29 @@ body.light-mode .highlight-name {
   color: #0891b2 !important;
 }
 
+/* Premium Top Loading Progress Bar */
+.top-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+  z-index: 999999;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+}
+.top-loading-bar.loading {
+  opacity: 1;
+  width: 75%;
+  transition: width 1.2s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 0.2s ease;
+}
+.top-loading-bar.finished {
+  opacity: 1;
+  width: 100%;
+  transition: width 0.3s ease, opacity 0.3s ease 0.3s;
+}
+
 
 
