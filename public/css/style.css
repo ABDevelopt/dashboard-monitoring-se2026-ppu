@@ -84,7 +84,7 @@ body {
 
 /* ====== SIDEBAR ====== */
 .sidebar {
-  width: var(--sidebar-width);
+  width: 260px;
   min-height: 100vh;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border);
@@ -98,6 +98,7 @@ body {
   transition: transform 0.3s ease, background-color 0.3s ease;
   overflow-y: auto;
   overflow-x: hidden;
+  transform: translateX(-100%); /* Mobile-first: hidden off-screen by default */
 }
 
 .sidebar-logo {
@@ -190,7 +191,7 @@ body {
 
 /* ====== MAIN CONTENT ====== */
 .main-wrapper {
-  margin-left: var(--sidebar-width);
+  margin-left: 0; /* Mobile-first: full width */
   flex: 1;
   min-width: 0;
   display: flex;
@@ -208,11 +209,11 @@ body {
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  padding: 0 24px;
-  gap: 12px;
+  padding: 0 12px; /* Mobile-first compact padding */
+  gap: 8px;
   position: fixed;
   top: 0;
-  left: var(--sidebar-width);
+  left: 0; /* Mobile-first: span full width */
   right: 0;
   z-index: 50;
   min-width: 0;
@@ -1002,19 +1003,12 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
 /* --- Mobile: ≤ 768px --- */
 @media (max-width: 768px) {
   /* Sidebar: slide-out overlay */
-  .sidebar {
-    transform: translateX(-100%);
-    width: 260px;
-    z-index: 100;
-  }
   .sidebar.active { transform: translateX(0); }
-  .main-wrapper { margin-left: 0; }
   .page-content { padding: 12px; padding-top: calc(var(--header-height) + 12px); }
   .btn-toggle-sidebar { display: inline-flex; }
   .btn-close-sidebar { display: block; }
 
   /* Topbar compact */
-  .topbar { padding: 0 12px; gap: 8px; left: 0; }
   .topbar-title { font-size: 14px; }
 
   /* KPI cards: 2 kolom */
@@ -1494,8 +1488,21 @@ body.has-expanded-card .fade-in {
   animation: none !important;
 }
 
-/* ====== SIDEBAR COLLAPSE ON DESKTOP ====== */
+/* ====== DESKTOP LAYOUT (DEFAULT STATE) ====== */
 @media (min-width: 769px) {
+  .sidebar {
+    transform: translateX(0); /* Show sidebar */
+    width: var(--sidebar-width);
+  }
+  .main-wrapper {
+    margin-left: var(--sidebar-width);
+  }
+  .topbar {
+    left: var(--sidebar-width);
+    padding: 0 24px; /* Desktop spacious padding */
+  }
+
+  /* Collapsed state overrides */
   body.sidebar-collapsed .sidebar {
     transform: translateX(-100%);
   }
