@@ -91,10 +91,20 @@
     <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 4px;">Penajam Paser Utara</p>
   </div>
 
-  <% if (latestUpload) { %>
-  <div class="sidebar-upload-info">
-    <strong><i class="bi bi-calendar3"></i> Data Terakhir</strong>
-    <%= latestUpload.tanggal %> · <%= latestUpload.filename.length > 28 ? latestUpload.filename.slice(0,25)+'...' : latestUpload.filename %>
+  <% if (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed) { %>
+  <div class="sidebar-upload-info" style="display: flex; flex-direction: column; gap: 8px;">
+    <% if (latestUploadsDetailed.muatan) { %>
+      <div>
+        <strong style="color: var(--accent-cyan); font-size: 11px; margin-bottom: 2px;"><i class="bi bi-box-seam"></i> Data Muatan</strong>
+        <span style="font-size: 10px; opacity: 0.85;"><%= latestUploadsDetailed.muatan.tanggal %> · <%= latestUploadsDetailed.muatan.filename.length > 24 ? latestUploadsDetailed.muatan.filename.slice(0,21)+'...' : latestUploadsDetailed.muatan.filename %></span>
+      </div>
+    <% } %>
+    <% if (latestUploadsDetailed.fasih) { %>
+      <div style="<%= latestUploadsDetailed.muatan ? 'border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px;' : '' %>">
+        <strong style="color: var(--accent-purple); font-size: 11px; margin-bottom: 2px;"><i class="bi bi-phone"></i> Data FASIH</strong>
+        <span style="font-size: 10px; opacity: 0.85;"><%= latestUploadsDetailed.fasih.tanggal %> · <%= latestUploadsDetailed.fasih.status_filename.length > 24 ? latestUploadsDetailed.fasih.status_filename.slice(0,21)+'...' : latestUploadsDetailed.fasih.status_filename %></span>
+      </div>
+    <% } %>
   </div>
   <% } %>
 
@@ -321,11 +331,19 @@
         <div class="topbar-title" style="line-height: 1.2;"><%= typeof title !== 'undefined' ? title : 'Dashboard' %></div>
         <div class="topbar-subtitle" style="font-size: 11px; margin-top: 2px; color: var(--text-muted);">
           Penajam Paser Utara
-          <% if (typeof latestUpload !== 'undefined' && latestUpload && latestUpload.created_at) { %>
-            <span style="opacity: 0.6; margin: 0 4px;">|</span>
-            <span title="Waktu update data terakhir" style="color: var(--accent-blue); font-weight: 500;">
-              <i class="bi bi-clock-history"></i> Update: <%= new Date(latestUpload.created_at + 'Z').toLocaleString('id-ID', {day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit'}) %>
-            </span>
+          <% if (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed) { %>
+            <% if (latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.created_at) { %>
+              <span style="opacity: 0.6; margin: 0 4px;">|</span>
+              <span title="Waktu update data FASIH terakhir" style="color: var(--accent-purple); font-weight: 500;">
+                <i class="bi bi-phone"></i> FASIH: <%= new Date(latestUploadsDetailed.fasih.created_at + 'Z').toLocaleString('id-ID', {day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit'}) %>
+              </span>
+            <% } %>
+            <% if (latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.created_at) { %>
+              <span style="opacity: 0.6; margin: 0 4px;">|</span>
+              <span title="Waktu update data Muatan terakhir" style="color: var(--accent-cyan); font-weight: 500;">
+                <i class="bi bi-box-seam"></i> Muatan: <%= new Date(latestUploadsDetailed.muatan.created_at + 'Z').toLocaleString('id-ID', {day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit'}) %>
+              </span>
+            <% } %>
           <% } %>
         </div>
       </div>

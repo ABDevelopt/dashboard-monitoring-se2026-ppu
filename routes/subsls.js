@@ -10,7 +10,7 @@ router.get('/', (req, res) => {
   const filterKorlap = req.query.korlap || '';
   const filterPml = req.query.pml || '';
   const filterPcl = req.query.pcl || '';
-  const filterStatus = req.query.status || ''; // 'selesai' | 'belum'
+  const filterStatus = req.query.status || ''; // 'belum_mulai' | 'sedang_didata' | 'memenuhi_target' | 'melebihi_target'
 
   let data = [];
   let total = 0;
@@ -24,8 +24,16 @@ router.get('/', (req, res) => {
     if (filterKorlap) { cond.push('m.korlap = ?'); params.push(filterKorlap); }
     if (filterPml) { cond.push('m.pml = ?'); params.push(filterPml); }
     if (filterPcl) { cond.push('m.pcl = ?'); params.push(filterPcl); }
-    if (filterStatus === 'selesai') cond.push('p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan');
-    if (filterStatus === 'belum') cond.push('(p.kode IS NULL OR m.muatan = 0 OR (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) < m.muatan)');
+    
+    if (filterStatus === 'belum_mulai') {
+      cond.push('(p.kode IS NULL OR (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
+    } else if (filterStatus === 'sedang_didata') {
+      cond.push('(p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) > 0 OR COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0) AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) < m.muatan)');
+    } else if (filterStatus === 'memenuhi_target') {
+      cond.push('(p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) = m.muatan AND NOT (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
+    } else if (filterStatus === 'melebihi_target') {
+      cond.push('(p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) > m.muatan)');
+    }
 
     const where = cond.length ? 'AND ' + cond.join(' AND ') : '';
 
@@ -49,7 +57,18 @@ router.get('/', (req, res) => {
              THEN 0 
              ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
         END AS target_fasih,
-        CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END AS sudah_diisi,
+        CASE 
+          WHEN p.kode IS NULL OR (
+            COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND 
+            COALESCE(p.draft, 0) = 0 AND 
+            COALESCE(p.submitted_by_pcl, 0) = 0 AND 
+            COALESCE(p.approved, 0) = 0 AND 
+            COALESCE(p.rejected, 0) = 0
+          ) THEN 'belum_mulai'
+          WHEN m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) < m.muatan THEN 'sedang_didata'
+          WHEN (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) = m.muatan THEN 'memenuhi_target'
+          ELSE 'melebihi_target'
+        END AS sudah_diisi,
         COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
         COALESCE(p.usaha_ditemukan, 0) AS usaha_ditemukan,
         COALESCE(p.usaha_baru, 0) AS usaha_baru,
@@ -113,7 +132,18 @@ router.get('/export', (req, res) => {
            ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
       END AS target_fasih_sekarang,
       m.muatan AS target_muatan,
-      CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 'Selesai' ELSE 'Belum' END AS status,
+      CASE 
+        WHEN p.kode IS NULL OR (
+          COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND 
+          COALESCE(p.draft, 0) = 0 AND 
+          COALESCE(p.submitted_by_pcl, 0) = 0 AND 
+          COALESCE(p.approved, 0) = 0 AND 
+          COALESCE(p.rejected, 0) = 0
+        ) THEN 'Belum Mulai'
+        WHEN m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) < m.muatan THEN 'Sedang Didata'
+        WHEN (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) = m.muatan THEN 'Memenuhi Target'
+        ELSE 'Melebihi Target'
+      END AS status,
       COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
       COALESCE(p.usaha_ditemukan, 0) AS usaha_ditemukan,
       COALESCE(p.usaha_baru, 0) AS usaha_baru,

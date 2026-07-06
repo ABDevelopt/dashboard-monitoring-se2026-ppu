@@ -3,7 +3,7 @@ const path = require('path');
 const session = require('express-session');
 const flash = require('connect-flash');
 const { loadMasterFromJson } = require('./services/excelParser');
-const { getDb, getLatestUpload, getSettings, updateSettings, getKippOfficers } = require('./database');
+const { getDb, getLatestUpload, getLatestUploadsDetailed, getSettings, updateSettings, getKippOfficers } = require('./database');
 
 const app = express();
 const expressLayouts = require('express-ejs-layouts');
@@ -50,6 +50,7 @@ app.use((req, res, next) => {
   const latest = getLatestUpload();
   res.locals.latestUpload = latest || null;
   res.locals.uploadId = latest ? latest.id : null;
+  res.locals.latestUploadsDetailed = getLatestUploadsDetailed();
   res.locals.user = req.session.user || null;
   res.locals.isAdmin = req.session.isAdmin || false;
 

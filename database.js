@@ -263,6 +263,22 @@ function getLatestUpload() {
   return getDb().prepare('SELECT * FROM uploads ORDER BY id DESC LIMIT 1').get();
 }
 
+// Ambil upload terakhir yang memiliki data FASIH dan data Muatan secara terpisah
+function getLatestUploadsDetailed() {
+  try {
+    const db = getDb();
+    const latestFasih = db.prepare("SELECT * FROM uploads WHERE status_filename IS NOT NULL AND status_filename != '' ORDER BY id DESC LIMIT 1").get();
+    const latestMuatan = db.prepare("SELECT * FROM uploads WHERE filename IS NOT NULL AND filename != '' ORDER BY id DESC LIMIT 1").get();
+    return {
+      fasih: latestFasih || null,
+      muatan: latestMuatan || null
+    };
+  } catch (err) {
+    console.error('Error fetching getLatestUploadsDetailed:', err);
+    return { fasih: null, muatan: null };
+  }
+}
+
 // Ambil semua upload (untuk tren)
 function getAllUploads() {
   return getDb().prepare('SELECT * FROM uploads ORDER BY tanggal ASC').all();
@@ -1030,7 +1046,7 @@ function getKippOfficers() {
 }
 
 module.exports = {
-  getDb, getLatestUpload, getAllUploads,
+  getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
   getBottomPerformers, getAnomalyStats,

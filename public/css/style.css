@@ -437,6 +437,8 @@ body.light-mode .badge-yellow { color: #9a3412; }
 .badge-gray { background: rgba(100,116,139,0.15); color: var(--text-muted); border: 1px solid var(--border); }
 .badge-orange { background: rgba(249,115,22,0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.25); }
 body.light-mode .badge-orange { color: #c2410c; }
+.badge-purple { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.25); }
+body.light-mode .badge-purple { color: #7e22ce; }
 
 /* ====== FILTER BAR ====== */
 .filter-bar {

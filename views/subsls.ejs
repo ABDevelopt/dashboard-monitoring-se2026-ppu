@@ -71,13 +71,15 @@
           <div>
             <label id="statusLabel" for="filterStatus" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">
               Status Progres
-              <!-- <span title="Kriteria Selesai: SubSLS memiliki target muatan > 0 DAN jumlah (Usaha Ditemukan + Baru) >= Muatan" style="cursor: help; margin-left: 4px;"><i class="bi bi-info-circle"></i></span> -->
+              <span title="Kriteria Status:&#10;- Belum Mulai: realisasi & aktivitas = 0&#10;- Sedang Didata: realisasi > 0 dan < target muatan&#10;- Memenuhi Target: realisasi = target muatan&#10;- Melebihi Target: realisasi > target muatan" style="cursor: help; margin-left: 4px;"><i class="bi bi-info-circle"></i></span>
             </label>
-            <!-- <select id="filterStatus" name="status" style="width:100%;"> -->
-              <!-- <option value="">-- Semua Status --</option> -->
-              <!-- <option value="selesai" <%= filterStatus === 'selesai' ? 'selected' : '' %>>Selesai Pencacahan</option> -->
-              <!-- <option value="belum" <%= filterStatus === 'belum' ? 'selected' : '' %>>Belum Selesai</option> -->
-            <!-- </select> -->
+            <select id="filterStatus" name="status" style="width:100%;">
+              <option value="">-- Semua Status --</option>
+              <option value="belum_mulai" <%= filterStatus === 'belum_mulai' ? 'selected' : '' %>>Belum Mulai</option>
+              <option value="sedang_didata" <%= filterStatus === 'sedang_didata' ? 'selected' : '' %>>Sedang Didata</option>
+              <option value="memenuhi_target" <%= filterStatus === 'memenuhi_target' ? 'selected' : '' %>>Memenuhi Target</option>
+              <option value="melebihi_target" <%= filterStatus === 'melebihi_target' ? 'selected' : '' %>>Melebihi Target</option>
+            </select>
           </div>
 
         </div>
@@ -113,7 +115,7 @@
 
                 <th rowspan="2">Wilayah</th>
                 <th rowspan="2">Petugas (PCL/PML/Korlap)</th>
-                <!-- <th rowspan="2" class="text-center">Status</th> -->
+                <th rowspan="2" class="text-center">Status</th>
                 <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
                 <th colspan="4" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
               </tr>
@@ -159,13 +161,17 @@
                     </div>
 
                   </td>
-                  <!-- <td class="text-center" data-sort="<%= row.sudah_diisi %>"> -->
-                    <!-- <% if (row.sudah_diisi) { %> -->
-                      <!-- <span class="badge badge-green">Selesai</span> -->
-                    <!-- <% } else { %> -->
-                      <!-- <span class="badge badge-red">Belum</span> -->
-                    <!-- <% } %> -->
-                  <!-- </td> -->
+                  <td class="text-center" data-sort="<%= row.sudah_diisi %>">
+                    <% if (row.sudah_diisi === 'belum_mulai') { %>
+                      <span class="badge badge-gray">Belum Mulai</span>
+                    <% } else if (row.sudah_diisi === 'sedang_didata') { %>
+                      <span class="badge badge-orange">Sedang Didata</span>
+                    <% } else if (row.sudah_diisi === 'memenuhi_target') { %>
+                      <span class="badge badge-green">Memenuhi Target</span>
+                    <% } else { %>
+                      <span class="badge badge-purple">Melebihi Target</span>
+                    <% } %>
+                  </td>
                   
                   <td class="text-right bg-yellow-soft status-draft-text" data-sort="<%= row.draft %>"><%= (row.draft || 0).toLocaleString('id-ID') %></td>
                   <td class="text-right bg-blue-soft status-submit-text" data-sort="<%= row.submitted_by_pcl %>"><%= (row.submitted_by_pcl || 0).toLocaleString('id-ID') %></td>
