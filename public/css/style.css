@@ -265,6 +265,7 @@ body.light-mode .btn-primary { color: white; }
   padding-top: calc(var(--header-height) + 24px);
   overflow-x: hidden;
   min-width: 0;
+  position: relative;
 }
 
 /* ====== FLASH MESSAGES ====== */
@@ -1788,6 +1789,33 @@ body.light-mode .highlight-name {
   opacity: 1;
   width: 100%;
   transition: width 0.3s ease, opacity 0.3s ease 0.3s;
+}
+
+/* Premium PJAX Transition Loading Overlay */
+.pjax-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.pjax-loading-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+body.light-mode .pjax-loading-overlay {
+  background: rgba(255, 255, 255, 0.6);
 }
 
 
