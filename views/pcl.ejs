@@ -430,10 +430,14 @@
                         <span class="td-code" style="font-size: 9px; padding: 1px 3px; font-weight: normal; margin-right: 4px;"><%= s.kode %></span>
                         <%= s.nama_sls %>
                       </div>
-                      <% if (s.sudah_diisi) { %>
-                        <span class="badge badge-green btn-xs" style="font-size: 8px; padding: 1px 4px;">Selesai</span>
+                      <% if (s.sudah_diisi === 'belum_mulai') { %>
+                        <span class="badge badge-gray btn-xs" style="font-size: 8px; padding: 1px 4px;">Belum Mulai</span>
+                      <% } else if (s.sudah_diisi === 'sedang_didata') { %>
+                        <span class="badge badge-orange btn-xs" style="font-size: 8px; padding: 1px 4px;">Sedang Didata</span>
+                      <% } else if (s.sudah_diisi === 'memenuhi_target') { %>
+                        <span class="badge badge-green btn-xs" style="font-size: 8px; padding: 1px 4px;">Memenuhi Target</span>
                       <% } else { %>
-                        <span class="badge badge-red btn-xs" style="font-size: 8px; padding: 1px 4px;">Belum</span>
+                        <span class="badge badge-purple btn-xs" style="font-size: 8px; padding: 1px 4px;">Melebihi Target</span>
                       <% } %>
                     </div>
                     

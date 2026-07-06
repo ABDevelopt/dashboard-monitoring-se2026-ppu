@@ -60,7 +60,18 @@ router.get('/', (req, res) => {
                THEN 0 
                ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
           END AS target_fasih,
-          CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END AS sudah_diisi,
+          CASE 
+            WHEN p.kode IS NULL OR (
+              COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND 
+              COALESCE(p.draft, 0) = 0 AND 
+              COALESCE(p.submitted_by_pcl, 0) = 0 AND 
+              COALESCE(p.approved, 0) = 0 AND 
+              COALESCE(p.rejected, 0) = 0
+            ) THEN 'belum_mulai'
+            WHEN m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) < m.muatan THEN 'sedang_didata'
+            WHEN (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) = m.muatan THEN 'memenuhi_target'
+            ELSE 'melebihi_target'
+          END AS sudah_diisi,
           COALESCE(p.usaha_ditemukan + p.usaha_baru, 0) AS usaha_total,
           COALESCE(p.ditemukan + p.keluarga_baru, 0) AS keluarga_total
         FROM subsls_master m
