@@ -593,22 +593,34 @@
       <% if (settings.overview_tren_fasih === '1') { %>
       createFasihTrenChart('trenFasihChartCanvas', rawTrenData);
 
-      // Hitung dan inisialisasi penambahan harian FASIH (Daily Increment)
+      // Hitung dan inisialisasi penambahan harian FASIH per status (Daily Increment per Status)
       const dailyIncrementLabels = [];
-      const dailyIncrements = [];
+      const dailyIncrements = {
+        draft: [],
+        submitted: [],
+        approved: [],
+        rejected: []
+      };
+
       for (let i = 0; i < rawTrenData.length; i++) {
         const current = rawTrenData[i];
-        const currentTotal = (current.draft_total || 0) + (current.submitted_total || 0) + (current.approved_total || 0) + (current.rejected_total || 0);
         dailyIncrementLabels.push(current.tanggal);
+        
         if (i === 0) {
-          dailyIncrements.push(currentTotal);
+          dailyIncrements.draft.push(current.draft_total || 0);
+          dailyIncrements.submitted.push(current.submitted_total || 0);
+          dailyIncrements.approved.push(current.approved_total || 0);
+          dailyIncrements.rejected.push(current.rejected_total || 0);
         } else {
           const prev = rawTrenData[i - 1];
-          const prevTotal = (prev.draft_total || 0) + (prev.submitted_total || 0) + (prev.approved_total || 0) + (prev.rejected_total || 0);
-          dailyIncrements.push(Math.max(0, currentTotal - prevTotal));
+          dailyIncrements.draft.push(Math.max(0, (current.draft_total || 0) - (prev.draft_total || 0)));
+          dailyIncrements.submitted.push(Math.max(0, (current.submitted_total || 0) - (prev.submitted_total || 0)));
+          dailyIncrements.approved.push(Math.max(0, (current.approved_total || 0) - (prev.approved_total || 0)));
+          dailyIncrements.rejected.push(Math.max(0, (current.rejected_total || 0) - (prev.rejected_total || 0)));
         }
       }
-      createDailyBarChart('fasihDailyIncrementChartCanvas', dailyIncrementLabels, dailyIncrements, 'Penambahan Harian FASIH (Daily Increment)', 'rgba(124, 58, 237, 0.8)');
+
+      createDailyFasihStatusChart('fasihDailyIncrementChartCanvas', dailyIncrementLabels, dailyIncrements, 'Penambahan Harian FASIH Per Status (Daily Increment)');
       <% } %>
 
       // Initialize kecamatan comparison bar chart

@@ -598,6 +598,82 @@ function createDailyBarChart(canvasId, labels, data, title = '', color = '#7c3ae
   return chart;
 }
 
+// ===== DAILY INCREMENT STATUS BAR CHART =====
+function createDailyFasihStatusChart(canvasId, labels, datasetsData, title = '') {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+  const theme = getThemeColors();
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Draft',
+          data: datasetsData.draft,
+          backgroundColor: '#eab308',
+          borderRadius: 4,
+        },
+        {
+          label: 'Submitted',
+          data: datasetsData.submitted,
+          backgroundColor: '#3b82f6',
+          borderRadius: 4,
+        },
+        {
+          label: 'Approved',
+          data: datasetsData.approved,
+          backgroundColor: '#10b981',
+          borderRadius: 4,
+        },
+        {
+          label: 'Rejected',
+          data: datasetsData.rejected,
+          backgroundColor: '#ef4444',
+          borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: theme.text, font: { size: 11, family: 'Inter' } }
+        },
+        title: { display: !!title, text: title, color: theme.title, font: { size: 13, weight: '700' } },
+        tooltip: {
+          backgroundColor: theme.bgCard,
+          borderColor: theme.border,
+          borderWidth: 1,
+          titleColor: theme.title,
+          bodyColor: theme.text,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: +${ctx.parsed.y.toLocaleString('id-ID')} dokumen`
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: theme.text, font: { size: 11 } },
+          grid: { color: theme.grid }
+        },
+        y: {
+          stacked: true,
+          ticks: { color: theme.text, font: { size: 11 } },
+          grid: { color: theme.grid }
+        }
+      }
+    }
+  });
+  window.activeCharts = window.activeCharts || [];
+  window.activeCharts.push(chart);
+  return chart;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   window.initProgressBars();
 });
