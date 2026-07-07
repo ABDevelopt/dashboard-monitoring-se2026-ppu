@@ -197,6 +197,11 @@
           <span class="nav-icon"><i class="bi bi-speedometer2"></i></span> Performa Petugas
         </a>
         <% } %>
+        <% if (settings.page_performa === '1') { %>
+        <a href="/harian" class="nav-item <%= activePage === 'harian' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-calendar3"></i></span> Progres Harian
+        </a>
+        <% } %>
         <% if (settings.page_leaderboard === '1') { %>
         <a href="/leaderboard" class="nav-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-trophy"></i></span> Performa Terbaik

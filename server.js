@@ -129,6 +129,7 @@ app.use('/early-warning', require('./routes/earlywarning'));
 app.use('/leaderboard', require('./routes/leaderboard'));
 app.use('/performa-terendah', require('./routes/performa-terendah'));
 app.use('/performa', require('./routes/performa'));
+app.use('/harian', require('./routes/harian'));
 app.use('/deteksi-anomali', require('./routes/deteksianomali'));
 app.use('/agent', require('./routes/agent'));
 app.use('/api', require('./routes/api'));
