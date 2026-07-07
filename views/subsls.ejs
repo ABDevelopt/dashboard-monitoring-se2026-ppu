@@ -144,9 +144,13 @@
                   </td>
                   <td>
                     <div style="font-weight: 500; font-size: 12px;" class="td-primary">
-                      <%= row.pcl %>
-                      <% if (row.pcl && kippPcls.includes(row.pcl.toUpperCase())) { %>
-                        <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
+                      <% if (row.pcl) { %>
+                        <a href="/pcl?pcl=<%= encodeURIComponent(row.pcl) %>" style="color: inherit; text-decoration: none;"><%= row.pcl %></a>
+                        <% if (kippPcls.includes(row.pcl.toUpperCase())) { %>
+                          <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
+                        <% } %>
+                      <% } else { %>
+                        -
                       <% } %>
                     </div>
                     <div style="font-size: 11px; color: var(--text-muted);" class="hide-md">

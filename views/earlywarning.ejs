@@ -101,7 +101,7 @@
               <div class="warning-icon"><i class="bi bi-pause-circle-fill text-orange"></i></div>
               <div class="warning-body">
                 <div class="warning-name">
-                  <%= item.pcl %>
+                  <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: inherit; text-decoration: none;"><%= item.pcl %></a>
                   <% if (kippPcls.includes(item.pcl.toUpperCase())) { %>
                     <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px;">KIPP</span>
                   <% } %>
@@ -184,7 +184,7 @@
                 <div class="warning-icon"><i class="bi bi-exclamation-triangle-fill text-red"></i></div>
                 <div class="warning-body">
                   <div class="warning-name">
-                    <%= item.pcl %>
+                    <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: inherit; text-decoration: none;"><%= item.pcl %></a>
                     <% if (kippPcls.includes(item.pcl.toUpperCase())) { %>
                       <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px;">KIPP</span>
                     <% } %>
@@ -316,7 +316,7 @@
               <div class="warning-icon"><i class="bi bi-exclamation-triangle-fill text-yellow"></i></div>
               <div class="warning-body">
                 <div class="warning-name">
-                  <%= item.pcl %>
+                  <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: inherit; text-decoration: none;"><%= item.pcl %></a>
                   <% if (kippPcls.includes(item.pcl.toUpperCase())) { %>
                     <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px;">KIPP</span>
                   <% } %>

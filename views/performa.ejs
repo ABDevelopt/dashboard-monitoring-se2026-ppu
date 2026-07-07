@@ -146,8 +146,10 @@
                   <td class="text-center" data-sort="<%= index + 1 %>" style="padding: 10px 8px; font-size: 12px; color: var(--text-muted);">
                     <%= index + 1 %>
                   </td>
-                  <td data-sort="<%= item.pcl %>" style="padding: 10px 8px; font-weight: 600; font-size: 13px; cursor: help;" title="<%= hoverNarrative %>">
-                    <%= item.pcl %> <i class="bi bi-info-circle text-muted" style="font-size: 10px; margin-left: 2px;"></i>
+                  <td data-sort="<%= item.pcl %>" style="padding: 10px 8px; font-weight: 600; font-size: 13px;">
+                    <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="text-decoration: none; color: inherit; cursor: help;" title="<%= hoverNarrative %>">
+                      <%= item.pcl %> <i class="bi bi-info-circle text-muted" style="font-size: 10px; margin-left: 2px;"></i>
+                    </a>
                     <% if (kippPcls.includes(item.pcl.toUpperCase())) { %>
                       <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px;">KIPP</span>
                     <% } %>

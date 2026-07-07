@@ -85,7 +85,7 @@
               <% harianStats.forEach((row, idx) => { %>
                 <tr>
                   <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= idx + 1 %></td>
-                  <td class="td-primary"><%= row.nama_petugas %></td>
+                  <td class="td-primary"><a href="/pcl?pcl=<%= encodeURIComponent(row.nama_petugas) %>"><%= row.nama_petugas %></a></td>
                   <td><%= row.nama_pml %></td>
                   <td><%= row.kecamatan %></td>
                   <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<%= row.desa %>">
