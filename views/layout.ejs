@@ -138,6 +138,32 @@
       </div>
     </div>
 
+    <!-- Section 5: Drilldown Petugas -->
+    <% if (typeof settings !== 'undefined' && (settings.page_korlap === '1' || settings.page_pml === '1' || settings.page_pcl === '1')) { %>
+    <div class="nav-section-wrapper" data-section="petugas">
+      <div class="nav-section-header">
+        <span>Drilldown Petugas</span>
+      </div>
+      <div class="nav-section-content">
+        <% if (settings.page_korlap === '1') { %>
+        <a href="/korlap" class="nav-item <%= activePage === 'korlap' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-person-workspace"></i></span> Per Korlap
+        </a>
+        <% } %>
+        <% if (settings.page_pml === '1') { %>
+        <a href="/pml" class="nav-item <%= activePage === 'pml' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-clipboard2-data"></i></span> Per PML
+        </a>
+        <% } %>
+        <% if (settings.page_pcl === '1') { %>
+        <a href="/pcl" class="nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-person-gear"></i></span> Per PCL
+        </a>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
     <!-- Section 2: Evaluasi & Kualitas -->
     <% if (typeof settings !== 'undefined' && (settings.page_earlywarning === '1' || settings.page_deteksianomali === '1')) { %>
     <div class="nav-section-wrapper" data-section="evaluasi">
@@ -221,31 +247,7 @@
       </div>
     </div>
 
-    <!-- Section 5: Drilldown Petugas -->
-    <% if (typeof settings !== 'undefined' && (settings.page_korlap === '1' || settings.page_pml === '1' || settings.page_pcl === '1')) { %>
-    <div class="nav-section-wrapper" data-section="petugas">
-      <div class="nav-section-header">
-        <span>Drilldown Petugas</span>
-      </div>
-      <div class="nav-section-content">
-        <% if (settings.page_korlap === '1') { %>
-        <a href="/korlap" class="nav-item <%= activePage === 'korlap' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-person-workspace"></i></span> Per Korlap
-        </a>
-        <% } %>
-        <% if (settings.page_pml === '1') { %>
-        <a href="/pml" class="nav-item <%= activePage === 'pml' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-clipboard2-data"></i></span> Per PML
-        </a>
-        <% } %>
-        <% if (settings.page_pcl === '1') { %>
-        <a href="/pcl" class="nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-person-gear"></i></span> Per PCL
-        </a>
-        <% } %>
-      </div>
-    </div>
-    <% } %>
+
 
     <!-- Section 6: Data & Utilitas -->
     <% if (typeof settings !== 'undefined' && (settings.page_export === '1' || (typeof isAdmin !== 'undefined' && isAdmin))) { %>
