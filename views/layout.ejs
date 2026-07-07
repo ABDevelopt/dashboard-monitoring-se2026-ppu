@@ -362,10 +362,11 @@
   <main class="page-content">
     <!-- PJAX LOADING OVERLAY FOR CONTENT ONLY -->
     <div id="pjax-loading-overlay" class="pjax-loading-overlay">
-      <div class="spinner-border text-cyan" role="status" style="width: 2.5rem; height: 2.5rem; border-width: 3px; color: var(--accent-cyan);">
-        <span class="visually-hidden">Loading...</span>
+      <div class="pjax-loading-card">
+        <div class="pjax-spinner"></div>
+        <div style="margin-top: 14px; font-size: 12px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.01em;">Memuat Halaman</div>
+        <div style="margin-top: 4px; font-size: 10px; color: var(--text-muted);">Mohon tunggu sebentar...</div>
       </div>
-      <div style="margin-top: 16px; font-size: 13px; font-weight: 500; color: var(--text-secondary);">Memuat Halaman...</div>
     </div>
     <!-- Flash Messages -->
     <% if (success && success.length) { %>
