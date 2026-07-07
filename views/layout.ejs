@@ -831,8 +831,8 @@
       });
       try {
         await Promise.all([
-          loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'),
-          loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js')
+          loadScript('/js/jspdf.umd.min.js?v=<%= appVersion %>'),
+          loadScript('/js/jspdf.plugin.autotable.min.js?v=<%= appVersion %>')
         ]);
         const cleanTable = window.getCleanTableClone(tableId);
         if (!cleanTable) {
