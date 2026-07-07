@@ -164,22 +164,27 @@ router.get('/', (req, res) => {
     const harianStatsQuery = `
       SELECT 
         m.pcl AS nama_petugas,
-        MAX(m.pml) AS nama_pml,
+        m.pml AS nama_pml,
+        m.kecamatan AS kecamatan,
+        GROUP_CONCAT(DISTINCT m.desa) AS desa,
         GROUP_CONCAT(DISTINCT m.nama_sls) AS wilayah_kerja,
         ${selectParts.join(',\n')}
       FROM subsls_master m
       ${joinParts.join('\n')}
       ${where}
-      GROUP BY m.pcl
+      GROUP BY m.pcl, m.pml, m.kecamatan
       ORDER BY m.pcl ASC
     `;
 
     harianStats = getDb().prepare(harianStatsQuery).all(...queryParams);
     
-    // Format wilayah_kerja space padding
+    // Format list fields with space padding
     harianStats.forEach(row => {
       if (row.wilayah_kerja) {
         row.wilayah_kerja = row.wilayah_kerja.split(',').join(', ');
+      }
+      if (row.desa) {
+        row.desa = row.desa.split(',').join(', ');
       }
     });
   }
