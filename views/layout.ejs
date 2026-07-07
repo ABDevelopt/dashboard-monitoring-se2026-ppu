@@ -830,10 +830,9 @@
         }
       });
       try {
-        await Promise.all([
-          loadScript('/js/jspdf.umd.min.js?v=<%= appVersion %>'),
-          loadScript('/js/jspdf.plugin.autotable.min.js?v=<%= appVersion %>')
-        ]);
+        // Load sequentially to prevent prototype registration race conditions
+        await loadScript('/js/jspdf.umd.min.js?v=<%= appVersion %>');
+        await loadScript('/js/jspdf.plugin.autotable.min.js?v=<%= appVersion %>');
         const cleanTable = window.getCleanTableClone(tableId);
         if (!cleanTable) {
           Swal.close();
