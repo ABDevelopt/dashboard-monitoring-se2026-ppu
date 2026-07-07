@@ -471,6 +471,65 @@
 
     </div>
 
+    <!-- TABEL PROGRES HARIAN PETUGAS (5 HARI TERAKHIR) -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-calendar3"></i> Progres Harian Petugas (5 Hari Terakhir)</div>
+      </div>
+
+      <div class="search-wrap mb-4" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <input type="search" id="harianSearch" placeholder="Cari nama petugas/PML..." aria-label="Cari nama petugas atau PML" style="width: 100%; max-width: 280px;">
+        <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
+          <span class="badge badge-purple-soft" style="font-size: 9px; padding: 2px 6px;"><i class="bi bi-phone"></i> FASIH %</span>
+        </div>
+      </div>
+
+      <% if (typeof harianStats !== 'undefined' && harianStats && harianStats.length > 0 && typeof recentUploads !== 'undefined' && recentUploads && recentUploads.length > 0) { %>
+        <div class="table-wrap" style="max-height: 500px; overflow-y: auto;">
+          <table id="harianTable">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 40px;">No</th>
+                <th>Nama Petugas</th>
+                <th>Nama PML</th>
+                <th>Wilayah Kerja SLS</th>
+                <% recentUploads.forEach(u => { %>
+                  <th class="text-right" style="width: 100px;"><%= new Date(u.tanggal).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) %></th>
+                <% }) %>
+              </tr>
+            </thead>
+            <tbody>
+              <% harianStats.forEach((row, idx) => { %>
+                <tr>
+                  <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= idx + 1 %></td>
+                  <td class="td-primary"><%= row.nama_petugas %></td>
+                  <td><%= row.nama_pml %></td>
+                  <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<%= row.wilayah_kerja %>">
+                    <%= row.wilayah_kerja %>
+                  </td>
+                  <% recentUploads.forEach((u, i) => { %>
+                    <% 
+                      const real = row['realisasi_' + i] || 0;
+                      const target = row['target_' + i] || 0;
+                      const pct = target > 0 ? (100 * real / target) : 0;
+                    %>
+                    <td class="text-right fw-bold" data-sort="<%= pct %>" style="color: <%= pct >= 100 ? 'var(--accent-green)' : (pct >= 50 ? 'var(--accent-purple)' : (pct > 0 ? 'var(--accent-orange)' : 'var(--text-muted)')) %>">
+                      <%= pct.toFixed(2) %>%
+                    </td>
+                  <% }) %>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="empty-state text-center" style="padding: 30px;">
+          <div class="empty-state-icon" style="font-size: 28px; margin-bottom: 8px;"><i class="bi bi-calendar-x"></i></div>
+          <div class="empty-state-text">Belum ada data progres harian. Silakan lakukan upload data terlebih dahulu.</div>
+        </div>
+      <% } %>
+    </div>
+
   <% } %>
 </div>
 
@@ -509,6 +568,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Re-bind sorting and searching on the table
     makeTableSortable('pclTable');
     makeTableSearchable('pclSearch', 'pclTable');
+    makeTableSortable('harianTable');
+    makeTableSearchable('harianSearch', 'harianTable');
 
     // 2. Re-bind search utility for detail items
     makeListSearchable('detailSubslsSearch', 'detailSubslsList', '.detail-item');
