@@ -50,6 +50,12 @@ router.get('/', (req, res) => {
     `).all(...params);
 
     if (filterPcl) {
+      const settings = getSettings();
+      const isStatic = settings.target_fasih_mode === 'static';
+      const targetFormula = isStatic
+        ? 'COALESCE(m.target_fasih, 0)'
+        : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+
       detailSubsls = getDb().prepare(`
         SELECT 
           m.kode, m.kecamatan, m.desa, m.nama_sls,
@@ -59,10 +65,7 @@ router.get('/', (req, res) => {
           COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
           COALESCE(p.approved, 0) AS approved,
           COALESCE(p.rejected, 0) AS rejected,
-          CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-               THEN 0 
-               ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-          END AS target_fasih,
+          ${targetFormula} AS target_fasih,
           CASE 
             WHEN p.kode IS NULL OR (
               COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND 
