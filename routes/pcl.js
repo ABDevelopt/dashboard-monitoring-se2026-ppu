@@ -60,7 +60,8 @@ router.get('/', (req, res) => {
         SELECT 
           m.kode, m.kecamatan, m.desa, m.nama_sls,
           m.korlap, m.pml, m.pcl, m.muatan,
-          m.target_fasih AS target_fasih_awal,
+          COALESCE(m.target_fasih, 0) AS target_fasih_statis,
+          CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END AS target_fasih_dinamis,
           COALESCE(p.draft, 0) AS draft,
           COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
           COALESCE(p.approved, 0) AS approved,

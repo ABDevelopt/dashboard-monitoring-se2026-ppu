@@ -486,43 +486,76 @@
       }
     }
 
-    if (toggleBtn && sidebar && overlay) {
-      toggleBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (window.innerWidth > 768) {
-          // Desktop collapse logic
-          document.body.classList.toggle('sidebar-collapsed');
-          const isCollapsed = document.body.classList.contains('sidebar-collapsed');
-          localStorage.setItem('sidebar-collapsed', isCollapsed);
-          toggleBtn.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
-        } else {
-          // Mobile slide-out overlay logic
-          sidebar.classList.add('active');
-          overlay.classList.add('active');
-          toggleBtn.setAttribute('aria-expanded', 'true');
-        }
-      });
+    // Event delegation on document for sidebar toggling and theme toggling
+    // This ensures buttons remain clickable even after PJAX page swaps them
+    document.addEventListener('click', (e) => {
+      // 1. Sidebar Toggle / Menu Button Click
+      const toggleBtn = e.target.closest('#sidebarToggle');
+      const bottomNavMenuBtn = e.target.closest('#bottomNavMenuBtn');
       
-      const closeSidebar = () => {
-        sidebar.classList.remove('active');
-        overlay.classList.remove('active');
-        toggleBtn.setAttribute('aria-expanded', 'false');
-      };
-
-      if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
-      overlay.addEventListener('click', closeSidebar);
-
-      // Mobile bottom nav menu toggle logic
-      const bottomNavMenuBtn = document.getElementById('bottomNavMenuBtn');
-      if (bottomNavMenuBtn) {
-        bottomNavMenuBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          sidebar.classList.add('active');
-          overlay.classList.add('active');
-          toggleBtn.setAttribute('aria-expanded', 'true');
-        });
+      if (toggleBtn || bottomNavMenuBtn) {
+        e.preventDefault();
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const mainToggleBtn = document.getElementById('sidebarToggle');
+        
+        if (sidebar && overlay) {
+          if (window.innerWidth > 768 && toggleBtn) {
+            // Desktop collapse logic
+            document.body.classList.toggle('sidebar-collapsed');
+            const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+            localStorage.setItem('sidebar-collapsed', isCollapsed);
+            toggleBtn.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
+          } else {
+            // Mobile slide-out overlay logic
+            sidebar.classList.add('active');
+            overlay.classList.add('active');
+            if (mainToggleBtn) mainToggleBtn.setAttribute('aria-expanded', 'true');
+          }
+        }
+        return;
       }
-    }
+
+      // 2. Sidebar Close / Overlay Click
+      const closeBtn = e.target.closest('#sidebarClose');
+      const sidebarOverlay = e.target.closest('#sidebarOverlay');
+      if (closeBtn || sidebarOverlay) {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const mainToggleBtn = document.getElementById('sidebarToggle');
+        
+        if (sidebar && overlay) {
+          sidebar.classList.remove('active');
+          overlay.classList.remove('active');
+          if (mainToggleBtn) mainToggleBtn.setAttribute('aria-expanded', 'false');
+        }
+        return;
+      }
+
+      // 3. Theme Toggle Button Click
+      const themeToggleBtn = e.target.closest('#themeToggle');
+      if (themeToggleBtn) {
+        e.preventDefault();
+        document.body.classList.toggle('light-mode');
+        const isLight = document.body.classList.contains('light-mode');
+        localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        
+        const themeIcon = document.getElementById('themeIcon');
+        if (themeIcon) {
+          if (isLight) {
+            themeIcon.classList.remove('bi-moon-fill');
+            themeIcon.classList.add('bi-sun-fill');
+          } else {
+            themeIcon.classList.remove('bi-sun-fill');
+            themeIcon.classList.add('bi-moon-fill');
+          }
+        }
+        
+        // Dispatch event for charts to adapt
+        window.dispatchEvent(new Event('themechange'));
+        return;
+      }
+    });
 
     const wrappers = document.querySelectorAll('.nav-section-wrapper');
 
@@ -587,24 +620,6 @@
       }
     });
 
-    if (themeToggleBtn && themeIcon) {
-      themeToggleBtn.addEventListener('click', () => {
-        document.body.classList.toggle('light-mode');
-        const isLight = document.body.classList.contains('light-mode');
-        localStorage.setItem('theme', isLight ? 'light' : 'dark');
-        
-        if (isLight) {
-          themeIcon.classList.remove('bi-moon-fill');
-          themeIcon.classList.add('bi-sun-fill');
-        } else {
-          themeIcon.classList.remove('bi-sun-fill');
-          themeIcon.classList.add('bi-moon-fill');
-        }
-        
-        // Dispatch event for charts to adapt
-        window.dispatchEvent(new Event('themechange'));
-      });
-    }
 
     // Dynamic Expand Table Feature
     const toggleCardExpand = (card, btn) => {
