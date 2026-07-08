@@ -103,6 +103,34 @@ router.get('/', (req, res) => {
     `).get(uploadId);
   }
 
+  let kippPclStats = [];
+  let kippDaysRemaining = 0;
+  const KIPP_DEADLINE = new Date('2026-07-06');
+
+  if (uploadId) {
+    kippPclStats = getDb().prepare(`
+      SELECT 
+        m.pcl AS nama_petugas,
+        COUNT(m.kode) AS total_subsls,
+        SUM(COALESCE(p.draft, 0)) AS draft,
+        SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted,
+        SUM(COALESCE(p.approved, 0)) AS approved,
+        SUM(COALESCE(p.rejected, 0)) AS rejected,
+        SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS realisasi
+      FROM subsls_master m
+      LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+      WHERE m.nama_sls = 'KIPP IKN' AND m.pcl IS NOT NULL AND m.pcl != ''
+      GROUP BY m.pcl
+      ORDER BY realisasi DESC
+    `).all(uploadId);
+
+    const currentUpload = getDb().prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
+    if (currentUpload) {
+      const d2 = new Date(currentUpload.tanggal);
+      kippDaysRemaining = Math.max(0, Math.ceil((KIPP_DEADLINE - d2) / (1000 * 60 * 60 * 24)));
+    }
+  }
+
   res.render('kipp', {
     title: 'Kawasan KIPP IKN',
     activePage: 'kipp',
@@ -114,6 +142,8 @@ router.get('/', (req, res) => {
     limit: total || 50,
     filterKec, filterDesa, filterKorlap, filterPml, filterPcl, filterStatus,
     kecList, desaList, korlapList, pmlList, pclList,
+    kippPclStats,
+    kippDaysRemaining,
   });
 });
 
