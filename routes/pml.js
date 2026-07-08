@@ -31,8 +31,6 @@ router.get('/', (req, res) => {
           SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
           SUM(COALESCE(p.approved, 0)) AS approved_total,
           SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-          SUM(COALESCE(m.target_fasih, 0)) AS target_fasih_statis,
-          SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END) AS target_fasih_dinamis,
           SUM(${targetFormula}) AS target_fasih_total,
           CASE WHEN SUM(${targetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${targetFormula}), 2) ELSE 0.0 END AS pct
         FROM subsls_master m

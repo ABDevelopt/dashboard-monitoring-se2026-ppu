@@ -183,13 +183,9 @@
               </div>
 
               <div id="detailPclList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
-                <% detailPcl.forEach(item => { 
-                  let doneFasih = (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0);
-                  let pctStatis = item.target_fasih_statis ? ((doneFasih / item.target_fasih_statis) * 100).toFixed(2) : '0.00';
-                  let pctDinamis = item.target_fasih_dinamis ? ((doneFasih / item.target_fasih_dinamis) * 100).toFixed(2) : '0.00';
-                %>
-                  <div class="detail-item" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; margin-bottom: 6px; font-size: 11px;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; gap: 8px;">
+                <% detailPcl.forEach(item => { %>
+                  <div class="detail-item" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 4px; font-size: 11px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                       <div style="font-weight: 600; color: var(--text-primary);">
                         <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: var(--accent-cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                           <i class="bi bi-person"></i> <%= item.pcl %>
@@ -197,41 +193,27 @@
                         <% if (kippPcls.includes(item.pcl.toUpperCase())) { %>
                           <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
                         <% } %>
-                        <div style="font-size: 9px; color: var(--text-muted); font-weight: normal; margin-top: 2px;">Kec. <%= item.kecamatan %></div>
                       </div>
-                      
-                      <!-- Stacked Badges for Static vs Dynamic -->
-                      <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
-                        <!-- Dinamis Badge -->
-                        <div style="display: flex; align-items: center; gap: 4px;">
-                          <span style="font-size: 8px; color: var(--text-muted);">Dinamis:</span>
-                          <span class="badge badge-blue btn-xs" style="font-size: 8px; padding: 1px 4px;"><%= pctDinamis %>%</span>
-                        </div>
-                        <!-- Statis Badge -->
-                        <div style="display: flex; align-items: center; gap: 4px;">
-                          <span style="font-size: 8px; color: var(--text-muted);">Statis:</span>
-                          <span class="badge badge-purple btn-xs" style="font-size: 8px; padding: 1px 4px; background: rgba(139, 92, 246, 0.2); border-color: rgba(139, 92, 246, 0.4); color: #d8b4fe;"><%= pctStatis %>%</span>
-                        </div>
-                      </div>
+                      <% if (parseFloat(item.pct) >= 100) { %>
+                        <span class="badge badge-green btn-xs" style="font-size: 8px; padding: 1px 4px;">100%</span>
+                      <% } else if (parseFloat(item.pct) <= 0) { %>
+                        <span class="badge badge-red btn-xs" style="font-size: 8px; padding: 1px 4px;">0%</span>
+                      <% } else { %>
+                        <span class="badge badge-blue btn-xs" style="font-size: 8px; padding: 1px 4px;"><%= parseFloat(item.pct).toFixed(2) %>%</span>
+                      <% } %>
                     </div>
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); flex-wrap: wrap; gap: 4px;">
-                      <span class="muatan-col" style="color: var(--accent-cyan);">
-                        Muatan: <strong><%= item.usaha_total + item.keluarga_total %></strong>/<%= item.total_muatan %>
-                      </span>
-                      
-                      <div style="display: flex; flex-direction: column; gap: 2px; align-items: flex-end; font-size: 9px;">
-                        <span style="color: var(--accent-purple);">
-                          FASIH (Dinamis): <strong><%= doneFasih %></strong>/<%= item.target_fasih_dinamis %>
+                      <div>Kec. <%= item.kecamatan %></div>
+                      <div style="display: flex; gap: 6px; align-items: center;">
+                        <span class="muatan-col" style="color: var(--accent-cyan);">
+                          Muatan: <strong><%= item.usaha_total + item.keluarga_total %></strong>/<%= item.total_muatan %>
                         </span>
-                        <span style="color: #c084fc;">
-                          FASIH (Statis): <strong><%= doneFasih %></strong>/<%= item.target_fasih_statis %>
+                        <span style="color: var(--accent-purple);">
+                          FASIH: <strong><%= (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0) %></strong>/<%= item.target_fasih_total %>
+                          <span style="font-size: 9px; color: var(--text-muted);">(D<%= item.draft_total %> S<%= item.submitted_total %> A<%= item.approved_total %> R<%= item.rejected_total %>)</span>
                         </span>
                       </div>
-                    </div>
-                    
-                    <div style="margin-top: 4px; font-size: 9px; color: var(--text-muted); text-align: right;">
-                      (D<%= item.draft_total %> S<%= item.submitted_total %> A<%= item.approved_total %> R<%= item.rejected_total %>)
                     </div>
                   </div>
                 <% }) %>
