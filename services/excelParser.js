@@ -73,6 +73,9 @@ function loadMasterFromJson(jsonPath) {
     console.error('⚠️ Warning: Failed to apply target_fasih from Excel:', err.message);
   }
 
+  // Apply KIPP IKN overrides
+  applyKippOverrides(db);
+
   return rows.length;
 }
 
@@ -607,7 +610,32 @@ function loadMasterFromExcel(filePath) {
   });
 
   saveTx(dataRows);
+  
+  // Apply KIPP IKN overrides
+  applyKippOverrides(db);
+
   return dataRows.length;
+}
+
+function applyKippOverrides(db) {
+  try {
+    console.log('Applying special KIPP IKN PCL and target_fasih overrides...');
+    db.exec(`
+      -- Swap PCL for 103 and 101/123/124
+      UPDATE subsls_master SET pcl = 'MUHAMAD FIRDAUS EKA TRISNA SAPUTRA', target_fasih = 33 WHERE kode = '6409040004500103';
+      UPDATE subsls_master SET pcl = 'Betni Sari', target_fasih = 0 WHERE kode = '6409040004500101';
+      UPDATE subsls_master SET pcl = 'Betni Sari', target_fasih = 1 WHERE kode = '6409040004500123';
+      UPDATE subsls_master SET pcl = 'Betni Sari', target_fasih = 0 WHERE kode = '6409040004500124';
+      UPDATE subsls_master SET pcl = 'Betni Sari', target_fasih = 0 WHERE kode = '6409040004500104';
+      
+      -- Nurul Hidayanti: shift target from 130 to 127
+      UPDATE subsls_master SET target_fasih = 2 WHERE kode = '6409040004500127';
+      UPDATE subsls_master SET target_fasih = 0 WHERE kode = '6409040004500130';
+    `);
+    console.log('✅ Applied special KIPP IKN overrides successfully.');
+  } catch (err) {
+    console.error('⚠️ Warning: Failed to apply KIPP IKN overrides:', err.message);
+  }
 }
 
 module.exports = { parseAndSaveExcel, loadMasterFromJson, loadMasterFromExcel };
