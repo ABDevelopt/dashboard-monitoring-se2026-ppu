@@ -681,7 +681,66 @@ function getEarlyWarning(uploadId, filters = {}) {
     }
   }
 
-  return { zeroPcl, slowPcl, zeroPml, stagnanPcl, diffDays };
+  // 5. Prediksi Capaian Akhir < 40%: PCL yang diprediksi menyelesaikan < 40% target pada 31 Agustus 2026
+  let lowProjectedPcl = [];
+  if (currentUpload) {
+    const currentDate = new Date(currentUpload.tanggal);
+    const deadline = new Date('2026-08-31');
+    const daysRemaining = Math.max(0, Math.ceil((deadline - currentDate) / (1000 * 60 * 60 * 24)));
+
+    // Query stats for all PCLs
+    const allPcls = getDb().prepare(`
+      SELECT 
+        m.pcl, 
+        MAX(m.pml) AS pml, 
+        MAX(m.korlap) AS korlap, 
+        MAX(m.kecamatan) AS kecamatan,
+        SUM(${singleSelesaiFormula}) AS selesai,
+        SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS selesai_sekarang,
+        SUM(COALESCE(p.draft, 0)) AS draft_total,
+        SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
+        SUM(COALESCE(p.approved, 0)) AS approved_total,
+        SUM(COALESCE(p.rejected, 0)) AS rejected_total,
+        SUM(${singleTargetFormula}) AS target_fasih_total
+      FROM subsls_master m
+      LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+      WHERE 1=1 ${where}
+      GROUP BY m.pcl COLLATE NOCASE
+    `).all(...paramsZeroPcl);
+
+    allPcls.forEach(item => {
+      const selesaiFasih = item.selesai_sekarang || 0;
+      const targetFasih = item.target_fasih_total || 0;
+      if (targetFasih > 0) {
+        const runrate = diffDays > 0 ? (selesaiFasih / diffDays) : 0;
+        const projectedFinal = selesaiFasih + (runrate * daysRemaining);
+        const projectedPct = (projectedFinal / targetFasih) * 100;
+        
+        if (projectedPct < 40.0) {
+          lowProjectedPcl.push({
+            pcl: item.pcl,
+            pml: item.pml,
+            korlap: item.korlap,
+            kecamatan: item.kecamatan,
+            target_fasih_total: targetFasih,
+            selesai_sekarang: selesaiFasih,
+            runrate: parseFloat(runrate.toFixed(2)),
+            projected_final: Math.round(projectedFinal),
+            projected_pct: parseFloat(projectedPct.toFixed(2)),
+            draft_total: item.draft_total || 0,
+            submitted_total: item.submitted_total || 0,
+            approved_total: item.approved_total || 0,
+            rejected_total: item.rejected_total || 0
+          });
+        }
+      }
+    });
+    
+    // Sort lowProjectedPcl by projected_pct ascending
+    lowProjectedPcl.sort((a, b) => a.projected_pct - b.projected_pct);
+  }
+
+  return { zeroPcl, slowPcl, zeroPml, stagnanPcl, lowProjectedPcl, diffDays };
 }
 
 // Top performers

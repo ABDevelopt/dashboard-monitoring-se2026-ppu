@@ -51,7 +51,7 @@
     </div>
 
     <!-- HEADER RINGKASAN EARLY WARNING -->
-    <div class="stats-grid">
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
       <div class="stat-card red">
         <div class="stat-icon"><i class="bi bi-person-gear"></i></div>
         <div class="stat-label">PCL Tanpa Progres</div>
@@ -62,7 +62,7 @@
         <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
         <div class="stat-label">PCL Progres Lambat</div>
         <div class="stat-value"><%= warning.slowPcl.length %></div>
-        <div class="stat-sub">Pencacah < 1.0 dokumen/hari</div>
+        <div class="stat-sub">Pencacah < 5.0 dokumen/hari</div>
       </div>
       <div class="stat-card red">
         <div class="stat-icon"><i class="bi bi-clipboard2-data"></i></div>
@@ -75,6 +75,12 @@
         <div class="stat-label">PCL Stagnan 2 Hari</div>
         <div class="stat-value"><%= warning.stagnanPcl.length %></div>
         <div class="stat-sub">Tidak ada penambahan dokumen FASIH</div>
+      </div>
+      <div class="stat-card red" style="background: linear-gradient(135deg, var(--bg-card) 0%, rgba(239, 68, 68, 0.05) 100%);">
+        <div class="stat-icon" style="color: var(--accent-red); background: rgba(239, 68, 68, 0.1);"><i class="bi bi-graph-down"></i></div>
+        <div class="stat-label">Prediksi Capaian < 40%</div>
+        <div class="stat-value" style="color: var(--accent-red);"><%= (warning.lowProjectedPcl || []).length %></div>
+        <div class="stat-sub">PCL diprediksi gagal capai target 40%</div>
       </div>
     </div>
 
@@ -362,7 +368,78 @@
         </div>
       <% } else { %>
         <div class="no-data">
-          <i class="bi bi-check-circle-fill text-green" style="font-size: 18px; margin-right: 6px;"></i> Tidak ada PCL dengan progres lambat (semua di atas 1.0 dokumen/hari). Kerja bagus!
+          <i class="bi bi-check-circle-fill text-green" style="font-size: 18px; margin-right: 6px;"></i> Tidak ada PCL dengan progres lambat (semua di atas 5.0 dokumen/hari). Kerja bagus!
+        </div>
+      <% } %>
+    </div>
+
+    <!-- PCL DENGAN PREDIKSI CAPAIAN AKHIR < 40% -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <div class="card-title">
+          <span class="text-red"><i class="bi bi-graph-down"></i> PCL dengan Prediksi Capaian Akhir < 40%</span>
+        </div>
+        <span class="badge badge-red"><%= (warning.lowProjectedPcl || []).length %> Petugas</span>
+      </div>
+
+      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+        Daftar PCL yang berdasarkan kecepatan kerja saat ini (runrate) diprediksi akan menyelesaikan <strong>kurang dari 40% target FASIH</strong> mereka pada akhir kegiatan (31 Agustus 2026).
+      </p>
+
+      <% if (warning.lowProjectedPcl && warning.lowProjectedPcl.length > 0) { %>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; max-height: 500px; overflow-y: auto; padding-right: 4px;">
+          <% warning.lowProjectedPcl.forEach(item => { %>
+            <div class="warning-card danger">
+              <div class="warning-icon"><i class="bi-exclamation-triangle-fill text-red"></i></div>
+              <div class="warning-body">
+                <div class="warning-name">
+                  <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: inherit; text-decoration: none;"><%= item.pcl %></a>
+                  <% if (kippPcls.includes(item.pcl.toUpperCase())) { %>
+                    <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px;">KIPP</span>
+                  <% } %>
+                </div>
+                <div class="warning-meta">
+                  Kec. <strong><%= item.kecamatan %></strong> · PML: <strong><%= item.pml %></strong> · Korlap: <strong><%= item.korlap %></strong>
+                </div>
+                <div class="warning-stats">
+                  <span class="warning-stat">Target FASIH: <strong><%= item.target_fasih_total %></strong></span>
+                  <span class="warning-stat">Realisasi: <strong><%= item.selesai_sekarang %></strong></span>
+                  <span class="warning-stat text-red">Prediksi Capaian: <strong><%= item.projected_final %> dok (<%= item.projected_pct %>%)</strong></span>
+                </div>
+                <div class="fasih-grid-container">
+                  <div class="fasih-grid-header">
+                    <span class="fasih-grid-title"><i class="bi bi-phone"></i> FASIH</span>
+                    <span class="badge badge-blue">Target: <%= item.target_fasih_total %></span>
+                  </div>
+                  <div class="fasih-grid">
+                    <div class="fasih-grid-item fasih-item-draft">
+                      <div class="fasih-grid-item-label">Draft</div>
+                      <div class="fasih-grid-item-value"><%= item.draft_total %></div>
+                    </div>
+                    <div class="fasih-grid-item fasih-item-submit">
+                      <div class="fasih-grid-item-label">Submit</div>
+                      <div class="fasih-grid-item-value"><%= item.submitted_total %></div>
+                    </div>
+                    <div class="fasih-grid-item fasih-item-approve">
+                      <div class="fasih-grid-item-label">Approve</div>
+                      <div class="fasih-grid-item-value"><%= item.approved_total %></div>
+                    </div>
+                    <div class="fasih-grid-item fasih-item-reject">
+                      <div class="fasih-grid-item-label">Reject</div>
+                      <div class="fasih-grid-item-value"><%= item.rejected_total %></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
+                  <div class="progress-bar red" data-width="<%= item.projected_pct %>" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <div class="no-data">
+          <i class="bi bi-check-circle-fill text-green" style="font-size: 18px; margin-right: 6px;"></i> Tidak ada PCL dengan prediksi capaian akhir di bawah 40%. Semua berjalan dengan baik!
         </div>
       <% } %>
     </div>

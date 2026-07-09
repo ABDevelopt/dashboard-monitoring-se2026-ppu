@@ -1247,6 +1247,8 @@
       const estDaysToFinish = currentSpeed > 0 ? (remainingFasih / currentSpeed) : null;
       const isOfftrack = (currentSpeed === 0 && remainingFasih > 0) || (estDaysToFinish !== null && estDaysToFinish > daysRemaining);
       const reqSpeed = daysRemaining > 0 ? (remainingFasih / daysRemaining) : remainingFasih;
+      const projectedFinalVal = totalFasihAll + (currentSpeed * daysRemaining);
+      const projectedPctVal = totalFasihTarget > 0 ? (projectedFinalVal / totalFasihTarget) * 100 : 100;
 
       const donePct = totalMuatan ? ((totalUsaha / totalMuatan) * 100).toFixed(2) : '0.00';
       const fasihPct = totalFasihTarget ? ((totalFasihAll / totalFasihTarget) * 100).toFixed(2) : '0.00';
@@ -1315,21 +1317,27 @@
               <i class="bi bi-speedometer2" style="font-size: 14px;"></i> Analisis Kecepatan & Sisa Waktu
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;">
               <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
                 <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Kecepatan Saat Ini</div>
-                <div style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-top: 2px;">${currentSpeedText} <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);">dok/hari</span></div>
+                <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-top: 2px;">${currentSpeedText} <span style="font-size: 8px; font-weight: 500; color: var(--text-muted);">dok/hari</span></div>
               </div>
               <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
                 <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Status Target</div>
                 <div style="font-size: 12px; font-weight: 700; margin-top: 4px;">
                   ${remainingFasih === 0 ? `
-                    <span class="badge badge-green" style="font-size: 10px; padding: 3px 8px;">Selesai 100%</span>
+                    <span class="badge badge-green" style="font-size: 9px; padding: 2px 6px;">Selesai</span>
                   ` : isOfftrack ? `
-                    <span class="badge badge-red" style="font-size: 10px; padding: 3px 8px;"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
+                    <span class="badge badge-red" style="font-size: 9px; padding: 2px 6px;"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
                   ` : `
-                    <span class="badge badge-blue" style="font-size: 10px; padding: 3px 8px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
+                    <span class="badge badge-blue" style="font-size: 9px; padding: 2px 6px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
                   `}
+                </div>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+                <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Prediksi Capaian</div>
+                <div style="font-size: 14px; font-weight: 700; color: ${projectedPctVal < 40 ? 'var(--accent-red)' : (projectedPctVal >= 100 ? 'var(--accent-green)' : 'var(--text-primary)')}; margin-top: 2px;">
+                  ${projectedPctVal.toFixed(1)}%
                 </div>
               </div>
             </div>
