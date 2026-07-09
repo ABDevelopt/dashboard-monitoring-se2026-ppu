@@ -447,7 +447,8 @@
   const kippPmls = <%- JSON.stringify(typeof kippPmls !== 'undefined' ? kippPmls : []) %>;
   const kippKorlaps = <%- JSON.stringify(typeof kippKorlaps !== 'undefined' ? kippKorlaps : []) %>;
   const globalSettings = <%- JSON.stringify(typeof settings !== 'undefined' ? settings : {}) %>;
-  const activeTargetPct = new Date().getMonth() >= 6 ? 50 : 25; // 6 is July
+  const latestUploadDateVal = <%- latestUpload && latestUpload.tanggal ? JSON.stringify(latestUpload.tanggal) : 'null' %>;
+  const activeTargetPct = (latestUploadDateVal ? new Date(latestUploadDateVal) : new Date()) >= new Date('2026-07-01') ? 40 : 25;
 
   // Dynamic script loader for performance optimization
   window._scriptPromises = {};
@@ -1268,13 +1269,13 @@
               <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
                 <div class="progress-bar ${parseFloat(donePct) >= 100 ? 'green' : (parseFloat(donePct) < activeTargetPct ? 'red' : 'blue')}" style="width: ${donePct}%; height: 100%; border-radius: 99px;"></div>
               </div>
-              <!-- Marker 25% (Juni) -->
+              <!-- Marker 25% (30 Juni) -->
               <div style="position: absolute; left: 25%; top: -3px; height: 12px; border-left: 1px dashed ${activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; opacity: ${activeTargetPct === 25 ? '1' : '0.5'}; z-index: 2; pointer-events: none;">
-                <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: ${activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; white-space: nowrap;">Jun: 25%</span>
+                <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: ${activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; white-space: nowrap;">30 Jun: 25%</span>
               </div>
-              <!-- Marker 50% (Juli) -->
-              <div style="position: absolute; left: 50%; top: -3px; height: 12px; border-left: 1px dashed ${activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; opacity: ${activeTargetPct === 50 ? '1' : '0.5'}; z-index: 2; pointer-events: none;">
-                <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: ${activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; white-space: nowrap;">Jul: 50%</span>
+              <!-- Marker 40% (15 Juli) -->
+              <div style="position: absolute; left: 40%; top: -3px; height: 12px; border-left: 1px dashed ${activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; opacity: ${activeTargetPct === 40 ? '1' : '0.5'}; z-index: 2; pointer-events: none;">
+                <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: ${activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; white-space: nowrap;">15 Jul: 40%</span>
               </div>
             </div>
           </div>

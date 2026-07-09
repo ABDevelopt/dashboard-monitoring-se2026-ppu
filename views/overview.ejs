@@ -1,10 +1,10 @@
 <%
   let activeTargetPct = 25;
-  let targetMonthName = 'Juni';
-  const currentMonth = new Date().getMonth(); // 5 = Juni, 6 = Juli
-  if (currentMonth === 6) { // Juli
-    activeTargetPct = 50;
-    targetMonthName = 'Juli';
+  let targetMonthName = '30 Juni';
+  const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
+  if (currentDate >= new Date('2026-07-01')) {
+    activeTargetPct = 40;
+    targetMonthName = '15 Juli';
   }
 %>
 <div class="fade-in">
@@ -203,14 +203,14 @@
             <% } %>
           </div>
 
-          <!-- Marker 25% (Juni) -->
+          <!-- Marker 25% (30 Juni) -->
           <div class="target-marker" style="position: absolute; left: 25%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--border)' %>; z-index: 2; pointer-events: none;">
-            <span class="target-marker-text" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">Target Juni: 25%</span>
+            <span class="target-marker-text" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">Target 30 Jun: 25%</span>
           </div>
 
-          <!-- Marker 50% (Juli) -->
-          <div class="target-marker" style="position: absolute; left: 50%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--border)' %>; z-index: 2; pointer-events: none;">
-            <span class="target-marker-text" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 50 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">Target Juli: 50%</span>
+          <!-- Marker 40% (15 Juli) -->
+          <div class="target-marker" style="position: absolute; left: 40%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--border)' %>; z-index: 2; pointer-events: none;">
+            <span class="target-marker-text" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">Target 15 Jul: 40%</span>
           </div>
         </div>
 
