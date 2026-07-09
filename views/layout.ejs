@@ -37,11 +37,14 @@
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
   <script src="/js/charts.js?v=<%= appVersion %>" defer></script>
-  <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') { %>
-    <style>
+  <style>
+    <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') { %>
       .muatan-col { display: none !important; }
-    </style>
-  <% } %>
+    <% } %>
+    @media (max-width: 992px) {
+      .topbar-weather-widget { display: none !important; }
+    }
+  </style>
 </head>
 <body>
 <script>
@@ -356,6 +359,24 @@
         </div>
       </div>
     </div>
+
+    <!-- WEATHER & DATE WIDGET (Top bar) -->
+    <div id="topbarWeather" class="topbar-weather-widget" style="display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 500; padding: 4px 10px; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); margin-right: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
+      <span id="topbarTimeText" style="display: flex; align-items: center; gap: 4px; font-weight: 600; color: var(--text-primary);">
+        <i class="bi bi-clock-fill" style="color: var(--accent-purple);"></i> <span id="liveTime">--:--:--</span>
+      </span>
+      <span style="opacity: 0.4;">|</span>
+      <span id="topbarDateText" style="display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+        <i class="bi bi-calendar3" style="color: var(--accent-blue);"></i> <span id="liveDate">--/--/--</span>
+      </span>
+      <span style="opacity: 0.4;">|</span>
+      <span id="weatherData" style="display: flex; align-items: center; gap: 4px; color: var(--text-primary);">
+        <span id="weatherIcon" style="font-size: 14px;"><i class="bi bi-cloud-sun-fill" style="color: var(--accent-yellow);"></i></span>
+        <span id="weatherTemp">--°C</span>
+        <span id="weatherInfo" style="font-size: 9px; color: var(--text-muted); font-weight: 500;">(Memuat...)</span>
+      </span>
+    </div>
+
     <div class="topbar-actions">
       <button class="btn btn-secondary" id="themeToggle" title="Ubah Tema" aria-label="Ubah Tema" style="padding: 8px 12px; min-width: auto;">
         <i class="bi bi-moon-fill" id="themeIcon"></i>
@@ -450,6 +471,149 @@
   const latestUploadDateVal = <%- latestUpload && latestUpload.tanggal ? JSON.stringify(latestUpload.tanggal) : 'null' %>;
   const activeTargetPct = (latestUploadDateVal ? new Date(latestUploadDateVal) : new Date()) >= new Date('2026-07-01') ? 40 : 25;
 
+  // Live Date, Time and Weather Widget Logic
+  function updateTime() {
+    const optionsDate = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('id-ID', optionsDate);
+    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' WITA';
+    
+    // Topbar elements
+    const liveTimeEl = document.getElementById('liveTime');
+    const liveDateEl = document.getElementById('liveDate');
+    if (liveTimeEl) liveTimeEl.textContent = timeStr;
+    if (liveDateEl) liveDateEl.textContent = dateStr;
+
+    // Overview widgets if present
+    const overviewTimeEl = document.getElementById('overviewTime');
+    const overviewDateEl = document.getElementById('overviewDate');
+    if (overviewTimeEl) overviewTimeEl.textContent = timeStr;
+    if (overviewDateEl) overviewDateEl.textContent = dateStr;
+  }
+
+  function updateWeather() {
+    const cachedWeather = localStorage.getItem('ppu_weather');
+    const cachedTime = localStorage.getItem('ppu_weather_time');
+    const now = Date.now();
+    
+    // Check cache (15 minutes = 900,000 ms)
+    if (cachedWeather && cachedTime && (now - parseInt(cachedTime)) < 900000) {
+      try {
+        renderWeather(JSON.parse(cachedWeather));
+        return;
+      } catch (e) {
+        // Parse error, refetch
+      }
+    }
+    
+    // Fetch new weather data for Penajam Paser Utara (Latitude: -1.2650, Longitude: 116.8286)
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=-1.2650&longitude=116.8286&current=temperature_2m,relative_humidity_2m,weather_code')
+      .then(response => response.json())
+      .then(data => {
+        if (data && data.current) {
+          const weatherObj = {
+            temp: data.current.temperature_2m,
+            code: data.current.weather_code,
+            humidity: data.current.relative_humidity_2m
+          };
+          localStorage.setItem('ppu_weather', JSON.stringify(weatherObj));
+          localStorage.setItem('ppu_weather_time', now.toString());
+          renderWeather(weatherObj);
+        }
+      })
+      .catch(err => {
+        console.error('Weather fetch error:', err);
+        if (cachedWeather) {
+          try {
+            renderWeather(JSON.parse(cachedWeather));
+          } catch (e) {}
+        } else {
+          // Static fallback: Penajam is usually warm and partly cloudy
+          renderWeather({ temp: 31, code: 2, humidity: 80 });
+        }
+      });
+  }
+
+  function renderWeather(w) {
+    let iconHTML = '';
+    let desc = '';
+    
+    switch (w.code) {
+      case 0:
+        iconHTML = '<i class="bi bi-sun-fill" style="color: #fbbf24;"></i>';
+        desc = 'Cerah';
+        break;
+      case 1:
+      case 2:
+        iconHTML = '<i class="bi bi-cloud-sun-fill" style="color: #f59e0b;"></i>';
+        desc = 'Cerah Berawan';
+        break;
+      case 3:
+        iconHTML = '<i class="bi bi-cloud-fill" style="color: #94a3b8;"></i>';
+        desc = 'Berawan';
+        break;
+      case 45:
+      case 48:
+        iconHTML = '<i class="bi bi-cloud-fog2-fill" style="color: #cbd5e1;"></i>';
+        desc = 'Kabut';
+        break;
+      case 51:
+      case 53:
+      case 55:
+      case 56:
+      case 57:
+        iconHTML = '<i class="bi bi-cloud-drizzle-fill" style="color: #60a5fa;"></i>';
+        desc = 'Gerimis';
+        break;
+      case 61:
+      case 63:
+        iconHTML = '<i class="bi bi-cloud-rain-fill" style="color: #3b82f6;"></i>';
+        desc = 'Hujan Ringan';
+        break;
+      case 65:
+      case 80:
+      case 81:
+      case 82:
+        iconHTML = '<i class="bi bi-cloud-rain-heavy-fill" style="color: #2563eb;"></i>';
+        desc = 'Hujan';
+        break;
+      case 95:
+      case 96:
+      case 99:
+        iconHTML = '<i class="bi bi-cloud-lightning-rain-fill" style="color: #ef4444;"></i>';
+        desc = 'Hujan Badai';
+        break;
+      default:
+        iconHTML = '<i class="bi bi-cloud-sun-fill" style="color: #f59e0b;"></i>';
+        desc = 'Cerah Berawan';
+    }
+    
+    // Topbar elements
+    const topIcon = document.getElementById('weatherIcon');
+    const topTemp = document.getElementById('weatherTemp');
+    const topInfo = document.getElementById('weatherInfo');
+    if (topIcon) topIcon.innerHTML = iconHTML;
+    if (topTemp) topTemp.textContent = Math.round(w.temp) + '°C';
+    if (topInfo) topInfo.textContent = `(${desc})`;
+
+    // Overview elements if present
+    const ovIcon = document.getElementById('overviewWeatherIcon');
+    const ovTemp = document.getElementById('overviewWeatherTemp');
+    const ovDesc = document.getElementById('overviewWeatherDesc');
+    if (ovIcon) ovIcon.innerHTML = iconHTML;
+    if (ovTemp) ovTemp.textContent = Math.round(w.temp) + '°C';
+    if (ovDesc) ovDesc.textContent = `${desc} · Kelembapan: ${w.humidity}%`;
+  }
+
+  function renderWeatherFromCache() {
+    const cachedWeather = localStorage.getItem('ppu_weather');
+    if (cachedWeather) {
+      try {
+        renderWeather(JSON.parse(cachedWeather));
+      } catch (e) {}
+    }
+  }
+
   // Dynamic script loader for performance optimization
   window._scriptPromises = {};
   function loadScript(url) {
@@ -476,6 +640,14 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    // Start weather and live clock updates
+    updateTime();
+    setInterval(updateTime, 1000);
+    renderWeatherFromCache();
+    updateWeather();
+    // Refresh weather every 10 minutes (600,000 ms)
+    setInterval(updateWeather, 600000);
+
     const sidebar = document.getElementById('sidebar');
     const toggleBtn = document.getElementById('sidebarToggle');
     const closeBtn = document.getElementById('sidebarClose');
@@ -1971,6 +2143,14 @@
         if (loader) {
           loader.classList.remove('loading');
           loader.classList.add('finished');
+        }
+
+        // Re-initialize date and weather rendering for the newly swapped page container
+        if (typeof updateTime === 'function') {
+          updateTime();
+        }
+        if (typeof renderWeatherFromCache === 'function') {
+          renderWeatherFromCache();
         }
 
       } catch (err) {
