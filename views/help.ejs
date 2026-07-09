@@ -1,0 +1,817 @@
+<div class="fade-in" id="help-page">
+
+<%
+/* ─── SECTION DATA ─────────────────────────────────────────── */
+const sections = [
+  { id: 'getting-started', icon: 'bi-rocket-takeoff-fill', label: 'Mulai Menggunakan', color: 'var(--accent-blue)' },
+  { id: 'badges',          icon: 'bi-patch-check-fill',    label: 'Badge & Status',    color: 'var(--accent-green)' },
+  { id: 'excel-format',    icon: 'bi-file-earmark-excel-fill', label: 'Format File Excel', color: '#22c55e' },
+  { id: 'columns',         icon: 'bi-table',               label: 'Arti Kolom Data',   color: 'var(--accent-cyan)' },
+  { id: 'navigation',      icon: 'bi-map-fill',            label: 'Navigasi & Filter', color: 'var(--accent-purple)' },
+  { id: 'faq',             icon: 'bi-question-circle-fill', label: 'FAQ',               color: 'var(--accent-yellow)' },
+];
+%>
+
+<!-- ══════════════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════════════ -->
+<div style="background: linear-gradient(135deg, rgba(var(--accent-rgb),0.12) 0%, rgba(var(--accent-rgb),0.03) 100%); border: 1px solid rgba(var(--accent-rgb),0.2); border-radius: 16px; padding: 32px 28px; margin-bottom: 24px; position: relative; overflow: hidden;">
+  <div style="position: absolute; right: -20px; top: -20px; font-size: 120px; opacity: 0.04; line-height: 1; pointer-events: none;">
+    <i class="bi bi-question-circle-fill"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+    <div style="width: 56px; height: 56px; border-radius: 14px; background: rgba(var(--accent-rgb),0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <i class="bi bi-life-preserver" style="font-size: 26px; color: var(--accent-blue);"></i>
+    </div>
+    <div>
+      <h1 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px 0;">Panduan & Bantuan</h1>
+      <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Semua yang perlu Anda ketahui tentang Dashboard Monitoring SE2026 PPU</p>
+    </div>
+  </div>
+
+  <!-- Quick nav chips -->
+  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px;">
+    <% sections.forEach(s => { %>
+    <a href="#<%= s.id %>" class="help-chip" style="--chip-color: <%= s.color %>;">
+      <i class="bi <%= s.icon %>"></i> <%= s.label %>
+    </a>
+    <% }); %>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     1. MULAI MENGGUNAKAN
+═══════════════════════════════════════════════════ -->
+<div class="help-section" id="getting-started">
+  <div class="help-section-header">
+    <div class="help-section-icon" style="background: rgba(var(--accent-rgb),0.12);">
+      <i class="bi bi-rocket-takeoff-fill" style="color: var(--accent-blue);"></i>
+    </div>
+    <div>
+      <h2 class="help-section-title">Mulai Menggunakan</h2>
+      <p class="help-section-sub">Panduan cepat untuk pengguna baru</p>
+    </div>
+  </div>
+
+  <div class="help-grid-2">
+    <div class="help-card">
+      <div class="help-card-icon" style="background: rgba(var(--accent-rgb),0.1);">
+        <i class="bi bi-display" style="color: var(--accent-blue);"></i>
+      </div>
+      <h3 class="help-card-title">Overview</h3>
+      <p class="help-card-body">Halaman utama berisi ringkasan progres pendataan SE2026 seluruh kabupaten — jumlah selesai, target, dan persentase pencapaian secara keseluruhan.</p>
+    </div>
+    <div class="help-card">
+      <div class="help-card-icon" style="background: rgba(52,211,153,0.1);">
+        <i class="bi bi-layers-fill" style="color: var(--accent-green);"></i>
+      </div>
+      <h3 class="help-card-title">Navigasi Drilldown</h3>
+      <p class="help-card-body">Sistem navigasi berlapis: <strong>Overview → Kecamatan → Korlap → PML → PCL → SubSLS</strong>. Klik nama petugas untuk melihat detail tugas mereka.</p>
+    </div>
+    <div class="help-card">
+      <div class="help-card-icon" style="background: rgba(251,191,36,0.1);">
+        <i class="bi bi-upload" style="color: var(--accent-yellow);"></i>
+      </div>
+      <h3 class="help-card-title">Upload Data</h3>
+      <p class="help-card-body">Data diperbarui dengan mengupload file Excel dari FASIH. Hanya Admin yang memiliki akses upload. Data terbaru otomatis terpilih sebagai basis tampilan.</p>
+    </div>
+    <div class="help-card">
+      <div class="help-card-icon" style="background: rgba(167,139,250,0.1);">
+        <i class="bi bi-clock-history" style="color: var(--accent-purple);"></i>
+      </div>
+      <h3 class="help-card-title">Data Historis</h3>
+      <p class="help-card-body">Grafik tren menampilkan perkembangan pendataan dari hari ke hari. Gunakan halaman <strong>Progres Harian</strong> untuk melihat kenaikan tiap periode.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     2. BADGE & STATUS
+═══════════════════════════════════════════════════ -->
+<div class="help-section" id="badges">
+  <div class="help-section-header">
+    <div class="help-section-icon" style="background: rgba(52,211,153,0.12);">
+      <i class="bi bi-patch-check-fill" style="color: var(--accent-green);"></i>
+    </div>
+    <div>
+      <h2 class="help-section-title">Badge & Status</h2>
+      <p class="help-section-sub">Cara membaca label dan indikator warna di dashboard</p>
+    </div>
+  </div>
+
+  <!-- Progress Status Badges -->
+  <div class="help-subsection-title"><i class="bi bi-circle-fill" style="font-size: 8px; color: var(--accent-blue);"></i> Status Progres Pendataan (SubSLS)</div>
+  <div class="help-badge-grid">
+    <div class="help-badge-item">
+      <span class="badge" style="background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); padding: 4px 10px; font-size: 12px; border-radius: 6px; font-weight: 600;">Belum Mulai</span>
+      <p style="font-size: 12px; color: var(--text-secondary); margin: 8px 0 0 0;">Tidak ada aktivitas apapun. PCL belum membuka atau memulai pendataan di SubSLS ini.</p>
+    </div>
+    <div class="help-badge-item">
+      <span class="badge" style="background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); padding: 4px 10px; font-size: 12px; border-radius: 6px; font-weight: 600;">Sedang Didata</span>
+      <p style="font-size: 12px; color: var(--text-secondary); margin: 8px 0 0 0;">Proses pendataan sudah dimulai, namun jumlah usaha/keluarga yang ditemukan belum memenuhi target muatan.</p>
+    </div>
+    <div class="help-badge-item">
+      <span class="badge" style="background: rgba(249,115,22,0.15); color: var(--accent-blue); border: 1px solid rgba(249,115,22,0.3); padding: 4px 10px; font-size: 12px; border-radius: 6px; font-weight: 600;">Memenuhi Target</span>
+      <p style="font-size: 12px; color: var(--text-secondary); margin: 8px 0 0 0;">Jumlah usaha/keluarga yang ditemukan sudah mencapai target muatan yang ditetapkan.</p>
+    </div>
+    <div class="help-badge-item">
+      <span class="badge" style="background: rgba(52,211,153,0.15); color: var(--accent-green); border: 1px solid rgba(52,211,153,0.3); padding: 4px 10px; font-size: 12px; border-radius: 6px; font-weight: 600;">Melebihi Target</span>
+      <p style="font-size: 12px; color: var(--text-secondary); margin: 8px 0 0 0;">Jumlah yang ditemukan melebihi target muatan awal — ini normal karena ada usaha/keluarga baru yang ditemukan di lapangan.</p>
+    </div>
+  </div>
+
+  <!-- FASIH Status -->
+  <div class="help-subsection-title" style="margin-top: 20px;"><i class="bi bi-circle-fill" style="font-size: 8px; color: var(--accent-purple);"></i> Status Dokumen FASIH</div>
+  <div class="help-badge-grid">
+    <div class="help-badge-item">
+      <span class="badge" style="background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); padding: 4px 10px; font-size: 12px; border-radius: 6px; font-weight: 600;"><i class="bi bi-pencil-fill"></i> Draft</span>
+      <p style="font-size: 12px; color: var(--text-secondary); margin: 8px 0 0 0;">Dokumen sudah dibuat oleh PCL namun belum dikirim ke PML untuk diverifikasi.</p>
+    </div>
+    <div class="help-badge-item">
+      <span class="badge" style="background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); padding: 4px 10px; font-size: 12px; border-radius: 6px; font-weight: 600;"><i class="bi bi-send-fill"></i> Dikirim</span>
+      <p style="font-size: 12px; color: var(--text-secondary); margin: 8px 0 0 0;">PCL sudah submit dokumen ke PML, menunggu verifikasi / approval dari PML atau Korlap.</p>
+    </div>
+    <div class="help-badge-item">
+      <span class="badge" style="background: rgba(52,211,153,0.15); color: var(--accent-green); border: 1px solid rgba(52,211,153,0.3); padding: 4px 10px; font-size: 12px; border-radius: 6px; font-weight: 600;"><i class="bi bi-check-circle-fill"></i> Disetujui</span>
+      <p style="font-size: 12px; color: var(--text-secondary); margin: 8px 0 0 0;">Dokumen sudah diverifikasi dan disetujui oleh PML/Korlap. Ini adalah status final yang valid.</p>
+    </div>
+    <div class="help-badge-item">
+      <span class="badge" style="background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); padding: 4px 10px; font-size: 12px; border-radius: 6px; font-weight: 600;"><i class="bi bi-x-circle-fill"></i> Ditolak</span>
+      <p style="font-size: 12px; color: var(--text-secondary); margin: 8px 0 0 0;">Dokumen ditolak dan dikembalikan ke PCL untuk diperbaiki. PCL harus melakukan koreksi data.</p>
+    </div>
+  </div>
+
+  <!-- On-Track / Off-Track -->
+  <div class="help-subsection-title" style="margin-top: 20px;"><i class="bi bi-circle-fill" style="font-size: 8px; color: var(--accent-green);"></i> Indikator Ketercapaian Target</div>
+  <div class="help-callout" style="--callout-color: 52,211,153;">
+    <div style="display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 220px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span style="background: rgba(52,211,153,0.15); color: var(--accent-green); border: 1px solid rgba(52,211,153,0.3); padding: 3px 10px; font-size: 11px; border-radius: 6px; font-weight: 700;">✓ On-Track</span>
+          <span style="font-size: 12px; color: var(--text-secondary);">Progres ≥ Target Kumulatif</span>
+        </div>
+        <p style="font-size: 12px; color: var(--text-secondary); margin: 0;">Persentase progres PCL/PML sudah mencapai atau melampaui target kumulatif berdasarkan tanggal data terkini.</p>
+      </div>
+      <div style="flex: 1; min-width: 220px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span style="background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); padding: 3px 10px; font-size: 11px; border-radius: 6px; font-weight: 700;">✗ Off-Track</span>
+          <span style="font-size: 12px; color: var(--text-secondary);">Progres &lt; Target Kumulatif</span>
+        </div>
+        <p style="font-size: 12px; color: var(--text-secondary); margin: 0;">Progres tertinggal dari target kumulatif. Petugas ini perlu mendapat perhatian atau intervensi.</p>
+      </div>
+    </div>
+    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted);">
+      <i class="bi bi-info-circle"></i> <strong>Target kumulatif</strong> = persentase yang seharusnya tercapai pada tanggal data terkini, dihitung proporsional dari total waktu pendataan (15 Jun – 31 Agu 2026). Saat ini sistem menggunakan nilai <strong>25%</strong> (fase awal) atau <strong>40%</strong> (setelah 1 Juli).
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     3. FORMAT FILE EXCEL
+═══════════════════════════════════════════════════ -->
+<div class="help-section" id="excel-format">
+  <div class="help-section-header">
+    <div class="help-section-icon" style="background: rgba(34,197,94,0.12);">
+      <i class="bi bi-file-earmark-excel-fill" style="color: #22c55e;"></i>
+    </div>
+    <div>
+      <h2 class="help-section-title">Format File Excel</h2>
+      <p class="help-section-sub">Spesifikasi file yang dapat diproses oleh sistem</p>
+    </div>
+  </div>
+
+  <div class="help-grid-2">
+    <!-- File 1 -->
+    <div class="help-card" style="border-left: 3px solid #22c55e;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+        <i class="bi bi-file-earmark-excel-fill" style="font-size: 22px; color: #22c55e;"></i>
+        <div>
+          <div style="font-size: 13px; font-weight: 700; color: var(--text-primary);">File 1: Rekap Progres Pencacahan</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Sumber: Export FASIH → Rekap Progres</div>
+        </div>
+      </div>
+      <div class="help-tag-row">
+        <span class="help-tag"><i class="bi bi-file-earmark"></i> .xlsx / .xls</span>
+        <span class="help-tag"><i class="bi bi-arrows-expand"></i> Maks. 50 MB</span>
+        <span class="help-tag help-tag-optional">Opsional</span>
+      </div>
+      <div style="margin-top: 14px;">
+        <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;">Kolom yang Dibutuhkan:</div>
+        <div class="help-col-list">
+          <div class="help-col-item"><code>Kode SLS</code> <span>Kode unik SubSLS</span></div>
+          <div class="help-col-item"><code>PCL</code> <span>Nama petugas pencacah lapangan</span></div>
+          <div class="help-col-item"><code>PML</code> <span>Nama pengawas PCL</span></div>
+          <div class="help-col-item"><code>Korlap</code> <span>Koordinator lapangan</span></div>
+          <div class="help-col-item"><code>Kecamatan</code> <span>Nama kecamatan</span></div>
+          <div class="help-col-item"><code>Draft</code> <span>Jumlah dokumen draft</span></div>
+          <div class="help-col-item"><code>Dikirim</code> <span>Jumlah dokumen terkirim</span></div>
+          <div class="help-col-item"><code>Disetujui</code> <span>Jumlah dokumen disetujui</span></div>
+          <div class="help-col-item"><code>Ditolak</code> <span>Jumlah dokumen ditolak</span></div>
+          <div class="help-col-item"><code>Usaha Ditemukan</code> <span>Usaha ditemukan di lapangan</span></div>
+          <div class="help-col-item"><code>Usaha Baru</code> <span>Usaha baru di luar muatan</span></div>
+          <div class="help-col-item"><code>Usaha Tutup</code> <span>Usaha yang tutup/tidak ada</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- File 2 -->
+    <div class="help-card" style="border-left: 3px solid var(--accent-purple);">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+        <i class="bi bi-file-earmark-excel-fill" style="font-size: 22px; color: var(--accent-purple);"></i>
+        <div>
+          <div style="font-size: 13px; font-weight: 700; color: var(--text-primary);">File 2: Rekap Status Assignment FASIH</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Sumber: Export FASIH → Status Assignment</div>
+        </div>
+      </div>
+      <div class="help-tag-row">
+        <span class="help-tag"><i class="bi bi-file-earmark"></i> .xlsx / .xls</span>
+        <span class="help-tag"><i class="bi bi-arrows-expand"></i> Maks. 50 MB</span>
+        <span class="help-tag help-tag-optional">Opsional</span>
+      </div>
+      <div style="margin-top: 14px;">
+        <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;">Kolom yang Dibutuhkan:</div>
+        <div class="help-col-list">
+          <div class="help-col-item"><code>Kode SLS</code> <span>Kode unik SubSLS</span></div>
+          <div class="help-col-item"><code>PCL</code> <span>Nama petugas yang di-assign</span></div>
+          <div class="help-col-item"><code>Status FASIH</code> <span>Status assignment di aplikasi</span></div>
+          <div class="help-col-item"><code>Target FASIH</code> <span>Jumlah target dokumen FASIH</span></div>
+        </div>
+      </div>
+      <div class="help-callout" style="--callout-color: 167,139,250; margin-top: 14px; padding: 10px 12px;">
+        <div style="font-size: 12px; color: var(--text-secondary);">
+          <i class="bi bi-lightbulb-fill" style="color: var(--accent-purple);"></i>
+          File ini melengkapi File 1 dengan informasi target FASIH per-SubSLS yang digunakan untuk menghitung persentase ketercapaian.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tips -->
+  <div class="help-callout" style="--callout-color: 249,115,22; margin-top: 16px;">
+    <div style="font-size: 13px; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px;"><i class="bi bi-exclamation-triangle-fill"></i> Tips Upload yang Benar</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
+      <div style="font-size: 12px; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 6px;">
+        <i class="bi bi-check-circle-fill" style="color: var(--accent-green); margin-top: 1px; flex-shrink: 0;"></i>
+        Pastikan nama kolom <strong>persis sama</strong> dengan yang diharapkan (termasuk spasi)
+      </div>
+      <div style="font-size: 12px; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 6px;">
+        <i class="bi bi-check-circle-fill" style="color: var(--accent-green); margin-top: 1px; flex-shrink: 0;"></i>
+        File tidak boleh terlindungi password / terenkripsi
+      </div>
+      <div style="font-size: 12px; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 6px;">
+        <i class="bi bi-check-circle-fill" style="color: var(--accent-green); margin-top: 1px; flex-shrink: 0;"></i>
+        Bisa upload beberapa file sekaligus dalam satu sesi
+      </div>
+      <div style="font-size: 12px; color: var(--text-secondary); display: flex; align-items: flex-start; gap: 6px;">
+        <i class="bi bi-check-circle-fill" style="color: var(--accent-green); margin-top: 1px; flex-shrink: 0;"></i>
+        Pilih tanggal data yang tepat sesuai data di file Excel
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     4. ARTI KOLOM DATA
+═══════════════════════════════════════════════════ -->
+<div class="help-section" id="columns">
+  <div class="help-section-header">
+    <div class="help-section-icon" style="background: rgba(var(--accent-rgb),0.12);">
+      <i class="bi bi-table" style="color: var(--accent-cyan);"></i>
+    </div>
+    <div>
+      <h2 class="help-section-title">Arti Kolom Data</h2>
+      <p class="help-section-sub">Penjelasan setiap metrik yang ditampilkan di tabel dan kartu</p>
+    </div>
+  </div>
+
+  <!-- Tabel Definisi Kolom -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="min-width: 140px;">Kolom / Metrik</th>
+          <th>Penjelasan</th>
+          <th style="min-width: 80px; text-align: center;">Sumber</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="td-primary"><code>Total SLS</code></td>
+          <td>Jumlah total SubSLS (Satuan Lingkungan Setempat) yang ditugaskan kepada petugas/wilayah ini</td>
+          <td style="text-align: center;"><span class="help-tag" style="font-size: 10px;">Master</span></td>
+        </tr>
+        <tr>
+          <td class="td-primary"><code>Selesai</code></td>
+          <td>Jumlah SubSLS yang sudah selesai didata — artinya jumlah <em>Dikirim + Disetujui + Ditolak</em> ≥ target FASIH</td>
+          <td style="text-align: center;"><span class="help-tag" style="font-size: 10px;">FASIH</span></td>
+        </tr>
+        <tr>
+          <td class="td-primary"><code>Draft</code></td>
+          <td>Dokumen yang sudah dibuat PCL tapi belum dikirim ke PML. Ini belum dihitung sebagai "selesai"</td>
+          <td style="text-align: center;"><span class="help-tag" style="font-size: 10px;">FASIH</span></td>
+        </tr>
+        <tr>
+          <td class="td-primary"><code>Dikirim</code></td>
+          <td>Dokumen yang sudah di-submit oleh PCL ke PML untuk diverifikasi. Dihitung dalam progres</td>
+          <td style="text-align: center;"><span class="help-tag" style="font-size: 10px;">FASIH</span></td>
+        </tr>
+        <tr>
+          <td class="td-primary"><code>Disetujui</code></td>
+          <td>Dokumen yang sudah divalidasi oleh PML/Korlap. Status final terbaik</td>
+          <td style="text-align: center;"><span class="help-tag" style="font-size: 10px;">FASIH</span></td>
+        </tr>
+        <tr>
+          <td class="td-primary"><code>Ditolak</code></td>
+          <td>Dokumen yang dikembalikan karena ada kesalahan. PCL perlu merevisi dan mengirim ulang</td>
+          <td style="text-align: center;"><span class="help-tag" style="font-size: 10px;">FASIH</span></td>
+        </tr>
+        <tr>
+          <td class="td-primary"><code>Target FASIH</code></td>
+          <td>Jumlah dokumen FASIH yang harus diselesaikan. Bisa berubah sesuai kondisi lapangan (usaha baru/tutup)</td>
+          <td style="text-align: center;"><span class="help-tag" style="font-size: 10px;">Assignment</span></td>
+        </tr>
+        <tr>
+          <td class="td-primary"><code>Muatan</code></td>
+          <td>Jumlah usaha/keluarga yang tercatat dalam rancangan awal (muatan awal) untuk SubSLS tersebut</td>
+          <td style="text-align: center;"><span class="help-tag" style="font-size: 10px;">Master</span></td>
+        </tr>
+        <tr>
+          <td class="td-primary"><code>Usaha Ditemukan</code></td>
+          <td>Jumlah usaha yang berhasil ditemukan oleh PCL di lapangan (bisa sama, lebih, atau kurang dari muatan)</td>
+          <td style="text-align: center;"><span class="help-tag" style="font-size: 10px;">FASIH</span></td>
+        </tr>
+        <tr>
+          <td class="td-primary"><code>Usaha Baru</code></td>
+          <td>Usaha yang ditemukan di lapangan namun tidak tercatat dalam muatan awal — perlu dicatat sebagai temuan baru</td>
+          <td style="text-align: center;"><span class="help-tag" style="font-size: 10px;">FASIH</span></td>
+        </tr>
+        <tr>
+          <td class="td-primary"><code>Progres (%)</code></td>
+          <td>Persentase ketercapaian = <em>(Dikirim + Disetujui + Ditolak) / Target FASIH × 100%</em></td>
+          <td style="text-align: center;"><span class="help-tag" style="font-size: 10px;">Hitung</span></td>
+        </tr>
+        <tr>
+          <td class="td-primary"><code>Stagnan</code></td>
+          <td>(Early Warning) SubSLS yang tidak mengalami kenaikan progres dalam beberapa hari terakhir</td>
+          <td style="text-align: center;"><span class="help-tag" style="font-size: 10px;">Analisis</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     5. NAVIGASI & FILTER
+═══════════════════════════════════════════════════ -->
+<div class="help-section" id="navigation">
+  <div class="help-section-header">
+    <div class="help-section-icon" style="background: rgba(167,139,250,0.12);">
+      <i class="bi bi-map-fill" style="color: var(--accent-purple);"></i>
+    </div>
+    <div>
+      <h2 class="help-section-title">Navigasi & Filter</h2>
+      <p class="help-section-sub">Cara menggunakan fitur drilldown dan breadcrumb</p>
+    </div>
+  </div>
+
+  <!-- Hirarki -->
+  <div class="help-hierarchy">
+    <div class="help-hierarchy-step" style="--step-color: var(--accent-blue);">
+      <div class="help-hierarchy-dot"></div>
+      <div class="help-hierarchy-content">
+        <div class="help-hierarchy-label">Overview <code>/</code></div>
+        <div class="help-hierarchy-desc">Ringkasan total seluruh kabupaten PPU</div>
+      </div>
+    </div>
+    <div class="help-hierarchy-line"></div>
+    <div class="help-hierarchy-step" style="--step-color: var(--accent-cyan);">
+      <div class="help-hierarchy-dot"></div>
+      <div class="help-hierarchy-content">
+        <div class="help-hierarchy-label">Per Kecamatan <code>/kecamatan</code></div>
+        <div class="help-hierarchy-desc">Breakdown per kecamatan, klik nama untuk filter</div>
+      </div>
+    </div>
+    <div class="help-hierarchy-line"></div>
+    <div class="help-hierarchy-step" style="--step-color: var(--accent-purple);">
+      <div class="help-hierarchy-dot"></div>
+      <div class="help-hierarchy-content">
+        <div class="help-hierarchy-label">Per Korlap <code>/korlap</code></div>
+        <div class="help-hierarchy-desc">Progres per koordinator lapangan</div>
+      </div>
+    </div>
+    <div class="help-hierarchy-line"></div>
+    <div class="help-hierarchy-step" style="--step-color: var(--accent-green);">
+      <div class="help-hierarchy-dot"></div>
+      <div class="help-hierarchy-content">
+        <div class="help-hierarchy-label">Per PML <code>/pml</code></div>
+        <div class="help-hierarchy-desc">Progres per pengawas mitra lapangan</div>
+      </div>
+    </div>
+    <div class="help-hierarchy-line"></div>
+    <div class="help-hierarchy-step" style="--step-color: var(--accent-yellow);">
+      <div class="help-hierarchy-dot"></div>
+      <div class="help-hierarchy-content">
+        <div class="help-hierarchy-label">Per PCL <code>/pcl</code></div>
+        <div class="help-hierarchy-desc">Progres per petugas pencacah lapangan, klik nama untuk detail SubSLS</div>
+      </div>
+    </div>
+    <div class="help-hierarchy-line"></div>
+    <div class="help-hierarchy-step" style="--step-color: var(--accent-red);">
+      <div class="help-hierarchy-dot"></div>
+      <div class="help-hierarchy-content">
+        <div class="help-hierarchy-label">Detail SLS <code>/subsls</code></div>
+        <div class="help-hierarchy-desc">Tabel lengkap seluruh SubSLS dengan status masing-masing</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="help-grid-2" style="margin-top: 16px;">
+    <div class="help-card">
+      <h3 class="help-card-title"><i class="bi bi-funnel-fill" style="color: var(--accent-blue);"></i> Cara Filter Data</h3>
+      <p class="help-card-body">Gunakan dropdown filter di atas tabel untuk menyaring berdasarkan <strong>Kecamatan</strong>, <strong>Korlap</strong>, <strong>PML</strong>, atau <strong>nama PCL</strong>. Filter bisa dikombinasikan. Breadcrumb di atas halaman akan menunjukkan filter aktif.</p>
+    </div>
+    <div class="help-card">
+      <h3 class="help-card-title"><i class="bi bi-signpost-split-fill" style="color: var(--accent-purple);"></i> Breadcrumb Navigation</h3>
+      <p class="help-card-body">Bar navigasi di bawah header menunjukkan posisi Anda saat ini, misalnya <strong>Home › Per PCL › Ahmad Fauzi</strong>. Klik crumb sebelumnya untuk kembali ke level atas tanpa kehilangan filter lain.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     6. FAQ
+═══════════════════════════════════════════════════ -->
+<div class="help-section" id="faq">
+  <div class="help-section-header">
+    <div class="help-section-icon" style="background: rgba(251,191,36,0.12);">
+      <i class="bi bi-question-circle-fill" style="color: var(--accent-yellow);"></i>
+    </div>
+    <div>
+      <h2 class="help-section-title">FAQ — Pertanyaan yang Sering Ditanyakan</h2>
+      <p class="help-section-sub">Jawaban cepat untuk masalah umum</p>
+    </div>
+  </div>
+
+  <div class="help-faq-list">
+
+    <details class="help-faq-item">
+      <summary class="help-faq-q">
+        <i class="bi bi-chevron-right help-faq-chevron"></i>
+        Mengapa data di dashboard tidak sama dengan yang saya lihat di aplikasi FASIH?
+      </summary>
+      <div class="help-faq-a">
+        Dashboard menggunakan data dari file Excel yang di-<em>export</em> oleh Admin dari FASIH, bukan real-time. Ada jeda antara perubahan di FASIH dan tampilan di dashboard sesuai frekuensi upload. Selain itu, data scraping kadang memiliki selisih kecil dengan data native FASIH.
+      </div>
+    </details>
+
+    <details class="help-faq-item">
+      <summary class="help-faq-q">
+        <i class="bi bi-chevron-right help-faq-chevron"></i>
+        Kenapa progres saya 0% padahal saya sudah mendata banyak?
+      </summary>
+      <div class="help-faq-a">
+        Kemungkinan penyebab: (1) Data belum di-upload oleh Admin; (2) Nama PCL di file tidak cocok dengan data master — pastikan ejaan nama sama persis; (3) Dokumen masih di status <em>Draft</em> sehingga belum terhitung sebagai progres. Hanya status <em>Dikirim, Disetujui,</em> dan <em>Ditolak</em> yang dihitung.
+      </div>
+    </details>
+
+    <details class="help-faq-item">
+      <summary class="help-faq-q">
+        <i class="bi bi-chevron-right help-faq-chevron"></i>
+        Apa yang dimaksud "Target FASIH Dinamis"?
+      </summary>
+      <div class="help-faq-a">
+        Target FASIH bisa dihitung dua cara: (1) <strong>Statis</strong> — menggunakan target awal dari rancangan muatan. (2) <strong>Dinamis</strong> — target berubah sesuai kondisi lapangan, yaitu <em>Target Awal + Usaha Baru + Keluarga Baru - Usaha Tutup - Tidak Ditemukan</em>. Admin bisa mengonfigurasi ini di halaman Pengaturan.
+      </div>
+    </details>
+
+    <details class="help-faq-item">
+      <summary class="help-faq-q">
+        <i class="bi bi-chevron-right help-faq-chevron"></i>
+        Bagaimana cara mengetahui SubSLS mana yang perlu diprioritaskan?
+      </summary>
+      <div class="help-faq-a">
+        Gunakan halaman <strong>Early Warning</strong> untuk melihat SubSLS yang stagnan atau berisiko tidak selesai tepat waktu. Halaman <strong>Performa Terendah</strong> menampilkan petugas yang tertinggal dari target. Halaman <strong>Deteksi Anomali</strong> mendeteksi pola tidak wajar dalam data.
+      </div>
+    </details>
+
+    <details class="help-faq-item">
+      <summary class="help-faq-q">
+        <i class="bi bi-chevron-right help-faq-chevron"></i>
+        Mengapa beberapa halaman tidak muncul di sidebar?
+      </summary>
+      <div class="help-faq-a">
+        Admin dapat mengaktifkan/menonaktifkan halaman-halaman tertentu melalui <strong>Pengaturan Tampilan</strong>. Jika halaman yang Anda butuhkan tidak tersedia, hubungi Admin untuk mengaktifkannya.
+      </div>
+    </details>
+
+    <details class="help-faq-item">
+      <summary class="help-faq-q">
+        <i class="bi bi-chevron-right help-faq-chevron"></i>
+        Bagaimana cara menginstal dashboard di HP (PWA)?
+      </summary>
+      <div class="help-faq-a">
+        Di Chrome/Edge: buka dashboard di browser, lalu ketuk ikon <strong>"Install"</strong> atau <strong>"Add to Home Screen"</strong> di pojok kanan atas address bar. Di Safari (iPhone): ketuk tombol Share → <em>Add to Home Screen</em>. Setelah terinstall, dashboard bisa dibuka seperti aplikasi native tanpa membuka browser.
+      </div>
+    </details>
+
+    <details class="help-faq-item">
+      <summary class="help-faq-q">
+        <i class="bi bi-chevron-right help-faq-chevron"></i>
+        Apakah data aman jika internet mati?
+      </summary>
+      <div class="help-faq-a">
+        Dashboard memiliki fitur <strong>Service Worker (PWA)</strong> yang menyimpan versi terakhir halaman secara lokal. Jika internet mati, Anda masih bisa membuka dashboard dan melihat data terakhir yang pernah dimuat. Namun data tidak akan diperbarui hingga koneksi pulih.
+      </div>
+    </details>
+
+  </div>
+
+  <!-- Contact / Footer Help -->
+  <div style="margin-top: 24px; padding: 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; text-align: center;">
+    <div style="font-size: 28px; margin-bottom: 8px;">💬</div>
+    <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Masih ada pertanyaan?</div>
+    <p style="font-size: 12px; color: var(--text-secondary); margin: 0;">Hubungi tim teknis BPS Kabupaten Penajam Paser Utara atau gunakan fitur <strong>Asisten AI</strong> untuk mendapat jawaban cepat berbasis data.</p>
+    <% if (typeof settings !== 'undefined' && settings.page_aiagent === '1') { %>
+    <a href="/agent" class="btn btn-primary" style="margin-top: 14px; display: inline-flex;">
+      <i class="bi bi-robot"></i> Tanya Asisten AI
+    </a>
+    <% } %>
+  </div>
+</div>
+
+</div><!-- /.fade-in -->
+
+<style>
+/* ── HELP PAGE STYLES ────────────────────────────────── */
+.help-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 20px;
+  scroll-margin-top: calc(var(--header-height) + 44px);
+}
+
+.help-section-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.help-section-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.help-section-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+.help-section-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.help-subsection-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Grid 2 */
+.help-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 14px;
+}
+
+/* Cards */
+.help-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+.help-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  margin-bottom: 10px;
+}
+.help-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.help-card-body {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Chips */
+.help-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  background: rgba(var(--accent-rgb), 0.06);
+  border: 1px solid rgba(var(--accent-rgb), 0.15);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--chip-color, var(--text-secondary));
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.help-chip:hover {
+  background: rgba(var(--accent-rgb), 0.12);
+  transform: translateY(-1px);
+}
+
+/* Badge grid */
+.help-badge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
+}
+.help-badge-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+/* Callout */
+.help-callout {
+  background: rgba(var(--callout-color, var(--accent-rgb)), 0.06);
+  border: 1px solid rgba(var(--callout-color, var(--accent-rgb)), 0.2);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+/* Tags */
+.help-tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.help-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.help-tag-optional {
+  background: rgba(var(--accent-rgb), 0.07);
+  border-color: rgba(var(--accent-rgb), 0.2);
+  color: var(--accent-blue);
+}
+
+/* Column list */
+.help-col-list { display: flex; flex-direction: column; gap: 4px; }
+.help-col-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.help-col-item code {
+  background: rgba(var(--accent-rgb), 0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  color: var(--accent-blue);
+  flex-shrink: 0;
+}
+.help-col-item span { font-size: 12px; }
+
+/* Hierarchy */
+.help-hierarchy { padding: 4px 0; }
+.help-hierarchy-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+}
+.help-hierarchy-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--step-color);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.05), 0 0 0 4px var(--step-color);
+}
+.help-hierarchy-line {
+  width: 2px;
+  height: 18px;
+  background: var(--border);
+  margin-left: 9px;
+}
+.help-hierarchy-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.help-hierarchy-label code {
+  font-size: 11px;
+  background: rgba(var(--accent-rgb), 0.08);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.help-hierarchy-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* FAQ */
+.help-faq-list { display: flex; flex-direction: column; gap: 8px; }
+.help-faq-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+.help-faq-item[open] { border-color: rgba(var(--accent-rgb), 0.3); }
+.help-faq-q {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+.help-faq-q::-webkit-details-marker { display: none; }
+.help-faq-q:hover { color: var(--accent-blue); }
+.help-faq-chevron {
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+details[open] .help-faq-chevron { transform: rotate(90deg); }
+.help-faq-a {
+  padding: 0 16px 16px 36px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .help-section { padding: 16px; }
+  .help-section-icon { width: 36px; height: 36px; font-size: 16px; }
+  .help-section-title { font-size: 15px; }
+}
+
+/* Table primary cell */
+.td-primary {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  vertical-align: top;
+  padding-top: 11px !important;
+}
+</style>

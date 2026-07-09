@@ -134,6 +134,15 @@ app.use('/deteksi-anomali', require('./routes/deteksianomali'));
 app.use('/agent', require('./routes/agent'));
 app.use('/api', require('./routes/api'));
 
+// Help / FAQ page (public, no auth required)
+app.get('/help', (req, res) => {
+  res.render('help', {
+    title: 'Panduan & Bantuan',
+    activePage: 'help',
+  });
+});
+
+
 // Admin Auth Middleware
 function requireAdmin(req, res, next) {
   if (req.session.isAdmin) return next();
