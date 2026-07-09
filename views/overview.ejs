@@ -139,6 +139,30 @@
           const reqSpeed = daysRemaining > 0 ? (remainingFasih / daysRemaining) : remainingFasih;
           const projectedFinalVal = totalPengerjaan + (currentSpeed * daysRemaining);
           const projectedPctVal = (summary.target_fasih_total || 0) > 0 ? (projectedFinalVal / (summary.target_fasih_total || 0)) * 100 : 100;
+
+          // Hitung perkiraan selesai 40% dan 100%
+          const target_40 = (summary.target_fasih_total || 0) * 0.4;
+          let estDate40Text = 'Sudah tercapai';
+          let estDate100Text = 'Tidak dapat diprediksi (stagnan)';
+          
+          const optionsDate = { day: 'numeric', month: 'long', year: 'numeric' };
+
+          if (totalPengerjaan >= target_40) {
+            estDate40Text = 'Sudah Tercapai';
+          } else if (currentSpeed > 0) {
+            const daysTo40 = (target_40 - totalPengerjaan) / currentSpeed;
+            const date40 = new Date(uploadDate.getTime() + daysTo40 * 24 * 60 * 60 * 1000);
+            estDate40Text = date40.toLocaleDateString('id-ID', optionsDate);
+          } else {
+            estDate40Text = 'Tidak dapat diprediksi (stagnan)';
+          }
+
+          if (remainingFasih <= 0) {
+            estDate100Text = 'Sudah Selesai 100%';
+          } else if (currentSpeed > 0) {
+            const date100 = new Date(uploadDate.getTime() + estDaysToFinish * 24 * 60 * 60 * 1000);
+            estDate100Text = date100.toLocaleDateString('id-ID', optionsDate);
+          }
         %>
         
         <!-- Analisis Kecepatan & Estimasi Pendataan -->
@@ -168,6 +192,22 @@
               <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Prediksi Capaian</div>
               <div style="font-size: 14px; font-weight: 700; color: <%= projectedPctVal < 40 ? 'var(--accent-red)' : (projectedPctVal >= 100 ? 'var(--accent-green)' : 'var(--text-primary)') %>; margin-top: 2px;">
                 <%= projectedPctVal.toFixed(1) %>%
+              </div>
+            </div>
+          </div>
+
+          <!-- Estimasi Tanggal Selesai -->
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px;">
+            <div style="background: rgba(124, 58, 237, 0.04); border: 1px solid rgba(124, 58, 237, 0.15); border-radius: 8px; padding: 8px; text-align: center;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Perkiraan Selesai 40%</div>
+              <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-top: 2px;">
+                <i class="bi bi-calendar-check" style="color: var(--accent-purple); margin-right: 4px;"></i><%= estDate40Text %>
+              </div>
+            </div>
+            <div style="background: rgba(34, 197, 94, 0.04); border: 1px solid rgba(34, 197, 94, 0.15); border-radius: 8px; padding: 8px; text-align: center;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Perkiraan Selesai 100%</div>
+              <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-top: 2px;">
+                <i class="bi bi-calendar-check-fill" style="color: var(--accent-green); margin-right: 4px;"></i><%= estDate100Text %>
               </div>
             </div>
           </div>
