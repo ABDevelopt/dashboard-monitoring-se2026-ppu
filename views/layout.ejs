@@ -1850,6 +1850,19 @@
           oldTopbarActions.innerHTML = newTopbarActions.innerHTML;
         }
 
+        // Sync theme toggle icon after PJAX page swap
+        const themeIcon = document.getElementById('themeIcon');
+        if (themeIcon) {
+          const isLight = document.body.classList.contains('light-mode');
+          if (isLight) {
+            themeIcon.classList.remove('bi-moon-fill');
+            themeIcon.classList.add('bi-sun-fill');
+          } else {
+            themeIcon.classList.remove('bi-sun-fill');
+            themeIcon.classList.add('bi-moon-fill');
+          }
+        }
+
         // Update Sidebar/Bottomnav Active Classes
         const targetPath = new URL(url, window.location.origin).pathname;
         
