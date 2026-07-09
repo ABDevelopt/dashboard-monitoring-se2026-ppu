@@ -575,7 +575,7 @@ select:focus, input:focus {
   border: 1px solid rgba(59, 130, 246, 0.15) !important;
 }
 .status-submit-text {
-  color: var(--accent-blue) !important;
+  color: #3b82f6 !important;
 }
 body.light-mode .status-submit-text {
   color: #2563eb !important;
