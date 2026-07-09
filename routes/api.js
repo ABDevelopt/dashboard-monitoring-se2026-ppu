@@ -211,4 +211,21 @@ router.get('/detail/pcl', (req, res) => {
   res.json(data);
 });
 
+// Simpan data cuaca harian
+router.post('/weather', (req, res) => {
+  const { tanggal, temp, code, humidity } = req.body;
+  if (!tanggal || temp === undefined || code === undefined || humidity === undefined) {
+    return res.status(400).json({ error: 'Data cuaca tidak lengkap.' });
+  }
+  const { saveDailyWeather } = require('../database');
+  const success = saveDailyWeather(tanggal, temp, code, humidity);
+  res.json({ success });
+});
+
+// Ambil riwayat cuaca
+router.get('/weather/history', (req, res) => {
+  const { getWeatherHistory } = require('../database');
+  res.json(getWeatherHistory());
+});
+
 module.exports = router;

@@ -163,6 +163,15 @@ function initSchema() {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+
+    -- Tabel riwayat cuaca harian
+    CREATE TABLE IF NOT EXISTS weather_history (
+      tanggal TEXT PRIMARY KEY,
+      temp REAL,
+      code INTEGER,
+      humidity INTEGER,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 }
 
@@ -1104,11 +1113,45 @@ function getKippOfficers() {
   }
 }
 
+function saveDailyWeather(tanggal, temp, code, humidity) {
+  try {
+    const db = getDb();
+    db.prepare(`
+      INSERT INTO weather_history (tanggal, temp, code, humidity, updated_at)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(tanggal) DO UPDATE SET
+        temp = excluded.temp,
+        code = excluded.code,
+        humidity = excluded.humidity,
+        updated_at = CURRENT_TIMESTAMP
+    `).run(tanggal, temp, code, humidity);
+    return true;
+  } catch (err) {
+    console.error("Error saving daily weather:", err);
+    return false;
+  }
+}
+
+function getWeatherHistory(limit = 7) {
+  try {
+    const db = getDb();
+    return db.prepare(`
+      SELECT tanggal, temp, code, humidity
+      FROM weather_history
+      ORDER BY tanggal DESC
+      LIMIT ?
+    `).all(limit);
+  } catch (err) {
+    console.error("Error getting weather history:", err);
+    return [];
+  }
+}
+
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
   getBottomPerformers, getAnomalyStats,
   getSettings, updateSettings, getUserByUsername, hashPassword, rebuildSummaryCache, rebuildAllSummaryCaches,
-  getKippOfficers
+  getKippOfficers, saveDailyWeather, getWeatherHistory
 };
