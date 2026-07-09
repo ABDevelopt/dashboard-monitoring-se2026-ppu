@@ -56,7 +56,9 @@
             </div>
           </div>
 
-          <div style="background: var(--bg-progress-wrap); height: 28px; border-radius: 14px; overflow: hidden; position: relative; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">
+        <div class="progress-timeline-container" style="position: relative; height: 28px; margin-top: 22px; margin-bottom: 14px;">
+          <!-- Track & Progress Bar -->
+          <div style="background: var(--bg-progress-wrap); height: 28px; border-radius: 14px; overflow: hidden; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">
             <div class="progress-bar" data-width="<%= fasihPct %>" style="background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%); height: 20px; width: 0%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; min-width: 24px; box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);">
               <% if (parseFloat(fasihPct) >= 15) { %>
                 <span style="font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"><%= fasihPct %>%</span>
@@ -66,6 +68,17 @@
               <span style="margin-left: 12px; font-size: 11px; font-weight: 800; color: var(--text-primary); white-space: nowrap;"><%= fasihPct %>%</span>
             <% } %>
           </div>
+
+          <!-- Marker 25% (30 Juni) -->
+          <div class="target-marker" style="position: absolute; left: 25%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 25 ? 'var(--accent-purple)' : 'var(--border)' %>; z-index: 2; pointer-events: none;">
+            <span class="target-marker-text" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 25 ? 'var(--accent-purple)' : 'var(--text-muted)' %>; white-space: nowrap;">Target 30 Jun: 25%</span>
+          </div>
+
+          <!-- Marker 40% (15 Juli) -->
+          <div class="target-marker" style="position: absolute; left: 40%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 40 ? 'var(--accent-purple)' : 'var(--border)' %>; z-index: 2; pointer-events: none;">
+            <span class="target-marker-text" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 40 ? 'var(--accent-purple)' : 'var(--text-muted)' %>; white-space: nowrap;">Target 15 Jul: 40%</span>
+          </div>
+        </div>
 
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); margin-bottom: 20px;">
             <div>
