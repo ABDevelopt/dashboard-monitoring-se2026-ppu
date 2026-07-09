@@ -383,14 +383,8 @@
 
   <!-- PAGE CONTENT -->
   <main class="page-content">
-    <!-- PJAX LOADING OVERLAY FOR CONTENT ONLY -->
-    <div id="pjax-loading-overlay" class="pjax-loading-overlay">
-      <div class="pjax-loading-card">
-        <div class="pjax-spinner"></div>
-        <div style="margin-top: 14px; font-size: 12px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.01em;">Memuat Halaman</div>
-        <div style="margin-top: 4px; font-size: 10px; color: var(--text-muted);">Mohon tunggu sebentar...</div>
-      </div>
-    </div>
+    <!-- PJAX CLICK-BLOCK OVERLAY (invisible, only prevents interaction during load) -->
+    <div id="pjax-loading-overlay" class="pjax-loading-overlay"></div>
     <!-- Flash Messages -->
     <% if (success && success.length) { %>
     <div class="flash-messages">
@@ -2095,6 +2089,44 @@
       }
       const overlay = document.getElementById('pjax-loading-overlay');
       if (overlay) overlay.classList.add('active');
+
+      // Inject skeleton immediately into the content area
+      const skeletonTarget = document.getElementById('pjax-container');
+      if (skeletonTarget) {
+        skeletonTarget.innerHTML = `
+          <div class="skeleton-page">
+            <div class="skeleton-stat-row">
+              <div class="skeleton-stat-card skeleton-block"></div>
+              <div class="skeleton-stat-card skeleton-block"></div>
+              <div class="skeleton-stat-card skeleton-block"></div>
+              <div class="skeleton-stat-card skeleton-block"></div>
+            </div>
+            <div class="skeleton-main-row">
+              <div class="skeleton-chart skeleton-block"></div>
+              <div class="skeleton-list">
+                <div class="skeleton-list-item skeleton-block"></div>
+                <div class="skeleton-list-item skeleton-block"></div>
+                <div class="skeleton-list-item skeleton-block"></div>
+                <div class="skeleton-list-item skeleton-block"></div>
+                <div class="skeleton-list-item skeleton-block"></div>
+                <div class="skeleton-list-item skeleton-block"></div>
+              </div>
+            </div>
+            <div class="skeleton-table-wrap">
+              <div class="skeleton-table-header skeleton-block"></div>
+              ${[...Array(6)].map(() => `
+                <div class="skeleton-table-row">
+                  <div class="skeleton-table-cell skeleton-block"></div>
+                  <div class="skeleton-table-cell skeleton-block"></div>
+                  <div class="skeleton-table-cell skeleton-block"></div>
+                  <div class="skeleton-table-cell skeleton-block"></div>
+                  <div class="skeleton-table-cell skeleton-block"></div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
 
       try {
         const response = await fetch(url);
