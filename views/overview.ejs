@@ -80,6 +80,87 @@
           </div>
         </div>
 
+        <%
+          const startSensusDate = new Date('2026-06-15');
+          const uploadDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
+          
+          // Calculate diffDays (days since June 15)
+          const diffTime = uploadDate - startSensusDate;
+          const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+          
+          // Calculate daysRemaining (days until August 31)
+          const deadline = new Date('2026-08-31');
+          const daysRemaining = Math.max(0, Math.ceil((deadline - uploadDate) / (1000 * 60 * 60 * 24)));
+
+          const remainingFasih = Math.max(0, (summary.target_fasih_total || 0) - totalPengerjaan);
+          const currentSpeed = diffDays > 0 ? (totalPengerjaan / diffDays) : 0;
+          const currentSpeedText = currentSpeed.toFixed(2);
+          const estDaysToFinish = currentSpeed > 0 ? (remainingFasih / currentSpeed) : null;
+          const isOfftrack = (currentSpeed === 0 && remainingFasih > 0) || (estDaysToFinish !== null && estDaysToFinish > daysRemaining);
+          const reqSpeed = daysRemaining > 0 ? (remainingFasih / daysRemaining) : remainingFasih;
+          const projectedFinalVal = totalPengerjaan + (currentSpeed * daysRemaining);
+          const projectedPctVal = (summary.target_fasih_total || 0) > 0 ? (projectedFinalVal / (summary.target_fasih_total || 0)) * 100 : 100;
+        %>
+        
+        <!-- Analisis Kecepatan & Estimasi Pendataan -->
+        <div style="margin-top: 18px; padding: 14px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; text-align: left;">
+          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-purple); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <i class="bi bi-speedometer2" style="font-size: 14px;"></i> Analisis Kecepatan & Sisa Waktu Kabupaten
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;">
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Kecepatan Saat Ini</div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-top: 2px;"><%= currentSpeedText %> <span style="font-size: 8px; font-weight: 500; color: var(--text-muted);">dok/hari</span></div>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Status Target</div>
+              <div style="font-size: 12px; font-weight: 700; margin-top: 4px;">
+                <% if (remainingFasih === 0) { %>
+                  <span class="badge badge-green" style="font-size: 9px; padding: 2px 6px;">Selesai</span>
+                <% } else if (isOfftrack) { %>
+                  <span class="badge badge-red" style="font-size: 9px; padding: 2px 6px;"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
+                <% } else { %>
+                  <span class="badge badge-blue" style="font-size: 9px; padding: 2px 6px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
+                <% } %>
+              </div>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+              <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Prediksi Capaian</div>
+              <div style="font-size: 14px; font-weight: 700; color: <%= projectedPctVal < 40 ? 'var(--accent-red)' : (projectedPctVal >= 100 ? 'var(--accent-green)' : 'var(--text-primary)') %>; margin-top: 2px;">
+                <%= projectedPctVal.toFixed(1) %>%
+              </div>
+            </div>
+          </div>
+          
+          <div style="font-size: 11px; line-height: 1.5; color: var(--text-secondary);">
+            <% if (remainingFasih === 0) { %>
+              Pendataan secara global telah menyelesaikan seluruh target pengisian dokumen FASIH sebanyak <strong><%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></strong> dokumen. Kinerja luar biasa!
+            <% } else { %>
+              Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak 15 Juni). Sisa hari menuju deadline (31 Agustus): <strong><%= daysRemaining %> hari</strong>.<br>
+              Sisa beban kerja: <strong><%= remainingFasih.toLocaleString('id-ID') %> dokumen</strong>. 
+              Dengan kecepatan saat ini (<strong><%= currentSpeedText %> dok/hari</strong>), 
+              <% if (currentSpeed === 0) { %>
+                pendataan belum merealisasikan dokumen FASIH sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.
+              <% } else { %>
+                pendataan secara global diprediksi akan menyelesaikan sisa dokumen dalam waktu sekitar <strong><%= Math.ceil(estDaysToFinish) %> hari</strong>.
+              <% } %>
+              
+              <% if (isOfftrack) { %>
+                <div style="margin-top: 8px; padding: 8px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--accent-red); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
+                  <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red); font-size: 13px; margin-top: 1px;"></i>
+                  <div><strong>Off-Track:</strong> Pendataan secara global diprediksi terlambat/tidak selesai tepat waktu. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeed.toFixed(2) %> dok/hari</strong> agar selesai sesuai target pada 31 Agustus 2026.</div>
+                </div>
+              <% } else { %>
+                <div style="margin-top: 8px; padding: 8px; background: rgba(34, 197, 94, 0.08); border-left: 3px solid var(--accent-green); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
+                  <i class="bi bi-check-circle-fill" style="color: var(--accent-green); font-size: 13px; margin-top: 1px;"></i>
+                  <div><strong>On-Track:</strong> Kecepatan secara global sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum 31 Agustus 2026).</div>
+                </div>
+              <% } %>
+            <% } %>
+          </div>
+        </div>
+
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); margin-bottom: 20px;">
             <div>
               <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Capaian</div>
