@@ -6,6 +6,12 @@
   <title><%= typeof title !== 'undefined' ? title + ' — ' : '' %>Dashboard SE2026 PPU</title>
   <meta name="description" content="Dashboard Monitoring Sensus Ekonomi 2026 Kabupaten Penajam Paser Utara">
   <link rel="icon" type="image/png" href="/logo-mark.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#f97316">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SE2026 PPU">
+  <link rel="apple-touch-icon" href="/logo-mark.png">
   <% if (typeof activePage === 'undefined') { activePage = ''; } %>
   <% if (typeof appVersion === 'undefined') { appVersion = ''; } %>
   <% if (typeof settings === 'undefined') { settings = {}; } %>
@@ -2345,6 +2351,15 @@
       const url = (e.state && e.state.url) ? e.state.url : window.location.pathname + window.location.search;
       loadPage(url, false);
     });
+
+    // Register Service Worker for PWA support
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((reg) => console.log('Service Worker registered successfully:', reg.scope))
+          .catch((err) => console.error('Service Worker registration failed:', err));
+      });
+    }
   });
 </script>
 <%- typeof scripts !== 'undefined' ? scripts : '' %>
