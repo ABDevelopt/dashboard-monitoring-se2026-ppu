@@ -10,10 +10,11 @@
 <div class="fade-in">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <% if (!uploadId) { %>
-    <div class="card empty-state text-center">
-      <div class="empty-state-icon"><i class="bi bi-bar-chart-steps"></i></div>
-      <div class="empty-state-title">Belum Ada Data Terupload</div>
-      <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/upload">Upload Data</a>.</div>
+    <div class="card empty-state">
+      <div class="empty-state-icon"><i class="bi bi-person-vcard"></i></div>
+      <div class="empty-state-title">Belum Ada Data Petugas</div>
+      <div class="empty-state-text">Upload file Excel untuk mulai memantau performa dan progres setiap Petugas Cacah Lapangan (PCL).</div>
+      <a href="/upload" class="empty-state-action"><i class="bi bi-cloud-arrow-up-fill"></i> Upload Data Sekarang</a>
     </div>
   <% } else { %>
     <div id="ajax-container">

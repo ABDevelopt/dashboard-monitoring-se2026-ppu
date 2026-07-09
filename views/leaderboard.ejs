@@ -1,9 +1,10 @@
 <div class="fade-in">
   <% if (!uploadId) { %>
-    <div class="card empty-state text-center">
-      <div class="empty-state-icon"><i class="bi bi-bar-chart-steps"></i></div>
-      <div class="empty-state-title">Belum Ada Data Terupload</div>
-      <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="/upload">Upload Data</a>.</div>
+    <div class="card empty-state">
+      <div class="empty-state-icon"><i class="bi bi-trophy"></i></div>
+      <div class="empty-state-title">Belum Ada Data Leaderboard</div>
+      <div class="empty-state-text">Upload file Excel untuk mulai melihat peringkat dan performa terbaik setiap petugas lapangan.</div>
+      <a href="/upload" class="empty-state-action"><i class="bi bi-cloud-arrow-up-fill"></i> Upload Data Sekarang</a>
     </div>
   <% } else { %>
     
