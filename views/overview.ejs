@@ -171,43 +171,39 @@
             <i class="bi bi-speedometer2" style="font-size: 14px;"></i> Analisis Kecepatan & Sisa Waktu Kabupaten
           </div>
           
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;">
-            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
-              <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Kecepatan Saat Ini</div>
-              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-top: 2px;"><%= currentSpeedText %> <span style="font-size: 8px; font-weight: 500; color: var(--text-muted);">dok/hari</span></div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-bottom: 12px;">
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 500;">Kecepatan</div>
+              <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-top: 2px;"><%= currentSpeedText %> <span style="font-size: 8px; font-weight: 500; color: var(--text-muted);">dok/hari</span></div>
             </div>
-            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
-              <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Status Target</div>
-              <div style="font-size: 12px; font-weight: 700; margin-top: 4px;">
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 500; margin-bottom: 2px;">Status</div>
+              <div>
                 <% if (remainingFasih === 0) { %>
-                  <span class="badge badge-green" style="font-size: 9px; padding: 2px 6px;">Selesai</span>
+                  <span class="badge badge-green" style="font-size: 8px; padding: 1px 4px;">Selesai</span>
                 <% } else if (isOfftrack) { %>
-                  <span class="badge badge-red" style="font-size: 9px; padding: 2px 6px;"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
+                  <span class="badge badge-red" style="font-size: 8px; padding: 1px 4px;"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
                 <% } else { %>
-                  <span class="badge badge-green" style="font-size: 9px; padding: 2px 6px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
+                  <span class="badge badge-green" style="font-size: 8px; padding: 1px 4px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
                 <% } %>
               </div>
             </div>
-            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
-              <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Prediksi Capaian</div>
-              <div style="font-size: 14px; font-weight: 700; color: <%= projectedPctVal < 40 ? 'var(--accent-red)' : (projectedPctVal >= 100 ? 'var(--accent-green)' : 'var(--text-primary)') %>; margin-top: 2px;">
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 500;">Prediksi Capaian</div>
+              <div style="font-size: 13px; font-weight: 700; color: <%= projectedPctVal < 40 ? 'var(--accent-red)' : (projectedPctVal >= 100 ? 'var(--accent-green)' : 'var(--text-primary)') %>; margin-top: 2px;">
                 <%= projectedPctVal.toFixed(1) %>%
               </div>
             </div>
-          </div>
-
-          <!-- Estimasi Tanggal Selesai -->
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px;">
-            <div style="background: rgba(124, 58, 237, 0.04); border: 1px solid rgba(124, 58, 237, 0.15); border-radius: 8px; padding: 8px; text-align: center;">
-              <div style="font-size: 9px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Perkiraan Selesai 40%</div>
-              <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-top: 2px;">
-                <i class="bi bi-calendar-check" style="color: var(--accent-purple); margin-right: 4px;"></i><%= estDate40Text %>
+            <div style="background: rgba(124, 58, 237, 0.03); border: 1px solid rgba(124, 58, 237, 0.12); border-radius: 8px; padding: 6px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 500;">Selesai 40%</div>
+              <div style="font-size: 11px; font-weight: 700; color: var(--text-primary); margin-top: 2px; white-space: nowrap;">
+                <i class="bi bi-calendar-check" style="color: var(--accent-purple); font-size: 10px; margin-right: 2px;"></i><%= estDate40Text %>
               </div>
             </div>
-            <div style="background: rgba(34, 197, 94, 0.04); border: 1px solid rgba(34, 197, 94, 0.15); border-radius: 8px; padding: 8px; text-align: center;">
-              <div style="font-size: 9px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Perkiraan Selesai 100%</div>
-              <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-top: 2px;">
-                <i class="bi bi-calendar-check-fill" style="color: var(--accent-green); margin-right: 4px;"></i><%= estDate100Text %>
+            <div style="background: rgba(34, 197, 94, 0.03); border: 1px solid rgba(34, 197, 94, 0.12); border-radius: 8px; padding: 6px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 500;">Selesai 100%</div>
+              <div style="font-size: 11px; font-weight: 700; color: var(--text-primary); margin-top: 2px; white-space: nowrap;">
+                <i class="bi bi-calendar-check-fill" style="color: var(--accent-green); font-size: 10px; margin-right: 2px;"></i><%= estDate100Text %>
               </div>
             </div>
           </div>
