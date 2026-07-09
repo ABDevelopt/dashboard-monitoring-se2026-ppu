@@ -367,7 +367,7 @@
                         <% } else if (isOfftrack) { %>
                           <span class="badge badge-red" style="font-size: 10px; padding: 3px 8px;"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
                         <% } else { %>
-                          <span class="badge badge-blue" style="font-size: 10px; padding: 3px 8px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
+                          <span class="badge badge-green" style="font-size: 10px; padding: 3px 8px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
                         <% } %>
                       </div>
                     </div>
@@ -523,7 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
       
-      const resetBtn = document.querySelector('a[href="/pcl"]');
+      const resetBtn = container.querySelector('a[href="/pcl"]');
       if (resetBtn) {
         resetBtn.addEventListener('click', (e) => {
           e.preventDefault();
