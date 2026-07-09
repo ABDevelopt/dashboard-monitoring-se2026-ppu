@@ -77,7 +77,40 @@
                 <th>Desa</th>
                 <th>Wilayah Kerja SLS</th>
                 <% recentUploads.forEach(u => { %>
-                  <th class="text-right" style="width: 100px;"><%= new Date(u.tanggal).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) %></th>
+                  <th class="text-right" style="width: 110px; vertical-align: top;">
+                    <div style="font-weight: 700;"><%= new Date(u.tanggal).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) %></div>
+                    <% if (u.weather) { %>
+                      <div style="font-size: 10px; font-weight: 500; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; justify-content: flex-end; gap: 4px;" class="weather-th-badge">
+                        <% 
+                          let iconHTML = '';
+                          let desc = '';
+                          switch (u.weather.code) {
+                            case 0:
+                              iconHTML = '<i class="bi bi-sun-fill" style="color: #fbbf24;" title="Cerah"></i>'; break;
+                            case 1:
+                            case 2:
+                              iconHTML = '<i class="bi bi-cloud-sun-fill" style="color: #f59e0b;" title="Cerah Berawan"></i>'; break;
+                            case 3:
+                              iconHTML = '<i class="bi bi-cloud-fill" style="color: #94a3b8;" title="Berawan"></i>'; break;
+                            case 45: case 48:
+                              iconHTML = '<i class="bi bi-cloud-fog2-fill" style="color: #cbd5e1;" title="Kabut"></i>'; break;
+                            case 51: case 53: case 55: case 56: case 57:
+                              iconHTML = '<i class="bi bi-cloud-drizzle-fill" style="color: #60a5fa;" title="Gerimis"></i>'; break;
+                            case 61: case 63:
+                              iconHTML = '<i class="bi bi-cloud-rain-fill" style="color: #3b82f6;" title="Hujan Ringan"></i>'; break;
+                            case 65: case 80: case 81: case 82:
+                              iconHTML = '<i class="bi bi-cloud-rain-heavy-fill" style="color: #2563eb;" title="Hujan"></i>'; break;
+                            case 95: case 96: case 99:
+                              iconHTML = '<i class="bi bi-cloud-lightning-rain-fill" style="color: #ef4444;" title="Hujan Badai"></i>'; break;
+                            default:
+                              iconHTML = '<i class="bi bi-cloud-sun-fill" style="color: #f59e0b;" title="Cerah Berawan"></i>';
+                          }
+                        %>
+                        <%- iconHTML %>
+                        <span style="font-size: 9px;"><%= Math.round(u.weather.temp) %>°C</span>
+                      </div>
+                    <% } %>
+                  </th>
                 <% }) %>
               </tr>
             </thead>

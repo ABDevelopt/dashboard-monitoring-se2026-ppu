@@ -17,6 +17,13 @@ router.get('/', (req, res) => {
   `).all();
   recentUploads.reverse(); // Chronological order (oldest to newest)
 
+  // Attach weather details to each upload day
+  recentUploads.forEach(u => {
+    const weather = getDb().prepare('SELECT temp, code, humidity FROM weather_history WHERE tanggal = ?').get(u.tanggal);
+    u.weather = weather || null;
+  });
+
+
   let harianStats = [];
   if (uploadId && recentUploads.length > 0) {
     let selectParts = [];

@@ -274,6 +274,39 @@ function createBarChart(canvasId, labels, dataSelesai, dataTotal, title = '') {
   return chart;
 }
 
+// ===== TOOLTIP WEATHER HELPERS =====
+function getWeatherTooltipFooter(trenData, index) {
+  const d = trenData[index];
+  if (d && d.weather_temp !== undefined && d.weather_temp !== null) {
+    let desc = '';
+    switch (d.weather_code) {
+      case 0: desc = 'Cerah'; break;
+      case 1:
+      case 2: desc = 'Cerah Berawan'; break;
+      case 3: desc = 'Berawan'; break;
+      case 45:
+      case 48: desc = 'Kabut'; break;
+      case 51:
+      case 53:
+      case 55:
+      case 56:
+      case 57: desc = 'Gerimis'; break;
+      case 61:
+      case 63: desc = 'Hujan Ringan'; break;
+      case 65:
+      case 80:
+      case 81:
+      case 82: desc = 'Hujan'; break;
+      case 95:
+      case 96:
+      case 99: desc = 'Hujan Badai'; break;
+      default: desc = 'Cerah Berawan';
+    }
+    return `Cuaca: ${desc} (${Math.round(d.weather_temp)}°C, RH: ${d.weather_humidity}%)`;
+  }
+  return '';
+}
+
 // ===== LINE CHART (Tren) =====
 function createTrenChart(canvasId, trenData) {
   const ctx = document.getElementById(canvasId);
@@ -326,6 +359,12 @@ function createTrenChart(canvasId, trenData) {
           bodyColor: theme.text,
           mode: 'index',
           intersect: false,
+          callbacks: {
+            footer: (tooltipItems) => {
+              const index = tooltipItems[0].dataIndex;
+              return getWeatherTooltipFooter(trenData, index);
+            }
+          }
         }
       },
       scales: {
@@ -342,6 +381,7 @@ function createTrenChart(canvasId, trenData) {
   window.activeCharts.push(chart);
   return chart;
 }
+
 
 // ===== LINE CHART (Fasih Tren) =====
 function createFasihTrenChart(canvasId, trenData) {
@@ -415,6 +455,12 @@ function createFasihTrenChart(canvasId, trenData) {
           bodyColor: theme.text,
           mode: 'index',
           intersect: false,
+          callbacks: {
+            footer: (tooltipItems) => {
+              const index = tooltipItems[0].dataIndex;
+              return getWeatherTooltipFooter(trenData, index);
+            }
+          }
         }
       },
       scales: {
@@ -557,7 +603,7 @@ function createDailyBarChart(canvasId, labels, data, title = '', color = '#7c3ae
 }
 
 // ===== DAILY INCREMENT STATUS BAR CHART =====
-function createDailyFasihStatusChart(canvasId, labels, datasetsData, title = '') {
+function createDailyFasihStatusChart(canvasId, labels, datasetsData, title = '', rawTrenData = []) {
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
   const theme = getThemeColors();
@@ -609,7 +655,12 @@ function createDailyFasihStatusChart(canvasId, labels, datasetsData, title = '')
           titleColor: theme.title,
           bodyColor: theme.text,
           callbacks: {
-            label: ctx => ` ${ctx.dataset.label}: +${ctx.parsed.y.toLocaleString('id-ID')} dokumen`
+            label: ctx => ` ${ctx.dataset.label}: +${ctx.parsed.y.toLocaleString('id-ID')} dokumen`,
+            footer: (tooltipItems) => {
+              if (!rawTrenData || !rawTrenData.length) return '';
+              const index = tooltipItems[0].dataIndex;
+              return getWeatherTooltipFooter(rawTrenData, index);
+            }
           }
         }
       },

@@ -438,13 +438,18 @@ function getTrenHarian() {
       SUM(COALESCE(s.draft_total, 0)) AS draft_total,
       SUM(COALESCE(s.submitted_total, 0)) AS submitted_total,
       SUM(COALESCE(s.approved_total, 0)) AS approved_total,
-      SUM(COALESCE(s.rejected_total, 0)) AS rejected_total
+      SUM(COALESCE(s.rejected_total, 0)) AS rejected_total,
+      w.temp AS weather_temp,
+      w.code AS weather_code,
+      w.humidity AS weather_humidity
     FROM uploads u
     LEFT JOIN summary_cache s ON s.upload_id = u.id
+    LEFT JOIN weather_history w ON w.tanggal = u.tanggal
     GROUP BY u.id
     ORDER BY u.tanggal ASC
   `).all();
 }
+
 
 // Overview summary
 function getOverviewSummary(uploadId) {
