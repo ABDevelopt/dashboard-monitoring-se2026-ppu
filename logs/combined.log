@@ -36,3 +36,7 @@
 {"level":"info","message":"✅ Master SubSLS already populated: 1042 records (from DB)","timestamp":"2026-07-10 14:00:48"}
 {"level":"info","message":"🚀 Dashboard SE2026 PPU berjalan di http://localhost:3000","timestamp":"2026-07-10 14:00:48"}
 {"level":"info","message":"📅 10/7/2026, 14.00.48","timestamp":"2026-07-10 14:00:48"}
+{"level":"warn","message":"Sentry DSN not found. Sentry error monitoring is disabled.","timestamp":"2026-07-10 14:42:08"}
+{"level":"info","message":"✅ Master SubSLS already populated: 1042 records (from DB)","timestamp":"2026-07-10 14:42:11"}
+{"level":"info","message":"🚀 Dashboard SE2026 PPU berjalan di http://localhost:3000","timestamp":"2026-07-10 14:42:11"}
+{"level":"info","message":"📅 10/7/2026, 14.42.11","timestamp":"2026-07-10 14:42:11"}
