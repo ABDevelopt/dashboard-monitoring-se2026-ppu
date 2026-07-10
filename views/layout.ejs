@@ -92,6 +92,206 @@
 <!-- SIDEBAR OVERLAY -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+<!-- MOBILE MENU SHEET (Bottom Sheet, mobile only) -->
+<div class="mobile-menu-backdrop" id="mobileMenuBackdrop" aria-hidden="true"></div>
+<div class="mobile-menu-sheet" id="mobileMenuSheet" role="dialog" aria-modal="true" aria-label="Menu Navigasi">
+  <!-- Drag handle -->
+  <div class="mobile-menu-handle"></div>
+
+  <!-- Sheet Header -->
+  <div class="mobile-menu-header">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <img src="/logo-horizontal.png" alt="SE2026" class="logo-light" style="height: 24px; object-fit: contain;">
+      <img src="/logo-horizontal-dark.png" alt="SE2026" class="logo-dark" style="height: 24px; object-fit: contain;">
+    </div>
+    <button class="mobile-menu-close" id="mobileMenuClose" aria-label="Tutup Menu">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="mobile-menu-body">
+
+    <!-- Section: Utama -->
+    <div class="mobile-menu-section">
+      <div class="mobile-menu-section-label">Utama</div>
+      <div class="mobile-menu-grid">
+        <a href="/" class="mobile-menu-card <%= activePage === 'overview' ? 'active' : '' %>">
+          <i class="bi bi-house-door"></i>
+          <span>Overview</span>
+        </a>
+        <% if (typeof settings !== 'undefined' && settings.page_map === '1') { %>
+        <a href="/map" class="mobile-menu-card <%= activePage === 'map' ? 'active' : '' %>">
+          <i class="bi bi-map"></i>
+          <span>Peta Progres</span>
+        </a>
+        <% } %>
+        <% if (typeof settings !== 'undefined' && settings.page_aiagent === '1') { %>
+        <a href="/agent" class="mobile-menu-card <%= activePage === 'agent' ? 'active' : '' %>">
+          <i class="bi bi-robot"></i>
+          <span>Asisten AI</span>
+        </a>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Section: Drilldown Petugas -->
+    <% if (typeof settings !== 'undefined' && (settings.page_korlap === '1' || settings.page_pml === '1' || settings.page_pcl === '1')) { %>
+    <div class="mobile-menu-section">
+      <div class="mobile-menu-section-label">Drilldown Petugas</div>
+      <div class="mobile-menu-grid">
+        <% if (settings.page_korlap === '1') { %>
+        <a href="/korlap" class="mobile-menu-card <%= activePage === 'korlap' ? 'active' : '' %>">
+          <i class="bi bi-person-workspace"></i>
+          <span>Per Korlap</span>
+        </a>
+        <% } %>
+        <% if (settings.page_pml === '1') { %>
+        <a href="/pml" class="mobile-menu-card <%= activePage === 'pml' ? 'active' : '' %>">
+          <i class="bi bi-clipboard2-data"></i>
+          <span>Per PML</span>
+        </a>
+        <% } %>
+        <% if (settings.page_pcl === '1') { %>
+        <a href="/pcl" class="mobile-menu-card <%= activePage === 'pcl' ? 'active' : '' %>">
+          <i class="bi bi-person-gear"></i>
+          <span>Per PCL</span>
+        </a>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Section: Evaluasi & Kualitas -->
+    <% if (typeof settings !== 'undefined' && (settings.page_earlywarning === '1' || settings.page_deteksianomali === '1')) { %>
+    <div class="mobile-menu-section">
+      <div class="mobile-menu-section-label">Evaluasi &amp; Kualitas</div>
+      <div class="mobile-menu-grid">
+        <% if (settings.page_earlywarning === '1') { %>
+        <a href="/early-warning" class="mobile-menu-card <%= activePage === 'earlywarning' ? 'active' : '' %>">
+          <i class="bi bi-exclamation-octagon"></i>
+          <span>Early Warning</span>
+        </a>
+        <% } %>
+        <% if (settings.page_deteksianomali === '1') { %>
+        <a href="/deteksi-anomali" class="mobile-menu-card <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
+          <i class="bi bi-shield-exclamation"></i>
+          <span>Deteksi Anomali</span>
+        </a>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Section: Analisis Kinerja -->
+    <% if (typeof settings !== 'undefined' && (settings.page_performa === '1' || settings.page_leaderboard === '1' || settings.page_performatrendah === '1')) { %>
+    <div class="mobile-menu-section">
+      <div class="mobile-menu-section-label">Analisis Kinerja</div>
+      <div class="mobile-menu-grid">
+        <% if (settings.page_performa === '1') { %>
+        <a href="/performa" class="mobile-menu-card <%= activePage === 'performa' ? 'active' : '' %>">
+          <i class="bi bi-speedometer2"></i>
+          <span>Performa</span>
+        </a>
+        <% } %>
+        <% if (settings.page_performa === '1') { %>
+        <a href="/harian" class="mobile-menu-card <%= activePage === 'harian' ? 'active' : '' %>">
+          <i class="bi bi-calendar3"></i>
+          <span>Harian</span>
+        </a>
+        <% } %>
+        <% if (settings.page_leaderboard === '1') { %>
+        <a href="/leaderboard" class="mobile-menu-card <%= activePage === 'leaderboard' ? 'active' : '' %>">
+          <i class="bi bi-trophy"></i>
+          <span>Terbaik</span>
+        </a>
+        <% } %>
+        <% if (settings.page_performatrendah === '1') { %>
+        <a href="/performa-terendah" class="mobile-menu-card <%= activePage === 'performa-terendah' ? 'active' : '' %>">
+          <i class="bi bi-graph-down"></i>
+          <span>Terendah</span>
+        </a>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Section: Drilldown Wilayah -->
+    <% if (typeof settings !== 'undefined' && (settings.page_kecamatan === '1' || settings.page_subsls === '1')) { %>
+    <div class="mobile-menu-section">
+      <div class="mobile-menu-section-label">Drilldown Wilayah</div>
+      <div class="mobile-menu-grid">
+        <% if (settings.page_kecamatan === '1') { %>
+        <a href="/kecamatan" class="mobile-menu-card <%= activePage === 'kecamatan' ? 'active' : '' %>">
+          <i class="bi bi-geo-alt"></i>
+          <span>Per Kecamatan</span>
+        </a>
+        <% } %>
+        <% if (settings.page_subsls === '1') { %>
+        <a href="/subsls" class="mobile-menu-card <%= activePage === 'subsls' ? 'active' : '' %>">
+          <i class="bi bi-box-seam"></i>
+          <span>Per SubSLS</span>
+        </a>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Section: Pendataan Khusus -->
+    <div class="mobile-menu-section">
+      <div class="mobile-menu-section-label">Pendataan Khusus</div>
+      <div class="mobile-menu-grid">
+        <a href="/kipp" class="mobile-menu-card <%= activePage === 'kipp' ? 'active' : '' %>">
+          <i class="bi bi-building"></i>
+          <span>Wilayah KIPP</span>
+        </a>
+        <a href="/pbi" class="mobile-menu-card <%= activePage === 'pbi' ? 'active' : '' %>">
+          <i class="bi bi-heart-pulse"></i>
+          <span>Pendataan PBI</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Section: Lainnya -->
+    <div class="mobile-menu-section">
+      <div class="mobile-menu-section-label">Lainnya</div>
+      <div class="mobile-menu-grid">
+        <a href="/help" class="mobile-menu-card <%= activePage === 'help' ? 'active' : '' %>">
+          <i class="bi bi-life-preserver"></i>
+          <span>Panduan</span>
+        </a>
+        <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+        <a href="/admin/upload" class="mobile-menu-card <%= activePage === 'upload' ? 'active' : '' %>">
+          <i class="bi bi-upload"></i>
+          <span>Upload Data</span>
+        </a>
+        <a href="/admin/settings" class="mobile-menu-card <%= activePage === 'settings' ? 'active' : '' %>">
+          <i class="bi bi-sliders"></i>
+          <span>Pengaturan</span>
+        </a>
+        <% } %>
+        <% if (typeof user !== 'undefined' && user) { %>
+        <a href="/logout" class="mobile-menu-card mobile-menu-card--logout">
+          <i class="bi bi-box-arrow-right"></i>
+          <span>Logout</span>
+        </a>
+        <% } else { %>
+        <a href="/login" class="mobile-menu-card">
+          <i class="bi bi-box-arrow-in-right"></i>
+          <span>Login</span>
+        </a>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Version info -->
+    <div class="mobile-menu-version">
+      SE2026 · PPU · v<%= packageVersion %> &nbsp;·&nbsp; © BPS Penajam Paser Utara
+    </div>
+
+  </div>
+</div>
+
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar" aria-label="Sidebar Menu">
   <button class="btn-close-sidebar" id="sidebarClose" aria-label="Tutup Sidebar"><i class="bi bi-x-lg"></i></button>
@@ -1323,6 +1523,57 @@
       }
     }
 
+    // ── Mobile Menu Sheet helpers ──────────────────────────────────────────
+    function openMobileMenuSheet() {
+      const sheet = document.getElementById('mobileMenuSheet');
+      const backdrop = document.getElementById('mobileMenuBackdrop');
+      const menuBtn = document.getElementById('bottomNavMenuBtn');
+      if (!sheet || !backdrop) return;
+      sheet.classList.add('open');
+      backdrop.classList.add('open');
+      document.body.classList.add('mobile-menu-open');
+      if (menuBtn) {
+        menuBtn.querySelector('i').className = 'bi bi-grid-fill';
+        menuBtn.classList.add('active');
+      }
+    }
+
+    function closeMobileMenuSheet() {
+      const sheet = document.getElementById('mobileMenuSheet');
+      const backdrop = document.getElementById('mobileMenuBackdrop');
+      const menuBtn = document.getElementById('bottomNavMenuBtn');
+      if (!sheet || !backdrop) return;
+      sheet.classList.remove('open');
+      backdrop.classList.remove('open');
+      document.body.classList.remove('mobile-menu-open');
+      if (menuBtn) {
+        menuBtn.querySelector('i').className = 'bi bi-grid';
+        menuBtn.classList.remove('active');
+      }
+    }
+
+    // Close mobile menu sheet on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeMobileMenuSheet();
+      }
+    });
+
+    // Close mobile menu sheet when any nav link inside it is tapped (PJAX will handle navigation)
+    const mobileMenuSheetEl = document.getElementById('mobileMenuSheet');
+    if (mobileMenuSheetEl) {
+      mobileMenuSheetEl.addEventListener('click', (e) => {
+        const card = e.target.closest('.mobile-menu-card');
+        if (card && !e.defaultPrevented) {
+          // Delay close until after PJAX intercepts the navigation
+          setTimeout(closeMobileMenuSheet, 80);
+        }
+      });
+    }
+
+    // Expose to global scope so PJAX loadPage can call it
+    window.closeMobileMenuSheet = closeMobileMenuSheet;
+
     // Event delegation on document for sidebar toggling and theme toggling
     // This ensures buttons remain clickable even after PJAX page swaps them
     document.addEventListener('click', (e) => {
@@ -1336,7 +1587,10 @@
         const overlay = document.getElementById('sidebarOverlay');
         const mainToggleBtn = document.getElementById('sidebarToggle');
         
-        if (sidebar && overlay) {
+        if (window.innerWidth <= 768 && bottomNavMenuBtn) {
+          // Mobile: open the menu card sheet instead of sidebar drawer
+          openMobileMenuSheet();
+        } else if (sidebar && overlay) {
           if (window.innerWidth > 768 && toggleBtn) {
             // Desktop collapse logic
             document.body.classList.toggle('sidebar-collapsed');
@@ -1344,12 +1598,20 @@
             localStorage.setItem('sidebar-collapsed', isCollapsed);
             toggleBtn.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
           } else {
-            // Mobile slide-out overlay logic
+            // Mobile sidebar toggle (hamburger in topbar)
             sidebar.classList.add('active');
             overlay.classList.add('active');
             if (mainToggleBtn) mainToggleBtn.setAttribute('aria-expanded', 'true');
           }
         }
+        return;
+      }
+
+      // 1b. Mobile menu sheet close button
+      const mobileMenuCloseBtn = e.target.closest('#mobileMenuClose');
+      const mobileMenuBackdropEl = e.target.closest('#mobileMenuBackdrop');
+      if (mobileMenuCloseBtn || mobileMenuBackdropEl) {
+        closeMobileMenuSheet();
         return;
       }
 
@@ -1368,6 +1630,7 @@
         }
         return;
       }
+
 
       // 3. Theme Toggle Button Click
       const themeToggleBtn = e.target.closest('#themeToggle');
@@ -2853,6 +3116,11 @@
         if (sidebar && sidebar.classList.contains('active')) {
           sidebar.classList.remove('active');
           if (overlay) overlay.classList.remove('active');
+        }
+
+        // Close mobile menu sheet if open (after PJAX navigation)
+        if (typeof window.closeMobileMenuSheet === 'function') {
+          window.closeMobileMenuSheet();
         }
 
         // Execute script elements inside the new content sequentially

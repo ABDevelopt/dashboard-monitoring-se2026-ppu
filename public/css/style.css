@@ -2510,3 +2510,212 @@ body.light-mode .skeleton-block {
   background: rgba(239, 68, 68, 0.1);
 }
 
+/* =========================================================
+   MOBILE MENU SHEET (Bottom Sheet)
+   Hidden by default — only shown at max-width: 768px
+   ========================================================= */
+
+/* Backdrop */
+.mobile-menu-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 3100;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.mobile-menu-backdrop.open {
+  opacity: 1;
+}
+
+/* Bottom Sheet container */
+.mobile-menu-sheet {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3200;
+  max-height: 88vh;
+  border-radius: 20px 20px 0 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.4);
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.mobile-menu-sheet.open {
+  transform: translateY(0);
+}
+
+/* Drag handle bar */
+.mobile-menu-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 99px;
+  margin: 10px auto 0;
+  flex-shrink: 0;
+}
+
+/* Sheet header */
+.mobile-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.mobile-menu-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s ease;
+}
+
+.mobile-menu-close:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+/* Scrollable body */
+.mobile-menu-body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  padding: 12px 14px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Section group */
+.mobile-menu-section {
+  margin-bottom: 14px;
+}
+
+.mobile-menu-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  padding-left: 2px;
+}
+
+/* Grid of nav cards */
+.mobile-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+/* Individual nav card */
+.mobile-menu-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 6px 10px;
+  border-radius: 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-menu-card i {
+  font-size: 20px;
+  display: block;
+  transition: transform 0.18s ease;
+}
+
+.mobile-menu-card:hover,
+.mobile-menu-card:focus {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-hover, var(--border));
+}
+
+.mobile-menu-card:active {
+  transform: scale(0.93);
+}
+
+/* Active (current page) state */
+.mobile-menu-card.active {
+  background: rgba(6, 182, 212, 0.1);
+  border-color: rgba(6, 182, 212, 0.4);
+  color: var(--accent-cyan);
+  box-shadow: 0 2px 10px rgba(6, 182, 212, 0.12);
+}
+
+.mobile-menu-card.active i {
+  color: var(--accent-cyan);
+}
+
+/* Logout card */
+.mobile-menu-card--logout {
+  color: var(--accent-red, #ef4444);
+  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.mobile-menu-card--logout:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--accent-red, #ef4444);
+}
+
+/* Version footer */
+.mobile-menu-version {
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  padding: 8px 0 2px;
+  border-top: 1px solid var(--border);
+}
+
+/* Only activate mobile-menu on mobile */
+@media (max-width: 768px) {
+  .mobile-menu-backdrop,
+  .mobile-menu-sheet {
+    display: flex;
+  }
+
+  /* Prevent body scroll when sheet is open */
+  body.mobile-menu-open {
+    overflow: hidden;
+  }
+}
+
+/* 3-col grid for smaller screens */
+@media (max-width: 380px) {
+  .mobile-menu-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
