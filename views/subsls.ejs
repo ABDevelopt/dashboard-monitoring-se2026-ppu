@@ -138,7 +138,14 @@
                 <tr>
                   <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                   <td class="td-code hide-md"><%= row.kode %></td>
-                  <td class="td-primary" style="font-weight: 600;"><%= row.nama_sls %></td>
+                  <td class="td-primary" style="font-weight: 600;">
+                    <div style="display: inline-flex; align-items: center; gap: 6px; width: 100%;">
+                      <span><%= row.nama_sls %></span>
+                      <button class="pin-btn" data-type="sls" data-name="<%= row.nama_sls %> (<%= row.desa %>)" data-href="/subsls?kode=<%= row.kode %>" title="Sematkan SLS ke Favorit" onclick="window.togglePin('sls', '<%= row.nama_sls %> (<%= row.desa %>)', '/subsls?kode=<%= row.kode %>')" style="font-size: 11px; padding: 2px;">
+                        <i class="bi bi-star"></i>
+                      </button>
+                    </div>
+                  </td>
                   <td>
                     <div style="font-weight: 600; font-size: 12px;"><%= row.kecamatan %></div>
                     <div style="font-size: 11px; color: var(--text-muted);"><%= row.desa %></div>

@@ -1,3 +1,20 @@
+// Load environment variables from .env
+require('dotenv').config();
+
+const Sentry = require("@sentry/node");
+const logger = require('./services/logger');
+
+// Initialize Sentry before importing Express for auto-instrumentation
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    tracesSampleRate: 1.0,
+  });
+  logger.info('Sentry error monitoring initialized.');
+} else {
+  logger.warn('Sentry DSN not found. Sentry error monitoring is disabled.');
+}
+
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
@@ -45,6 +62,7 @@ app.use((req, res, next) => {
   res.locals.activePage = ''; // default value
   res.locals.appVersion = APP_VERSION;
   res.locals.packageVersion = require('./package.json').version;
+  res.locals.sentryDsn = process.env.SENTRY_DSN || '';
 
   // Inject upload info globally
   const latest = getLatestUpload();
@@ -133,6 +151,7 @@ app.use('/harian', require('./routes/harian'));
 app.use('/deteksi-anomali', require('./routes/deteksianomali'));
 app.use('/agent', require('./routes/agent'));
 app.use('/api', require('./routes/api'));
+app.use('/api/search-global', require('./routes/search'));
 
 // Help / FAQ page (public, no auth required)
 app.get('/help', (req, res) => {
@@ -173,9 +192,14 @@ app.use((req, res) => {
   res.status(404).render('error', { title: '404 - Halaman Tidak Ditemukan', message: 'Halaman yang Anda cari tidak ada.' });
 });
 
+// Sentry error handler (must be registered before any other error middleware)
+if (process.env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
+
 // Error handler
 app.use((err, req, res, next) => {
-  console.error(err);
+  logger.error('Unhandled request error:', err);
   res.status(500).render('error', { title: 'Server Error', message: err.message });
 });
 
@@ -187,17 +211,17 @@ function init() {
     if (rowCount === 0) {
       const masterPath = path.join(__dirname, 'kelompok_populasi_pml_pcl_korlap_muatan.json');
       const count = loadMasterFromJson(masterPath);
-      console.log(`✅ Master SubSLS loaded: ${count} records (from JSON)`);
+      logger.info(`✅ Master SubSLS loaded: ${count} records (from JSON)`);
     } else {
-      console.log(`✅ Master SubSLS already populated: ${rowCount} records (from DB)`);
+      logger.info(`✅ Master SubSLS already populated: ${rowCount} records (from DB)`);
     }
   } catch (err) {
-    console.error('❌ Error loading master data:', err.message);
+    logger.error('❌ Error loading master data:', err);
   }
 
   app.listen(PORT, () => {
-    console.log(`🚀 Dashboard SE2026 PPU berjalan di http://localhost:${PORT}`);
-    console.log(`📅 ${new Date().toLocaleString('id-ID')}`);
+    logger.info(`🚀 Dashboard SE2026 PPU berjalan di http://localhost:${PORT}`);
+    logger.info(`📅 ${new Date().toLocaleString('id-ID')}`);
   });
 }
 

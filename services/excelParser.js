@@ -33,7 +33,7 @@ function loadMasterFromJson(jsonPath) {
             toTitleCase(kecNama),
             toTitleCase(desaNama),
             slsNama,
-            subsls.nama_korlap || '',
+            normalizeName(subsls.nama_korlap || ''),
             normalizeName(subsls.nama_pml || ''),
             normalizeName(subsls.nama_pcl || ''),
             subsls.total_muatan_assignment || 0,
@@ -492,7 +492,8 @@ function toInt(val) {
 
 function normalizeName(name) {
   if (!name) return '';
-  return name.trim().replace(/\s+/g, ' ');
+  const clean = name.trim().replace(/\s+/g, ' ');
+  return toTitleCase(clean);
 }
 
 function toTitleCase(str) {
@@ -572,7 +573,7 @@ function loadMasterFromExcel(filePath) {
     const kecamatan = toTitleCase(String(row[colIdx.kecamatan] || '').trim());
     const desa = toTitleCase(String(row[colIdx.desa] || '').trim());
     const nama_sls = colIdx.nama_sls !== -1 ? String(row[colIdx.nama_sls] || '').trim() : '';
-    const korlap = colIdx.korlap !== -1 ? String(row[colIdx.korlap] || '').trim() : '';
+    const korlap = colIdx.korlap !== -1 ? normalizeName(String(row[colIdx.korlap] || '')) : '';
     const pml = colIdx.pml !== -1 ? normalizeName(String(row[colIdx.pml] || '')) : '';
     const pcl = colIdx.pcl !== -1 ? normalizeName(String(row[colIdx.pcl] || '')) : '';
     const muatan = colIdx.muatan !== -1 ? toInt(row[colIdx.muatan]) : 0;

@@ -67,9 +67,9 @@
       </div>
       <div class="stat-card red" style="background: linear-gradient(135deg, var(--bg-card) 0%, rgba(239, 68, 68, 0.05) 100%);">
         <div class="stat-icon" style="color: var(--accent-red); background: rgba(239, 68, 68, 0.1);"><i class="bi bi-graph-down"></i></div>
-        <div class="stat-label">Prediksi Capaian < 40%</div>
+        <div class="stat-label">PCL Berisiko Tinggi</div>
         <div class="stat-value" style="color: var(--accent-red);"><%= (warning.lowProjectedPcl || []).length %></div>
-        <div class="stat-sub">PCL diprediksi gagal capai target 40%</div>
+        <div class="stat-sub">Prediksi < 40% (15 Jul) / < 100% (31 Agt)</div>
       </div>
     </div>
 
@@ -229,17 +229,17 @@
       <% } %>
     </div>
 
-    <!-- PCL DENGAN PREDIKSI CAPAIAN AKHIR < 40% -->
+    <!-- PCL DENGAN PREDIKSI CAPAIAN AKHIR BERISIKO TINGGI -->
     <div class="card mt-4">
       <div class="card-header">
         <div class="card-title">
-          <span class="text-red"><i class="bi bi-graph-down"></i> PCL dengan Prediksi Capaian Akhir < 40%</span>
+          <span class="text-red"><i class="bi bi-graph-down"></i> PCL Berisiko Tinggi (Proyeksi < 40% per 15 Jul atau < 100% per 31 Agt)</span>
         </div>
         <span class="badge badge-red"><%= (warning.lowProjectedPcl || []).length %> Petugas</span>
       </div>
 
       <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
-        Daftar PCL yang berdasarkan kecepatan kerja saat ini (runrate) diprediksi akan menyelesaikan <strong>kurang dari 40% target FASIH</strong> mereka pada akhir kegiatan (31 Agustus 2026).
+        Daftar PCL yang berdasarkan kecepatan kerja saat ini (runrate) diprediksi akan menyelesaikan <strong>kurang dari 40% target FASIH pada 15 Juli 2026</strong> atau <strong>kurang dari 100% target pada akhir kegiatan (31 Agustus 2026)</strong>.
       </p>
 
       <% if (warning.lowProjectedPcl && warning.lowProjectedPcl.length > 0) { %>
@@ -257,10 +257,11 @@
                 <div class="warning-meta">
                   Kec. <strong><%= item.kecamatan %></strong> · PML: <strong><%= item.pml %></strong> · Korlap: <strong><%= item.korlap %></strong>
                 </div>
-                <div class="warning-stats">
-                  <span class="warning-stat">Target FASIH: <strong><%= item.target_fasih_total %></strong></span>
+                <div class="warning-stats" style="flex-wrap: wrap; gap: 8px;">
+                  <span class="warning-stat">Target: <strong><%= item.target_fasih_total %></strong></span>
                   <span class="warning-stat">Realisasi: <strong><%= item.selesai_sekarang %></strong></span>
-                  <span class="warning-stat text-red">Prediksi Capaian: <strong><%= item.projected_final %> dok (<%= item.projected_pct %>%)</strong></span>
+                  <span class="warning-stat text-yellow">Proyeksi 15 Jul (40%): <strong class="<%= item.projected_pct_july15 < 40 ? 'text-red' : '' %>"><%= item.projected_final_july15 %> dok (<%= item.projected_pct_july15 %>%)</strong></span>
+                  <span class="warning-stat text-red">Proyeksi 31 Agt (100%): <strong class="<%= item.projected_pct < 100 ? 'text-red' : '' %>"><%= item.projected_final %> dok (<%= item.projected_pct %>%)</strong></span>
                 </div>
                 <div class="fasih-grid-container">
                   <div class="fasih-grid-header">
@@ -287,7 +288,7 @@
                   </div>
                 </div>
                 <div class="progress-bar-wrap" style="height: 6px; margin-top: 10px;">
-                  <div class="progress-bar red" data-width="<%= item.projected_pct %>" style="width: 0%;"></div>
+                  <div class="progress-bar red" data-width="<%= Math.min(100, item.projected_pct) %>" style="width: 0%;"></div>
                 </div>
               </div>
             </div>
@@ -295,7 +296,7 @@
         </div>
       <% } else { %>
         <div class="no-data">
-          <i class="bi bi-check-circle-fill text-green" style="font-size: 18px; margin-right: 6px;"></i> Tidak ada PCL dengan prediksi capaian akhir di bawah 40%. Semua berjalan dengan baik!
+          <i class="bi bi-check-circle-fill text-green" style="font-size: 18px; margin-right: 6px;"></i> Tidak ada PCL dengan risiko keterlambatan proyeksi. Semua berjalan dengan baik!
         </div>
       <% } %>
     </div>

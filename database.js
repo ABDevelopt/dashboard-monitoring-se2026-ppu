@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const logger = require('./services/logger');
 
 const DB_PATH = path.join(__dirname, 'data', 'se2026.db');
 
@@ -46,168 +47,235 @@ function getDb() {
     db.pragma('temp_store = MEMORY');
     db.pragma('mmap_size = 134217728');
     db.pragma('foreign_keys = ON');
-    initSchema();
-    migrateSchema();
+    runMigrations();
     initSettings();
     initUsers();
   }
   return db;
 }
 
-function initSchema() {
+function runMigrations() {
+  // Ensure migrations log table exists
   db.exec(`
-    -- Tabel upload history
-    CREATE TABLE IF NOT EXISTS uploads (
+    CREATE TABLE IF NOT EXISTS schema_migrations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      filename TEXT NOT NULL,
-      stored_filename TEXT,
-      tanggal DATE NOT NULL,
-      total_subsls_terisi INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      status_filename TEXT,
-      stored_status_filename TEXT
-    );
-
-    -- Master SubSLS dari JSON (Korlap, PML, PCL, muatan)
-    CREATE TABLE IF NOT EXISTS subsls_master (
-      kode TEXT PRIMARY KEY,
-      kode_kec TEXT,
-      kecamatan TEXT,
-      desa TEXT,
-      nama_sls TEXT,
-      korlap TEXT,
-      pml TEXT,
-      pcl TEXT,
-      muatan INTEGER DEFAULT 0,
-      kode_2025 TEXT,
-      target_fasih INTEGER DEFAULT 0
-    );
-
-    -- Data progres per SubSLS per upload
-    CREATE TABLE IF NOT EXISTS progres (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      upload_id INTEGER NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
-      kode TEXT NOT NULL,
-      usaha_tidak_ditemukan INTEGER DEFAULT 0,
-      usaha_ditemukan INTEGER DEFAULT 0,
-      usaha_baru INTEGER DEFAULT 0,
-      usaha_tutup INTEGER DEFAULT 0,
-      usaha_ganda INTEGER DEFAULT 0,
-      tidak_ditemukan INTEGER DEFAULT 0,
-      ditemukan INTEGER DEFAULT 0,
-      keluarga_baru INTEGER DEFAULT 0,
-      meninggal INTEGER DEFAULT 0,
-      tidak_eligible INTEGER DEFAULT 0,
-      tidak_dapat_ditemui INTEGER DEFAULT 0,
-      rumah_tunggal INTEGER DEFAULT 0,
-      rumah_deret INTEGER DEFAULT 0,
-      rumah_susun INTEGER DEFAULT 0,
-      apartemen INTEGER DEFAULT 0,
-      lainnya INTEGER DEFAULT 0,
-      draft INTEGER DEFAULT 0,
-      submitted_by_pcl INTEGER DEFAULT 0,
-      approved INTEGER DEFAULT 0,
-      rejected INTEGER DEFAULT 0,
-      UNIQUE(upload_id, kode)
-    );
-
-     CREATE INDEX IF NOT EXISTS idx_progres_upload ON progres(upload_id);
-    CREATE INDEX IF NOT EXISTS idx_progres_kode ON progres(kode);
-    CREATE INDEX IF NOT EXISTS idx_master_kecamatan ON subsls_master(kecamatan);
-    CREATE INDEX IF NOT EXISTS idx_master_korlap ON subsls_master(korlap);
-    CREATE INDEX IF NOT EXISTS idx_master_pml ON subsls_master(pml);
-    CREATE INDEX IF NOT EXISTS idx_master_pcl ON subsls_master(pcl);
-
-    -- Tabel summary_cache untuk optimasi chatbot & fetchPageData
-    CREATE TABLE IF NOT EXISTS summary_cache (
-      upload_id INTEGER NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
-      kecamatan TEXT,
-      desa TEXT,
-      korlap TEXT,
-      pml TEXT,
-      pcl TEXT,
-      total_sls INTEGER,
-      selesai INTEGER,
-      total_muatan INTEGER,
-      muatan_selesai INTEGER,
-      usaha_total INTEGER,
-      keluarga_total INTEGER,
-      draft_total INTEGER,
-      submitted_total INTEGER,
-      approved_total INTEGER,
-      rejected_total INTEGER,
-      target_fasih_total INTEGER,
-      usaha_ditemukan INTEGER DEFAULT 0,
-      usaha_baru INTEGER DEFAULT 0,
-      ditemukan INTEGER DEFAULT 0,
-      keluarga_baru INTEGER DEFAULT 0,
-      usaha_tidak_ditemukan INTEGER DEFAULT 0,
-      tidak_ditemukan INTEGER DEFAULT 0,
-      usaha_tutup INTEGER DEFAULT 0,
-      meninggal INTEGER DEFAULT 0,
-      usaha_ganda INTEGER DEFAULT 0,
-      rumah_tunggal INTEGER DEFAULT 0,
-      rumah_deret INTEGER DEFAULT 0,
-      rumah_susun INTEGER DEFAULT 0,
-      apartemen INTEGER DEFAULT 0,
-      lainnya INTEGER DEFAULT 0,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (upload_id, pcl, desa)
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_summary_upload ON summary_cache(upload_id);
-    CREATE INDEX IF NOT EXISTS idx_summary_pcl ON summary_cache(pcl);
-
-    -- Tabel pengaturan tampilan halaman/fitur
-    CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY,
-      value TEXT
-    );
-
-    -- Tabel riwayat cuaca harian
-    CREATE TABLE IF NOT EXISTS weather_history (
-      tanggal TEXT PRIMARY KEY,
-      temp REAL,
-      code INTEGER,
-      humidity INTEGER,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      version TEXT UNIQUE NOT NULL,
+      applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
-}
 
-function migrateSchema() {
-  // Alter subsls_master to add target_fasih
-  try {
-    db.prepare('ALTER TABLE subsls_master ADD COLUMN target_fasih INTEGER DEFAULT 0').run();
-  } catch (err) {}
+  const appliedMigrations = db.prepare('SELECT version FROM schema_migrations').all().map(m => m.version);
 
-  // Alter progres to add draft, submitted_by_pcl, approved, rejected
-  const progresCols = ['draft', 'submitted_by_pcl', 'approved', 'rejected'];
-  progresCols.forEach(col => {
-    try {
-      db.prepare(`ALTER TABLE progres ADD COLUMN ${col} INTEGER DEFAULT 0`).run();
-    } catch (err) {}
+  const migrations = [
+    {
+      version: '20260710000000_init',
+      up: (db) => {
+        db.exec(`
+          -- Tabel upload history
+          CREATE TABLE IF NOT EXISTS uploads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT NOT NULL,
+            stored_filename TEXT,
+            tanggal DATE NOT NULL,
+            total_subsls_terisi INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            status_filename TEXT,
+            stored_status_filename TEXT
+          );
+
+          -- Master SubSLS dari JSON (Korlap, PML, PCL, muatan)
+          CREATE TABLE IF NOT EXISTS subsls_master (
+            kode TEXT PRIMARY KEY,
+            kode_kec TEXT,
+            kecamatan TEXT,
+            desa TEXT,
+            nama_sls TEXT,
+            korlap TEXT,
+            pml TEXT,
+            pcl TEXT,
+            muatan INTEGER DEFAULT 0,
+            kode_2025 TEXT,
+            target_fasih INTEGER DEFAULT 0
+          );
+
+          -- Data progres per SubSLS per upload
+          CREATE TABLE IF NOT EXISTS progres (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            upload_id INTEGER NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
+            kode TEXT NOT NULL,
+            usaha_tidak_ditemukan INTEGER DEFAULT 0,
+            usaha_ditemukan INTEGER DEFAULT 0,
+            usaha_baru INTEGER DEFAULT 0,
+            usaha_tutup INTEGER DEFAULT 0,
+            usaha_ganda INTEGER DEFAULT 0,
+            tidak_ditemukan INTEGER DEFAULT 0,
+            ditemukan INTEGER DEFAULT 0,
+            keluarga_baru INTEGER DEFAULT 0,
+            meninggal INTEGER DEFAULT 0,
+            tidak_eligible INTEGER DEFAULT 0,
+            tidak_dapat_ditemui INTEGER DEFAULT 0,
+            rumah_tunggal INTEGER DEFAULT 0,
+            rumah_deret INTEGER DEFAULT 0,
+            rumah_susun INTEGER DEFAULT 0,
+            apartemen INTEGER DEFAULT 0,
+            lainnya INTEGER DEFAULT 0,
+            draft INTEGER DEFAULT 0,
+            submitted_by_pcl INTEGER DEFAULT 0,
+            approved INTEGER DEFAULT 0,
+            rejected INTEGER DEFAULT 0,
+            UNIQUE(upload_id, kode)
+          );
+
+          CREATE INDEX IF NOT EXISTS idx_progres_upload ON progres(upload_id);
+          CREATE INDEX IF NOT EXISTS idx_progres_kode ON progres(kode);
+          CREATE INDEX IF NOT EXISTS idx_master_kecamatan ON subsls_master(kecamatan);
+          CREATE INDEX IF NOT EXISTS idx_master_korlap ON subsls_master(korlap);
+          CREATE INDEX IF NOT EXISTS idx_master_pml ON subsls_master(pml);
+          CREATE INDEX IF NOT EXISTS idx_master_pcl ON subsls_master(pcl);
+
+          -- Tabel summary_cache untuk optimasi chatbot & fetchPageData
+          CREATE TABLE IF NOT EXISTS summary_cache (
+            upload_id INTEGER NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
+            kecamatan TEXT,
+            desa TEXT,
+            korlap TEXT,
+            pml TEXT,
+            pcl TEXT,
+            total_sls INTEGER,
+            selesai INTEGER,
+            total_muatan INTEGER,
+            muatan_selesai INTEGER,
+            usaha_total INTEGER,
+            keluarga_total INTEGER,
+            draft_total INTEGER,
+            submitted_total INTEGER,
+            approved_total INTEGER,
+            rejected_total INTEGER,
+            target_fasih_total INTEGER,
+            usaha_ditemukan INTEGER DEFAULT 0,
+            usaha_baru INTEGER DEFAULT 0,
+            ditemukan INTEGER DEFAULT 0,
+            keluarga_baru INTEGER DEFAULT 0,
+            usaha_tidak_ditemukan INTEGER DEFAULT 0,
+            tidak_ditemukan INTEGER DEFAULT 0,
+            usaha_tutup INTEGER DEFAULT 0,
+            meninggal INTEGER DEFAULT 0,
+            usaha_ganda INTEGER DEFAULT 0,
+            rumah_tunggal INTEGER DEFAULT 0,
+            rumah_deret INTEGER DEFAULT 0,
+            rumah_susun INTEGER DEFAULT 0,
+            apartemen INTEGER DEFAULT 0,
+            lainnya INTEGER DEFAULT 0,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (upload_id, pcl, desa)
+          );
+
+          CREATE INDEX IF NOT EXISTS idx_summary_upload ON summary_cache(upload_id);
+          CREATE INDEX IF NOT EXISTS idx_summary_pcl ON summary_cache(pcl);
+
+          -- Tabel pengaturan tampilan halaman/fitur
+          CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+          );
+
+          -- Tabel riwayat cuaca harian
+          CREATE TABLE IF NOT EXISTS weather_history (
+            tanggal TEXT PRIMARY KEY,
+            temp REAL,
+            code INTEGER,
+            humidity INTEGER,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+      }
+    },
+    {
+      version: '20260710000001_add_target_fasih',
+      up: (db) => {
+        try {
+          db.prepare('ALTER TABLE subsls_master ADD COLUMN target_fasih INTEGER DEFAULT 0').run();
+        } catch (_) {}
+      }
+    },
+    {
+      version: '20260710000002_add_progres_columns',
+      up: (db) => {
+        const progresCols = ['draft', 'submitted_by_pcl', 'approved', 'rejected'];
+        progresCols.forEach(col => {
+          try {
+            db.prepare(`ALTER TABLE progres ADD COLUMN ${col} INTEGER DEFAULT 0`).run();
+          } catch (_) {}
+        });
+      }
+    },
+    {
+      version: '20260710000003_add_uploads_filenames',
+      up: (db) => {
+        const uploadsCols = ['stored_filename', 'status_filename', 'stored_status_filename'];
+        uploadsCols.forEach(col => {
+          try {
+            db.prepare(`ALTER TABLE uploads ADD COLUMN ${col} TEXT`).run();
+          } catch (_) {}
+        });
+      }
+    },
+    {
+      version: '20260710000004_normalize_officer_names',
+      up: (db) => {
+        const toTitleCase = (str) => {
+          if (!str) return '';
+          return str.trim().toLowerCase().replace(/\s+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        };
+
+        const rows = db.prepare('SELECT rowid, korlap, pml, pcl FROM subsls_master').all();
+        const updateStmt = db.prepare('UPDATE subsls_master SET korlap = ?, pml = ?, pcl = ? WHERE rowid = ?');
+
+        db.transaction(() => {
+          for (const row of rows) {
+            updateStmt.run(
+              toTitleCase(row.korlap),
+              toTitleCase(row.pml),
+              toTitleCase(row.pcl),
+              row.rowid
+            );
+          }
+        })();
+
+        try {
+          db.prepare('DELETE FROM summary_cache').run();
+        } catch (_) {}
+      }
+    }
+  ];
+
+  let appliedCount = 0;
+  migrations.forEach(m => {
+    if (!appliedMigrations.includes(m.version)) {
+      logger.info(`Applying database migration: ${m.version}`);
+      try {
+        m.up(db);
+        db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(m.version);
+        appliedCount++;
+      } catch (err) {
+        logger.error(`Failed to apply migration ${m.version}:`, err);
+        throw err;
+      }
+    }
   });
 
-  // Alter uploads to add status_filename, stored_status_filename, and stored_filename
-  try {
-    db.prepare('ALTER TABLE uploads ADD COLUMN stored_filename TEXT').run();
-  } catch (e) {}
-  try {
-    db.prepare('ALTER TABLE uploads ADD COLUMN status_filename TEXT').run();
-  } catch (e) {}
-  try {
-    db.prepare('ALTER TABLE uploads ADD COLUMN stored_status_filename TEXT').run();
-  } catch (e) {}
+  if (appliedCount > 0) {
+    logger.info(`Database schema migrations complete. Applied ${appliedCount} migrations.`);
+  }
 
-  // Rebuild summary cache for all uploads if empty or missing 'desa' or 'usaha_baru' columns
+  // Verify and potentially populate summary_cache
   try {
     try {
       const tableInfo = db.prepare("PRAGMA table_info(summary_cache)").all();
       const hasDesa = tableInfo.some(col => col.name === 'desa');
       const hasUsahaBaru = tableInfo.some(col => col.name === 'usaha_baru');
       if (tableInfo.length > 0 && (!hasDesa || !hasUsahaBaru)) {
-        console.log('summary_cache is missing required columns. Recreating summary_cache table...');
+        logger.info('summary_cache is missing required columns. Recreating summary_cache table...');
         db.exec(`
           DROP TABLE IF EXISTS summary_cache;
           CREATE TABLE summary_cache (
@@ -250,20 +318,20 @@ function migrateSchema() {
         `);
       }
     } catch (tblErr) {
-      console.error('Error checking summary_cache structure:', tblErr);
+      logger.error('Error checking summary_cache structure:', tblErr);
     }
 
     const uploadCount = db.prepare('SELECT COUNT(*) as n FROM uploads').get().n;
     const cacheCount = db.prepare('SELECT COUNT(*) as n FROM summary_cache').get().n;
     if (uploadCount > 0 && cacheCount === 0) {
-      console.log('Populating summary_cache for existing uploads...');
+      logger.info('Populating summary_cache for existing uploads...');
       const uploadsList = db.prepare('SELECT id FROM uploads').all();
       for (const u of uploadsList) {
         rebuildSummaryCache(u.id);
       }
     }
   } catch (err) {
-    console.error('Error migrating/populating summary_cache:', err);
+    logger.error('Error migrating/populating summary_cache:', err);
   }
 }
 
@@ -283,7 +351,7 @@ function getLatestUploadsDetailed() {
       muatan: latestMuatan || null
     };
   } catch (err) {
-    console.error('Error fetching getLatestUploadsDetailed:', err);
+    logger.error('Error fetching getLatestUploadsDetailed:', err);
     return { fasih: null, muatan: null };
   }
 }
@@ -695,12 +763,15 @@ function getEarlyWarning(uploadId, filters = {}) {
     }
   }
 
-  // 5. Prediksi Capaian Akhir < 40%: PCL yang diprediksi menyelesaikan < 40% target pada 31 Agustus 2026
+  // 5. Prediksi Capaian Akhir Berisiko Tinggi: < 40% pada 15 Juli 2026 ATAU < 100% pada 31 Agustus 2026
   let lowProjectedPcl = [];
   if (currentUpload) {
     const currentDate = new Date(currentUpload.tanggal);
-    const deadline = new Date('2026-08-31');
-    const daysRemaining = Math.max(0, Math.ceil((deadline - currentDate) / (1000 * 60 * 60 * 24)));
+    const deadlineJuly15 = new Date('2026-07-15');
+    const deadlineAug31 = new Date('2026-08-31');
+
+    const daysToJuly15 = Math.max(0, Math.ceil((deadlineJuly15 - currentDate) / (1000 * 60 * 60 * 24)));
+    const daysToAug31 = Math.max(0, Math.ceil((deadlineAug31 - currentDate) / (1000 * 60 * 60 * 24)));
 
     // Query stats for all PCLs
     const allPcls = getDb().prepare(`
@@ -727,10 +798,16 @@ function getEarlyWarning(uploadId, filters = {}) {
       const targetFasih = item.target_fasih_total || 0;
       if (targetFasih > 0) {
         const runrate = diffDays > 0 ? (selesaiFasih / diffDays) : 0;
-        const projectedFinal = selesaiFasih + (runrate * daysRemaining);
-        const projectedPct = (projectedFinal / targetFasih) * 100;
         
-        if (projectedPct < 40.0) {
+        // Proyeksi 15 Juli (target: < 40%)
+        const projectedJuly15 = selesaiFasih + (runrate * daysToJuly15);
+        const projectedPctJuly15 = (projectedJuly15 / targetFasih) * 100;
+
+        // Proyeksi 31 Agustus (target: < 100%)
+        const projectedAug31 = selesaiFasih + (runrate * daysToAug31);
+        const projectedPctAug31 = (projectedAug31 / targetFasih) * 100;
+        
+        if (projectedPctJuly15 < 40.0 || projectedPctAug31 < 100.0) {
           lowProjectedPcl.push({
             pcl: item.pcl,
             pml: item.pml,
@@ -739,8 +816,10 @@ function getEarlyWarning(uploadId, filters = {}) {
             target_fasih_total: targetFasih,
             selesai_sekarang: selesaiFasih,
             runrate: parseFloat(runrate.toFixed(2)),
-            projected_final: Math.round(projectedFinal),
-            projected_pct: parseFloat(projectedPct.toFixed(2)),
+            projected_final: Math.round(projectedAug31),
+            projected_pct: parseFloat(projectedAug31.toFixed(2)),
+            projected_final_july15: Math.round(projectedJuly15),
+            projected_pct_july15: parseFloat(projectedPctJuly15.toFixed(2)),
             draft_total: item.draft_total || 0,
             submitted_total: item.submitted_total || 0,
             approved_total: item.approved_total || 0,
@@ -1113,7 +1192,7 @@ function getKippOfficers() {
     const korlaps = db.prepare("SELECT DISTINCT korlap FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND korlap IS NOT NULL").all().map(r => r.korlap.toUpperCase());
     return { pcls, pmls, korlaps };
   } catch (err) {
-    console.error("Error fetching KIPP officers:", err);
+    logger.error("Error fetching KIPP officers:", err);
     return { pcls: [], pmls: [], korlaps: [] };
   }
 }
@@ -1132,7 +1211,7 @@ function saveDailyWeather(tanggal, temp, code, humidity) {
     `).run(tanggal, temp, code, humidity);
     return true;
   } catch (err) {
-    console.error("Error saving daily weather:", err);
+    logger.error("Error saving daily weather:", err);
     return false;
   }
 }
@@ -1147,7 +1226,7 @@ function getWeatherHistory(limit = 7) {
       LIMIT ?
     `).all(limit);
   } catch (err) {
-    console.error("Error getting weather history:", err);
+    logger.error("Error getting weather history:", err);
     return [];
   }
 }

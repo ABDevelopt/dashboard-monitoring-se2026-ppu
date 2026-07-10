@@ -156,6 +156,16 @@
       </div>
     </div>
 
+    <!-- Section: Favorit / Pinned (Local Storage client-side) -->
+    <div class="nav-section-wrapper" data-section="favorit" id="sidebarPinnedSection" style="display: none;">
+      <div class="nav-section-header">
+        <span>Favorit Saya</span>
+      </div>
+      <div class="nav-section-content" id="sidebarPinnedList">
+        <!-- Populated dynamically from localStorage by JS -->
+      </div>
+    </div>
+
     <!-- Section 5: Drilldown Petugas -->
     <% if (typeof settings !== 'undefined' && (settings.page_korlap === '1' || settings.page_pml === '1' || settings.page_pcl === '1')) { %>
     <div class="nav-section-wrapper" data-section="petugas">
@@ -387,6 +397,10 @@
     </div>
 
     <div class="topbar-actions">
+      <button class="btn btn-secondary" id="globalSearchBtn" title="Cari... (Ctrl+K)" aria-label="Pencarian Global" style="padding: 8px 12px; min-width: auto; gap: 6px; display: inline-flex; align-items: center;">
+        <i class="bi bi-search"></i>
+        <span class="search-hotkey-hint" style="font-size: 10px; opacity: 0.6; display: inline-block; background: var(--bg-primary); padding: 1px 4px; border-radius: 4px; border: 1px solid var(--border); font-family: inherit;">Ctrl K</span>
+      </button>
       <button class="btn btn-secondary" id="themeToggle" title="Ubah Tema" aria-label="Ubah Tema" style="padding: 8px 12px; min-width: auto;">
         <i class="bi bi-moon-fill" id="themeIcon"></i>
       </button>
@@ -425,17 +439,16 @@
 
     <div id="pjax-container">
       <%- body %>
+      <!-- Footer Disclaimer -->
+      <% if (typeof activePage !== 'undefined' && activePage !== 'overview') { %>
+      <footer class="page-footer-disclaimer" style="margin-top: 30px; padding: 16px 0; border-top: 1px solid var(--border); text-align: center; width: 100%; flex-shrink: 0;">
+        <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 0 16px;">
+          <i class="bi bi-info-circle-fill" style="color: var(--accent-blue); margin-right: 4px;"></i>
+          <strong>Disclaimer:</strong> Data berasal dari metode scraping website sehingga data yang terekam hanya yang tersimpan di server FASIH, sehingga mungkin ada perbedaan dengan data aktual di lapangan (aplikasi FASIH masing-masing petugas).
+        </p>
+      </footer>
+      <% } %>
     </div>
-
-    <!-- Footer Disclaimer -->
-    <% if (typeof activePage !== 'undefined' && activePage !== 'overview') { %>
-    <footer style="margin-top: 30px; padding: 16px 0; border-top: 1px solid var(--border); text-align: center; width: 100%; flex-shrink: 0;">
-      <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 0 16px;">
-        <i class="bi bi-info-circle-fill" style="color: var(--accent-blue); margin-right: 4px;"></i>
-        <strong>Disclaimer:</strong> Data berasal dari metode scraping website sehingga data yang terekam hanya yang tersimpan di server FASIH, sehingga mungkin ada perbedaan dengan data aktual di lapangan (aplikasi FASIH masing-masing petugas).
-      </p>
-    </footer>
-    <% } %>
   </main>
 </div>
 
@@ -459,6 +472,41 @@
   </div>
 </div>
 
+<!-- GLOBAL SEARCH MODAL -->
+<div id="globalSearchModal" class="search-modal-backdrop hidden" aria-hidden="true" role="dialog">
+  <div class="search-modal-card">
+    <div class="search-modal-header">
+      <i class="bi bi-search search-modal-icon"></i>
+      <input type="text" id="globalSearchInput" placeholder="Cari PCL, SLS, desa, kecamatan..." autocomplete="off" aria-label="Cari PCL, SLS, desa, kecamatan...">
+      <button id="closeSearchModalBtn" class="search-modal-close" title="Tutup (Esc)" aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="search-modal-body" id="globalSearchBody">
+      <div class="search-modal-results" id="globalSearchResults">
+        <div class="search-welcome-state">
+          <i class="bi bi-search" style="font-size: 24px; opacity: 0.5; margin-bottom: 8px;"></i>
+          <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">Ketik minimal 2 karakter untuk memulai pencarian global...</p>
+        </div>
+      </div>
+    </div>
+    <div class="search-modal-footer">
+      <span><kbd>↑↓</kbd> Navigasi</span>
+      <span><kbd>Enter</kbd> Pilih</span>
+      <span><kbd>Esc</kbd> Tutup</span>
+    </div>
+  </div>
+</div>
+
+
+<% if (typeof sentryDsn !== 'undefined' && sentryDsn) { %>
+<!-- Sentry Browser SDK -->
+<script src="https://browser.sentry-cdn.com/8.0.0/bundle.min.js" crossorigin="anonymous"></script>
+<script>
+  Sentry.init({
+    dsn: "<%= sentryDsn %>",
+    tracesSampleRate: 1.0,
+  });
+</script>
+<% } %>
 
 <script>
   // Injected EJS variables for global client-side calculations
@@ -918,7 +966,340 @@
     return window._scriptPromises[url];
   }
 
+  // ===== BOOKMARKS / FAVORIT SAYA =====
+  window.getPinnedItems = function() {
+    try {
+      const items = localStorage.getItem('ppu_bookmarks');
+      return items ? JSON.parse(items) : [];
+    } catch (e) {
+      console.error('Error reading bookmarks:', e);
+      return [];
+    }
+  };
+
+  window.savePinnedItems = function(items) {
+    try {
+      localStorage.setItem('ppu_bookmarks', JSON.stringify(items));
+    } catch (e) {
+      console.error('Error saving bookmarks:', e);
+    }
+  };
+
+  window.updatePinnedSidebar = function() {
+    const section = document.getElementById('sidebarPinnedSection');
+    const list = document.getElementById('sidebarPinnedList');
+    if (!section || !list) return;
+
+    const items = window.getPinnedItems();
+    if (items.length === 0) {
+      section.style.display = 'none';
+      list.innerHTML = '';
+      return;
+    }
+
+    section.style.display = 'block';
+    const currentPath = window.location.pathname + window.location.search;
+    
+    list.innerHTML = items.map(item => {
+      const isCurrentActive = currentPath === item.href;
+      const icon = item.type === 'pcl' ? 'bi-person-badge-fill' : 'bi-geo-alt-fill';
+      const colorStyle = item.type === 'pcl' ? 'color: var(--accent-blue);' : 'color: var(--accent-green);';
+      
+      return `
+        <a href="${item.href}" class="nav-item ${isCurrentActive ? 'active' : ''}">
+          <span class="nav-icon"><i class="bi ${icon}" style="${colorStyle}"></i></span>
+          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${item.name}</span>
+          <button class="unpin-sidebar-btn" data-type="${item.type}" data-name="${item.name}" title="Hapus dari Favorit" onclick="event.preventDefault(); window.togglePin('${item.type}', '${item.name}', '${item.href}');">
+            <i class="bi bi-x"></i>
+          </button>
+        </a>
+      `;
+    }).join('');
+  };
+
+  window.togglePin = function(type, name, href) {
+    let items = window.getPinnedItems();
+    const exists = items.some(item => item.type === type && item.name === name);
+
+    if (exists) {
+      items = items.filter(item => !(item.type === type && item.name === name));
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: `Dihapus dari Favorit`,
+          showConfirmButton: false,
+          timer: 1500,
+          background: 'var(--bg-card)',
+          color: 'var(--text-primary)'
+        });
+      }
+    } else {
+      items.push({ type, name, href });
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: `Ditambahkan ke Favorit`,
+          showConfirmButton: false,
+          timer: 1500,
+          background: 'var(--bg-card)',
+          color: 'var(--text-primary)'
+        });
+      }
+    }
+
+    window.savePinnedItems(items);
+    window.updatePinnedSidebar();
+    window.syncPinButtons();
+  };
+
+  window.syncPinButtons = function() {
+    const items = window.getPinnedItems();
+    document.querySelectorAll('.pin-btn').forEach(btn => {
+      const type = btn.getAttribute('data-type');
+      const name = btn.getAttribute('data-name');
+      const isPinned = items.some(item => item.type === type && item.name === name);
+      if (isPinned) {
+        btn.classList.add('pinned');
+        btn.setAttribute('title', 'Hapus dari Favorit');
+      } else {
+        btn.classList.remove('pinned');
+        btn.setAttribute('title', 'Sematkan ke Favorit');
+      }
+    });
+  };
+
+  // ===== GLOBAL FUZZY SEARCH (Ctrl+K) =====
+  let currentSearchFocusIndex = -1;
+  let searchDebounceTimeout = null;
+
+  window.toggleGlobalSearchModal = function(show) {
+    const modal = document.getElementById('globalSearchModal');
+    const input = document.getElementById('globalSearchInput');
+    const results = document.getElementById('globalSearchResults');
+    
+    if (!modal) return;
+    
+    if (show) {
+      modal.classList.remove('hidden');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => {
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+      }, 50);
+      currentSearchFocusIndex = -1;
+      if (results) {
+        results.innerHTML = `
+          <div class="search-welcome-state">
+            <i class="bi bi-search" style="font-size: 24px; opacity: 0.5; margin-bottom: 8px;"></i>
+            <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">Ketik minimal 2 karakter untuk memulai pencarian global...</p>
+          </div>
+        `;
+      }
+    } else {
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      if (input) input.blur();
+    }
+  };
+
+  window.performGlobalSearch = function(query) {
+    const resultsContainer = document.getElementById('globalSearchResults');
+    if (!resultsContainer) return;
+
+    if (!query || query.trim().length < 2) {
+      resultsContainer.innerHTML = `
+        <div class="search-welcome-state">
+          <i class="bi bi-search" style="font-size: 24px; opacity: 0.5; margin-bottom: 8px;"></i>
+          <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">Ketik minimal 2 karakter untuk memulai pencarian global...</p>
+        </div>
+      `;
+      currentSearchFocusIndex = -1;
+      return;
+    }
+
+    resultsContainer.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: center; padding: 40px 20px; color: var(--text-muted); gap: 8px; font-size: 13px;">
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 1rem; height: 1rem; border-width: 0.15em; border-color: var(--accent-blue) transparent transparent transparent;"></span>
+        Mencari data...
+      </div>
+    `;
+
+    fetch(`/api/search-global?q=${encodeURIComponent(query)}`)
+      .then(res => res.json())
+      .then(data => {
+        let html = '';
+        let totalItems = 0;
+
+        const categories = [
+          { key: 'pcl', label: 'Petugas PCL', icon: 'bi-person-badge-fill' },
+          { key: 'pml', label: 'Pengawas PML', icon: 'bi-person-gear' },
+          { key: 'korlap', label: 'Koordinator Lapangan', icon: 'bi-person-workspace' },
+          { key: 'kecamatan', label: 'Kecamatan', icon: 'bi-geo-alt-fill' },
+          { key: 'desa', label: 'Desa/Kelurahan', icon: 'bi-geo-fill' },
+          { key: 'sls', label: 'Satuan Lingkungan Setempat (SLS)', icon: 'bi-grid-3x3-gap-fill' }
+        ];
+
+        categories.forEach(cat => {
+          const items = data[cat.key] || [];
+          if (items.length > 0) {
+            html += `
+              <div class="search-group">
+                <div class="search-group-title">${cat.label}</div>
+            `;
+            items.forEach(item => {
+              html += `
+                <a href="${item.href}" class="search-result-item" data-index="${totalItems}">
+                  <div class="search-result-item-icon"><i class="bi ${cat.icon}"></i></div>
+                  <div class="search-result-item-content">
+                    <div class="search-result-item-title">${item.label}</div>
+                    <div class="search-result-item-sub">${item.sublabel}</div>
+                  </div>
+                </a>
+              `;
+              totalItems++;
+            });
+            html += `</div>`;
+          }
+        });
+
+        if (totalItems === 0) {
+          resultsContainer.innerHTML = `
+            <div class="search-welcome-state">
+              <i class="bi bi-exclamation-circle" style="font-size: 24px; opacity: 0.5; margin-bottom: 8px; color: var(--accent-red);"></i>
+              <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">Tidak ada hasil ditemukan untuk <strong>"${query}"</strong></p>
+            </div>
+          `;
+          currentSearchFocusIndex = -1;
+        } else {
+          resultsContainer.innerHTML = html;
+          currentSearchFocusIndex = 0;
+          highlightSearchItem(0);
+
+          document.querySelectorAll('.search-result-item').forEach(el => {
+            el.addEventListener('click', () => {
+              window.toggleGlobalSearchModal(false);
+            });
+          });
+        }
+      })
+      .catch(err => {
+        console.error('Error in global search API:', err);
+        resultsContainer.innerHTML = `
+          <div class="search-welcome-state">
+            <i class="bi bi-x-circle" style="font-size: 24px; opacity: 0.5; margin-bottom: 8px; color: var(--accent-red);"></i>
+            <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">Terjadi kesalahan koneksi saat mencari.</p>
+          </div>
+        `;
+        currentSearchFocusIndex = -1;
+      });
+  };
+
+  function highlightSearchItem(index) {
+    const items = document.querySelectorAll('.search-result-item');
+    items.forEach(item => item.classList.remove('selected'));
+    
+    const target = document.querySelector(`.search-result-item[data-index="${index}"]`);
+    if (target) {
+      target.classList.add('selected');
+      target.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Bookmarks
+    window.updatePinnedSidebar();
+    window.syncPinButtons();
+
+    // Global Search trigger button
+    const globalSearchBtn = document.getElementById('globalSearchBtn');
+    if (globalSearchBtn) {
+      globalSearchBtn.addEventListener('click', () => {
+        window.toggleGlobalSearchModal(true);
+      });
+    }
+
+    // Close search modal button
+    const closeSearchModalBtn = document.getElementById('closeSearchModalBtn');
+    if (closeSearchModalBtn) {
+      closeSearchModalBtn.addEventListener('click', () => {
+        window.toggleGlobalSearchModal(false);
+      });
+    }
+
+    // Click backdrop to close search modal
+    const globalSearchModal = document.getElementById('globalSearchModal');
+    if (globalSearchModal) {
+      globalSearchModal.addEventListener('click', (e) => {
+        if (e.target === globalSearchModal) {
+          window.toggleGlobalSearchModal(false);
+        }
+      });
+    }
+
+    // Input debounce search
+    const globalSearchInput = document.getElementById('globalSearchInput');
+    if (globalSearchInput) {
+      globalSearchInput.addEventListener('input', (e) => {
+        clearTimeout(searchDebounceTimeout);
+        const val = e.target.value;
+        searchDebounceTimeout = setTimeout(() => {
+          window.performGlobalSearch(val);
+        }, 250);
+      });
+
+      // Key navigation inside input
+      globalSearchInput.addEventListener('keydown', (e) => {
+        const items = document.querySelectorAll('.search-result-item');
+        const max = items.length;
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (max === 0) return;
+          currentSearchFocusIndex = (currentSearchFocusIndex + 1) % max;
+          highlightSearchItem(currentSearchFocusIndex);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (max === 0) return;
+          currentSearchFocusIndex = (currentSearchFocusIndex - 1 + max) % max;
+          highlightSearchItem(currentSearchFocusIndex);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          const target = document.querySelector(`.search-result-item[data-index="${currentSearchFocusIndex}"]`);
+          if (target) {
+            target.click();
+          }
+        }
+      });
+    }
+
+    // Keyboard Shortcuts: Ctrl+K / Cmd+K and Escape
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        const modal = document.getElementById('globalSearchModal');
+        if (modal) {
+          const isHidden = modal.classList.contains('hidden');
+          window.toggleGlobalSearchModal(isHidden);
+        }
+      }
+      
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('globalSearchModal');
+        if (modal && !modal.classList.contains('hidden')) {
+          e.preventDefault();
+          window.toggleGlobalSearchModal(false);
+        }
+      }
+    });
+
     // Start weather and live clock updates
     updateTime();
     setInterval(updateTime, 1000);
@@ -1009,6 +1390,14 @@
         
         // Dispatch event for charts to adapt
         window.dispatchEvent(new Event('themechange'));
+        return;
+      }
+
+      // 4. Global Search Button Click (Event Delegation)
+      const globalSearchBtn = e.target.closest('#globalSearchBtn');
+      if (globalSearchBtn) {
+        e.preventDefault();
+        window.toggleGlobalSearchModal(true);
         return;
       }
     });
@@ -1791,7 +2180,7 @@
               </div>
               <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
                 <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Prediksi Capaian</div>
-                <div style="font-size: 14px; font-weight: 700; color: ${projectedPctVal < 40 ? 'var(--accent-red)' : (projectedPctVal >= 100 ? 'var(--accent-green)' : 'var(--text-primary)')}; margin-top: 2px;">
+                <div style="font-size: 14px; font-weight: 700; color: ${projectedPctVal < 40 ? 'var(--accent-red)' : (projectedPctVal < 100 ? 'var(--accent-yellow)' : 'var(--accent-green)')}; margin-top: 2px;">
                   ${projectedPctVal.toFixed(1)}%
                 </div>
               </div>
@@ -2247,6 +2636,98 @@
       }
     };
 
+    function getSkeletonHTML(url) {
+      let path = '';
+      try {
+        path = new URL(url, window.location.origin).pathname;
+      } catch (e) {
+        path = url;
+      }
+
+      if (path === '/map') {
+        return `
+          <div class="skeleton-page">
+            <div class="skeleton-block" style="height: 30px; width: 25%; margin-bottom: 20px; border-radius: 6px;"></div>
+            <div style="display: flex; gap: 14px; height: 500px; flex-wrap: wrap;">
+              <div class="skeleton-block" style="width: 280px; height: 100%; min-width: 240px; border-radius: 12px;"></div>
+              <div class="skeleton-block" style="flex: 1; min-width: 300px; height: 100%; border-radius: 12px;"></div>
+            </div>
+          </div>
+        `;
+      }
+
+      if (path === '/help') {
+        return `
+          <div class="skeleton-page" style="max-width: 800px; margin: 0 auto;">
+            <div class="skeleton-block" style="height: 34px; width: 40%; margin-bottom: 20px; border-radius: 6px;"></div>
+            <div class="skeleton-block" style="height: 48px; margin-bottom: 24px; border-radius: 10px;"></div>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div class="skeleton-block" style="height: 54px; border-radius: 8px;"></div>
+              <div class="skeleton-block" style="height: 54px; border-radius: 8px;"></div>
+              <div class="skeleton-block" style="height: 54px; border-radius: 8px;"></div>
+              <div class="skeleton-block" style="height: 54px; border-radius: 8px;"></div>
+            </div>
+          </div>
+        `;
+      }
+
+      if (path === '/subsls') {
+        return `
+          <div class="skeleton-page">
+            <div class="skeleton-block" style="height: 30px; width: 35%; margin-bottom: 14px; border-radius: 6px;"></div>
+            <div class="skeleton-block" style="height: 80px; margin-bottom: 16px; border-radius: 12px;"></div>
+            <div class="skeleton-table-wrap">
+              <div class="skeleton-table-header skeleton-block" style="height: 16px; width: 200px; margin-bottom: 16px;"></div>
+              ${[...Array(6)].map(() => `
+                <div class="skeleton-table-row">
+                  <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
+                  <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
+                  <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
+                  <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
+                  <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      // Default/Standard layout (Overview, PCL, PML, Korlap, Kecamatan, Early Warning)
+      const isEarlyWarning = path === '/early-warning';
+      const cardCount = isEarlyWarning ? 5 : 4;
+      return `
+        <div class="skeleton-page">
+          <div class="skeleton-block" style="height: 30px; width: 25%; margin-bottom: 14px; border-radius: 6px;"></div>
+          <div class="skeleton-stat-row" style="grid-template-columns: repeat(${cardCount}, 1fr);">
+            ${[...Array(cardCount)].map(() => `<div class="skeleton-stat-card skeleton-block"></div>`).join('')}
+          </div>
+          <div class="skeleton-main-row">
+            <div class="skeleton-chart skeleton-block"></div>
+            <div class="skeleton-list">
+              <div class="skeleton-list-item skeleton-block"></div>
+              <div class="skeleton-list-item skeleton-block"></div>
+              <div class="skeleton-list-item skeleton-block"></div>
+              <div class="skeleton-list-item skeleton-block"></div>
+              <div class="skeleton-list-item skeleton-block"></div>
+              <div class="skeleton-list-item skeleton-block"></div>
+            </div>
+          </div>
+          <div class="skeleton-table-wrap">
+            <div class="skeleton-table-header skeleton-block" style="height: 16px; width: 180px; margin-bottom: 16px;"></div>
+            ${[...Array(5)].map(() => `
+              <div class="skeleton-table-row">
+                <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
+                <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
+                <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
+                <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
+                <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
     // PJAX router for seamless AJAX page transitions without reloading the sidebar
     async function loadPage(url, pushState = true) {
       const loader = document.getElementById('topLoadingBar');
@@ -2262,39 +2743,7 @@
       // Inject skeleton immediately into the content area
       const skeletonTarget = document.getElementById('pjax-container');
       if (skeletonTarget) {
-        skeletonTarget.innerHTML = `
-          <div class="skeleton-page">
-            <div class="skeleton-stat-row">
-              <div class="skeleton-stat-card skeleton-block"></div>
-              <div class="skeleton-stat-card skeleton-block"></div>
-              <div class="skeleton-stat-card skeleton-block"></div>
-              <div class="skeleton-stat-card skeleton-block"></div>
-            </div>
-            <div class="skeleton-main-row">
-              <div class="skeleton-chart skeleton-block"></div>
-              <div class="skeleton-list">
-                <div class="skeleton-list-item skeleton-block"></div>
-                <div class="skeleton-list-item skeleton-block"></div>
-                <div class="skeleton-list-item skeleton-block"></div>
-                <div class="skeleton-list-item skeleton-block"></div>
-                <div class="skeleton-list-item skeleton-block"></div>
-                <div class="skeleton-list-item skeleton-block"></div>
-              </div>
-            </div>
-            <div class="skeleton-table-wrap">
-              <div class="skeleton-table-header skeleton-block"></div>
-              ${[...Array(6)].map(() => `
-                <div class="skeleton-table-row">
-                  <div class="skeleton-table-cell skeleton-block"></div>
-                  <div class="skeleton-table-cell skeleton-block"></div>
-                  <div class="skeleton-table-cell skeleton-block"></div>
-                  <div class="skeleton-table-cell skeleton-block"></div>
-                  <div class="skeleton-table-cell skeleton-block"></div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        `;
+        skeletonTarget.innerHTML = getSkeletonHTML(url);
       }
 
       try {
@@ -2466,15 +2915,26 @@
         }
 
         // Re-initialize progress bars for the newly swapped page content
-        // initProgressBars reads data-width attributes and animates bar widths.
-        // Must be called after PJAX swap because DOMContentLoaded does NOT fire again.
         if (typeof window.initProgressBars === 'function') {
           window.initProgressBars();
+        }
+
+        // Re-initialize expand buttons and table export buttons for the new page content
+        if (typeof window.initExpandButtons === 'function') {
+          window.initExpandButtons(document.getElementById('pjax-container'));
         }
 
         // Update breadcrumb navigation for the new page
         if (typeof updateBreadcrumbs === 'function') {
           updateBreadcrumbs(url);
+        }
+
+        // Sync bookmark pins state on the newly loaded page
+        if (typeof window.syncPinButtons === 'function') {
+          window.syncPinButtons();
+        }
+        if (typeof window.updatePinnedSidebar === 'function') {
+          window.updatePinnedSidebar();
         }
 
         // Re-initialize date and weather rendering for the newly swapped page container

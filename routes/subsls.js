@@ -11,6 +11,8 @@ router.get('/', (req, res) => {
   const filterPml = req.query.pml || '';
   const filterPcl = req.query.pcl || '';
   const filterStatus = req.query.status || ''; // 'belum_mulai' | 'sedang_didata' | 'memenuhi_target' | 'melebihi_target'
+  const filterKode = req.query.kode || '';
+  const filterQ = req.query.q || '';
 
   let data = [];
   let total = 0;
@@ -24,6 +26,8 @@ router.get('/', (req, res) => {
     if (filterKorlap) { cond.push('m.korlap = ?'); params.push(filterKorlap); }
     if (filterPml) { cond.push('m.pml = ?'); params.push(filterPml); }
     if (filterPcl) { cond.push('m.pcl = ?'); params.push(filterPcl); }
+    if (filterKode) { cond.push('m.kode = ?'); params.push(filterKode); }
+    if (filterQ) { cond.push('(m.nama_sls LIKE ? OR m.kode LIKE ?)'); params.push(`%${filterQ}%`, `%${filterQ}%`); }
     
     if (filterStatus === 'belum_mulai') {
       cond.push('(p.kode IS NULL OR (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
@@ -108,7 +112,7 @@ router.get('/', (req, res) => {
     page: 1,
     totalPages: 1,
     limit: total || 50,
-    filterKec, filterDesa, filterKorlap, filterPml, filterPcl, filterStatus,
+    filterKec, filterDesa, filterKorlap, filterPml, filterPcl, filterStatus, filterKode, filterQ,
     kecList, desaList, korlapList, pmlList, pclList,
   });
 });
