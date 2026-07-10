@@ -1,4 +1,4 @@
-const CACHE_NAME = 'se2026-ppu-v1';
+const CACHE_NAME = 'se2026-ppu-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/css/style.css',
@@ -32,11 +32,14 @@ self.addEventListener('activate', (event) => {
 
 // Fetch Event (Network First Fallback to Cache)
 self.addEventListener('fetch', (event) => {
-  // Hanya intercept GET request dan hindari API / dynamic pages
+  // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
+  // Skip non-http(s) schemes — cache.put() does not support
+  // chrome-extension://, moz-extension://, data:, etc.
   const url = new URL(event.request.url);
-  
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
   // Cache static assets (CSS, JS, images)
   if (
     url.pathname.includes('/css/') ||
