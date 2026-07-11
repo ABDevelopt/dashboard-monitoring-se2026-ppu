@@ -30,15 +30,29 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Safe cache put helper — silently swallows storage errors
+async function safeCachePut(request, response) {
+  // Do not cache opaque responses (cross-origin, type 'opaque') —
+  // they can trigger quota errors and have hidden error status codes
+  if (!response || response.status !== 200 || response.type === 'opaque') return;
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(request, response);
+  } catch (err) {
+    // Silently ignore cache storage errors (quota exceeded, internal errors, etc.)
+    console.warn('[SW] cache.put failed (ignored):', err.message);
+  }
+}
+
 // Fetch Event (Network First Fallback to Cache)
 self.addEventListener('fetch', (event) => {
-  // Hanya intercept GET request dan hindari API / dynamic pages
+  // Only intercept GET requests, avoid API / dynamic pages
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
-  
-  // Cache static assets (CSS, JS, images)
+
+  // Cache static assets (CSS, JS, images, fonts)
   if (
     url.pathname.includes('/css/') ||
     url.pathname.includes('/js/') ||
@@ -49,15 +63,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
         if (cachedResponse) return cachedResponse;
-        
+
         return fetch(event.request).then((networkResponse) => {
-          if (!networkResponse || networkResponse.status !== 200) {
-            return networkResponse;
-          }
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+          // Clone before consuming — safeCachePut uses the clone
+          safeCachePut(event.request, networkResponse.clone());
           return networkResponse;
         }).catch(() => caches.match('/'));
       })
@@ -65,13 +74,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Untuk navigasi / page request biasa: Network First
+  // For normal page navigation: Network First, fall back to cache when offline
   event.respondWith(
     fetch(event.request).catch(() => {
       return caches.match(event.request).then((response) => {
         if (response) return response;
-        // Jika offline total dan request berupa halaman, kembalikan start_url/root cache
-        if (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) {
+        // Offline fallback for HTML pages: serve root cache
+        if (
+          event.request.headers.get('accept') &&
+          event.request.headers.get('accept').includes('text/html')
+        ) {
           return caches.match('/');
         }
       });
