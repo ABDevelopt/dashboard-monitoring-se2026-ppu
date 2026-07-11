@@ -21,6 +21,8 @@
     "express-ejs-layouts": "^2.5.1",
     "express-session": "^1.19.0",
     "multer": "^2.2.0",
+    "pdfkit": "^0.19.1",
+    "pdfkit-table": "^0.2.11",
     "winston": "^3.19.0",
     "xlsx": "^0.18.5"
   }

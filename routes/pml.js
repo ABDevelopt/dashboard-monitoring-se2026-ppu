@@ -1,7 +1,37 @@
 const express = require('express');
 const router = express.Router();
 const XLSX = require('xlsx');
+const PDFDocument = require('pdfkit-table');
 const { getPmlStats, getDb, getSettings, attachProgressPercentages, getAllUploads } = require('../database');
+
+// Heatmap color generator (HSL to RGB conversion)
+function getHeatmapColor(pct) {
+  const p = Math.min(Math.max(pct, 0), 100);
+  const hue = p * 1.2; // 0 to 120 (Red to Green)
+  
+  // Convert HSL (hue, 75%, 85%) to RGB Hex
+  const s = 0.75;
+  const l = 0.85; // Light background for readability
+  
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((hue / 60) % 2 - 1));
+  const m = l - c / 2;
+  
+  let r = 0, g = 0, b = 0;
+  if (0 <= hue && hue < 60) {
+    r = c; g = x; b = 0;
+  } else if (60 <= hue && hue < 120) {
+    r = x; g = c; b = 0;
+  } else {
+    r = 0; g = c; b = x;
+  }
+  
+  const rHex = Math.round((r + m) * 255).toString(16).padStart(2, '0');
+  const gHex = Math.round((g + m) * 255).toString(16).padStart(2, '0');
+  const bHex = Math.round((b + m) * 255).toString(16).padStart(2, '0');
+  
+  return `#${rHex}${gHex}${bHex}`;
+}
 
 // Date Formatting Helpers
 function formatDate(dateStr) {
@@ -22,7 +52,7 @@ function formatDateShort(dateStr) {
   return `${day} ${month}`;
 }
 
-// Helper to compile report data for both HTML and Excel
+// Helper to compile report data for both HTML, Excel, and PDF
 function getReportData(selectedUploadIds, filterPml) {
   const db = getDb();
   
@@ -239,6 +269,95 @@ router.get('/laporan', (req, res) => {
     formatDate,
     formatDateShort
   });
+});
+
+// GET: PML Report Download PDF (Server-side generated with heatmap)
+router.get('/laporan/pdf', async (req, res) => {
+  const filterPml = req.query.pml || '';
+  
+  let selectedUploadIds = [];
+  if (req.query.uploadIds) {
+    selectedUploadIds = String(req.query.uploadIds).split(',').map(Number).filter(Boolean);
+  }
+
+  const { uploads, groupedData } = getReportData(selectedUploadIds, filterPml);
+
+  if (uploads.length === 0) {
+    return res.status(400).send('Tidak ada data progres untuk dibuat PDF.');
+  }
+
+  try {
+    const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' });
+
+    // Set Response Headers to download PDF directly
+    const dateStr = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Disposition', `attachment; filename="progres_pendataan_petugas_pcl_${dateStr}.pdf"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    doc.pipe(res);
+
+    // Title Header
+    doc.font("Helvetica-Bold").fontSize(15).text("PROGRES PENDATAAN PETUGAS PCL", { align: 'center' });
+    const latestDate = uploads[uploads.length - 1].tanggal;
+    doc.font("Helvetica").fontSize(9).text(`Membandingkan progres s/d tanggal ${formatDate(latestDate)}`, { align: 'center' });
+    doc.moveDown(1.5);
+
+    // Grouped Tables by PML
+    const pmlKeys = Object.keys(groupedData);
+    for (let i = 0; i < pmlKeys.length; i++) {
+      const pmlName = pmlKeys[i];
+      const pmlRows = groupedData[pmlName];
+
+      // Draw PML Section Header
+      doc.font("Helvetica-Bold").fontSize(10).text(`PML: ${pmlName}`, { underline: true });
+      doc.moveDown(0.4);
+
+      const headers = ["No", "Nama Petugas", "Wilayah Kerja Desa"];
+      uploads.forEach(u => {
+        headers.push(formatDateShort(u.tanggal));
+      });
+
+      const rows = [];
+      pmlRows.forEach((row, idx) => {
+        const docRow = [
+          String(idx + 1),
+          row.pcl,
+          row.wilayah || '-'
+        ];
+
+        row.progress.forEach(p => {
+          const pctVal = parseFloat(p.pct) || 0;
+          docRow.push({
+            label: `${pctVal.toFixed(2)}%`,
+            options: {
+              backgroundColor: getHeatmapColor(pctVal),
+              backgroundOpacity: 0.85
+            }
+          });
+        });
+
+        rows.push(docRow);
+      });
+
+      const table = {
+        headers: headers,
+        rows: rows
+      };
+
+      await doc.table(table, {
+        prepareHeader: () => doc.font("Helvetica-Bold").fontSize(7.5),
+        prepareRow: () => doc.font("Helvetica").fontSize(7.5)
+      });
+
+      doc.moveDown(1);
+    }
+
+    doc.end();
+  } catch (err) {
+    console.error('Gagal membuat PDF:', err);
+    if (!res.headersSent) {
+      res.status(500).send('Terjadi kesalahan saat membuat laporan PDF.');
+    }
+  }
 });
 
 // GET: PML Report Download Excel

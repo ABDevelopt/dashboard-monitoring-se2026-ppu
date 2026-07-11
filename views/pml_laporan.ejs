@@ -226,7 +226,9 @@
     .col-pct {
       text-align: right;
       width: 85px;
-      font-weight: 500;
+      font-weight: 600;
+      background-color: hsla(var(--pct-hue), 70%, 35%, 0.25);
+      color: hsl(var(--pct-hue), 80%, 75%);
     }
 
     .empty-state {
@@ -287,6 +289,12 @@
         color: #000 !important;
       }
 
+      .col-pct {
+        background-color: hsl(var(--pct-hue), 75%, 85%) !important;
+        color: hsl(var(--pct-hue), 85%, 20%) !important;
+        border: 1px solid #000 !important;
+      }
+
       .pml-section {
         page-break-inside: avoid;
       }
@@ -334,7 +342,7 @@
         <!-- Actions -->
         <div style="display: flex; gap: 8px;">
           <button type="submit" class="btn btn-primary"><i class="bi bi-arrow-clockwise"></i> Perbarui</button>
-          <button type="button" class="btn btn-success" onclick="window.print()"><i class="bi bi-printer"></i> Cetak / Simpan PDF</button>
+          <button type="button" class="btn btn-success" onclick="downloadPDF()"><i class="bi bi-file-earmark-pdf"></i> Unduh PDF</button>
           <button type="button" class="btn btn-secondary" onclick="downloadExcel()"><i class="bi bi-file-earmark-excel"></i> Unduh Excel</button>
           <a href="/pml" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
         </div>
@@ -392,7 +400,9 @@
                   <td class="col-pml no-print"><%= row.pml %></td>
                   <td><%= row.wilayah || '-' %></td>
                   <% row.progress.forEach(prog => { %>
-                    <td class="col-pct"><%= prog.pct %>%</td>
+                    <% const pctVal = parseFloat(prog.pct) || 0; %>
+                    <% const hue = Math.min(Math.max(pctVal, 0), 100) * 1.2; %>
+                    <td class="col-pct" style="--pct-hue: <%= hue %>;"><%= prog.pct %>%</td>
                   <% }) %>
                 </tr>
               <% }) %>
@@ -419,6 +429,20 @@
         alert('Anda hanya dapat memilih maksimal 6 tanggal untuk perbandingan progres harian.');
         checkbox.checked = false;
       }
+    }
+
+    // Build URL query string to trigger pdf download
+    function downloadPDF() {
+      const pml = document.getElementById('pmlSelect').value;
+      const checkedBoxes = document.querySelectorAll('input[name="uploadIds"]:checked');
+      const uploadIds = Array.from(checkedBoxes).map(cb => cb.value).join(',');
+      
+      let url = `/pml/laporan/pdf?pml=${encodeURIComponent(pml)}`;
+      if (uploadIds) {
+        url += `&uploadIds=${uploadIds}`;
+      }
+      
+      window.location.href = url;
     }
 
     // Build URL query string to trigger excel download
