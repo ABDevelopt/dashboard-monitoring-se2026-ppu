@@ -3144,7 +3144,6 @@
     let sheetCurrentY = 0;
     let sheetDragging = false;
     const sheetCloseThreshold = 90;
-    const sidebar = document.getElementById('sidebar');
 
     if (sidebar) {
       sidebar.addEventListener('touchstart', (e) => {
@@ -3185,7 +3184,6 @@
             closeBtn.click();
           } else {
             sidebar.classList.remove('active');
-            const overlay = document.getElementById('sidebarOverlay');
             if (overlay) overlay.classList.remove('active');
           }
           triggerHaptic(15);
