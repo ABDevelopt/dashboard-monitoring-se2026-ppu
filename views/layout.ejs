@@ -2799,6 +2799,17 @@
         return;
       }
 
+      // Always show skeleton immediately so desktop gets visual feedback too
+      oldContent.className = isBack ? 'pjax-enter-back' : 'pjax-enter';
+      oldContent.innerHTML = getSkeletonHTML(url);
+      void oldContent.offsetWidth; // trigger reflow
+      oldContent.className = ''; // slide in
+
+      // If fetch hasn't returned yet, wait for it
+      if (!targetDoc) {
+        targetDoc = await fetchPromise;
+      }
+
       if (targetDoc) {
         const newContent = targetDoc.getElementById('pjax-container');
         if (newContent) {
@@ -2809,37 +2820,19 @@
             window._pjaxCleanups = [];
           }
 
-          oldContent.className = isBack ? 'pjax-enter-back' : 'pjax-enter';
+          // Small delay so skeleton is visible briefly even on fast connections
+          await new Promise(resolve => setTimeout(resolve, 120));
+          oldContent.style.opacity = '0';
+          await new Promise(resolve => setTimeout(resolve, 80));
           oldContent.innerHTML = newContent.innerHTML;
-          void oldContent.offsetWidth; // trigger reflow
-          oldContent.className = ''; // slide in
+          oldContent.style.opacity = '1';
         } else {
           window.location.href = url;
           return;
         }
       } else {
-        // Show skeleton as fallback if slower than transition
-        oldContent.className = isBack ? 'pjax-enter-back' : 'pjax-enter';
-        oldContent.innerHTML = getSkeletonHTML(url);
-        void oldContent.offsetWidth;
-        oldContent.className = '';
-
-        targetDoc = await fetchPromise;
-        if (targetDoc) {
-          const newContent = targetDoc.getElementById('pjax-container');
-          if (newContent) {
-            oldContent.style.opacity = '0';
-            await new Promise(resolve => setTimeout(resolve, 100));
-            oldContent.innerHTML = newContent.innerHTML;
-            oldContent.style.opacity = '1';
-          } else {
-            window.location.href = url;
-            return;
-          }
-        } else {
-          window.location.href = url;
-          return;
-        }
+        window.location.href = url;
+        return;
       }
 
       if (targetDoc) {
