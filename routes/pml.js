@@ -223,6 +223,25 @@ router.get('/', (req, res) => {
     }
   }
 
+  let pmlHistory = [];
+  if (uploadId && filterPml) {
+    pmlHistory = getDb().prepare(`
+      SELECT 
+        u.tanggal,
+        SUM(c.draft_total) AS draft_total,
+        SUM(c.submitted_total) AS submitted_total,
+        SUM(c.approved_total) AS approved_total,
+        SUM(c.rejected_total) AS rejected_total,
+        SUM(c.submitted_total + c.approved_total + c.rejected_total) AS selesai_total,
+        SUM(c.target_fasih_total) AS target_fasih_total
+      FROM summary_cache c
+      JOIN uploads u ON c.upload_id = u.id
+      WHERE UPPER(c.pml) = ?
+      GROUP BY u.tanggal, u.id
+      ORDER BY u.tanggal ASC
+    `).all(filterPml.toUpperCase());
+  }
+
   const selectedPmlStats = filterPml ? pmlStats.find(p => p.pml.toUpperCase() === filterPml.toUpperCase()) : null;
 
   res.render('pml', {
@@ -232,6 +251,7 @@ router.get('/', (req, res) => {
     detailPcl,
     selectedPmlStats,
     filterPml,
+    pmlHistory,
   });
 });
 

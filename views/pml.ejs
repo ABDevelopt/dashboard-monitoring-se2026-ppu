@@ -179,6 +179,21 @@
                     <div class="progress-bar <%= parseFloat(totalFasihPct) >= 100 ? 'green' : (parseFloat(totalFasihPct) < 25 ? 'red' : 'purple') %>" data-width="<%= totalFasihPct %>" style="width: 0%;"></div>
                   </div>
                 </div>
+
+                <!-- Daily Progress Chart (PML Team Trend) -->
+                <div style="margin-top: 18px; margin-bottom: 18px; border-top: 1px solid var(--border); padding-top: 14px; margin-left: -20px; margin-right: -20px;">
+                  <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; padding-left: 20px; padding-right: 20px;">
+                    <i class="bi bi-graph-up"></i> Tren Progres Harian Tim PML (FASIH)
+                  </div>
+                  <div style="height: 180px; position: relative; width: 100%; padding-left: 10px; padding-right: 10px;">
+                    <canvas id="pmlHistoryChartCanvas"></canvas>
+                  </div>
+                </div>
+
+                <!-- JSON data script tag -->
+                <script id="pmlHistoryData" type="application/json">
+                  <%- JSON.stringify(pmlHistory) %>
+                </script>
               </div>
 
               <div class="search-wrap mb-4" style="max-width: 100%; margin-bottom: 12px;">
@@ -189,7 +204,7 @@
                 <% detailPcl.forEach(item => { %>
                   <div class="detail-item" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 4px; font-size: 11px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                      <div style="font-weight: 600; color: var(--text-primary);">
+                      <div style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 75%;">
                         <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: var(--accent-cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                           <i class="bi bi-person"></i> <%= item.pcl %>
                         </a>
@@ -204,6 +219,16 @@
                       <% } else { %>
                         <span class="badge badge-blue btn-xs" style="font-size: 8px; padding: 1px 4px;"><%= parseFloat(item.pct).toFixed(2) %>%</span>
                       <% } %>
+                    </div>
+                    
+                    <!-- Mini Progress Bar per PCL with Target Line -->
+                    <% const pctVal = parseFloat(item.pct) || 0; %>
+                    <div class="progress-bar-target-wrap" style="position: relative; height: 5px; margin-top: 6px; margin-bottom: 6px;">
+                      <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
+                        <div class="progress-bar <%= pctVal >= 100 ? 'green' : (pctVal < activeTargetPct ? 'red' : 'blue') %>" data-width="<%= pctVal %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
+                      </div>
+                      <!-- Target line indicator at activeTargetPct -->
+                      <div style="position: absolute; left: <%= activeTargetPct %>%; top: -2px; height: 9px; border-left: 1.5px dashed var(--accent-cyan); z-index: 2; opacity: 0.8; pointer-events: none;" title="Target: <%= activeTargetPct %>%"></div>
                     </div>
                     
                     <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); flex-wrap: wrap; gap: 4px;">
@@ -248,6 +273,27 @@
     <% if (filterPml) { %>
       makeListSearchable('detailPclSearch', 'detailPclList', '.detail-item');
     <% } %>
+
+    function initPmlHistoryChart() {
+      const dataEl = document.getElementById('pmlHistoryData');
+      if (!dataEl) return;
+      try {
+        const data = JSON.parse(dataEl.textContent);
+        if (data && data.length) {
+          if (typeof Chart !== 'undefined') {
+            const existingChart = Chart.getChart("pmlHistoryChartCanvas");
+            if (existingChart) {
+              existingChart.destroy();
+            }
+          }
+          if (typeof createPclHistoryChart === 'function') {
+            createPclHistoryChart('pmlHistoryChartCanvas', data);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to init PML history chart:', e);
+      }
+    }
 
     // AJAX Drilldown logic for PML
     const detailContainer = document.getElementById('pmlDetailContainer');
@@ -301,6 +347,7 @@
               // Re-bind close handler
               bindCloseDetail();
               if (window.initProgressBars) window.initProgressBars(detailContainer);
+              initPmlHistoryChart();
             }
           })
           .catch(err => {
@@ -356,5 +403,6 @@
     }
 
     bindCloseDetail();
+    initPmlHistoryChart();
   });
 </script>
