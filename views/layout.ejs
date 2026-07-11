@@ -2776,6 +2776,7 @@
       const overlay = document.getElementById('pjax-loading-overlay');
       if (overlay) overlay.classList.add('active');
 
+      try {
       // Play exit transition
       if (oldContent) {
         oldContent.className = isBack ? 'pjax-exit-back' : 'pjax-exit';
@@ -2841,6 +2842,7 @@
         }
       }
 
+      if (targetDoc) {
         // Update document title
         document.title = targetDoc.title || document.title;
 
@@ -2913,8 +2915,6 @@
         }
 
         // Close sidebar drawer overlay on mobile after clicking
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebarOverlay');
         if (sidebar && sidebar.classList.contains('active')) {
           sidebar.classList.remove('active');
           if (overlay) overlay.classList.remove('active');
@@ -3009,12 +3009,12 @@
         if (typeof renderWeatherFromCache === 'function') {
           renderWeatherFromCache();
         }
+      }
 
       } catch (err) {
         console.error('AJAX page navigation error:', err);
         window.location.href = url;
       } finally {
-        const overlay = document.getElementById('pjax-loading-overlay');
         if (overlay) {
           overlay.classList.remove('active');
         }
