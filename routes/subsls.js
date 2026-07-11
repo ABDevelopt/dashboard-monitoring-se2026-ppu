@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb } = require('../database');
+const { getDb, getSettings, attachProgressPercentages } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -16,6 +16,12 @@ router.get('/', (req, res) => {
 
   let data = [];
   let total = 0;
+
+  const settings = getSettings();
+  const isStatic = settings.target_fasih_mode === 'static';
+  const targetFormula = isStatic
+    ? 'COALESCE(m.target_fasih, 0)'
+    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
 
   if (uploadId) {
     let cond = [];
@@ -48,7 +54,7 @@ router.get('/', (req, res) => {
       WHERE 1=1 ${where}
     `).get(...params).n;
 
-    data = getDb().prepare(`
+    data = attachProgressPercentages(getDb().prepare(`
       SELECT 
         m.kode, m.kecamatan, m.desa, m.nama_sls,
         m.korlap, m.pml, m.pcl, m.muatan,
@@ -57,10 +63,7 @@ router.get('/', (req, res) => {
         COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
         COALESCE(p.approved, 0) AS approved,
         COALESCE(p.rejected, 0) AS rejected,
-        CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-             THEN 0 
-             ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-        END AS target_fasih,
+        ${targetFormula} AS target_fasih,
         CASE 
           WHEN p.kode IS NULL OR (
             COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND 
@@ -92,7 +95,7 @@ router.get('/', (req, res) => {
       LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
       WHERE 1=1 ${where}
       ORDER BY m.kecamatan, m.desa, m.kode
-    `).all(...params);
+    `).all(...params));
   }
 
   // Filter lists
@@ -122,7 +125,13 @@ router.get('/export', (req, res) => {
   const uploadId = res.locals.uploadId;
   if (!uploadId) return res.status(400).send('Belum ada data yang diupload.');
 
-  const data = getDb().prepare(`
+  const settings = getSettings();
+  const isStatic = settings.target_fasih_mode === 'static';
+  const targetFormula = isStatic
+    ? 'COALESCE(m.target_fasih, 0)'
+    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+
+  const data = attachProgressPercentages(getDb().prepare(`
     SELECT 
       m.kode, m.kecamatan, m.desa, m.nama_sls,
       m.korlap, m.pml, m.pcl, 
@@ -131,10 +140,8 @@ router.get('/export', (req, res) => {
       COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
       COALESCE(p.approved, 0) AS approved,
       COALESCE(p.rejected, 0) AS rejected,
-      CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-           THEN 0 
-           ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-      END AS target_fasih_sekarang,
+      ${targetFormula} AS target_fasih_sekarang,
+
       m.muatan AS target_muatan,
       CASE 
         WHEN p.kode IS NULL OR (
@@ -167,7 +174,7 @@ router.get('/export', (req, res) => {
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     ORDER BY m.kecamatan, m.desa, m.kode
-  `).all(uploadId);
+  `).all(uploadId));
 
   const headers = Object.keys(data[0] || {});
   const csv = [

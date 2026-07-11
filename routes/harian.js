@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb } = require('../database');
+const { getDb, getSettings } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -28,14 +28,21 @@ router.get('/', (req, res) => {
   if (uploadId && recentUploads.length > 0) {
     let selectParts = [];
     let joinParts = [];
+    const settings = getSettings();
+    const isStatic = settings.target_fasih_mode === 'static';
+
     recentUploads.forEach((u, i) => {
+      const targetFormula = isStatic
+        ? 'COALESCE(m.target_fasih, 0)'
+        : `CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p${i}.usaha_baru, 0) + COALESCE(p${i}.keluarga_baru, 0) - COALESCE(p${i}.usaha_tutup, 0) - COALESCE(p${i}.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p${i}.usaha_baru, 0) + COALESCE(p${i}.keluarga_baru, 0) - COALESCE(p${i}.usaha_tutup, 0) - COALESCE(p${i}.tidak_ditemukan, 0)) END`;
+
       selectParts.push(`
         SUM(CASE WHEN p${i}.upload_id IS NOT NULL 
           THEN (COALESCE(p${i}.submitted_by_pcl, 0) + COALESCE(p${i}.approved, 0) + COALESCE(p${i}.rejected, 0)) 
           ELSE 0 END) AS realisasi_${i},
         SUM(
           CASE WHEN p${i}.upload_id IS NOT NULL 
-          THEN CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p${i}.usaha_baru, 0) + COALESCE(p${i}.keluarga_baru, 0) - COALESCE(p${i}.usaha_tutup, 0) - COALESCE(p${i}.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p${i}.usaha_baru, 0) + COALESCE(p${i}.keluarga_baru, 0) - COALESCE(p${i}.usaha_tutup, 0) - COALESCE(p${i}.tidak_ditemukan, 0)) END
+          THEN ${targetFormula}
           ELSE COALESCE(m.target_fasih, 0) END
         ) AS target_${i}
       `);
@@ -77,6 +84,13 @@ router.get('/', (req, res) => {
       if (row.desa) {
         row.desa = row.desa.split(',').join(', ');
       }
+      // Centralized daily progress percentage calculation
+      recentUploads.forEach((u, i) => {
+        const real = row['realisasi_' + i] || 0;
+        const target = row['target_' + i] || 0;
+        row['pct_' + i] = target > 0 ? parseFloat(((100 * real) / target).toFixed(2)) : 0.0;
+        row['pct_str_' + i] = target > 0 ? ((100 * real) / target).toFixed(2) : '0.00';
+      });
     });
   }
 

@@ -130,12 +130,11 @@
                   </td>
                   <% recentUploads.forEach((u, i) => { %>
                     <% 
-                      const real = row['realisasi_' + i] || 0;
-                      const target = row['target_' + i] || 0;
-                      const pct = target > 0 ? (100 * real / target) : 0;
+                      const pct = row['pct_' + i] || 0.0;
+                      const pctStr = row['pct_str_' + i] || '0.00';
                     %>
                     <td class="text-right fw-bold" data-sort="<%= pct %>" style="color: <%= pct >= 100 ? 'var(--accent-green)' : (pct >= 50 ? 'var(--accent-purple)' : (pct > 0 ? 'var(--accent-orange)' : 'var(--text-muted)')) %>">
-                      <%= pct.toFixed(2) %>%
+                      <%= pctStr %>%
                     </td>
                   <% }) %>
                 </tr>

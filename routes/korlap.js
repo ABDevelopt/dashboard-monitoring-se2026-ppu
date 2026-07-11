@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getKorlapStats, getDb, getSettings } = require('../database');
+const { getKorlapStats, getDb, getSettings, attachProgressPercentages } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -18,7 +18,7 @@ router.get('/', (req, res) => {
         ? 'COALESCE(m.target_fasih, 0)'
         : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
 
-      detailData = getDb().prepare(`
+      detailData = attachProgressPercentages(getDb().prepare(`
         SELECT 
           m.pml, m.korlap,
           COUNT(DISTINCT m.pcl) AS jumlah_pcl,
@@ -38,15 +38,18 @@ router.get('/', (req, res) => {
         WHERE m.korlap = ?
         GROUP BY m.pml
         ORDER BY selesai ASC
-      `).all(uploadId, filterKorlap);
+      `).all(uploadId, filterKorlap));
     }
   }
+
+  const selectedKorlapStats = filterKorlap ? korlapStats.find(k => k.korlap.toUpperCase() === filterKorlap.toUpperCase()) : null;
 
   res.render('korlap', {
     title: 'Per Korlap',
     activePage: 'korlap',
     korlapStats,
     detailData,
+    selectedKorlapStats,
     filterKorlap,
   });
 });

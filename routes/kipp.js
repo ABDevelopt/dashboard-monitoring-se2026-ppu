@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb } = require('../database');
+const { getDb, getSettings, attachProgressPercentages } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -15,6 +15,12 @@ router.get('/', (req, res) => {
   let data = [];
   let total = 0;
 
+  const settings = getSettings();
+  const isStatic = settings.target_fasih_mode === 'static';
+  const targetFormula = isStatic
+    ? 'COALESCE(m.target_fasih, 0)'
+    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+
   if (uploadId) {
     let cond = ["m.nama_sls = 'KIPP IKN'"];
     let params = [uploadId];
@@ -24,8 +30,8 @@ router.get('/', (req, res) => {
     if (filterKorlap) { cond.push('m.korlap = ?'); params.push(filterKorlap); }
     if (filterPml) { cond.push('m.pml = ?'); params.push(filterPml); }
     if (filterPcl) { cond.push('m.pcl = ?'); params.push(filterPcl); }
-    if (filterStatus === 'selesai') cond.push('p.kode IS NOT NULL AND m.target_fasih > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih');
-    if (filterStatus === 'belum') cond.push('(p.kode IS NULL OR m.target_fasih = 0 OR (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) < m.target_fasih)');
+    if (filterStatus === 'selesai') cond.push(`p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula})`);
+    if (filterStatus === 'belum') cond.push(`(p.kode IS NULL OR (${targetFormula}) = 0 OR (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) < (${targetFormula}))`);
 
     const where = cond.length ? 'AND ' + cond.join(' AND ') : '';
 
@@ -36,7 +42,7 @@ router.get('/', (req, res) => {
       WHERE 1=1 ${where}
     `).get(...params).n;
 
-    data = getDb().prepare(`
+    data = attachProgressPercentages(getDb().prepare(`
       SELECT 
         m.kode, m.kecamatan, m.desa, m.nama_sls,
         m.korlap, m.pml, m.pcl, m.muatan,
@@ -45,11 +51,8 @@ router.get('/', (req, res) => {
         COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
         COALESCE(p.approved, 0) AS approved,
         COALESCE(p.rejected, 0) AS rejected,
-        CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-             THEN 0 
-             ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-        END AS target_fasih,
-        CASE WHEN p.kode IS NOT NULL AND m.target_fasih > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= m.target_fasih THEN 1 ELSE 0 END AS sudah_diisi,
+        ${targetFormula} AS target_fasih,
+        CASE WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 1 ELSE 0 END AS sudah_diisi,
         COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
         COALESCE(p.usaha_ditemukan, 0) AS usaha_ditemukan,
         COALESCE(p.usaha_baru, 0) AS usaha_baru,
@@ -69,7 +72,7 @@ router.get('/', (req, res) => {
       LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
       WHERE 1=1 ${where}
       ORDER BY m.kecamatan, m.desa, m.kode
-    `).all(...params);
+    `).all(...params));
   }
 
   // Filter lists restricted to KIPP codes only
@@ -83,7 +86,7 @@ router.get('/', (req, res) => {
 
   let overallStats = null;
   if (uploadId) {
-    overallStats = getDb().prepare(`
+    overallStats = attachProgressPercentages(getDb().prepare(`
       SELECT 
         SUM(COALESCE(p.draft, 0)) AS draft,
         SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted,
@@ -93,15 +96,13 @@ router.get('/', (req, res) => {
         SUM(m.muatan) AS muatan,
         SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) AS usaha_total,
         SUM(COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS keluarga_total,
-        SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-                 THEN 0 
-                 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-            END) AS target_fasih
+        SUM(${targetFormula}) AS target_fasih
       FROM subsls_master m
       LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
       WHERE m.nama_sls = 'KIPP IKN'
-    `).get(uploadId);
+    `).get(uploadId));
   }
+
 
   let kippPclStats = [];
   let kippDaysRemaining = 0;

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getKecamatanStats, getDb } = require('../database');
+const { getKecamatanStats, getDb, getSettings, attachProgressPercentages } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -12,7 +12,13 @@ router.get('/', (req, res) => {
     kecStats = getKecamatanStats(uploadId);
 
     if (filterKec) {
-      desaStats = getDb().prepare(`
+      const settings = getSettings();
+      const isStatic = settings.target_fasih_mode === 'static';
+      const targetFormula = isStatic
+        ? 'COALESCE(m.target_fasih, 0)'
+        : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+
+      desaStats = attachProgressPercentages(getDb().prepare(`
         SELECT 
           m.kecamatan, m.desa,
           COUNT(m.kode) AS total_subsls,
@@ -25,24 +31,24 @@ router.get('/', (req, res) => {
           SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
           SUM(COALESCE(p.approved, 0)) AS approved_total,
           SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-          SUM(CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 
-                   THEN 0 
-                   ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) 
-              END) AS target_fasih_total
+          SUM(${targetFormula}) AS target_fasih_total
         FROM subsls_master m
         LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
         WHERE m.kecamatan = ?
         GROUP BY m.desa
         ORDER BY selesai DESC
-      `).all(uploadId, filterKec);
+      `).all(uploadId, filterKec));
     }
   }
+
+  const selectedKecStats = filterKec ? kecStats.find(k => k.kecamatan.toUpperCase() === filterKec.toUpperCase()) : null;
 
   res.render('kecamatan', {
     title: 'Per Kecamatan',
     activePage: 'kecamatan',
     kecStats,
     desaStats,
+    selectedKecStats,
     filterKec,
   });
 });

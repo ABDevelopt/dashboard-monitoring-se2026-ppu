@@ -122,8 +122,8 @@
               </thead>
               <tbody>
                 <% pclStats.forEach((p, index) => { %>
-                  <% let fasihPct = p.target_fasih_total ? ((( (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0) ) / p.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
-                  <% let muatanPct = p.total_muatan ? ((p.usaha_total / p.total_muatan) * 100).toFixed(2) : '0.00'; %>
+                  <% let fasihPct = p.fasih_pct_str; %>
+                  <% let muatanPct = p.muatan_pct_str; %>
                   <tr class="<%= filterPcl === p.pcl ? 'active' : '' %>" style="<%= filterPcl === p.pcl ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                     <td class="td-primary">
@@ -276,18 +276,18 @@
                   Korlap: <strong><%= detailSubsls[0].korlap %></strong><% if (kippKorlaps.includes(detailSubsls[0].korlap.toUpperCase())) { %> <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle;">KIPP</span><% } %>
                 </div>
                 <% 
-                  let doneMuatan = detailSubsls.reduce((acc, s) => acc + s.usaha_total, 0);
-                  let totalMuatan = detailSubsls.reduce((acc, s) => acc + s.muatan, 0);
-                  let donePct = totalMuatan ? ((doneMuatan / totalMuatan) * 100).toFixed(2) : '0.00';
+                  let doneMuatan = selectedPclStats ? selectedPclStats.usaha_total : 0;
+                  let totalMuatan = selectedPclStats ? selectedPclStats.total_muatan : 0;
+                  let donePct = selectedPclStats ? selectedPclStats.muatan_pct_str : '0.00';
 
-                  let doneFasih = detailSubsls.reduce((acc, s) => acc + (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0), 0);
-                  let totalFasih = detailSubsls.reduce((acc, s) => acc + (s.target_fasih || 0), 0);
-                  let fasihPct = totalFasih ? ((doneFasih / totalFasih) * 100).toFixed(2) : '0.00';
+                  let doneFasih = selectedPclStats ? ((selectedPclStats.submitted_total || 0) + (selectedPclStats.approved_total || 0) + (selectedPclStats.rejected_total || 0)) : 0;
+                  let totalFasih = selectedPclStats ? selectedPclStats.target_fasih_total : 0;
+                  let fasihPct = selectedPclStats ? selectedPclStats.fasih_pct_str : '0.00';
 
-                  let draftFasih = detailSubsls.reduce((acc, s) => acc + (s.draft || 0), 0);
-                  let submittedFasih = detailSubsls.reduce((acc, s) => acc + (s.submitted_by_pcl || 0), 0);
-                  let rejectedFasih = detailSubsls.reduce((acc, s) => acc + (s.rejected || 0), 0);
-                  let approvedFasih = detailSubsls.reduce((acc, s) => acc + (s.approved || 0), 0);
+                  let draftFasih = selectedPclStats ? (selectedPclStats.draft_total || 0) : 0;
+                  let submittedFasih = selectedPclStats ? (selectedPclStats.submitted_total || 0) : 0;
+                  let rejectedFasih = selectedPclStats ? (selectedPclStats.rejected_total || 0) : 0;
+                  let approvedFasih = selectedPclStats ? (selectedPclStats.approved_total || 0) : 0;
                 %>
                 <!-- Progress Muatan -->
                 <div style="margin-bottom: 12px;" class="muatan-col">

@@ -66,8 +66,8 @@
               </thead>
               <tbody>
                 <% pmlStats.forEach((p, index) => { %>
-                  <% let fasihPct = p.target_fasih_total ? ((( (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0) ) / p.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
-                  <% let muatanPct = p.total_muatan ? ((p.usaha_total / p.total_muatan) * 100).toFixed(2) : '0.00'; %>
+                  <% let fasihPct = p.fasih_pct_str; %>
+                  <% let muatanPct = p.muatan_pct_str; %>
                   <tr class="<%= filterPml === p.pml ? 'active' : '' %>" style="<%= filterPml === p.pml ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                     <td class="td-primary">
@@ -136,13 +136,13 @@
                   Korlap Atasan: <strong><%= detailPcl[0].korlap %></strong>
                 </div>
                 <% 
-                  let totalBeban = detailPcl.reduce((acc, c) => acc + c.total_muatan, 0);
-                  let totalUsaha = detailPcl.reduce((acc, c) => acc + c.usaha_total, 0);
-                  let totalPct = totalBeban ? ((totalUsaha / totalBeban) * 100).toFixed(2) : '0.00';
+                  let totalBeban = selectedPmlStats ? selectedPmlStats.total_muatan : 0;
+                  let totalUsaha = selectedPmlStats ? selectedPmlStats.usaha_total : 0;
+                  let totalPct = selectedPmlStats ? selectedPmlStats.muatan_pct_str : '0.00';
 
-                  let totalFasihTgt = detailPcl.reduce((acc, c) => acc + (c.target_fasih_total || 0), 0);
-                  let totalFasihDone = detailPcl.reduce((acc, c) => acc + (c.submitted_total || 0) + (c.approved_total || 0) + (c.rejected_total || 0), 0);
-                  let totalFasihPct = totalFasihTgt ? ((totalFasihDone / totalFasihTgt) * 100).toFixed(2) : '0.00';
+                  let totalFasihTgt = selectedPmlStats ? selectedPmlStats.target_fasih_total : 0;
+                  let totalFasihDone = selectedPmlStats ? ((selectedPmlStats.submitted_total || 0) + (selectedPmlStats.approved_total || 0) + (selectedPmlStats.rejected_total || 0)) : 0;
+                  let totalFasihPct = selectedPmlStats ? selectedPmlStats.fasih_pct_str : '0.00';
                 %>
                 <!-- Progress Muatan -->
                 <div style="margin-bottom: 12px;" class="muatan-col">

@@ -27,3 +27,5 @@ uploads/*
 *.xls
 !rancangan-muatan-se2026-ppu.xlsx
 scratch/
+logs/
+

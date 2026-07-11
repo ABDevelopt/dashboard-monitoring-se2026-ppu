@@ -25,17 +25,8 @@
       let muatanPct = totalMuatan ? ((totalRealisasiMuatan / totalMuatan) * 100).toFixed(2) : '0.00';
 
       // Overall PBI comparison stats
-      let overallFasihPct = '0.00';
-      let overallMuatanPct = '0.00';
-      if (typeof overallStats !== 'undefined' && overallStats) {
-        let overallTargetFasih = overallStats.target_fasih || 0;
-        let overallRealisasiFasih = (overallStats.approved || 0) + (overallStats.submitted || 0) + (overallStats.rejected || 0);
-        overallFasihPct = overallTargetFasih ? ((overallRealisasiFasih / overallTargetFasih) * 100).toFixed(2) : '0.00';
-
-        let overallMuatan = overallStats.muatan || 0;
-        let overallRealisasiMuatan = (overallStats.usaha_total || 0) + (overallStats.keluarga_total || 0);
-        overallMuatanPct = overallMuatan ? ((overallRealisasiMuatan / overallMuatan) * 100).toFixed(2) : '0.00';
-      }
+      let overallFasihPct = overallStats ? overallStats.fasih_pct_str : '0.00';
+      let overallMuatanPct = overallStats ? overallStats.muatan_pct_str : '0.00';
     %>
 
     <!-- PBI MONITORING HEADER STATS -->

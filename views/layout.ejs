@@ -9,6 +9,7 @@
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#f97316">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="SE2026 PPU">
   <link rel="apple-touch-icon" href="/logo-mark.png">
@@ -1994,7 +1995,7 @@
           ${makeSectionHeader('Rincian Per PML')}
           <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
             ${rows.map(r => {
-              const pct = r.total_muatan > 0 ? ((r.usaha_total / r.total_muatan)*100).toFixed(1) : '0.0';
+              const pct = r.muatan_pct_str || '0.00';
               return `<div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
                 <span style="font-size:12px; font-weight:500;">${r.pml}</span>
                 <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">${r.usaha_total}/${r.total_muatan} (${pct}%)</span>
@@ -2044,7 +2045,7 @@
           ${makeSectionHeader('Rincian Per PCL')}
           <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
             ${rows.map(r => {
-              const pct = r.total_muatan > 0 ? ((r.usaha_total / r.total_muatan)*100).toFixed(1) : '0.0';
+              const pct = r.muatan_pct_str || '0.00';
               return `<div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
                 <div>
                   <span style="font-size:12px; font-weight:500;">${r.pcl}</span>

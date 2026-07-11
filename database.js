@@ -372,7 +372,7 @@ function getProgresWithMaster(uploadId) {
 
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
 
-  return getDb().prepare(`
+  return attachProgressPercentages(getDb().prepare(`
     SELECT 
       m.kode, m.kode_kec, m.kecamatan, m.desa, m.nama_sls,
       m.korlap, m.pml, m.pcl, m.muatan, m.target_fasih AS target_fasih_awal,
@@ -390,12 +390,12 @@ function getProgresWithMaster(uploadId) {
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     ORDER BY m.kecamatan, m.desa, m.kode
-  `).all(uploadId);
+  `).all(uploadId));
 }
 
 // Agregate per kecamatan
 function getKecamatanStats(uploadId) {
-  return getDb().prepare(`
+  return attachProgressPercentages(getDb().prepare(`
     SELECT 
       kecamatan,
       SUM(total_sls) AS total_subsls,
@@ -415,12 +415,12 @@ function getKecamatanStats(uploadId) {
     WHERE upload_id = ?
     GROUP BY kecamatan
     ORDER BY kecamatan
-  `).all(uploadId);
+  `).all(uploadId));
 }
 
 // Agregate per korlap
 function getKorlapStats(uploadId) {
-  return getDb().prepare(`
+  return attachProgressPercentages(getDb().prepare(`
     SELECT 
       korlap,
       COUNT(DISTINCT pcl) AS jumlah_pcl,
@@ -440,12 +440,12 @@ function getKorlapStats(uploadId) {
     WHERE upload_id = ?
     GROUP BY korlap
     ORDER BY selesai ASC
-  `).all(uploadId);
+  `).all(uploadId));
 }
 
 // Agregate per PML
 function getPmlStats(uploadId) {
-  return getDb().prepare(`
+  return attachProgressPercentages(getDb().prepare(`
     SELECT 
       pml,
       korlap,
@@ -465,12 +465,12 @@ function getPmlStats(uploadId) {
     WHERE upload_id = ?
     GROUP BY pml, korlap
     ORDER BY selesai ASC
-  `).all(uploadId);
+  `).all(uploadId));
 }
 
 // Agregate per PCL
 function getPclStats(uploadId) {
-  return getDb().prepare(`
+  return attachProgressPercentages(getDb().prepare(`
     SELECT 
       pcl,
       pml,
@@ -491,7 +491,7 @@ function getPclStats(uploadId) {
     WHERE upload_id = ?
     GROUP BY pcl, pml, korlap, kecamatan
     ORDER BY selesai ASC
-  `).all(uploadId);
+  `).all(uploadId));
 }
 
 // Tren harian
@@ -558,7 +558,7 @@ function getOverviewSummary(uploadId) {
   const muatan_selesai = stats.muatan_selesai || 0;
   const target_fasih_total = stats.target_fasih_total || 0;
 
-  return { 
+  return attachProgressPercentages({ 
     total, 
     selesai, 
     belum: total - selesai, 
@@ -567,7 +567,7 @@ function getOverviewSummary(uploadId) {
     target_awal_total, 
     target_fasih_total, 
     ...stats 
-  };
+  });
 }
 
 // Early warning: PCL dengan 0 progres
@@ -916,7 +916,10 @@ function getTopPerformers(uploadId, filters = {}) {
     LIMIT ?
   `).all(...params, limit);
 
-  return { topPcl, topPml };
+  return { 
+    topPcl: attachProgressPercentages(topPcl), 
+    topPml: attachProgressPercentages(topPml) 
+  };
 }
 
 // Bottom performers
@@ -999,7 +1002,10 @@ function getBottomPerformers(uploadId, filters = {}) {
     LIMIT ?
   `).all(...params, limit);
 
-  return { bottomPcl, bottomPml };
+  return { 
+    bottomPcl: attachProgressPercentages(bottomPcl), 
+    bottomPml: attachProgressPercentages(bottomPml) 
+  };
 }
 
 function getAnomalyStats(uploadId, filters = {}) {
@@ -1231,11 +1237,42 @@ function getWeatherHistory(limit = 7) {
   }
 }
 
+function attachProgressPercentages(data) {
+  if (!data) return data;
+  if (Array.isArray(data)) {
+    return data.map(attachProgressPercentages);
+  }
+
+  // Single object
+  const submitted = data.submitted_total !== undefined ? data.submitted_total : (data.submitted_by_pcl !== undefined ? data.submitted_by_pcl : (data.submitted || 0));
+  const approved = data.approved_total !== undefined ? data.approved_total : (data.approved || 0);
+  const rejected = data.rejected_total !== undefined ? data.rejected_total : (data.rejected || 0);
+  const targetFasih = data.target_fasih_total !== undefined ? data.target_fasih_total : (data.target_fasih || 0);
+
+  const completedFasih = submitted + approved + rejected;
+  data.fasih_pct = targetFasih > 0 ? parseFloat(((completedFasih / targetFasih) * 100).toFixed(2)) : 0.0;
+  data.fasih_pct_str = targetFasih > 0 ? ((completedFasih / targetFasih) * 100).toFixed(2) : '0.00';
+
+  const targetMuatan = data.total_muatan !== undefined ? data.total_muatan : (data.muatan || 0);
+  let completedMuatan = 0;
+  if (data.muatan_selesai !== undefined) {
+    completedMuatan = data.muatan_selesai;
+  } else {
+    const usaha = data.usaha_total !== undefined ? data.usaha_total : (data.total_usaha || 0);
+    const keluarga = data.keluarga_total !== undefined ? data.keluarga_total : (data.total_keluarga || 0);
+    completedMuatan = usaha + keluarga;
+  }
+  data.muatan_pct = targetMuatan > 0 ? parseFloat(((completedMuatan / targetMuatan) * 100).toFixed(2)) : 0.0;
+  data.muatan_pct_str = targetMuatan > 0 ? ((completedMuatan / targetMuatan) * 100).toFixed(2) : '0.00';
+
+  return data;
+}
+
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
   getBottomPerformers, getAnomalyStats,
   getSettings, updateSettings, getUserByUsername, hashPassword, rebuildSummaryCache, rebuildAllSummaryCaches,
-  getKippOfficers, saveDailyWeather, getWeatherHistory
+  getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages
 };

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getPmlStats, getDb, getSettings } = require('../database');
+const { getPmlStats, getDb, getSettings, attachProgressPercentages } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -18,7 +18,7 @@ router.get('/', (req, res) => {
         ? 'COALESCE(m.target_fasih, 0)'
         : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
 
-      detailPcl = getDb().prepare(`
+      detailPcl = attachProgressPercentages(getDb().prepare(`
         SELECT 
           m.pcl, m.pml, m.korlap, m.kecamatan,
           COUNT(m.kode) AS total_subsls,
@@ -38,15 +38,18 @@ router.get('/', (req, res) => {
         WHERE m.pml = ?
         GROUP BY m.pcl, m.kecamatan
         ORDER BY selesai ASC
-      `).all(uploadId, filterPml);
+      `).all(uploadId, filterPml));
     }
   }
+
+  const selectedPmlStats = filterPml ? pmlStats.find(p => p.pml.toUpperCase() === filterPml.toUpperCase()) : null;
 
   res.render('pml', {
     title: 'Per PML',
     activePage: 'pml',
     pmlStats,
     detailPcl,
+    selectedPmlStats,
     filterPml,
   });
 });

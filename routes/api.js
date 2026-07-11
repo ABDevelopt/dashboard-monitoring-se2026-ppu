@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getTrenHarian, getKecamatanStats, getPclStats, getDb, getSettings } = require('../database');
+const { getTrenHarian, getKecamatanStats, getPclStats, getDb, getSettings, attachProgressPercentages } = require('../database');
 
 // Tren harian (untuk Chart.js)
 router.get('/tren', (req, res) => {
@@ -98,7 +98,7 @@ router.get('/map-stats', (req, res) => {
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
   `).all(uploadId);
 
-  res.json({ desaStats, slsStats });
+  res.json({ desaStats: attachProgressPercentages(desaStats), slsStats: attachProgressPercentages(slsStats) });
 });
 
 // Detail Korlap
@@ -136,7 +136,7 @@ router.get('/detail/korlap', (req, res) => {
     ORDER BY selesai ASC
   `).all(uploadId, name);
 
-  res.json(data);
+  res.json(attachProgressPercentages(data));
 });
 
 // Detail PML
@@ -173,7 +173,7 @@ router.get('/detail/pml', (req, res) => {
     ORDER BY selesai ASC
   `).all(uploadId, name);
 
-  res.json(data);
+  res.json(attachProgressPercentages(data));
 });
 
 // Detail PCL
@@ -208,7 +208,7 @@ router.get('/detail/pcl', (req, res) => {
     ORDER BY m.kecamatan, m.desa, m.kode
   `).all(uploadId, name);
 
-  res.json(data);
+  res.json(attachProgressPercentages(data));
 });
 
 // Simpan data cuaca harian

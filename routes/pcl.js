@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getPclStats, getDb, getSettings } = require('../database');
+const { getPclStats, getDb, getSettings, attachProgressPercentages } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -25,7 +25,7 @@ router.get('/', (req, res) => {
       ? 'COALESCE(m.target_fasih, 0)'
       : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
 
-    pclStats = getDb().prepare(`
+    pclStats = attachProgressPercentages(getDb().prepare(`
       SELECT 
         m.pcl, m.pml, m.korlap, m.kecamatan,
         COUNT(m.kode) AS total_subsls,
@@ -47,7 +47,7 @@ router.get('/', (req, res) => {
       ${where}
       GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
       ORDER BY selesai ASC
-    `).all(...params);
+    `).all(...params));
 
     if (filterPcl) {
       const settings = getSettings();
@@ -56,7 +56,7 @@ router.get('/', (req, res) => {
         ? 'COALESCE(m.target_fasih, 0)'
         : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
 
-      detailSubsls = getDb().prepare(`
+      detailSubsls = attachProgressPercentages(getDb().prepare(`
         SELECT 
           m.kode, m.kecamatan, m.desa, m.nama_sls,
           m.korlap, m.pml, m.pcl, m.muatan,
@@ -84,7 +84,7 @@ router.get('/', (req, res) => {
         LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
         WHERE m.pcl = ?
         ORDER BY m.kecamatan, m.desa, m.kode
-      `).all(uploadId, filterPcl);
+      `).all(uploadId, filterPcl));
     }
   }
 
@@ -130,11 +130,14 @@ router.get('/', (req, res) => {
     `).all(filterPcl);
   }
 
+  const selectedPclStats = filterPcl ? pclStats.find(p => p.pcl.toUpperCase() === filterPcl.toUpperCase()) : null;
+
   res.render('pcl', {
     title: 'Per PCL',
     activePage: 'pcl',
     pclStats,
     detailSubsls,
+    selectedPclStats,
     filterPcl,
     filterKec,
     filterKorlap,

@@ -67,8 +67,8 @@
               </thead>
               <tbody>
                 <% korlapStats.forEach((k, index) => { %>
-                  <% let fasihPct = k.target_fasih_total ? ((( (k.submitted_total || 0) + (k.approved_total || 0) + (k.rejected_total || 0) ) / k.target_fasih_total) * 100).toFixed(2) : '0.00'; %>
-                  <% let muatanPct = k.total_muatan ? (( (k.usaha_total + k.keluarga_total) / k.total_muatan ) * 100).toFixed(2) : '0.00'; %>
+                  <% let fasihPct = k.fasih_pct_str; %>
+                  <% let muatanPct = k.muatan_pct_str; %>
                   <tr class="<%= filterKorlap === k.korlap ? 'active' : '' %>" style="<%= filterKorlap === k.korlap ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                     <td class="td-primary">
@@ -134,13 +134,13 @@
             <% if (detailData && detailData.length > 0) { %>
               <div class="mb-4">
                 <% 
-                  let totalBeban = detailData.reduce((acc, c) => acc + c.total_muatan, 0);
-                  let totalUsaha = detailData.reduce((acc, c) => acc + c.usaha_total, 0);
-                  let totalPct = totalBeban ? ((totalUsaha / totalBeban) * 100).toFixed(2) : '0.00';
+                  let totalBeban = selectedKorlapStats ? selectedKorlapStats.total_muatan : 0;
+                  let totalUsaha = selectedKorlapStats ? selectedKorlapStats.usaha_total : 0;
+                  let totalPct = selectedKorlapStats ? selectedKorlapStats.muatan_pct_str : '0.00';
 
-                  let totalFasihTgt = detailData.reduce((acc, c) => acc + (c.target_fasih_total || 0), 0);
-                  let totalFasihDone = detailData.reduce((acc, c) => acc + (c.submitted_total || 0) + (c.approved_total || 0) + (c.rejected_total || 0), 0);
-                  let totalFasihPct = totalFasihTgt ? ((totalFasihDone / totalFasihTgt) * 100).toFixed(2) : '0.00';
+                  let totalFasihTgt = selectedKorlapStats ? selectedKorlapStats.target_fasih_total : 0;
+                  let totalFasihDone = selectedKorlapStats ? ((selectedKorlapStats.submitted_total || 0) + (selectedKorlapStats.approved_total || 0) + (selectedKorlapStats.rejected_total || 0)) : 0;
+                  let totalFasihPct = selectedKorlapStats ? selectedKorlapStats.fasih_pct_str : '0.00';
                 %>
                 <!-- Progress Muatan -->
                 <div style="margin-bottom: 12px;" class="muatan-col">

@@ -2510,3 +2510,174 @@ body.light-mode .skeleton-block {
   background: rgba(239, 68, 68, 0.1);
 }
 
+
+/* ====== MOBILE BOTTOM SHEET & MENU CARD ADAPTATION ====== */
+@media (max-width: 768px) {
+  /* Transform left-sliding sidebar into a bottom sheet */
+  .sidebar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 75vh !important; /* height of bottom sheet */
+    max-height: 80vh !important;
+    top: auto !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-right: none !important;
+    border-top: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-lg) !important;
+    transform: translateY(100%) !important; /* slide up from bottom instead of left */
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    z-index: 1050 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: auto !important;
+    overflow-y: hidden !important; /* contain scrolling within the nav container */
+  }
+
+  .sidebar.active {
+    transform: translateY(0) !important;
+  }
+
+  /* Notch / drag handle at the top of the sheet */
+  .sidebar::before {
+    content: '';
+    display: block;
+    width: 48px;
+    height: 5px;
+    background: var(--text-muted);
+    border-radius: 10px;
+    margin: 12px auto 8px;
+    opacity: 0.4;
+    flex-shrink: 0;
+  }
+
+  /* Close button positioned inside the bottom sheet */
+  .btn-close-sidebar {
+    top: 12px !important;
+    right: 16px !important;
+    padding: 8px !important;
+    font-size: 14px !important;
+    border-radius: 50% !important;
+    background: rgba(var(--accent-rgb), 0.05) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+  }
+
+  /* Hide vertical logo, upload info and footer to save valuable sheet space */
+  .sidebar-logo,
+  .sidebar-upload-info,
+  .sidebar-footer {
+    display: none !important;
+  }
+
+  /* Search block formatting inside bottom sheet */
+  .sidebar-search {
+    padding: 12px 16px 8px !important;
+    border-bottom: none !important;
+    flex-shrink: 0 !important;
+  }
+
+  .sidebar-search input {
+    background: var(--bg-primary) !important;
+    border: 1px solid var(--border) !important;
+    height: 42px !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
+    padding-left: 36px !important;
+  }
+
+  .sidebar-search .bi-search {
+    left: 14px !important;
+    font-size: 13px !important;
+  }
+
+  /* Convert the vertical menu list to a Card Grid */
+  .sidebar-nav {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+    padding: 16px !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    flex: 1 !important;
+    align-content: start !important;
+  }
+
+  /* Hide category headers ("Utama", etc.) to create a clean grid */
+  .nav-section-header {
+    display: none !important;
+  }
+
+  /* Set section content and wrappers to display inline in the grid */
+  .nav-section-wrapper,
+  .nav-section-content {
+    display: contents !important;
+  }
+
+  /* Styles for each individual Card Menu Item */
+  .nav-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 12px 6px !important;
+    border-radius: 12px !important;
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    letter-spacing: normal !important;
+    margin: 0 !important;
+    min-height: 84px !important;
+    aspect-ratio: 1.1 / 1 !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    gap: 6px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+  }
+
+  /* Larger icons inside cards */
+  .nav-item .nav-icon {
+    font-size: 22px !important;
+    margin: 0 !important;
+    color: var(--accent-blue) !important;
+    transition: transform 0.2s ease !important;
+  }
+
+  /* Active card styling with glowing accents */
+  .nav-item.active {
+    background: rgba(var(--accent-rgb), 0.08) !important;
+    border-color: var(--accent-blue) !important;
+    color: var(--accent-blue) !important;
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.15) !important;
+  }
+
+  .nav-item.active .nav-icon {
+    color: var(--accent-blue) !important;
+    transform: scale(1.1);
+  }
+
+  /* Hover and active micro-animations */
+  .nav-item:active {
+    transform: scale(0.95) !important;
+    background: var(--bg-card-hover) !important;
+  }
+
+  /* Unpin star button inside cards */
+  .unpin-sidebar-btn {
+    position: absolute !important;
+    right: 4px !important;
+    top: 4px !important;
+    opacity: 0.8 !important;
+    font-size: 9px !important;
+    padding: 2px !important;
+  }
+
+  .sidebar-overlay {
+    z-index: 1040 !important;
+  }
+}
+
+
