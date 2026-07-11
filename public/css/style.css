@@ -2735,6 +2735,33 @@ body.light-mode .skeleton-block {
     will-change: opacity;
     transition: opacity 0.3s ease-out !important;
   }
+
+  /* Safe Area Inset Layout Offsets for Notch/Statusbar/Home-Indicator */
+  .topbar {
+    height: calc(var(--header-height) + env(safe-area-inset-top, 0px)) !important;
+    padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+  
+  #breadcrumb-bar {
+    top: calc(var(--header-height) + env(safe-area-inset-top, 0px)) !important;
+  }
+
+  .page-content {
+    padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px) + 12px) !important;
+    padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important; /* prevent content overlap with bottom nav */
+  }
+
+  body.has-breadcrumb .page-content {
+    padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px) + 32px + 12px) !important;
+  }
+
+  .pjax-loading-overlay {
+    top: calc(var(--header-height) + env(safe-area-inset-top, 0px)) !important;
+  }
+
+  .sidebar {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+  }
 }
 
 
