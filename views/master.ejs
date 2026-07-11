@@ -118,11 +118,11 @@
     </div>
 
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
-      <form action="/master" method="GET" style="display: flex; gap: 8px; flex: 1; min-width: 200px;">
+      <form action="/admin/master" method="GET" style="display: flex; gap: 8px; flex: 1; min-width: 200px;">
         <input type="search" name="q" value="<%= q %>" placeholder="Cari Kode, SLS, Petugas, Wilayah..." aria-label="Cari Kode, SLS, Petugas, atau Wilayah" style="flex: 1; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); min-width: 0;">
         <button type="submit" class="btn btn-secondary" aria-label="Cari data SLS"><i class="bi bi-search"></i></button>
         <% if (q) { %>
-          <a href="/master" class="btn btn-secondary" title="Reset Pencarian" aria-label="Reset pencarian dan tampilkan semua"><i class="bi bi-x-lg"></i></a>
+          <a href="/admin/master" class="btn btn-secondary" title="Reset Pencarian" aria-label="Reset pencarian dan tampilkan semua"><i class="bi bi-x-lg"></i></a>
         <% } %>
       </form>
       <div style="font-size: 12px; color: var(--text-secondary);">
@@ -177,7 +177,7 @@
                             title="Edit Record"
                             aria-label="Edit SLS <%= row.nama_sls %>"><i class="bi bi-pencil-fill"></i></button>
                     <% if (row.has_progress === 0) { %>
-                      <form action="/master/delete/<%= row.kode %>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SLS master <%= row.kode %>?');" style="display: inline;">
+                      <form action="/admin/master/delete/<%= row.kode %>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SLS master <%= row.kode %>?');" style="display: inline;">
                         <button type="submit" class="btn btn-danger btn-xs" title="Hapus" aria-label="Hapus SLS <%= row.nama_sls %>"><i class="bi bi-trash-fill"></i></button>
                       </form>
                     <% } else { %>
@@ -221,7 +221,7 @@
       <div class="card-title"><i class="bi bi-plus-circle-fill" style="color: var(--accent-green);"></i> Tambah SLS Baru</div>
       <button class="btn btn-secondary btn-xs" id="btnCloseAddModal" aria-label="Tutup Dialog Tambah SLS" style="min-width: auto; padding: 4px 8px;"><i class="bi bi-x-lg"></i></button>
     </div>
-    <form action="/master/add" method="POST">
+    <form action="/admin/master/add" method="POST">
       <div style="display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto; padding-right: 4px;">
         
         <div>
@@ -293,7 +293,7 @@
       <div class="card-title"><i class="bi bi-pencil-square" style="color: var(--accent-cyan);"></i> Edit Record SLS Master</div>
       <button class="btn btn-secondary btn-xs" id="btnCloseEditModal" aria-label="Tutup Dialog Edit SLS" style="min-width: auto; padding: 4px 8px;"><i class="bi bi-x-lg"></i></button>
     </div>
-    <form action="/master/edit" method="POST">
+    <form action="/admin/master/edit" method="POST">
       <input type="hidden" name="kode" id="editKode">
       
       <div style="display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto; padding-right: 4px;">
