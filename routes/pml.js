@@ -311,9 +311,31 @@ router.get('/laporan/pdf', async (req, res) => {
       doc.font("Helvetica-Bold").fontSize(10).text(`PML: ${pmlName}`, { underline: true });
       doc.moveDown(0.4);
 
-      const headers = ["No", "Nama Petugas", "Wilayah Kerja Desa"];
+      // Setup headers as objects with column property mapping and custom renderer
+      const headers = [
+        { label: "No", property: "no", width: 25, align: "center" },
+        { label: "Nama Petugas", property: "pcl", width: 140 },
+        { label: "Wilayah Kerja Desa", property: "wilayah", width: 220 }
+      ];
+
       uploads.forEach(u => {
-        headers.push(formatDateShort(u.tanggal));
+        headers.push({
+          label: formatDateShort(u.tanggal),
+          property: u.tanggal,
+          align: "right",
+          width: 60,
+          renderer: (value, indexColumn, indexRow, row, rectRow, rectCell, docInstance) => {
+            const pctVal = parseFloat(value) || 0;
+            const color = getHeatmapColor(pctVal);
+            
+            docInstance.save();
+            // Draw custom filled rectangle for the cell background
+            docInstance.fillColor(color).rect(rectCell.x + 0.5, rectCell.y + 0.5, rectCell.width - 1, rectCell.height - 1).fill();
+            docInstance.restore();
+            
+            return `${pctVal.toFixed(2)}%`;
+          }
+        });
       });
 
       const rows = [];
@@ -325,14 +347,7 @@ router.get('/laporan/pdf', async (req, res) => {
         ];
 
         row.progress.forEach(p => {
-          const pctVal = parseFloat(p.pct) || 0;
-          docRow.push({
-            label: `${pctVal.toFixed(2)}%`,
-            options: {
-              backgroundColor: getHeatmapColor(pctVal),
-              backgroundOpacity: 0.85
-            }
-          });
+          docRow.push(p.pct);
         });
 
         rows.push(docRow);
