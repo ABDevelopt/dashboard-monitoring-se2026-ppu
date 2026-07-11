@@ -2040,6 +2040,40 @@ body.light-mode .highlight-name {
   transition: width 0.3s ease, opacity 0.3s ease 0.3s;
 }
 
+/* Premium PJAX Container Slide Transitions */
+#pjax-container {
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
+/* Exit: slide left and fade out */
+#pjax-container.pjax-exit {
+  opacity: 0;
+  transform: translate3d(-24px, 0, 0);
+}
+
+/* Back Exit: slide right and fade out */
+#pjax-container.pjax-exit-back {
+  opacity: 0;
+  transform: translate3d(24px, 0, 0);
+}
+
+/* Enter: start off-screen to the right and transparent */
+#pjax-container.pjax-enter {
+  opacity: 0;
+  transform: translate3d(24px, 0, 0);
+  transition: none !important; /* instant snap */
+}
+
+/* Back Enter: start off-screen to the left and transparent */
+#pjax-container.pjax-enter-back {
+  opacity: 0;
+  transform: translate3d(-24px, 0, 0);
+  transition: none !important; /* instant snap */
+}
+
 /* Premium PJAX Transition Loading Overlay */
 .pjax-loading-overlay {
   position: fixed;

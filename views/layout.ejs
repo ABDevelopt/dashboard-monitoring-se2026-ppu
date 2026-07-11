@@ -2730,7 +2730,34 @@
     }
 
     // PJAX router for seamless AJAX page transitions without reloading the sidebar
+    function isGoingBack(targetUrl) {
+      const currentPath = window.location.pathname;
+      const targetPath = new URL(targetUrl, window.location.origin).pathname;
+      
+      if (targetPath === '/' && currentPath !== '/') return true;
+      
+      const currentDepth = currentPath.split('/').filter(Boolean).length;
+      const targetDepth = targetPath.split('/').filter(Boolean).length;
+      if (targetDepth < currentDepth) return true;
+      
+      if (currentPath === targetPath) {
+        const currentParams = new URLSearchParams(window.location.search);
+        const targetParams = new URLSearchParams(new URL(targetUrl, window.location.origin).search);
+        if (targetParams.toString() === '' && currentParams.toString() !== '') return true;
+        
+        if (currentParams.has('pcl') && !targetParams.has('pcl')) return true;
+        if (currentParams.has('pml') && !targetParams.has('pml')) return true;
+        if (currentParams.has('korlap') && !targetParams.has('korlap')) return true;
+        if (currentParams.has('kec') && !targetParams.has('kec')) return true;
+      }
+      return false;
+    }
+
+    // PJAX router for seamless AJAX page transitions without reloading the sidebar
     async function loadPage(url, pushState = true) {
+      const oldContent = document.getElementById('pjax-container');
+      const isBack = isGoingBack(url);
+
       const loader = document.getElementById('topLoadingBar');
       if (loader) {
         loader.classList.remove('finished');
@@ -2741,28 +2768,31 @@
       const overlay = document.getElementById('pjax-loading-overlay');
       if (overlay) overlay.classList.add('active');
 
-      // Inject skeleton immediately into the content area
-      const skeletonTarget = document.getElementById('pjax-container');
-      if (skeletonTarget) {
-        skeletonTarget.innerHTML = getSkeletonHTML(url);
+      // Play exit transition
+      if (oldContent) {
+        oldContent.className = isBack ? 'pjax-exit-back' : 'pjax-exit';
       }
 
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          window.location.href = url;
-          return;
-        }
-
+      // Parallel fetch and anim wait
+      const fetchPromise = fetch(url).then(async (response) => {
+        if (!response.ok) return null;
         const htmlText = await response.text();
         const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlText, 'text/html');
+        return parser.parseFromString(htmlText, 'text/html');
+      }).catch(() => null);
 
-        // Swap body container
-        const newContent = doc.getElementById('pjax-container');
-        const oldContent = document.getElementById('pjax-container');
-        if (newContent && oldContent) {
-          // Clean up page-specific popstate event listeners before swapping content
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      let targetDoc = await fetchPromise;
+
+      if (!oldContent) {
+        window.location.href = url;
+        return;
+      }
+
+      if (targetDoc) {
+        const newContent = targetDoc.getElementById('pjax-container');
+        if (newContent) {
           if (window._pjaxCleanups && window._pjaxCleanups.length) {
             window._pjaxCleanups.forEach(item => {
               window.removeEventListener(item.type, item.listener, item.options);
@@ -2770,32 +2800,58 @@
             window._pjaxCleanups = [];
           }
 
+          oldContent.className = isBack ? 'pjax-enter-back' : 'pjax-enter';
           oldContent.innerHTML = newContent.innerHTML;
+          void oldContent.offsetWidth; // trigger reflow
+          oldContent.className = ''; // slide in
         } else {
-          // Fallback if pjax container structure is missing in the target page
           window.location.href = url;
           return;
         }
+      } else {
+        // Show skeleton as fallback if slower than transition
+        oldContent.className = isBack ? 'pjax-enter-back' : 'pjax-enter';
+        oldContent.innerHTML = getSkeletonHTML(url);
+        void oldContent.offsetWidth;
+        oldContent.className = '';
+
+        targetDoc = await fetchPromise;
+        if (targetDoc) {
+          const newContent = targetDoc.getElementById('pjax-container');
+          if (newContent) {
+            oldContent.style.opacity = '0';
+            await new Promise(resolve => setTimeout(resolve, 100));
+            oldContent.innerHTML = newContent.innerHTML;
+            oldContent.style.opacity = '1';
+          } else {
+            window.location.href = url;
+            return;
+          }
+        } else {
+          window.location.href = url;
+          return;
+        }
+      }
 
         // Update document title
-        document.title = doc.title || document.title;
+        document.title = targetDoc.title || document.title;
 
         // Update Topbar Title
-        const newTopbarTitle = doc.querySelector('.topbar-title');
+        const newTopbarTitle = targetDoc.querySelector('.topbar-title');
         const oldTopbarTitle = document.querySelector('.topbar-title');
         if (newTopbarTitle && oldTopbarTitle) {
           oldTopbarTitle.innerHTML = newTopbarTitle.innerHTML;
         }
 
         // Update Topbar Subtitle
-        const newTopbarSubtitle = doc.querySelector('.topbar-subtitle');
+        const newTopbarSubtitle = targetDoc.querySelector('.topbar-subtitle');
         const oldTopbarSubtitle = document.querySelector('.topbar-subtitle');
         if (newTopbarSubtitle && oldTopbarSubtitle) {
           oldTopbarSubtitle.innerHTML = newTopbarSubtitle.innerHTML;
         }
 
         // Update Topbar Actions (e.g. Upload Data button visibility)
-        const newTopbarActions = doc.querySelector('.topbar-actions');
+        const newTopbarActions = targetDoc.querySelector('.topbar-actions');
         const oldTopbarActions = document.querySelector('.topbar-actions');
         if (newTopbarActions && oldTopbarActions) {
           oldTopbarActions.innerHTML = newTopbarActions.innerHTML;
