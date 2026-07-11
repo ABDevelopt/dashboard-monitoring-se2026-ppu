@@ -86,7 +86,7 @@
                 <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Realisasi Approved vs Target FASIH (Fokus Utama Monitoring)</p>
               </div>
             </div>
-            <div style="text-align: right;">
+            <div style="text-align: right; margin-left: auto;">
               <% let totalPengerjaan = (summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0); %>
               <% let fasihPct = summary.fasih_pct_str; %>
               <div style="font-size: 18px; font-weight: 800; color: var(--accent-purple);"><%= fasihPct %>%</div>
@@ -346,7 +346,7 @@
               <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Realisasi Usaha Total vs Target Muatan Prelist (Indikator Opsional Monitoring)</p>
             </div>
           </div>
-          <div style="text-align: right;">
+          <div style="text-align: right; margin-left: auto;">
             <% let totalPct = summary.muatan_pct_str; %>
             <div style="font-size: 22px; font-weight: 900; color: var(--accent-cyan);"><%= totalPct %>%</div>
             <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Capaian Muatan</div>
