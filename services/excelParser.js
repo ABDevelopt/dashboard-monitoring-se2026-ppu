@@ -333,8 +333,10 @@ function findStatusColumnIndexes(headers) {
   const kodeIdx = findIndex(['level_6_full_code', 'smallcode', 'kode', 'code']);
   const draftIdx = findIndex(['draft']);
   const approvedIdx = findIndex(['approved', 'approved by pengawas']);
-  const rejectedIdx = findIndex(['rejected', 'rejected by pengawas']);
-  
+
+  // Collect ALL 'rejected' columns (e.g. "REJECTED BY Pengawas", "REJECTED BY Admin Kabupaten")
+  const rejectedIdxs = findMultipleIndexes(['rejected']);
+
   // Look for submitted columns
   const submittedIdxs = findMultipleIndexes(['submitted_by_pcl', 'submitted by pencacah', 'submitted respondent', 'submitted']);
 
@@ -343,7 +345,7 @@ function findStatusColumnIndexes(headers) {
     draft: draftIdx,
     submittedIdxs: submittedIdxs,
     approved: approvedIdx,
-    rejected: rejectedIdx
+    rejectedIdxs: rejectedIdxs
   };
 }
 
@@ -381,7 +383,8 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
       const draft = colIdx.draft !== -1 ? toInt(row[colIdx.draft]) : 0;
       const submitted = colIdx.submittedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
       const approved = colIdx.approved !== -1 ? toInt(row[colIdx.approved]) : 0;
-      const rejected = colIdx.rejected !== -1 ? toInt(row[colIdx.rejected]) : 0;
+      // Sum ALL rejected columns (Pengawas + Admin Kabupaten, dll.)
+      const rejected = colIdx.rejectedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
 
       // Pastikan baris progres ada untuk upload ini sebelum update status
       insertStmt.run(uploadId, kode);
@@ -441,7 +444,8 @@ function parseAndSaveStatusExcelOnly(filePath, uploadId, prevUploadId = null) {
       const draft = colIdx.draft !== -1 ? toInt(row[colIdx.draft]) : 0;
       const submitted = colIdx.submittedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
       const approved = colIdx.approved !== -1 ? toInt(row[colIdx.approved]) : 0;
-      const rejected = colIdx.rejected !== -1 ? toInt(row[colIdx.rejected]) : 0;
+      // Sum ALL rejected columns (Pengawas + Admin Kabupaten, dll.)
+      const rejected = colIdx.rejectedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
 
       let usaha_tidak_ditemukan = 0, usaha_ditemukan = 0, usaha_baru = 0, usaha_tutup = 0, usaha_ganda = 0;
       let tidak_ditemukan = 0, ditemukan = 0, keluarga_baru = 0, meninggal = 0, tidak_eligible = 0, tidak_dapat_ditemui = 0;
