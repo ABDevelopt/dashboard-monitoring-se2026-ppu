@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { getDb } = require('../database');
+const { getDb, rebuildSummaryCache } = require('../database');
 const { loadMasterFromJson, loadMasterFromExcel } = require('../services/excelParser');
 
 const storage = multer.diskStorage({
@@ -244,6 +244,59 @@ router.post('/delete/:kode', (req, res) => {
   } catch (err) {
     console.error('Master delete error:', err);
     req.flash('error', `Gagal menghapus SLS: ${err.message}`);
+    res.redirect('/admin/master');
+  }
+});
+
+// POST: mass rename PCL or PML officer
+router.post('/rename-officer', (req, res) => {
+  const { role, oldName, newName } = req.body;
+
+  if (!oldName || !newName || !role) {
+    req.flash('error', 'Semua kolom input (peran, nama lama, dan nama baru) harus diisi.');
+    return res.redirect('/admin/master');
+  }
+
+  const cleanOld = oldName.trim();
+  const cleanNew = newName.trim().replace(/\s+/g, ' '); // normalize spaces
+  
+  if (cleanOld === cleanNew) {
+    req.flash('error', 'Nama baru tidak boleh sama dengan nama lama.');
+    return res.redirect('/admin/master');
+  }
+
+  const db = getDb();
+
+  try {
+    let affected = 0;
+    if (role === 'pcl') {
+      const stmt = db.prepare('UPDATE subsls_master SET pcl = ? WHERE UPPER(pcl) = ?');
+      const result = stmt.run(cleanNew, cleanOld.toUpperCase());
+      affected = result.changes;
+    } else if (role === 'pml') {
+      const stmt = db.prepare('UPDATE subsls_master SET pml = ? WHERE UPPER(pml) = ?');
+      const result = stmt.run(cleanNew, cleanOld.toUpperCase());
+      affected = result.changes;
+    } else {
+      throw new Error('Peran petugas tidak dikenal.');
+    }
+
+    if (affected === 0) {
+      req.flash('error', `Tidak ditemukan petugas dengan nama "${cleanOld}" di database.`);
+      return res.redirect('/admin/master');
+    }
+
+    // Rebuild summary cache for all uploads to reflect rename
+    const uploads = db.prepare('SELECT id FROM uploads').all();
+    for (const u of uploads) {
+      rebuildSummaryCache(u.id);
+    }
+
+    req.flash('success', `Berhasil mengganti nama ${role.toUpperCase()} "${cleanOld}" menjadi "${cleanNew}" pada ${affected} wilayah SLS.`);
+    res.redirect('/admin/master');
+  } catch (err) {
+    console.error('Rename officer error:', err);
+    req.flash('error', `Gagal mengganti nama petugas: ${err.message}`);
     res.redirect('/admin/master');
   }
 });

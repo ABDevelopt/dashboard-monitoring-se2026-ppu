@@ -69,9 +69,43 @@
           <span style="font-size: 11px; line-height: 1.3;">Aksi ini akan menghapus seluruh data master saat ini dan menggantinya dengan data default.</span>
         </div>
       </div>
-      <form action="/master/reset" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mengembalikan master data ke versi bawaan JSON? Seluruh perubahan manual akan terhapus.');">
+      <form action="/admin/master/reset" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mengembalikan master data ke versi bawaan JSON? Seluruh perubahan manual akan terhapus.');">
         <button type="submit" class="btn btn-danger" style="width: 100%; justify-content: center;"><i class="bi bi-trash3-fill"></i> Reset ke Master Bawaan (JSON)</button>
       </form>
+    </div>
+
+    <!-- RENAME OFFICERS CARD -->
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div class="card-header">
+          <div class="card-title"><i class="bi bi-person-gear"></i> Ganti Nama Petugas Massal</div>
+        </div>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
+          Ganti nama PCL (PPL) atau PML secara massal pada seluruh wilayah SLS di master data.
+        </p>
+
+        <form action="/admin/master/rename-officer" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin memperbarui nama petugas tersebut secara massal?');">
+          <div class="form-group mb-3" style="margin-bottom: 12px;">
+            <label for="renameRole" style="font-size: 11px; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 4px;">Peran Petugas:</label>
+            <select name="role" id="renameRole" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);" required>
+              <option value="pcl">PCL (Petugas Pencacah / PPL)</option>
+              <option value="pml">PML (Pengawas Lapangan)</option>
+            </select>
+          </div>
+          
+          <div class="form-group mb-3" style="margin-bottom: 12px;">
+            <label for="oldName" style="font-size: 11px; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 4px;">Nama Lama (Sesuai database saat ini):</label>
+            <input type="text" name="oldName" id="oldName" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);" placeholder="Contoh: Any Nur Amini" required>
+          </div>
+
+          <div class="form-group mb-3" style="margin-bottom: 16px;">
+            <label for="newName" style="font-size: 11px; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 4px;">Nama Baru (Ejaan yang benar):</label>
+            <input type="text" name="newName" id="newName" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);" placeholder="Contoh: Any Nur Amini, A.Md." required>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;"><i class="bi bi-arrow-left-right"></i> Perbarui Nama</button>
+        </form>
+      </div>
     </div>
 
   </div>
