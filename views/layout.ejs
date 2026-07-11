@@ -44,6 +44,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
   <script src="/js/charts.js?v=<%= appVersion %>" defer></script>
+  <script src="/js/table-filter.js?v=<%= appVersion %>" defer></script>
   <style>
     <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') { %>
       .muatan-col { display: none !important; }
@@ -2975,6 +2976,11 @@
         // Re-initialize progress bars for the newly swapped page content
         if (typeof window.initProgressBars === 'function') {
           window.initProgressBars();
+        }
+
+        // Re-initialize Excel-like column filters for the newly swapped table
+        if (typeof window.initExcelFilters === 'function') {
+          window.initExcelFilters();
         }
 
         // Re-initialize expand buttons and table export buttons for the new page content
