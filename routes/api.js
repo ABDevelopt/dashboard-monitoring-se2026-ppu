@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getTrenHarian, getKecamatanStats, getPclStats, getDb, getSettings, attachProgressPercentages } = require('../database');
+const { getTrenHarian, getKecamatanStats, getPclStats, getDb, getSettings, attachProgressPercentages, getTargetFormula } = require('../database');
 
 // Tren harian (untuk Chart.js)
 router.get('/tren', (req, res) => {
@@ -48,11 +48,7 @@ router.get('/map-stats', (req, res) => {
   const db = getDb();
   
   const settings = getSettings();
-  const isStatic = settings.target_fasih_mode === 'static';
-
-  const singleTargetFormula = isStatic 
-    ? 'COALESCE(m.target_fasih, 0)'
-    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
 
@@ -108,11 +104,7 @@ router.get('/detail/korlap', (req, res) => {
   if (!uploadId || !name) return res.json({ error: 'Parameter uploadId atau nama Korlap tidak ditemukan.' });
 
   const settings = getSettings();
-  const isStatic = settings.target_fasih_mode === 'static';
-
-  const singleTargetFormula = isStatic 
-    ? 'COALESCE(m.target_fasih, 0)'
-    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
   const data = getDb().prepare(`
     SELECT 
@@ -146,11 +138,7 @@ router.get('/detail/pml', (req, res) => {
   if (!uploadId || !name) return res.json({ error: 'Parameter uploadId atau nama PML tidak ditemukan.' });
 
   const settings = getSettings();
-  const isStatic = settings.target_fasih_mode === 'static';
-
-  const singleTargetFormula = isStatic 
-    ? 'COALESCE(m.target_fasih, 0)'
-    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
   const data = getDb().prepare(`
     SELECT 
@@ -183,11 +171,7 @@ router.get('/detail/pcl', (req, res) => {
   if (!uploadId || !name) return res.json({ error: 'Parameter uploadId atau nama PCL tidak ditemukan.' });
 
   const settings = getSettings();
-  const isStatic = settings.target_fasih_mode === 'static';
-
-  const singleTargetFormula = isStatic 
-    ? 'COALESCE(m.target_fasih, 0)'
-    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
   const data = getDb().prepare(`
     SELECT 

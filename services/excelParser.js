@@ -239,8 +239,8 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
        usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
        tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
        rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
-       draft, submitted_by_pcl, approved, rejected)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       draft, submitted_by_pcl, approved, rejected, target_upload)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const getPrevStatus = db.prepare(`
@@ -248,14 +248,15 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
       COALESCE(draft, 0) AS draft, 
       COALESCE(submitted_by_pcl, 0) AS submitted_by_pcl, 
       COALESCE(approved, 0) AS approved, 
-      COALESCE(rejected, 0) AS rejected
+      COALESCE(rejected, 0) AS rejected,
+      COALESCE(target_upload, 0) AS target_upload
     FROM progres 
     WHERE upload_id = ? AND kode = ?
   `);
 
   const doInsert = db.transaction((uploadId, prevUploadId, rows) => {
     for (const r of rows) {
-      let draft = 0, submitted = 0, approved = 0, rejected = 0;
+      let draft = 0, submitted = 0, approved = 0, rejected = 0, targetUpload = 0;
       if (prevUploadId) {
         const prev = getPrevStatus.get(prevUploadId, r.kode);
         if (prev) {
@@ -263,6 +264,7 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
           submitted = prev.submitted_by_pcl;
           approved = prev.approved;
           rejected = prev.rejected;
+          targetUpload = prev.target_upload;
         }
       }
       insertProgres.run(
@@ -270,7 +272,7 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
         r.usaha_tidak_ditemukan, r.usaha_ditemukan, r.usaha_baru, r.usaha_tutup, r.usaha_ganda,
         r.tidak_ditemukan, r.ditemukan, r.keluarga_baru, r.meninggal, r.tidak_eligible, r.tidak_dapat_ditemui,
         r.rumah_tunggal, r.rumah_deret, r.rumah_susun, r.apartemen, r.lainnya,
-        draft, submitted, approved, rejected
+        draft, submitted, approved, rejected, targetUpload
       );
     }
   });
@@ -340,12 +342,15 @@ function findStatusColumnIndexes(headers) {
   // Look for submitted columns
   const submittedIdxs = findMultipleIndexes(['submitted_by_pcl', 'submitted by pencacah', 'submitted respondent', 'submitted']);
 
+  const totalIdx = findIndex(['total']);
+
   return {
     kode: kodeIdx,
     draft: draftIdx,
     submittedIdxs: submittedIdxs,
     approved: approvedIdx,
-    rejectedIdxs: rejectedIdxs
+    rejectedIdxs: rejectedIdxs,
+    total: totalIdx
   };
 }
 
@@ -370,7 +375,7 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
 
   const updateStmt = db.prepare(`
     UPDATE progres 
-    SET draft = ?, submitted_by_pcl = ?, approved = ?, rejected = ?
+    SET draft = ?, submitted_by_pcl = ?, approved = ?, rejected = ?, target_upload = ?
     WHERE upload_id = ? AND kode = ?
   `);
 
@@ -385,10 +390,11 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
       const approved = colIdx.approved !== -1 ? toInt(row[colIdx.approved]) : 0;
       // Sum ALL rejected columns (Pengawas + Admin Kabupaten, dll.)
       const rejected = colIdx.rejectedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
+      const targetUpload = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 0;
 
       // Pastikan baris progres ada untuk upload ini sebelum update status
       insertStmt.run(uploadId, kode);
-      updateStmt.run(draft, submitted, approved, rejected, uploadId, kode);
+      updateStmt.run(draft, submitted, approved, rejected, targetUpload, uploadId, kode);
     }
   });
 
@@ -431,7 +437,7 @@ function parseAndSaveStatusExcelOnly(filePath, uploadId, prevUploadId = null) {
 
   const updateStmt = db.prepare(`
     UPDATE progres 
-    SET draft = ?, submitted_by_pcl = ?, approved = ?, rejected = ?
+    SET draft = ?, submitted_by_pcl = ?, approved = ?, rejected = ?, target_upload = ?
     WHERE upload_id = ? AND kode = ?
   `);
 
@@ -446,6 +452,7 @@ function parseAndSaveStatusExcelOnly(filePath, uploadId, prevUploadId = null) {
       const approved = colIdx.approved !== -1 ? toInt(row[colIdx.approved]) : 0;
       // Sum ALL rejected columns (Pengawas + Admin Kabupaten, dll.)
       const rejected = colIdx.rejectedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
+      const targetUpload = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 0;
 
       let usaha_tidak_ditemukan = 0, usaha_ditemukan = 0, usaha_baru = 0, usaha_tutup = 0, usaha_ganda = 0;
       let tidak_ditemukan = 0, ditemukan = 0, keluarga_baru = 0, meninggal = 0, tidak_eligible = 0, tidak_dapat_ditemui = 0;
@@ -481,7 +488,7 @@ function parseAndSaveStatusExcelOnly(filePath, uploadId, prevUploadId = null) {
         draft, submitted, approved, rejected
       );
 
-      updateStmt.run(draft, submitted, approved, rejected, uploadId, kode);
+      updateStmt.run(draft, submitted, approved, rejected, targetUpload, uploadId, kode);
     }
   });
 
@@ -643,4 +650,4 @@ function applyKippOverrides(db) {
   }
 }
 
-module.exports = { parseAndSaveExcel, loadMasterFromJson, loadMasterFromExcel };
+module.exports = { parseAndSaveExcel, loadMasterFromJson, loadMasterFromExcel, parseAndSaveStatusExcel, parseAndSaveStatusExcelOnly };

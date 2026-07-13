@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb, getSettings } = require('../database');
+const { getDb, getSettings, getTargetFormula } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -29,12 +29,9 @@ router.get('/', (req, res) => {
     let selectParts = [];
     let joinParts = [];
     const settings = getSettings();
-    const isStatic = settings.target_fasih_mode === 'static';
 
     recentUploads.forEach((u, i) => {
-      const targetFormula = isStatic
-        ? 'COALESCE(m.target_fasih, 0)'
-        : `CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p${i}.usaha_baru, 0) + COALESCE(p${i}.keluarga_baru, 0) - COALESCE(p${i}.usaha_tutup, 0) - COALESCE(p${i}.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p${i}.usaha_baru, 0) + COALESCE(p${i}.keluarga_baru, 0) - COALESCE(p${i}.usaha_tutup, 0) - COALESCE(p${i}.tidak_ditemukan, 0)) END`;
+      const targetFormula = getTargetFormula(settings.target_fasih_mode, `p${i}`);
 
       selectParts.push(`
         SUM(CASE WHEN p${i}.upload_id IS NOT NULL 

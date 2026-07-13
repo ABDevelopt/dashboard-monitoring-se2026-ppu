@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const XLSX = require('xlsx');
 const PDFDocument = require('pdfkit-table');
-const { getPmlStats, getDb, getSettings, attachProgressPercentages, getAllUploads } = require('../database');
+const { getPmlStats, getDb, getSettings, attachProgressPercentages, getAllUploads, getTargetFormula } = require('../database');
 
 // Heatmap color generator (HSL to RGB conversion)
 function getHeatmapColor(pct) {
@@ -106,10 +106,7 @@ function getReportData(selectedUploadIds, filterPml) {
 
   // Get target_fasih_mode setting to determine formula
   const settings = getSettings();
-  const isStatic = settings.target_fasih_mode === 'static';
-  const targetFormula = isStatic
-    ? 'COALESCE(m.target_fasih, 0)'
-    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+  const targetFormula = getTargetFormula(settings.target_fasih_mode);
 
   // Query progress for each PCL on each selected upload_id
   const progressQuery = db.prepare(`
@@ -194,10 +191,7 @@ router.get('/', (req, res) => {
 
     if (filterPml) {
       const settings = getSettings();
-      const isStatic = settings.target_fasih_mode === 'static';
-      const targetFormula = isStatic
-        ? 'COALESCE(m.target_fasih, 0)'
-        : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+      const targetFormula = getTargetFormula(settings.target_fasih_mode);
 
       detailPcl = attachProgressPercentages(getDb().prepare(`
         SELECT 

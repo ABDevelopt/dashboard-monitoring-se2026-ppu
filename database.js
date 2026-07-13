@@ -246,6 +246,14 @@ function runMigrations() {
           db.prepare('DELETE FROM summary_cache').run();
         } catch (_) {}
       }
+    },
+    {
+      version: '20260713000000_add_target_upload_to_progres',
+      up: (db) => {
+        try {
+          db.prepare('ALTER TABLE progres ADD COLUMN target_upload INTEGER DEFAULT 0').run();
+        } catch (_) {}
+      }
     }
   ];
 
@@ -361,14 +369,20 @@ function getAllUploads() {
   return getDb().prepare('SELECT * FROM uploads ORDER BY tanggal ASC').all();
 }
 
+function getTargetFormula(mode, progresAlias = 'p', masterAlias = 'm') {
+  if (mode === 'static') {
+    return `COALESCE(${masterAlias}.target_fasih, 0)`;
+  } else if (mode === 'fasih-sm') {
+    return `COALESCE(${progresAlias}.target_upload, 0)`;
+  } else {
+    return `CASE WHEN (COALESCE(${masterAlias}.target_fasih, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.keluarga_baru, 0) - COALESCE(${progresAlias}.usaha_tutup, 0) - COALESCE(${progresAlias}.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(${masterAlias}.target_fasih, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.keluarga_baru, 0) - COALESCE(${progresAlias}.usaha_tutup, 0) - COALESCE(${progresAlias}.tidak_ditemukan, 0)) END`;
+  }
+}
+
 // Ambil data progres gabungan dengan master untuk upload tertentu
 function getProgresWithMaster(uploadId) {
   const settings = getSettings();
-  const isStatic = settings.target_fasih_mode === 'static';
-
-  const singleTargetFormula = isStatic 
-    ? 'COALESCE(m.target_fasih, 0)'
-    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
 
@@ -585,11 +599,7 @@ function getEarlyWarning(uploadId, filters = {}) {
   }
 
   const settings = getSettings();
-  const isStatic = settings.target_fasih_mode === 'static';
-
-  const singleTargetFormula = isStatic 
-    ? 'COALESCE(m.target_fasih, 0)'
-    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
 
@@ -860,11 +870,7 @@ function getTopPerformers(uploadId, filters = {}) {
   }
 
   const settings = getSettings();
-  const isStatic = settings.target_fasih_mode === 'static';
-
-  const singleTargetFormula = isStatic 
-    ? 'COALESCE(m.target_fasih, 0)'
-    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
 
@@ -946,11 +952,7 @@ function getBottomPerformers(uploadId, filters = {}) {
   }
 
   const settings = getSettings();
-  const isStatic = settings.target_fasih_mode === 'static';
-
-  const singleTargetFormula = isStatic 
-    ? 'COALESCE(m.target_fasih, 0)'
-    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
 
@@ -1135,11 +1137,7 @@ function rebuildSummaryCache(uploadId) {
   db.prepare('DELETE FROM summary_cache WHERE upload_id = ?').run(uploadId);
   
   const settings = getSettings();
-  const isStatic = settings.target_fasih_mode === 'static';
-
-  const singleTargetFormula = isStatic 
-    ? 'COALESCE(m.target_fasih, 0)'
-    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
 
@@ -1274,5 +1272,5 @@ module.exports = {
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
   getBottomPerformers, getAnomalyStats,
   getSettings, updateSettings, getUserByUsername, hashPassword, rebuildSummaryCache, rebuildAllSummaryCaches,
-  getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages
+  getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages, getTargetFormula
 };

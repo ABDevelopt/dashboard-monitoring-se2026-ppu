@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb, getSettings, attachProgressPercentages } = require('../database');
+const { getDb, getSettings, attachProgressPercentages, getTargetFormula } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -16,10 +16,7 @@ router.get('/', (req, res) => {
   let total = 0;
 
   const settings = getSettings();
-  const isStatic = settings.target_fasih_mode === 'static';
-  const targetFormula = isStatic
-    ? 'COALESCE(m.target_fasih, 0)'
-    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+  const targetFormula = getTargetFormula(settings.target_fasih_mode);
 
   if (uploadId) {
     let cond = ["m.nama_sls = 'KIPP IKN'"];

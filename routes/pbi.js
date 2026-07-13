@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb, getSettings, attachProgressPercentages } = require('../database');
+const { getDb, getSettings, attachProgressPercentages, getTargetFormula } = require('../database');
 
 const PBI_CODES = [
   '64090100010003', '64090100010008', '64090100020000', '64090100020003', '64090100020004',
@@ -108,10 +108,7 @@ router.get('/', (req, res) => {
   let total = 0;
 
   const settings = getSettings();
-  const isStatic = settings.target_fasih_mode === 'static';
-  const targetFormula = isStatic
-    ? 'COALESCE(m.target_fasih, 0)'
-    : 'CASE WHEN (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(m.target_fasih, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.keluarga_baru, 0) - COALESCE(p.usaha_tutup, 0) - COALESCE(p.tidak_ditemukan, 0)) END';
+  const targetFormula = getTargetFormula(settings.target_fasih_mode);
 
   if (uploadId) {
     let cond = ['m.kode IN (' + PBI_CODES.map(() => '?').join(',') + ')'];

@@ -469,7 +469,7 @@
           
           <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
             <label class="radio-card">
-              <input type="radio" name="target_fasih_mode" value="dynamic" <%= settings.target_fasih_mode !== 'static' ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
+              <input type="radio" name="target_fasih_mode" value="dynamic" <%= settings.target_fasih_mode === 'dynamic' ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
               <div style="min-width: 0;">
                 <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 1: Target Lapangan Dinamis (Default)</strong>
                 <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target = Target Awal + Temuan Baru (Usaha &amp; Keluarga Baru) - Objek Tutup &amp; Tidak Ditemukan. Sangat adil karena mengikuti beban kerja riil petugas di lapangan.</span>
@@ -481,6 +481,14 @@
               <div style="min-width: 0;">
                 <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 2: Target Alokasi Statis (Rancangan Murni)</strong>
                 <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target dikunci mutlak berdasarkan alokasi rancangan awal. Target tidak akan pernah berubah, namun progres petugas bisa melebihi 100% jika ada temuan baru.</span>
+              </div>
+            </label>
+
+            <label class="radio-card">
+              <input type="radio" name="target_fasih_mode" value="fasih-sm" <%= settings.target_fasih_mode === 'fasih-sm' ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
+              <div style="min-width: 0;">
+                <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 3: Target FASIH-SM (Kolom Total)</strong>
+                <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target dihitung menggunakan kolom "total" yang ada di file excel progres (sheet Rekap Pivot) yang diupload.</span>
               </div>
             </label>
           </div>
