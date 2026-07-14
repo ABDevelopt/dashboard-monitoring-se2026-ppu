@@ -131,6 +131,14 @@
                       <% if (kippPcls.includes(p.pcl.toUpperCase())) { %>
                         <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px;">KIPP</span>
                       <% } %>
+                      <% 
+                        const totalAnomaliPcl = (p.usaha_ganda_total || 0) + (p.keluarga_tidak_dapat_ditemui_total || 0) + (p.rejected_total || 0);
+                        if (totalAnomaliPcl > 0) { 
+                      %>
+                        <a href="/deteksi-anomali?pcl=<%= encodeURIComponent(p.pcl) %>" class="badge badge-red" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px; text-decoration: none;" title="Ditemukan <%= totalAnomaliPcl %> anomali data. Klik untuk melihat detail.">
+                          <i class="bi bi-shield-exclamation"></i> Anomali: <%= totalAnomaliPcl %>
+                        </a>
+                      <% } %>
                     </td>
                     <td class="hide-md">
                       <%= p.pml %>

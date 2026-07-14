@@ -1188,6 +1188,10 @@ function getAnomalyStats(uploadId, filters = {}) {
     where += ' AND m.pml = ?';
     params.push(filters.pml);
   }
+  if (filters.pcl) {
+    where += ' AND m.pcl = ?';
+    params.push(filters.pcl);
+  }
 
   // Query aggregates of anomaly indicators per PCL
   const sql = `
