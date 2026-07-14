@@ -322,6 +322,20 @@ function runMigrations() {
           logger.error('⚠️ Migration: Failed to apply target_honor from Excel:', err.message);
         }
       }
+    },
+    {
+      version: '20260714010000_add_muatan_original_and_setting',
+      up: (db) => {
+        try {
+          db.prepare('ALTER TABLE subsls_master ADD COLUMN muatan_original INTEGER DEFAULT 0').run();
+        } catch (_) {}
+        try {
+          db.prepare('UPDATE subsls_master SET muatan_original = muatan').run();
+        } catch (_) {}
+        try {
+          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('target_muatan_mode', 'prelist')").run();
+        } catch (_) {}
+      }
     }
   ];
 
@@ -1184,7 +1198,8 @@ function initSettings() {
     'overview_kecamatan': '1',
     'overview_bangunan': '1',
     'show_progres_muatan': '1',
-    'target_fasih_mode': 'static'
+    'target_fasih_mode': 'static',
+    'target_muatan_mode': 'prelist'
   };
 
   const insert = getDb().prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
@@ -1223,13 +1238,31 @@ function rebuildAllSummaryCaches() {
 }
 
 function updateSettings(settingsObj) {
+  const db = getDb();
   const currentSettings = getSettings();
-  const update = getDb().prepare('UPDATE settings SET value = ? WHERE key = ?');
+  const update = db.prepare('UPDATE settings SET value = ? WHERE key = ?');
   for (const [k, v] of Object.entries(settingsObj)) {
     update.run(v, k);
   }
-  // Rebuild cache if target_fasih_mode changed
-  if (currentSettings.target_fasih_mode !== settingsObj.target_fasih_mode) {
+  
+  let needsRebuild = false;
+  
+  if (settingsObj.target_fasih_mode !== undefined && currentSettings.target_fasih_mode !== settingsObj.target_fasih_mode) {
+    needsRebuild = true;
+  }
+  
+  if (settingsObj.target_muatan_mode !== undefined && currentSettings.target_muatan_mode !== settingsObj.target_muatan_mode) {
+    needsRebuild = true;
+    db.transaction(() => {
+      if (settingsObj.target_muatan_mode === 'honor') {
+        db.prepare('UPDATE subsls_master SET muatan = COALESCE(target_honor, 0)').run();
+      } else {
+        db.prepare('UPDATE subsls_master SET muatan = COALESCE(muatan_original, 0)').run();
+      }
+    })();
+  }
+  
+  if (needsRebuild) {
     rebuildAllSummaryCaches();
   }
 }

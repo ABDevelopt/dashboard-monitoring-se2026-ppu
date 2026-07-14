@@ -1,6 +1,6 @@
 const XLSX = require('xlsx');
 const path = require('path');
-const { getDb } = require('../database');
+const { getDb, getSettings } = require('../database');
 const fs = require('fs');
 
 // Load master data dari JSON (dijalankan sekali saat startup)
@@ -10,8 +10,8 @@ function loadMasterFromJson(jsonPath) {
 
   const insert = db.prepare(`
     INSERT OR REPLACE INTO subsls_master 
-      (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025, target_fasih)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025, target_fasih, muatan_original)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const insertMany = db.transaction((rows) => {
@@ -38,7 +38,8 @@ function loadMasterFromJson(jsonPath) {
             normalizeName(subsls.nama_pcl || ''),
             subsls.total_muatan_assignment || 0,
             subsls.id_subsls_2025 || subsls.id_subsls,
-            subsls.total_muatan_assignment || 0 // Default target_fasih to muatan
+            subsls.total_muatan_assignment || 0, // Default target_fasih to muatan
+            subsls.total_muatan_assignment || 0  // muatan_original
           ]);
         }
       }
@@ -75,6 +76,18 @@ function loadMasterFromJson(jsonPath) {
 
   // Apply KIPP IKN overrides
   applyKippOverrides(db);
+
+  // Sync muatan column based on target_muatan_mode
+  try {
+    const settings = getSettings();
+    if (settings.target_muatan_mode === 'honor') {
+      db.prepare('UPDATE subsls_master SET muatan = COALESCE(target_honor, 0)').run();
+    } else {
+      db.prepare('UPDATE subsls_master SET muatan = COALESCE(muatan_original, 0)').run();
+    }
+  } catch (err) {
+    console.error('⚠️ Warning: Failed to sync muatan after JSON load:', err.message);
+  }
 
   return rows.length;
 }
@@ -602,7 +615,8 @@ function loadMasterFromExcel(filePath) {
       pcl,
       muatan,
       kode_2025,
-      target_fasih
+      target_fasih,
+      muatan
     ]);
   }
 
@@ -610,8 +624,8 @@ function loadMasterFromExcel(filePath) {
 
   const insert = db.prepare(`
     INSERT OR REPLACE INTO subsls_master 
-      (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025, target_fasih)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025, target_fasih, muatan_original)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const saveTx = db.transaction((list) => {
@@ -625,6 +639,18 @@ function loadMasterFromExcel(filePath) {
   
   // Apply KIPP IKN overrides
   applyKippOverrides(db);
+
+  // Sync muatan column based on target_muatan_mode
+  try {
+    const settings = getSettings();
+    if (settings.target_muatan_mode === 'honor') {
+      db.prepare('UPDATE subsls_master SET muatan = COALESCE(target_honor, 0)').run();
+    } else {
+      db.prepare('UPDATE subsls_master SET muatan = COALESCE(muatan_original, 0)').run();
+    }
+  } catch (err) {
+    console.error('⚠️ Warning: Failed to sync muatan after Excel load:', err.message);
+  }
 
   return dataRows.length;
 }

@@ -411,6 +411,39 @@
         <i class="bi bi-search"></i>
         <span class="search-hotkey-hint" style="font-size: 10px; opacity: 0.6; display: inline-block; background: var(--bg-primary); padding: 1px 4px; border-radius: 4px; border: 1px solid var(--border); font-family: inherit;">Ctrl K</span>
       </button>
+      <!-- Target Mode Selectors Dropdown -->
+      <div class="target-selector-wrapper" style="position: relative; display: inline-block;">
+        <button class="btn btn-secondary" id="targetSelectorBtn" title="Ubah Mode Target" aria-label="Ubah Mode Target" style="padding: 8px 12px; min-width: auto; gap: 6px; display: inline-flex; align-items: center;">
+          <i class="bi bi-bullseye" style="color: var(--accent-purple);"></i>
+          <span style="font-size: 11px; font-weight: 600;">Target</span>
+          <i class="bi bi-chevron-down" style="font-size: 9px; opacity: 0.7;"></i>
+        </button>
+        <div id="targetSelectorDropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); z-index: 1050; width: 220px; padding: 12px; flex-direction: column; gap: 10px; text-align: left;">
+          <!-- Target FASIH -->
+          <div>
+            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <i class="bi bi-phone" style="color: var(--accent-purple);"></i> Target FASIH
+            </div>
+            <select id="publicTargetFasihMode" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: 12px; font-weight: 500; cursor: pointer; outline: none;">
+              <option value="static" <%= settings.target_fasih_mode === 'static' || !settings.target_fasih_mode ? 'selected' : '' %>>Statis (Prelist)</option>
+              <option value="dynamic" <%= settings.target_fasih_mode === 'dynamic' ? 'selected' : '' %>>Dinamis (Temuan)</option>
+              <option value="fasih-sm" <%= settings.target_fasih_mode === 'fasih-sm' ? 'selected' : '' %>>FASIH-SM (Upload)</option>
+              <option value="honor" <%= settings.target_fasih_mode === 'honor' ? 'selected' : '' %>>Target Honor</option>
+            </select>
+          </div>
+          
+          <!-- Target Muatan -->
+          <div style="border-top: 1px solid var(--border); padding-top: 10px;">
+            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <i class="bi bi-box-seam" style="color: var(--accent-cyan);"></i> Target Muatan
+            </div>
+            <select id="publicTargetMuatanMode" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: 12px; font-weight: 500; cursor: pointer; outline: none;">
+              <option value="prelist" <%= settings.target_muatan_mode === 'prelist' || !settings.target_muatan_mode ? 'selected' : '' %>>Muatan Prelist</option>
+              <option value="honor" <%= settings.target_muatan_mode === 'honor' ? 'selected' : '' %>>Target Honor</option>
+            </select>
+          </div>
+        </div>
+      </div>
       <button class="btn btn-secondary" id="themeToggle" title="Ubah Tema" aria-label="Ubah Tema" style="padding: 8px 12px; min-width: auto;">
         <i class="bi bi-moon-fill" id="themeIcon"></i>
       </button>
@@ -3201,6 +3234,78 @@
           .then((reg) => console.log('Service Worker registered successfully:', reg.scope))
           .catch((err) => console.error('Service Worker registration failed:', err));
       });
+    }
+
+    // Target Selector Dropdown Toggler
+    const targetSelectorBtn = document.getElementById('targetSelectorBtn');
+    const targetSelectorDropdown = document.getElementById('targetSelectorDropdown');
+
+    if (targetSelectorBtn && targetSelectorDropdown) {
+      targetSelectorBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = targetSelectorDropdown.style.display === 'none' || !targetSelectorDropdown.style.display;
+        targetSelectorDropdown.style.display = isHidden ? 'flex' : 'none';
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!targetSelectorDropdown.contains(e.target) && e.target !== targetSelectorBtn) {
+          targetSelectorDropdown.style.display = 'none';
+        }
+      });
+
+      const publicTargetFasihMode = document.getElementById('publicTargetFasihMode');
+      const publicTargetMuatanMode = document.getElementById('publicTargetMuatanMode');
+
+      const updateTargetMode = async (payload) => {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            title: 'Memperbarui Target...',
+            text: 'Mohon tunggu sejenak, data sedang disesuaikan.',
+            allowOutsideClick: false,
+            didOpen: () => {
+              Swal.showLoading();
+            }
+          });
+        }
+
+        try {
+          const response = await fetch('/api/settings/target-mode', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+          const result = await response.json();
+          if (result.success) {
+            window.location.reload();
+          } else {
+            if (typeof Swal !== 'undefined') {
+              Swal.fire('Gagal', result.error || 'Terjadi kesalahan saat memperbarui target.', 'error');
+            } else {
+              alert(result.error || 'Terjadi kesalahan saat memperbarui target.');
+            }
+          }
+        } catch (err) {
+          if (typeof Swal !== 'undefined') {
+            Swal.fire('Gagal', 'Koneksi server terputus.', 'error');
+          } else {
+            alert('Koneksi server terputus.');
+          }
+        }
+      };
+
+      if (publicTargetFasihMode) {
+        publicTargetFasihMode.addEventListener('change', () => {
+          updateTargetMode({ target_fasih_mode: publicTargetFasihMode.value });
+        });
+      }
+
+      if (publicTargetMuatanMode) {
+        publicTargetMuatanMode.addEventListener('change', () => {
+          updateTargetMode({ target_muatan_mode: publicTargetMuatanMode.value });
+        });
+      }
     }
   });
 </script>

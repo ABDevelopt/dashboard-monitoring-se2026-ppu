@@ -224,20 +224,30 @@ router.get('/weather/history', (req, res) => {
 
 // Ubah mode target utama progres secara dinamis
 router.post('/settings/target-mode', (req, res) => {
-  const { mode } = req.body;
-  if (!['static', 'dynamic', 'fasih-sm'].includes(mode)) {
-    return res.status(400).json({ error: 'Mode target tidak valid.' });
-  }
-
+  const { target_fasih_mode, target_muatan_mode } = req.body;
   const { getSettings, updateSettings } = require('../database');
   const settings = getSettings();
-  const updatedSettings = { ...settings, target_fasih_mode: mode };
+  const updatedSettings = { ...settings };
 
-  try {
-    updateSettings(updatedSettings);
-    res.json({ success: true, mode });
-  } catch (err) {
-    res.status(500).json({ error: `Gagal memperbarui target mode: ${err.message}` });
+  let changed = false;
+  if (target_fasih_mode && ['static', 'dynamic', 'fasih-sm', 'honor'].includes(target_fasih_mode)) {
+    updatedSettings.target_fasih_mode = target_fasih_mode;
+    changed = true;
+  }
+  if (target_muatan_mode && ['prelist', 'honor'].includes(target_muatan_mode)) {
+    updatedSettings.target_muatan_mode = target_muatan_mode;
+    changed = true;
+  }
+
+  if (changed) {
+    try {
+      updateSettings(updatedSettings);
+      res.json({ success: true, target_fasih_mode, target_muatan_mode });
+    } catch (err) {
+      res.status(500).json({ error: `Gagal memperbarui target mode: ${err.message}` });
+    }
+  } else {
+    res.status(400).json({ error: 'Tidak ada perubahan target yang valid.' });
   }
 });
 

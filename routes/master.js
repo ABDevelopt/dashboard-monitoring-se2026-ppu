@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { getDb, rebuildSummaryCache } = require('../database');
+const { getDb, rebuildSummaryCache, getSettings } = require('../database');
 const { loadMasterFromJson, loadMasterFromExcel } = require('../services/excelParser');
 
 const storage = multer.diskStorage({
@@ -156,9 +156,11 @@ router.post('/add', (req, res) => {
   const targetFasihNum = target_fasih !== undefined && target_fasih !== '' ? parseInt(target_fasih) : muatanNum;
 
   try {
+    const settings = getSettings();
+    const activeMuatanVal = settings.target_muatan_mode === 'honor' ? 0 : muatanNum;
     db.prepare(`
-      INSERT INTO subsls_master (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, target_fasih, kode_2025)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO subsls_master (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, target_fasih, kode_2025, muatan_original)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       kode.trim(),
       kode_kec,
@@ -168,9 +170,10 @@ router.post('/add', (req, res) => {
       (korlap || '').trim(),
       (pml || '').trim().replace(/\s+/g, ' '),
       (pcl || '').trim().replace(/\s+/g, ' '),
-      muatanNum,
+      activeMuatanVal,
       targetFasihNum,
-      (kode_2025 || kode).trim()
+      (kode_2025 || kode).trim(),
+      muatanNum
     );
 
     req.flash('success', `Berhasil menambahkan SLS baru: ${nama_sls || kode}`);
@@ -199,7 +202,9 @@ router.post('/edit', (req, res) => {
   try {
     db.prepare(`
       UPDATE subsls_master 
-      SET kecamatan = ?, desa = ?, nama_sls = ?, korlap = ?, pml = ?, pcl = ?, muatan = ?, target_fasih = ?, kode_2025 = ?, kode_kec = ?
+      SET kecamatan = ?, desa = ?, nama_sls = ?, korlap = ?, pml = ?, pcl = ?, 
+          muatan_original = ?, muatan = CASE WHEN (SELECT value FROM settings WHERE key = 'target_muatan_mode') = 'honor' THEN target_honor ELSE ? END, 
+          target_fasih = ?, kode_2025 = ?, kode_kec = ?
       WHERE kode = ?
     `).run(
       kecamatan.trim(),
@@ -208,6 +213,7 @@ router.post('/edit', (req, res) => {
       (korlap || '').trim(),
       (pml || '').trim().replace(/\s+/g, ' '),
       (pcl || '').trim().replace(/\s+/g, ' '),
+      muatanNum,
       muatanNum,
       targetFasihNum,
       (kode_2025 || kode).trim(),

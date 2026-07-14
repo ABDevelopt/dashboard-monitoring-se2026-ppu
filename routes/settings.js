@@ -62,6 +62,10 @@ router.post('/', (req, res) => {
     updatedSettings.target_fasih_mode = req.body.target_fasih_mode;
   }
 
+  if (['prelist', 'honor'].includes(req.body.target_muatan_mode)) {
+    updatedSettings.target_muatan_mode = req.body.target_muatan_mode;
+  }
+
   try {
     updateSettings(updatedSettings);
     req.flash('success', 'Pengaturan tampilan berhasil diperbarui.');
