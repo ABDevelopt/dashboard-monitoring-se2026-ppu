@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { parseAndSaveExcel } = require('../services/excelParser');
-const { getAllUploads, getDb } = require('../database');
+const { getAllUploads, getDb, getSettings, rebuildAllSummaryCaches } = require('../database');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, '../uploads')),
@@ -290,6 +290,83 @@ router.post('/import-local', (req, res) => {
       try { fs.unlinkSync(destPath); } catch (e) {}
     }
     req.flash('error', `Gagal memproses file local: ${err.message}`);
+  }
+
+  res.redirect('/admin/upload');
+});
+
+// POST: Process upload target honor
+router.post('/honor', upload.single('honorFile'), (req, res) => {
+  if (!req.file) {
+    req.flash('error', 'Silakan pilih file Excel target honor untuk diupload.');
+    return res.redirect('/admin/upload');
+  }
+
+  const tempPath = req.file.path;
+  const db = getDb();
+
+  try {
+    const XLSX = require('xlsx');
+    const wb = XLSX.readFile(tempPath);
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const excelRows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+    if (excelRows.length === 0) {
+      throw new Error('File Excel kosong atau tidak valid.');
+    }
+
+    const headers = excelRows[0];
+    const codeIdx = headers.indexOf('idsubsls_25_2');
+    const keluargaIdx = headers.indexOf('keluarga');
+    const utpIdx = headers.indexOf('jml_utp_subsektor');
+    const sbrIdx = headers.indexOf('Total_usaha_SBR');
+
+    if (codeIdx === -1 || keluargaIdx === -1 || utpIdx === -1 || sbrIdx === -1) {
+      throw new Error('Format kolom Excel tidak sesuai. Pastikan memiliki kolom idsubsls_25_2, keluarga, jml_utp_subsektor, dan Total_usaha_SBR.');
+    }
+
+    const updateStmt = db.prepare('UPDATE subsls_master SET target_honor = ? WHERE kode = ?');
+    let updatedCount = 0;
+
+    db.transaction(() => {
+      for (let i = 1; i < excelRows.length; i++) {
+        const row = excelRows[i];
+        if (!row || row.length === 0) continue;
+        const code = String(row[codeIdx] || '').trim();
+        if (!code) continue;
+        const valY = parseInt(row[keluargaIdx] || 0, 10);
+        const valZ = parseInt(row[utpIdx] || 0, 10);
+        const valAA = parseInt(row[sbrIdx] || 0, 10);
+        const targetHonor = valY + valZ + valAA;
+        updateStmt.run(targetHonor, code);
+        updatedCount++;
+      }
+    })();
+
+    // Copy to the root folder so that it replaces the master copy
+    const targetRootPath = path.join(__dirname, '../muatan_sls_pembayaran_honor.xlsx');
+    fs.copyFileSync(tempPath, targetRootPath);
+
+    // Sync settings & rebuild caches
+    const settings = getSettings();
+    if (settings.target_muatan_mode === 'honor') {
+      db.transaction(() => {
+        db.prepare('UPDATE subsls_master SET muatan = COALESCE(target_honor, 0)').run();
+      })();
+    }
+
+    // Always rebuild cache to ensure consistency of percentages/numbers
+    rebuildAllSummaryCaches();
+
+    req.flash('success', `Berhasil memproses target honor untuk ${updatedCount} records dari Excel.`);
+  } catch (err) {
+    console.error('Error uploading honor file:', err);
+    req.flash('error', `Gagal memproses file target honor: ${err.message}`);
+  } finally {
+    // Delete temp upload file to keep directory clean
+    if (fs.existsSync(tempPath)) {
+      try { fs.unlinkSync(tempPath); } catch (e) {}
+    }
   }
 
   res.redirect('/admin/upload');
