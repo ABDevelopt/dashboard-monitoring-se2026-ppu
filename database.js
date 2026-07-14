@@ -935,7 +935,7 @@ function getEarlyWarning(uploadId, filters = {}) {
             selesai_sekarang: selesaiFasih,
             runrate: parseFloat(runrate.toFixed(2)),
             projected_final: Math.round(projectedAug31),
-            projected_pct: parseFloat(projectedAug31.toFixed(2)),
+            projected_pct: parseFloat(projectedPctAug31.toFixed(2)),
             projected_final_july15: Math.round(projectedJuly15),
             projected_pct_july15: parseFloat(projectedPctJuly15.toFixed(2)),
             draft_total: item.draft_total || 0,
