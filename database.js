@@ -487,10 +487,6 @@ function getKeluargaTotalFormula(mode, progresAlias = 'p') {
 }
 
 function getAdaptiveMuatanFormula(mode, progresAlias = 'p', masterAlias = 'm') {
-  const realFormula = getRealizationFormula(mode, progresAlias);
-  if (mode === 'honor') {
-    return `CASE WHEN COALESCE(${masterAlias}.muatan, 0) < ${realFormula} THEN ${realFormula} ELSE COALESCE(${masterAlias}.muatan, 0) END`;
-  }
   return `COALESCE(${masterAlias}.muatan, 0)`;
 }
 
@@ -1465,11 +1461,7 @@ function attachProgressPercentages(data) {
     completedMuatan = usaha + keluarga;
   }
 
-  // Fallback Target Adaptif in JS if mode is 'honor'
-  const settings = getSettings();
-  if (settings.target_muatan_mode === 'honor' && completedMuatan > targetMuatan) {
-    targetMuatan = completedMuatan;
-  }
+
 
   data.muatan_pct = targetMuatan > 0 ? parseFloat(((completedMuatan / targetMuatan) * 100).toFixed(2)) : 0.0;
   data.muatan_pct_str = targetMuatan > 0 ? ((completedMuatan / targetMuatan) * 100).toFixed(2) : '0.00';
