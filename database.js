@@ -1188,10 +1188,6 @@ function getAnomalyStats(uploadId, filters = {}) {
     where += ' AND m.pml = ?';
     params.push(filters.pml);
   }
-  if (filters.pcl) {
-    where += ' AND m.pcl = ?';
-    params.push(filters.pcl);
-  }
 
   // Query aggregates of anomaly indicators per PCL
   const sql = `
@@ -1200,7 +1196,12 @@ function getAnomalyStats(uploadId, filters = {}) {
       m.pml,
       m.korlap,
       m.kecamatan,
+      SUM(COALESCE(p.usaha_ditemukan, 0)) AS usaha_ditemukan,
+      SUM(COALESCE(p.usaha_baru, 0)) AS usaha_baru,
+      SUM(COALESCE(p.usaha_tidak_ditemukan, 0)) AS usaha_tidak_ditemukan,
+      SUM(COALESCE(p.usaha_tutup, 0)) AS usaha_tutup,
       SUM(COALESCE(p.usaha_ganda, 0)) AS usaha_ganda,
+      (SUM(COALESCE(p.usaha_ditemukan, 0)) + SUM(COALESCE(p.usaha_baru, 0)) + SUM(COALESCE(p.usaha_tidak_ditemukan, 0)) + SUM(COALESCE(p.usaha_tutup, 0)) + SUM(COALESCE(p.usaha_ganda, 0))) AS usaha_total,
       SUM(COALESCE(p.tidak_dapat_ditemui, 0)) AS tidak_dapat_ditemui,
       SUM(COALESCE(p.rejected, 0)) AS rejected,
       (SUM(COALESCE(p.usaha_ganda, 0)) + SUM(COALESCE(p.tidak_dapat_ditemui, 0)) + SUM(COALESCE(p.rejected, 0))) AS total_anomali
@@ -1212,7 +1213,7 @@ function getAnomalyStats(uploadId, filters = {}) {
     ORDER BY total_anomali DESC
   `;
 
-  return getDb().prepare(sql).all(params);
+  return getDb().prepare(sql).all(...params);
 }
 
 function initSettings() {

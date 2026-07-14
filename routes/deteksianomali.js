@@ -7,12 +7,11 @@ router.get('/', (req, res) => {
   const filterKec = req.query.kec || '';
   const filterKorlap = req.query.korlap || '';
   const filterPml = req.query.pml || '';
-  const filterPcl = req.query.pcl || '';
 
   let anomalies = [];
 
   if (uploadId) {
-    anomalies = getAnomalyStats(uploadId, { kec: filterKec, korlap: filterKorlap, pml: filterPml, pcl: filterPcl });
+    anomalies = getAnomalyStats(uploadId, { kec: filterKec, korlap: filterKorlap, pml: filterPml });
   }
 
   // Get filter lists
@@ -27,7 +26,6 @@ router.get('/', (req, res) => {
     filterKec,
     filterKorlap,
     filterPml,
-    filterPcl,
     kecList,
     korlapList,
     pmlList
