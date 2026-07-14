@@ -222,4 +222,24 @@ router.get('/weather/history', (req, res) => {
   res.json(getWeatherHistory());
 });
 
+// Ubah mode target utama progres secara dinamis
+router.post('/settings/target-mode', (req, res) => {
+  const { mode } = req.body;
+  if (!['static', 'dynamic', 'fasih-sm'].includes(mode)) {
+    return res.status(400).json({ error: 'Mode target tidak valid.' });
+  }
+
+  const { getSettings, updateSettings } = require('../database');
+  const settings = getSettings();
+  const updatedSettings = { ...settings, target_fasih_mode: mode };
+
+  try {
+    updateSettings(updatedSettings);
+    res.json({ success: true, mode });
+  } catch (err) {
+    res.status(500).json({ error: `Gagal memperbarui target mode: ${err.message}` });
+  }
+});
+
 module.exports = router;
+

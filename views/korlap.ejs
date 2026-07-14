@@ -49,7 +49,7 @@
                   <th class="text-right bg-blue-soft">Submitted</th>
                   <th class="text-right bg-red-soft">Rejected</th>
                   <th class="text-right bg-green-soft">Approved</th>
-                  <th class="text-right bg-purple-soft">Target</th>
+                  <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'Tgt Dinamis' : (settings.target_fasih_mode === 'honor' ? 'Tgt Honor' : 'Tgt Statis')) %></th>
                   <th class="text-right bg-purple-soft">Progres %</th>
                   <th class="text-right bg-cyan-soft muatan-col">Usaha Total</th>
                   <th class="text-right bg-cyan-soft muatan-col">Target Muatan</th>
@@ -218,7 +218,7 @@
                           Muatan: <strong><%= item.usaha_total + item.keluarga_total %></strong>/<%= item.total_muatan %>
                         </span>
                         <span style="color: var(--accent-purple);">
-                          FASIH: <strong><%= (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0) %></strong>/<%= item.target_fasih_total %>
+                          <%= settings.target_fasih_mode === 'fasih-sm' ? 'FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'FASIH Dinamis' : (settings.target_fasih_mode === 'honor' ? 'Honor' : 'FASIH Statis')) %>: <strong><%= (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0) %></strong>/<%= item.target_fasih_total %>
                           <span style="font-size: 9px; color: var(--text-muted);">(D<%= item.draft_total %> S<%= item.submitted_total %> A<%= item.approved_total %> R<%= item.rejected_total %>)</span>
                         </span>
                       </div>

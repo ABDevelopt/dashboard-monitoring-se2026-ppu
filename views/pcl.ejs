@@ -98,7 +98,7 @@
                   <th class="text-right bg-blue-soft">Submitted</th>
                   <th class="text-right bg-red-soft">Rejected</th>
                   <th class="text-right bg-green-soft">Approved</th>
-                  <th class="text-right bg-purple-soft">Target</th>
+                  <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'Tgt Dinamis' : (settings.target_fasih_mode === 'honor' ? 'Tgt Honor' : 'Tgt Statis')) %></th>
                   <th class="text-right bg-purple-soft">Progres %</th>
                   <th class="text-right bg-cyan-soft muatan-col">Usaha Total</th>
                   <th class="text-right bg-cyan-soft muatan-col">Target Muatan</th>
