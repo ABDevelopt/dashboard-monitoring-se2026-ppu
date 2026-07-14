@@ -3243,77 +3243,67 @@
       });
     }
 
-    // Target Selector Dropdown Toggler
-    const targetSelectorBtn = document.getElementById('targetSelectorBtn');
-    const targetSelectorDropdown = document.getElementById('targetSelectorDropdown');
-
-    if (targetSelectorBtn && targetSelectorDropdown) {
-      targetSelectorBtn.addEventListener('click', (e) => {
+    // Target Selector Dropdown Toggler (using event delegation to support PJAX content swaps)
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('#targetSelectorBtn');
+      const dropdown = document.getElementById('targetSelectorDropdown');
+      if (btn && dropdown) {
         e.stopPropagation();
-        const isHidden = targetSelectorDropdown.style.display === 'none' || !targetSelectorDropdown.style.display;
-        targetSelectorDropdown.style.display = isHidden ? 'flex' : 'none';
-      });
-
-      document.addEventListener('click', (e) => {
-        if (!targetSelectorDropdown.contains(e.target) && e.target !== targetSelectorBtn) {
-          targetSelectorDropdown.style.display = 'none';
+        const isHidden = dropdown.style.display === 'none' || !dropdown.style.display;
+        dropdown.style.display = isHidden ? 'flex' : 'none';
+      } else if (dropdown) {
+        if (!dropdown.contains(e.target)) {
+          dropdown.style.display = 'none';
         }
-      });
+      }
+    });
 
-      const publicTargetFasihMode = document.getElementById('publicTargetFasihMode');
-      const publicTargetMuatanMode = document.getElementById('publicTargetMuatanMode');
-
-      const updateTargetMode = async (payload) => {
-        if (typeof Swal !== 'undefined') {
-          Swal.fire({
-            title: 'Memperbarui Target...',
-            text: 'Mohon tunggu sejenak, data sedang disesuaikan.',
-            allowOutsideClick: false,
-            didOpen: () => {
-              Swal.showLoading();
-            }
-          });
-        }
-
-        try {
-          const response = await fetch('/api/settings/target-mode', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-          });
-          const result = await response.json();
-          if (result.success) {
-            window.location.reload();
-          } else {
-            if (typeof Swal !== 'undefined') {
-              Swal.fire('Gagal', result.error || 'Terjadi kesalahan saat memperbarui target.', 'error');
-            } else {
-              alert(result.error || 'Terjadi kesalahan saat memperbarui target.');
-            }
+    const updateTargetMode = async (payload) => {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          title: 'Memperbarui Target...',
+          text: 'Mohon tunggu sejenak, data sedang disesuaikan.',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
           }
-        } catch (err) {
+        });
+      }
+
+      try {
+        const response = await fetch('/api/settings/target-mode', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result.success) {
+          window.location.reload();
+        } else {
           if (typeof Swal !== 'undefined') {
-            Swal.fire('Gagal', 'Koneksi server terputus.', 'error');
+            Swal.fire('Gagal', result.error || 'Terjadi kesalahan saat memperbarui target.', 'error');
           } else {
-            alert('Koneksi server terputus.');
+            alert(result.error || 'Terjadi kesalahan saat memperbarui target.');
           }
         }
-      };
-
-      if (publicTargetFasihMode) {
-        publicTargetFasihMode.addEventListener('change', () => {
-          updateTargetMode({ target_fasih_mode: publicTargetFasihMode.value });
-        });
+      } catch (err) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire('Gagal', 'Koneksi server terputus.', 'error');
+        } else {
+          alert('Koneksi server terputus.');
+        }
       }
+    };
 
-      if (publicTargetMuatanMode) {
-        publicTargetMuatanMode.addEventListener('change', () => {
-          updateTargetMode({ target_muatan_mode: publicTargetMuatanMode.value });
-        });
+    document.addEventListener('change', (e) => {
+      if (e.target.id === 'publicTargetFasihMode') {
+        updateTargetMode({ target_fasih_mode: e.target.value });
+      } else if (e.target.id === 'publicTargetMuatanMode') {
+        updateTargetMode({ target_muatan_mode: e.target.value });
       }
-    }
+    });
   });
 </script>
 <%- typeof scripts !== 'undefined' ? scripts : '' %>
