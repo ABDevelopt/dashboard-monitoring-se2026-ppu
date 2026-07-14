@@ -88,7 +88,7 @@
                   <th rowspan="2" class="hide-md">Kecamatan</th>
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
                   <th colspan="6" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
-                  <th colspan="5" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Beban Muatan</th>
+                  <th colspan="5" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
                   <th colspan="2" class="text-center bg-blue-soft hide-sm" style="border-bottom: 1px solid var(--border);">Proyeksi (Deadline: 31 Agt)</th>
                 </tr>
                 <tr>
@@ -100,9 +100,9 @@
                   <th class="text-right bg-green-soft">Approved</th>
                   <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'Tgt Dinamis' : (settings.target_fasih_mode === 'honor' ? 'Tgt Honor' : 'Tgt Statis')) %></th>
                   <th class="text-right bg-purple-soft">Progres %</th>
-                  <th class="text-right bg-cyan-soft muatan-col">Realisasi</th>
-                  <th class="text-right bg-cyan-soft muatan-col">Target Muatan</th>
-                  <th class="text-right bg-cyan-soft muatan-col">Progres %</th>
+                  <th class="text-right bg-cyan-soft hide-sm muatan-col">Realisasi</th>
+                  <th class="text-right bg-cyan-soft hide-sm muatan-col">Target</th>
+                  <th class="bg-cyan-soft muatan-col" style="min-width:160px;">Bar Progres</th>
                   <th class="text-right bg-green-soft hide-sm muatan-col">Usaha</th>
                   <th class="text-right bg-green-soft hide-sm muatan-col">Keluarga</th>
                   <th class="text-right bg-blue-soft hide-sm">Laju Saat Ini</th>
@@ -159,14 +159,20 @@
                     </td>
                      <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total) %>"><%= (p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total)).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>">
-                      <% if (parseFloat(muatanPct) >= 100) { %>
-                        <span class="badge badge-green">100%</span>
-                      <% } else if (parseFloat(muatanPct) < activeTargetPct) { %>
-                        <span class="badge badge-red"><%= muatanPct %>%</span>
-                      <% } else { %>
-                        <span class="badge badge-blue"><%= muatanPct %>%</span>
-                      <% } %>
+                    <td class="bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>" style="min-width: 160px; padding: 6px 10px;">
+                      <%
+                        const muatanRealPcl = p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total);
+                        const muatanTgtPcl  = p.total_muatan || 0;
+                        const muatanWPcl    = Math.min(parseFloat(muatanPct), 100);
+                        const muatanColorPcl = muatanWPcl >= 100 ? 'var(--accent-green)' : (muatanWPcl < activeTargetPct ? 'var(--accent-red)' : 'var(--accent-cyan)');
+                      %>
+                      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px;">
+                        <span style="font-weight:700; color:<%= muatanColorPcl %>"><%= muatanPct %>%</span>
+                        <span><%= muatanRealPcl.toLocaleString('id-ID') %> / <%= muatanTgtPcl.toLocaleString('id-ID') %></span>
+                      </div>
+                      <div style="height:5px; background:var(--bg-progress-wrap); border-radius:99px; overflow:hidden;">
+                        <div class="progress-bar <%= muatanWPcl >= 100 ? 'green' : (muatanWPcl < activeTargetPct ? 'red' : 'blue') %>" data-width="<%= muatanWPcl %>" style="width:0%; height:100%; border-radius:99px;"></div>
+                      </div>
                     </td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.keluarga_total %>"><%= (p.keluarga_total || 0).toLocaleString('id-ID') %></td>
