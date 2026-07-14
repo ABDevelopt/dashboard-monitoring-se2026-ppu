@@ -53,7 +53,7 @@
                   <th class="text-right bg-green-soft">Approved</th>
                   <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'Tgt Dinamis' : (settings.target_fasih_mode === 'honor' ? 'Tgt Honor' : 'Tgt Statis')) %></th>
                   <th class="text-right bg-purple-soft">Progres %</th>
-                  <th class="text-right bg-cyan-soft muatan-col">Usaha Total</th>
+                  <th class="text-right bg-cyan-soft muatan-col">Realisasi</th>
                   <th class="text-right bg-cyan-soft muatan-col">Target Muatan</th>
                   <th class="text-right bg-cyan-soft muatan-col">Progres %</th>
                 </tr>
@@ -99,7 +99,7 @@
                         <span class="badge badge-blue"><%= fasihPct %>%</span>
                       <% } %>
                     </td>
-                    <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
+                    <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total) %>"><%= (p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total)).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>">
                       <% if (parseFloat(muatanPct) >= 100) { %>

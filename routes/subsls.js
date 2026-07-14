@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb, getSettings, attachProgressPercentages, getTargetFormula } = require('../database');
+const { getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -51,6 +51,13 @@ router.get('/', (req, res) => {
       WHERE 1=1 ${where}
     `).get(...params).n;
 
+    const settings = getSettings();
+    const targetFormula = getTargetFormula(settings.target_fasih_mode);
+    const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
+    const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+    const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+    const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+
     data = attachProgressPercentages(getDb().prepare(`
       SELECT 
         m.kode, m.kecamatan, m.desa, m.nama_sls,
@@ -65,14 +72,14 @@ router.get('/', (req, res) => {
         COALESCE(p.target_upload, 0) AS target_upload,
         CASE 
           WHEN p.kode IS NULL OR (
-            COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND 
+            (${realFormula}) = 0 AND 
             COALESCE(p.draft, 0) = 0 AND 
             COALESCE(p.submitted_by_pcl, 0) = 0 AND 
             COALESCE(p.approved, 0) = 0 AND 
             COALESCE(p.rejected, 0) = 0
           ) THEN 'belum_mulai'
-          WHEN m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) < m.muatan THEN 'sedang_didata'
-          WHEN (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) = m.muatan THEN 'memenuhi_target'
+          WHEN (${targetMuatanFormula}) > 0 AND (${realFormula}) < (${targetMuatanFormula}) THEN 'sedang_didata'
+          WHEN (${realFormula}) = (${targetMuatanFormula}) THEN 'memenuhi_target'
           ELSE 'melebihi_target'
         END AS sudah_diisi,
         COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
@@ -83,8 +90,8 @@ router.get('/', (req, res) => {
         COALESCE(p.tidak_ditemukan, 0) AS tidak_ditemukan,
         COALESCE(p.ditemukan, 0) AS ditemukan,
         COALESCE(p.keluarga_baru, 0) AS keluarga_baru,
-        COALESCE(p.usaha_ditemukan + p.usaha_baru, 0) AS usaha_total,
-        COALESCE(p.ditemukan + p.keluarga_baru, 0) AS keluarga_total,
+        (${usahaTotalFormula}) AS usaha_total,
+        (${keluargaTotalFormula}) AS keluarga_total,
         COALESCE(p.rumah_tunggal, 0) AS rumah_tunggal,
         COALESCE(p.rumah_deret, 0) AS rumah_deret,
         COALESCE(p.rumah_susun, 0) AS rumah_susun,
@@ -126,6 +133,10 @@ router.get('/export', (req, res) => {
 
   const settings = getSettings();
   const targetFormula = getTargetFormula(settings.target_fasih_mode);
+  const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
+  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+  const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+  const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
   const data = attachProgressPercentages(getDb().prepare(`
     SELECT 
@@ -140,17 +151,17 @@ router.get('/export', (req, res) => {
       COALESCE(m.target_fasih, 0) AS target_static,
       COALESCE(p.target_upload, 0) AS target_upload,
 
-      m.muatan AS target_muatan,
+      (${targetMuatanFormula}) AS target_muatan,
       CASE 
         WHEN p.kode IS NULL OR (
-          COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND 
+          (${realFormula}) = 0 AND 
           COALESCE(p.draft, 0) = 0 AND 
           COALESCE(p.submitted_by_pcl, 0) = 0 AND 
           COALESCE(p.approved, 0) = 0 AND 
           COALESCE(p.rejected, 0) = 0
         ) THEN 'Belum Mulai'
-        WHEN m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) < m.muatan THEN 'Sedang Didata'
-        WHEN (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) = m.muatan THEN 'Memenuhi Target'
+        WHEN (${targetMuatanFormula}) > 0 AND (${realFormula}) < (${targetMuatanFormula}) THEN 'Sedang Didata'
+        WHEN (${realFormula}) = (${targetMuatanFormula}) THEN 'Memenuhi Target'
         ELSE 'Melebihi Target'
       END AS status,
       COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
@@ -162,8 +173,8 @@ router.get('/export', (req, res) => {
       COALESCE(p.ditemukan, 0) AS keluarga_ditemukan,
       COALESCE(p.keluarga_baru, 0) AS keluarga_baru,
       COALESCE(p.meninggal, 0) AS meninggal,
-      COALESCE(p.usaha_ditemukan + p.usaha_baru, 0) AS total_usaha,
-      COALESCE(p.ditemukan + p.keluarga_baru, 0) AS total_keluarga,
+      (${usahaTotalFormula}) AS total_usaha,
+      (${keluargaTotalFormula}) AS total_keluarga,
       COALESCE(p.rumah_tunggal, 0) AS rumah_tunggal,
       COALESCE(p.rumah_deret, 0) AS rumah_deret,
       COALESCE(p.rumah_susun, 0) AS rumah_susun,

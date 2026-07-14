@@ -459,13 +459,41 @@ function getTargetFormula(mode, progresAlias = 'p', masterAlias = 'm') {
     return `COALESCE(${progresAlias}.target_upload, 0)`;
   } else if (mode === 'dynamic') {
     return `CASE WHEN (COALESCE(${masterAlias}.target_fasih, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.keluarga_baru, 0) - COALESCE(${progresAlias}.usaha_tutup, 0) - COALESCE(${progresAlias}.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(${masterAlias}.target_fasih, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.keluarga_baru, 0) - COALESCE(${progresAlias}.usaha_tutup, 0) - COALESCE(${progresAlias}.tidak_ditemukan, 0)) END`;
-  } else if (mode === 'honor') {
-    return `COALESCE(${masterAlias}.target_honor, 0)`;
   } else {
     // Default to static
     return `COALESCE(${masterAlias}.target_fasih, 0)`;
   }
 }
+
+function getRealizationFormula(mode, progresAlias = 'p') {
+  if (mode === 'honor') {
+    return `(COALESCE(${progresAlias}.ditemukan, 0) + COALESCE(${progresAlias}.keluarga_baru, 0) + COALESCE(${progresAlias}.tidak_ditemukan, 0) + COALESCE(${progresAlias}.meninggal, 0) + COALESCE(${progresAlias}.tidak_eligible, 0) + COALESCE(${progresAlias}.tidak_dapat_ditemui, 0) + COALESCE(${progresAlias}.usaha_ditemukan, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.usaha_tidak_ditemukan, 0) + COALESCE(${progresAlias}.usaha_tutup, 0) + COALESCE(${progresAlias}.usaha_ganda, 0))`;
+  }
+  return `(COALESCE(${progresAlias}.usaha_ditemukan, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.ditemukan, 0) + COALESCE(${progresAlias}.keluarga_baru, 0))`;
+}
+
+function getUsahaTotalFormula(mode, progresAlias = 'p') {
+  if (mode === 'honor') {
+    return `(COALESCE(${progresAlias}.usaha_ditemukan, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.usaha_tidak_ditemukan, 0) + COALESCE(${progresAlias}.usaha_tutup, 0) + COALESCE(${progresAlias}.usaha_ganda, 0))`;
+  }
+  return `(COALESCE(${progresAlias}.usaha_ditemukan, 0) + COALESCE(${progresAlias}.usaha_baru, 0))`;
+}
+
+function getKeluargaTotalFormula(mode, progresAlias = 'p') {
+  if (mode === 'honor') {
+    return `(COALESCE(${progresAlias}.ditemukan, 0) + COALESCE(${progresAlias}.keluarga_baru, 0) + COALESCE(${progresAlias}.tidak_ditemukan, 0) + COALESCE(${progresAlias}.meninggal, 0) + COALESCE(${progresAlias}.tidak_eligible, 0) + COALESCE(${progresAlias}.tidak_dapat_ditemui, 0))`;
+  }
+  return `(COALESCE(${progresAlias}.ditemukan, 0) + COALESCE(${progresAlias}.keluarga_baru, 0))`;
+}
+
+function getAdaptiveMuatanFormula(mode, progresAlias = 'p', masterAlias = 'm') {
+  const realFormula = getRealizationFormula(mode, progresAlias);
+  if (mode === 'honor') {
+    return `CASE WHEN COALESCE(${masterAlias}.muatan, 0) < ${realFormula} THEN ${realFormula} ELSE COALESCE(${masterAlias}.muatan, 0) END`;
+  }
+  return `COALESCE(${masterAlias}.muatan, 0)`;
+}
+
 
 // Ambil data progres gabungan dengan master untuk upload tertentu
 function getProgresWithMaster(uploadId) {
@@ -474,10 +502,15 @@ function getProgresWithMaster(uploadId) {
 
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
 
+  const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
+  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+  const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+  const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+
   return attachProgressPercentages(getDb().prepare(`
     SELECT 
       m.kode, m.kode_kec, m.kecamatan, m.desa, m.nama_sls,
-      m.korlap, m.pml, m.pcl, m.muatan, m.target_fasih AS target_fasih_awal,
+      m.korlap, m.pml, m.pcl, m.target_fasih AS target_fasih_awal,
       p.usaha_tidak_ditemukan, p.usaha_ditemukan, p.usaha_baru,
       p.usaha_tutup, p.usaha_ganda,
       p.tidak_ditemukan, p.ditemukan, p.keluarga_baru,
@@ -488,7 +521,11 @@ function getProgresWithMaster(uploadId) {
       COALESCE(p.approved, 0) AS approved,
       COALESCE(p.rejected, 0) AS rejected,
       (${singleTargetFormula}) AS target_fasih,
-      (${singleSelesaiFormula}) AS sudah_diisi
+      (${singleSelesaiFormula}) AS sudah_diisi,
+      (${targetMuatanFormula}) AS muatan,
+      (${realFormula}) AS muatan_selesai,
+      (${usahaTotalFormula}) AS usaha_total,
+      (${keluargaTotalFormula}) AS keluarga_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     ORDER BY m.kecamatan, m.desa, m.kode
@@ -634,11 +671,11 @@ function getOverviewSummary(uploadId) {
   if (!uploadId) return null;
   const total = getDb().prepare('SELECT COUNT(*) as n FROM subsls_master').get().n;
   const target_awal_total = getDb().prepare('SELECT SUM(target_fasih) AS n FROM subsls_master').get().n || 0;
-  const muatan_total = getDb().prepare('SELECT SUM(muatan) as n FROM subsls_master').get().n || 0;
 
   const stats = getDb().prepare(`
     SELECT 
       SUM(selesai) AS selesai,
+      SUM(total_muatan) AS total_muatan,
       SUM(muatan_selesai) AS muatan_selesai,
       SUM(target_fasih_total) AS target_fasih_total,
       SUM(target_static_total) AS target_static_total,
@@ -667,6 +704,7 @@ function getOverviewSummary(uploadId) {
   `).get(uploadId);
 
   const selesai = stats.selesai || 0;
+  const total_muatan = stats.total_muatan || 0;
   const muatan_selesai = stats.muatan_selesai || 0;
   const target_fasih_total = stats.target_fasih_total || 0;
   const target_static_total = stats.target_static_total || 0;
@@ -676,7 +714,8 @@ function getOverviewSummary(uploadId) {
     total, 
     selesai, 
     belum: total - selesai, 
-    muatan_total, 
+    total_muatan, 
+    muatan_total: total_muatan, 
     muatan_selesai, 
     target_awal_total, 
     target_fasih_total, 
@@ -729,6 +768,9 @@ function getEarlyWarning(uploadId, filters = {}) {
     paramsZeroPml.push(filters.pml);
   }
 
+  const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
+  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+
   const zeroPcl = getDb().prepare(`
     SELECT 
       m.pcl, 
@@ -737,8 +779,8 @@ function getEarlyWarning(uploadId, filters = {}) {
       MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
-      SUM(m.muatan) AS total_muatan,
-      SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_selesai,
+      SUM(${targetMuatanFormula}) AS total_muatan,
+      SUM(${realFormula}) AS muatan_selesai,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
@@ -762,8 +804,8 @@ function getEarlyWarning(uploadId, filters = {}) {
       MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
-      SUM(m.muatan) AS total_muatan,
-      SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_selesai,
+      SUM(${targetMuatanFormula}) AS total_muatan,
+      SUM(${realFormula}) AS muatan_selesai,
       CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 100.0 END AS pct,
       SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS muatan_realisasi,
       ROUND(SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) * 1.0 / ?, 2) AS rata_rata,
@@ -788,8 +830,8 @@ function getEarlyWarning(uploadId, filters = {}) {
       MAX(m.korlap) AS korlap,
       COUNT(m.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
-      SUM(m.muatan) AS total_muatan,
-      SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_selesai,
+      SUM(${targetMuatanFormula}) AS total_muatan,
+      SUM(${realFormula}) AS muatan_selesai,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
@@ -982,6 +1024,10 @@ function getTopPerformers(uploadId, filters = {}) {
 
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
 
+  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+  const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+  const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+
   const topPcl = getDb().prepare(`
     SELECT 
       m.pcl, 
@@ -990,10 +1036,10 @@ function getTopPerformers(uploadId, filters = {}) {
       MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
-      SUM(m.muatan) AS total_muatan,
+      SUM(${targetMuatanFormula}) AS total_muatan,
       CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 0.0 END AS pct,
-      SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
+      SUM(${usahaTotalFormula}) AS usaha_total,
+      SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
@@ -1015,10 +1061,10 @@ function getTopPerformers(uploadId, filters = {}) {
       MAX(m.korlap) AS korlap,
       COUNT(m.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
-      SUM(m.muatan) AS total_muatan,
+      SUM(${targetMuatanFormula}) AS total_muatan,
       CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 0.0 END AS pct,
-      SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
+      SUM(${usahaTotalFormula}) AS usaha_total,
+      SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
@@ -1068,6 +1114,10 @@ function getBottomPerformers(uploadId, filters = {}) {
 
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
 
+  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+  const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+  const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+
   const bottomPcl = getDb().prepare(`
     SELECT 
       m.pcl, 
@@ -1076,10 +1126,10 @@ function getBottomPerformers(uploadId, filters = {}) {
       MAX(m.kecamatan) AS kecamatan,
       COUNT(m.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
-      SUM(m.muatan) AS total_muatan,
+      SUM(${targetMuatanFormula}) AS total_muatan,
       CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 100.0 END AS pct,
-      SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
+      SUM(${usahaTotalFormula}) AS usaha_total,
+      SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
@@ -1101,10 +1151,10 @@ function getBottomPerformers(uploadId, filters = {}) {
       MAX(m.korlap) AS korlap,
       COUNT(m.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
-      SUM(m.muatan) AS total_muatan,
+      SUM(${targetMuatanFormula}) AS total_muatan,
       CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 100.0 END AS pct,
-      SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
+      SUM(${usahaTotalFormula}) AS usaha_total,
+      SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
@@ -1276,6 +1326,11 @@ function rebuildSummaryCache(uploadId) {
 
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
 
+  const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
+  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+  const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+  const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+
   db.prepare(`
     INSERT INTO summary_cache (
       upload_id, kecamatan, desa, korlap, pml, pcl,
@@ -1295,10 +1350,10 @@ function rebuildSummaryCache(uploadId) {
       m.pcl,
       COUNT(m.kode) AS total_sls,
       SUM(${singleSelesaiFormula}) AS selesai,
-      SUM(m.muatan) AS total_muatan,
-      SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS muatan_selesai,
-      SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-      SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
+      SUM(${targetMuatanFormula}) AS total_muatan,
+      SUM(${realFormula}) AS muatan_selesai,
+      SUM(${usahaTotalFormula}) AS usaha_total,
+      SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
@@ -1400,7 +1455,7 @@ function attachProgressPercentages(data) {
   data.fasih_upload_pct = targetUpload > 0 ? parseFloat(((completedFasih / targetUpload) * 100).toFixed(2)) : 0.0;
   data.fasih_upload_pct_str = targetUpload > 0 ? ((completedFasih / targetUpload) * 100).toFixed(2) : '0.00';
 
-  const targetMuatan = data.total_muatan !== undefined ? data.total_muatan : (data.muatan || 0);
+  let targetMuatan = data.total_muatan !== undefined ? data.total_muatan : (data.muatan_total !== undefined ? data.muatan_total : (data.muatan || 0));
   let completedMuatan = 0;
   if (data.muatan_selesai !== undefined) {
     completedMuatan = data.muatan_selesai;
@@ -1409,6 +1464,13 @@ function attachProgressPercentages(data) {
     const keluarga = data.keluarga_total !== undefined ? data.keluarga_total : (data.total_keluarga || 0);
     completedMuatan = usaha + keluarga;
   }
+
+  // Fallback Target Adaptif in JS if mode is 'honor'
+  const settings = getSettings();
+  if (settings.target_muatan_mode === 'honor' && completedMuatan > targetMuatan) {
+    targetMuatan = completedMuatan;
+  }
+
   data.muatan_pct = targetMuatan > 0 ? parseFloat(((completedMuatan / targetMuatan) * 100).toFixed(2)) : 0.0;
   data.muatan_pct_str = targetMuatan > 0 ? ((completedMuatan / targetMuatan) * 100).toFixed(2) : '0.00';
 
@@ -1421,5 +1483,6 @@ module.exports = {
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
   getBottomPerformers, getAnomalyStats,
   getSettings, updateSettings, getUserByUsername, hashPassword, rebuildSummaryCache, rebuildAllSummaryCaches,
-  getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages, getTargetFormula
+  getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages, getTargetFormula,
+  getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula
 };

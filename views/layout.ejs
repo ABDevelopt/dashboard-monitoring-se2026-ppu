@@ -428,7 +428,6 @@
               <option value="static" <%= settings.target_fasih_mode === 'static' || !settings.target_fasih_mode ? 'selected' : '' %>>Statis (Prelist)</option>
               <option value="dynamic" <%= settings.target_fasih_mode === 'dynamic' ? 'selected' : '' %>>Dinamis (Temuan)</option>
               <option value="fasih-sm" <%= settings.target_fasih_mode === 'fasih-sm' ? 'selected' : '' %>>FASIH-SM (Upload)</option>
-              <option value="honor" <%= settings.target_fasih_mode === 'honor' ? 'selected' : '' %>>Target Honor</option>
             </select>
           </div>
           
@@ -2001,6 +2000,8 @@
       const totalSelesai = rows.reduce((s, r) => s + (r.selesai || 0), 0);
       const totalMuatan = rows.reduce((s, r) => s + (r.total_muatan || 0), 0);
       const totalUsaha = rows.reduce((s, r) => s + (r.usaha_total || 0), 0);
+      const totalKeluarga = rows.reduce((s, r) => s + (r.keluarga_total || 0), 0);
+      const totalMuatanSelesai = totalUsaha + totalKeluarga;
       const totalFasihTarget = rows.reduce((s, r) => s + (r.target_fasih_total || 0), 0);
       const totalDraft = rows.reduce((s, r) => s + (r.draft_total || 0), 0);
       const totalSubmit = rows.reduce((s, r) => s + (r.submitted_total || 0), 0);
@@ -2022,7 +2023,7 @@
           <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
             <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
           </div>
-          ${makeProgressBar(totalUsaha, totalMuatan, 'var(--accent-blue)')}
+          ${makeProgressBar(totalMuatanSelesai, totalMuatan, 'var(--accent-blue)')}
         </div>
         <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
           ${makeSectionHeader('Progres FASIH (Submit + Approve + Reject)')}
@@ -2038,9 +2039,10 @@
           <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
             ${rows.map(r => {
               const pct = r.muatan_pct_str || '0.00';
+              const completed = r.muatan_selesai !== undefined ? r.muatan_selesai : ((r.usaha_total || 0) + (r.keluarga_total || 0));
               return `<div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
                 <span style="font-size:12px; font-weight:500;">${r.pml}</span>
-                <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">${r.usaha_total}/${r.total_muatan} (${pct}%)</span>
+                <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">${completed}/${r.total_muatan} (${pct}%)</span>
               </div>`;
             }).join('')}
           </div>
@@ -2054,6 +2056,8 @@
       const totalSelesai = rows.reduce((s, r) => s + (r.selesai || 0), 0);
       const totalMuatan = rows.reduce((s, r) => s + (r.total_muatan || 0), 0);
       const totalUsaha = rows.reduce((s, r) => s + (r.usaha_total || 0), 0);
+      const totalKeluarga = rows.reduce((s, r) => s + (r.keluarga_total || 0), 0);
+      const totalMuatanSelesai = totalUsaha + totalKeluarga;
       const totalFasihTarget = rows.reduce((s, r) => s + (r.target_fasih_total || 0), 0);
       const totalDraft = rows.reduce((s, r) => s + (r.draft_total || 0), 0);
       const totalSubmit = rows.reduce((s, r) => s + (r.submitted_total || 0), 0);
@@ -2072,7 +2076,7 @@
           <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
             <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
           </div>
-          ${makeProgressBar(totalUsaha, totalMuatan, 'var(--accent-blue)')}
+          ${makeProgressBar(totalMuatanSelesai, totalMuatan, 'var(--accent-blue)')}
         </div>
         <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
           ${makeSectionHeader('Progres FASIH (Submit + Approve + Reject)')}
@@ -2088,12 +2092,13 @@
           <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
             ${rows.map(r => {
               const pct = r.muatan_pct_str || '0.00';
+              const completed = r.muatan_selesai !== undefined ? r.muatan_selesai : ((r.usaha_total || 0) + (r.keluarga_total || 0));
               return `<div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
                 <div>
                   <span style="font-size:12px; font-weight:500;">${r.pcl}</span>
                   <span style="font-size:10px; color:var(--text-muted); margin-left:6px;">${r.kecamatan}</span>
                 </div>
-                <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">${r.usaha_total}/${r.total_muatan} (${pct}%)</span>
+                <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">${completed}/${r.total_muatan} (${pct}%)</span>
               </div>`;
             }).join('')}
           </div>
@@ -2107,6 +2112,8 @@
       const totalSelesai = rows.filter(r => r.sudah_diisi).length;
       const totalMuatan = rows.reduce((s, r) => s + (r.muatan || 0), 0);
       const totalUsaha = rows.reduce((s, r) => s + (r.usaha_total || 0), 0);
+      const totalKeluarga = rows.reduce((s, r) => s + (r.keluarga_total || 0), 0);
+      const totalMuatanSelesai = totalUsaha + totalKeluarga;
       const totalFasihTarget = rows.reduce((s, r) => s + (r.target_fasih || 0), 0);
       const totalDraft = rows.reduce((s, r) => s + (r.draft || 0), 0);
       const totalSubmit = rows.reduce((s, r) => s + (r.submitted_by_pcl || 0), 0);
@@ -2137,7 +2144,7 @@
       const projectedFinalVal = totalFasihAll + (currentSpeed * daysRemaining);
       const projectedPctVal = totalFasihTarget > 0 ? (projectedFinalVal / totalFasihTarget) * 100 : 100;
 
-      const donePct = totalMuatan ? ((totalUsaha / totalMuatan) * 100).toFixed(2) : '0.00';
+      const donePct = totalMuatan ? ((totalMuatanSelesai / totalMuatan) * 100).toFixed(2) : '0.00';
       const fasihPct = totalFasihTarget ? ((totalFasihAll / totalFasihTarget) * 100).toFixed(2) : '0.00';
 
       const showMuatan = typeof globalSettings !== 'undefined' && globalSettings.show_progres_muatan !== '0';
@@ -2149,7 +2156,7 @@
           <div style="margin-bottom: 12px; text-align: left;" class="muatan-col">
             <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
               <span><i class="bi bi-briefcase"></i> Progres Muatan</span>
-              <span class="fw-bold">${totalUsaha.toLocaleString('id-ID')} / ${totalMuatan.toLocaleString('id-ID')} (${donePct}%)</span>
+              <span class="fw-bold">${totalMuatanSelesai.toLocaleString('id-ID')} / ${totalMuatan.toLocaleString('id-ID')} (${donePct}%)</span>
             </div>
             <div class="progress-bar-target-wrap" style="position: relative; height: 6px; margin-top: 16px; margin-bottom: 8px;">
               <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">

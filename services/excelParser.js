@@ -414,19 +414,37 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
   updateTx(rows);
 }
 
-function parseAndSaveStatusExcelOnly(filePath, uploadId, prevUploadId = null) {
+function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename, tanggal) {
   const db = getDb();
   const wb = XLSX.readFile(filePath, { raw: true });
   const ws = findDataSheet(wb);
   if (!ws) throw new Error('Sheet dalam file rekap status tidak ditemukan.');
 
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: 0 });
-  if (rows.length < 2) return;
+  if (rows.length < 2) return { uploadId: null, uniqueSubsls: 0 };
 
   const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
   const colIdx = findStatusColumnIndexes(headers);
 
   if (colIdx.kode === -1) throw new Error('Kolom identitas wilayah/SLS ("level_6_full_code" atau "smallcode") tidak ditemukan dalam file rekap status.');
+
+  // Create uploads record first so uploadId exists for FK constraint
+  const uploadResult = db.prepare(`
+    INSERT INTO uploads (filename, stored_filename, tanggal, total_subsls_terisi, status_filename, stored_status_filename)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(originalFilename || 'status_fasih', null, tanggal, 0, originalFilename, storedFilename);
+  const uploadId = uploadResult.lastInsertRowid;
+
+  // Find previous upload that has FASIH status data (draft/submitted/approved/rejected)
+  const prevUploadRow = db.prepare(`
+    SELECT u.id FROM uploads u
+    JOIN progres p ON u.id = p.upload_id
+    WHERE u.id < ?
+    GROUP BY u.id
+    HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
+    ORDER BY u.id DESC LIMIT 1
+  `).get(uploadId);
+  const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
 
   const insertStmt = db.prepare(`
     INSERT OR IGNORE INTO progres (
@@ -454,6 +472,7 @@ function parseAndSaveStatusExcelOnly(filePath, uploadId, prevUploadId = null) {
     WHERE upload_id = ? AND kode = ?
   `);
 
+  let processedCount = 0;
   const updateTx = db.transaction((list) => {
     for (let i = 1; i < list.length; i++) {
       const row = list[i];
@@ -463,7 +482,6 @@ function parseAndSaveStatusExcelOnly(filePath, uploadId, prevUploadId = null) {
       const draft = colIdx.draft !== -1 ? toInt(row[colIdx.draft]) : 0;
       const submitted = colIdx.submittedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
       const approved = colIdx.approved !== -1 ? toInt(row[colIdx.approved]) : 0;
-      // Sum ALL rejected columns (Pengawas + Admin Kabupaten, dll.)
       const rejected = colIdx.rejectedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
       const targetUpload = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 0;
 
@@ -502,10 +520,20 @@ function parseAndSaveStatusExcelOnly(filePath, uploadId, prevUploadId = null) {
       );
 
       updateStmt.run(draft, submitted, approved, rejected, targetUpload, uploadId, kode);
+      processedCount++;
     }
   });
 
   updateTx(rows);
+
+  // Update total_subsls_terisi count
+  db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(processedCount, uploadId);
+
+  // Rebuild summary cache for this upload
+  const { rebuildSummaryCache } = require('../database');
+  rebuildSummaryCache(uploadId);
+
+  return { uploadId, uniqueSubsls: processedCount };
 }
 
 function toInt(val) {
@@ -676,4 +704,245 @@ function applyKippOverrides(db) {
   }
 }
 
-module.exports = { parseAndSaveExcel, loadMasterFromJson, loadMasterFromExcel, parseAndSaveStatusExcel, parseAndSaveStatusExcelOnly };
+function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaName, originalUsahaName, tanggal, statusFilePath = null, statusOriginalFilename = null, statusStoredFilename = null) {
+  const db = getDb();
+  
+  // Map to hold merged progress data by Sub-SLS code
+  const mergedData = {};
+  
+  // 1. Parse Keluarga if provided
+  if (keluargaPath && fs.existsSync(keluargaPath)) {
+    const wb = XLSX.readFile(keluargaPath, { raw: true });
+    const ws = wb.Sheets['KELUARGA'] || findDataSheet(wb);
+    if (ws) {
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: 0 });
+      if (rows.length >= 5) {
+        // Headers are on row index 3
+        const headers = rows[3].map(h => String(h || '').toLowerCase().trim());
+        const kodeIdx = headers.indexOf('kode');
+        const ditemukanIdx = headers.indexOf('ditemukan');
+        const baruIdx = headers.indexOf('keluarga baru');
+        const meninggalIdx = headers.indexOf('meninggal');
+        const teIdx = headers.indexOf('tidak eligible');
+        const tddIdx = headers.indexOf('tidak dapat ditemui sampai akhir pendataan');
+        const tdIdx = headers.indexOf('tidak ditemukan');
+        
+        if (kodeIdx !== -1) {
+          for (let i = 4; i < rows.length; i++) {
+            const row = rows[i];
+            const kode = String(row[kodeIdx] || '').trim();
+            if (!kode || kode.length < 10) continue;
+            
+            if (!mergedData[kode]) {
+              mergedData[kode] = createEmptyProgresRecord();
+            }
+            
+            mergedData[kode].ditemukan = ditemukanIdx !== -1 ? toInt(row[ditemukanIdx]) : 0;
+            mergedData[kode].keluarga_baru = baruIdx !== -1 ? toInt(row[baruIdx]) : 0;
+            mergedData[kode].meninggal = meninggalIdx !== -1 ? toInt(row[meninggalIdx]) : 0;
+            mergedData[kode].tidak_eligible = teIdx !== -1 ? toInt(row[teIdx]) : 0;
+            mergedData[kode].tidak_dapat_ditemui = tddIdx !== -1 ? toInt(row[tddIdx]) : 0;
+            mergedData[kode].tidak_ditemukan = tdIdx !== -1 ? toInt(row[tdIdx]) : 0;
+          }
+        }
+      }
+    }
+  }
+  
+  // 2. Parse Usaha if provided
+  if (usahaPath && fs.existsSync(usahaPath)) {
+    const wb = XLSX.readFile(usahaPath, { raw: true });
+    
+    // Parse USAHA PERUSAHAAN (BKU)
+    const wsPerusahaan = wb.Sheets['USAHA PERUSAHAAN'];
+    if (wsPerusahaan) {
+      const rows = XLSX.utils.sheet_to_json(wsPerusahaan, { header: 1, raw: true, defval: 0 });
+      let headerIdx = -1;
+      for (let i = 0; i < 10; i++) {
+        if (rows[i] && rows[i].includes('Kode')) {
+          headerIdx = i;
+          break;
+        }
+      }
+      
+      if (headerIdx !== -1 && rows[headerIdx + 1]) {
+        const headers = rows[headerIdx];
+        const subHeaders = rows[headerIdx + 1];
+        const kodeIdx = headers.indexOf('Kode');
+        
+        const ditemukanIdx = subHeaders.indexOf('Ditemukan');
+        const tutupIdx = subHeaders.indexOf('Tutup');
+        const gandaIdx = subHeaders.indexOf('Ganda');
+        const tdIdx = subHeaders.indexOf('Tidak Ditemukan');
+        const baruIdx = subHeaders.indexOf('Baru');
+        
+        if (kodeIdx !== -1) {
+          for (let i = headerIdx + 2; i < rows.length; i++) {
+            const row = rows[i];
+            const kode = String(row[kodeIdx] || '').trim();
+            if (!kode || kode.length < 10) continue;
+            
+            if (!mergedData[kode]) {
+              mergedData[kode] = createEmptyProgresRecord();
+            }
+            
+            mergedData[kode].usaha_ditemukan += ditemukanIdx !== -1 ? toInt(row[ditemukanIdx]) : 0;
+            mergedData[kode].usaha_tutup += tutupIdx !== -1 ? toInt(row[tutupIdx]) : 0;
+            mergedData[kode].usaha_ganda += gandaIdx !== -1 ? toInt(row[gandaIdx]) : 0;
+            mergedData[kode].usaha_tidak_ditemukan += tdIdx !== -1 ? toInt(row[tdIdx]) : 0;
+            mergedData[kode].usaha_baru += baruIdx !== -1 ? toInt(row[baruIdx]) : 0;
+          }
+        }
+      }
+    }
+    
+    // Parse USAHA KELUARGA
+    const wsUsahaKeluarga = wb.Sheets['USAHA KELUARGA'];
+    if (wsUsahaKeluarga) {
+      const rows = XLSX.utils.sheet_to_json(wsUsahaKeluarga, { header: 1, raw: true, defval: 0 });
+      let headerIdx = -1;
+      for (let i = 0; i < 10; i++) {
+        if (rows[i] && rows[i].includes('Kode')) {
+          headerIdx = i;
+          break;
+        }
+      }
+      
+      if (headerIdx !== -1 && rows[headerIdx + 1]) {
+        const headers = rows[headerIdx];
+        const subHeaders = rows[headerIdx + 1];
+        const kodeIdx = headers.indexOf('Kode');
+        
+        const ditemukanIdx = subHeaders.indexOf('Ditemukan');
+        const tutupIdx = subHeaders.indexOf('Tutup');
+        const gandaIdx = subHeaders.indexOf('Ganda');
+        const tdIdx = subHeaders.indexOf('Tidak Ditemukan');
+        const baruIdx = subHeaders.indexOf('Baru');
+        
+        if (kodeIdx !== -1) {
+          for (let i = headerIdx + 2; i < rows.length; i++) {
+            const row = rows[i];
+            const kode = String(row[kodeIdx] || '').trim();
+            if (!kode || kode.length < 10) continue;
+            
+            if (!mergedData[kode]) {
+              mergedData[kode] = createEmptyProgresRecord();
+            }
+            
+            mergedData[kode].usaha_ditemukan += ditemukanIdx !== -1 ? toInt(row[ditemukanIdx]) : 0;
+            mergedData[kode].usaha_tutup += tutupIdx !== -1 ? toInt(row[tutupIdx]) : 0;
+            mergedData[kode].usaha_ganda += gandaIdx !== -1 ? toInt(row[gandaIdx]) : 0;
+            mergedData[kode].usaha_tidak_ditemukan += tdIdx !== -1 ? toInt(row[tdIdx]) : 0;
+            mergedData[kode].usaha_baru += baruIdx !== -1 ? toInt(row[baruIdx]) : 0;
+          }
+        }
+      }
+    }
+  }
+  
+  // 3. Save to database
+  const filename = [
+    originalKeluargaName ? `Keluarga: ${originalKeluargaName}` : '',
+    originalUsahaName ? `Usaha: ${originalUsahaName}` : ''
+  ].filter(Boolean).join(' | ') || 'separate_exports';
+  
+  const uploadStmt = db.prepare(`
+    INSERT INTO uploads (filename, stored_filename, tanggal, total_subsls_terisi, status_filename, stored_status_filename) 
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  
+  const dataRows = Object.entries(mergedData).map(([kode, val]) => ({
+    kode,
+    ...val
+  })).filter(r => r.kode.length >= 10);
+  
+  const uploadResult = uploadStmt.run(filename, null, tanggal, dataRows.length, statusOriginalFilename, statusStoredFilename);
+  const uploadId = uploadResult.lastInsertRowid;
+  
+  // Get previous upload_id
+  const prevUploadRow = db.prepare(`
+    SELECT u.id 
+    FROM uploads u
+    JOIN progres p ON u.id = p.upload_id
+    WHERE u.id < ? 
+    GROUP BY u.id
+    HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
+    ORDER BY u.id DESC LIMIT 1
+  `).get(uploadId);
+  const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
+  
+  const insertProgres = db.prepare(`
+    INSERT OR REPLACE INTO progres 
+      (upload_id, kode,
+       usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
+       tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
+       rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
+       draft, submitted_by_pcl, approved, rejected, target_upload)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  
+  const getPrevStatus = db.prepare(`
+    SELECT 
+      COALESCE(draft, 0) AS draft, 
+      COALESCE(submitted_by_pcl, 0) AS submitted_by_pcl, 
+      COALESCE(approved, 0) AS approved, 
+      COALESCE(rejected, 0) AS rejected,
+      COALESCE(target_upload, 0) AS target_upload
+    FROM progres 
+    WHERE upload_id = ? AND kode = ?
+  `);
+  
+  db.transaction(() => {
+    for (const r of dataRows) {
+      let draft = 0, submitted = 0, approved = 0, rejected = 0, targetUpload = 0;
+      if (prevUploadId) {
+        const prev = getPrevStatus.get(prevUploadId, r.kode);
+        if (prev) {
+          draft = prev.draft;
+          submitted = prev.submitted_by_pcl;
+          approved = prev.approved;
+          rejected = prev.rejected;
+          targetUpload = prev.target_upload;
+        }
+      }
+      
+      insertProgres.run(
+        uploadId, r.kode,
+        r.usaha_tidak_ditemukan, r.usaha_ditemukan, r.usaha_baru, r.usaha_tutup, r.usaha_ganda,
+        r.tidak_ditemukan, r.ditemukan, r.keluarga_baru, r.meninggal, r.tidak_eligible, r.tidak_dapat_ditemui,
+        0, 0, 0, 0, 0,
+        draft, submitted, approved, rejected, targetUpload
+      );
+    }
+  })();
+  
+  // Process status FASIH if provided
+  if (statusFilePath) {
+    parseAndSaveStatusExcel(statusFilePath, uploadId);
+  }
+  
+  // Rebuild summary cache
+  const { rebuildSummaryCache } = require('../database');
+  rebuildSummaryCache(uploadId);
+  
+  return { uploadId, totalRows: dataRows.length, uniqueSubsls: dataRows.length };
+}
+
+function createEmptyProgresRecord() {
+  return {
+    usaha_tidak_ditemukan: 0,
+    usaha_ditemukan: 0,
+    usaha_baru: 0,
+    usaha_tutup: 0,
+    usaha_ganda: 0,
+    tidak_ditemukan: 0,
+    ditemukan: 0,
+    keluarga_baru: 0,
+    meninggal: 0,
+    tidak_eligible: 0,
+    tidak_dapat_ditemui: 0
+  };
+}
+
+module.exports = { parseAndSaveExcel, loadMasterFromJson, loadMasterFromExcel, parseAndSaveStatusExcel, parseAndSaveStatusExcelOnly, parseAndSaveSeparateExports };
+

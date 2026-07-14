@@ -462,7 +462,7 @@
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
           <div>
             <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Realisasi</div>
-            <div style="font-size: 15px; font-weight: 800; color: var(--text-primary);"><%= summary.usaha_total.toLocaleString('id-ID') %></div>
+            <div style="font-size: 15px; font-weight: 800; color: var(--text-primary);"><%= summary.muatan_selesai.toLocaleString('id-ID') %></div>
           </div>
           <div>
             <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Target</div>
@@ -876,7 +876,7 @@
       const kecFasihTotal = [];
       <% kecStats.forEach(k => { %>
         kecLabels.push("<%= k.kecamatan %>");
-        kecSelesai.push(<%= k.usaha_total %>);
+        kecSelesai.push(<%= k.muatan_selesai %>);
         kecTotal.push(<%= k.total_muatan %>);
         kecFasihSelesai.push(<%= (k.submitted_total || 0) + (k.approved_total || 0) + (k.rejected_total || 0) %>);
         kecFasihTotal.push(<%= k.target_fasih_total || 0 %>);
