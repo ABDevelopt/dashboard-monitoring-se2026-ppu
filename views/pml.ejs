@@ -146,7 +146,7 @@
                 </div>
                 <% 
                   let totalBeban = selectedPmlStats ? selectedPmlStats.total_muatan : 0;
-                  let totalUsaha = selectedPmlStats ? selectedPmlStats.usaha_total : 0;
+                  let totalUsaha = selectedPmlStats ? (selectedPmlStats.muatan_selesai !== undefined ? selectedPmlStats.muatan_selesai : (selectedPmlStats.usaha_total + selectedPmlStats.keluarga_total)) : 0;
                   let totalPct = selectedPmlStats ? selectedPmlStats.muatan_pct_str : '0.00';
 
                   let totalFasihTgt = selectedPmlStats ? selectedPmlStats.target_fasih_total : 0;

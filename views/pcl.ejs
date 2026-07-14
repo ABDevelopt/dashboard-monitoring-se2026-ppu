@@ -88,7 +88,7 @@
                   <th rowspan="2" class="hide-md">Kecamatan</th>
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
                   <th colspan="6" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
-                  <th colspan="5" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
+                  <th colspan="3" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
                   <th colspan="2" class="text-center bg-blue-soft hide-sm" style="border-bottom: 1px solid var(--border);">Proyeksi (Deadline: 31 Agt)</th>
                 </tr>
                 <tr>
@@ -103,8 +103,6 @@
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Realisasi</th>
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Target</th>
                   <th class="bg-cyan-soft muatan-col" style="min-width:160px;">Bar Progres</th>
-                  <th class="text-right bg-green-soft hide-sm muatan-col">Usaha</th>
-                  <th class="text-right bg-green-soft hide-sm muatan-col">Keluarga</th>
                   <th class="text-right bg-blue-soft hide-sm">Laju Saat Ini</th>
                   <th class="text-right bg-orange-soft hide-sm" style="min-width: 90px;">Kec. Perlu/Hr</th>
                   <th class="text-right bg-orange-soft hide-sm" style="min-width: 80px;">Perlu (Hari)</th>
@@ -174,8 +172,6 @@
                         <div class="progress-bar <%= muatanWPcl >= 100 ? 'green' : (muatanWPcl < activeTargetPct ? 'red' : 'blue') %>" data-width="<%= muatanWPcl %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
-                    <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.keluarga_total %>"><%= (p.keluarga_total || 0).toLocaleString('id-ID') %></td>
                     <%
                       let fasihSelesaiPcl = (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
                       let totalFasihProgress = (p.draft_total || 0) + fasihSelesaiPcl;
@@ -282,7 +278,7 @@
                   Korlap: <strong><%= detailSubsls[0].korlap %></strong><% if (kippKorlaps.includes(detailSubsls[0].korlap.toUpperCase())) { %> <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle;">KIPP</span><% } %>
                 </div>
                 <% 
-                  let doneMuatan = selectedPclStats ? selectedPclStats.usaha_total : 0;
+                  let doneMuatan = selectedPclStats ? (selectedPclStats.muatan_selesai !== undefined ? selectedPclStats.muatan_selesai : (selectedPclStats.usaha_total + selectedPclStats.keluarga_total)) : 0;
                   let totalMuatan = selectedPclStats ? selectedPclStats.total_muatan : 0;
                   let donePct = selectedPclStats ? selectedPclStats.muatan_pct_str : '0.00';
 

@@ -135,7 +135,7 @@
               <div class="mb-4">
                 <% 
                   let totalBeban = selectedKorlapStats ? selectedKorlapStats.total_muatan : 0;
-                  let totalUsaha = selectedKorlapStats ? selectedKorlapStats.usaha_total : 0;
+                  let totalUsaha = selectedKorlapStats ? (selectedKorlapStats.muatan_selesai !== undefined ? selectedKorlapStats.muatan_selesai : (selectedKorlapStats.usaha_total + selectedKorlapStats.keluarga_total)) : 0;
                   let totalPct = selectedKorlapStats ? selectedKorlapStats.muatan_pct_str : '0.00';
 
                   let totalFasihTgt = selectedKorlapStats ? selectedKorlapStats.target_fasih_total : 0;
