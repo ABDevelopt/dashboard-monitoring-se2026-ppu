@@ -95,7 +95,8 @@ function runMigrations() {
             pcl TEXT,
             muatan INTEGER DEFAULT 0,
             kode_2025 TEXT,
-            target_fasih INTEGER DEFAULT 0
+            target_fasih INTEGER DEFAULT 0,
+            target_honor INTEGER DEFAULT 0
           );
 
           -- Data progres per SubSLS per upload
@@ -152,6 +153,9 @@ function runMigrations() {
             approved_total INTEGER,
             rejected_total INTEGER,
             target_fasih_total INTEGER,
+            target_static_total INTEGER DEFAULT 0,
+            target_upload_total INTEGER DEFAULT 0,
+            target_honor_total INTEGER DEFAULT 0,
             usaha_ditemukan INTEGER DEFAULT 0,
             usaha_baru INTEGER DEFAULT 0,
             ditemukan INTEGER DEFAULT 0,
@@ -254,6 +258,70 @@ function runMigrations() {
           db.prepare('ALTER TABLE progres ADD COLUMN target_upload INTEGER DEFAULT 0').run();
         } catch (_) {}
       }
+    },
+    {
+      version: '20260713000001_add_dual_targets_to_summary_cache',
+      up: (db) => {
+        try {
+          db.prepare('ALTER TABLE summary_cache ADD COLUMN target_static_total INTEGER DEFAULT 0').run();
+        } catch (_) {}
+        try {
+          db.prepare('ALTER TABLE summary_cache ADD COLUMN target_upload_total INTEGER DEFAULT 0').run();
+        } catch (_) {}
+      }
+    },
+    {
+      version: '20260714000000_add_target_honor_to_master',
+      up: (db) => {
+        try {
+          db.prepare('ALTER TABLE subsls_master ADD COLUMN target_honor INTEGER DEFAULT 0').run();
+        } catch (_) {}
+        try {
+          db.prepare('ALTER TABLE summary_cache ADD COLUMN target_honor_total INTEGER DEFAULT 0').run();
+        } catch (_) {}
+
+        try {
+          const XLSX = require('xlsx');
+          const path = require('path');
+          const fs = require('fs');
+          const honorPath = path.join(__dirname, 'muatan_sls_pembayaran_honor.xlsx');
+          if (fs.existsSync(honorPath)) {
+            logger.info('Importing target_honor from muatan_sls_pembayaran_honor.xlsx in migration...');
+            const wb = XLSX.readFile(honorPath);
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const excelRows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+            if (excelRows.length > 0) {
+              const headers = excelRows[0];
+              const codeIdx = headers.indexOf('idsubsls_25_2');
+              const keluargaIdx = headers.indexOf('keluarga');
+              const utpIdx = headers.indexOf('jml_utp_subsektor');
+              const sbrIdx = headers.indexOf('Total_usaha_SBR');
+
+              if (codeIdx !== -1 && keluargaIdx !== -1 && utpIdx !== -1 && sbrIdx !== -1) {
+                const updateStmt = db.prepare('UPDATE subsls_master SET target_honor = ? WHERE kode = ?');
+                let updatedCount = 0;
+                db.transaction(() => {
+                  for (let i = 1; i < excelRows.length; i++) {
+                    const row = excelRows[i];
+                    if (!row || row.length === 0) continue;
+                    const code = String(row[codeIdx] || '').trim();
+                    if (!code) continue;
+                    const valY = parseInt(row[keluargaIdx] || 0, 10);
+                    const valZ = parseInt(row[utpIdx] || 0, 10);
+                    const valAA = parseInt(row[sbrIdx] || 0, 10);
+                    const targetHonor = valY + valZ + valAA;
+                    updateStmt.run(targetHonor, code);
+                    updatedCount++;
+                  }
+                })();
+                logger.info(`✅ Migration: Applied target_honor for ${updatedCount} records from Excel.`);
+              }
+            }
+          }
+        } catch (err) {
+          logger.error('⚠️ Migration: Failed to apply target_honor from Excel:', err.message);
+        }
+      }
     }
   ];
 
@@ -304,6 +372,9 @@ function runMigrations() {
             approved_total INTEGER,
             rejected_total INTEGER,
             target_fasih_total INTEGER,
+            target_static_total INTEGER DEFAULT 0,
+            target_upload_total INTEGER DEFAULT 0,
+            target_honor_total INTEGER DEFAULT 0,
             usaha_ditemukan INTEGER DEFAULT 0,
             usaha_baru INTEGER DEFAULT 0,
             ditemukan INTEGER DEFAULT 0,
@@ -370,12 +441,15 @@ function getAllUploads() {
 }
 
 function getTargetFormula(mode, progresAlias = 'p', masterAlias = 'm') {
-  if (mode === 'static') {
-    return `COALESCE(${masterAlias}.target_fasih, 0)`;
-  } else if (mode === 'fasih-sm') {
+  if (mode === 'fasih-sm') {
     return `COALESCE(${progresAlias}.target_upload, 0)`;
-  } else {
+  } else if (mode === 'dynamic') {
     return `CASE WHEN (COALESCE(${masterAlias}.target_fasih, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.keluarga_baru, 0) - COALESCE(${progresAlias}.usaha_tutup, 0) - COALESCE(${progresAlias}.tidak_ditemukan, 0)) < 0 THEN 0 ELSE (COALESCE(${masterAlias}.target_fasih, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.keluarga_baru, 0) - COALESCE(${progresAlias}.usaha_tutup, 0) - COALESCE(${progresAlias}.tidak_ditemukan, 0)) END`;
+  } else if (mode === 'honor') {
+    return `COALESCE(${masterAlias}.target_honor, 0)`;
+  } else {
+    // Default to static
+    return `COALESCE(${masterAlias}.target_fasih, 0)`;
   }
 }
 
@@ -424,7 +498,9 @@ function getKecamatanStats(uploadId) {
       SUM(submitted_total) AS submitted_total,
       SUM(approved_total) AS approved_total,
       SUM(rejected_total) AS rejected_total,
-      SUM(target_fasih_total) AS target_fasih_total
+      SUM(target_fasih_total) AS target_fasih_total,
+      SUM(target_static_total) AS target_static_total,
+      SUM(target_upload_total) AS target_upload_total
     FROM summary_cache
     WHERE upload_id = ?
     GROUP BY kecamatan
@@ -449,7 +525,9 @@ function getKorlapStats(uploadId) {
       SUM(submitted_total) AS submitted_total,
       SUM(approved_total) AS approved_total,
       SUM(rejected_total) AS rejected_total,
-      SUM(target_fasih_total) AS target_fasih_total
+      SUM(target_fasih_total) AS target_fasih_total,
+      SUM(target_static_total) AS target_static_total,
+      SUM(target_upload_total) AS target_upload_total
     FROM summary_cache
     WHERE upload_id = ?
     GROUP BY korlap
@@ -474,7 +552,9 @@ function getPmlStats(uploadId) {
       SUM(submitted_total) AS submitted_total,
       SUM(approved_total) AS approved_total,
       SUM(rejected_total) AS rejected_total,
-      SUM(target_fasih_total) AS target_fasih_total
+      SUM(target_fasih_total) AS target_fasih_total,
+      SUM(target_static_total) AS target_static_total,
+      SUM(target_upload_total) AS target_upload_total
     FROM summary_cache
     WHERE upload_id = ?
     GROUP BY pml, korlap
@@ -500,7 +580,9 @@ function getPclStats(uploadId) {
       SUM(submitted_total) AS submitted_total,
       SUM(approved_total) AS approved_total,
       SUM(rejected_total) AS rejected_total,
-      SUM(target_fasih_total) AS target_fasih_total
+      SUM(target_fasih_total) AS target_fasih_total,
+      SUM(target_static_total) AS target_static_total,
+      SUM(target_upload_total) AS target_upload_total
     FROM summary_cache
     WHERE upload_id = ?
     GROUP BY pcl, pml, korlap, kecamatan
@@ -545,6 +627,8 @@ function getOverviewSummary(uploadId) {
       SUM(selesai) AS selesai,
       SUM(muatan_selesai) AS muatan_selesai,
       SUM(target_fasih_total) AS target_fasih_total,
+      SUM(target_static_total) AS target_static_total,
+      SUM(target_upload_total) AS target_upload_total,
       SUM(usaha_total) AS usaha_total,
       SUM(keluarga_total) AS keluarga_total,
       SUM(usaha_tidak_ditemukan) AS usaha_tidak_ditemukan,
@@ -571,6 +655,8 @@ function getOverviewSummary(uploadId) {
   const selesai = stats.selesai || 0;
   const muatan_selesai = stats.muatan_selesai || 0;
   const target_fasih_total = stats.target_fasih_total || 0;
+  const target_static_total = stats.target_static_total || 0;
+  const target_upload_total = stats.target_upload_total || 0;
 
   return attachProgressPercentages({ 
     total, 
@@ -580,6 +666,8 @@ function getOverviewSummary(uploadId) {
     muatan_selesai, 
     target_awal_total, 
     target_fasih_total, 
+    target_static_total,
+    target_upload_total,
     ...stats 
   });
 }
@@ -641,7 +729,9 @@ function getEarlyWarning(uploadId, filters = {}) {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(${singleTargetFormula}) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total,
+      SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
+      SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
@@ -667,7 +757,9 @@ function getEarlyWarning(uploadId, filters = {}) {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(${singleTargetFormula}) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total,
+      SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
+      SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
@@ -688,7 +780,9 @@ function getEarlyWarning(uploadId, filters = {}) {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(${singleTargetFormula}) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total,
+      SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
+      SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
@@ -890,7 +984,9 @@ function getTopPerformers(uploadId, filters = {}) {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(${singleTargetFormula}) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total,
+      SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
+      SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
@@ -913,7 +1009,9 @@ function getTopPerformers(uploadId, filters = {}) {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(${singleTargetFormula}) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total,
+      SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
+      SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
@@ -972,7 +1070,9 @@ function getBottomPerformers(uploadId, filters = {}) {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(${singleTargetFormula}) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total,
+      SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
+      SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
@@ -995,7 +1095,9 @@ function getBottomPerformers(uploadId, filters = {}) {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(${singleTargetFormula}) AS target_fasih_total
+      SUM(${singleTargetFormula}) AS target_fasih_total,
+      SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
+      SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
@@ -1146,6 +1248,7 @@ function rebuildSummaryCache(uploadId) {
       upload_id, kecamatan, desa, korlap, pml, pcl,
       total_sls, selesai, total_muatan, muatan_selesai,
       usaha_total, keluarga_total, draft_total, submitted_total, approved_total, rejected_total, target_fasih_total,
+      target_static_total, target_upload_total, target_honor_total,
       usaha_ditemukan, usaha_baru, ditemukan, keluarga_baru,
       usaha_tidak_ditemukan, tidak_ditemukan, usaha_tutup, meninggal, usaha_ganda,
       rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya
@@ -1168,6 +1271,9 @@ function rebuildSummaryCache(uploadId) {
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
       SUM(${singleTargetFormula}) AS target_fasih_total,
+      SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
+      SUM(COALESCE(p.target_upload, 0)) AS target_upload_total,
+      SUM(COALESCE(m.target_honor, 0)) AS target_honor_total,
       SUM(COALESCE(p.usaha_ditemukan, 0)) AS usaha_ditemukan,
       SUM(COALESCE(p.usaha_baru, 0)) AS usaha_baru,
       SUM(COALESCE(p.ditemukan, 0)) AS ditemukan,
@@ -1250,6 +1356,16 @@ function attachProgressPercentages(data) {
   const completedFasih = submitted + approved + rejected;
   data.fasih_pct = targetFasih > 0 ? parseFloat(((completedFasih / targetFasih) * 100).toFixed(2)) : 0.0;
   data.fasih_pct_str = targetFasih > 0 ? ((completedFasih / targetFasih) * 100).toFixed(2) : '0.00';
+
+  // Compute dual targets
+  const targetStatic = data.target_static_total !== undefined ? data.target_static_total : (data.target_static || 0);
+  const targetUpload = data.target_upload_total !== undefined ? data.target_upload_total : (data.target_upload || 0);
+
+  data.fasih_static_pct = targetStatic > 0 ? parseFloat(((completedFasih / targetStatic) * 100).toFixed(2)) : 0.0;
+  data.fasih_static_pct_str = targetStatic > 0 ? ((completedFasih / targetStatic) * 100).toFixed(2) : '0.00';
+
+  data.fasih_upload_pct = targetUpload > 0 ? parseFloat(((completedFasih / targetUpload) * 100).toFixed(2)) : 0.0;
+  data.fasih_upload_pct_str = targetUpload > 0 ? ((completedFasih / targetUpload) * 100).toFixed(2) : '0.00';
 
   const targetMuatan = data.total_muatan !== undefined ? data.total_muatan : (data.muatan || 0);
   let completedMuatan = 0;

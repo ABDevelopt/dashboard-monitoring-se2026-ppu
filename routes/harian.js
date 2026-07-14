@@ -41,7 +41,17 @@ router.get('/', (req, res) => {
           CASE WHEN p${i}.upload_id IS NOT NULL 
           THEN ${targetFormula}
           ELSE COALESCE(m.target_fasih, 0) END
-        ) AS target_${i}
+        ) AS target_${i},
+        SUM(
+          CASE WHEN p${i}.upload_id IS NOT NULL 
+          THEN COALESCE(m.target_fasih, 0)
+          ELSE COALESCE(m.target_fasih, 0) END
+        ) AS target_static_${i},
+        SUM(
+          CASE WHEN p${i}.upload_id IS NOT NULL 
+          THEN COALESCE(p${i}.target_upload, 0)
+          ELSE 0 END
+        ) AS target_upload_${i}
       `);
       joinParts.push(`
         LEFT JOIN progres p${i} ON m.kode = p${i}.kode AND p${i}.upload_id = ?

@@ -21,6 +21,50 @@
       <a href="/upload" class="btn btn-primary"><i class="bi bi-lightning-charge-fill"></i> Upload Data Rekap Pertama</a>
     </div>
   <% } else { %>
+    <!-- BANNER PEMBERITAHUAN UPDATE (DISMISSIBLE) -->
+    <div id="updateNotificationBanner" style="display: none; background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%); border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px 20px; margin-top: 12px; margin-bottom: 12px; position: relative; backdrop-filter: blur(8px);">
+      <button onclick="dismissUpdateBanner()" style="position: absolute; top: 12px; right: 16px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 4px; display: flex; align-items: center; justify-content: center; transition: var(--transition);" title="Tutup">
+        <i class="bi bi-x-lg"></i>
+      </button>
+      <div style="display: flex; gap: 14px; align-items: flex-start; padding-right: 24px;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);">
+          <i class="bi bi-patch-check-fill"></i>
+        </div>
+        <div style="min-width: 0; flex: 1;">
+          <h4 style="margin: 0 0 6px 0; font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span>Pembaruan Dashboard Sistem (v2.1)</span>
+            <span style="font-size: 9px; font-weight: 700; background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%); color: white; padding: 2px 6px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">Baru</span>
+          </h4>
+          <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.6;">
+            Kami telah menambahkan beberapa fitur baru untuk mempermudah monitoring sensus Anda:
+            <ul style="margin: 6px 0 0 0; padding-left: 18px; list-style-type: disc; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 16px;">
+              <li><strong>Target FASIH-SM</strong>: Model target baru dari kolom total pivot Excel.</li>
+              <li><strong>Filter Kolom ala Excel</strong>: Live search &amp; filter langsung pada header tabel.</li>
+              <li><strong>Grafik Tren Harian PML</strong>: Visualisasi historis progres tim pada detail PML.</li>
+              <li><strong>Optimasi Mobile Viewport</strong>: Layout menu bottom-sheet &amp; transisi responsif.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function() {
+        const dismissed = localStorage.getItem('dismissed_update_v2.1');
+        if (!dismissed) {
+          document.getElementById('updateNotificationBanner').style.display = 'block';
+        }
+      })();
+      function dismissUpdateBanner() {
+        localStorage.setItem('dismissed_update_v2.1', 'true');
+        document.getElementById('updateNotificationBanner').style.opacity = '0';
+        document.getElementById('updateNotificationBanner').style.transform = 'translateY(-10px)';
+        document.getElementById('updateNotificationBanner').style.transition = 'all 0.3s ease';
+        setTimeout(() => {
+          document.getElementById('updateNotificationBanner').style.display = 'none';
+        }, 300);
+      }
+    </script>
+
     <!-- HEADER GRID: DISCLAIMER & WEATHER -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); gap: 12px; margin-top: 12px; margin-bottom: 4px;">
       <!-- DISCLAIMER DATA SCRAPING -->
@@ -82,7 +126,12 @@
                 <i class="bi bi-phone"></i>
               </div>
               <div style="min-width: 0;">
-                <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary);">Assignment FASIH</h3>
+                <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  Assignment FASIH
+                  <span style="font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); display: inline-block;">
+                    <%= settings.target_fasih_mode === 'fasih-sm' ? 'Target FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'Target Dinamis' : (settings.target_fasih_mode === 'honor' ? 'Target Honor' : 'Target Statis')) %>
+                  </span>
+                </h3>
                 <p style="margin: 2px 0 0 0; font-size: 10px; color: var(--text-muted); line-height: 1.2;">Realisasi Approved vs Target FASIH (Fokus Utama Monitoring)</p>
               </div>
             </div>
@@ -116,6 +165,39 @@
           <!-- Marker 40% (15 Juli) -->
           <div class="target-marker" style="position: absolute; left: 40%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 40 ? 'var(--accent-purple)' : 'var(--border)' %>; z-index: 2; pointer-events: none;">
             <span class="target-marker-text" style="position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 40 ? 'var(--accent-purple)' : 'var(--text-muted)' %>; white-space: nowrap;">Target 15 Jul: 40%</span>
+          </div>
+        </div>
+
+        <!-- Comparative Progress Bars -->
+        <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+          <!-- Bar 1: Target Statis -->
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px; font-weight: 600;">
+              <span style="color: var(--accent-blue);"><i class="bi bi-shield-check"></i> Target Statis (Prelist): <span style="font-weight: 800;"><%= (summary.target_static_total || 0).toLocaleString('id-ID') %></span></span>
+              <span style="color: var(--accent-blue); font-weight: 800;"><%= summary.fasih_static_pct_str %>%</span>
+            </div>
+            <div class="progress-timeline-container" style="position: relative; height: 16px;">
+              <div style="background: var(--bg-progress-wrap); height: 16px; border-radius: 8px; overflow: hidden; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 2px;">
+                <div class="progress-bar" data-width="<%= summary.fasih_static_pct_str %>" style="background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%); height: 10px; width: 0%; border-radius: 5px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+              </div>
+              <div class="target-marker" style="position: absolute; left: 25%; top: -1px; height: 18px; border-left: 1.5px dashed var(--border); z-index: 2; pointer-events: none;"></div>
+              <div class="target-marker" style="position: absolute; left: 40%; top: -1px; height: 18px; border-left: 1.5px dashed var(--border); z-index: 2; pointer-events: none;"></div>
+            </div>
+          </div>
+
+          <!-- Bar 2: Target FASIH-SM -->
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px; font-weight: 600;">
+              <span style="color: var(--accent-purple);"><i class="bi bi-file-earmark-excel"></i> Target FASIH-SM (Upload): <span style="font-weight: 800;"><%= (summary.target_upload_total || 0).toLocaleString('id-ID') %></span></span>
+              <span style="color: var(--accent-purple); font-weight: 800;"><%= summary.fasih_upload_pct_str %>%</span>
+            </div>
+            <div class="progress-timeline-container" style="position: relative; height: 16px;">
+              <div style="background: var(--bg-progress-wrap); height: 16px; border-radius: 8px; overflow: hidden; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 2px;">
+                <div class="progress-bar" data-width="<%= summary.fasih_upload_pct_str %>" style="background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%); height: 10px; width: 0%; border-radius: 5px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+              </div>
+              <div class="target-marker" style="position: absolute; left: 25%; top: -1px; height: 18px; border-left: 1.5px dashed var(--border); z-index: 2; pointer-events: none;"></div>
+              <div class="target-marker" style="position: absolute; left: 40%; top: -1px; height: 18px; border-left: 1.5px dashed var(--border); z-index: 2; pointer-events: none;"></div>
+            </div>
           </div>
         </div>
 

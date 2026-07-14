@@ -38,6 +38,8 @@ router.get('/', (req, res) => {
         SUM(COALESCE(p.approved, 0)) AS approved_total,
         SUM(COALESCE(p.rejected, 0)) AS rejected_total,
         SUM(${targetFormula}) AS target_fasih_total,
+        SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
+        SUM(COALESCE(p.target_upload, 0)) AS target_upload_total,
         CASE WHEN SUM(${targetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${targetFormula}), 2) ELSE 0.0 END AS pct
       FROM subsls_master m
       LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
@@ -60,6 +62,8 @@ router.get('/', (req, res) => {
           COALESCE(p.approved, 0) AS approved,
           COALESCE(p.rejected, 0) AS rejected,
           ${targetFormula} AS target_fasih,
+          COALESCE(m.target_fasih, 0) AS target_static,
+          COALESCE(p.target_upload, 0) AS target_upload,
           CASE 
             WHEN p.kode IS NULL OR (
               COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND 

@@ -466,29 +466,36 @@
           <div class="settings-group-title">
             <i class="bi bi-bullseye"></i> Metode Target FASIH
           </div>
-          
           <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
             <label class="radio-card">
-              <input type="radio" name="target_fasih_mode" value="dynamic" <%= settings.target_fasih_mode === 'dynamic' ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
+              <input type="radio" name="target_fasih_mode" value="static" <%= settings.target_fasih_mode === 'static' || !settings.target_fasih_mode ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
               <div style="min-width: 0;">
-                <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 1: Target Lapangan Dinamis (Default)</strong>
-                <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target = Target Awal + Temuan Baru (Usaha &amp; Keluarga Baru) - Objek Tutup &amp; Tidak Ditemukan. Sangat adil karena mengikuti beban kerja riil petugas di lapangan.</span>
+                <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 1: Target Alokasi Statis (Sesuai Dashboard Pimpinan)</strong>
+                <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target dikunci mutlak berdasarkan alokasi rancangan awal. Target tidak akan pernah berubah, namun progres petugas bisa melebihi 100% jika ada temuan baru.</span>
               </div>
             </label>
 
             <label class="radio-card">
-              <input type="radio" name="target_fasih_mode" value="static" <%= settings.target_fasih_mode === 'static' ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
+              <input type="radio" name="target_fasih_mode" value="dynamic" <%= settings.target_fasih_mode === 'dynamic' ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
               <div style="min-width: 0;">
-                <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 2: Target Alokasi Statis (Rancangan Murni)</strong>
-                <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target dikunci mutlak berdasarkan alokasi rancangan awal. Target tidak akan pernah berubah, namun progres petugas bisa melebihi 100% jika ada temuan baru.</span>
+                <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 2: Target Alokasi Dinamis (Menyesuaikan Temuan Lapangan)</strong>
+                <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target dihitung dinamis: Target Awal + Usaha Baru + Keluarga Baru - Usaha Tutup - Tidak Ditemukan. Target menyesuaikan dengan beban kerja nyata di lapangan.</span>
               </div>
             </label>
 
             <label class="radio-card">
               <input type="radio" name="target_fasih_mode" value="fasih-sm" <%= settings.target_fasih_mode === 'fasih-sm' ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
               <div style="min-width: 0;">
-                <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 3: Target FASIH-SM (Kolom Total)</strong>
+                <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 3: Target FASIH-SM (Sesuai Dashboard FASIH-SM)</strong>
                 <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target dihitung menggunakan kolom "total" yang ada di file excel progres (sheet Rekap Pivot) yang diupload.</span>
+              </div>
+            </label>
+
+            <label class="radio-card">
+              <input type="radio" name="target_fasih_mode" value="honor" <%= settings.target_fasih_mode === 'honor' ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
+              <div style="min-width: 0;">
+                <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 4: Target Honor (Untuk Pembayaran Honor Petugas)</strong>
+                <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target khusus untuk pembayaran honor petugas, diperoleh dari file muatan_sls_pembayaran_honor.xlsx.</span>
               </div>
             </label>
           </div>

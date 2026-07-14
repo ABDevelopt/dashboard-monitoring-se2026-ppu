@@ -141,6 +141,8 @@ router.get('/', (req, res) => {
         COALESCE(p.approved, 0) AS approved,
         COALESCE(p.rejected, 0) AS rejected,
         ${targetFormula} AS target_fasih,
+        COALESCE(m.target_fasih, 0) AS target_static,
+        COALESCE(p.target_upload, 0) AS target_upload,
         CASE WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 1 ELSE 0 END AS sudah_diisi,
         COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
         COALESCE(p.usaha_ditemukan, 0) AS usaha_ditemukan,
@@ -186,7 +188,9 @@ router.get('/', (req, res) => {
         SUM(m.muatan) AS muatan,
         SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) AS usaha_total,
         SUM(COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS keluarga_total,
-        SUM(${targetFormula}) AS target_fasih
+        SUM(${targetFormula}) AS target_fasih,
+        SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
+        SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
       FROM subsls_master m
       LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
       WHERE m.kode IN (${pbiPlaceholders})

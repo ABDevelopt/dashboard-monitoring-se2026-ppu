@@ -61,6 +61,8 @@ router.get('/', (req, res) => {
         COALESCE(p.approved, 0) AS approved,
         COALESCE(p.rejected, 0) AS rejected,
         ${targetFormula} AS target_fasih,
+        COALESCE(m.target_fasih, 0) AS target_static,
+        COALESCE(p.target_upload, 0) AS target_upload,
         CASE 
           WHEN p.kode IS NULL OR (
             COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND 
@@ -135,6 +137,8 @@ router.get('/export', (req, res) => {
       COALESCE(p.approved, 0) AS approved,
       COALESCE(p.rejected, 0) AS rejected,
       ${targetFormula} AS target_fasih_sekarang,
+      COALESCE(m.target_fasih, 0) AS target_static,
+      COALESCE(p.target_upload, 0) AS target_upload,
 
       m.muatan AS target_muatan,
       CASE 
