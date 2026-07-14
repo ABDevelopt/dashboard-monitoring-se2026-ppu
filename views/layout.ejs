@@ -2019,19 +2019,19 @@
 
       return `
         <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
-          ${makeSectionHeader('Progres Muatan')}
-          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
-            <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
-          </div>
-          ${makeProgressBar(totalMuatanSelesai, totalMuatan, 'var(--accent-blue)')}
-        </div>
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
           ${makeSectionHeader('Progres FASIH (Submit + Approve + Reject)')}
           <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
             <span style="font-size:13px; color:var(--text-muted);">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} entri</span>
           </div>
           ${makeProgressBar(totalFasihAll, totalFasihTarget, '#22c55e')}
           ${makeFasihCards(totalDraft, totalSubmit, totalApprove, totalReject)}
+        </div>
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+          ${makeSectionHeader('Progres Muatan')}
+          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
+            <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
+          </div>
+          ${makeProgressBar(totalMuatanSelesai, totalMuatan, 'var(--accent-blue)')}
         </div>
         ${rows.length > 0 ? `
         <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
@@ -2072,19 +2072,19 @@
 
       return `
         <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
-          ${makeSectionHeader('Progres Muatan')}
-          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
-            <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
-          </div>
-          ${makeProgressBar(totalMuatanSelesai, totalMuatan, 'var(--accent-blue)')}
-        </div>
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
           ${makeSectionHeader('Progres FASIH (Submit + Approve + Reject)')}
           <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
             <span style="font-size:13px; color:var(--text-muted);">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} entri</span>
           </div>
           ${makeProgressBar(totalFasihAll, totalFasihTarget, '#22c55e')}
           ${makeFasihCards(totalDraft, totalSubmit, totalApprove, totalReject)}
+        </div>
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+          ${makeSectionHeader('Progres Muatan')}
+          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
+            <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
+          </div>
+          ${makeProgressBar(totalMuatanSelesai, totalMuatan, 'var(--accent-blue)')}
         </div>
         ${rows.length > 0 ? `
         <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
@@ -2151,6 +2151,17 @@
 
       let html = `
         <div class="mb-4">
+          <!-- Progress FASIH -->
+          <div style="margin-bottom: 12px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+              <span><i class="bi bi-phone"></i> Progres FASIH (Submit + Approve + Reject)</span>
+              <span class="fw-bold">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} (${fasihPct}%)</span>
+            </div>
+            <div class="progress-bar-wrap" style="height: 6px;">
+              <div class="progress-bar ${parseFloat(fasihPct) >= 100 ? 'green' : (parseFloat(fasihPct) < 25 ? 'red' : 'purple')}" style="width: ${fasihPct}%;"></div>
+            </div>
+          </div>
+
           <!-- Progress Muatan -->
           ${showMuatan ? `
           <div style="margin-bottom: 12px; text-align: left;" class="muatan-col">
@@ -2173,17 +2184,6 @@
             </div>
           </div>
           ` : ''}
-
-          <!-- Progress FASIH -->
-          <div style="margin-bottom: 12px; text-align: left;">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
-              <span><i class="bi bi-phone"></i> Progres FASIH (Submit + Approve + Reject)</span>
-              <span class="fw-bold">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} (${fasihPct}%)</span>
-            </div>
-            <div class="progress-bar-wrap" style="height: 6px;">
-              <div class="progress-bar ${parseFloat(fasihPct) >= 100 ? 'green' : (parseFloat(fasihPct) < 25 ? 'red' : 'purple')}" style="width: ${fasihPct}%;"></div>
-            </div>
-          </div>
 
           <!-- Mini Grid Status FASIH -->
           <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; text-align: center;">

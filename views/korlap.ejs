@@ -142,6 +142,17 @@
                   let totalFasihDone = selectedKorlapStats ? ((selectedKorlapStats.submitted_total || 0) + (selectedKorlapStats.approved_total || 0) + (selectedKorlapStats.rejected_total || 0)) : 0;
                   let totalFasihPct = selectedKorlapStats ? selectedKorlapStats.fasih_pct_str : '0.00';
                 %>
+                <!-- Progress FASIH -->
+                <div style="margin-bottom: 16px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                    <span><i class="bi bi-phone"></i> Progres FASIH Tim (Submit + Approve + Reject)</span>
+                    <span class="fw-bold"><%= totalFasihDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihPct %>%)</span>
+                  </div>
+                  <div class="progress-bar-wrap" style="height: 6px;">
+                    <div class="progress-bar <%= parseFloat(totalFasihPct) >= 100 ? 'green' : (parseFloat(totalFasihPct) < 25 ? 'red' : 'purple') %>" data-width="<%= totalFasihPct %>" style="width: 0%;"></div>
+                  </div>
+                </div>
+
                 <!-- Progress Muatan -->
                 <div style="margin-bottom: 12px;" class="muatan-col">
                   <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
@@ -162,16 +173,6 @@
                     <div style="position: absolute; left: 40%; top: -3px; height: 12px; border-left: 1px dashed <%= activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 40 ? '1' : '0.5' %>; z-index: 2; pointer-events: none;">
                       <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: <%= activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">15 Jul: 40%</span>
                     </div>
-                  </div>
-                </div>
-                <!-- Progress FASIH -->
-                <div style="margin-bottom: 16px;">
-                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
-                    <span><i class="bi bi-phone"></i> Progres FASIH Tim (Submit + Approve + Reject)</span>
-                    <span class="fw-bold"><%= totalFasihDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihPct %>%)</span>
-                  </div>
-                  <div class="progress-bar-wrap" style="height: 6px;">
-                    <div class="progress-bar <%= parseFloat(totalFasihPct) >= 100 ? 'green' : (parseFloat(totalFasihPct) < 25 ? 'red' : 'purple') %>" data-width="<%= totalFasihPct %>" style="width: 0%;"></div>
                   </div>
                 </div>
               </div>

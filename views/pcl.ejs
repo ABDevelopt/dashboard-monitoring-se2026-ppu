@@ -304,15 +304,15 @@
                   let rejectedFasih = selectedPclStats ? (selectedPclStats.rejected_total || 0) : 0;
                   let approvedFasih = selectedPclStats ? (selectedPclStats.approved_total || 0) : 0;
                 %>
-                <!-- Progress Muatan -->
-                <div style="margin-bottom: 12px;" class="muatan-col">
+                <!-- Progress FASIH -->
+                <div style="margin-bottom: 12px;">
                   <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
-                    <span><i class="bi bi-briefcase"></i> Progres Muatan</span>
-                    <span class="fw-bold"><%= doneMuatan.toLocaleString('id-ID') %> / <%= totalMuatan.toLocaleString('id-ID') %> (<%= donePct %>%)</span>
+                    <span><i class="bi bi-phone"></i> Progres FASIH (Submit + Approve + Reject)</span>
+                    <span class="fw-bold"><%= doneFasih.toLocaleString('id-ID') %> / <%= totalFasih.toLocaleString('id-ID') %> (<%= fasihPct %>%)</span>
                   </div>
                   <div class="progress-bar-target-wrap" style="position: relative; height: 6px; margin-top: 16px; margin-bottom: 8px;">
                     <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
-                      <div class="progress-bar <%= parseFloat(donePct) >= 100 ? 'green' : (parseFloat(donePct) < activeTargetPct ? 'red' : 'blue') %>" data-width="<%= donePct %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
+                      <div class="progress-bar <%= parseFloat(fasihPct) >= 100 ? 'green' : (parseFloat(fasihPct) < activeTargetPct ? 'red' : 'blue') %>" data-width="<%= fasihPct %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
                     </div>
                     
                     <!-- Marker 25% (30 Juni) -->
@@ -326,15 +326,16 @@
                     </div>
                   </div>
                 </div>
-                <!-- Progress FASIH -->
-                <div style="margin-bottom: 12px;">
+
+                <!-- Progress Muatan -->
+                <div style="margin-bottom: 12px;" class="muatan-col">
                   <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
-                    <span><i class="bi bi-phone"></i> Progres FASIH (Submit + Approve + Reject)</span>
-                    <span class="fw-bold"><%= doneFasih.toLocaleString('id-ID') %> / <%= totalFasih.toLocaleString('id-ID') %> (<%= fasihPct %>%)</span>
+                    <span><i class="bi bi-briefcase"></i> Progres Muatan</span>
+                    <span class="fw-bold"><%= doneMuatan.toLocaleString('id-ID') %> / <%= totalMuatan.toLocaleString('id-ID') %> (<%= donePct %>%)</span>
                   </div>
                   <div class="progress-bar-target-wrap" style="position: relative; height: 6px; margin-top: 16px; margin-bottom: 8px;">
                     <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
-                      <div class="progress-bar <%= parseFloat(fasihPct) >= 100 ? 'green' : (parseFloat(fasihPct) < activeTargetPct ? 'red' : 'blue') %>" data-width="<%= fasihPct %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
+                      <div class="progress-bar <%= parseFloat(donePct) >= 100 ? 'green' : (parseFloat(donePct) < activeTargetPct ? 'red' : 'blue') %>" data-width="<%= donePct %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
                     </div>
                     
                     <!-- Marker 25% (30 Juni) -->
