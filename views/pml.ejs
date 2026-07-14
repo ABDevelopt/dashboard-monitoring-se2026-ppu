@@ -218,35 +218,38 @@
                           <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
                         <% } %>
                       </div>
-                      <% if (parseFloat(item.pct) >= 100) { %>
-                        <span class="badge badge-green btn-xs" style="font-size: 8px; padding: 1px 4px;">100%</span>
-                      <% } else if (parseFloat(item.pct) <= 0) { %>
-                        <span class="badge badge-red btn-xs" style="font-size: 8px; padding: 1px 4px;">0%</span>
-                      <% } else { %>
-                        <span class="badge badge-blue btn-xs" style="font-size: 8px; padding: 1px 4px;"><%= parseFloat(item.pct).toFixed(2) %>%</span>
-                      <% } %>
                     </div>
                     
-                    <!-- Mini Progress Bar per PCL with Target Line -->
+                    <!-- FASIH Progress Bar -->
                     <% const pctVal = parseFloat(item.pct) || 0; %>
-                    <div class="progress-bar-target-wrap" style="position: relative; height: 5px; margin-top: 6px; margin-bottom: 6px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 6px;">
+                      <span style="font-weight: 600;"><i class="bi bi-phone"></i> FASIH: <span style="color: var(--accent-purple);"><%= pctVal.toFixed(2) %>%</span></span>
+                      <span><%= ((item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0)).toLocaleString('id-ID') %> / <%= item.target_fasih_total.toLocaleString('id-ID') %></span>
+                    </div>
+                    <div class="progress-bar-target-wrap" style="position: relative; height: 5px; margin-top: 2px; margin-bottom: 6px;">
                       <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
                         <div class="progress-bar <%= pctVal >= 100 ? 'green' : (pctVal < activeTargetPct ? 'red' : 'blue') %>" data-width="<%= pctVal %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
                       </div>
-                      <!-- Target line indicator at activeTargetPct -->
+                      <div style="position: absolute; left: <%= activeTargetPct %>%; top: -2px; height: 9px; border-left: 1.5px dashed var(--accent-cyan); z-index: 2; opacity: 0.8; pointer-events: none;" title="Target: <%= activeTargetPct %>%"></div>
+                    </div>
+
+                    <!-- Muatan Progress Bar -->
+                    <% const muatanPctVal = parseFloat(item.muatan_pct) || 0; %>
+                    <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 4px;">
+                      <span style="font-weight: 600;"><i class="bi bi-briefcase"></i> Muatan: <span style="color: var(--accent-cyan);"><%= item.muatan_pct_str %>%</span></span>
+                      <span><%= (item.muatan_selesai !== undefined ? item.muatan_selesai : (item.usaha_total + item.keluarga_total)).toLocaleString('id-ID') %> / <%= item.total_muatan.toLocaleString('id-ID') %></span>
+                    </div>
+                    <div class="progress-bar-target-wrap" style="position: relative; height: 5px; margin-top: 2px; margin-bottom: 6px;">
+                      <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
+                        <div class="progress-bar <%= muatanPctVal >= 100 ? 'green' : (muatanPctVal < activeTargetPct ? 'red' : 'cyan') %>" data-width="<%= muatanPctVal %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
+                      </div>
                       <div style="position: absolute; left: <%= activeTargetPct %>%; top: -2px; height: 9px; border-left: 1.5px dashed var(--accent-cyan); z-index: 2; opacity: 0.8; pointer-events: none;" title="Target: <%= activeTargetPct %>%"></div>
                     </div>
                     
-                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); flex-wrap: wrap; gap: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); flex-wrap: wrap; gap: 4px; margin-top: 8px;">
                       <div>Kec. <%= item.kecamatan %></div>
-                      <div style="display: flex; gap: 6px; align-items: center;">
-                        <span class="muatan-col" style="color: var(--accent-cyan);">
-                          Muatan: <strong><%= item.usaha_total + item.keluarga_total %></strong>/<%= item.total_muatan %>
-                        </span>
-                        <span style="color: var(--accent-purple);">
-                          <%= settings.target_fasih_mode === 'fasih-sm' ? 'FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'FASIH Dinamis' : (settings.target_fasih_mode === 'honor' ? 'Honor' : 'FASIH Statis')) %>: <strong><%= (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0) %></strong>/<%= item.target_fasih_total %>
-                          <span style="font-size: 9px; color: var(--text-muted);">(D<%= item.draft_total %> S<%= item.submitted_total %> A<%= item.approved_total %> R<%= item.rejected_total %>)</span>
-                        </span>
+                      <div style="font-size: 9px; color: var(--text-muted);">
+                        (D<%= item.draft_total %> S<%= item.submitted_total %> A<%= item.approved_total %> R<%= item.rejected_total %>)
                       </div>
                     </div>
                   </div>
