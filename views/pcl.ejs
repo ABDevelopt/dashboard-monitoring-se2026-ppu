@@ -165,11 +165,11 @@
                         <span class="badge badge-blue"><%= fasihPct %>%</span>
                       <% } %>
                     </td>
-                     <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total) %>"><%= (p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total)).toLocaleString('id-ID') %></td>
+                     <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.muatan_selesai %>"><%= (p.muatan_selesai || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
                     <td class="bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>" style="min-width: 160px; padding: 6px 10px;">
                       <%
-                        const muatanRealPcl = p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total);
+                        const muatanRealPcl = p.muatan_selesai || 0;
                         const muatanTgtPcl  = p.total_muatan || 0;
                         const muatanWPcl    = Math.min(parseFloat(muatanPct), 100);
                         const muatanColorPcl = muatanWPcl >= 100 ? 'var(--accent-green)' : (muatanWPcl < activeTargetPct ? 'var(--accent-red)' : 'var(--accent-cyan)');

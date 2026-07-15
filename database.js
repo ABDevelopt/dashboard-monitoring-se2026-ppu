@@ -1464,6 +1464,7 @@ function attachProgressPercentages(data) {
     const usaha = data.usaha_total !== undefined ? data.usaha_total : (data.total_usaha || 0);
     const keluarga = data.keluarga_total !== undefined ? data.keluarga_total : (data.total_keluarga || 0);
     completedMuatan = usaha + keluarga;
+    data.muatan_selesai = completedMuatan;
   }
 
 

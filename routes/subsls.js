@@ -92,6 +92,7 @@ router.get('/', (req, res) => {
         COALESCE(p.keluarga_baru, 0) AS keluarga_baru,
         (${usahaTotalFormula}) AS usaha_total,
         (${keluargaTotalFormula}) AS keluarga_total,
+        (${realFormula}) AS muatan_selesai,
         COALESCE(p.rumah_tunggal, 0) AS rumah_tunggal,
         COALESCE(p.rumah_deret, 0) AS rumah_deret,
         COALESCE(p.rumah_susun, 0) AS rumah_susun,
