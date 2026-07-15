@@ -58,6 +58,13 @@ Anda dapat menyaring dan mengurutkan data secara langsung melalui parameter 'que
 Gunakan template query di bawah ini sebagai dasar penulisan query SQL Anda jika menggunakan 'run_read_only_query'. Ganti parameter seperti ':uploadId', ':kecamatan', atau ':limit' dengan nilai riil sebelum menjalankan query:
 ${hintsText}
 
+## Format Respons & Tampilan — WAJIB DIIKUTI
+Untuk mempermudah pembacaan data, Anda harus memformat jawaban Anda dengan standar estetika premium berikut:
+1. **Bahasa**: Selalu gunakan Bahasa Indonesia yang profesional, ramah, sopan, dan solutif.
+2. **Gunakan Tabel Markdown**: Setiap kali Anda menyajikan data kuantitatif, daftar petugas (PCL/PML/Korlap), progres wilayah, perbandingan angka, atau peringkat (terbaik/terendah), Anda **WAJIB** menampilkannya dalam bentuk **Tabel Markdown** yang rapi dengan kolom yang jelas (misalnya: Nama, Wilayah, Target, Realisasi, Persentase).
+3. **Penyajian Rekomendasi/Analisis**: Gunakan daftar berpoin (bulleted lists) atau daftar bernomor (numbered lists) untuk menyajikan temuan, langkah tindak lanjut, atau rekomendasi kinerja. Gunakan cetak tebal (**bold**) pada kata kunci penting agar mudah dipindai oleh mata (scannable).
+4. **Ringkasan Singkat**: Sebelum menyajikan tabel data yang besar, berikan penjelasan/pengantar singkat (1-2 kalimat), dan akhiri dengan kesimpulan atau rekomendasi yang solutif.
+
 ### ATURAN PEMBATASAN & TAUTAN (TRUNCATION & LINKING):
 - Jika data yang diterima dari tool memiliki penanda terpotong ('truncated'), Anda WAJIB memberitahukan kepada user secara sopan bahwa data dibatasi demi kenyamanan chat, lalu berikan link markdown ke halaman data lengkap website yang bersangkutan (misal: [Halaman PCL](/pcl), [Halaman PML](/pml), [Halaman Korlap](/korlap), [Halaman Kecamatan](/kecamatan), [Halaman SubSLS](/subsls), [Halaman Early Warning](/earlywarning), [Halaman Deteksi Anomali](/deteksianomali), [Halaman Leaderboard](/leaderboard)).
 
@@ -116,9 +123,9 @@ const OPENROUTER_DEFAULT_MODEL    = 'openrouter/free';
 // SmartSwitch worst-case: MAX_SWITCH_TRIES × AGENT_API_TIMEOUT_MS
 //   = 3 × 18s = 54s  <  browser 60s  ✓
 // Server selalu habis sebelum browser abort → tidak ada ECONNRESET.
-const AGENT_API_TIMEOUT_MS          = 120000; // outer server per-provider
-const AGENT_API_QUICK_RESPONSE_MS   = 110000; // call PERTAMA ke AI
-const AGENT_API_TOOLRESULT_MS       = 110000; // call KEDUA+ ke AI (setelah tool-result)
+const AGENT_API_TIMEOUT_MS          = 18000; // outer server per-provider
+const AGENT_API_QUICK_RESPONSE_MS   = 14000; // call PERTAMA ke AI
+const AGENT_API_TOOLRESULT_MS       = 16000; // call KEDUA+ ke AI (setelah tool-result)
 const DB_WORKER_TIMEOUT_MS          = 10000; // max query SQLite (harus < QUICK_RESPONSE_MS)
 const TOOL_RESULT_MAX_ROWS          =    20; // batas baris tool-result yang dikirim ke model
 const MAX_SWITCH_TRIES              =     3; // batas total percobaan SmartSwitch
@@ -846,7 +853,7 @@ function capPageDataResult(result) {
   const arrayFields = [
     'pclStats', 'pmlStats', 'korlapStats', 'kecamatanStats',
     'topPerformers', 'bottomPerformers', 'earlyWarning',
-    'anomalyStats', 'detailSubsls', 'detailPcl', 'detailData', 'tren'
+    'anomalyStats', 'detailSubsls', 'detailPcl', 'detailData', 'tren', 'subslsStats'
   ];
 
   for (const field of arrayFields) {
@@ -961,7 +968,7 @@ async function runToolCall(functionCall) {
 function isQuotaOrRateLimitError(error) {
   if (!error) return false;
   const msg = (error.message || '').toLowerCase();
-  return /http\s+\d+|rate.limit|quota|billing|credit|exhausted|demand|limit|timeout|aborted/i.test(msg);
+  return /http\s+\d+|rate.limit|quota|billing|credit|exhausted|demand|limit|time.?out|timed.?out|aborted/i.test(msg);
 }
 
 function getApiKeyForProvider(provider, settings) {
@@ -1156,7 +1163,7 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
 
     let response    = await callGemini(userMessage, false);
     let loopCount   = 0;
-    const MAX_LOOPS = 2;
+    const MAX_LOOPS = 5;
 
     while (loopCount < MAX_LOOPS) {
       if (abortSignal?.aborted) throw new Error('Request dibatalkan saat loop tool-call.');
@@ -1204,13 +1211,19 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
       finalText = response.response.text();
     } catch (textErr) {
       log.error('Gemini response.text() error:', textErr.message);
-      // ROOT CAUSE #4 FIX — ekstrak teks manual jika .text() throw
+    }
+
+    if (!finalText || !finalText.trim()) {
+      // ROOT CAUSE #4 FIX — ekstrak teks manual jika .text() throw atau kosong
       finalText = response.response.candidates
         ?.flatMap(c => c.content?.parts || [])
         ?.map(p => p.text || '')
         ?.join('\n')
-        ?.trim()
-        || 'Model tidak mengembalikan teks. Periksa finish_reason di log server.';
+        ?.trim();
+    }
+
+    if (!finalText || !finalText.trim()) {
+      finalText = 'Model tidak mengembalikan teks. Periksa finish_reason di log server.';
     }
 
     log.info('Gemini selesai — panjang respons:', finalText.length, 'karakter');
@@ -1247,7 +1260,7 @@ async function sendMessageToOpenAI(userMessage, chatHistory, settings, selectedM
     let response = await createOpenAIResponse(apiKey, { model, instructions: SYSTEM_INSTRUCTION, input, tools, tool_choice: 'auto' });
 
     let loopCount   = 0;
-    const MAX_LOOPS = 2;
+    const MAX_LOOPS = 5;
 
     while (loopCount < MAX_LOOPS) {
       if (abortSignal?.aborted) throw new Error('Request dibatalkan saat loop tool-call OpenAI.');
@@ -1358,7 +1371,7 @@ async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selec
   ] : undefined; // FIX #4 — tidak kirim tools ke model :free
 
   let loopCount = 0;
-  const MAX_LOOPS = 2; // Allow fallback parser to scan all models' text JSON outputs
+  const MAX_LOOPS = 5; // Allow fallback parser to scan all models' text JSON outputs
 
   try {
     if (abortSignal?.aborted) throw new Error('Request dibatalkan sebelum dikirim ke OpenRouter.');
