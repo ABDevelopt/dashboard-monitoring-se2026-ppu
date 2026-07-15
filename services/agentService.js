@@ -3,6 +3,7 @@ const { dbSchemaDescription } = require('./dbSchema');
 const { QUERY_HINTS } = require('./queryHints');
 const { Worker } = require('worker_threads');
 const path = require('path');
+const { spawn } = require('child_process');
 
 // ─────────────────────────────────────────────
 //  LOGGER TERPUSAT
@@ -17,6 +18,147 @@ const log = {
   warn  : (...a) => ['debug','info','warn'].includes(LOG_LEVEL)            && console.warn ('[AGENT:WRN]', ...a),
   error : (...a) => ['debug','info','warn','error'].includes(LOG_LEVEL)    && console.error('[AGENT:ERR]', ...a),
 };
+
+// ─────────────────────────────────────────────
+//  CURL FETCH FALLBACK (Self-Healing for Dewaweb)
+// ─────────────────────────────────────────────
+function curlFetch(url, options = {}) {
+  return new Promise((resolve, reject) => {
+    const method = options.method || 'GET';
+    const headers = options.headers || {};
+    const body = options.body;
+
+    const args = ['-s', '-i', '-X', method];
+
+    for (const [key, val] of Object.entries(headers)) {
+      args.push('-H', `${key}: ${val}`);
+    }
+
+    let hasBody = false;
+    let bodyBuffer = null;
+    if (body !== undefined && body !== null) {
+      if (typeof body === 'string') {
+        bodyBuffer = Buffer.from(body);
+      } else if (Buffer.isBuffer(body)) {
+        bodyBuffer = body;
+      } else if (typeof body.toString === 'function') {
+        bodyBuffer = Buffer.from(body.toString());
+      }
+      
+      if (bodyBuffer && bodyBuffer.length > 0) {
+        args.push('--data-binary', '@-');
+        hasBody = true;
+      }
+    }
+
+    args.push('--max-time', '30');
+    args.push(url);
+
+    const child = spawn('curl', args);
+    const stdoutChunks = [];
+    const stderrChunks = [];
+
+    if (hasBody && bodyBuffer) {
+      child.stdin.write(bodyBuffer);
+      child.stdin.end();
+    }
+
+    child.stdout.on('data', (chunk) => { stdoutChunks.push(chunk); });
+    child.stderr.on('data', (chunk) => { stderrChunks.push(chunk); });
+
+    child.on('error', (err) => { reject(err); });
+
+    child.on('close', (code) => {
+      if (code !== 0) {
+        return reject(new Error(`curl exited with code ${code}: ${Buffer.concat(stderrChunks).toString()}`));
+      }
+
+      const raw = Buffer.concat(stdoutChunks);
+      const doubleNewline = Buffer.from('\r\n\r\n');
+      let headerEndIdx = raw.indexOf(doubleNewline);
+      let delimiterLength = 4;
+      
+      if (headerEndIdx === -1) {
+        headerEndIdx = raw.indexOf(Buffer.from('\n\n'));
+        delimiterLength = 2;
+      }
+
+      let headerText = '';
+      let bodyBufferResult = null;
+
+      if (headerEndIdx !== -1) {
+        headerText = raw.slice(0, headerEndIdx).toString();
+        bodyBufferResult = raw.slice(headerEndIdx + delimiterLength);
+      } else {
+        bodyBufferResult = raw;
+      }
+
+      const headerLines = headerText.split(/\r?\n/);
+      const statusLine = headerLines[0] || '';
+      const statusMatch = statusLine.match(/HTTP\/[\d\.]+\s+(\d+)/i);
+      const status = statusMatch ? parseInt(statusMatch[1], 10) : 200;
+
+      const responseHeaders = new Map();
+      for (let i = 1; i < headerLines.length; i++) {
+        const line = headerLines[i];
+        const colonIdx = line.indexOf(':');
+        if (colonIdx !== -1) {
+          const name = line.slice(0, colonIdx).trim().toLowerCase();
+          const value = line.slice(colonIdx + 1).trim();
+          responseHeaders.set(name, value);
+        }
+      }
+
+      const response = {
+        status,
+        ok: status >= 200 && status < 300,
+        statusText: statusLine.slice(statusLine.indexOf(String(status)) + String(status).length).trim(),
+        headers: {
+          get: (name) => responseHeaders.get(String(name).toLowerCase()) || null,
+          has: (name) => responseHeaders.has(String(name).toLowerCase())
+        },
+        text: () => Promise.resolve(bodyBufferResult.toString()),
+        json: () => {
+          const text = bodyBufferResult.toString();
+          try {
+            return Promise.resolve(JSON.parse(text));
+          } catch (e) {
+            return Promise.reject(new Error(`Failed to parse JSON: ${text.slice(0, 100)}`));
+          }
+        }
+      };
+
+      resolve(response);
+    });
+  });
+}
+
+async function checkNativeFetchConnectivity() {
+  try {
+    const res = await timeoutPromise(
+      fetch('https://generativelanguage.googleapis.com/v1beta/models', { method: 'HEAD' }),
+      2000,
+      'Timeout'
+    );
+    log.info('Native fetch connectivity check: SUCCESS');
+  } catch (err) {
+    log.warn('Native fetch connectivity check failed:', err.message, '. Installing curl-based fetch fallback...');
+    
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async function(url, options) {
+      try {
+        return await curlFetch(url, options);
+      } catch (curlErr) {
+        log.error('curlFetch fallback error:', curlErr.message);
+        return originalFetch(url, options);
+      }
+    };
+  }
+}
+
+checkNativeFetchConnectivity();
+
+
 
 // ─────────────────────────────────────────────
 //  KONSTANTA
