@@ -466,21 +466,21 @@ function getTargetFormula(mode, progresAlias = 'p', masterAlias = 'm') {
 }
 
 function getRealizationFormula(mode, progresAlias = 'p') {
-  if (mode === 'honor') {
+  if (mode === 'honor' || mode === 'prelist') {
     return `(COALESCE(${progresAlias}.ditemukan, 0) + COALESCE(${progresAlias}.keluarga_baru, 0) + COALESCE(${progresAlias}.tidak_ditemukan, 0) + COALESCE(${progresAlias}.meninggal, 0) + COALESCE(${progresAlias}.tidak_eligible, 0) + COALESCE(${progresAlias}.tidak_dapat_ditemui, 0) + COALESCE(${progresAlias}.usaha_ditemukan, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.usaha_tidak_ditemukan, 0) + COALESCE(${progresAlias}.usaha_tutup, 0) + COALESCE(${progresAlias}.usaha_ganda, 0))`;
   }
   return `(COALESCE(${progresAlias}.usaha_ditemukan, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.ditemukan, 0) + COALESCE(${progresAlias}.keluarga_baru, 0))`;
 }
 
 function getUsahaTotalFormula(mode, progresAlias = 'p') {
-  if (mode === 'honor') {
+  if (mode === 'honor' || mode === 'prelist') {
     return `(COALESCE(${progresAlias}.usaha_ditemukan, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.usaha_tidak_ditemukan, 0) + COALESCE(${progresAlias}.usaha_tutup, 0) + COALESCE(${progresAlias}.usaha_ganda, 0))`;
   }
   return `(COALESCE(${progresAlias}.usaha_ditemukan, 0) + COALESCE(${progresAlias}.usaha_baru, 0))`;
 }
 
 function getKeluargaTotalFormula(mode, progresAlias = 'p') {
-  if (mode === 'honor') {
+  if (mode === 'honor' || mode === 'prelist') {
     return `(COALESCE(${progresAlias}.ditemukan, 0) + COALESCE(${progresAlias}.keluarga_baru, 0) + COALESCE(${progresAlias}.tidak_ditemukan, 0) + COALESCE(${progresAlias}.meninggal, 0) + COALESCE(${progresAlias}.tidak_eligible, 0) + COALESCE(${progresAlias}.tidak_dapat_ditemui, 0))`;
   }
   return `(COALESCE(${progresAlias}.ditemukan, 0) + COALESCE(${progresAlias}.keluarga_baru, 0))`;
