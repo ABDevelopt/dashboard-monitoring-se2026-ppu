@@ -118,6 +118,46 @@
     }
   }
 
+  // Helper to map each th to its actual visual column index in the table body
+  function mapHeadersToColIdx(table) {
+    const thead = table.querySelector('thead');
+    if (!thead) return new Map();
+    
+    const rows = thead.querySelectorAll('tr');
+    const grid = [];
+    for (let y = 0; y < rows.length; y++) {
+      grid[y] = [];
+    }
+    
+    const thMap = new Map();
+    
+    rows.forEach((tr, y) => {
+      let x = 0;
+      const ths = tr.querySelectorAll('th');
+      ths.forEach(th => {
+        while (grid[y][x]) {
+          x++;
+        }
+        
+        const colspan = parseInt(th.getAttribute('colspan') || 1);
+        const rowspan = parseInt(th.getAttribute('rowspan') || 1);
+        
+        for (let r = 0; r < rowspan; r++) {
+          for (let c = 0; c < colspan; c++) {
+            if (grid[y + r]) {
+              grid[y + r][x + c] = true;
+            }
+          }
+        }
+        
+        thMap.set(th, x);
+        x += colspan;
+      });
+    });
+    
+    return thMap;
+  }
+
   // Main initialization function
   window.initExcelFilters = function () {
     // Find all data tables that should be filterable (we auto-apply to tables with th elements)
@@ -132,47 +172,68 @@
       const thead = table.querySelector('thead');
       if (!thead) return;
 
-      // Find the row containing th headers (for multi-row header, pick the last row containing headers)
-      const headerRows = thead.querySelectorAll('tr');
-      if (headerRows.length === 0) return;
-      const headerRow = headerRows[headerRows.length - 1]; // last header row maps to data columns
-      const headers = headerRow.querySelectorAll('th');
+      const thMap = mapHeadersToColIdx(table);
+      const allThs = thead.querySelectorAll('th');
 
-      headers.forEach((th, colIdx) => {
-        // Skip action or index columns
-        if (th.classList.contains('no-filter') || th.textContent.trim() === 'No' || th.textContent.trim() === 'Aksi') {
+      allThs.forEach((th) => {
+        const colIdx = thMap.get(th);
+        if (colIdx === undefined) return;
+
+        // Skip headers with colspan > 1 (grouped headers like 'Assignment FASIH')
+        const colspan = parseInt(th.getAttribute('colspan') || 1);
+        if (colspan > 1) return;
+
+        const thText = th.textContent.trim().toLowerCase();
+        // Skip action columns (like edit/delete buttons)
+        if (th.classList.contains('no-filter') || thText === 'aksi') {
           return;
         }
 
         // Style the TH cell relative for dropdown positioning
         th.style.position = 'relative';
-        
-        // Wrap original TH contents
-        const wrapper = document.createElement('div');
-        wrapper.className = 'filter-header-container';
-        wrapper.style.display = 'inline-flex';
-        wrapper.style.alignItems = 'center';
-        wrapper.style.gap = '6px';
-        wrapper.style.justifyContent = 'space-between';
-        wrapper.style.width = '100%';
+        th.style.paddingRight = '32px'; // Dedicated space for funnel icon
 
-        const textSpan = document.createElement('span');
-        textSpan.innerHTML = th.innerHTML;
-        wrapper.appendChild(textSpan);
-
-        // Create filter funnel button
-        const filterBtn = document.createElement('span');
-        filterBtn.className = 'filter-btn no-print';
-        filterBtn.innerHTML = '<i class="bi bi-funnel"></i>';
-        filterBtn.style.cursor = 'pointer';
-        filterBtn.style.color = 'var(--text-muted)';
-        filterBtn.style.padding = '2px';
-        filterBtn.style.borderRadius = '4px';
-        filterBtn.title = 'Filter Kolom';
-        wrapper.appendChild(filterBtn);
-
+        // Wrap original TH contents in an inline-block span to ensure separation
+        const wrapper = document.createElement('span');
+        wrapper.className = 'filter-header-wrapper';
+        wrapper.style.marginRight = '8px';
+        wrapper.style.display = 'inline-block';
+        wrapper.style.verticalAlign = 'middle';
+        wrapper.innerHTML = th.innerHTML;
         th.innerHTML = '';
         th.appendChild(wrapper);
+
+        // Create filter funnel button (absolutely positioned, centered vertically, slightly larger)
+        const filterBtn = document.createElement('span');
+        filterBtn.className = 'filter-btn no-print';
+        filterBtn.innerHTML = '<i class="bi bi-funnel" style="font-size: 13px;"></i>';
+        filterBtn.style.position = 'absolute';
+        filterBtn.style.right = '6px';
+        filterBtn.style.top = '50%';
+        filterBtn.style.transform = 'translateY(-50%)';
+        filterBtn.style.cursor = 'pointer';
+        filterBtn.style.color = 'var(--text-muted)';
+        filterBtn.style.padding = '4px 6px'; // Larger click target
+        filterBtn.style.borderRadius = '4px';
+        filterBtn.style.display = 'inline-flex';
+        filterBtn.style.alignItems = 'center';
+        filterBtn.style.justifyContent = 'center';
+        filterBtn.style.transition = 'all 0.2s ease';
+        filterBtn.title = 'Filter Kolom';
+
+        // Hover effects
+        filterBtn.addEventListener('mouseenter', () => {
+          filterBtn.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+          filterBtn.style.color = 'var(--text-primary)';
+        });
+        filterBtn.addEventListener('mouseleave', () => {
+          filterBtn.style.backgroundColor = 'transparent';
+          if (!filterBtn.classList.contains('active')) {
+            filterBtn.style.color = 'var(--text-muted)';
+          }
+        });
+
+        th.appendChild(filterBtn);
 
         // Create Filter Dropdown Panel
         const dropdown = document.createElement('div');
@@ -198,7 +259,7 @@
           </div>
         `;
         
-        wrapper.appendChild(dropdown);
+        th.appendChild(dropdown);
 
         // Click funnel button to toggle dropdown panel
         filterBtn.addEventListener('click', (e) => {
@@ -307,14 +368,14 @@
             delete activeFilters[colIdx];
             filterBtn.classList.remove('active');
             filterBtn.style.color = 'var(--text-muted)';
-            filterBtn.innerHTML = '<i class="bi bi-funnel"></i>';
+            filterBtn.innerHTML = '<i class="bi bi-funnel" style="font-size: 13px;"></i>';
           } else {
             // Apply filtering
             const checkedVals = Array.from(checkedCheckboxes).map(cb => cb.value);
             activeFilters[colIdx] = checkedVals;
             filterBtn.classList.add('active');
             filterBtn.style.color = 'var(--accent-cyan)';
-            filterBtn.innerHTML = '<i class="bi bi-funnel-fill"></i>';
+            filterBtn.innerHTML = '<i class="bi bi-funnel-fill" style="font-size: 13px;"></i>';
           }
 
           table.dataset.activeFilters = JSON.stringify(activeFilters);
@@ -330,7 +391,7 @@
           
           filterBtn.classList.remove('active');
           filterBtn.style.color = 'var(--text-muted)';
-          filterBtn.innerHTML = '<i class="bi bi-funnel"></i>';
+          filterBtn.innerHTML = '<i class="bi bi-funnel" style="font-size: 13px;"></i>';
           
           applyAllFilters(table);
           dropdown.classList.remove('active');
