@@ -166,4 +166,215 @@ router.get('/', (req, res) => {
   });
 });
 
+router.get('/export-excel', (req, res) => {
+  const uploadId = res.locals.uploadId;
+  if (!uploadId) return res.status(400).send('Belum ada data yang diupload.');
+
+  const settings = getSettings();
+  const targetFormula = getTargetFormula(settings.target_fasih_mode);
+  const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
+  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+  const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+  const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+
+  // 1. Fetch PCL stats
+  const pcls = getDb().prepare(`
+    SELECT 
+      m.pcl, m.pml, m.korlap, m.kecamatan,
+      COUNT(m.kode) AS total_subsls,
+      SUM(CASE WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 1 ELSE 0 END) AS selesai,
+      SUM(${targetMuatanFormula}) AS total_muatan,
+      SUM(${realFormula}) AS muatan_selesai,
+      SUM(${usahaTotalFormula}) AS usaha_total,
+      SUM(COALESCE(p.usaha_ditemukan, 0)) AS usaha_ditemukan_total,
+      SUM(COALESCE(p.usaha_baru, 0)) AS usaha_baru_total,
+      SUM(COALESCE(p.usaha_tidak_ditemukan, 0)) AS usaha_tidak_ditemukan_total,
+      SUM(COALESCE(p.usaha_tutup, 0)) AS usaha_tutup_total,
+      SUM(COALESCE(p.usaha_ganda, 0)) AS usaha_ganda_total,
+      SUM(COALESCE(p.ditemukan, 0)) AS keluarga_ditemukan_total,
+      SUM(COALESCE(p.keluarga_baru, 0)) AS keluarga_baru_total,
+      SUM(COALESCE(p.tidak_ditemukan, 0)) AS keluarga_tidak_ditemukan_total,
+      SUM(COALESCE(p.meninggal, 0)) AS keluarga_meninggal_total,
+      SUM(COALESCE(p.tidak_eligible, 0)) AS keluarga_tidak_eligible_total,
+      SUM(COALESCE(p.tidak_dapat_ditemui, 0)) AS keluarga_tidak_dapat_ditemui_total,
+      SUM(${keluargaTotalFormula}) AS keluarga_total,
+      SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
+      SUM(COALESCE(p.approved, 0)) AS approved_total,
+      SUM(COALESCE(p.rejected, 0)) AS rejected_total,
+      SUM(${targetFormula}) AS target_fasih_total
+    FROM subsls_master m
+    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
+    ORDER BY m.kecamatan, m.korlap, m.pml, m.pcl
+  `).all(uploadId);
+
+  // 2. Fetch PML stats
+  const pmls = getDb().prepare(`
+    SELECT 
+      m.pml, m.korlap,
+      COUNT(DISTINCT m.pcl) AS jumlah_pcl,
+      COUNT(m.kode) AS total_subsls,
+      SUM(CASE WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 1 ELSE 0 END) AS selesai,
+      SUM(${targetMuatanFormula}) AS total_muatan,
+      SUM(${realFormula}) AS muatan_selesai,
+      SUM(${usahaTotalFormula}) AS usaha_total,
+      SUM(${keluargaTotalFormula}) AS keluarga_total,
+      SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
+      SUM(COALESCE(p.approved, 0)) AS approved_total,
+      SUM(COALESCE(p.rejected, 0)) AS rejected_total,
+      SUM(${targetFormula}) AS target_fasih_total
+    FROM subsls_master m
+    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    GROUP BY m.pml, m.korlap
+    ORDER BY m.korlap, m.pml
+  `).all(uploadId);
+
+  // 3. Fetch Korlap stats
+  const korlaps = getDb().prepare(`
+    SELECT 
+      m.korlap,
+      COUNT(DISTINCT m.pml) AS jumlah_pml,
+      COUNT(DISTINCT m.pcl) AS jumlah_pcl,
+      COUNT(m.kode) AS total_subsls,
+      SUM(CASE WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 1 ELSE 0 END) AS selesai,
+      SUM(${targetMuatanFormula}) AS total_muatan,
+      SUM(${realFormula}) AS muatan_selesai,
+      SUM(${usahaTotalFormula}) AS usaha_total,
+      SUM(${keluargaTotalFormula}) AS keluarga_total,
+      SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
+      SUM(COALESCE(p.approved, 0)) AS approved_total,
+      SUM(COALESCE(p.rejected, 0)) AS rejected_total,
+      SUM(${targetFormula}) AS target_fasih_total
+    FROM subsls_master m
+    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    GROUP BY m.korlap
+    ORDER BY m.korlap
+  `).all(uploadId);
+
+  // Format PCL data
+  const pclSheetData = pcls.map((r, idx) => {
+    const completedMuatan = r.muatan_selesai || 0;
+    const targetMuatan = r.total_muatan || 0;
+    const muatanPct = targetMuatan > 0 ? parseFloat(((completedMuatan / targetMuatan) * 100).toFixed(2)) : 0.0;
+    
+    const completedFasih = (r.submitted_total || 0) + (r.approved_total || 0) + (r.rejected_total || 0);
+    const targetFasih = r.target_fasih_total || 0;
+    const fasihPct = targetFasih > 0 ? parseFloat(((completedFasih / targetFasih) * 100).toFixed(2)) : 0.0;
+
+    return {
+      'No': idx + 1,
+      'Nama PCL': r.pcl || '-',
+      'PML (Pengawas)': r.pml || '-',
+      'Korlap (Koordinator)': r.korlap || '-',
+      'Kecamatan': r.kecamatan || '-',
+      'Jumlah Sub-SLS': r.total_subsls || 0,
+      'Sub-SLS Selesai FASIH': r.selesai || 0,
+      'Target Muatan': targetMuatan,
+      'Realisasi Muatan': completedMuatan,
+      'Capaian Muatan (%)': muatanPct,
+      'Total Usaha': r.usaha_total || 0,
+      'Usaha Ditemukan': r.usaha_ditemukan_total || 0,
+      'Usaha Baru': r.usaha_baru_total || 0,
+      'Usaha Tidak Ditemukan': r.usaha_tidak_ditemukan_total || 0,
+      'Usaha Tutup': r.usaha_tutup_total || 0,
+      'Usaha Ganda': r.usaha_ganda_total || 0,
+      'Total Keluarga': r.keluarga_total || 0,
+      'Keluarga Ditemukan': r.keluarga_ditemukan_total || 0,
+      'Keluarga Baru': r.keluarga_baru_total || 0,
+      'Keluarga Tidak Ditemukan': r.keluarga_tidak_ditemukan_total || 0,
+      'Keluarga Meninggal': r.keluarga_meninggal_total || 0,
+      'Keluarga Tidak Eligible': r.keluarga_tidak_eligible_total || 0,
+      'Keluarga Tidak Dapat Ditemui': r.keluarga_tidak_dapat_ditemui_total || 0,
+      'FASIH Draft': r.draft_total || 0,
+      'FASIH Submitted': r.submitted_total || 0,
+      'FASIH Approved': r.approved_total || 0,
+      'FASIH Rejected': r.rejected_total || 0,
+      'Target FASIH': targetFasih,
+      'Capaian FASIH (%)': fasihPct
+    };
+  });
+
+  // Format PML data
+  const pmlSheetData = pmls.map((r, idx) => {
+    const completedMuatan = r.muatan_selesai || 0;
+    const targetMuatan = r.total_muatan || 0;
+    const muatanPct = targetMuatan > 0 ? parseFloat(((completedMuatan / targetMuatan) * 100).toFixed(2)) : 0.0;
+    
+    const completedFasih = (r.submitted_total || 0) + (r.approved_total || 0) + (r.rejected_total || 0);
+    const targetFasih = r.target_fasih_total || 0;
+    const fasihPct = targetFasih > 0 ? parseFloat(((completedFasih / targetFasih) * 100).toFixed(2)) : 0.0;
+
+    return {
+      'No': idx + 1,
+      'Nama PML': r.pml || '-',
+      'Korlap (Koordinator)': r.korlap || '-',
+      'Jumlah PCL Bawahan': r.jumlah_pcl || 0,
+      'Jumlah Sub-SLS': r.total_subsls || 0,
+      'Sub-SLS Selesai FASIH': r.selesai || 0,
+      'Target Muatan': targetMuatan,
+      'Realisasi Muatan': completedMuatan,
+      'Capaian Muatan (%)': muatanPct,
+      'Total Usaha': r.usaha_total || 0,
+      'Total Keluarga': r.keluarga_total || 0,
+      'FASIH Draft': r.draft_total || 0,
+      'FASIH Submitted': r.submitted_total || 0,
+      'FASIH Approved': r.approved_total || 0,
+      'FASIH Rejected': r.rejected_total || 0,
+      'Target FASIH': targetFasih,
+      'Capaian FASIH (%)': fasihPct
+    };
+  });
+
+  // Format Korlap data
+  const korlapSheetData = korlaps.map((r, idx) => {
+    const completedMuatan = r.muatan_selesai || 0;
+    const targetMuatan = r.total_muatan || 0;
+    const muatanPct = targetMuatan > 0 ? parseFloat(((completedMuatan / targetMuatan) * 100).toFixed(2)) : 0.0;
+    
+    const completedFasih = (r.submitted_total || 0) + (r.approved_total || 0) + (r.rejected_total || 0);
+    const targetFasih = r.target_fasih_total || 0;
+    const fasihPct = targetFasih > 0 ? parseFloat(((completedFasih / targetFasih) * 100).toFixed(2)) : 0.0;
+
+    return {
+      'No': idx + 1,
+      'Nama Korlap': r.korlap || '-',
+      'Jumlah PML Bawahan': r.jumlah_pml || 0,
+      'Jumlah PCL Bawahan': r.jumlah_pcl || 0,
+      'Jumlah Sub-SLS': r.total_subsls || 0,
+      'Sub-SLS Selesai FASIH': r.selesai || 0,
+      'Target Muatan': targetMuatan,
+      'Realisasi Muatan': completedMuatan,
+      'Capaian Muatan (%)': muatanPct,
+      'Total Usaha': r.usaha_total || 0,
+      'Total Keluarga': r.keluarga_total || 0,
+      'FASIH Draft': r.draft_total || 0,
+      'FASIH Submitted': r.submitted_total || 0,
+      'FASIH Approved': r.approved_total || 0,
+      'FASIH Rejected': r.rejected_total || 0,
+      'Target FASIH': targetFasih,
+      'Capaian FASIH (%)': fasihPct
+    };
+  });
+
+  const XLSX = require('xlsx');
+  const wb = XLSX.utils.book_new();
+  
+  const wsPcl = XLSX.utils.json_to_sheet(pclSheetData);
+  const wsPml = XLSX.utils.json_to_sheet(pmlSheetData);
+  const wsKorlap = XLSX.utils.json_to_sheet(korlapSheetData);
+
+  XLSX.utils.book_append_sheet(wb, wsPcl, "Progres PCL");
+  XLSX.utils.book_append_sheet(wb, wsPml, "Progres PML");
+  XLSX.utils.book_append_sheet(wb, wsKorlap, "Progres Korlap");
+
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="progres_muatan_petugas_${new Date().toISOString().slice(0,10)}.xlsx"`);
+  res.send(buf);
+});
+
 module.exports = router;

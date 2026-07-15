@@ -68,9 +68,12 @@
       
       <!-- PCL LIST TABLE -->
       <div class="card" style="margin-bottom: 0;">
-        <div class="card-header">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
           <div class="card-title"><i class="bi bi-person-gear"></i> Progres Kinerja per PCL (Pencacah)</div>
-          <span class="badge badge-blue"><%= pclStats.length %> PCL</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <a href="/pcl/export-excel" class="btn btn-xs" style="background: #22c55e; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download><i class="bi bi-file-earmark-excel"></i> Export Excel Petugas</a>
+            <span class="badge badge-blue"><%= pclStats.length %> PCL</span>
+          </div>
         </div>
 
         <div class="search-wrap mb-4">

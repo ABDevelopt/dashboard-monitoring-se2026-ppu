@@ -301,7 +301,10 @@
       <div class="nav-section-content">
         <% if (settings.page_export === '1') { %>
         <a href="/subsls/export" class="nav-item">
-          <span class="nav-icon"><i class="bi bi-download"></i></span> Export CSV
+          <span class="nav-icon"><i class="bi bi-download"></i></span> Export CSV (Sub-SLS)
+        </a>
+        <a href="/pcl/export-excel" class="nav-item">
+          <span class="nav-icon"><i class="bi bi-file-earmark-excel"></i></span> Export Excel Petugas
         </a>
         <% } %>
         <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
