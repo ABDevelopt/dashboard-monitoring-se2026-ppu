@@ -1,4 +1,5 @@
 <div class="fade-in">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <% if (!uploadId) { %>
     <div class="card empty-state">
       <div class="empty-state-icon"><i class="bi bi-geo-alt"></i></div>
@@ -87,123 +88,383 @@
       </form>
     </div>
 
-    <!-- MAIN DATA TABLE -->
-    <div class="card mt-4" id="subslsTableContainer">
-      <div class="card-header">
-        <div class="card-title">
-          <span><i class="bi bi-box-seam"></i> Daftar Rincian SubSLS (Blok Sensus)</span>
+    <!-- TWO-COLUMN GRID FOR DRILLDOWN -->
+    <div class="drilldown-grid <%= filterKode ? 'has-selection' : 'no-selection' %> mt-4">
+
+      <!-- MAIN DATA TABLE -->
+      <div class="card" id="subslsTableContainer" style="margin-bottom: 0;">
+        <div class="card-header">
+          <div class="card-title">
+            <span><i class="bi bi-box-seam"></i> Daftar Rincian SubSLS (Blok Sensus)</span>
+          </div>
+          <div>
+            <span style="font-size:12px; margin-right:12px; color:var(--text-secondary);">
+              Menampilkan <%= data.length %> dari <%= total.toLocaleString('id-ID') %> SubSLS
+            </span>
+            <a href="/subsls/export" class="btn btn-success btn-sm"><i class="bi bi-download"></i> Export ke CSV</a>
+          </div>
         </div>
-        <div>
-          <span style="font-size:12px; margin-right:12px; color:var(--text-secondary);">
-            Menampilkan <%= data.length %> dari <%= total.toLocaleString('id-ID') %> SubSLS
-          </span>
-          <a href="/subsls/export" class="btn btn-success btn-sm"><i class="bi bi-download"></i> Export ke CSV</a>
+
+        <div class="search-wrap mb-4" style="max-width: 300px;">
+          <input type="search" id="localSearch" placeholder="Cari di halaman ini..." aria-label="Cari SLS di halaman ini">
         </div>
-      </div>
 
-      <div class="search-wrap mb-4" style="max-width: 300px;">
-        <input type="search" id="localSearch" placeholder="Cari di halaman ini..." aria-label="Cari SLS di halaman ini">
-      </div>
-
-      <% if (data && data.length > 0) { %>
-        <div class="table-wrap" style="max-height: 800px; overflow-y: auto;">
-          <table id="subslsTable">
-            <thead>
-              <tr>
-                <th rowspan="2" class="text-center" style="font-weight: 600; width: 40px;">No</th>
-                <th rowspan="2" class="hide-md">Kode SLS</th>
-                <th rowspan="2">Nama SLS</th>
-
-                <th rowspan="2">Wilayah</th>
-                <th rowspan="2">Petugas (PCL/PML/Korlap)</th>
-                <th rowspan="2" class="text-center">Status</th>
-                <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
-                <th colspan="3" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
-              </tr>
-              <tr>
-                <th class="text-right bg-yellow-soft">Draft</th>
-                <th class="text-right bg-blue-soft">Submitted</th>
-                <th class="text-right bg-green-soft">Approved</th>
-                <th class="text-right bg-red-soft">Rejected</th>
-                <th class="text-right bg-purple-soft">Target</th>
-                
-                <th class="text-right bg-cyan-soft muatan-col">Realisasi</th>
-                <th class="text-right bg-cyan-soft muatan-col">Target</th>
-                <th class="text-right bg-cyan-soft muatan-col">Usaha Baru</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% data.forEach((row, index) => { %>
+        <% if (data && data.length > 0) { %>
+          <div class="table-wrap" style="max-height: 800px; overflow-y: auto;">
+            <table id="subslsTable">
+              <thead>
                 <tr>
-                  <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
-                  <td class="td-code hide-md"><%= row.kode %></td>
-                  <td class="td-primary" style="font-weight: 600;">
-                    <div style="display: inline-flex; align-items: center; gap: 6px; width: 100%;">
-                      <span><%= row.nama_sls %></span>
-                      <button class="pin-btn" data-type="sls" data-name="<%= row.nama_sls %> (<%= row.desa %>)" data-href="/subsls?kode=<%= row.kode %>" title="Sematkan SLS ke Favorit" onclick="window.togglePin('sls', '<%= row.nama_sls %> (<%= row.desa %>)', '/subsls?kode=<%= row.kode %>')" style="font-size: 11px; padding: 2px;">
-                        <i class="bi bi-star"></i>
-                      </button>
-                    </div>
-                  </td>
-                  <td>
-                    <div style="font-weight: 600; font-size: 12px;"><%= row.kecamatan %></div>
-                    <div style="font-size: 11px; color: var(--text-muted);"><%= row.desa %></div>
-                  </td>
-                  <td>
-                    <div style="font-weight: 500; font-size: 12px;" class="td-primary">
-                      <% if (row.pcl) { %>
-                        <a href="/pcl?pcl=<%= encodeURIComponent(row.pcl) %>" style="color: inherit; text-decoration: none;"><%= row.pcl %></a>
-                        <% if (kippPcls.includes(row.pcl.toUpperCase())) { %>
-                          <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
-                        <% } %>
-                      <% } else { %>
-                        -
-                      <% } %>
-                    </div>
-                    <div style="font-size: 11px; color: var(--text-muted);" class="hide-md">
-                      PML: <%= row.pml %>
-                      <% if (row.pml && kippPmls.includes(row.pml.toUpperCase())) { %>
-                        <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 1px;">KIPP</span>
-                      <% } %>
-                      · Krl: <%= row.korlap %>
-                      <% if (row.korlap && kippKorlaps.includes(row.korlap.toUpperCase())) { %>
-                        <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 1px;">KIPP</span>
-                      <% } %>
-                    </div>
+                  <th rowspan="2" class="text-center" style="font-weight: 600; width: 40px;">No</th>
+                  <th rowspan="2" class="hide-md">Kode SLS</th>
+                  <th rowspan="2">Nama SLS</th>
 
-                  </td>
-                  <td class="text-center" data-sort="<%= row.sudah_diisi %>">
-                    <% if (row.sudah_diisi === 'belum_mulai') { %>
-                      <span class="badge badge-gray">Belum Mulai</span>
-                    <% } else if (row.sudah_diisi === 'sedang_didata') { %>
-                      <span class="badge badge-orange">Sedang Didata</span>
-                    <% } else if (row.sudah_diisi === 'memenuhi_target') { %>
-                      <span class="badge badge-green">Memenuhi Target</span>
-                    <% } else { %>
-                      <span class="badge badge-purple">Melebihi Target</span>
-                    <% } %>
-                  </td>
-                  
-                  <td class="text-right bg-yellow-soft status-draft-text" data-sort="<%= row.draft %>"><%= (row.draft || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-blue-soft status-submit-text" data-sort="<%= row.submitted_by_pcl %>"><%= (row.submitted_by_pcl || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-green-soft status-approve-text fw-bold" data-sort="<%= row.approved %>"><%= (row.approved || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-red-soft status-reject-text" data-sort="<%= row.rejected %>" style="font-weight: 600;"><%= (row.rejected || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-purple-soft" data-sort="<%= row.target_fasih %>"><%= (row.target_fasih || 0).toLocaleString('id-ID') %></td>
-                  
-                  <td class="text-right fw-bold bg-cyan-soft muatan-col" data-sort="<%= row.muatan_selesai %>"><%= (row.muatan_selesai || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= row.muatan %>"><%= row.muatan.toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-cyan-soft text-green muatan-col" data-sort="<%= row.usaha_baru %>">+<%= (row.usaha_baru || 0).toLocaleString('id-ID') %></td>
+                  <th rowspan="2">Wilayah</th>
+                  <th rowspan="2">Petugas (PCL/PML/Korlap)</th>
+                  <th rowspan="2" class="text-center">Status</th>
+                  <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                  <th colspan="3" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
                 </tr>
-              <% }) %>
-            </tbody>
-          </table>
-        </div>
+                <tr>
+                  <th class="text-right bg-yellow-soft">Draft</th>
+                  <th class="text-right bg-blue-soft">Submitted</th>
+                  <th class="text-right bg-green-soft">Approved</th>
+                  <th class="text-right bg-red-soft">Rejected</th>
+                  <th class="text-right bg-purple-soft">Target</th>
+                  
+                  <th class="text-right bg-cyan-soft muatan-col">Realisasi</th>
+                  <th class="text-right bg-cyan-soft muatan-col">Target</th>
+                  <th class="text-right bg-cyan-soft muatan-col">Usaha Baru</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% data.forEach((row, index) => { %>
+                  <tr class="<%= filterKode === row.kode ? 'active' : '' %>" style="<%= filterKode === row.kode ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
+                    <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
+                    <td class="td-code hide-md"><%= row.kode %></td>
+                    <td class="td-primary" style="font-weight: 600;">
+                      <div style="display: inline-flex; align-items: center; gap: 6px; width: 100%;">
+                        <a href="/subsls?kode=<%= row.kode %>&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" style="color: inherit; text-decoration: none; display: inline-block;">
+                          <%= row.nama_sls %>
+                        </a>
+                        <button class="pin-btn" data-type="sls" data-name="<%= row.nama_sls %> (<%= row.desa %>)" data-href="/subsls?kode=<%= row.kode %>" title="Sematkan SLS ke Favorit" onclick="window.togglePin('sls', '<%= row.nama_sls %> (<%= row.desa %>)', '/subsls?kode=<%= row.kode %>')" style="font-size: 11px; padding: 2px;">
+                          <i class="bi bi-star"></i>
+                        </button>
+                      </div>
+                    </td>
+                    <td>
+                      <div style="font-weight: 600; font-size: 12px;"><%= row.kecamatan %></div>
+                      <div style="font-size: 11px; color: var(--text-muted);"><%= row.desa %></div>
+                    </td>
+                    <td>
+                      <div style="font-weight: 500; font-size: 12px;" class="td-primary">
+                        <% if (row.pcl) { %>
+                          <a href="/pcl?pcl=<%= encodeURIComponent(row.pcl) %>" style="color: inherit; text-decoration: none;"><%= row.pcl %></a>
+                          <% if (kippPcls.includes(row.pcl.toUpperCase())) { %>
+                            <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
+                          <% } %>
+                        <% } else { %>
+                          -
+                        <% } %>
+                      </div>
+                      <div style="font-size: 11px; color: var(--text-muted);" class="hide-md">
+                        PML: <%= row.pml %>
+                        <% if (row.pml && kippPmls.includes(row.pml.toUpperCase())) { %>
+                          <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 1px;">KIPP</span>
+                        <% } %>
+                        · Krl: <%= row.korlap %>
+                        <% if (row.korlap && kippKorlaps.includes(row.korlap.toUpperCase())) { %>
+                          <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 1px;">KIPP</span>
+                        <% } %>
+                      </div>
 
-      <% } else { %>
-        <div class="no-data">
-          <i class="bi bi-slash-circle-fill text-red" style="font-size: 18px; margin-right: 6px;"></i> Tidak ditemukan data SubSLS yang sesuai dengan kriteria filter Anda.
-        </div>
-      <% } %>
+                    </td>
+                    <td class="text-center" data-sort="<%= row.sudah_diisi %>">
+                      <% if (row.sudah_diisi === 'belum_mulai') { %>
+                        <span class="badge badge-gray">Belum Mulai</span>
+                      <% } else if (row.sudah_diisi === 'sedang_didata') { %>
+                        <span class="badge badge-orange">Sedang Didata</span>
+                      <% } else if (row.sudah_diisi === 'memenuhi_target') { %>
+                        <span class="badge badge-green">Memenuhi Target</span>
+                      <% } else { %>
+                        <span class="badge badge-purple">Melebihi Target</span>
+                      <% } %>
+                    </td>
+                    
+                    <td class="text-right bg-yellow-soft status-draft-text" data-sort="<%= row.draft %>"><%= (row.draft || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-blue-soft status-submit-text" data-sort="<%= row.submitted_by_pcl %>"><%= (row.submitted_by_pcl || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-green-soft status-approve-text fw-bold" data-sort="<%= row.approved %>"><%= (row.approved || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-red-soft status-reject-text" data-sort="<%= row.rejected %>" style="font-weight: 600;"><%= (row.rejected || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft" data-sort="<%= row.target_fasih %>"><%= (row.target_fasih || 0).toLocaleString('id-ID') %></td>
+                    
+                    <td class="text-right fw-bold bg-cyan-soft muatan-col" data-sort="<%= row.muatan_selesai %>"><%= (row.muatan_selesai || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= row.muatan %>"><%= row.muatan.toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft text-green muatan-col" data-sort="<%= row.usaha_baru %>">+<%= (row.usaha_baru || 0).toLocaleString('id-ID') %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+
+        <% } else { %>
+          <div class="no-data">
+            <i class="bi bi-slash-circle-fill text-red" style="font-size: 18px; margin-right: 6px;"></i> Tidak ditemukan data SubSLS yang sesuai dengan kriteria filter Anda.
+          </div>
+        <% } %>
+      </div>
+
+      <!-- SUBSLS DETAIL SIDEBAR -->
+      <div id="subslsDetailContainer" style="transition: all 0.25s ease;">
+        <% if (selectedSubsls) { %>
+          <% 
+            let fasihDone = (selectedSubsls.submitted_by_pcl || 0) + (selectedSubsls.approved || 0) + (selectedSubsls.rejected || 0);
+            let fasihTgt = selectedSubsls.target_fasih || 0;
+            let fasihPct = fasihTgt > 0 ? ((fasihDone / fasihTgt) * 100).toFixed(2) : '0.00';
+            
+            let muatanDone = selectedSubsls.muatan_selesai || 0;
+            let muatanTgt = selectedSubsls.muatan || 0;
+            let muatanPct = muatanTgt > 0 ? ((muatanDone / muatanTgt) * 100).toFixed(2) : '0.00';
+            let muatanColor = parseFloat(muatanPct) >= 100 ? 'var(--accent-green)' : (parseFloat(muatanPct) < 25 ? 'var(--accent-red)' : 'var(--accent-cyan)');
+          %>
+          <div class="card" style="border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 20px; position: sticky; top: 80px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+            <!-- Close Detail Button -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;">
+              <div>
+                <span class="badge badge-purple" style="font-size: 9px; padding: 2px 6px; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; display: inline-block;">Rincian SubSLS</span>
+                <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.nama_sls %></h3>
+                <code style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 2px;"><%= selectedSubsls.kode %></code>
+              </div>
+              <a href="/subsls?kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="btn-close-detail" style="color: var(--text-muted); font-size: 18px; text-decoration: none; padding: 4px; line-height: 1;"><i class="bi bi-x-lg"></i></a>
+            </div>
+
+            <!-- Identitas Wilayah & Petugas -->
+            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 11px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+                <div>
+                  <div style="color: var(--text-muted);">Kecamatan</div>
+                  <strong style="color: var(--text-primary);"><%= selectedSubsls.kecamatan %></strong>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted);">Desa/Kelurahan</div>
+                  <strong style="color: var(--text-primary);"><%= selectedSubsls.desa %></strong>
+                </div>
+              </div>
+              
+              <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11px;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: var(--text-muted);"><i class="bi bi-person-badge"></i> Pencacah (PCL)</span>
+                  <strong style="color: var(--text-primary);"><%= selectedSubsls.pcl || '-' %></strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: var(--text-muted);"><i class="bi bi-person-check"></i> Pengawas (PML)</span>
+                  <strong style="color: var(--text-primary);"><%= selectedSubsls.pml || '-' %></strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: var(--text-muted);"><i class="bi bi-person-gear"></i> Korlap</span>
+                  <strong style="color: var(--text-primary);"><%= selectedSubsls.korlap || '-' %></strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Status Badge -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+              <span style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">Status Progres SLS:</span>
+              <% if (selectedSubsls.sudah_diisi === 'belum_mulai') { %>
+                <span class="badge badge-gray" style="padding: 4px 10px; font-size: 10px;">Belum Mulai</span>
+              <% } else if (selectedSubsls.sudah_diisi === 'sedang_didata') { %>
+                <span class="badge badge-orange" style="padding: 4px 10px; font-size: 10px;">Sedang Didata</span>
+              <% } else if (selectedSubsls.sudah_diisi === 'memenuhi_target') { %>
+                <span class="badge badge-green" style="padding: 4px 10px; font-size: 10px;">Memenuhi Target</span>
+              <% } else { %>
+                <span class="badge badge-purple" style="padding: 4px 10px; font-size: 10px;">Melebihi Target</span>
+              <% } %>
+            </div>
+
+            <!-- PROGRESS CARDS -->
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px;">
+              <!-- FASIH CARD -->
+              <div style="background: rgba(167,139,250,0.03); border: 1px solid rgba(167,139,250,0.15); border-radius: 12px; padding: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 11px; font-weight: 700; color: var(--accent-purple); text-transform: uppercase;"><i class="bi bi-file-earmark-text"></i> Assignment FASIH</span>
+                  <span style="font-size: 13px; font-weight: 700; color: var(--accent-purple);"><%= fasihPct %>%</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">
+                  <span>Capaian Dokumen</span>
+                  <strong><%= fasihDone %> / <%= fasihTgt %></strong>
+                </div>
+                <div style="height: 6px; background: rgba(167,139,250,0.1); border-radius: 99px; overflow: hidden; margin-bottom: 12px;">
+                  <div class="progress-bar purple" data-width="<%= Math.min(parseFloat(fasihPct), 100) %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; text-align: center; font-size: 10px;">
+                  <div style="background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.15); padding: 4px; border-radius: 6px;">
+                    <div style="color: var(--accent-yellow); font-size: 8px; font-weight: bold; text-transform: uppercase;">Draft</div>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.draft %></div>
+                  </div>
+                  <div style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.15); padding: 4px; border-radius: 6px;">
+                    <div style="color: var(--accent-blue); font-size: 8px; font-weight: bold; text-transform: uppercase;">Submit</div>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.submitted_by_pcl %></div>
+                  </div>
+                  <div style="background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.15); padding: 4px; border-radius: 6px;">
+                    <div style="color: var(--accent-green); font-size: 8px; font-weight: bold; text-transform: uppercase;">Appr</div>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.approved %></div>
+                  </div>
+                  <div style="background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.15); padding: 4px; border-radius: 6px;">
+                    <div style="color: var(--accent-red); font-size: 8px; font-weight: bold; text-transform: uppercase;">Rejc</div>
+                    <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.rejected %></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MUATAN CARD -->
+              <div style="background: rgba(6,182,212,0.03); border: 1px solid rgba(6,182,212,0.15); border-radius: 12px; padding: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 11px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase;"><i class="bi bi-box-seam"></i> Progres Muatan</span>
+                  <span style="font-size: 13px; font-weight: 700; color: <%= muatanColor %>;"><%= muatanPct %>%</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">
+                  <span>Realisasi / Target</span>
+                  <strong><%= muatanDone %> / <%= muatanTgt %></strong>
+                </div>
+                <div style="height: 6px; background: rgba(6,182,212,0.1); border-radius: 99px; overflow: hidden; margin-bottom: 12px;">
+                  <div class="progress-bar <%= parseFloat(muatanPct) >= 100 ? 'green' : (parseFloat(muatanPct) < 25 ? 'red' : 'blue') %>" data-width="<%= Math.min(parseFloat(muatanPct), 100) %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
+                </div>
+                
+                <!-- Temuan Keberadaan Usaha -->
+                <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+                  <i class="bi bi-shop"></i> Temuan Keberadaan Usaha
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; text-align: center; font-size: 9px; margin-bottom: 12px;">
+                  <div style="background: rgba(34,197,94,0.06); padding: 4px 2px; border-radius: 4px; border: 1px solid rgba(34,197,94,0.1);">
+                    <div style="color: var(--accent-green); font-size: 7px; font-weight: bold; text-transform: uppercase; overflow: hidden; white-space: nowrap;">Ada</div>
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.usaha_ditemukan %></div>
+                  </div>
+                  <div style="background: rgba(59,130,246,0.06); padding: 4px 2px; border-radius: 4px; border: 1px solid rgba(59,130,246,0.1);">
+                    <div style="color: var(--accent-blue); font-size: 7px; font-weight: bold; text-transform: uppercase; overflow: hidden; white-space: nowrap;">Baru</div>
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.usaha_baru %></div>
+                  </div>
+                  <div style="background: rgba(239,68,68,0.06); padding: 4px 2px; border-radius: 4px; border: 1px solid rgba(239,68,68,0.1);">
+                    <div style="color: var(--accent-red); font-size: 7px; font-weight: bold; text-transform: uppercase; overflow: hidden; white-space: nowrap;">Tdk Ada</div>
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.usaha_tidak_ditemukan %></div>
+                  </div>
+                  <div style="background: rgba(251,191,36,0.06); padding: 4px 2px; border-radius: 4px; border: 1px solid rgba(251,191,36,0.1);">
+                    <div style="color: var(--accent-yellow); font-size: 7px; font-weight: bold; text-transform: uppercase; overflow: hidden; white-space: nowrap;">Tutup</div>
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.usaha_tutup %></div>
+                  </div>
+                  <div style="background: rgba(167,139,250,0.06); padding: 4px 2px; border-radius: 4px; border: 1px solid rgba(167,139,250,0.1);">
+                    <div style="color: var(--accent-purple); font-size: 7px; font-weight: bold; text-transform: uppercase; overflow: hidden; white-space: nowrap;">Ganda</div>
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.usaha_ganda %></div>
+                  </div>
+                </div>
+
+                <!-- Temuan Keberadaan Keluarga -->
+                <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+                  <i class="bi bi-people"></i> Temuan Keberadaan Keluarga
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; text-align: center; font-size: 9px;">
+                  <div style="background: rgba(34,197,94,0.06); padding: 4px 2px; border-radius: 4px; border: 1px solid rgba(34,197,94,0.1);">
+                    <div style="color: var(--accent-green); font-size: 7px; font-weight: bold; text-transform: uppercase;">Ditemukan</div>
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.ditemukan %></div>
+                  </div>
+                  <div style="background: rgba(59,130,246,0.06); padding: 4px 2px; border-radius: 4px; border: 1px solid rgba(59,130,246,0.1);">
+                    <div style="color: var(--accent-blue); font-size: 7px; font-weight: bold; text-transform: uppercase;">Klg Baru</div>
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.keluarga_baru %></div>
+                  </div>
+                  <div style="background: rgba(239,68,68,0.06); padding: 4px 2px; border-radius: 4px; border: 1px solid rgba(239,68,68,0.1);">
+                    <div style="color: var(--accent-red); font-size: 7px; font-weight: bold; text-transform: uppercase;">Tdk Ada</div>
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.tidak_ditemukan %></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Analisis Kecepatan & Estimasi Pendataan -->
+            <%
+              let remainingFasih = Math.max(0, fasihTgt - fasihDone);
+              let currentSpeed = fasihDone / diffDays; // dokumen per hari
+              let currentSpeedText = currentSpeed.toFixed(2);
+              
+              let estDaysToFinish = currentSpeed > 0 ? (remainingFasih / currentSpeed) : null;
+              let isOfftrack = (currentSpeed === 0 && remainingFasih > 0) || (estDaysToFinish !== null && estDaysToFinish > daysRemaining);
+              
+              let reqSpeed = daysRemaining > 0 ? (remainingFasih / daysRemaining) : remainingFasih;
+            %>
+            <div style="margin-top: 18px; padding: 14px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px;">
+              <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-cyan); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <i class="bi bi-speedometer2" style="font-size: 14px;"></i> Analisis Kecepatan & Sisa Waktu
+              </div>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+                  <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Kecepatan Saat Ini</div>
+                  <div style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-top: 2px;"><%= currentSpeedText %> <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);">dok/hari</span></div>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+                  <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Status Target</div>
+                  <div style="font-size: 12px; font-weight: 700; margin-top: 4px;">
+                    <% if (remainingFasih === 0) { %>
+                      <span class="badge badge-green" style="font-size: 10px; padding: 3px 8px;">Selesai 100%</span>
+                    <% } else if (isOfftrack) { %>
+                      <span class="badge badge-red" style="font-size: 10px; padding: 3px 8px;"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
+                    <% } else { %>
+                      <span class="badge badge-green" style="font-size: 10px; padding: 3px 8px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+              
+              <div style="font-size: 11px; line-height: 1.5; color: var(--text-secondary);">
+                <% if (remainingFasih === 0) { %>
+                  Seluruh target pengisian dokumen FASIH sebanyak <strong><%= fasihTgt %></strong> dokumen pada SubSLS ini telah diselesaikan. Kinerja luar biasa!
+                <% } else { %>
+                  Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak 15 Juni). Sisa hari menuju deadline (31 Agustus): <strong><%= daysRemaining %> hari</strong>.<br>
+                  Sisa beban kerja: <strong><%= remainingFasih %> dokumen</strong>. 
+                  Dengan kecepatan saat ini (<strong><%= currentSpeedText %> dok/hari</strong>), 
+                  <% if (currentSpeed === 0) { %>
+                    progres belum berjalan sehingga estimasi hari selesai tidak dapat diprediksi.
+                  <% } else { %>
+                    beban kerja diprediksi akan selesai dalam waktu sekitar <strong><%= Math.ceil(estDaysToFinish) %> hari</strong>.
+                  <% } %>
+                  
+                  <% if (isOfftrack) { %>
+                    <div style="margin-top: 8px; padding: 8px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--accent-red); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
+                      <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red); font-size: 13px; margin-top: 1px;"></i>
+                      <div><strong>Off-Track:</strong> Progres diprediksi terlambat/tidak selesai tepat waktu. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeed.toFixed(2) %> dok/hari</strong> agar selesai sesuai target pada 31 Agustus 2026.</div>
+                    </div>
+                  <% } else { %>
+                    <div style="margin-top: 8px; padding: 8px; background: rgba(34, 197, 94, 0.08); border-left: 3px solid var(--accent-green); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
+                      <i class="bi bi-check-circle-fill" style="color: var(--accent-green); font-size: 13px; margin-top: 1px;"></i>
+                      <div><strong>On-Track:</strong> Kecepatan progres sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum 31 Agustus 2026).</div>
+                    </div>
+                  <% } %>
+                <% } %>
+              </div>
+            </div>
+
+            <!-- Daily Progress Chart -->
+            <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; margin-left: -20px; margin-right: -20px;">
+              <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; padding-left: 20px; padding-right: 20px;">
+                <i class="bi bi-graph-up"></i> Tren Progres Harian (FASIH)
+              </div>
+              <div style="height: 180px; position: relative; width: 100%; padding-left: 10px; padding-right: 10px;">
+                <canvas id="subslsHistoryChartCanvas"></canvas>
+              </div>
+            </div>
+
+            <!-- JSON data script tag -->
+            <script id="subslsHistoryData" type="application/json">
+              <%- JSON.stringify(subslsHistory) %>
+            </script>
+
+          </div>
+        <% } else { %>
+          <div class="card empty-state text-center" style="height: 100%; min-height: 300px; display: flex; flex-direction: column; justify-content: center; border-style: dashed;">
+            <div class="empty-state-icon"><i class="bi bi-arrow-left-circle"></i></div>
+            <div class="empty-state-title">Pilih SubSLS</div>
+            <div class="empty-state-text">Klik nama SubSLS di tabel sebelah kiri untuk melihat rincian progres tugas, temuan muatan, dan detail lainnya secara lengkap.</div>
+          </div>
+        <% } %>
+      </div>
+
+    </div>
     </div>
   <% } %>
 </div>
@@ -219,9 +480,11 @@ document.addEventListener('DOMContentLoaded', () => {
       window.initExpandButtons(container);
     }
 
-    // 1. Re-initialize sorting and searching on the table
+    // 1. Re-initialize sorting, searching, and progress bars
     makeTableSortable('subslsTable');
     makeTableSearchable('localSearch', 'subslsTable');
+    if (window.initProgressBars) window.initProgressBars(container);
+    initSubslsHistoryChart();
 
     // 2. Filter form change listeners
     const filterForm = document.getElementById('filterForm');
@@ -243,9 +506,145 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
     }
+
+    // 3. AJAX Drilldown logic for SubSLS details (updates only the detail segment with Caching & Loading Spinner)
+    const detailContainer = document.getElementById('subslsDetailContainer');
+    const table = document.getElementById('subslsTable');
+
+    function renderDetail(html, url) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const newDetail = doc.getElementById('subslsDetailContainer');
+      if (newDetail) {
+        detailContainer.innerHTML = newDetail.innerHTML;
+        detailContainer.style.opacity = '1';
+
+        // Toggle grid selection classes
+        const grid = document.querySelector('.drilldown-grid');
+        if (grid) {
+          grid.classList.remove('no-selection');
+          grid.classList.add('has-selection');
+        }
+
+        // Update URL path without refresh
+        window.history.pushState(null, '', url);
+
+        // Re-bind close handler
+        bindCloseDetail();
+        if (window.initProgressBars) window.initProgressBars(detailContainer);
+        initSubslsHistoryChart();
+      }
+    }
+
+    function bindCloseDetail() {
+      if (!detailContainer) return;
+      const closeBtn = detailContainer.querySelector('.btn-close-detail');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const url = closeBtn.getAttribute('href');
+
+          // Reset active rows
+          if (table) {
+            table.querySelectorAll('tbody tr').forEach(r => {
+              r.classList.remove('active');
+              r.removeAttribute('style');
+            });
+          }
+
+          if (window.detailHtmlCache && window.detailHtmlCache[url]) {
+            renderDetail(window.detailHtmlCache[url], url);
+            const grid = document.querySelector('.drilldown-grid');
+            if (grid) {
+              grid.classList.remove('has-selection');
+              grid.classList.add('no-selection');
+            }
+          } else {
+            detailContainer.innerHTML = `
+              <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 350px; text-align: center; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 24px; position: sticky; top: 80px;">
+                <div class="spinner-border text-cyan" role="status" style="width: 2.5rem; height: 2.5rem; border-width: 3px; color: var(--accent-cyan);">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <div style="margin-top: 16px; font-size: 13px; color: var(--text-muted); font-weight: 500;">Menutup Detail...</div>
+              </div>
+            `;
+            detailContainer.style.opacity = '1';
+
+            fetch(url)
+              .then(res => res.text())
+              .then(html => {
+                if (!window.detailHtmlCache) window.detailHtmlCache = {};
+                window.detailHtmlCache[url] = html;
+                renderDetail(html, url);
+                const grid = document.querySelector('.drilldown-grid');
+                if (grid) {
+                  grid.classList.remove('has-selection');
+                  grid.classList.add('no-selection');
+                }
+              })
+              .catch(err => {
+                console.error(err);
+                detailContainer.style.opacity = '1';
+              });
+          }
+        });
+      }
+    }
+
+    if (table && detailContainer) {
+      table.querySelector('tbody').addEventListener('click', (e) => {
+        const link = e.target.closest('td.td-primary a');
+        if (!link) return;
+
+        e.preventDefault();
+        const url = link.getAttribute('href');
+        const row = link.closest('tr');
+
+        // Update active row visual indicator
+        table.querySelectorAll('tbody tr').forEach(r => {
+          r.classList.remove('active');
+          r.removeAttribute('style');
+        });
+        row.classList.add('active');
+        row.style.background = 'var(--bg-card-hover)';
+        row.style.fontWeight = '500';
+
+        if (window.detailHtmlCache && window.detailHtmlCache[url]) {
+          renderDetail(window.detailHtmlCache[url], url);
+        } else {
+          // Loading spinner animation card
+          detailContainer.innerHTML = `
+            <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 350px; text-align: center; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 24px; position: sticky; top: 80px;">
+              <div class="spinner-border text-cyan" role="status" style="width: 2.5rem; height: 2.5rem; border-width: 3px; color: var(--accent-cyan);">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <div style="margin-top: 16px; font-size: 13px; color: var(--text-muted); font-weight: 500;">Memuat Rincian SLS...</div>
+            </div>
+          `;
+          detailContainer.style.opacity = '1';
+
+          fetch(url)
+            .then(res => res.text())
+            .then(html => {
+              if (!window.detailHtmlCache) window.detailHtmlCache = {};
+              window.detailHtmlCache[url] = html;
+              renderDetail(html, url);
+            })
+            .catch(err => {
+              console.error(err);
+              detailContainer.style.opacity = '1';
+            });
+        }
+      });
+    }
+
+    bindCloseDetail();
   }
 
   function fetchAndReplace(queryString, refreshAll) {
+    if (window.detailHtmlCache) {
+      for (let key in window.detailHtmlCache) delete window.detailHtmlCache[key];
+    }
     const url = '/subsls' + (queryString ? (queryString.startsWith('?') ? queryString : '?' + queryString) : '');
     
     // Choose target container (ajax-container for full page reload, subslsTableContainer for partial table update)
@@ -274,6 +673,27 @@ document.addEventListener('DOMContentLoaded', () => {
           targetElement.style.pointerEvents = 'auto';
         }
       });
+  }
+
+  function initSubslsHistoryChart() {
+    const dataEl = document.getElementById('subslsHistoryData');
+    if (!dataEl) return;
+    try {
+      const data = JSON.parse(dataEl.textContent);
+      if (data && data.length) {
+        if (typeof Chart !== 'undefined') {
+          const existingChart = Chart.getChart("subslsHistoryChartCanvas");
+          if (existingChart) {
+            existingChart.destroy();
+          }
+        }
+        if (typeof createPclHistoryChart === 'function') {
+          createPclHistoryChart('subslsHistoryChartCanvas', data);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to init SubSLS history chart:', e);
+    }
   }
 
   attachListeners();
