@@ -215,6 +215,18 @@ function init() {
     } else {
       logger.info(`✅ Master SubSLS already populated: ${rowCount} records (from DB)`);
     }
+
+    // Rebuild cache on startup to ensure any code/formula updates are reflected
+    const { rebuildAllSummaryCaches } = require('./database');
+    setTimeout(() => {
+      try {
+        logger.info('🔄 Rebuilding summary caches...');
+        rebuildAllSummaryCaches();
+        logger.info('✅ Summary caches successfully rebuilt');
+      } catch (e) {
+        logger.error('❌ Failed to rebuild summary caches on startup:', e);
+      }
+    }, 1000);
   } catch (err) {
     logger.error('❌ Error loading master data:', err);
   }

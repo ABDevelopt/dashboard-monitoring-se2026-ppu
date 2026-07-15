@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { parseAndSaveExcel } = require('../services/excelParser');
+const { parseAndSaveExcel, parseAndSaveSeparateExports, parseAndSaveStatusExcelOnly } = require('../services/excelParser');
 const { getAllUploads, getDb, getSettings, rebuildAllSummaryCaches } = require('../database');
 
 const storage = multer.diskStorage({
@@ -108,12 +108,16 @@ function extractDateFromFilename(filename) {
 // POST: Process upload
 router.post('/', upload.fields([
   { name: 'excelFile', maxCount: 100 },
+  { name: 'keluargaFile', maxCount: 100 },
+  { name: 'usahaFile', maxCount: 100 },
   { name: 'statusFile', maxCount: 100 }
 ]), (req, res) => {
   const excelFiles = req.files && req.files['excelFile'] ? req.files['excelFile'] : [];
+  const keluargaFiles = req.files && req.files['keluargaFile'] ? req.files['keluargaFile'] : [];
+  const usahaFiles = req.files && req.files['usahaFile'] ? req.files['usahaFile'] : [];
   const statusFiles = req.files && req.files['statusFile'] ? req.files['statusFile'] : [];
 
-  if (excelFiles.length === 0 && statusFiles.length === 0) {
+  if (excelFiles.length === 0 && keluargaFiles.length === 0 && usahaFiles.length === 0 && statusFiles.length === 0) {
     req.flash('error', 'Silakan pilih setidaknya satu file Excel untuk diupload.');
     return res.redirect('/admin/upload');
   }
@@ -125,7 +129,7 @@ router.post('/', upload.fields([
 
   function addToGroup(date, type, file) {
     if (!groups[date]) {
-      groups[date] = { excelFile: null, statusFile: null };
+      groups[date] = { excelFile: null, keluargaFile: null, usahaFile: null, statusFile: null };
     }
     groups[date][type] = file;
   }
@@ -134,6 +138,18 @@ router.post('/', upload.fields([
   for (const f of excelFiles) {
     const d = extractDateFromFilename(f.originalname) || defaultTanggal;
     addToGroup(d, 'excelFile', f);
+  }
+
+  // Process keluarga files
+  for (const f of keluargaFiles) {
+    const d = extractDateFromFilename(f.originalname) || defaultTanggal;
+    addToGroup(d, 'keluargaFile', f);
+  }
+
+  // Process usaha files
+  for (const f of usahaFiles) {
+    const d = extractDateFromFilename(f.originalname) || defaultTanggal;
+    addToGroup(d, 'usahaFile', f);
   }
 
   // Process status files (FASIH)
@@ -151,29 +167,61 @@ router.post('/', upload.fields([
   for (const date of sortedDates) {
     const g = groups[date];
     const excelFile = g.excelFile;
+    const keluargaFile = g.keluargaFile;
+    const usahaFile = g.usahaFile;
     const statusFile = g.statusFile;
 
     try {
-      const result = parseAndSaveExcel(
-        excelFile ? excelFile.path : null, 
-        excelFile ? excelFile.originalname : (statusFile ? statusFile.originalname : null), 
-        excelFile ? excelFile.filename : null, 
-        date,
-        statusFile ? statusFile.path : null,
-        statusFile ? statusFile.originalname : null,
-        statusFile ? statusFile.filename : null
-      );
-
+      let result;
       let msg = `Tanggal ${date}: `;
-      if (excelFile) msg += `Progres (${excelFile.originalname}) `;
+
+      if (keluargaFile || usahaFile) {
+        result = parseAndSaveSeparateExports(
+          keluargaFile ? keluargaFile.path : null,
+          usahaFile ? usahaFile.path : null,
+          keluargaFile ? keluargaFile.originalname : null,
+          usahaFile ? usahaFile.originalname : null,
+          date,
+          statusFile ? statusFile.path : null,
+          statusFile ? statusFile.originalname : null,
+          statusFile ? statusFile.filename : null
+        );
+        if (keluargaFile) msg += `Keluarga (${keluargaFile.originalname}) `;
+        if (usahaFile) msg += `Usaha (${usahaFile.originalname}) `;
+      } else if (excelFile) {
+        result = parseAndSaveExcel(
+          excelFile.path, 
+          excelFile.originalname, 
+          excelFile.filename, 
+          date,
+          statusFile ? statusFile.path : null,
+          statusFile ? statusFile.originalname : null,
+          statusFile ? statusFile.filename : null
+        );
+        msg += `Progres (${excelFile.originalname}) `;
+      } else if (statusFile) {
+        result = parseAndSaveStatusExcelOnly(
+          statusFile.path,
+          statusFile.originalname,
+          statusFile.filename,
+          date
+        );
+      }
+
       if (statusFile) msg += `Status FASIH (${statusFile.originalname}) `;
-      msg += `berhasil diproses (SubSLS: ${result.uniqueSubsls})`;
+      msg += `berhasil diproses (SubSLS: ${result ? result.uniqueSubsls : 0})`;
       successMessages.push(msg);
     } catch (err) {
       console.error(`Error processing date ${date}:`, err);
       // Clean up uploaded files for this date
       if (excelFile && fs.existsSync(excelFile.path)) {
         try { fs.unlinkSync(excelFile.path); } catch (e) {}
+      }
+      if (keluargaFile && fs.existsSync(keluargaFile.path)) {
+        try { fs.unlinkSync(keluargaFile.path); } catch (e) {}
+      }
+      if (usahaFile && fs.existsSync(usahaFile.path)) {
+        try { fs.unlinkSync(usahaFile.path); } catch (e) {}
       }
       if (statusFile && fs.existsSync(statusFile.path)) {
         try { fs.unlinkSync(statusFile.path); } catch (e) {}
@@ -278,7 +326,14 @@ router.post('/import-local', (req, res) => {
     // Process the copied file
     let result;
     if (type === 'excel') {
-      result = parseAndSaveExcel(destPath, filename, storedFilename, tanggal, null, null, null);
+      const nameLower = filename.toLowerCase();
+      if (nameLower.includes('keluarga')) {
+        result = parseAndSaveSeparateExports(destPath, null, filename, null, tanggal, null, null, null);
+      } else if (nameLower.includes('pendataan') || nameLower.includes('usaha')) {
+        result = parseAndSaveSeparateExports(null, destPath, null, filename, tanggal, null, null, null);
+      } else {
+        result = parseAndSaveExcel(destPath, filename, storedFilename, tanggal, null, null, null);
+      }
     } else {
       result = parseAndSaveExcel(null, null, null, tanggal, destPath, filename, storedFilename);
     }

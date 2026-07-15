@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getPclStats, getDb, getSettings, attachProgressPercentages, getTargetFormula } = require('../database');
+const { getPclStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -21,18 +21,31 @@ router.get('/', (req, res) => {
 
     const settings = getSettings();
     const targetFormula = getTargetFormula(settings.target_fasih_mode);
+    const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
+    const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+    const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+    const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
     pclStats = attachProgressPercentages(getDb().prepare(`
       SELECT 
         m.pcl, m.pml, m.korlap, m.kecamatan,
         COUNT(m.kode) AS total_subsls,
         SUM(CASE WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 1 ELSE 0 END) AS selesai,
-        SUM(m.muatan) AS total_muatan,
-        SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
-        SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
+        SUM(${targetMuatanFormula}) AS total_muatan,
+        SUM(${realFormula}) AS muatan_selesai,
+        SUM(${usahaTotalFormula}) AS usaha_total,
+        SUM(COALESCE(p.usaha_ditemukan, 0)) AS usaha_ditemukan_total,
+        SUM(COALESCE(p.usaha_baru, 0)) AS usaha_baru_total,
+        SUM(COALESCE(p.usaha_tidak_ditemukan, 0)) AS usaha_tidak_ditemukan_total,
+        SUM(COALESCE(p.usaha_tutup, 0)) AS usaha_tutup_total,
+        SUM(COALESCE(p.usaha_ganda, 0)) AS usaha_ganda_total,
         SUM(COALESCE(p.ditemukan, 0)) AS keluarga_ditemukan_total,
         SUM(COALESCE(p.keluarga_baru, 0)) AS keluarga_baru_total,
-        SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
+        SUM(COALESCE(p.tidak_ditemukan, 0)) AS keluarga_tidak_ditemukan_total,
+        SUM(COALESCE(p.meninggal, 0)) AS keluarga_meninggal_total,
+        SUM(COALESCE(p.tidak_eligible, 0)) AS keluarga_tidak_eligible_total,
+        SUM(COALESCE(p.tidak_dapat_ditemui, 0)) AS keluarga_tidak_dapat_ditemui_total,
+        SUM(${keluargaTotalFormula}) AS keluarga_total,
         SUM(COALESCE(p.draft, 0)) AS draft_total,
         SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
         SUM(COALESCE(p.approved, 0)) AS approved_total,
@@ -51,6 +64,10 @@ router.get('/', (req, res) => {
     if (filterPcl) {
       const settings = getSettings();
       const targetFormula = getTargetFormula(settings.target_fasih_mode);
+      const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
+      const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+      const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+      const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
       detailSubsls = attachProgressPercentages(getDb().prepare(`
         SELECT 
@@ -66,18 +83,18 @@ router.get('/', (req, res) => {
           COALESCE(p.target_upload, 0) AS target_upload,
           CASE 
             WHEN p.kode IS NULL OR (
-              COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND 
+              (${realFormula}) = 0 AND 
               COALESCE(p.draft, 0) = 0 AND 
               COALESCE(p.submitted_by_pcl, 0) = 0 AND 
               COALESCE(p.approved, 0) = 0 AND 
               COALESCE(p.rejected, 0) = 0
             ) THEN 'belum_mulai'
-            WHEN m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) < m.muatan THEN 'sedang_didata'
-            WHEN (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) = m.muatan THEN 'memenuhi_target'
+            WHEN (${targetMuatanFormula}) > 0 AND (${realFormula}) < (${targetMuatanFormula}) THEN 'sedang_didata'
+            WHEN (${realFormula}) = (${targetMuatanFormula}) THEN 'memenuhi_target'
             ELSE 'melebihi_target'
           END AS sudah_diisi,
-          COALESCE(p.usaha_ditemukan + p.usaha_baru, 0) AS usaha_total,
-          COALESCE(p.ditemukan + p.keluarga_baru, 0) AS keluarga_total
+          ${usahaTotalFormula} AS usaha_total,
+          ${keluargaTotalFormula} AS keluarga_total
         FROM subsls_master m
         LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
         WHERE m.pcl = ?

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const XLSX = require('xlsx');
 const PDFDocument = require('pdfkit-table');
-const { getPmlStats, getDb, getSettings, attachProgressPercentages, getAllUploads, getTargetFormula } = require('../database');
+const { getPmlStats, getDb, getSettings, attachProgressPercentages, getAllUploads, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
 
 // Heatmap color generator (HSL to RGB conversion)
 function getHeatmapColor(pct) {
@@ -192,16 +192,20 @@ router.get('/', (req, res) => {
     if (filterPml) {
       const settings = getSettings();
       const targetFormula = getTargetFormula(settings.target_fasih_mode);
+      const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
+      const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+      const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+      const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
       detailPcl = attachProgressPercentages(getDb().prepare(`
         SELECT 
           m.pcl, m.pml, m.korlap, m.kecamatan,
           COUNT(m.kode) AS total_subsls,
           SUM(CASE WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 1 ELSE 0 END) AS selesai,
-          SUM(m.muatan) AS total_muatan,
-          SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
-          SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-          SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
+          SUM(${targetMuatanFormula}) AS total_muatan,
+          SUM(${realFormula}) AS muatan_selesai,
+          SUM(${usahaTotalFormula}) AS usaha_total,
+          SUM(${keluargaTotalFormula}) AS keluarga_total,
           SUM(COALESCE(p.draft, 0)) AS draft_total,
           SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
           SUM(COALESCE(p.approved, 0)) AS approved_total,

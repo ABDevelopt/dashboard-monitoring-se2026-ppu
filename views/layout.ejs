@@ -428,7 +428,6 @@
               <option value="static" <%= settings.target_fasih_mode === 'static' || !settings.target_fasih_mode ? 'selected' : '' %>>Statis (Prelist)</option>
               <option value="dynamic" <%= settings.target_fasih_mode === 'dynamic' ? 'selected' : '' %>>Dinamis (Temuan)</option>
               <option value="fasih-sm" <%= settings.target_fasih_mode === 'fasih-sm' ? 'selected' : '' %>>FASIH-SM (Upload)</option>
-              <option value="honor" <%= settings.target_fasih_mode === 'honor' ? 'selected' : '' %>>Target Honor</option>
             </select>
           </div>
           
@@ -2001,6 +2000,8 @@
       const totalSelesai = rows.reduce((s, r) => s + (r.selesai || 0), 0);
       const totalMuatan = rows.reduce((s, r) => s + (r.total_muatan || 0), 0);
       const totalUsaha = rows.reduce((s, r) => s + (r.usaha_total || 0), 0);
+      const totalKeluarga = rows.reduce((s, r) => s + (r.keluarga_total || 0), 0);
+      const totalMuatanSelesai = totalUsaha + totalKeluarga;
       const totalFasihTarget = rows.reduce((s, r) => s + (r.target_fasih_total || 0), 0);
       const totalDraft = rows.reduce((s, r) => s + (r.draft_total || 0), 0);
       const totalSubmit = rows.reduce((s, r) => s + (r.submitted_total || 0), 0);
@@ -2018,13 +2019,6 @@
 
       return `
         <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
-          ${makeSectionHeader('Progres Muatan')}
-          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
-            <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
-          </div>
-          ${makeProgressBar(totalUsaha, totalMuatan, 'var(--accent-blue)')}
-        </div>
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
           ${makeSectionHeader('Progres FASIH (Submit + Approve + Reject)')}
           <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
             <span style="font-size:13px; color:var(--text-muted);">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} entri</span>
@@ -2032,15 +2026,23 @@
           ${makeProgressBar(totalFasihAll, totalFasihTarget, '#22c55e')}
           ${makeFasihCards(totalDraft, totalSubmit, totalApprove, totalReject)}
         </div>
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+          ${makeSectionHeader('Progres Muatan')}
+          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
+            <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
+          </div>
+          ${makeProgressBar(totalMuatanSelesai, totalMuatan, 'var(--accent-blue)')}
+        </div>
         ${rows.length > 0 ? `
         <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
           ${makeSectionHeader('Rincian Per PML')}
           <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
             ${rows.map(r => {
               const pct = r.muatan_pct_str || '0.00';
+              const completed = r.muatan_selesai !== undefined ? r.muatan_selesai : ((r.usaha_total || 0) + (r.keluarga_total || 0));
               return `<div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
                 <span style="font-size:12px; font-weight:500;">${r.pml}</span>
-                <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">${r.usaha_total}/${r.total_muatan} (${pct}%)</span>
+                <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">${completed}/${r.total_muatan} (${pct}%)</span>
               </div>`;
             }).join('')}
           </div>
@@ -2054,6 +2056,8 @@
       const totalSelesai = rows.reduce((s, r) => s + (r.selesai || 0), 0);
       const totalMuatan = rows.reduce((s, r) => s + (r.total_muatan || 0), 0);
       const totalUsaha = rows.reduce((s, r) => s + (r.usaha_total || 0), 0);
+      const totalKeluarga = rows.reduce((s, r) => s + (r.keluarga_total || 0), 0);
+      const totalMuatanSelesai = totalUsaha + totalKeluarga;
       const totalFasihTarget = rows.reduce((s, r) => s + (r.target_fasih_total || 0), 0);
       const totalDraft = rows.reduce((s, r) => s + (r.draft_total || 0), 0);
       const totalSubmit = rows.reduce((s, r) => s + (r.submitted_total || 0), 0);
@@ -2068,13 +2072,6 @@
 
       return `
         <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
-          ${makeSectionHeader('Progres Muatan')}
-          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
-            <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
-          </div>
-          ${makeProgressBar(totalUsaha, totalMuatan, 'var(--accent-blue)')}
-        </div>
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
           ${makeSectionHeader('Progres FASIH (Submit + Approve + Reject)')}
           <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
             <span style="font-size:13px; color:var(--text-muted);">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} entri</span>
@@ -2082,18 +2079,26 @@
           ${makeProgressBar(totalFasihAll, totalFasihTarget, '#22c55e')}
           ${makeFasihCards(totalDraft, totalSubmit, totalApprove, totalReject)}
         </div>
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+          ${makeSectionHeader('Progres Muatan')}
+          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
+            <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
+          </div>
+          ${makeProgressBar(totalMuatanSelesai, totalMuatan, 'var(--accent-blue)')}
+        </div>
         ${rows.length > 0 ? `
         <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
           ${makeSectionHeader('Rincian Per PCL')}
           <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
             ${rows.map(r => {
               const pct = r.muatan_pct_str || '0.00';
+              const completed = r.muatan_selesai !== undefined ? r.muatan_selesai : ((r.usaha_total || 0) + (r.keluarga_total || 0));
               return `<div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
                 <div>
                   <span style="font-size:12px; font-weight:500;">${r.pcl}</span>
                   <span style="font-size:10px; color:var(--text-muted); margin-left:6px;">${r.kecamatan}</span>
                 </div>
-                <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">${r.usaha_total}/${r.total_muatan} (${pct}%)</span>
+                <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">${completed}/${r.total_muatan} (${pct}%)</span>
               </div>`;
             }).join('')}
           </div>
@@ -2107,6 +2112,8 @@
       const totalSelesai = rows.filter(r => r.sudah_diisi).length;
       const totalMuatan = rows.reduce((s, r) => s + (r.muatan || 0), 0);
       const totalUsaha = rows.reduce((s, r) => s + (r.usaha_total || 0), 0);
+      const totalKeluarga = rows.reduce((s, r) => s + (r.keluarga_total || 0), 0);
+      const totalMuatanSelesai = totalUsaha + totalKeluarga;
       const totalFasihTarget = rows.reduce((s, r) => s + (r.target_fasih || 0), 0);
       const totalDraft = rows.reduce((s, r) => s + (r.draft || 0), 0);
       const totalSubmit = rows.reduce((s, r) => s + (r.submitted_by_pcl || 0), 0);
@@ -2137,19 +2144,30 @@
       const projectedFinalVal = totalFasihAll + (currentSpeed * daysRemaining);
       const projectedPctVal = totalFasihTarget > 0 ? (projectedFinalVal / totalFasihTarget) * 100 : 100;
 
-      const donePct = totalMuatan ? ((totalUsaha / totalMuatan) * 100).toFixed(2) : '0.00';
+      const donePct = totalMuatan ? ((totalMuatanSelesai / totalMuatan) * 100).toFixed(2) : '0.00';
       const fasihPct = totalFasihTarget ? ((totalFasihAll / totalFasihTarget) * 100).toFixed(2) : '0.00';
 
       const showMuatan = typeof globalSettings !== 'undefined' && globalSettings.show_progres_muatan !== '0';
 
       let html = `
         <div class="mb-4">
+          <!-- Progress FASIH -->
+          <div style="margin-bottom: 12px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+              <span><i class="bi bi-phone"></i> Progres FASIH (Submit + Approve + Reject)</span>
+              <span class="fw-bold">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} (${fasihPct}%)</span>
+            </div>
+            <div class="progress-bar-wrap" style="height: 6px;">
+              <div class="progress-bar ${parseFloat(fasihPct) >= 100 ? 'green' : (parseFloat(fasihPct) < 25 ? 'red' : 'purple')}" style="width: ${fasihPct}%;"></div>
+            </div>
+          </div>
+
           <!-- Progress Muatan -->
           ${showMuatan ? `
           <div style="margin-bottom: 12px; text-align: left;" class="muatan-col">
             <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
               <span><i class="bi bi-briefcase"></i> Progres Muatan</span>
-              <span class="fw-bold">${totalUsaha.toLocaleString('id-ID')} / ${totalMuatan.toLocaleString('id-ID')} (${donePct}%)</span>
+              <span class="fw-bold">${totalMuatanSelesai.toLocaleString('id-ID')} / ${totalMuatan.toLocaleString('id-ID')} (${donePct}%)</span>
             </div>
             <div class="progress-bar-target-wrap" style="position: relative; height: 6px; margin-top: 16px; margin-bottom: 8px;">
               <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
@@ -2166,17 +2184,6 @@
             </div>
           </div>
           ` : ''}
-
-          <!-- Progress FASIH -->
-          <div style="margin-bottom: 12px; text-align: left;">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
-              <span><i class="bi bi-phone"></i> Progres FASIH (Submit + Approve + Reject)</span>
-              <span class="fw-bold">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} (${fasihPct}%)</span>
-            </div>
-            <div class="progress-bar-wrap" style="height: 6px;">
-              <div class="progress-bar ${parseFloat(fasihPct) >= 100 ? 'green' : (parseFloat(fasihPct) < 25 ? 'red' : 'purple')}" style="width: ${fasihPct}%;"></div>
-            </div>
-          </div>
 
           <!-- Mini Grid Status FASIH -->
           <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; text-align: center;">
@@ -3236,77 +3243,67 @@
       });
     }
 
-    // Target Selector Dropdown Toggler
-    const targetSelectorBtn = document.getElementById('targetSelectorBtn');
-    const targetSelectorDropdown = document.getElementById('targetSelectorDropdown');
-
-    if (targetSelectorBtn && targetSelectorDropdown) {
-      targetSelectorBtn.addEventListener('click', (e) => {
+    // Target Selector Dropdown Toggler (using event delegation to support PJAX content swaps)
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('#targetSelectorBtn');
+      const dropdown = document.getElementById('targetSelectorDropdown');
+      if (btn && dropdown) {
         e.stopPropagation();
-        const isHidden = targetSelectorDropdown.style.display === 'none' || !targetSelectorDropdown.style.display;
-        targetSelectorDropdown.style.display = isHidden ? 'flex' : 'none';
-      });
-
-      document.addEventListener('click', (e) => {
-        if (!targetSelectorDropdown.contains(e.target) && e.target !== targetSelectorBtn) {
-          targetSelectorDropdown.style.display = 'none';
+        const isHidden = dropdown.style.display === 'none' || !dropdown.style.display;
+        dropdown.style.display = isHidden ? 'flex' : 'none';
+      } else if (dropdown) {
+        if (!dropdown.contains(e.target)) {
+          dropdown.style.display = 'none';
         }
-      });
+      }
+    });
 
-      const publicTargetFasihMode = document.getElementById('publicTargetFasihMode');
-      const publicTargetMuatanMode = document.getElementById('publicTargetMuatanMode');
-
-      const updateTargetMode = async (payload) => {
-        if (typeof Swal !== 'undefined') {
-          Swal.fire({
-            title: 'Memperbarui Target...',
-            text: 'Mohon tunggu sejenak, data sedang disesuaikan.',
-            allowOutsideClick: false,
-            didOpen: () => {
-              Swal.showLoading();
-            }
-          });
-        }
-
-        try {
-          const response = await fetch('/api/settings/target-mode', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-          });
-          const result = await response.json();
-          if (result.success) {
-            window.location.reload();
-          } else {
-            if (typeof Swal !== 'undefined') {
-              Swal.fire('Gagal', result.error || 'Terjadi kesalahan saat memperbarui target.', 'error');
-            } else {
-              alert(result.error || 'Terjadi kesalahan saat memperbarui target.');
-            }
+    const updateTargetMode = async (payload) => {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          title: 'Memperbarui Target...',
+          text: 'Mohon tunggu sejenak, data sedang disesuaikan.',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
           }
-        } catch (err) {
+        });
+      }
+
+      try {
+        const response = await fetch('/api/settings/target-mode', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result.success) {
+          window.location.reload();
+        } else {
           if (typeof Swal !== 'undefined') {
-            Swal.fire('Gagal', 'Koneksi server terputus.', 'error');
+            Swal.fire('Gagal', result.error || 'Terjadi kesalahan saat memperbarui target.', 'error');
           } else {
-            alert('Koneksi server terputus.');
+            alert(result.error || 'Terjadi kesalahan saat memperbarui target.');
           }
         }
-      };
-
-      if (publicTargetFasihMode) {
-        publicTargetFasihMode.addEventListener('change', () => {
-          updateTargetMode({ target_fasih_mode: publicTargetFasihMode.value });
-        });
+      } catch (err) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire('Gagal', 'Koneksi server terputus.', 'error');
+        } else {
+          alert('Koneksi server terputus.');
+        }
       }
+    };
 
-      if (publicTargetMuatanMode) {
-        publicTargetMuatanMode.addEventListener('change', () => {
-          updateTargetMode({ target_muatan_mode: publicTargetMuatanMode.value });
-        });
+    document.addEventListener('change', (e) => {
+      if (e.target.id === 'publicTargetFasihMode') {
+        updateTargetMode({ target_fasih_mode: e.target.value });
+      } else if (e.target.id === 'publicTargetMuatanMode') {
+        updateTargetMode({ target_muatan_mode: e.target.value });
       }
-    }
+    });
   });
 </script>
 <%- typeof scripts !== 'undefined' ? scripts : '' %>

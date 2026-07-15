@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getKecamatanStats, getDb, getSettings, attachProgressPercentages, getTargetFormula } = require('../database');
+const { getKecamatanStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -14,16 +14,21 @@ router.get('/', (req, res) => {
     if (filterKec) {
       const settings = getSettings();
       const targetFormula = getTargetFormula(settings.target_fasih_mode);
+      const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
+      const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+      const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+      const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+      const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 1 ELSE 0 END`;
 
       desaStats = attachProgressPercentages(getDb().prepare(`
         SELECT 
           m.kecamatan, m.desa,
           COUNT(m.kode) AS total_subsls,
-          SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN 1 ELSE 0 END) AS selesai,
-          SUM(m.muatan) AS total_muatan,
-          SUM(CASE WHEN p.kode IS NOT NULL AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) >= m.muatan THEN m.muatan ELSE 0 END) AS muatan_selesai,
-          SUM(COALESCE(p.usaha_ditemukan + p.usaha_baru, 0)) AS usaha_total,
-          SUM(COALESCE(p.ditemukan + p.keluarga_baru, 0)) AS keluarga_total,
+          SUM(${singleSelesaiFormula}) AS selesai,
+          SUM(${targetMuatanFormula}) AS total_muatan,
+          SUM(${realFormula}) AS muatan_selesai,
+          SUM(${usahaTotalFormula}) AS usaha_total,
+          SUM(${keluargaTotalFormula}) AS keluarga_total,
           SUM(COALESCE(p.draft, 0)) AS draft_total,
           SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
           SUM(COALESCE(p.approved, 0)) AS approved_total,

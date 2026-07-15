@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb, getSettings, attachProgressPercentages, getTargetFormula } = require('../database');
+const { getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -85,6 +85,11 @@ router.get('/', (req, res) => {
 
   let overallStats = null;
   if (uploadId) {
+    const settings = getSettings();
+    const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+    const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+    const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+
     overallStats = attachProgressPercentages(getDb().prepare(`
       SELECT 
         SUM(COALESCE(p.draft, 0)) AS draft,
@@ -92,9 +97,9 @@ router.get('/', (req, res) => {
         SUM(COALESCE(p.approved, 0)) AS approved,
         SUM(COALESCE(p.rejected, 0)) AS rejected,
         SUM(m.target_fasih) AS target_fasih_awal,
-        SUM(m.muatan) AS muatan,
-        SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) AS usaha_total,
-        SUM(COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) AS keluarga_total,
+        SUM(${targetMuatanFormula}) AS muatan,
+        SUM(${usahaTotalFormula}) AS usaha_total,
+        SUM(${keluargaTotalFormula}) AS keluarga_total,
         SUM(${targetFormula}) AS target_fasih,
         SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
         SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
