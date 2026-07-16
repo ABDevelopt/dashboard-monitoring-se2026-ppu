@@ -263,14 +263,14 @@ const OPENROUTER_DEFAULT_MODEL    = 'openrouter/free';
 //         > query SQLite      (10 000ms)        = DB_WORKER_TIMEOUT_MS
 //
 // SmartSwitch worst-case: MAX_SWITCH_TRIES × AGENT_API_TIMEOUT_MS
-//   = 3 × 18s = 54s  <  browser 60s  ✓
+//   = 5 × 18s = 90s (browser timeout is 60s, but most errors fail instantly, so 5 is safe and guarantees fallback across providers)
 // Server selalu habis sebelum browser abort → tidak ada ECONNRESET.
 const AGENT_API_TIMEOUT_MS          = 18000; // outer server per-provider
 const AGENT_API_QUICK_RESPONSE_MS   = 14000; // call PERTAMA ke AI
 const AGENT_API_TOOLRESULT_MS       = 16000; // call KEDUA+ ke AI (setelah tool-result)
 const DB_WORKER_TIMEOUT_MS          = 10000; // max query SQLite (harus < QUICK_RESPONSE_MS)
 const TOOL_RESULT_MAX_ROWS          =    20; // batas baris tool-result yang dikirim ke model
-const MAX_SWITCH_TRIES              =     3; // batas total percobaan SmartSwitch
+const MAX_SWITCH_TRIES              =     5; // batas total percobaan SmartSwitch
 
 const GEMINI_USER_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.5-flash'];
 const OPENAI_USER_MODELS = ['gpt-5.5'];
@@ -1220,11 +1220,11 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}) {
       lastError = err;
       log.error(`[SmartSwitch] Gagal pada ${current.provider}/${current.model}:`, err.message);
       
-      if (settings.chatbot_smart_switch !== '1' || !isQuotaOrRateLimitError(err)) {
+      if (settings.chatbot_smart_switch !== '1') {
         break;
       }
       
-      log.warn(`[SmartSwitch] Kuota/rate-limit terdeteksi. Mencoba berikutnya...`);
+      log.warn(`[SmartSwitch] Mencoba berikutnya...`);
     } finally {
       clearActiveRequest(current.provider);
     }
@@ -1536,6 +1536,7 @@ async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selec
     while (loopCount < MAX_LOOPS) {
       if (abortSignal?.aborted) throw new Error('Request dibatalkan saat loop tool-call OpenRouter.');
 
+      loopCount++;
       const choice = response.choices?.[0];
       // FIX #4 — guard: choice atau message bisa null pada beberapa model
       if (!choice || !choice.message) {
@@ -1548,57 +1549,68 @@ async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selec
 
       // --- TEXT JSON TOOL CALL FALLBACK PARSER ---
       let isTextToolCall = false;
-      let parsedTextTool = null;
+      const parsedTextTools = [];
+
       if ((!toolCalls || toolCalls.length === 0) && assistantMessage.content) {
-        const text = assistantMessage.content.trim();
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
+        const jsonStrings = extractJSONObjects(assistantMessage.content);
+        
+        for (const jsonStr of jsonStrings) {
           try {
-            const parsed = JSON.parse(jsonMatch[0]);
+            const parsed = JSON.parse(jsonStr);
             let toolName = parsed.tool || parsed.name || parsed.function || parsed.action;
             
             // Implicit tool detection
             if (!toolName) {
-              if (parsed.route || parsed.endpoint) {
+              const routeVal = parsed.route || parsed.endpoint || parsed.page_path || parsed.page_route || parsed.page || parsed.path || parsed.url;
+              const queryVal = parsed.query || parsed.sql || parsed.params?.query || parsed.params?.sql || parsed.arguments?.query || parsed.arguments?.sql;
+              
+              if (routeVal) {
                 toolName = 'fetch_page_data';
-              } else if (parsed.query || parsed.sql || parsed.params?.query || parsed.params?.sql || parsed.arguments?.query || parsed.arguments?.sql) {
+              } else if (queryVal) {
                 toolName = 'run_read_only_query';
               }
             }
 
             if (toolName === 'run_read_only_query' || toolName === 'fetch_page_data') {
-              log.info('[JSON Fallback] Detected text-based tool call:', toolName);
               let args = {};
               if (toolName === 'run_read_only_query') {
                 const queryVal = parsed.query || parsed.sql || parsed.params?.query || parsed.params?.sql || parsed.arguments?.query || parsed.arguments?.sql || parsed.arguments || parsed.params || '';
                 args = { query: typeof queryVal === 'string' ? queryVal : JSON.stringify(queryVal) };
               } else if (toolName === 'fetch_page_data') {
-                const routeVal = parsed.route || parsed.endpoint || parsed.params?.route || parsed.params?.endpoint || parsed.arguments?.route || parsed.arguments?.endpoint || '';
+                const routeVal = parsed.route || parsed.endpoint || parsed.page_path || parsed.page_route || parsed.page || parsed.path || parsed.url || '';
                 const qParams = parsed.queryParams || parsed.params?.queryParams || parsed.arguments?.queryParams || parsed.params || {};
                 args = { route: routeVal, queryParams: typeof qParams === 'object' ? qParams : {} };
               }
-              parsedTextTool = { name: toolName, args };
-              isTextToolCall = true;
+              parsedTextTools.push({ name: toolName, args });
             }
           } catch (e) {
-            log.debug('[JSON Fallback] Brace matching but failed to parse JSON:', e.message);
+            log.debug('[JSON Fallback] Brace matching but failed to parse extracted JSON:', e.message);
           }
         }
       }
 
-      if (!toolCalls && !isTextToolCall) break;
-      if (toolCalls && toolCalls.length === 0 && !isTextToolCall) break;
-
-      loopCount++;
-
-      if (isTextToolCall) {
-        log.info(`[JSON Fallback] Loop ${loopCount}/${MAX_LOOPS}: executing ${parsedTextTool.name}`);
-        const result = await runToolCall({ name: parsedTextTool.name, args: parsedTextTool.args });
+      if (parsedTextTools.length > 0) {
+        isTextToolCall = true;
+        log.info(`[JSON Fallback] Loop ${loopCount}/${MAX_LOOPS}: executing ${parsedTextTools.length} text-based tool calls`);
         
-        messages.push({ role: 'assistant', content: JSON.stringify(parsedTextTool) });
+        // Push original assistant response text to history
+        messages.push({ role: 'assistant', content: assistantMessage.content });
+
+        // Run all tools sequentially and aggregate results
+        const results = [];
+        for (const t of parsedTextTools) {
+          const result = await runToolCall(t);
+          results.push({ tool: t, result });
+        }
+
+        // Push aggregated tool outputs to history
+        const summary = results.map(r => 
+          `[SISTEM] Hasil eksekusi tool ${r.tool.name} dengan parameter ${JSON.stringify(r.tool.args)}:\n${JSON.stringify(r.result)}`
+        ).join('\n\n');
+
         messages.push({
           role: 'user',
-          content: `[SISTEM] Hasil eksekusi tool ${parsedTextTool.name}:\n${JSON.stringify(result)}`
+          content: summary
         });
 
         const nextPayload = { model, messages };
@@ -1610,6 +1622,9 @@ async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selec
         }
         continue;
       }
+
+      if (!toolCalls && !isTextToolCall) break;
+      if (toolCalls && toolCalls.length === 0 && !isTextToolCall) break;
 
       log.info(`OpenRouter tool-call loop ${loopCount}/${MAX_LOOPS}: ${toolCalls.map(f => f.function.name).join(', ')}`);
 
@@ -1684,6 +1699,49 @@ async function callOpenRouterAPI(apiKey, payload, isToolResult = false) {
     throw new Error(fullMsg);
   }
   return data;
+}
+
+function extractJSONObjects(text) {
+  const objects = [];
+  let braceCount = 0;
+  let startIndex = -1;
+  let inString = false;
+  let escape = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+
+    if (inString) {
+      if (char === '\\') {
+        escape = !escape;
+      } else if (char === '"' && !escape) {
+        inString = false;
+      } else {
+        escape = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      escape = false;
+      continue;
+    }
+
+    if (char === '{') {
+      if (braceCount === 0) {
+        startIndex = i;
+      }
+      braceCount++;
+    } else if (char === '}') {
+      braceCount--;
+      if (braceCount === 0 && startIndex !== -1) {
+        objects.push(text.substring(startIndex, i + 1));
+        startIndex = -1;
+      }
+    }
+  }
+  return objects;
 }
 
 module.exports = { sendMessageToAgent, fetchPageData };
