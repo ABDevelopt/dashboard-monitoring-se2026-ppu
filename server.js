@@ -189,6 +189,7 @@ adminRouter.get('/logout', (req, res) => {
 adminRouter.use('/upload', requireAdmin, require('./routes/upload'));
 adminRouter.use('/master', requireAdmin, require('./routes/master'));
 adminRouter.use('/settings', requireAdmin, require('./routes/settings'));
+adminRouter.use('/users', requireAdmin, require('./routes/users'));
 // adminRouter.use('/agent', requireAdmin, require('./routes/agent'));
 
 // 404
