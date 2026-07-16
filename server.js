@@ -72,8 +72,12 @@ app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   res.locals.isAdmin = req.session.isAdmin || false;
 
-  // Inject display settings globally
-  res.locals.settings = getSettings() || {};
+  // Inject display settings globally (with session override)
+  const globalSettings = getSettings() || {};
+  if (!req.session.settings) {
+    req.session.settings = {};
+  }
+  res.locals.settings = { ...globalSettings, ...req.session.settings };
 
   // Inject KIPP lists globally
   const kipp = getKippOfficers();

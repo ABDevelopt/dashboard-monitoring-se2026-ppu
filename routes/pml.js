@@ -105,7 +105,7 @@ function getReportData(selectedUploadIds, filterPml) {
   }
 
   // Get target_fasih_mode setting to determine formula
-  const settings = getSettings();
+  const settings = res.locals.settings;
   const targetFormula = getTargetFormula(settings.target_fasih_mode);
 
   // Query progress for each PCL on each selected upload_id
@@ -187,10 +187,10 @@ router.get('/', (req, res) => {
   const filterPml = req.query.pml || '';
 
   if (uploadId) {
-    pmlStats = getPmlStats(uploadId);
+    pmlStats = getPmlStats(uploadId, res.locals.settings);
 
     if (filterPml) {
-      const settings = getSettings();
+      const settings = res.locals.settings;
       const targetFormula = getTargetFormula(settings.target_fasih_mode);
       const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
       const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');

@@ -103,7 +103,7 @@
                   <th class="text-right bg-red-soft">Rejected</th>
                   <th class="text-right bg-green-soft">Approved</th>
                   <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'Tgt Dinamis' : (settings.target_fasih_mode === 'honor' ? 'Tgt Honor' : 'Tgt Statis')) %></th>
-                  <th class="text-right bg-purple-soft">Progres %</th>
+                  <th class="bg-purple-soft" style="min-width: 160px;">Bar Progres</th>
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Realisasi</th>
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Target</th>
                   <th class="bg-cyan-soft muatan-col" style="min-width:160px;">Bar Progres</th>
@@ -156,14 +156,20 @@
                      <td class="text-right bg-red-soft hide-sm status-reject-text" data-sort="<%= p.rejected_total %>" style="font-weight: 600;"><%= (p.rejected_total || 0).toLocaleString('id-ID') %></td>
                      <td class="text-right bg-green-soft hide-sm status-approve-text" data-sort="<%= p.approved_total %>" style="font-weight: 600;"><%= (p.approved_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.target_fasih_total %>"><%= (p.target_fasih_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>">
-                      <% if (parseFloat(fasihPct) >= 100) { %>
-                        <span class="badge badge-green">100%</span>
-                      <% } else if (parseFloat(fasihPct) < 25) { %>
-                        <span class="badge badge-red"><%= fasihPct %>%</span>
-                      <% } else { %>
-                        <span class="badge badge-blue"><%= fasihPct %>%</span>
-                      <% } %>
+                    <td class="bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>" style="min-width: 160px; padding: 6px 10px;">
+                      <%
+                        const fasihRealPcl = (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
+                        const fasihTgtPcl  = p.target_fasih_total || 0;
+                        const fasihWPcl    = Math.min(parseFloat(fasihPct), 100);
+                        const fasihColorPcl = fasihWPcl >= 100 ? 'var(--accent-green)' : (fasihWPcl < activeTargetPct ? 'var(--accent-red)' : 'var(--accent-purple)');
+                      %>
+                      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px;">
+                        <span style="font-weight:700; color:<%= fasihColorPcl %>"><%= fasihPct %>%</span>
+                        <span><%= fasihRealPcl.toLocaleString('id-ID') %> / <%= fasihTgtPcl.toLocaleString('id-ID') %></span>
+                      </div>
+                      <div class="progress-bar-container" style="background:rgba(255,255,255,0.08); border:1px solid var(--border); border-radius:99px; height:8px; overflow:hidden;">
+                        <div style="width:<%= fasihWPcl %>%; background:<%= fasihColorPcl %>; height:100%; border-radius:99px; transition:width 0.4s ease;"></div>
+                      </div>
                     </td>
                      <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.muatan_selesai %>"><%= (p.muatan_selesai || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>

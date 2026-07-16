@@ -12,7 +12,7 @@ router.get('/', (req, res) => {
   let performers = { topPcl: [] };
 
   if (uploadId) {
-    const top = getTopPerformers(uploadId, { kec: filterKec, korlap: filterKorlap, pml: filterPml, limit: null });
+    const top = getTopPerformers(uploadId, { kec: filterKec, korlap: filterKorlap, pml: filterPml, limit: null }, res.locals.settings);
     performers = { topPcl: top.topPcl || [] };
   }
 

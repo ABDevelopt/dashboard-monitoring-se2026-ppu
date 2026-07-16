@@ -11,7 +11,7 @@ router.get('/', (req, res) => {
   let performers = { topPcl: [], topPml: [] };
 
   if (uploadId) {
-    performers = getTopPerformers(uploadId, { kec: filterKec, korlap: filterKorlap, pml: filterPml });
+    performers = getTopPerformers(uploadId, { kec: filterKec, korlap: filterKorlap, pml: filterPml }, res.locals.settings);
   }
 
   // Get filter lists
