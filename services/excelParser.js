@@ -148,30 +148,7 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
 
   // If rekap file (filePath) is missing, but status file is present:
   if (!filePath && statusFilePath) {
-    const uploadStmt = db.prepare(`
-      INSERT INTO uploads (filename, stored_filename, tanggal, total_subsls_terisi, status_filename, stored_status_filename) 
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    const finalFilename = originalFilename || statusOriginalFilename || 'status_only';
-    const uploadResult = uploadStmt.run(finalFilename, storedFilename, tanggal, 0, statusOriginalFilename, statusStoredFilename);
-    const uploadId = uploadResult.lastInsertRowid;
-
-    // Find previous upload_id
-    const prevUploadRow = db.prepare('SELECT id FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(uploadId);
-    const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
-
-    // Process status file
-    parseAndSaveStatusExcelOnly(statusFilePath, uploadId, prevUploadId);
-
-    // Update total_subsls_terisi
-    const actualCount = db.prepare('SELECT COUNT(*) as n FROM progres WHERE upload_id = ?').get(uploadId).n;
-    db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(actualCount, uploadId);
-
-    // Rebuild summary cache
-    const { rebuildSummaryCache } = require('../database');
-    rebuildSummaryCache(uploadId);
-
-    return { uploadId, totalRows: 0, uniqueSubsls: actualCount };
+    return parseAndSaveStatusExcelOnly(statusFilePath, statusOriginalFilename, statusStoredFilename, tanggal);
   }
 
   const wb = XLSX.readFile(filePath, { raw: true });
@@ -432,7 +409,7 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   const uploadResult = db.prepare(`
     INSERT INTO uploads (filename, stored_filename, tanggal, total_subsls_terisi, status_filename, stored_status_filename)
     VALUES (?, ?, ?, ?, ?, ?)
-  `).run(originalFilename || 'status_fasih', null, tanggal, 0, originalFilename, storedFilename);
+  `).run('', null, tanggal, 0, originalFilename, storedFilename);
   const uploadId = uploadResult.lastInsertRowid;
 
   // Find previous upload that has FASIH status data (draft/submitted/approved/rejected)

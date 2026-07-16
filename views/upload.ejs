@@ -121,7 +121,7 @@
                 <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                 <td class="td-primary" style="font-weight: 500; word-break: break-all;"><%= file.filename %></td>
                 <td><%= (file.size / 1024 / 1024).toFixed(2) %> MB</td>
-                <td style="font-size: 11px; color: var(--text-secondary);"><%= new Date(file.mtime).toLocaleString('id-ID') %></td>
+                <td style="font-size: 11px; color: var(--text-secondary);"><%= new Date(file.mtime).toLocaleString('id-ID', { timeZone: 'Asia/Makassar' }) %> WITA</td>
                 <td>
                   <input type="date" id="date-<%= index %>" value="<%= detected %>" style="width: 100%; padding: 4px 6px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary);">
                 </td>
@@ -175,7 +175,7 @@
                 <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);\"><%= index + 1 %></td>
                 <td class="td-code hide-md"><%= u.id %></td>
                 <td class="td-primary">
-                  <div><%= u.filename %></div>
+                  <div><%= u.filename || '(Hanya Status FASIH)' %></div>
                   <% if (u.status_filename) { %>
                     <div style="font-size: 11px; color: var(--accent-purple); margin-top: 4px; font-weight: 500;">
                       <i class="bi bi-phone"></i> Status: <%= u.status_filename %>
@@ -184,10 +184,12 @@
                 </td>
                 <td><span class="badge badge-gray"><%= u.tanggal %></span></td>
                 <td class="text-right fw-bold td-primary"><%= u.total_subsls_terisi.toLocaleString('id-ID') %></td>
-                <td class="hide-md"><%= new Date(u.created_at).toLocaleString('id-ID') %></td>
+                <td class="hide-md"><%= new Date(u.created_at + 'Z').toLocaleString('id-ID', { timeZone: 'Asia/Makassar' }) %> WITA</td>
 
                 <td class="text-center" style="display: flex; gap: 4px; justify-content: center; align-items: center;">
-                  <a href="/admin/upload/download/<%= u.id %>" class="btn btn-secondary" style="padding: 4px 8px;" title="Download File Excel Progres" aria-label="Unduh Excel Progres <%= u.filename %>"><i class="bi bi-download"></i></a>
+                  <% if (u.stored_filename) { %>
+                    <a href="/admin/upload/download/<%= u.id %>" class="btn btn-secondary" style="padding: 4px 8px;" title="Download File Excel Progres" aria-label="Unduh Excel Progres <%= u.filename %>"><i class="bi bi-download"></i></a>
+                  <% } %>
                   <% if (u.status_filename) { %>
                     <a href="/admin/upload/download-status/<%= u.id %>" class="btn btn-secondary" style="padding: 4px 8px; color: var(--accent-purple); border-color: rgba(139, 92, 246, 0.3);" title="Download File Status FASIH" aria-label="Unduh Status FASIH <%= u.status_filename %>"><i class="bi bi-phone"></i> <i class="bi bi-download"></i></a>
                   <% } %>
