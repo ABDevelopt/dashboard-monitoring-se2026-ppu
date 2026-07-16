@@ -85,6 +85,45 @@ app.use((req, res, next) => {
   res.locals.kippPmls = kipp.pmls;
   res.locals.kippKorlaps = kipp.korlaps;
 
+  // Inject helper functions for formatting dates to WITA (UTC+8)
+  const getWitaParts = (dateInput) => {
+    if (!dateInput) return null;
+    let utcDate;
+    if (dateInput instanceof Date) {
+      utcDate = dateInput;
+    } else {
+      let str = String(dateInput).trim();
+      if (!str.includes('T') && !str.includes('Z')) {
+        str = str.replace(' ', 'T') + 'Z';
+      }
+      utcDate = new Date(str);
+    }
+    if (isNaN(utcDate.getTime())) return null;
+    const witaDate = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000));
+    return {
+      dayName: ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][witaDate.getUTCDay()],
+      day: witaDate.getUTCDate(),
+      monthName: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][witaDate.getUTCMonth()],
+      month: String(witaDate.getUTCMonth() + 1).padStart(2, '0'),
+      year: witaDate.getUTCFullYear(),
+      hours: String(witaDate.getUTCHours()).padStart(2, '0'),
+      minutes: String(witaDate.getUTCMinutes()).padStart(2, '0'),
+      seconds: String(witaDate.getUTCSeconds()).padStart(2, '0')
+    };
+  };
+
+  res.locals.formatWita = (dateInput) => {
+    const parts = getWitaParts(dateInput);
+    if (!parts) return String(dateInput);
+    return `${parts.dayName}, ${parts.day} ${parts.monthName} ${parts.year}, ${parts.hours}.${parts.minutes} WITA`;
+  };
+
+  res.locals.formatWitaShort = (dateInput) => {
+    const parts = getWitaParts(dateInput);
+    if (!parts) return String(dateInput || '');
+    return `${parts.day}/${parts.month}/${parts.year} ${parts.hours}.${parts.minutes}.${parts.seconds}`;
+  };
+
   next();
 });
 
