@@ -105,6 +105,99 @@ router.get('/', (req, res) => {
     `).all(...params));
   }
 
+  let selectedSubsls = null;
+  if (uploadId && filterKode) {
+    selectedSubsls = data.find(s => s.kode === filterKode);
+    if (!selectedSubsls) {
+      const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
+      const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+      const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+      const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+
+      const directData = attachProgressPercentages(getDb().prepare(`
+        SELECT 
+          m.kode, m.kecamatan, m.desa, m.nama_sls,
+          m.korlap, m.pml, m.pcl, m.muatan,
+          m.target_fasih AS target_fasih_awal,
+          COALESCE(p.draft, 0) AS draft,
+          COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
+          COALESCE(p.approved, 0) AS approved,
+          COALESCE(p.rejected, 0) AS rejected,
+          ${targetFormula} AS target_fasih,
+          COALESCE(m.target_fasih, 0) AS target_static,
+          COALESCE(p.target_upload, 0) AS target_upload,
+          CASE 
+            WHEN p.kode IS NULL OR (
+              (${realFormula}) = 0 AND 
+              COALESCE(p.draft, 0) = 0 AND 
+              COALESCE(p.submitted_by_pcl, 0) = 0 AND 
+              COALESCE(p.approved, 0) = 0 AND 
+              COALESCE(p.rejected, 0) = 0
+            ) THEN 'belum_mulai'
+            WHEN (${targetMuatanFormula}) > 0 AND (${realFormula}) < (${targetMuatanFormula}) THEN 'sedang_didata'
+            WHEN (${realFormula}) = (${targetMuatanFormula}) THEN 'memenuhi_target'
+            ELSE 'melebihi_target'
+          END AS sudah_diisi,
+          COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
+          COALESCE(p.usaha_ditemukan, 0) AS usaha_ditemukan,
+          COALESCE(p.usaha_baru, 0) AS usaha_baru,
+          COALESCE(p.usaha_tutup, 0) AS usaha_tutup,
+          COALESCE(p.usaha_ganda, 0) AS usaha_ganda,
+          COALESCE(p.tidak_ditemukan, 0) AS tidak_ditemukan,
+          COALESCE(p.ditemukan, 0) AS ditemukan,
+          COALESCE(p.keluarga_baru, 0) AS keluarga_baru,
+          (${usahaTotalFormula}) AS usaha_total,
+          (${keluargaTotalFormula}) AS keluarga_total,
+          (${realFormula}) AS muatan_selesai,
+          COALESCE(p.rumah_tunggal, 0) AS rumah_tunggal,
+          COALESCE(p.rumah_deret, 0) AS rumah_deret,
+          COALESCE(p.rumah_susun, 0) AS rumah_susun,
+          COALESCE(p.apartemen, 0) AS apartemen,
+          COALESCE(p.lainnya, 0) AS lainnya
+        FROM subsls_master m
+        LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+        WHERE m.kode = ?
+      `).all(uploadId, filterKode));
+      selectedSubsls = directData[0] || null;
+    }
+  }
+
+  // Hitung hari berjalan dari tanggal mulai pendataan (15 Juni 2026) & sisa hari menuju deadline
+  const START_DATE = new Date('2026-06-15');
+  let diffDays = 1;
+  let daysRemaining = 0;
+  if (uploadId) {
+    const currentUpload = getDb().prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
+
+    if (currentUpload) {
+      const d2 = new Date(currentUpload.tanggal);
+      const diffTime = d2 - START_DATE;
+      diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+
+      const deadline = new Date('2026-08-31');
+      daysRemaining = Math.max(0, Math.ceil((deadline - d2) / (1000 * 60 * 60 * 24)));
+    }
+  }
+
+  let subslsHistory = [];
+  if (uploadId && filterKode) {
+    subslsHistory = getDb().prepare(`
+      SELECT 
+        u.tanggal,
+        COALESCE(p.draft, 0) AS draft_total,
+        COALESCE(p.submitted_by_pcl, 0) AS submitted_total,
+        COALESCE(p.approved, 0) AS approved_total,
+        COALESCE(p.rejected, 0) AS rejected_total,
+        (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS selesai_total,
+        ${targetFormula} AS target_fasih_total
+      FROM progres p
+      JOIN uploads u ON p.upload_id = u.id
+      JOIN subsls_master m ON m.kode = p.kode
+      WHERE p.kode = ?
+      ORDER BY u.tanggal ASC
+    `).all(filterKode);
+  }
+
   // Filter lists
   const kecList = getDb().prepare('SELECT DISTINCT kecamatan FROM subsls_master ORDER BY kecamatan').all();
   const desaList = filterKec
@@ -124,6 +217,11 @@ router.get('/', (req, res) => {
     limit: total || 50,
     filterKec, filterDesa, filterKorlap, filterPml, filterPcl, filterStatus, filterKode, filterQ,
     kecList, desaList, korlapList, pmlList, pclList,
+    settings,
+    selectedSubsls,
+    diffDays,
+    daysRemaining,
+    subslsHistory
   });
 });
 
