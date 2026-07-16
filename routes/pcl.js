@@ -19,7 +19,7 @@ router.get('/', (req, res) => {
     if (filterKorlap) { where += ' AND m.korlap = ?'; params.push(filterKorlap); }
     if (filterPml) { where += ' AND m.pml = ?'; params.push(filterPml); }
 
-    const settings = getSettings();
+    const settings = res.locals.settings;
     const targetFormula = getTargetFormula(settings.target_fasih_mode);
     const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
     const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
@@ -62,7 +62,7 @@ router.get('/', (req, res) => {
     `).all(...params));
 
     if (filterPcl) {
-      const settings = getSettings();
+      const settings = res.locals.settings;
       const targetFormula = getTargetFormula(settings.target_fasih_mode);
       const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
       const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
@@ -170,7 +170,7 @@ router.get('/export-excel', (req, res) => {
   const uploadId = res.locals.uploadId;
   if (!uploadId) return res.status(400).send('Belum ada data yang diupload.');
 
-  const settings = getSettings();
+  const settings = res.locals.settings;
   const targetFormula = getTargetFormula(settings.target_fasih_mode);
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');

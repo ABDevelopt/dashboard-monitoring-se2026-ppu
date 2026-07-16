@@ -9,8 +9,8 @@ router.get('/', (req, res) => {
   let tren = [];
 
   if (uploadId) {
-    summary = getOverviewSummary(uploadId);
-    kecStats = getKecamatanStats(uploadId);
+    summary = getOverviewSummary(uploadId, res.locals.settings);
+    kecStats = getKecamatanStats(uploadId, res.locals.settings);
     tren = getTrenHarian();
   }
 

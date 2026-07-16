@@ -15,7 +15,7 @@ router.get('/', (req, res) => {
   let data = [];
   let total = 0;
 
-  const settings = getSettings();
+  const settings = res.locals.settings;
   const targetFormula = getTargetFormula(settings.target_fasih_mode);
 
   if (uploadId) {
@@ -85,7 +85,7 @@ router.get('/', (req, res) => {
 
   let overallStats = null;
   if (uploadId) {
-    const settings = getSettings();
+    const settings = res.locals.settings;
     const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
     const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
     const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');

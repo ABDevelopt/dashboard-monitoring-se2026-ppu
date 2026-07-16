@@ -9,10 +9,10 @@ router.get('/', (req, res) => {
   const filterKec = req.query.kec || '';
 
   if (uploadId) {
-    kecStats = getKecamatanStats(uploadId);
+    kecStats = getKecamatanStats(uploadId, res.locals.settings);
 
     if (filterKec) {
-      const settings = getSettings();
+      const settings = res.locals.settings;
       const targetFormula = getTargetFormula(settings.target_fasih_mode);
       const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
       const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');

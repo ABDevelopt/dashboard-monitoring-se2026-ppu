@@ -9,10 +9,10 @@ router.get('/', (req, res) => {
   const filterKorlap = req.query.korlap || '';
 
   if (uploadId) {
-    korlapStats = getKorlapStats(uploadId);
+    korlapStats = getKorlapStats(uploadId, res.locals.settings);
 
     if (filterKorlap) {
-      const settings = getSettings();
+      const settings = res.locals.settings;
       const targetFormula = getTargetFormula(settings.target_fasih_mode);
       const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
       const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');

@@ -17,7 +17,7 @@ router.get('/', (req, res) => {
   let data = [];
   let total = 0;
 
-  const settings = getSettings();
+  const settings = res.locals.settings;
   const targetFormula = getTargetFormula(settings.target_fasih_mode);
 
   if (uploadId) {
@@ -51,7 +51,7 @@ router.get('/', (req, res) => {
       WHERE 1=1 ${where}
     `).get(...params).n;
 
-    const settings = getSettings();
+    const settings = res.locals.settings;
     const targetFormula = getTargetFormula(settings.target_fasih_mode);
     const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
     const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
@@ -132,7 +132,7 @@ router.get('/export', (req, res) => {
   const uploadId = res.locals.uploadId;
   if (!uploadId) return res.status(400).send('Belum ada data yang diupload.');
 
-  const settings = getSettings();
+  const settings = res.locals.settings;
   const targetFormula = getTargetFormula(settings.target_fasih_mode);
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');

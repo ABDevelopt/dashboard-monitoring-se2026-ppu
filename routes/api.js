@@ -11,7 +11,7 @@ router.get('/tren', (req, res) => {
 router.get('/kecamatan', (req, res) => {
   const uploadId = res.locals.uploadId;
   if (!uploadId) return res.json([]);
-  res.json(getKecamatanStats(uploadId));
+  res.json(getKecamatanStats(uploadId, res.locals.settings));
 });
 
 // Search SubSLS
@@ -20,7 +20,7 @@ router.get('/search', (req, res) => {
   const uploadId = res.locals.uploadId;
   if (!q || !uploadId) return res.json([]);
 
-  const settings = getSettings();
+  const settings = res.locals.settings;
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
 
@@ -42,7 +42,7 @@ router.get('/summary', (req, res) => {
   if (!uploadId) return res.json(null);
 
   const { getOverviewSummary } = require('../database');
-  res.json(getOverviewSummary(uploadId));
+  res.json(getOverviewSummary(uploadId, res.locals.settings));
 });
 
 // Map Statistics API
@@ -51,7 +51,7 @@ router.get('/map-stats', (req, res) => {
 
   const db = getDb();
   
-  const settings = getSettings();
+  const settings = res.locals.settings;
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
@@ -116,7 +116,7 @@ router.get('/detail/korlap', (req, res) => {
   const name = req.query.name;
   if (!uploadId || !name) return res.json({ error: 'Parameter uploadId atau nama Korlap tidak ditemukan.' });
 
-  const settings = getSettings();
+  const settings = res.locals.settings;
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
@@ -156,7 +156,7 @@ router.get('/detail/pml', (req, res) => {
   const name = req.query.name;
   if (!uploadId || !name) return res.json({ error: 'Parameter uploadId atau nama PML tidak ditemukan.' });
 
-  const settings = getSettings();
+  const settings = res.locals.settings;
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
@@ -195,7 +195,7 @@ router.get('/detail/pcl', (req, res) => {
   const name = req.query.name;
   if (!uploadId || !name) return res.json({ error: 'Parameter uploadId atau nama PCL tidak ditemukan.' });
 
-  const settings = getSettings();
+  const settings = res.locals.settings;
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
@@ -243,30 +243,31 @@ router.get('/weather/history', (req, res) => {
   res.json(getWeatherHistory());
 });
 
-// Ubah mode target utama progres secara dinamis
+// Ubah mode target utama progres secara dinamis per-user session
 router.post('/settings/target-mode', (req, res) => {
   const { target_fasih_mode, target_muatan_mode } = req.body;
-  const { getSettings, updateSettings } = require('../database');
-  const settings = getSettings();
-  const updatedSettings = { ...settings };
+  if (!req.session.settings) {
+    req.session.settings = {};
+  }
 
   let changed = false;
   if (target_fasih_mode && ['static', 'dynamic', 'fasih-sm'].includes(target_fasih_mode)) {
-    updatedSettings.target_fasih_mode = target_fasih_mode;
+    req.session.settings.target_fasih_mode = target_fasih_mode;
     changed = true;
   }
   if (target_muatan_mode && ['prelist', 'honor'].includes(target_muatan_mode)) {
-    updatedSettings.target_muatan_mode = target_muatan_mode;
+    req.session.settings.target_muatan_mode = target_muvan_mode || target_muatan_mode; // safeguard spelling
+    req.session.settings.target_muatan_mode = target_muatan_mode;
     changed = true;
   }
 
   if (changed) {
-    try {
-      updateSettings(updatedSettings);
+    req.session.save((err) => {
+      if (err) {
+        return res.status(500).json({ error: `Gagal menyimpan session: ${err.message}` });
+      }
       res.json({ success: true, target_fasih_mode, target_muatan_mode });
-    } catch (err) {
-      res.status(500).json({ error: `Gagal memperbarui target mode: ${err.message}` });
-    }
+    });
   } else {
     res.status(400).json({ error: 'Tidak ada perubahan target yang valid.' });
   }

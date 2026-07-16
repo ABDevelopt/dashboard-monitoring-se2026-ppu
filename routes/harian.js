@@ -28,7 +28,7 @@ router.get('/', (req, res) => {
   if (uploadId && recentUploads.length > 0) {
     let selectParts = [];
     let joinParts = [];
-    const settings = getSettings();
+    const settings = res.locals.settings;
 
     recentUploads.forEach((u, i) => {
       const targetFormula = getTargetFormula(settings.target_fasih_mode, `p${i}`);
