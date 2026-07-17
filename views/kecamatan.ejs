@@ -172,6 +172,9 @@
     makeTableSortable('desaTable');
     makeTableSearchable('desaSearch', 'desaTable');
 
+    // Animate progress bars already rendered on initial page load (SSR + kec cards)
+    if (window.initProgressBars) window.initProgressBars(document);
+
     const detailContainer = document.getElementById('kecDetailContainer');
     const cardsGrid = document.querySelector('.kec-grid');
 
@@ -210,6 +213,9 @@
               makeTableSortable('desaTable');
               makeTableSearchable('desaSearch', 'desaTable');
 
+              // Animate new progress bars injected via PJAX
+              if (window.initProgressBars) window.initProgressBars(detailContainer);
+
               // Re-bind close handler
               bindCloseDetail();
             }
@@ -247,6 +253,9 @@
                 detailContainer.innerHTML = newDetail.innerHTML;
                 detailContainer.style.opacity = '1';
                 window.history.pushState(null, '', url);
+
+                // Animate progress bars after closing detail (back to list state)
+                if (window.initProgressBars) window.initProgressBars(detailContainer);
               }
             })
             .catch(err => {
