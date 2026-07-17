@@ -1082,8 +1082,9 @@ async function runToolCall(functionCall) {
 
   if (name === PAGE_DATA_TOOL_DECLARATION.name) {
     try {
-      const result = fetchPageData(args.route, args.queryParams || {});
-      log.debug('fetchPageData selesai:', args.route);
+      const routeVal = args.route || args.path || args.endpoint || '';
+      const result = fetchPageData(routeVal, args.queryParams || {});
+      log.debug('fetchPageData selesai:', routeVal);
 
       // FIX #6 — Batasi ukuran payload sebelum dikirim ke model.
       // fetchPageData bisa mengembalikan ratusan baris (pclStats, pmlStats, dsb).
@@ -1556,7 +1557,86 @@ async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selec
         
         for (const jsonStr of jsonStrings) {
           try {
-            const parsed = JSON.parse(jsonStr);
+            const sanitizedStr = sanitizeJSONString(jsonStr);
+            const parsed = JSON.parse(sanitizedStr);
+
+            // 1. Support {"tool_calls": [...]}
+            if (parsed && parsed.tool_calls && Array.isArray(parsed.tool_calls)) {
+              for (const tc of parsed.tool_calls) {
+                let toolName = tc.name || tc.function?.name || tc.tool || tc.action;
+                let tcArgs = tc.arguments || tc.args || tc.function?.arguments || tc.function?.args || {};
+
+                if (typeof tcArgs === 'string') {
+                  try {
+                    tcArgs = JSON.parse(tcArgs);
+                  } catch (_) {}
+                }
+
+                if (!toolName) {
+                  const routeVal = tcArgs.route || tcArgs.endpoint || tcArgs.page_path || tcArgs.page_route || tcArgs.page || tcArgs.path || tcArgs.url;
+                  const queryVal = tcArgs.query || tcArgs.sql || tcArgs.params?.query || tcArgs.params?.sql;
+                  if (routeVal) {
+                    toolName = 'fetch_page_data';
+                  } else if (queryVal) {
+                    toolName = 'run_read_only_query';
+                  }
+                }
+
+                if (toolName === 'run_read_only_query' || toolName === 'fetch_page_data') {
+                  let args = {};
+                  if (toolName === 'run_read_only_query') {
+                    const queryVal = tcArgs.query || tcArgs.sql || tcArgs.params?.query || tcArgs.params?.sql || '';
+                    args = { query: typeof queryVal === 'string' ? queryVal : JSON.stringify(queryVal) };
+                  } else if (toolName === 'fetch_page_data') {
+                    const routeVal = tcArgs.route || tcArgs.endpoint || tcArgs.page_path || tcArgs.page_route || tcArgs.page || tcArgs.path || tcArgs.url || '';
+                    const qParams = tcArgs.queryParams || tcArgs.params?.queryParams || tcArgs.arguments?.queryParams || tcArgs.params || {};
+                    args = { route: routeVal, queryParams: typeof qParams === 'object' ? qParams : {} };
+                  }
+                  parsedTextTools.push({ name: toolName, args });
+                }
+              }
+              continue;
+            }
+
+            // 2. Support array of tool calls directly: [...]
+            if (Array.isArray(parsed)) {
+              for (const tc of parsed) {
+                let toolName = tc.name || tc.function?.name || tc.tool || tc.action;
+                let tcArgs = tc.arguments || tc.args || tc.function?.arguments || tc.function?.args || {};
+
+                if (typeof tcArgs === 'string') {
+                  try {
+                    tcArgs = JSON.parse(tcArgs);
+                  } catch (_) {}
+                }
+
+                if (!toolName) {
+                  const routeVal = tcArgs.route || tcArgs.endpoint || tcArgs.page_path || tcArgs.page_route || tcArgs.page || tcArgs.path || tcArgs.url;
+                  const queryVal = tcArgs.query || tcArgs.sql || tcArgs.params?.query || tcArgs.params?.sql;
+                  if (routeVal) {
+                    toolName = 'fetch_page_data';
+                  } else if (queryVal) {
+                    toolName = 'run_read_only_query';
+                  }
+                }
+
+                if (toolName === 'run_read_only_query' || toolName === 'fetch_page_data') {
+                  let args = {};
+                  if (toolName === 'run_read_only_query') {
+                    const queryVal = tcArgs.query || tcArgs.sql || tcArgs.params?.query || tcArgs.params?.sql || '';
+                    args = { query: typeof queryVal === 'string' ? queryVal : JSON.stringify(queryVal) };
+                  } else if (toolName === 'fetch_page_data') {
+                    const routeVal = tcArgs.route || tcArgs.endpoint || tcArgs.page_path || tcArgs.page_route || tcArgs.page || tcArgs.path || tcArgs.url || '';
+                    const qParams = tcArgs.queryParams || tcArgs.params?.queryParams || tcArgs.arguments?.queryParams || tcArgs.params || {};
+                    args = { route: routeVal, queryParams: typeof qParams === 'object' ? qParams : {} };
+                  }
+                  parsedTextTools.push({ name: toolName, args });
+                }
+              }
+              continue;
+            }
+
+            // 3. Support single tool call object directly: { "tool": "...", "args": ... }
             let toolName = parsed.tool || parsed.name || parsed.function || parsed.action;
             
             // Implicit tool detection
@@ -1584,7 +1664,8 @@ async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selec
               parsedTextTools.push({ name: toolName, args });
             }
           } catch (e) {
-            log.debug('[JSON Fallback] Brace matching but failed to parse extracted JSON:', e.message);
+            log.error('[JSON Fallback] Brace matching but failed to parse extracted JSON:', e.message);
+            log.error('[JSON Fallback] Extracted JSON string was:', JSON.stringify(jsonStr));
           }
         }
       }
@@ -1742,6 +1823,19 @@ function extractJSONObjects(text) {
     }
   }
   return objects;
+}
+
+function sanitizeJSONString(str) {
+  let cleaned = str.trim();
+  
+  // Fix common trailing parentheses typos like "})]" or "})}"
+  cleaned = cleaned.replace(/\}\s*\)\s*\]/g, '}]');
+  cleaned = cleaned.replace(/\}\s*\)\s*\}/g, '}}');
+  cleaned = cleaned.replace(/\]\s*\)\s*\}/g, ']}');
+  cleaned = cleaned.replace(/\)\s*\]/g, ']');
+  cleaned = cleaned.replace(/\)\s*\}/g, '}');
+
+  return cleaned;
 }
 
 module.exports = { sendMessageToAgent, fetchPageData };

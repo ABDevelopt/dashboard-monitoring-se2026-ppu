@@ -1620,6 +1620,10 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   margin-top: 16px !important;
 }
 
+.card.card-expanded .pcl-insight-card {
+  display: none !important;
+}
+
 /* Other sibling elements in expanded card (progress sections, etc.) */
 .card.card-expanded > div:not(.table-wrap):not(.card-header):not(.expand-filter-bar) {
   flex-shrink: 0 !important;

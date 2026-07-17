@@ -314,6 +314,9 @@
         <a href="/admin/master" class="nav-item <%= activePage === 'master' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-database-fill-gear"></i></span> Kelola Master Data
         </a>
+        <a href="/admin/users" class="nav-item <%= activePage === 'users' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-people-fill"></i></span> Kelola Pengguna
+        </a>
         <a href="/admin/settings" class="nav-item <%= activePage === 'settings' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-sliders"></i></span> Pengaturan Tampilan
         </a>
@@ -3057,6 +3060,11 @@
       // Check if it is an internal page
       const isInternal = href.startsWith('/') || href.startsWith(window.location.origin);
       if (!isInternal) return;
+
+      // Skip logout link
+      if (href === '/logout' || href.endsWith('/logout')) {
+        return;
+      }
 
       e.preventDefault();
       loadPage(href);

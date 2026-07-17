@@ -1524,12 +1524,35 @@ function attachProgressPercentages(data) {
     data.muatan_selesai = completedMuatan;
   }
 
-
-
   data.muatan_pct = targetMuatan > 0 ? parseFloat(((completedMuatan / targetMuatan) * 100).toFixed(2)) : 0.0;
   data.muatan_pct_str = targetMuatan > 0 ? ((completedMuatan / targetMuatan) * 100).toFixed(2) : '0.00';
 
   return data;
+}
+
+function getAllUsers() {
+  return getDb().prepare('SELECT id, username, role, created_at FROM users ORDER BY created_at DESC').all();
+}
+
+function createUser(username, password, role) {
+  const stmt = getDb().prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)');
+  const info = stmt.run(username, hashPassword(password), role);
+  return info.lastInsertRowid;
+}
+
+function updateUser(id, username, password, role) {
+  if (password && password.trim() !== '') {
+    const stmt = getDb().prepare('UPDATE users SET username = ?, password = ?, role = ? WHERE id = ?');
+    return stmt.run(username, hashPassword(password), role, id).changes;
+  } else {
+    const stmt = getDb().prepare('UPDATE users SET username = ?, role = ? WHERE id = ?');
+    return stmt.run(username, role, id).changes;
+  }
+}
+
+function deleteUser(id) {
+  const stmt = getDb().prepare('DELETE FROM users WHERE id = ?');
+  return stmt.run(id).changes;
 }
 
 module.exports = {
@@ -1539,5 +1562,6 @@ module.exports = {
   getBottomPerformers, getAnomalyStats,
   getSettings, updateSettings, getUserByUsername, hashPassword, rebuildSummaryCache, rebuildAllSummaryCaches,
   getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages, getTargetFormula,
-  getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula
+  getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula,
+  getAllUsers, createUser, updateUser, deleteUser
 };

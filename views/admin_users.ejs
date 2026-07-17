@@ -1,0 +1,390 @@
+<div class="fade-in">
+  <style>
+    .users-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-top: 24px;
+    }
+    .users-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .users-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .users-title i {
+      color: var(--accent-cyan);
+    }
+
+    /* Modal Styling */
+    .custom-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(5px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .custom-modal.active {
+      display: flex;
+    }
+    .custom-modal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 450px;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      animation: modalSlideIn 0.2s ease-out;
+    }
+    @keyframes modalSlideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .custom-modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .custom-modal-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .custom-modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0;
+    }
+    .custom-modal-body {
+      padding: 20px;
+    }
+    .custom-modal-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background: var(--bg-subtle);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .form-control {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .form-control:focus {
+      border-color: var(--accent-cyan);
+      outline: none;
+    }
+
+    .password-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .password-input-wrapper .form-control {
+      padding-right: 40px;
+    }
+    .password-toggle-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .badge-admin {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+    .badge-user {
+      background: rgba(14, 165, 233, 0.15);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(14, 165, 233, 0.2);
+    }
+    .badge-korlap {
+      background: rgba(168, 85, 247, 0.15);
+      color: #a855f7;
+      border: 1px solid rgba(168, 85, 247, 0.2);
+    }
+  </style>
+
+  <div class="users-container">
+    <div class="users-header">
+      <div class="users-title">
+        <i class="bi bi-people-fill"></i>
+        <span>Manajemen Pengguna</span>
+      </div>
+      <button class="btn btn-primary" onclick="openCreateModal()">
+        <i class="bi bi-person-plus-fill"></i> Tambah Pengguna
+      </button>
+    </div>
+
+    <div class="table-wrap">
+      <table style="width: 100%;">
+        <thead>
+          <tr>
+            <th style="width: 50px;" class="text-center">No</th>
+            <th>Username</th>
+            <th>Peran (Role)</th>
+            <th>Tanggal Dibuat</th>
+            <th style="width: 120px;" class="text-center">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (users && users.length > 0) { %>
+            <% users.forEach((u, index) => { %>
+              <tr>
+                <td class="text-center" style="font-weight: 600;"><%= index + 1 %></td>
+                <td style="font-weight: 600;" class="td-primary"><%= u.username %></td>
+                <td>
+                  <span class="badge <%= u.role === 'admin' ? 'badge-admin' : (u.role === 'korlap' ? 'badge-korlap' : 'badge-user') %>">
+                    <%= u.role.toUpperCase() %>
+                  </span>
+                </td>
+                <td style="font-size: 12px; color: var(--text-secondary);">
+                  <%= new Date(u.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+                </td>
+                <td class="text-center">
+                  <div style="display: flex; gap: 6px; justify-content: center;">
+                    <button class="btn btn-secondary btn-xs" onclick="openEditModal(<%= JSON.stringify(u) %>)" title="Edit Kredensial">
+                      <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <!-- Sembunyikan/Proteksi tombol hapus untuk akun sendiri (Saran 3) -->
+                    <% if (user && u.id === user.id) { %>
+                      <button class="btn btn-danger btn-xs" disabled style="opacity: 0.4; cursor: not-allowed;" title="Tidak dapat menghapus diri sendiri">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    <% } else { %>
+                      <button class="btn btn-danger btn-xs" onclick="openDeleteModal(<%= u.id %>, '<%= u.username %>')" title="Hapus Pengguna">
+                        <i class="bi bi-trash3"></i>
+                      </button>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="5" class="text-center" style="color: var(--text-muted); padding: 30px;">Belum ada data pengguna.</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 1. MODAL TAMBAH PENGGUNA -->
+  <div class="custom-modal" id="createModal">
+    <div class="custom-modal-card">
+      <div class="custom-modal-header">
+        <div class="custom-modal-title"><i class="bi bi-person-plus-fill"></i> Tambah Pengguna Baru</div>
+        <button class="custom-modal-close" onclick="closeModal('createModal')"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <form action="/admin/users/create" method="POST">
+        <div class="custom-modal-body">
+          <div class="form-group">
+            <label for="create_username">Username</label>
+            <input type="text" name="username" id="create_username" class="form-control" autocomplete="off" placeholder="Masukkan nama pengguna" required>
+          </div>
+          <div class="form-group">
+            <label for="create_password">Password</label>
+            <div class="password-input-wrapper">
+              <input type="password" name="password" id="create_password" class="form-control" placeholder="Masukkan sandi akun" required>
+              <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('create_password')">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="create_role">Peran (Role)</label>
+            <select name="role" id="create_role" class="form-control" required>
+              <option value="user">USER (Akses Chatbot)</option>
+              <option value="korlap">KORLAP (Koordinator Lapangan)</option>
+              <option value="admin">ADMIN (Akses Penuh)</option>
+            </select>
+          </div>
+        </div>
+        <div class="custom-modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('createModal')">Batal</button>
+          <button type="submit" class="btn btn-primary">Tambah Akun</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. MODAL EDIT PENGGUNA -->
+  <div class="custom-modal" id="editModal">
+    <div class="custom-modal-card">
+      <div class="custom-modal-header">
+        <div class="custom-modal-title"><i class="bi bi-pencil-square"></i> Edit Kredensial Pengguna</div>
+        <button class="custom-modal-close" onclick="closeModal('editModal')"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <form id="editForm" method="POST">
+        <div class="custom-modal-body">
+          <div class="form-group">
+            <label for="edit_username">Username</label>
+            <input type="text" name="username" id="edit_username" class="form-control" autocomplete="off" required>
+          </div>
+          <div class="form-group">
+            <label for="edit_password">Password Baru (Kosongkan jika tidak ingin diubah)</label>
+            <div class="password-input-wrapper">
+              <input type="password" name="password" id="edit_password" class="form-control" placeholder="Ketik sandi baru untuk mereset">
+              <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('edit_password')">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="edit_role">Peran (Role)</label>
+            <select name="role" id="edit_role" class="form-control" required>
+              <option value="user">USER (Akses Chatbot)</option>
+              <option value="korlap">KORLAP (Koordinator Lapangan)</option>
+              <option value="admin">ADMIN (Akses Penuh)</option>
+            </select>
+          </div>
+        </div>
+        <div class="custom-modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('editModal')">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. MODAL HAPUS PENGGUNA (Saran 3) -->
+  <div class="custom-modal" id="deleteModal">
+    <div class="custom-modal-card">
+      <div class="custom-modal-header">
+        <div class="custom-modal-title"><i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red);"></i> Konfirmasi Hapus Akun</div>
+        <button class="custom-modal-close" onclick="closeModal('deleteModal')"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <form id="deleteForm" method="POST">
+        <div class="custom-modal-body">
+          <p style="font-size: 13px; line-height: 1.5; color: var(--text-primary);">
+            Apakah Anda yakin ingin menghapus akun pengguna <strong id="delete_username_label"></strong> secara permanen?
+          </p>
+          <div class="alert alert-error" style="background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: var(--accent-red); margin-top: 12px; margin-bottom: 0;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span style="font-size: 11px; line-height: 1.3;">Aksi ini tidak dapat dibatalkan dan pengguna tersebut tidak akan bisa login kembali.</span>
+          </div>
+        </div>
+        <div class="custom-modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('deleteModal')">Batal</button>
+          <button type="submit" class="btn btn-danger">Hapus Permanen</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openCreateModal() {
+    document.getElementById('create_username').value = '';
+    document.getElementById('create_password').value = '';
+    document.getElementById('create_role').value = 'user';
+    document.getElementById('createModal').classList.add('active');
+  }
+
+  function openEditModal(userObj) {
+    document.getElementById('edit_username').value = userObj.username;
+    document.getElementById('edit_password').value = '';
+    document.getElementById('edit_role').value = userObj.role;
+    document.getElementById('editForm').action = `/admin/users/edit/${userObj.id}`;
+    document.getElementById('editModal').classList.add('active');
+  }
+
+  function openDeleteModal(userId, username) {
+    document.getElementById('delete_username_label').textContent = username;
+    document.getElementById('deleteForm').action = `/admin/users/delete/${userId}`;
+    document.getElementById('deleteModal').classList.add('active');
+  }
+
+  function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+  }
+
+  function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.nextElementSibling;
+    const icon = button.querySelector('i');
+    
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.remove('bi-eye');
+      icon.classList.add('bi-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.remove('bi-eye-slash');
+      icon.classList.add('bi-eye');
+    }
+  }
+
+  // Menutup modal jika backdrop diklik
+  window.addEventListener('click', (e) => {
+    const modals = document.querySelectorAll('.custom-modal');
+    modals.forEach(m => {
+      if (e.target === m) {
+        m.classList.remove('active');
+      }
+    });
+  });
+
+  // Esc key untuk menutup modal
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const activeModal = document.querySelector('.custom-modal.active');
+      if (activeModal) activeModal.classList.remove('active');
+    }
+  });
+</script>

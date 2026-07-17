@@ -541,6 +541,7 @@
 </div>
 
 <script>
+(function() {
   const chatHistory = [];
   const modelOptions = {
     gemini: <%- JSON.stringify(geminiModels || []) %>,
@@ -1134,4 +1135,11 @@
       });
     }
   });
+
+  // Expose functions globally to HTML handlers
+  window.clearChatHistory = clearChatHistory;
+  window.handleChatSubmit = handleChatSubmit;
+  window.sendQuickPrompt = sendQuickPrompt;
+  window.copyCodeToClipboard = copyCodeToClipboard;
+})();
 </script>
