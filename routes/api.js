@@ -291,6 +291,8 @@ router.get('/latest-updates', (req, res) => {
       status_filename: details.fasih.status_filename
     } : null
   });
+});
+
 // Endpoint untuk mendapatkan ringkasan early warning petugas
 router.get('/early-warning-summary', (req, res) => {
   const { getLatestUpload, getEarlyWarning } = require('../database');
