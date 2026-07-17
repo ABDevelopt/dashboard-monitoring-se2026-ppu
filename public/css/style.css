@@ -2086,23 +2086,7 @@ body.light-mode .highlight-name {
   to { transform: rotate(360deg); }
 }
 
-/* Premium PJAX Container Slide Transitions - Disabled on Mobile viewports */
-@media (max-width: 768px) {
-  #pjax-container {
-    transition: none !important;
-    transform: none !important;
-    opacity: 1 !important;
-  }
 
-  #pjax-container.pjax-exit,
-  #pjax-container.pjax-exit-back,
-  #pjax-container.pjax-enter,
-  #pjax-container.pjax-enter-back {
-    opacity: 1 !important;
-    transform: none !important;
-    transition: none !important;
-  }
-}
 
 /* Premium PJAX Transition Loading Overlay */
 .pjax-loading-overlay {

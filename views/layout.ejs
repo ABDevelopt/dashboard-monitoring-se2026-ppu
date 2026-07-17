@@ -2784,33 +2784,8 @@
     }
 
     // PJAX router for seamless AJAX page transitions without reloading the sidebar
-    function isGoingBack(targetUrl) {
-      const currentPath = window.location.pathname;
-      const targetPath = new URL(targetUrl, window.location.origin).pathname;
-      
-      if (targetPath === '/' && currentPath !== '/') return true;
-      
-      const currentDepth = currentPath.split('/').filter(Boolean).length;
-      const targetDepth = targetPath.split('/').filter(Boolean).length;
-      if (targetDepth < currentDepth) return true;
-      
-      if (currentPath === targetPath) {
-        const currentParams = new URLSearchParams(window.location.search);
-        const targetParams = new URLSearchParams(new URL(targetUrl, window.location.origin).search);
-        if (targetParams.toString() === '' && currentParams.toString() !== '') return true;
-        
-        if (currentParams.has('pcl') && !targetParams.has('pcl')) return true;
-        if (currentParams.has('pml') && !targetParams.has('pml')) return true;
-        if (currentParams.has('korlap') && !targetParams.has('korlap')) return true;
-        if (currentParams.has('kec') && !targetParams.has('kec')) return true;
-      }
-      return false;
-    }
-
-    // PJAX router for seamless AJAX page transitions without reloading the sidebar
     async function loadPage(url, pushState = true) {
       const oldContent = document.getElementById('pjax-container');
-      const isBack = isGoingBack(url);
 
       const loader = document.getElementById('topLoadingBar');
       if (loader) {
@@ -2823,37 +2798,20 @@
       if (overlay) overlay.classList.add('active');
 
       try {
-      // Play exit transition
-      if (oldContent) {
-        oldContent.className = isBack ? 'pjax-exit-back' : 'pjax-exit';
-      }
-
-      // Parallel fetch and anim wait
-      const fetchPromise = fetch(url).then(async (response) => {
-        if (!response.ok) return null;
-        const htmlText = await response.text();
-        const parser = new DOMParser();
-        return parser.parseFromString(htmlText, 'text/html');
-      }).catch(() => null);
-
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      let targetDoc = await fetchPromise;
-
-      if (!oldContent) {
+      // Fetch target page
+      const response = await fetch(url);
+      if (!response.ok) {
         window.location.href = url;
         return;
       }
 
-      // Always show skeleton immediately so desktop gets visual feedback too
-      oldContent.className = isBack ? 'pjax-enter-back' : 'pjax-enter';
-      oldContent.innerHTML = getSkeletonHTML(url);
-      void oldContent.offsetWidth; // trigger reflow
-      oldContent.className = ''; // slide in
+      const htmlText = await response.text();
+      const parser = new DOMParser();
+      const targetDoc = parser.parseFromString(htmlText, 'text/html');
 
-      // If fetch hasn't returned yet, wait for it
-      if (!targetDoc) {
-        targetDoc = await fetchPromise;
+      if (!oldContent) {
+        window.location.href = url;
+        return;
       }
 
       if (targetDoc) {
@@ -2866,12 +2824,8 @@
             window._pjaxCleanups = [];
           }
 
-          // Small delay so skeleton is visible briefly even on fast connections
-          await new Promise(resolve => setTimeout(resolve, 120));
-          oldContent.style.opacity = '0';
-          await new Promise(resolve => setTimeout(resolve, 80));
+          // Swap content immediately with no delays, fades, or class changes
           oldContent.innerHTML = newContent.innerHTML;
-          oldContent.style.opacity = '1';
         } else {
           window.location.href = url;
           return;
