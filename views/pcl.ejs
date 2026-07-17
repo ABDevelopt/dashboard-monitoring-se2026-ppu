@@ -21,17 +21,17 @@
 
     <!-- FILTER BAR -->
     <div class="card">
-      <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
+      <div class="card-header section-divider">
         <div class="card-title"><i class="bi bi-search"></i> Filter Pencarian PCL</div>
         <a href="/pcl" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
       </div>
       
       <form action="/pcl" method="GET" id="filterForm">
-        <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
+        <div class="filter-form-grid auto-grid">
           
           <div>
-            <label for="filterKec" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
-            <select id="filterKec" name="kec"  style="width:100%;">
+            <label for="filterKec" class="ui-label">Kecamatan</label>
+            <select id="filterKec" name="kec" class="w-full">
               <option value="">-- Semua Kecamatan --</option>
               <% kecList.forEach(k => { %>
                 <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
@@ -40,8 +40,8 @@
           </div>
 
           <div>
-            <label for="filterKorlap" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
-            <select id="filterKorlap" name="korlap"  style="width:100%;">
+            <label for="filterKorlap" class="ui-label">Koordinator Lapangan</label>
+            <select id="filterKorlap" name="korlap" class="w-full">
               <option value="">-- Semua Korlap --</option>
               <% korlapList.forEach(k => { %>
                 <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
@@ -50,8 +50,8 @@
           </div>
 
           <div>
-            <label for="filterPml" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
-            <select id="filterPml" name="pml"  style="width:100%;">
+            <label for="filterPml" class="ui-label">PML (Pengawas)</label>
+            <select id="filterPml" name="pml" class="w-full">
               <option value="">-- Semua PML --</option>
               <% pmlList.forEach(p => { %>
                 <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
@@ -68,9 +68,9 @@
       
       <!-- PCL LIST TABLE -->
       <div class="card" style="margin-bottom: 0;">
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="card-header flex-between">
           <div class="card-title"><i class="bi bi-person-gear"></i> Progres Kinerja per PCL (Pencacah)</div>
-          <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="flex-start">
             <a href="/pcl/export-excel" class="btn btn-xs" style="background: #22c55e; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download><i class="bi bi-file-earmark-excel"></i> Export Excel Petugas</a>
             <span class="badge badge-blue"><%= pclStats.length %> PCL</span>
           </div>
@@ -85,7 +85,7 @@
             <table id="pclTable">
               <thead class="hide-sm">
                 <tr>
-                  <th rowspan="2" class="text-center" style="font-weight: 600; width: 40px;">No</th>
+                  <th rowspan="2" class="text-center th-no">No</th>
                   <th rowspan="2">Nama PCL</th>
                   <th rowspan="2" class="hide-md">PML</th>
                   <th rowspan="2" class="hide-md">Kecamatan</th>
@@ -121,7 +121,7 @@
               </thead>
               <thead class="show-sm-table-header">
                 <tr>
-                  <th class="text-center" style="width: 40px;">No</th>
+                  <th class="text-center th-no">No</th>
                   <th>Nama PCL</th>
                   <!-- <th class="text-right">Selesai</th> -->
                   <th class="text-right bg-purple-soft" data-column-idx="9">FASIH %</th>
@@ -133,19 +133,19 @@
                   <% let fasihPct = p.fasih_pct_str; %>
                   <% let muatanPct = p.muatan_pct_str; %>
                   <tr class="<%= filterPcl === p.pcl ? 'active' : '' %>" style="<%= filterPcl === p.pcl ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
-                    <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
+                    <td class="text-center td-index"><%= index + 1 %></td>
                     <td class="td-primary">
-                      <a href="/pcl?pcl=<%= encodeURIComponent(p.pcl) %>&kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" style="color: inherit; text-decoration: none; display: inline-block;">
+                      <a href="/pcl?pcl=<%= encodeURIComponent(p.pcl) %>&kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="link-plain" style="display: inline-block;">
                         <i class="bi bi-person"></i> <%= p.pcl %>
                       </a>
                       <% if (kippPcls.includes(p.pcl.toUpperCase())) { %>
-                        <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px;">KIPP</span>
+                        <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 4px;">KIPP</span>
                       <% } %>
                     </td>
                     <td class="hide-md">
                       <%= p.pml %>
                       <% if (kippPmls.includes(p.pml.toUpperCase())) { %>
-                        <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
+                        <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 2px;">KIPP</span>
                       <% } %>
                     </td>
                     <td class="hide-md"><%= p.kecamatan %></td>
@@ -163,7 +163,7 @@
                         const fasihWPcl    = Math.min(parseFloat(fasihPct), 100);
                         const fasihColorPcl = fasihWPcl >= 100 ? 'var(--accent-green)' : (fasihWPcl < activeTargetPct ? 'var(--accent-red)' : 'var(--accent-purple)');
                       %>
-                      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px;">
+                      <div class="bar-label" style="font-size:10px; margin-bottom:3px;">
                         <span style="font-weight:700; color:<%= fasihColorPcl %>"><%= fasihPct %>%</span>
                         <span><%= fasihRealPcl.toLocaleString('id-ID') %> / <%= fasihTgtPcl.toLocaleString('id-ID') %></span>
                       </div>
@@ -180,11 +180,11 @@
                         const muatanWPcl    = Math.min(parseFloat(muatanPct), 100);
                         const muatanColorPcl = muatanWPcl >= 100 ? 'var(--accent-green)' : (muatanWPcl < activeTargetPct ? 'var(--accent-red)' : 'var(--accent-cyan)');
                       %>
-                      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px;">
+                      <div class="bar-label" style="font-size:10px; margin-bottom:3px;">
                         <span style="font-weight:700; color:<%= muatanColorPcl %>"><%= muatanPct %>%</span>
                         <span><%= muatanRealPcl.toLocaleString('id-ID') %> / <%= muatanTgtPcl.toLocaleString('id-ID') %></span>
                       </div>
-                      <div style="height:5px; background:var(--bg-progress-wrap); border-radius:99px; overflow:hidden;">
+                      <div class="progress-track-sm">
                         <div class="progress-bar <%= muatanWPcl >= 100 ? 'green' : (muatanWPcl < activeTargetPct ? 'red' : 'blue') %>" data-width="<%= muatanWPcl %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
@@ -289,31 +289,31 @@
           %>
           
           <!-- Insight Card Target 40% -->
-          <div style="margin-top: 18px; padding: 16px; border-top: 1px dashed var(--border); background: rgba(139, 92, 246, 0.03); border-radius: 8px; display: flex; flex-direction: column; gap: 12px;">
-            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: var(--text-primary);">
+          <div style="margin-top: 18px; padding: 16px; border-top: 1px dashed var(--border); background: rgba(139, 92, 246, 0.03); border-radius: 8px;" class="flex-col gap-3">
+            <div class="flex-start ui-subtitle" style="font-weight: 700;">
               <i class="bi bi-lightbulb-fill" style="color: var(--accent-yellow);"></i> Analisis Insight Kinerja (Batas Target 40% FASIH)
             </div>
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
               <!-- Stat 1: Mencapai Target -->
-              <div style="background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 4px; text-align: left;">
-                <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Sudah Mencapai &ge; 40%</span>
-                <span style="font-size: 18px; font-weight: 800; color: var(--accent-green);"><%= countOver40 %> <span style="font-size: 11px; font-weight: 500; color: var(--text-secondary);">Petugas</span></span>
-                <span style="font-size: 10px; color: var(--text-muted);"><%= ((countOver40 / pclStats.length) * 100).toFixed(1) %>% dari total petugas</span>
+              <div style="background: var(--bg-primary); border-radius: 6px; padding: 12px; text-align: left;" class="info-panel-sm flex-col gap-2">
+                <span class="ui-label fw-500">Sudah Mencapai &ge; 40%</span>
+                <span class="ui-value text-green"><%= countOver40 %> <span class="text-sm fw-500 text-secondary">Petugas</span></span>
+                <span class="text-xs text-muted"><%= ((countOver40 / pclStats.length) * 100).toFixed(1) %>% dari total petugas</span>
               </div>
 
               <!-- Stat 2: Belum Mencapai Target -->
-              <div style="background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 4px; text-align: left;">
-                <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Belum Mencapai &lt; 40%</span>
-                <span style="font-size: 18px; font-weight: 800; color: var(--accent-red);"><%= countUnder40 %> <span style="font-size: 11px; font-weight: 500; color: var(--text-secondary);">Petugas</span></span>
-                <span style="font-size: 10px; color: var(--text-muted);"><%= ((countUnder40 / pclStats.length) * 100).toFixed(1) %>% dari total petugas</span>
+              <div style="background: var(--bg-primary); border-radius: 6px; padding: 12px; text-align: left;" class="info-panel-sm flex-col gap-2">
+                <span class="ui-label fw-500">Belum Mencapai &lt; 40%</span>
+                <span class="ui-value text-red"><%= countUnder40 %> <span class="text-sm fw-500 text-secondary">Petugas</span></span>
+                <span class="text-xs text-muted"><%= ((countUnder40 / pclStats.length) * 100).toFixed(1) %>% dari total petugas</span>
               </div>
 
               <!-- Stat 3: Kekurangan Dokumen -->
-              <div style="background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 4px; text-align: left;">
-                <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Total Kekurangan Progres</span>
-                <span style="font-size: 18px; font-weight: 800; color: var(--accent-purple);"><%= totalShortfall.toLocaleString('id-ID') %> <span style="font-size: 11px; font-weight: 500; color: var(--text-secondary);">Dokumen</span></span>
-                <span style="font-size: 10px; color: var(--text-muted);">Kumulatif dari <%= countUnder40 %> petugas</span>
+              <div style="background: var(--bg-primary); border-radius: 6px; padding: 12px; text-align: left;" class="info-panel-sm flex-col gap-2">
+                <span class="ui-label fw-500">Total Kekurangan Progres</span>
+                <span class="ui-value text-purple"><%= totalShortfall.toLocaleString('id-ID') %> <span class="text-sm fw-500 text-secondary">Dokumen</span></span>
+                <span class="text-xs text-muted">Kumulatif dari <%= countUnder40 %> petugas</span>
               </div>
             </div>
 
@@ -342,17 +342,17 @@
       <div id="pclDetailContainer">
         <% if (filterPcl) { %>
           <div class="card" id="pclDetailCard" style="margin-bottom: 0; position: sticky; top: 80px;">
-            <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
-              <div class="card-title" style="margin-bottom: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+            <div class="card-header flex-between">
+              <div class="card-title mb-0 flex-start" style="flex-wrap: wrap; gap: 4px;">
                 <i class="bi bi-search"></i> Rincian Tugas SLS: <mark class="highlight-name"><%= filterPcl %></mark>
                 <button class="pin-btn" data-type="pcl" data-name="<%= filterPcl %>" data-href="/pcl?pcl=<%= encodeURIComponent(filterPcl) %>" title="Sematkan Petugas ke Favorit" onclick="window.togglePin('pcl', '<%= filterPcl %>', '/pcl?pcl=<%= encodeURIComponent(filterPcl) %>')">
                   <i class="bi bi-star"></i>
                 </button>
                 <% if (kippPcls.includes(filterPcl.toUpperCase())) { %>
-                  <span class="badge badge-orange" style="padding: 2px 5px; font-size: 9px; vertical-align: middle; margin-left: 6px;">KIPP</span>
+                  <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 6px;">KIPP</span>
                 <% } %>
               </div>
-              <div style="display: flex; gap: 6px; align-items: center; margin-left: auto;">
+              <div class="flex-start" style="gap: 6px; margin-left: auto;">
                 <button onclick="window.shareElementAsImage('pclDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
                 <button onclick="window.copyElementAsImage('pclDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
                 <a href="/pcl?kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="btn btn-secondary btn-xs" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
@@ -361,9 +361,9 @@
 
             <% if (detailSubsls && detailSubsls.length > 0) { %>
               <div class="mb-4">
-                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
-                  PML: <strong><%= detailSubsls[0].pml %></strong><% if (kippPmls.includes(detailSubsls[0].pml.toUpperCase())) { %> <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle;">KIPP</span><% } %> · 
-                  Korlap: <strong><%= detailSubsls[0].korlap %></strong><% if (kippKorlaps.includes(detailSubsls[0].korlap.toUpperCase())) { %> <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle;">KIPP</span><% } %>
+                <div class="text-base text-secondary mb-2">
+                  PML: <strong><%= detailSubsls[0].pml %></strong><% if (kippPmls.includes(detailSubsls[0].pml.toUpperCase())) { %> <span class="badge badge-orange badge-xs" style="vertical-align: middle;">KIPP</span><% } %> · 
+                  Korlap: <strong><%= detailSubsls[0].korlap %></strong><% if (kippKorlaps.includes(detailSubsls[0].korlap.toUpperCase())) { %> <span class="badge badge-orange badge-xs" style="vertical-align: middle;">KIPP</span><% } %>
                 </div>
                 <% 
                   let doneMuatan = selectedPclStats ? (selectedPclStats.muatan_selesai !== undefined ? selectedPclStats.muatan_selesai : (selectedPclStats.usaha_total + selectedPclStats.keluarga_total)) : 0;
@@ -380,8 +380,8 @@
                   let approvedFasih = selectedPclStats ? (selectedPclStats.approved_total || 0) : 0;
                 %>
                 <!-- Progress FASIH -->
-                <div style="margin-bottom: 12px;">
-                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                <div class="mb-3">
+                  <div class="bar-label">
                     <span><i class="bi bi-phone"></i> Progres FASIH (Submit + Approve + Reject)</span>
                     <span class="fw-bold"><%= doneFasih.toLocaleString('id-ID') %> / <%= totalFasih.toLocaleString('id-ID') %> (<%= fasihPct %>%)</span>
                   </div>
@@ -403,8 +403,8 @@
                 </div>
 
                 <!-- Progress Muatan -->
-                <div style="margin-bottom: 12px;" class="muatan-col">
-                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                <div class="mb-3 muatan-col">
+                  <div class="bar-label">
                     <span><i class="bi bi-briefcase"></i> Progres Muatan</span>
                     <span class="fw-bold"><%= doneMuatan.toLocaleString('id-ID') %> / <%= totalMuatan.toLocaleString('id-ID') %> (<%= donePct %>%)</span>
                   </div>

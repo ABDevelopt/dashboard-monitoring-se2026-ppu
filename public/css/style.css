@@ -2928,4 +2928,193 @@ body.light-mode .skeleton-block {
 }
 
 
+/* =====================================================
+   UI UTILITY CLASSES v2 — CSS Refactor
+   Menggantikan inline style yang berulang di EJS views
+   ===================================================== */
 
+/* --- Layout & Flexbox --- */
+.flex-between  { display: flex; justify-content: space-between; align-items: center; }
+.flex-center   { display: flex; align-items: center; justify-content: center; }
+.flex-start    { display: flex; align-items: center; gap: 8px; }
+.flex-col      { display: flex; flex-direction: column; }
+.flex-col-gap  { display: flex; flex-direction: column; gap: 8px; }
+.min-w-0       { min-width: 0; }
+.w-full        { width: 100%; }
+.flex-shrink-0 { flex-shrink: 0; }
+
+/* --- Grid --- */
+.auto-grid     { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px; }
+.auto-grid-sm  { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr)); gap: 8px; }
+.auto-grid-lg  { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+
+/* --- Spacing --- */
+.mb-0  { margin-bottom: 0 !important; }
+.mb-2  { margin-bottom: 8px; }
+.mb-3  { margin-bottom: 12px; }
+.mb-5  { margin-bottom: 20px; }
+.mt-2  { margin-top: 8px; }
+.mt-3  { margin-top: 12px; }
+.pt-3  { padding-top: 12px; }
+.pt-4  { padding-top: 16px; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.p-3   { padding: 12px; }
+.px-3  { padding-left: 12px; padding-right: 12px; }
+.py-2  { padding-top: 8px; padding-bottom: 8px; }
+
+/* --- Typography --- */
+.text-xs       { font-size: 10px; }
+.text-2xs      { font-size: 9px; }
+.text-sm       { font-size: 11px; }
+.text-base     { font-size: 13px; }
+.fw-500        { font-weight: 500; }
+.fw-600        { font-weight: 600; }
+.fw-700        { font-weight: 700; }
+.fw-800        { font-weight: 800; }
+.leading-tight { line-height: 1.3; }
+.leading-snug  { line-height: 1.4; }
+.uppercase     { text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* --- UI Component Labels (pola berulang terbanyak) --- */
+/* Penggunaan: label muted kecil di atas nilai, title section kecil */
+.ui-label {
+  display: block;
+  font-size: 11px;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+}
+.ui-label-upper {
+  display: block;
+  font-size: 11px;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.ui-label-xs {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.ui-subtitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.ui-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+/* --- Progress Bar Label Row (di atas bar) --- */
+.bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+}
+.bar-label-bold {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+
+/* --- Progress Track (wrapper progress bar tipis) --- */
+.progress-track {
+  height: 8px;
+  width: 100%;
+  border-radius: 99px;
+  background: var(--bg-progress-wrap);
+  overflow: hidden;
+}
+.progress-track-sm {
+  height: 5px;
+  width: 100%;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--bg-progress-wrap);
+}
+.progress-track-md {
+  height: 10px;
+  width: 100%;
+  border-radius: 99px;
+  background: var(--bg-progress-wrap);
+  overflow: hidden;
+}
+
+/* --- Border Helpers --- */
+.border-b      { border-bottom: 1px solid var(--border); }
+.border-t      { border-top: 1px solid var(--border); }
+.border-t-dash { border-top: 1px dashed var(--border); }
+.border-b-dash { border-bottom: 1px dashed var(--border); }
+
+/* --- Table Helpers --- */
+.td-index  { font-weight: 600; background: var(--bg-subtle); }
+.th-no     { font-weight: 600; width: 40px; text-align: center; }
+.section-divider { margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+/* --- Links --- */
+.link-plain       { color: inherit; text-decoration: none; }
+.link-plain:hover { text-decoration: underline; }
+
+/* --- Info / Panel Box (pola: bg subtle + border + rounded + padding) --- */
+.info-panel {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+}
+.info-panel-sm {
+  background: var(--bg-summary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+/* --- Badge Sizes --- */
+.badge-xs { font-size: 8px !important; padding: 1px 4px !important; }
+.badge-sm { font-size: 10px; padding: 2px 6px; }
+
+/* --- Icon Circle (icon bulat berwarna) --- */
+.icon-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.icon-circle-sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+/* --- Color Backgrounds (untuk icon-circle) --- */
+.bg-purple-alpha { background: rgba(139, 92, 246, 0.1); }
+.bg-blue-alpha   { background: rgba(59, 130, 246, 0.1); }
+.bg-green-alpha  { background: rgba(16, 185, 129, 0.1); }
+.bg-red-alpha    { background: rgba(239, 68, 68, 0.1); }
+.bg-yellow-alpha { background: rgba(245, 158, 11, 0.1); }
+.bg-cyan-alpha   { background: rgba(6, 182, 212, 0.1); }
+.bg-subtle       { background: var(--bg-summary); }
+
+/* --- Skeleton Row Variants --- */
+.skeleton-row-sm { height: 12px; width: 50%; border-radius: 4px; }
+.skeleton-row-md { height: 12px; width: 80%; border-radius: 4px; }

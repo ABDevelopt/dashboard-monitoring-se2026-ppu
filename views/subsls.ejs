@@ -1,4 +1,4 @@
-<div class="fade-in">
+﻿<div class="fade-in">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <% if (!uploadId) { %>
     <div class="card empty-state">
@@ -21,8 +21,8 @@
         <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           
           <div>
-            <label for="filterKec" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
-            <select id="filterKec" name="kec"  style="width:100%;">
+            <label for="filterKec" class="ui-label">Kecamatan</label>
+            <select id="filterKec" name="kec"  class="w-full">
               <option value="">-- Semua Kecamatan --</option>
               <% kecList.forEach(k => { %>
                 <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
@@ -31,8 +31,8 @@
           </div>
 
           <div>
-            <label for="filterDesa" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Desa/Kelurahan</label>
-            <select id="filterDesa" name="desa"  style="width:100%;" <%= !filterKec ? 'disabled' : '' %>>
+            <label for="filterDesa" class="ui-label">Desa/Kelurahan</label>
+            <select id="filterDesa" name="desa"  class="w-full" <%= !filterKec ? 'disabled' : '' %>>
               <option value="">-- Semua Desa --</option>
               <% desaList.forEach(d => { %>
                 <option value="<%= d.desa %>" <%= filterDesa === d.desa ? 'selected' : '' %>><%= d.desa %></option>
@@ -41,8 +41,8 @@
           </div>
 
           <div>
-            <label for="filterKorlap" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
-            <select id="filterKorlap" name="korlap"  style="width:100%;">
+            <label for="filterKorlap" class="ui-label">Koordinator Lapangan</label>
+            <select id="filterKorlap" name="korlap"  class="w-full">
               <option value="">-- Semua Korlap --</option>
               <% korlapList.forEach(k => { %>
                 <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
@@ -51,8 +51,8 @@
           </div>
 
           <div>
-            <label for="filterPml" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
-            <select id="filterPml" name="pml"  style="width:100%;">
+            <label for="filterPml" class="ui-label">PML (Pengawas)</label>
+            <select id="filterPml" name="pml"  class="w-full">
               <option value="">-- Semua PML --</option>
               <% pmlList.forEach(p => { %>
                 <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
@@ -61,8 +61,8 @@
           </div>
 
           <div>
-            <label for="filterPcl" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PCL (Pencacah)</label>
-            <select id="filterPcl" name="pcl"  style="width:100%;">
+            <label for="filterPcl" class="ui-label">PCL (Pencacah)</label>
+            <select id="filterPcl" name="pcl"  class="w-full">
               <option value="">-- Semua PCL --</option>
               <% pclList.forEach(p => { %>
                 <option value="<%= p.pcl %>" <%= filterPcl === p.pcl ? 'selected' : '' %>><%= p.pcl %></option>
@@ -71,11 +71,11 @@
           </div>
 
           <div>
-            <label id="statusLabel" for="filterStatus" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">
+            <label id="statusLabel" for="filterStatus" class="ui-label">
               Status Progres
               <span title="Kriteria Status:&#10;- Belum Mulai: realisasi & aktivitas = 0&#10;- Sedang Didata: realisasi > 0 dan < target muatan&#10;- Memenuhi Target: realisasi = target muatan&#10;- Melebihi Target: realisasi > target muatan" style="cursor: help; margin-left: 4px;"><i class="bi bi-info-circle"></i></span>
             </label>
-            <select id="filterStatus" name="status" style="width:100%;">
+            <select id="filterStatus" name="status" class="w-full">
               <option value="">-- Semua Status --</option>
               <option value="belum_mulai" <%= filterStatus === 'belum_mulai' ? 'selected' : '' %>>Belum Mulai</option>
               <option value="sedang_didata" <%= filterStatus === 'sedang_didata' ? 'selected' : '' %>>Sedang Didata</option>
@@ -171,7 +171,7 @@
                         <% if (row.pml && kippPmls.includes(row.pml.toUpperCase())) { %>
                           <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 1px;">KIPP</span>
                         <% } %>
-                        · Krl: <%= row.korlap %>
+                        Â· Krl: <%= row.korlap %>
                         <% if (row.korlap && kippKorlaps.includes(row.korlap.toUpperCase())) { %>
                           <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 1px;">KIPP</span>
                         <% } %>
@@ -250,15 +250,15 @@
               </div>
               
               <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11px;">
-                <div style="display: flex; justify-content: space-between;">
+                <div class="flex-between" style="align-items: unset;">
                   <span style="color: var(--text-muted);"><i class="bi bi-person-badge"></i> Pencacah (PCL)</span>
                   <strong style="color: var(--text-primary);"><%= selectedSubsls.pcl || '-' %></strong>
                 </div>
-                <div style="display: flex; justify-content: space-between;">
+                <div class="flex-between" style="align-items: unset;">
                   <span style="color: var(--text-muted);"><i class="bi bi-person-check"></i> Pengawas (PML)</span>
                   <strong style="color: var(--text-primary);"><%= selectedSubsls.pml || '-' %></strong>
                 </div>
-                <div style="display: flex; justify-content: space-between;">
+                <div class="flex-between" style="align-items: unset;">
                   <span style="color: var(--text-muted);"><i class="bi bi-person-gear"></i> Korlap</span>
                   <strong style="color: var(--text-primary);"><%= selectedSubsls.korlap || '-' %></strong>
                 </div>
@@ -287,7 +287,7 @@
                   <span style="font-size: 11px; font-weight: 700; color: var(--accent-purple); text-transform: uppercase;"><i class="bi bi-file-earmark-text"></i> Assignment FASIH</span>
                   <span style="font-size: 13px; font-weight: 700; color: var(--accent-purple);"><%= fasihPct %>%</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">
+                <div class="bar-label" style="margin-bottom: 6px;">
                   <span>Capaian Dokumen</span>
                   <strong><%= fasihDone %> / <%= fasihTgt %></strong>
                 </div>
@@ -320,7 +320,7 @@
                   <span style="font-size: 11px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase;"><i class="bi bi-box-seam"></i> Progres Muatan</span>
                   <span style="font-size: 13px; font-weight: 700; color: <%= muatanColor %>;"><%= muatanPct %>%</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">
+                <div class="bar-label" style="margin-bottom: 6px;">
                   <span>Realisasi / Target</span>
                   <strong><%= muatanDone %> / <%= muatanTgt %></strong>
                 </div>
@@ -562,18 +562,18 @@ document.addEventListener('DOMContentLoaded', () => {
           } else {
             detailContainer.innerHTML = `
               <div class="card skeleton-card" style="border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 20px; position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px; min-height: 350px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="flex-between">
                   <div class="skeleton-block" style="height: 18px; width: 60%; border-radius: 6px;"></div>
                   <div class="skeleton-block" style="height: 20px; width: 20px; border-radius: 50%;"></div>
                 </div>
                 <div class="skeleton-block" style="height: 12px; width: 40%; border-radius: 4px; margin-top: -4px;"></div>
                 
                 <div style="border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="flex-between">
                     <div class="skeleton-block" style="height: 12px; width: 50%; border-radius: 4px;"></div>
                     <div class="skeleton-block" style="height: 12px; width: 25%; border-radius: 4px;"></div>
                   </div>
-                  <div class="skeleton-block" style="height: 8px; width: 100%; border-radius: 99px;"></div>
+                  <div class="skeleton-block" class="progress-track"></div>
                   
                   <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 4px;">
                     <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
@@ -584,11 +584,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div style="border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="flex-between">
                     <div class="skeleton-block" style="height: 12px; width: 40%; border-radius: 4px;"></div>
                     <div class="skeleton-block" style="height: 12px; width: 20%; border-radius: 4px;"></div>
                   </div>
-                  <div class="skeleton-block" style="height: 8px; width: 100%; border-radius: 99px;"></div>
+                  <div class="skeleton-block" class="progress-track"></div>
                 </div>
 
                 <div style="border-top: 1px solid var(--border); padding-top: 16px; display: flex; flex-direction: column; gap: 10px;">
@@ -644,18 +644,18 @@ document.addEventListener('DOMContentLoaded', () => {
           // Loading spinner animation card
           detailContainer.innerHTML = `
             <div class="card skeleton-card" style="border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 20px; position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px; min-height: 350px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="flex-between">
                 <div class="skeleton-block" style="height: 18px; width: 60%; border-radius: 6px;"></div>
                 <div class="skeleton-block" style="height: 20px; width: 20px; border-radius: 50%;"></div>
               </div>
               <div class="skeleton-block" style="height: 12px; width: 40%; border-radius: 4px; margin-top: -4px;"></div>
               
               <div style="border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="flex-between">
                   <div class="skeleton-block" style="height: 12px; width: 50%; border-radius: 4px;"></div>
                   <div class="skeleton-block" style="height: 12px; width: 25%; border-radius: 4px;"></div>
                 </div>
-                <div class="skeleton-block" style="height: 8px; width: 100%; border-radius: 99px;"></div>
+                <div class="skeleton-block" class="progress-track"></div>
                 
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 4px;">
                   <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
@@ -666,11 +666,11 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>
 
               <div style="border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="flex-between">
                   <div class="skeleton-block" style="height: 12px; width: 40%; border-radius: 4px;"></div>
                   <div class="skeleton-block" style="height: 12px; width: 20%; border-radius: 4px;"></div>
                 </div>
-                <div class="skeleton-block" style="height: 8px; width: 100%; border-radius: 99px;"></div>
+                <div class="skeleton-block" class="progress-track"></div>
               </div>
 
               <div style="border-top: 1px solid var(--border); padding-top: 16px; display: flex; flex-direction: column; gap: 10px;">

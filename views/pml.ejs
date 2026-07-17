@@ -1,4 +1,4 @@
-<%
+﻿<%
   let activeTargetPct = 25;
   let targetMonthName = '30 Juni';
   const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
@@ -97,11 +97,11 @@
                         const fW = Math.min(parseFloat(fasihPct), 100);
                         const fColor = fW >= 100 ? 'var(--accent-green)' : (fW < 25 ? 'var(--accent-red)' : 'var(--accent-purple)');
                       %>
-                      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px;">
+                      <div class="bar-label" style="font-size:10px; margin-bottom:3px;">
                         <span style="font-weight:700; color:<%= fColor %>"><%= fasihPct %>%</span>
                         <span><%= fReal.toLocaleString('id-ID') %> / <%= fTgt.toLocaleString('id-ID') %></span>
                       </div>
-                      <div style="height:5px; background:var(--bg-progress-wrap); border-radius:99px; overflow:hidden;">
+                      <div class="progress-track-sm">
                         <div class="progress-bar <%= fW >= 100 ? 'green' : (fW < 25 ? 'red' : 'purple') %>" data-width="<%= fW %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
@@ -114,11 +114,11 @@
                         const muatanW    = Math.min(parseFloat(muatanPct), 100);
                         const muatanColor = muatanW >= 100 ? 'var(--accent-green)' : (muatanW < activeTargetPct ? 'var(--accent-red)' : 'var(--accent-cyan)');
                       %>
-                      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px;">
+                      <div class="bar-label" style="font-size:10px; margin-bottom:3px;">
                         <span style="font-weight:700; color:<%= muatanColor %>"><%= muatanPct %>%</span>
                         <span><%= muatanReal.toLocaleString('id-ID') %> / <%= muatanTgt.toLocaleString('id-ID') %></span>
                       </div>
-                      <div style="height:5px; background:var(--bg-progress-wrap); border-radius:99px; overflow:hidden;">
+                      <div class="progress-track-sm">
                         <div class="progress-bar <%= muatanW >= 100 ? 'green' : (muatanW < activeTargetPct ? 'red' : 'blue') %>" data-width="<%= muatanW %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
@@ -161,7 +161,7 @@
                 %>
                 <!-- Progress FASIH -->
                 <div style="margin-bottom: 16px;">
-                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                  <div class="bar-label">
                     <span><i class="bi bi-phone"></i> Progres FASIH Tim (Submit + Approve + Reject)</span>
                     <span class="fw-bold"><%= totalFasihDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihPct %>%)</span>
                   </div>
@@ -172,7 +172,7 @@
 
                 <!-- Progress Muatan -->
                 <div style="margin-bottom: 12px;" class="muatan-col">
-                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                  <div class="bar-label">
                     <span><i class="bi bi-briefcase"></i> Progres Muatan Tim</span>
                     <span class="fw-bold"><%= totalUsaha.toLocaleString('id-ID') %> / <%= totalBeban.toLocaleString('id-ID') %> (<%= totalPct %>%)</span>
                   </div>
