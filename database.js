@@ -66,6 +66,17 @@ function runMigrations() {
 
   const appliedMigrations = db.prepare('SELECT version FROM schema_migrations').all().map(m => m.version);
 
+  // Clean up any legacy "null" string values in the uploads table to prevent false matching
+  try {
+    db.prepare("UPDATE uploads SET status_filename = NULL WHERE status_filename = 'null'").run();
+    db.prepare("UPDATE uploads SET filename = '' WHERE filename = 'null'").run();
+    db.prepare("UPDATE uploads SET stored_status_filename = NULL WHERE stored_status_filename = 'null'").run();
+    db.prepare("UPDATE uploads SET stored_filename = NULL WHERE stored_filename = 'null'").run();
+  } catch (err) {
+    logger.error('Error cleaning up legacy "null" string values in database:', err);
+  }
+
+
   const migrations = [
     {
       version: '20260710000000_init',
@@ -437,8 +448,8 @@ function getLatestUpload() {
 function getLatestUploadsDetailed() {
   try {
     const db = getDb();
-    const latestFasih = db.prepare("SELECT * FROM uploads WHERE status_filename IS NOT NULL AND status_filename != '' ORDER BY id DESC LIMIT 1").get();
-    const latestMuatan = db.prepare("SELECT * FROM uploads WHERE filename IS NOT NULL AND filename != '' ORDER BY id DESC LIMIT 1").get();
+    const latestFasih = db.prepare("SELECT * FROM uploads WHERE status_filename IS NOT NULL AND status_filename != '' AND status_filename != 'null' ORDER BY id DESC LIMIT 1").get();
+    const latestMuatan = db.prepare("SELECT * FROM uploads WHERE filename IS NOT NULL AND filename != '' AND filename != 'null' ORDER BY id DESC LIMIT 1").get();
     return {
       fasih: latestFasih || null,
       muatan: latestMuatan || null

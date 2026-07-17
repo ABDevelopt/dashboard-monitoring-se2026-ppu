@@ -3,6 +3,20 @@ const path = require('path');
 const { getDb, getSettings } = require('../database');
 const fs = require('fs');
 
+// Sanitization helpers to prevent string "null" representation in DB columns
+const safeFilename = (val) => {
+  if (!val) return '';
+  const s = String(val).trim();
+  return s.toLowerCase() === 'null' ? '' : s;
+};
+
+const safeNullableStr = (val) => {
+  if (!val) return null;
+  const s = String(val).trim();
+  return s.toLowerCase() === 'null' ? null : s;
+};
+
+
 // Load master data dari JSON (dijalankan sekali saat startup)
 function loadMasterFromJson(jsonPath) {
   const db = getDb();
@@ -267,8 +281,16 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
     }
   });
 
-  const uploadResult = uploadStmt.run(originalFilename, storedFilename, tanggal, dataRows.length, statusOriginalFilename, statusStoredFilename);
+  const uploadResult = uploadStmt.run(
+    safeFilename(originalFilename),
+    safeNullableStr(storedFilename),
+    tanggal,
+    dataRows.length,
+    safeNullableStr(statusOriginalFilename),
+    safeNullableStr(statusStoredFilename)
+  );
   const uploadId = uploadResult.lastInsertRowid;
+
 
   // Cari upload_id sebelumnya yang memiliki status data non-nol
   const prevUploadRow = db.prepare(`
@@ -409,7 +431,7 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   const uploadResult = db.prepare(`
     INSERT INTO uploads (filename, stored_filename, tanggal, total_subsls_terisi, status_filename, stored_status_filename)
     VALUES (?, ?, ?, ?, ?, ?)
-  `).run('', null, tanggal, 0, originalFilename, storedFilename);
+  `).run('', null, tanggal, 0, safeNullableStr(originalFilename), safeNullableStr(storedFilename));
   const uploadId = uploadResult.lastInsertRowid;
 
   // Find previous upload that has FASIH status data (draft/submitted/approved/rejected)
@@ -833,7 +855,14 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
     ...val
   })).filter(r => r.kode.length >= 10);
   
-  const uploadResult = uploadStmt.run(filename, null, tanggal, dataRows.length, statusOriginalFilename, statusStoredFilename);
+  const uploadResult = uploadStmt.run(
+    safeFilename(filename),
+    null,
+    tanggal,
+    dataRows.length,
+    safeNullableStr(statusOriginalFilename),
+    safeNullableStr(statusStoredFilename)
+  );
   const uploadId = uploadResult.lastInsertRowid;
   
   // Get previous upload_id
