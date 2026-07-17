@@ -3336,16 +3336,30 @@
       const latestFasihDate = <%- latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.created_at ? JSON.stringify(latestUploadsDetailed.fasih.created_at) : 'null' %>;
       const latestMuatanFile = <%- latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.filename ? JSON.stringify(latestUploadsDetailed.muatan.filename) : 'null' %>;
       const latestFasihFile = <%- latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.status_filename ? JSON.stringify(latestUploadsDetailed.fasih.status_filename) : 'null' %>;
-      const muatanWita = <%- latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.created_at ? JSON.stringify(formatWita(latestUploadsDetailed.muatan.created_at)) : 'null' %>;
-      const fasihWita = <%- latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.created_at ? JSON.stringify(formatWita(latestUploadsDetailed.fasih.created_at)) : 'null' %>;
     <% } else { %>
       const latestMuatanDate = null;
       const latestFasihDate = null;
       const latestMuatanFile = null;
       const latestFasihFile = null;
-      const muatanWita = null;
-      const fasihWita = null;
     <% } %>
+
+    // Client-side date formatter to display WITA timezone consistently
+    function formatWitaString(dateStr) {
+      if (!dateStr) return '';
+      const utcString = dateStr.endsWith('Z') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+      const date = new Date(utcString);
+      if (isNaN(date.getTime())) return dateStr;
+      
+      const witaTime = new Date(date.getTime() + (8 * 60 * 60 * 1000)); // shift UTC+8
+      const day = witaTime.getUTCDate();
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      const month = months[witaTime.getUTCMonth()];
+      const year = witaTime.getUTCFullYear();
+      const hours = String(witaTime.getUTCHours()).padStart(2, '0');
+      const minutes = String(witaTime.getUTCMinutes()).padStart(2, '0');
+      
+      return `${day} ${month} ${year}, ${hours}:${minutes} WITA`;
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
       const storedMuatan = localStorage.getItem('last_seen_muatan_date');
@@ -3364,8 +3378,9 @@
           updates.push({
             type: 'muatan',
             title: 'Data Muatan Diperbarui',
-            desc: `Data Muatan/Progres Utama baru telah di-upload pada <strong>${muatanWita}</strong>`,
-            file: latestMuatanFile
+            desc: `Data Muatan/Progres Utama baru telah di-upload pada <strong>${formatWitaString(latestMuatanDate)}</strong>`,
+            file: latestMuatanFile,
+            date: latestMuatanDate
           });
         }
         if (latestFasihDate && storedFasih !== latestFasihDate) {
@@ -3373,8 +3388,9 @@
           updates.push({
             type: 'fasih',
             title: 'Data FASIH Diperbarui',
-            desc: `Status progres FASIH baru telah di-upload pada <strong>${fasihWita}</strong>`,
-            file: latestFasihFile
+            desc: `Status progres FASIH baru telah di-upload pada <strong>${formatWitaString(latestFasihDate)}</strong>`,
+            file: latestFasihFile,
+            date: latestFasihDate
           });
         }
       }
@@ -3382,6 +3398,52 @@
       if (showNotification && updates.length > 0) {
         createToastNotification(updates);
       }
+
+      // Background Polling: check for new uploads every 60 seconds
+      setInterval(async () => {
+        try {
+          const response = await fetch('/api/latest-updates');
+          if (!response.ok) return;
+          const data = await response.json();
+
+          let hasNewUpdate = false;
+          let newUpdates = [];
+          const currentStoredMuatan = localStorage.getItem('last_seen_muatan_date');
+          const currentStoredFasih = localStorage.getItem('last_seen_fasih_date');
+
+          if (currentStoredMuatan !== null || currentStoredFasih !== null) {
+            if (data.muatan && data.muatan.created_at && currentStoredMuatan !== data.muatan.created_at) {
+              hasNewUpdate = true;
+              newUpdates.push({
+                type: 'muatan',
+                title: 'Data Muatan Diperbarui',
+                desc: `Data Muatan/Progres Utama baru telah di-upload pada <strong>${formatWitaString(data.muatan.created_at)}</strong>`,
+                file: data.muatan.filename,
+                date: data.muatan.created_at
+              });
+            }
+            if (data.fasih && data.fasih.created_at && currentStoredFasih !== data.fasih.created_at) {
+              hasNewUpdate = true;
+              newUpdates.push({
+                type: 'fasih',
+                title: 'Data FASIH Diperbarui',
+                desc: `Status progres FASIH baru telah di-upload pada <strong>${formatWitaString(data.fasih.created_at)}</strong>`,
+                file: data.fasih.status_filename,
+                date: data.fasih.created_at
+              });
+            }
+          }
+
+          if (hasNewUpdate && newUpdates.length > 0) {
+            // Remove any existing notification before creating a new one
+            const existingToast = document.querySelector('.inapp-notification-toast');
+            if (existingToast) existingToast.remove();
+            createToastNotification(newUpdates);
+          }
+        } catch (err) {
+          console.error('Error checking for updates in background:', err);
+        }
+      }, 60000);
 
       function createToastNotification(items) {
         const toast = document.createElement('div');
@@ -3441,8 +3503,13 @@
 
         const dismissToast = () => {
           toast.classList.add('hide');
-          if (latestMuatanDate) localStorage.setItem('last_seen_muatan_date', latestMuatanDate);
-          if (latestFasihDate) localStorage.setItem('last_seen_fasih_date', latestFasihDate);
+          items.forEach(item => {
+            if (item.type === 'muatan') {
+              localStorage.setItem('last_seen_muatan_date', item.date);
+            } else if (item.type === 'fasih') {
+              localStorage.setItem('last_seen_fasih_date', item.date);
+            }
+          });
           setTimeout(() => {
             toast.remove();
           }, 350);
@@ -3451,8 +3518,13 @@
         toast.querySelector('#closeNotificationBtn').addEventListener('click', dismissToast);
         toast.querySelector('#dismissNotificationBtn').addEventListener('click', dismissToast);
         toast.querySelector('#reloadPageBtn').addEventListener('click', () => {
-          if (latestMuatanDate) localStorage.setItem('last_seen_muatan_date', latestMuatanDate);
-          if (latestFasihDate) localStorage.setItem('last_seen_fasih_date', latestFasihDate);
+          items.forEach(item => {
+            if (item.type === 'muatan') {
+              localStorage.setItem('last_seen_muatan_date', item.date);
+            } else if (item.type === 'fasih') {
+              localStorage.setItem('last_seen_fasih_date', item.date);
+            }
+          });
           window.location.reload();
         });
 

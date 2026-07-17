@@ -273,5 +273,26 @@ router.post('/settings/target-mode', (req, res) => {
   }
 });
 
+// Endpoint untuk cek status update upload terbaru
+router.get('/latest-updates', (req, res) => {
+  const { getLatestUploadsDetailed } = require('../database');
+  const details = getLatestUploadsDetailed();
+  res.json({
+    muatan: details.muatan ? {
+      id: details.muatan.id,
+      created_at: details.muatan.created_at,
+      tanggal: details.muatan.tanggal,
+      filename: details.muatan.filename
+    } : null,
+    fasih: details.fasih ? {
+      id: details.fasih.id,
+      created_at: details.fasih.created_at,
+      tanggal: details.fasih.tanggal,
+      status_filename: details.fasih.status_filename
+    } : null
+  });
+});
+
 module.exports = router;
+
 
