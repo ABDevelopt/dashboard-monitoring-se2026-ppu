@@ -3061,6 +3061,11 @@
       const isInternal = href.startsWith('/') || href.startsWith(window.location.origin);
       if (!isInternal) return;
 
+      // Skip logout link
+      if (href === '/logout' || href.endsWith('/logout')) {
+        return;
+      }
+
       e.preventDefault();
       loadPage(href);
     });
