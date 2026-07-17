@@ -561,11 +561,40 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           } else {
             detailContainer.innerHTML = `
-              <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 350px; text-align: center; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 24px; position: sticky; top: 80px;">
-                <div class="spinner-border text-cyan" role="status" style="width: 2.5rem; height: 2.5rem; border-width: 3px; color: var(--accent-cyan);">
-                  <span class="visually-hidden">Loading...</span>
+              <div class="card skeleton-card" style="border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 20px; position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px; min-height: 350px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="skeleton-block" style="height: 18px; width: 60%; border-radius: 6px;"></div>
+                  <div class="skeleton-block" style="height: 20px; width: 20px; border-radius: 50%;"></div>
                 </div>
-                <div style="margin-top: 16px; font-size: 13px; color: var(--text-muted); font-weight: 500;">Menutup Detail...</div>
+                <div class="skeleton-block" style="height: 12px; width: 40%; border-radius: 4px; margin-top: -4px;"></div>
+                
+                <div style="border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="skeleton-block" style="height: 12px; width: 50%; border-radius: 4px;"></div>
+                    <div class="skeleton-block" style="height: 12px; width: 25%; border-radius: 4px;"></div>
+                  </div>
+                  <div class="skeleton-block" style="height: 8px; width: 100%; border-radius: 99px;"></div>
+                  
+                  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 4px;">
+                    <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                    <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                    <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                    <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                  </div>
+                </div>
+
+                <div style="border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="skeleton-block" style="height: 12px; width: 40%; border-radius: 4px;"></div>
+                    <div class="skeleton-block" style="height: 12px; width: 20%; border-radius: 4px;"></div>
+                  </div>
+                  <div class="skeleton-block" style="height: 8px; width: 100%; border-radius: 99px;"></div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border); padding-top: 16px; display: flex; flex-direction: column; gap: 10px;">
+                  <div class="skeleton-block" style="height: 12px; width: 50%; border-radius: 4px;"></div>
+                  <div class="skeleton-block" style="height: 120px; width: 100%; border-radius: 8px;"></div>
+                </div>
               </div>
             `;
             detailContainer.style.opacity = '1';
@@ -614,11 +643,40 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           // Loading spinner animation card
           detailContainer.innerHTML = `
-            <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 350px; text-align: center; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 24px; position: sticky; top: 80px;">
-              <div class="spinner-border text-cyan" role="status" style="width: 2.5rem; height: 2.5rem; border-width: 3px; color: var(--accent-cyan);">
-                <span class="visually-hidden">Loading...</span>
+            <div class="card skeleton-card" style="border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 20px; position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px; min-height: 350px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="skeleton-block" style="height: 18px; width: 60%; border-radius: 6px;"></div>
+                <div class="skeleton-block" style="height: 20px; width: 20px; border-radius: 50%;"></div>
               </div>
-              <div style="margin-top: 16px; font-size: 13px; color: var(--text-muted); font-weight: 500;">Memuat Rincian SLS...</div>
+              <div class="skeleton-block" style="height: 12px; width: 40%; border-radius: 4px; margin-top: -4px;"></div>
+              
+              <div style="border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="skeleton-block" style="height: 12px; width: 50%; border-radius: 4px;"></div>
+                  <div class="skeleton-block" style="height: 12px; width: 25%; border-radius: 4px;"></div>
+                </div>
+                <div class="skeleton-block" style="height: 8px; width: 100%; border-radius: 99px;"></div>
+                
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 4px;">
+                  <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                  <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                  <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                  <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                </div>
+              </div>
+
+              <div style="border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="skeleton-block" style="height: 12px; width: 40%; border-radius: 4px;"></div>
+                  <div class="skeleton-block" style="height: 12px; width: 20%; border-radius: 4px;"></div>
+                </div>
+                <div class="skeleton-block" style="height: 8px; width: 100%; border-radius: 99px;"></div>
+              </div>
+
+              <div style="border-top: 1px solid var(--border); padding-top: 16px; display: flex; flex-direction: column; gap: 10px;">
+                <div class="skeleton-block" style="height: 12px; width: 50%; border-radius: 4px;"></div>
+                <div class="skeleton-block" style="height: 120px; width: 100%; border-radius: 8px;"></div>
+              </div>
             </div>
           `;
           detailContainer.style.opacity = '1';
