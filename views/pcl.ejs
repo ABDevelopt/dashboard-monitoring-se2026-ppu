@@ -21,17 +21,17 @@
 
     <!-- FILTER BAR -->
     <div class="card">
-      <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
+      <div class="card-header section-divider">
         <div class="card-title"><i class="bi bi-search"></i> Filter Pencarian PCL</div>
         <a href="/pcl" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
       </div>
       
       <form action="/pcl" method="GET" id="filterForm">
-        <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
+        <div class="filter-form-grid auto-grid">
           
           <div>
-            <label for="filterKec" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
-            <select id="filterKec" name="kec"  style="width:100%;">
+            <label for="filterKec" class="ui-label">Kecamatan</label>
+            <select id="filterKec" name="kec" class="w-full">
               <option value="">-- Semua Kecamatan --</option>
               <% kecList.forEach(k => { %>
                 <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
@@ -40,8 +40,8 @@
           </div>
 
           <div>
-            <label for="filterKorlap" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
-            <select id="filterKorlap" name="korlap"  style="width:100%;">
+            <label for="filterKorlap" class="ui-label">Koordinator Lapangan</label>
+            <select id="filterKorlap" name="korlap" class="w-full">
               <option value="">-- Semua Korlap --</option>
               <% korlapList.forEach(k => { %>
                 <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
@@ -50,8 +50,8 @@
           </div>
 
           <div>
-            <label for="filterPml" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
-            <select id="filterPml" name="pml"  style="width:100%;">
+            <label for="filterPml" class="ui-label">PML (Pengawas)</label>
+            <select id="filterPml" name="pml" class="w-full">
               <option value="">-- Semua PML --</option>
               <% pmlList.forEach(p => { %>
                 <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
@@ -68,9 +68,9 @@
       
       <!-- PCL LIST TABLE -->
       <div class="card" style="margin-bottom: 0;">
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="card-header flex-between">
           <div class="card-title"><i class="bi bi-person-gear"></i> Progres Kinerja per PCL (Pencacah)</div>
-          <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="flex-start">
             <a href="/pcl/export-excel" class="btn btn-xs" style="background: #22c55e; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download><i class="bi bi-file-earmark-excel"></i> Export Excel Petugas</a>
             <span class="badge badge-blue"><%= pclStats.length %> PCL</span>
           </div>
@@ -85,7 +85,7 @@
             <table id="pclTable">
               <thead class="hide-sm">
                 <tr>
-                  <th rowspan="2" class="text-center" style="font-weight: 600; width: 40px;">No</th>
+                  <th rowspan="2" class="text-center th-no">No</th>
                   <th rowspan="2">Nama PCL</th>
                   <th rowspan="2" class="hide-md">PML</th>
                   <th rowspan="2" class="hide-md">Kecamatan</th>
@@ -102,7 +102,7 @@
                   <th class="text-right bg-blue-soft">Submitted</th>
                   <th class="text-right bg-red-soft">Rejected</th>
                   <th class="text-right bg-green-soft">Approved</th>
-                  <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'Tgt Dinamis' : (settings.target_fasih_mode === 'honor' ? 'Tgt Honor' : 'Tgt Statis')) %></th>
+                  <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : 'Tgt Statis' %></th>
                   <th class="bg-purple-soft" style="min-width: 160px;">Bar Progres</th>
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Realisasi</th>
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Target</th>
@@ -121,7 +121,7 @@
               </thead>
               <thead class="show-sm-table-header">
                 <tr>
-                  <th class="text-center" style="width: 40px;">No</th>
+                  <th class="text-center th-no">No</th>
                   <th>Nama PCL</th>
                   <!-- <th class="text-right">Selesai</th> -->
                   <th class="text-right bg-purple-soft" data-column-idx="9">FASIH %</th>
@@ -133,19 +133,19 @@
                   <% let fasihPct = p.fasih_pct_str; %>
                   <% let muatanPct = p.muatan_pct_str; %>
                   <tr class="<%= filterPcl === p.pcl ? 'active' : '' %>" style="<%= filterPcl === p.pcl ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
-                    <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
+                    <td class="text-center td-index"><%= index + 1 %></td>
                     <td class="td-primary">
-                      <a href="/pcl?pcl=<%= encodeURIComponent(p.pcl) %>&kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" style="color: inherit; text-decoration: none; display: inline-block;">
+                      <a href="/pcl?pcl=<%= encodeURIComponent(p.pcl) %>&kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="link-plain" style="display: inline-block;">
                         <i class="bi bi-person"></i> <%= p.pcl %>
                       </a>
                       <% if (kippPcls.includes(p.pcl.toUpperCase())) { %>
-                        <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px;">KIPP</span>
+                        <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 4px;">KIPP</span>
                       <% } %>
                     </td>
                     <td class="hide-md">
                       <%= p.pml %>
                       <% if (kippPmls.includes(p.pml.toUpperCase())) { %>
-                        <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
+                        <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 2px;">KIPP</span>
                       <% } %>
                     </td>
                     <td class="hide-md"><%= p.kecamatan %></td>
@@ -163,7 +163,7 @@
                         const fasihWPcl    = Math.min(parseFloat(fasihPct), 100);
                         const fasihColorPcl = fasihWPcl >= 100 ? 'var(--accent-green)' : (fasihWPcl < activeTargetPct ? 'var(--accent-red)' : 'var(--accent-purple)');
                       %>
-                      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px;">
+                      <div class="bar-label" style="font-size:10px; margin-bottom:3px;">
                         <span style="font-weight:700; color:<%= fasihColorPcl %>"><%= fasihPct %>%</span>
                         <span><%= fasihRealPcl.toLocaleString('id-ID') %> / <%= fasihTgtPcl.toLocaleString('id-ID') %></span>
                       </div>
@@ -180,11 +180,11 @@
                         const muatanWPcl    = Math.min(parseFloat(muatanPct), 100);
                         const muatanColorPcl = muatanWPcl >= 100 ? 'var(--accent-green)' : (muatanWPcl < activeTargetPct ? 'var(--accent-red)' : 'var(--accent-cyan)');
                       %>
-                      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px;">
+                      <div class="bar-label" style="font-size:10px; margin-bottom:3px;">
                         <span style="font-weight:700; color:<%= muatanColorPcl %>"><%= muatanPct %>%</span>
                         <span><%= muatanRealPcl.toLocaleString('id-ID') %> / <%= muatanTgtPcl.toLocaleString('id-ID') %></span>
                       </div>
-                      <div style="height:5px; background:var(--bg-progress-wrap); border-radius:99px; overflow:hidden;">
+                      <div class="progress-track-sm">
                         <div class="progress-bar <%= muatanWPcl >= 100 ? 'green' : (muatanWPcl < activeTargetPct ? 'red' : 'blue') %>" data-width="<%= muatanWPcl %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
@@ -267,6 +267,72 @@
               </tbody>
             </table>
           </div>
+
+          <%
+            let countOver40 = 0;
+            let countUnder40 = 0;
+            let totalShortfall = 0;
+
+            pclStats.forEach(p => {
+              const pct = parseFloat(p.fasih_pct_str || 0);
+              if (pct >= 40.0) {
+                countOver40++;
+              } else {
+                countUnder40++;
+                const realisasi = (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
+                const targetFasih = p.target_fasih_total || 0;
+                const target40 = Math.ceil(targetFasih * 0.4);
+                const shortfall = Math.max(0, target40 - realisasi);
+                totalShortfall += shortfall;
+              }
+            });
+          %>
+          
+          <!-- Insight Card Target 40% -->
+          <div style="margin-top: 18px; padding: 16px; border-top: 1px dashed var(--border); background: rgba(139, 92, 246, 0.03); border-radius: 8px;" class="flex-col gap-3">
+            <div class="flex-start ui-subtitle" style="font-weight: 700;">
+              <i class="bi bi-lightbulb-fill" style="color: var(--accent-yellow);"></i> Analisis Insight Kinerja (Batas Target 40% FASIH)
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+              <!-- Stat 1: Mencapai Target -->
+              <div style="background: var(--bg-primary); border-radius: 6px; padding: 12px; text-align: left;" class="info-panel-sm flex-col gap-2">
+                <span class="ui-label fw-500">Sudah Mencapai &ge; 40%</span>
+                <span class="ui-value text-green"><%= countOver40 %> <span class="text-sm fw-500 text-secondary">Petugas</span></span>
+                <span class="text-xs text-muted"><%= ((countOver40 / pclStats.length) * 100).toFixed(1) %>% dari total petugas</span>
+              </div>
+
+              <!-- Stat 2: Belum Mencapai Target -->
+              <div style="background: var(--bg-primary); border-radius: 6px; padding: 12px; text-align: left;" class="info-panel-sm flex-col gap-2">
+                <span class="ui-label fw-500">Belum Mencapai &lt; 40%</span>
+                <span class="ui-value text-red"><%= countUnder40 %> <span class="text-sm fw-500 text-secondary">Petugas</span></span>
+                <span class="text-xs text-muted"><%= ((countUnder40 / pclStats.length) * 100).toFixed(1) %>% dari total petugas</span>
+              </div>
+
+              <!-- Stat 3: Kekurangan Dokumen -->
+              <div style="background: var(--bg-primary); border-radius: 6px; padding: 12px; text-align: left;" class="info-panel-sm flex-col gap-2">
+                <span class="ui-label fw-500">Total Kekurangan Progres</span>
+                <span class="ui-value text-purple"><%= totalShortfall.toLocaleString('id-ID') %> <span class="text-sm fw-500 text-secondary">Dokumen</span></span>
+                <span class="text-xs text-muted">Kumulatif dari <%= countUnder40 %> petugas</span>
+              </div>
+            </div>
+
+            <% if (countUnder40 > 0) { %>
+              <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 6px; padding: 10px; display: flex; align-items: start; gap: 8px; text-align: left;">
+                <i class="bi bi-info-circle-fill" style="color: var(--accent-red); margin-top: 1px; flex-shrink: 0;"></i>
+                <div>
+                  Rata-rata kekurangan dokumen per petugas yang belum mencapai target adalah <strong><%= Math.ceil(totalShortfall / countUnder40) %> dokumen</strong>. Hubungi PCL terkait untuk segera melakukan pengiriman/upload data agar target minimal alokasi 40% terpenuhi.
+                </div>
+              </div>
+            <% } else { %>
+              <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; background: rgba(34, 197, 94, 0.04); border: 1px solid rgba(34, 197, 94, 0.15); border-radius: 6px; padding: 10px; display: flex; align-items: start; gap: 8px; text-align: left;">
+                <i class="bi bi-check-circle-fill" style="color: var(--accent-green); margin-top: 1px; flex-shrink: 0;"></i>
+                <div>
+                  Luar biasa! Seluruh petugas PCL telah berhasil melampaui target minimal 40% progres FASIH.
+                </div>
+              </div>
+            <% } %>
+          </div>
         <% } else { %>
           <div class="no-data">Tidak ada PCL yang cocok dengan filter.</div>
         <% } %>
@@ -276,17 +342,17 @@
       <div id="pclDetailContainer">
         <% if (filterPcl) { %>
           <div class="card" id="pclDetailCard" style="margin-bottom: 0; position: sticky; top: 80px;">
-            <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
-              <div class="card-title" style="margin-bottom: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+            <div class="card-header flex-between">
+              <div class="card-title mb-0 flex-start" style="flex-wrap: wrap; gap: 4px;">
                 <i class="bi bi-search"></i> Rincian Tugas SLS: <mark class="highlight-name"><%= filterPcl %></mark>
                 <button class="pin-btn" data-type="pcl" data-name="<%= filterPcl %>" data-href="/pcl?pcl=<%= encodeURIComponent(filterPcl) %>" title="Sematkan Petugas ke Favorit" onclick="window.togglePin('pcl', '<%= filterPcl %>', '/pcl?pcl=<%= encodeURIComponent(filterPcl) %>')">
                   <i class="bi bi-star"></i>
                 </button>
                 <% if (kippPcls.includes(filterPcl.toUpperCase())) { %>
-                  <span class="badge badge-orange" style="padding: 2px 5px; font-size: 9px; vertical-align: middle; margin-left: 6px;">KIPP</span>
+                  <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 6px;">KIPP</span>
                 <% } %>
               </div>
-              <div style="display: flex; gap: 6px; align-items: center; margin-left: auto;">
+              <div class="flex-start" style="gap: 6px; margin-left: auto;">
                 <button onclick="window.shareElementAsImage('pclDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
                 <button onclick="window.copyElementAsImage('pclDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
                 <a href="/pcl?kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="btn btn-secondary btn-xs" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
@@ -295,9 +361,9 @@
 
             <% if (detailSubsls && detailSubsls.length > 0) { %>
               <div class="mb-4">
-                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
-                  PML: <strong><%= detailSubsls[0].pml %></strong><% if (kippPmls.includes(detailSubsls[0].pml.toUpperCase())) { %> <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle;">KIPP</span><% } %> · 
-                  Korlap: <strong><%= detailSubsls[0].korlap %></strong><% if (kippKorlaps.includes(detailSubsls[0].korlap.toUpperCase())) { %> <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle;">KIPP</span><% } %>
+                <div class="text-base text-secondary mb-2">
+                  PML: <strong><%= detailSubsls[0].pml %></strong><% if (kippPmls.includes(detailSubsls[0].pml.toUpperCase())) { %> <span class="badge badge-orange badge-xs" style="vertical-align: middle;">KIPP</span><% } %> · 
+                  Korlap: <strong><%= detailSubsls[0].korlap %></strong><% if (kippKorlaps.includes(detailSubsls[0].korlap.toUpperCase())) { %> <span class="badge badge-orange badge-xs" style="vertical-align: middle;">KIPP</span><% } %>
                 </div>
                 <% 
                   let doneMuatan = selectedPclStats ? (selectedPclStats.muatan_selesai !== undefined ? selectedPclStats.muatan_selesai : (selectedPclStats.usaha_total + selectedPclStats.keluarga_total)) : 0;
@@ -314,8 +380,8 @@
                   let approvedFasih = selectedPclStats ? (selectedPclStats.approved_total || 0) : 0;
                 %>
                 <!-- Progress FASIH -->
-                <div style="margin-bottom: 12px;">
-                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                <div class="mb-3">
+                  <div class="bar-label">
                     <span><i class="bi bi-phone"></i> Progres FASIH (Submit + Approve + Reject)</span>
                     <span class="fw-bold"><%= doneFasih.toLocaleString('id-ID') %> / <%= totalFasih.toLocaleString('id-ID') %> (<%= fasihPct %>%)</span>
                   </div>
@@ -337,8 +403,8 @@
                 </div>
 
                 <!-- Progress Muatan -->
-                <div style="margin-bottom: 12px;" class="muatan-col">
-                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                <div class="mb-3 muatan-col">
+                  <div class="bar-label">
                     <span><i class="bi bi-briefcase"></i> Progres Muatan</span>
                     <span class="fw-bold"><%= doneMuatan.toLocaleString('id-ID') %> / <%= totalMuatan.toLocaleString('id-ID') %> (<%= donePct %>%)</span>
                   </div>
@@ -379,61 +445,13 @@
                   </div>
                 </div>
 
-                <!-- Mini Grid Status Keberadaan Usaha -->
-                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 16px; margin-bottom: 8px;">
-                  <i class="bi bi-shop"></i> Detail Temuan Keberadaan Usaha
-                </div>
-                <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; text-align: center;">
-                  <div class="fasih-grid-item" style="background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.2); padding: 6px 4px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 9px; color: var(--accent-green); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Ditemukan</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_ditemukan_total || 0 %></div>
+                <!-- Daily Progress Chart -->
+                <div style="margin-top: 20px; margin-bottom: 20px; border-top: 1px solid var(--border); padding-top: 16px; margin-left: -20px; margin-right: -20px;">
+                  <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; padding-left: 20px; padding-right: 20px;">
+                    <i class="bi bi-graph-up"></i> Tren Progres Harian (FASIH)
                   </div>
-                  <div class="fasih-grid-item" style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); padding: 6px 4px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 9px; color: var(--accent-blue); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Baru</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_baru_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); padding: 6px 4px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-red); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Tdk Ditemukan</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_tidak_ditemukan_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); padding: 6px 4px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 9px; color: var(--accent-yellow); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Tutup</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_tutup_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2); padding: 6px 4px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 9px; color: var(--accent-purple); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Ganda</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_ganda_total || 0 %></div>
-                  </div>
-                </div>
-
-                <!-- Mini Grid Status Keberadaan Keluarga -->
-                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 16px; margin-bottom: 8px;">
-                  <i class="bi bi-people-fill"></i> Detail Temuan Keberadaan Keluarga
-                </div>
-                <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; text-align: center;">
-                  <div class="fasih-grid-item" style="background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.2); padding: 6px 2px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-green); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Ditemukan</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_ditemukan_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); padding: 6px 2px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-blue); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Klg Baru</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_baru_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); padding: 6px 2px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-red); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Tdk Ditemukan</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_tidak_ditemukan_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); padding: 6px 2px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-yellow); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Meninggal</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_meninggal_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(156,163,175,0.06); border: 1px solid rgba(156,163,175,0.2); padding: 6px 2px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Tdk Eligible</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_tidak_eligible_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2); padding: 6px 2px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-purple); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Tdk Ditemui</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_tidak_dapat_ditemui_total || 0 %></div>
+                  <div style="height: 180px; position: relative; width: 100%; padding-left: 10px; padding-right: 10px;">
+                    <canvas id="pclHistoryChartCanvas"></canvas>
                   </div>
                 </div>
 
@@ -500,13 +518,61 @@
                   </div>
                 </div>
 
-                <!-- Daily Progress Chart -->
-                <div style="margin-top: 20px; margin-bottom: 20px; border-top: 1px solid var(--border); padding-top: 16px; margin-left: -20px; margin-right: -20px;">
-                  <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; padding-left: 20px; padding-right: 20px;">
-                    <i class="bi bi-graph-up"></i> Tren Progres Harian (FASIH)
+                <!-- Mini Grid Status Keberadaan Usaha -->
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 20px; margin-bottom: 8px; border-top: 1px solid var(--border); padding-top: 16px;">
+                  <i class="bi bi-shop"></i> Detail Temuan Keberadaan Usaha
+                </div>
+                <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; text-align: center;">
+                  <div class="fasih-grid-item" style="background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.2); padding: 6px 4px; border-radius: 6px;">
+                    <div class="fasih-grid-item-label" style="font-size: 9px; color: var(--accent-green); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Ditemukan</div>
+                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_ditemukan_total || 0 %></div>
                   </div>
-                  <div style="height: 180px; position: relative; width: 100%; padding-left: 10px; padding-right: 10px;">
-                    <canvas id="pclHistoryChartCanvas"></canvas>
+                  <div class="fasih-grid-item" style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); padding: 6px 4px; border-radius: 6px;">
+                    <div class="fasih-grid-item-label" style="font-size: 9px; color: var(--accent-blue); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Baru</div>
+                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_baru_total || 0 %></div>
+                  </div>
+                  <div class="fasih-grid-item" style="background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); padding: 6px 4px; border-radius: 6px;">
+                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-red); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Tdk Ditemukan</div>
+                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_tidak_ditemukan_total || 0 %></div>
+                  </div>
+                  <div class="fasih-grid-item" style="background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); padding: 6px 4px; border-radius: 6px;">
+                    <div class="fasih-grid-item-label" style="font-size: 9px; color: var(--accent-yellow); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Tutup</div>
+                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_tutup_total || 0 %></div>
+                  </div>
+                  <div class="fasih-grid-item" style="background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2); padding: 6px 4px; border-radius: 6px;">
+                    <div class="fasih-grid-item-label" style="font-size: 9px; color: var(--accent-purple); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Ganda</div>
+                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_ganda_total || 0 %></div>
+                  </div>
+                </div>
+
+                <!-- Mini Grid Status Keberadaan Keluarga -->
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 16px; margin-bottom: 8px;">
+                  <i class="bi bi-people-fill"></i> Detail Temuan Keberadaan Keluarga
+                </div>
+                <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; text-align: center;">
+                  <div class="fasih-grid-item" style="background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.2); padding: 6px 2px; border-radius: 6px;">
+                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-green); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Ditemukan</div>
+                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_ditemukan_total || 0 %></div>
+                  </div>
+                  <div class="fasih-grid-item" style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); padding: 6px 2px; border-radius: 6px;">
+                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-blue); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Klg Baru</div>
+                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_baru_total || 0 %></div>
+                  </div>
+                  <div class="fasih-grid-item" style="background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); padding: 6px 2px; border-radius: 6px;">
+                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-red); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Tdk Ditemukan</div>
+                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_tidak_ditemukan_total || 0 %></div>
+                  </div>
+                  <div class="fasih-grid-item" style="background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); padding: 6px 2px; border-radius: 6px;">
+                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-yellow); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Meninggal</div>
+                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_meninggal_total || 0 %></div>
+                  </div>
+                  <div class="fasih-grid-item" style="background: rgba(156,163,175,0.06); border: 1px solid rgba(156,163,175,0.2); padding: 6px 2px; border-radius: 6px;">
+                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Tdk Eligible</div>
+                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_tidak_eligible_total || 0 %></div>
+                  </div>
+                  <div class="fasih-grid-item" style="background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2); padding: 6px 2px; border-radius: 6px;">
+                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-purple); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Tdk Ditemui</div>
+                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_tidak_dapat_ditemui_total || 0 %></div>
                   </div>
                 </div>
 
@@ -688,11 +754,40 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           } else {
             detailContainer.innerHTML = `
-              <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 350px; text-align: center; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 24px; position: sticky; top: 80px;">
-                <div class="spinner-border text-cyan" role="status" style="width: 2.5rem; height: 2.5rem; border-width: 3px; color: var(--accent-cyan);">
-                  <span class="visually-hidden">Loading...</span>
+              <div class="card skeleton-card" style="border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 20px; position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px; min-height: 350px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="skeleton-block" style="height: 18px; width: 60%; border-radius: 6px;"></div>
+                  <div class="skeleton-block" style="height: 20px; width: 20px; border-radius: 50%;"></div>
                 </div>
-                <div style="margin-top: 16px; font-size: 13px; color: var(--text-muted); font-weight: 500;">Menutup Detail...</div>
+                <div class="skeleton-block" style="height: 12px; width: 40%; border-radius: 4px; margin-top: -4px;"></div>
+                
+                <div style="border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="skeleton-block" style="height: 12px; width: 50%; border-radius: 4px;"></div>
+                    <div class="skeleton-block" style="height: 12px; width: 25%; border-radius: 4px;"></div>
+                  </div>
+                  <div class="skeleton-block" style="height: 8px; width: 100%; border-radius: 99px;"></div>
+                  
+                  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 4px;">
+                    <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                    <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                    <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                    <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                  </div>
+                </div>
+
+                <div style="border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="skeleton-block" style="height: 12px; width: 40%; border-radius: 4px;"></div>
+                    <div class="skeleton-block" style="height: 12px; width: 20%; border-radius: 4px;"></div>
+                  </div>
+                  <div class="skeleton-block" style="height: 8px; width: 100%; border-radius: 99px;"></div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border); padding-top: 16px; display: flex; flex-direction: column; gap: 10px;">
+                  <div class="skeleton-block" style="height: 12px; width: 50%; border-radius: 4px;"></div>
+                  <div class="skeleton-block" style="height: 120px; width: 100%; border-radius: 8px;"></div>
+                </div>
               </div>
             `;
             detailContainer.style.opacity = '1';
@@ -741,11 +836,40 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           // Loading spinner animation card
           detailContainer.innerHTML = `
-            <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 350px; text-align: center; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 24px; position: sticky; top: 80px;">
-              <div class="spinner-border text-cyan" role="status" style="width: 2.5rem; height: 2.5rem; border-width: 3px; color: var(--accent-cyan);">
-                <span class="visually-hidden">Loading...</span>
+            <div class="card skeleton-card" style="border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 20px; position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px; min-height: 350px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="skeleton-block" style="height: 18px; width: 60%; border-radius: 6px;"></div>
+                <div class="skeleton-block" style="height: 20px; width: 20px; border-radius: 50%;"></div>
               </div>
-              <div style="margin-top: 16px; font-size: 13px; color: var(--text-muted); font-weight: 500;">Memuat Rincian Tugas...</div>
+              <div class="skeleton-block" style="height: 12px; width: 40%; border-radius: 4px; margin-top: -4px;"></div>
+              
+              <div style="border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="skeleton-block" style="height: 12px; width: 50%; border-radius: 4px;"></div>
+                  <div class="skeleton-block" style="height: 12px; width: 25%; border-radius: 4px;"></div>
+                </div>
+                <div class="skeleton-block" style="height: 8px; width: 100%; border-radius: 99px;"></div>
+                
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 4px;">
+                  <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                  <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                  <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                  <div class="skeleton-block" style="height: 38px; border-radius: 6px;"></div>
+                </div>
+              </div>
+
+              <div style="border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="skeleton-block" style="height: 12px; width: 40%; border-radius: 4px;"></div>
+                  <div class="skeleton-block" style="height: 12px; width: 20%; border-radius: 4px;"></div>
+                </div>
+                <div class="skeleton-block" style="height: 8px; width: 100%; border-radius: 99px;"></div>
+              </div>
+
+              <div style="border-top: 1px solid var(--border); padding-top: 16px; display: flex; flex-direction: column; gap: 10px;">
+                <div class="skeleton-block" style="height: 12px; width: 50%; border-radius: 4px;"></div>
+                <div class="skeleton-block" style="height: 120px; width: 100%; border-radius: 8px;"></div>
+              </div>
             </div>
           `;
           detailContainer.style.opacity = '1';

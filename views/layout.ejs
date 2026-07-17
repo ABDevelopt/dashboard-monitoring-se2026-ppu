@@ -119,7 +119,7 @@
           <i class="bi bi-box-seam" style="color: var(--accent-cyan);"></i> Update Muatan
         </span>
         <span style="color: var(--text-primary); font-weight: 500; padding-left: 14px;">
-          <%= latestUploadsDetailed.muatan.created_at ? (new Date(latestUploadsDetailed.muatan.created_at + 'Z').toLocaleString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit' }) + ' WITA') : latestUploadsDetailed.muatan.tanggal %>
+          <%= latestUploadsDetailed.muatan.created_at ? formatWita(latestUploadsDetailed.muatan.created_at) : latestUploadsDetailed.muatan.tanggal %>
         </span>
       </div>
     <% } %>
@@ -129,7 +129,7 @@
           <i class="bi bi-phone" style="color: var(--accent-purple);"></i> Update FASIH
         </span>
         <span style="color: var(--text-primary); font-weight: 500; padding-left: 14px;">
-          <%= latestUploadsDetailed.fasih.created_at ? (new Date(latestUploadsDetailed.fasih.created_at + 'Z').toLocaleString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit' }) + ' WITA') : latestUploadsDetailed.fasih.tanggal %>
+          <%= latestUploadsDetailed.fasih.created_at ? formatWita(latestUploadsDetailed.fasih.created_at) : latestUploadsDetailed.fasih.tanggal %>
         </span>
       </div>
     <% } %>
@@ -417,12 +417,30 @@
         <i class="bi bi-search"></i>
         <span class="search-hotkey-hint" style="font-size: 10px; opacity: 0.6; display: inline-block; background: var(--bg-primary); padding: 1px 4px; border-radius: 4px; border: 1px solid var(--border); font-family: inherit;">Ctrl K</span>
       </button>
+
+      <!-- Notification Bell -->
+      <div class="notification-bell-wrapper" style="position: relative; display: inline-block;">
+        <button class="btn btn-secondary" id="notificationBellBtn" title="Notifikasi Update Data" aria-label="Notifikasi Update Data" style="padding: 8px 12px; min-width: auto; gap: 6px; display: inline-flex; align-items: center; position: relative; height: 35px; border-radius: 8px;">
+          <i class="bi bi-bell-fill" id="notificationBellIcon" style="color: var(--text-muted); transition: color 0.3s; font-size: 14px;"></i>
+          <span id="notificationBellBadge" style="display: none; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; background-color: #ef4444; border: 2px solid var(--bg-card); border-radius: 50%; animation: pulse-badge 1.5s infinite;"></span>
+        </button>
+        <div id="notificationBellDropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2); z-index: 1050; width: 280px; padding: 12px; flex-direction: column; gap: 10px; text-align: left;">
+          <div style="font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 4px;">
+            <span>Riwayat Update Data</span>
+            <span id="clearNotificationBadge" style="font-size: 9px; text-transform: none; cursor: pointer; color: var(--accent-cyan); display: none; font-weight: 600; text-decoration: underline;">Tandai Terbaca</span>
+          </div>
+          <div id="notificationBellList" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; padding-right: 2px;">
+            <!-- content injected by JS -->
+          </div>
+        </div>
+      </div>
+
       <!-- Target Mode Selectors Dropdown -->
       <div class="target-selector-wrapper" style="position: relative; display: inline-block;">
         <button class="btn btn-secondary" id="targetSelectorBtn" title="Ubah Mode Target" aria-label="Ubah Mode Target" style="padding: 8px 12px; min-width: auto; gap: 6px; display: inline-flex; align-items: center;">
           <i class="bi bi-bullseye" style="color: var(--accent-purple);"></i>
           <span style="font-size: 11px; font-weight: 600;">
-            Target: <%= settings.target_fasih_mode === 'fasih-sm' ? 'FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'Dinamis' : 'Statis') %>
+            Target: <%= settings.target_fasih_mode === 'fasih-sm' ? 'FASIH-SM' : 'Statis' %>
           </span>
           <i class="bi bi-chevron-down" style="font-size: 9px; opacity: 0.7;"></i>
         </button>
@@ -434,8 +452,7 @@
             </div>
             <select id="publicTargetFasihMode" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: 12px; font-weight: 500; cursor: pointer; outline: none;">
               <option value="static" <%= settings.target_fasih_mode === 'static' || !settings.target_fasih_mode ? 'selected' : '' %>>Statis (Prelist)</option>
-              <option value="dynamic" <%= settings.target_fasih_mode === 'dynamic' ? 'selected' : '' %>>Dinamis (Temuan)</option>
-              <option value="fasih-sm" <%= settings.target_fasih_mode === 'fasih-sm' ? 'selected' : '' %>>FASIH-SM (Upload)</option>
+              <option value="fasih-sm" <%= settings.target_fasih_mode === 'fasih-sm' ? 'selected' : '' %>>FASIH-SM</option>
             </select>
           </div>
           
@@ -581,10 +598,10 @@
 
   // Live Date, Time and Weather Widget Logic
   function updateTime() {
-    const optionsDate = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    const optionsDate = { timeZone: 'Asia/Makassar', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
     const now = new Date();
     const dateStr = now.toLocaleDateString('id-ID', optionsDate);
-    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' WITA';
+    const timeStr = now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' WITA';
     
     // Topbar elements
     const liveTimeEl = document.getElementById('liveTime');
@@ -2787,33 +2804,8 @@
     }
 
     // PJAX router for seamless AJAX page transitions without reloading the sidebar
-    function isGoingBack(targetUrl) {
-      const currentPath = window.location.pathname;
-      const targetPath = new URL(targetUrl, window.location.origin).pathname;
-      
-      if (targetPath === '/' && currentPath !== '/') return true;
-      
-      const currentDepth = currentPath.split('/').filter(Boolean).length;
-      const targetDepth = targetPath.split('/').filter(Boolean).length;
-      if (targetDepth < currentDepth) return true;
-      
-      if (currentPath === targetPath) {
-        const currentParams = new URLSearchParams(window.location.search);
-        const targetParams = new URLSearchParams(new URL(targetUrl, window.location.origin).search);
-        if (targetParams.toString() === '' && currentParams.toString() !== '') return true;
-        
-        if (currentParams.has('pcl') && !targetParams.has('pcl')) return true;
-        if (currentParams.has('pml') && !targetParams.has('pml')) return true;
-        if (currentParams.has('korlap') && !targetParams.has('korlap')) return true;
-        if (currentParams.has('kec') && !targetParams.has('kec')) return true;
-      }
-      return false;
-    }
-
-    // PJAX router for seamless AJAX page transitions without reloading the sidebar
     async function loadPage(url, pushState = true) {
       const oldContent = document.getElementById('pjax-container');
-      const isBack = isGoingBack(url);
 
       const loader = document.getElementById('topLoadingBar');
       if (loader) {
@@ -2826,37 +2818,20 @@
       if (overlay) overlay.classList.add('active');
 
       try {
-      // Play exit transition
-      if (oldContent) {
-        oldContent.className = isBack ? 'pjax-exit-back' : 'pjax-exit';
-      }
-
-      // Parallel fetch and anim wait
-      const fetchPromise = fetch(url).then(async (response) => {
-        if (!response.ok) return null;
-        const htmlText = await response.text();
-        const parser = new DOMParser();
-        return parser.parseFromString(htmlText, 'text/html');
-      }).catch(() => null);
-
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      let targetDoc = await fetchPromise;
-
-      if (!oldContent) {
+      // Fetch target page
+      const response = await fetch(url);
+      if (!response.ok) {
         window.location.href = url;
         return;
       }
 
-      // Always show skeleton immediately so desktop gets visual feedback too
-      oldContent.className = isBack ? 'pjax-enter-back' : 'pjax-enter';
-      oldContent.innerHTML = getSkeletonHTML(url);
-      void oldContent.offsetWidth; // trigger reflow
-      oldContent.className = ''; // slide in
+      const htmlText = await response.text();
+      const parser = new DOMParser();
+      const targetDoc = parser.parseFromString(htmlText, 'text/html');
 
-      // If fetch hasn't returned yet, wait for it
-      if (!targetDoc) {
-        targetDoc = await fetchPromise;
+      if (!oldContent) {
+        window.location.href = url;
+        return;
       }
 
       if (targetDoc) {
@@ -2869,12 +2844,8 @@
             window._pjaxCleanups = [];
           }
 
-          // Small delay so skeleton is visible briefly even on fast connections
-          await new Promise(resolve => setTimeout(resolve, 120));
-          oldContent.style.opacity = '0';
-          await new Promise(resolve => setTimeout(resolve, 80));
+          // Swap content immediately with no delays, fades, or class changes
           oldContent.innerHTML = newContent.innerHTML;
-          oldContent.style.opacity = '1';
         } else {
           window.location.href = url;
           return;
@@ -3313,6 +3284,528 @@
       }
     });
   });
+</script>
+
+<!-- IN-APP NOTIFICATION SYSTEM -->
+<style>
+  /* In-app Notification styling */
+  .inapp-notification-toast {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 360px;
+    max-width: 100%;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    animation: toast-slide-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-sizing: border-box;
+  }
+
+  .inapp-notification-toast.hide {
+    animation: toast-slide-out 0.3s ease forwards;
+  }
+
+  @keyframes toast-slide-in {
+    from { transform: translateY(24px) scale(0.95); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+  }
+
+  @keyframes toast-slide-out {
+    from { transform: translateY(0) scale(1); opacity: 1; }
+    to { transform: translateY(16px) scale(0.95); opacity: 0; }
+  }
+
+  @media (max-width: 768px) {
+    .inapp-notification-toast {
+      bottom: 84px; /* safe distance from mobile bottom navigation bar */
+      left: 16px;
+      right: 16px;
+      width: auto;
+      /* Avoid slide transitions on mobile to follow user preference */
+      animation: toast-fade-in 0.25s ease-out;
+    }
+    .inapp-notification-toast.hide {
+      animation: toast-fade-out 0.2s ease-out forwards;
+    }
+  }
+
+  @keyframes toast-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes toast-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  @keyframes pulse-badge {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(239, 68, 68, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  }
+</style>
+
+
+<script>
+  (function() {
+    <% if (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed) { %>
+      const latestMuatanDate = <%- latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.created_at ? JSON.stringify(latestUploadsDetailed.muatan.created_at) : 'null' %>;
+      const latestFasihDate = <%- latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.created_at ? JSON.stringify(latestUploadsDetailed.fasih.created_at) : 'null' %>;
+      const latestMuatanFile = <%- latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.filename ? JSON.stringify(latestUploadsDetailed.muatan.filename) : 'null' %>;
+      const latestFasihFile = <%- latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.status_filename ? JSON.stringify(latestUploadsDetailed.fasih.status_filename) : 'null' %>;
+    <% } else { %>
+      const latestMuatanDate = null;
+      const latestFasihDate = null;
+      const latestMuatanFile = null;
+      const latestFasihFile = null;
+    <% } %>
+
+    // Client-side date formatter to display WITA timezone consistently
+    function formatWitaString(dateStr) {
+      if (!dateStr) return '';
+      const utcString = dateStr.endsWith('Z') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
+      const date = new Date(utcString);
+      if (isNaN(date.getTime())) return dateStr;
+      
+      const witaTime = new Date(date.getTime() + (8 * 60 * 60 * 1000)); // shift UTC+8
+      const day = witaTime.getUTCDate();
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      const month = months[witaTime.getUTCMonth()];
+      const year = witaTime.getUTCFullYear();
+      const hours = String(witaTime.getUTCHours()).padStart(2, '0');
+      const minutes = String(witaTime.getUTCMinutes()).padStart(2, '0');
+      
+      return `${day} ${month} ${year}, ${hours}:${minutes} WITA`;
+    }
+
+    function checkEarlyWarningSummary() {
+      fetch('/api/early-warning-summary')
+        .then(res => res.json())
+        .then(data => {
+          if (!data.success) return;
+          
+          const totalWarnings = data.zero_pcl_count + data.slow_pcl_count + data.zero_pml_count + data.stagnan_pcl_count + data.low_projected_pcl_count;
+          if (totalWarnings === 0) return;
+
+          const currentSig = `zeroPcl:${data.zero_pcl_count}_slow:${data.slow_pcl_count}_zeroPml:${data.zero_pml_count}_stagnan:${data.stagnan_pcl_count}_lowProj:${data.low_projected_pcl_count}`;
+          const lastSeenSig = localStorage.getItem('last_seen_ew_summary_signature');
+          
+          if (lastSeenSig === currentSig) {
+            return;
+          }
+
+          showEarlyWarningModal(data, currentSig);
+        })
+        .catch(err => console.error('Error fetching early warning summary:', err));
+    }
+
+    function showEarlyWarningModal(data, sig) {
+      const existing = document.getElementById('earlyWarningSummaryModal');
+      if (existing) existing.remove();
+
+      const modalHtml = `
+        <div id="earlyWarningSummaryModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.4); animation: fadeInEwModal 0.2s ease;">
+          <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 440px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 24px; position: relative; animation: slideInEwModal 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            
+            <!-- Header -->
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
+              <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-red); font-size: 20px; flex-shrink: 0; animation: pulseRed 2s infinite;">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+              </div>
+              <div style="text-align: left;">
+                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary);">Peringatan Dini Kinerja Petugas</h3>
+                <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Ringkasan performa kritis per ${formatWitaString(data.latest_upload_date)}</p>
+              </div>
+            </div>
+
+            <!-- Grid of metrics -->
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+              \${data.zero_pcl_count > 0 ? `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(239, 68, 68, 0.05); border-left: 3px solid var(--accent-red); border-radius: 4px;">
+                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-person-x"></i> PCL Tanpa Progres</span>
+                  <span class="badge badge-red" style="font-weight: 700;">\${data.zero_pcl_count} Petugas</span>
+                </div>
+              ` : ''}
+
+              \${data.zero_pml_count > 0 ? `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(239, 68, 68, 0.05); border-left: 3px solid var(--accent-red); border-radius: 4px;">
+                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-person-badge"></i> PML Tanpa Progres</span>
+                  <span class="badge badge-red" style="font-weight: 700;">\${data.zero_pml_count} Pengawas</span>
+                </div>
+              ` : ''}
+
+              \${data.stagnan_pcl_count > 0 ? `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(251, 191, 36, 0.05); border-left: 3px solid var(--accent-yellow); border-radius: 4px;">
+                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-clock-history"></i> PCL Stagnan (2 Hari)</span>
+                  <span class="badge badge-yellow" style="font-weight: 700;">\${data.stagnan_pcl_count} Petugas</span>
+                </div>
+              ` : ''}
+
+              \${data.slow_pcl_count > 0 ? `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(59, 130, 246, 0.05); border-left: 3px solid var(--accent-blue); border-radius: 4px;">
+                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-speedometer"></i> PCL Sangat Lambat</span>
+                  <span class="badge badge-blue" style="font-weight: 700;">\${data.slow_pcl_count} Petugas</span>
+                </div>
+              ` : ''}
+
+              \${data.low_projected_pcl_count > 0 ? `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(167, 139, 250, 0.05); border-left: 3px solid var(--accent-purple); border-radius: 4px;">
+                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-graph-down"></i> PCL Risiko Tinggi Terlambat</span>
+                  <span class="badge badge-purple" style="font-weight: 700;">\${data.low_projected_pcl_count} Petugas</span>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Warning Info Text -->
+            <p style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 24px; text-align: left;">
+              Terdapat beberapa petugas lapangan dan pengawas yang memerlukan bimbingan khusus karena tidak menunjukkan aktivitas pengisian atau berisiko tinggi gagal menyelesaikan target sebelum tenggat waktu.
+            </p>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              <button id="dismissEwModal" class="btn btn-secondary" style="font-size: 12px; padding: 8px 16px;">Abaikan</button>
+              <a href="/earlywarning" id="viewEwModal" class="btn btn-primary" style="font-size: 12px; padding: 8px 16px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="bi bi-arrow-right-circle"></i> Lihat Rincian
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (!document.getElementById('ewModalStyles')) {
+        const styleEl = document.createElement('style');
+        styleEl.id = 'ewModalStyles';
+        styleEl.innerHTML = `
+          @keyframes fadeInEwModal {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes slideInEwModal {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+          @keyframes pulseRed {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+          }
+        `;
+        document.head.appendChild(styleEl);
+      }
+
+      const div = document.createElement('div');
+      div.innerHTML = modalHtml;
+      const modalElement = div.firstElementChild;
+      document.body.appendChild(modalElement);
+
+      const dismissBtn = modalElement.querySelector('#dismissEwModal');
+      const viewBtn = modalElement.querySelector('#viewEwModal');
+
+      const closeModal = () => {
+        localStorage.setItem('last_seen_ew_summary_signature', sig);
+        modalElement.style.animation = 'fadeInEwModal 0.2s ease reverse';
+        setTimeout(() => modalElement.remove(), 180);
+      };
+
+      dismissBtn.addEventListener('click', closeModal);
+      viewBtn.addEventListener('click', closeModal);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      checkEarlyWarningSummary();
+      const storedMuatan = localStorage.getItem('last_seen_muatan_date');
+      const storedFasih = localStorage.getItem('last_seen_fasih_date');
+
+      let showNotification = false;
+      let updates = [];
+
+      if (storedMuatan === null && storedFasih === null) {
+        // First visit: initialize silently to avoid spamming the welcome toast
+        if (latestMuatanDate) localStorage.setItem('last_seen_muatan_date', latestMuatanDate);
+        if (latestFasihDate) localStorage.setItem('last_seen_fasih_date', latestFasihDate);
+      } else {
+        if (latestMuatanDate && storedMuatan !== latestMuatanDate) {
+          showNotification = true;
+          updates.push({
+            type: 'muatan',
+            title: 'Data Muatan Diperbarui',
+            desc: `Data Muatan/Progres Utama baru telah di-upload pada <strong>${formatWitaString(latestMuatanDate)}</strong>`,
+            file: latestMuatanFile,
+            date: latestMuatanDate
+          });
+        }
+        if (latestFasihDate && storedFasih !== latestFasihDate) {
+          showNotification = true;
+          updates.push({
+            type: 'fasih',
+            title: 'Data FASIH Diperbarui',
+            desc: `Status progres FASIH baru telah di-upload pada <strong>${formatWitaString(latestFasihDate)}</strong>`,
+            file: latestFasihFile,
+            date: latestFasihDate
+          });
+        }
+      }
+
+      if (showNotification && updates.length > 0) {
+        createToastNotification(updates);
+      }
+
+      // Background Polling: check for new uploads every 60 seconds
+      setInterval(async () => {
+        try {
+          const response = await fetch('/api/latest-updates');
+          if (!response.ok) return;
+          const data = await response.json();
+
+          let hasNewUpdate = false;
+          let newUpdates = [];
+          const currentStoredMuatan = localStorage.getItem('last_seen_muatan_date');
+          const currentStoredFasih = localStorage.getItem('last_seen_fasih_date');
+
+          if (currentStoredMuatan !== null || currentStoredFasih !== null) {
+            if (data.muatan && data.muatan.created_at && currentStoredMuatan !== data.muatan.created_at) {
+              hasNewUpdate = true;
+              newUpdates.push({
+                type: 'muatan',
+                title: 'Data Muatan Diperbarui',
+                desc: `Data Muatan/Progres Utama baru telah di-upload pada <strong>${formatWitaString(data.muatan.created_at)}</strong>`,
+                file: data.muatan.filename,
+                date: data.muatan.created_at
+              });
+            }
+            if (data.fasih && data.fasih.created_at && currentStoredFasih !== data.fasih.created_at) {
+              hasNewUpdate = true;
+              newUpdates.push({
+                type: 'fasih',
+                title: 'Data FASIH Diperbarui',
+                desc: `Status progres FASIH baru telah di-upload pada <strong>${formatWitaString(data.fasih.created_at)}</strong>`,
+                file: data.fasih.status_filename,
+                date: data.fasih.created_at
+              });
+            }
+          }
+
+          if (hasNewUpdate && newUpdates.length > 0) {
+            // Remove any existing notification before creating a new one
+            const existingToast = document.querySelector('.inapp-notification-toast');
+            if (existingToast) existingToast.remove();
+            createToastNotification(newUpdates);
+            if (typeof updateBellState === 'function') updateBellState();
+            
+            // Re-check early warning on new data upload
+            checkEarlyWarningSummary();
+          }
+        } catch (err) {
+          console.error('Error checking for updates in background:', err);
+        }
+      }, 60000);
+
+
+      function createToastNotification(items) {
+        const toast = document.createElement('div');
+        toast.className = 'inapp-notification-toast';
+        
+        let borderAccent = 'linear-gradient(to bottom, var(--accent-cyan), var(--accent-purple))';
+        let mainIconClass = 'bi-bell-fill';
+        let mainIconColor = 'var(--text-secondary)';
+        
+        if (items.length === 1) {
+          if (items[0].type === 'muatan') {
+            borderAccent = 'var(--accent-cyan)';
+            mainIconClass = 'bi-box-seam';
+            mainIconColor = 'var(--accent-cyan)';
+          } else {
+            borderAccent = 'var(--accent-purple)';
+            mainIconClass = 'bi-phone';
+            mainIconColor = 'var(--accent-purple)';
+          }
+        }
+
+        toast.style.borderLeft = `4px solid ${borderAccent}`;
+
+        let updatesHtml = items.map(item => `
+          <div style="margin-bottom: 8px;">
+            <div style="font-weight: 700; font-size: 12px; margin-bottom: 2px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+              <span style="display:inline-block; width: 6px; height: 6px; border-radius: 50%; background: ${item.type === 'muatan' ? 'var(--accent-cyan)' : 'var(--accent-purple)'};"></span>
+              ${item.title}
+            </div>
+            <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4;">${item.desc}</div>
+            <div style="font-size: 9px; color: var(--text-muted); word-break: break-all; margin-top: 2px; font-family: monospace;">File: ${item.file}</div>
+          </div>
+        `).join('');
+
+        toast.innerHTML = `
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 24px; height: 24px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.1); display: flex; align-items: center; justify-content: center; color: ${mainIconColor};">
+                <i class="bi ${mainIconClass}" style="font-size: 13px;"></i>
+              </div>
+              <span style="font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Pemberitahuan Data</span>
+            </div>
+            <button id="closeNotificationBtn" style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 2px; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: color 0.2s;" title="Tutup">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <div style="max-height: 200px; overflow-y: auto; padding-right: 4px;">
+            ${updatesHtml}
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; border-top: 1px solid var(--border); padding-top: 10px;">
+            <button id="dismissNotificationBtn" class="btn btn-secondary btn-xs" style="padding: 4px 8px; font-size: 10px;">Abaikan</button>
+            <button id="reloadPageBtn" class="btn btn-primary btn-xs" style="padding: 4px 10px; font-size: 10px; background: var(--accent-cyan); border-color: var(--accent-cyan); color: #0a0e1a; font-weight: 600;">Muat Ulang</button>
+          </div>
+        `;
+
+        document.body.appendChild(toast);
+
+        const dismissToast = () => {
+          toast.classList.add('hide');
+          items.forEach(item => {
+            if (item.type === 'muatan') {
+              localStorage.setItem('last_seen_muatan_date', item.date);
+            } else if (item.type === 'fasih') {
+              localStorage.setItem('last_seen_fasih_date', item.date);
+            }
+          });
+          setTimeout(() => {
+            toast.remove();
+          }, 350);
+        };
+
+        toast.querySelector('#closeNotificationBtn').addEventListener('click', dismissToast);
+        toast.querySelector('#dismissNotificationBtn').addEventListener('click', dismissToast);
+        toast.querySelector('#reloadPageBtn').addEventListener('click', () => {
+          items.forEach(item => {
+            if (item.type === 'muatan') {
+              localStorage.setItem('last_seen_muatan_date', item.date);
+            } else if (item.type === 'fasih') {
+              localStorage.setItem('last_seen_fasih_date', item.date);
+            }
+          });
+          window.location.reload();
+        });
+
+        // Auto close after 12 seconds
+        const autoDismissTimer = setTimeout(dismissToast, 12000);
+
+        toast.addEventListener('mouseenter', () => {
+          clearTimeout(autoDismissTimer);
+        });
+      }
+
+      // === Notification Bell Logic ===
+      const bellBtn = document.getElementById('notificationBellBtn');
+      const bellDropdown = document.getElementById('notificationBellDropdown');
+      const bellBadge = document.getElementById('notificationBellBadge');
+      const bellIcon = document.getElementById('notificationBellIcon');
+      const bellList = document.getElementById('notificationBellList');
+      const clearBadgeBtn = document.getElementById('clearNotificationBadge');
+
+      function updateBellState() {
+        const storedMuatan = localStorage.getItem('last_seen_muatan_date');
+        const storedFasih = localStorage.getItem('last_seen_fasih_date');
+
+        let isMuatanNew = latestMuatanDate && storedMuatan !== latestMuatanDate;
+        let isFasihNew = latestFasihDate && storedFasih !== latestFasihDate;
+
+        // Show/hide red badge and style bell
+        if (isMuatanNew || isFasihNew) {
+          if (bellBadge) bellBadge.style.display = 'block';
+          if (bellIcon) bellIcon.style.color = '#f59e0b'; // Gold color for active notifications
+          if (clearBadgeBtn) clearBadgeBtn.style.display = 'inline';
+        } else {
+          if (bellBadge) bellBadge.style.display = 'none';
+          if (bellIcon) bellIcon.style.color = 'var(--text-muted)';
+          if (clearBadgeBtn) clearBadgeBtn.style.display = 'none';
+        }
+
+        // Build list items
+        let html = '';
+        if (latestMuatanDate) {
+          html += `
+            <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-weight: 700; font-size: 10px; color: var(--accent-cyan); display: flex; align-items: center; gap: 6px;">
+                <i class="bi bi-box-seam"></i> UPDATE MUATAN
+                ${isMuatanNew ? '<span style="background: #ef4444; color: white; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: 800;">BARU</span>' : ''}
+              </span>
+              <span style="font-size: 11px; color: var(--text-primary); font-weight: 500;">${formatWitaString(latestMuatanDate)}</span>
+              <span style="font-size: 9px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;">File: ${latestMuatanFile}</span>
+            </div>
+          `;
+        }
+        if (latestFasihDate) {
+          html += `
+            <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-weight: 700; font-size: 10px; color: var(--accent-purple); display: flex; align-items: center; gap: 6px;">
+                <i class="bi bi-phone"></i> UPDATE FASIH
+                ${isFasihNew ? '<span style="background: #ef4444; color: white; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: 800;">BARU</span>' : ''}
+              </span>
+              <span style="font-size: 11px; color: var(--text-primary); font-weight: 500;">${formatWitaString(latestFasihDate)}</span>
+              <span style="font-size: 9px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;">File: ${latestFasihFile}</span>
+            </div>
+          `;
+        }
+        if (!latestMuatanDate && !latestFasihDate) {
+          html = '<div style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 12px 0;">Belum ada riwayat update.</div>';
+        }
+        if (bellList) bellList.innerHTML = html;
+      }
+
+      function markAllAsRead() {
+        if (latestMuatanDate) localStorage.setItem('last_seen_muatan_date', latestMuatanDate);
+        if (latestFasihDate) localStorage.setItem('last_seen_fasih_date', latestFasihDate);
+        updateBellState();
+        const existingToast = document.querySelector('.inapp-notification-toast');
+        if (existingToast) {
+          existingToast.classList.add('hide');
+          setTimeout(() => existingToast.remove(), 350);
+        }
+      }
+
+      // Initialize state on load
+      updateBellState();
+
+      if (bellBtn) {
+        bellBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isDropdownVisible = bellDropdown.style.display === 'flex';
+          
+          // Close other dropdowns
+          const targetSelectorDropdown = document.getElementById('targetSelectorDropdown');
+          if (targetSelectorDropdown) targetSelectorDropdown.style.display = 'none';
+
+          if (isDropdownVisible) {
+            bellDropdown.style.display = 'none';
+          } else {
+            updateBellState();
+            bellDropdown.style.display = 'flex';
+          }
+        });
+      }
+
+      if (clearBadgeBtn) {
+        clearBadgeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          markAllAsRead();
+        });
+      }
+
+      document.addEventListener('click', (e) => {
+        if (bellDropdown && !bellDropdown.contains(e.target) && e.target !== bellBtn && !bellBtn.contains(e.target)) {
+          bellDropdown.style.display = 'none';
+        }
+      });
+    });
+  })();
 </script>
 <%- typeof scripts !== 'undefined' ? scripts : '' %>
 </body>

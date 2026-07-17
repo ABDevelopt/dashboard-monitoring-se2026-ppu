@@ -251,7 +251,7 @@ router.post('/settings/target-mode', (req, res) => {
   }
 
   let changed = false;
-  if (target_fasih_mode && ['static', 'dynamic', 'fasih-sm'].includes(target_fasih_mode)) {
+  if (target_fasih_mode && ['static', 'fasih-sm'].includes(target_fasih_mode)) {
     req.session.settings.target_fasih_mode = target_fasih_mode;
     changed = true;
   }
@@ -273,5 +273,49 @@ router.post('/settings/target-mode', (req, res) => {
   }
 });
 
+// Endpoint untuk cek status update upload terbaru
+router.get('/latest-updates', (req, res) => {
+  const { getLatestUploadsDetailed } = require('../database');
+  const details = getLatestUploadsDetailed();
+  res.json({
+    muatan: details.muatan ? {
+      id: details.muatan.id,
+      created_at: details.muatan.created_at,
+      tanggal: details.muatan.tanggal,
+      filename: details.muatan.filename
+    } : null,
+    fasih: details.fasih ? {
+      id: details.fasih.id,
+      created_at: details.fasih.created_at,
+      tanggal: details.fasih.tanggal,
+      status_filename: details.fasih.status_filename
+    } : null
+  });
+});
+
+// Endpoint untuk mendapatkan ringkasan early warning petugas
+router.get('/early-warning-summary', (req, res) => {
+  const { getLatestUpload, getEarlyWarning } = require('../database');
+  const latestUpload = getLatestUpload();
+  if (!latestUpload) {
+    return res.json({
+      success: false,
+      message: 'Belum ada data upload'
+    });
+  }
+
+  const ew = getEarlyWarning(latestUpload.id);
+  res.json({
+    success: true,
+    latest_upload_date: latestUpload.tanggal,
+    zero_pcl_count: ew.zeroPcl.length,
+    slow_pcl_count: ew.slowPcl.length,
+    zero_pml_count: ew.zeroPml.length,
+    stagnan_pcl_count: ew.stagnanPcl.length,
+    low_projected_pcl_count: ew.lowProjectedPcl.length
+  });
+});
+
 module.exports = router;
+
 

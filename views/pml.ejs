@@ -1,4 +1,4 @@
-<%
+﻿<%
   let activeTargetPct = 25;
   let targetMonthName = '30 Juni';
   const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
@@ -51,7 +51,7 @@
                   <th class="text-right bg-blue-soft">Submitted</th>
                   <th class="text-right bg-red-soft">Rejected</th>
                   <th class="text-right bg-green-soft">Approved</th>
-                  <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'Tgt Dinamis' : (settings.target_fasih_mode === 'honor' ? 'Tgt Honor' : 'Tgt Statis')) %></th>
+                  <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : 'Tgt Statis' %></th>
                   <th class="text-right bg-purple-soft">Progres %</th>
                    <th class="text-right bg-cyan-soft hide-sm muatan-col">Realisasi</th>
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Target</th>
@@ -90,14 +90,20 @@
                     <td class="text-right bg-red-soft hide-sm status-reject-text" data-sort="<%= p.rejected_total %>" style="font-weight: 600;"><%= (p.rejected_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm status-approve-text" data-sort="<%= p.approved_total %>" style="font-weight: 600;"><%= (p.approved_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.target_fasih_total %>"><%= (p.target_fasih_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>">
-                      <% if (parseFloat(fasihPct) >= 100) { %>
-                        <span class="badge badge-green">100%</span>
-                      <% } else if (parseFloat(fasihPct) < 25) { %>
-                        <span class="badge badge-red"><%= fasihPct %>%</span>
-                      <% } else { %>
-                        <span class="badge badge-blue"><%= fasihPct %>%</span>
-                      <% } %>
+                    <td class="bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>" style="min-width: 160px; padding: 6px 10px; vertical-align: middle;">
+                      <%
+                        const fReal = (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
+                        const fTgt = p.target_fasih_total || 0;
+                        const fW = Math.min(parseFloat(fasihPct), 100);
+                        const fColor = fW >= 100 ? 'var(--accent-green)' : (fW < 25 ? 'var(--accent-red)' : 'var(--accent-purple)');
+                      %>
+                      <div class="bar-label" style="font-size:10px; margin-bottom:3px;">
+                        <span style="font-weight:700; color:<%= fColor %>"><%= fasihPct %>%</span>
+                        <span><%= fReal.toLocaleString('id-ID') %> / <%= fTgt.toLocaleString('id-ID') %></span>
+                      </div>
+                      <div class="progress-track-sm">
+                        <div class="progress-bar <%= fW >= 100 ? 'green' : (fW < 25 ? 'red' : 'purple') %>" data-width="<%= fW %>" style="width:0%; height:100%; border-radius:99px;"></div>
+                      </div>
                     </td>
                     <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total) %>"><%= (p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total)).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
@@ -108,11 +114,11 @@
                         const muatanW    = Math.min(parseFloat(muatanPct), 100);
                         const muatanColor = muatanW >= 100 ? 'var(--accent-green)' : (muatanW < activeTargetPct ? 'var(--accent-red)' : 'var(--accent-cyan)');
                       %>
-                      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px;">
+                      <div class="bar-label" style="font-size:10px; margin-bottom:3px;">
                         <span style="font-weight:700; color:<%= muatanColor %>"><%= muatanPct %>%</span>
                         <span><%= muatanReal.toLocaleString('id-ID') %> / <%= muatanTgt.toLocaleString('id-ID') %></span>
                       </div>
-                      <div style="height:5px; background:var(--bg-progress-wrap); border-radius:99px; overflow:hidden;">
+                      <div class="progress-track-sm">
                         <div class="progress-bar <%= muatanW >= 100 ? 'green' : (muatanW < activeTargetPct ? 'red' : 'blue') %>" data-width="<%= muatanW %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
@@ -155,7 +161,7 @@
                 %>
                 <!-- Progress FASIH -->
                 <div style="margin-bottom: 16px;">
-                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                  <div class="bar-label">
                     <span><i class="bi bi-phone"></i> Progres FASIH Tim (Submit + Approve + Reject)</span>
                     <span class="fw-bold"><%= totalFasihDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihPct %>%)</span>
                   </div>
@@ -166,7 +172,7 @@
 
                 <!-- Progress Muatan -->
                 <div style="margin-bottom: 12px;" class="muatan-col">
-                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
+                  <div class="bar-label">
                     <span><i class="bi bi-briefcase"></i> Progres Muatan Tim</span>
                     <span class="fw-bold"><%= totalUsaha.toLocaleString('id-ID') %> / <%= totalBeban.toLocaleString('id-ID') %> (<%= totalPct %>%)</span>
                   </div>

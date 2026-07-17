@@ -58,7 +58,7 @@ router.post('/', (req, res) => {
     updatedSettings[key] = req.body[key] === '1' ? '1' : '0';
   }
 
-  if (['static', 'dynamic', 'fasih-sm'].includes(req.body.target_fasih_mode)) {
+  if (['static', 'fasih-sm'].includes(req.body.target_fasih_mode)) {
     updatedSettings.target_fasih_mode = req.body.target_fasih_mode;
   }
 
