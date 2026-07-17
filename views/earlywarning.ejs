@@ -105,7 +105,7 @@
                   Kec. <strong><%= item.kecamatan %></strong> · PML: <strong><%= item.pml %></strong> · Korlap: <strong><%= item.korlap %></strong>
                 </div>
                 <div class="warning-stats">
-                  <span class="warning-stat"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Target FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'Target Dinamis' : (settings.target_fasih_mode === 'honor' ? 'Target Honor' : 'Target Statis')) %>: <strong><%= item.target_fasih_total %></strong></span>
+                  <span class="warning-stat"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Target FASIH-SM' : 'Target Statis' %>: <strong><%= item.target_fasih_total %></strong></span>
                   <span class="warning-stat">Selesai saat ini: <strong class="text-orange"><%= item.selesai_sekarang %></strong></span>
                   <span class="warning-stat">Selesai 2 hari lalu: <strong><%= item.selesai_lama %></strong></span>
                   <span class="warning-stat text-orange">Δ Penambahan: <strong><%= item.delta_selesai %></strong> dokumen (stagnan)</span>
@@ -187,7 +187,7 @@
                   Kec. <strong><%= item.kecamatan %></strong> · PML: <strong><%= item.pml %></strong> · Korlap: <strong><%= item.korlap %></strong>
                 </div>
                 <div class="warning-stats">
-                  <span class="warning-stat">SLS: <strong><%= item.total_subsls %></strong> (<%= settings.target_fasih_mode === 'fasih-sm' ? 'Target FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'Target Dinamis' : (settings.target_fasih_mode === 'honor' ? 'Target Honor' : 'Target Statis')) %>: <strong><%= item.target_fasih_total %></strong>)</span>
+                  <span class="warning-stat">SLS: <strong><%= item.total_subsls %></strong> (<%= settings.target_fasih_mode === 'fasih-sm' ? 'Target FASIH-SM' : 'Target Statis' %>: <strong><%= item.target_fasih_total %></strong>)</span>
                   <span class="warning-stat">Selesai: <strong class="text-yellow"><%= item.selesai %> SLS</strong> (FASIH dikerjakan: <strong><%= item.muatan_realisasi %></strong>)</span>
                   <span class="warning-stat text-yellow">Rata-rata: <strong><%= item.rata_rata %> dokumen/hari</strong> (Progres: <%= item.pct %>%)</span>
                 </div>

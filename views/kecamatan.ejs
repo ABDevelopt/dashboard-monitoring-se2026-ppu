@@ -45,7 +45,7 @@
           
           <div class="kec-detail">
             <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') { %>
-              <%= settings.target_fasih_mode === 'fasih-sm' ? 'Target FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'Target Dinamis' : (settings.target_fasih_mode === 'honor' ? 'Target Honor' : 'Target Statis')) %>: <strong><%= k.target_fasih_total.toLocaleString('id-ID') %></strong><br>
+              <%= settings.target_fasih_mode === 'fasih-sm' ? 'Target FASIH-SM' : 'Target Statis' %>: <strong><%= k.target_fasih_total.toLocaleString('id-ID') %></strong><br>
               Approved: <strong><%= k.approved_total.toLocaleString('id-ID') %></strong> · Rejected: <strong><%= k.rejected_total.toLocaleString('id-ID') %></strong><br>
               Submitted: <strong><%= k.submitted_total.toLocaleString('id-ID') %></strong> · Draft: <strong><%= k.draft_total.toLocaleString('id-ID') %></strong>
             <% } else { %>
@@ -86,7 +86,7 @@
                   <th class="text-right bg-blue-soft">Submitted</th>
                   <th class="text-right bg-red-soft">Rejected</th>
                   <th class="text-right bg-green-soft">Approved</th>
-                  <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : (settings.target_fasih_mode === 'dynamic' ? 'Tgt Dinamis' : (settings.target_fasih_mode === 'honor' ? 'Tgt Honor' : 'Tgt Statis')) %></th>
+                  <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : 'Tgt Statis' %></th>
                   <th class="text-right bg-purple-soft">Progres %</th>
                   
                   <th class="text-right bg-cyan-soft muatan-col">Realisasi</th>

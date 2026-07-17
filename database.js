@@ -1334,6 +1334,9 @@ function getSettings() {
   rows.forEach(r => {
     settings[r.key] = r.value;
   });
+  if (settings.target_fasih_mode === 'dynamic') {
+    settings.target_fasih_mode = 'static';
+  }
   return settings;
 }
 

@@ -251,7 +251,7 @@ router.post('/settings/target-mode', (req, res) => {
   }
 
   let changed = false;
-  if (target_fasih_mode && ['static', 'dynamic', 'fasih-sm'].includes(target_fasih_mode)) {
+  if (target_fasih_mode && ['static', 'fasih-sm'].includes(target_fasih_mode)) {
     req.session.settings.target_fasih_mode = target_fasih_mode;
     changed = true;
   }
