@@ -88,14 +88,20 @@
                     <td class="text-right bg-red-soft hide-sm status-reject-text" data-sort="<%= k.rejected_total %>" style="font-weight: 600;"><%= (k.rejected_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm status-approve-text" data-sort="<%= k.approved_total %>" style="font-weight: 600;"><%= (k.approved_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-purple-soft hide-sm" data-sort="<%= k.target_fasih_total %>"><%= (k.target_fasih_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>">
-                      <% if (parseFloat(fasihPct) >= 100) { %>
-                        <span class="badge badge-green">100%</span>
-                      <% } else if (parseFloat(fasihPct) < 25) { %>
-                        <span class="badge badge-red"><%= fasihPct %>%</span>
-                      <% } else { %>
-                        <span class="badge badge-blue"><%= fasihPct %>%</span>
-                      <% } %>
+                    <td class="bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>" style="min-width: 160px; padding: 6px 10px; vertical-align: middle;">
+                      <%
+                        const fReal = (k.submitted_total || 0) + (k.approved_total || 0) + (k.rejected_total || 0);
+                        const fTgt = k.target_fasih_total || 0;
+                        const fW = Math.min(parseFloat(fasihPct), 100);
+                        const fColor = fW >= 100 ? 'var(--accent-green)' : (fW < 25 ? 'var(--accent-red)' : 'var(--accent-purple)');
+                      %>
+                      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px;">
+                        <span style="font-weight:700; color:<%= fColor %>"><%= fasihPct %>%</span>
+                        <span><%= fReal.toLocaleString('id-ID') %> / <%= fTgt.toLocaleString('id-ID') %></span>
+                      </div>
+                      <div style="height:5px; background:var(--bg-progress-wrap); border-radius:99px; overflow:hidden;">
+                        <div class="progress-bar <%= fW >= 100 ? 'green' : (fW < 25 ? 'red' : 'purple') %>" data-width="<%= fW %>" style="width:0%; height:100%; border-radius:99px;"></div>
+                      </div>
                     </td>
                     <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= k.usaha_total %>"><%= k.usaha_total.toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= k.total_muatan %>"><%= k.total_muatan.toLocaleString('id-ID') %></td>
