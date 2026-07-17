@@ -3385,7 +3385,141 @@
       return `${day} ${month} ${year}, ${hours}:${minutes} WITA`;
     }
 
+    function checkEarlyWarningSummary() {
+      fetch('/api/early-warning-summary')
+        .then(res => res.json())
+        .then(data => {
+          if (!data.success) return;
+          
+          const totalWarnings = data.zero_pcl_count + data.slow_pcl_count + data.zero_pml_count + data.stagnan_pcl_count + data.low_projected_pcl_count;
+          if (totalWarnings === 0) return;
+
+          const currentSig = `zeroPcl:${data.zero_pcl_count}_slow:${data.slow_pcl_count}_zeroPml:${data.zero_pml_count}_stagnan:${data.stagnan_pcl_count}_lowProj:${data.low_projected_pcl_count}`;
+          const lastSeenSig = localStorage.getItem('last_seen_ew_summary_signature');
+          
+          if (lastSeenSig === currentSig) {
+            return;
+          }
+
+          showEarlyWarningModal(data, currentSig);
+        })
+        .catch(err => console.error('Error fetching early warning summary:', err));
+    }
+
+    function showEarlyWarningModal(data, sig) {
+      const existing = document.getElementById('earlyWarningSummaryModal');
+      if (existing) existing.remove();
+
+      const modalHtml = `
+        <div id="earlyWarningSummaryModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.4); animation: fadeInEwModal 0.2s ease;">
+          <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 440px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 24px; position: relative; animation: slideInEwModal 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            
+            <!-- Header -->
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
+              <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-red); font-size: 20px; flex-shrink: 0; animation: pulseRed 2s infinite;">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+              </div>
+              <div style="text-align: left;">
+                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary);">Peringatan Dini Kinerja Petugas</h3>
+                <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Ringkasan performa kritis per ${formatWitaString(data.latest_upload_date)}</p>
+              </div>
+            </div>
+
+            <!-- Grid of metrics -->
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+              \${data.zero_pcl_count > 0 ? `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(239, 68, 68, 0.05); border-left: 3px solid var(--accent-red); border-radius: 4px;">
+                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-person-x"></i> PCL Tanpa Progres</span>
+                  <span class="badge badge-red" style="font-weight: 700;">\${data.zero_pcl_count} Petugas</span>
+                </div>
+              ` : ''}
+
+              \${data.zero_pml_count > 0 ? `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(239, 68, 68, 0.05); border-left: 3px solid var(--accent-red); border-radius: 4px;">
+                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-person-badge"></i> PML Tanpa Progres</span>
+                  <span class="badge badge-red" style="font-weight: 700;">\${data.zero_pml_count} Pengawas</span>
+                </div>
+              ` : ''}
+
+              \${data.stagnan_pcl_count > 0 ? `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(251, 191, 36, 0.05); border-left: 3px solid var(--accent-yellow); border-radius: 4px;">
+                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-clock-history"></i> PCL Stagnan (2 Hari)</span>
+                  <span class="badge badge-yellow" style="font-weight: 700;">\${data.stagnan_pcl_count} Petugas</span>
+                </div>
+              ` : ''}
+
+              \${data.slow_pcl_count > 0 ? `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(59, 130, 246, 0.05); border-left: 3px solid var(--accent-blue); border-radius: 4px;">
+                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-speedometer"></i> PCL Sangat Lambat</span>
+                  <span class="badge badge-blue" style="font-weight: 700;">\${data.slow_pcl_count} Petugas</span>
+                </div>
+              ` : ''}
+
+              \${data.low_projected_pcl_count > 0 ? `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(167, 139, 250, 0.05); border-left: 3px solid var(--accent-purple); border-radius: 4px;">
+                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-graph-down"></i> PCL Risiko Tinggi Terlambat</span>
+                  <span class="badge badge-purple" style="font-weight: 700;">\${data.low_projected_pcl_count} Petugas</span>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Warning Info Text -->
+            <p style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 24px; text-align: left;">
+              Terdapat beberapa petugas lapangan dan pengawas yang memerlukan bimbingan khusus karena tidak menunjukkan aktivitas pengisian atau berisiko tinggi gagal menyelesaikan target sebelum tenggat waktu.
+            </p>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              <button id="dismissEwModal" class="btn btn-secondary" style="font-size: 12px; padding: 8px 16px;">Abaikan</button>
+              <a href="/earlywarning" id="viewEwModal" class="btn btn-primary" style="font-size: 12px; padding: 8px 16px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="bi bi-arrow-right-circle"></i> Lihat Rincian
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (!document.getElementById('ewModalStyles')) {
+        const styleEl = document.createElement('style');
+        styleEl.id = 'ewModalStyles';
+        styleEl.innerHTML = `
+          @keyframes fadeInEwModal {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes slideInEwModal {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+          @keyframes pulseRed {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+          }
+        `;
+        document.head.appendChild(styleEl);
+      }
+
+      const div = document.createElement('div');
+      div.innerHTML = modalHtml;
+      const modalElement = div.firstElementChild;
+      document.body.appendChild(modalElement);
+
+      const dismissBtn = modalElement.querySelector('#dismissEwModal');
+      const viewBtn = modalElement.querySelector('#viewEwModal');
+
+      const closeModal = () => {
+        localStorage.setItem('last_seen_ew_summary_signature', sig);
+        modalElement.style.animation = 'fadeInEwModal 0.2s ease reverse';
+        setTimeout(() => modalElement.remove(), 180);
+      };
+
+      dismissBtn.addEventListener('click', closeModal);
+      viewBtn.addEventListener('click', closeModal);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+      checkEarlyWarningSummary();
       const storedMuatan = localStorage.getItem('last_seen_muatan_date');
       const storedFasih = localStorage.getItem('last_seen_fasih_date');
 
@@ -3464,6 +3598,9 @@
             if (existingToast) existingToast.remove();
             createToastNotification(newUpdates);
             if (typeof updateBellState === 'function') updateBellState();
+            
+            // Re-check early warning on new data upload
+            checkEarlyWarningSummary();
           }
         } catch (err) {
           console.error('Error checking for updates in background:', err);

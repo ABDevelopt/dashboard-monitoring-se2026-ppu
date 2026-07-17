@@ -291,6 +291,27 @@ router.get('/latest-updates', (req, res) => {
       status_filename: details.fasih.status_filename
     } : null
   });
+// Endpoint untuk mendapatkan ringkasan early warning petugas
+router.get('/early-warning-summary', (req, res) => {
+  const { getLatestUpload, getEarlyWarning } = require('../database');
+  const latestUpload = getLatestUpload();
+  if (!latestUpload) {
+    return res.json({
+      success: false,
+      message: 'Belum ada data upload'
+    });
+  }
+
+  const ew = getEarlyWarning(latestUpload.id);
+  res.json({
+    success: true,
+    latest_upload_date: latestUpload.tanggal,
+    zero_pcl_count: ew.zeroPcl.length,
+    slow_pcl_count: ew.slowPcl.length,
+    zero_pml_count: ew.zeroPml.length,
+    stagnan_pcl_count: ew.stagnanPcl.length,
+    low_projected_pcl_count: ew.lowProjectedPcl.length
+  });
 });
 
 module.exports = router;
