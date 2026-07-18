@@ -347,6 +347,24 @@ function runMigrations() {
           db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('target_muatan_mode', 'prelist')").run();
         } catch (_) {}
       }
+    },
+    {
+      version: '20260718000000_add_remember_tokens',
+      up: (db) => {
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS remember_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token TEXT NOT NULL UNIQUE,
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+          );
+        `);
+        try {
+          db.exec(`CREATE INDEX IF NOT EXISTS idx_remember_tokens_token ON remember_tokens(token);`);
+        } catch (_) {}
+      }
     }
   ];
 
@@ -1555,6 +1573,31 @@ function deleteUser(id) {
   return stmt.run(id).changes;
 }
 
+function saveRememberToken(userId, token) {
+  const stmt = getDb().prepare("INSERT INTO remember_tokens (user_id, token, expires_at) VALUES (?, ?, datetime('now', '+30 days'))");
+  return stmt.run(userId, token).lastInsertRowid;
+}
+
+function getUserByRememberToken(token) {
+  const stmt = getDb().prepare(`
+    SELECT u.*, rt.token 
+    FROM users u 
+    JOIN remember_tokens rt ON u.id = rt.user_id 
+    WHERE rt.token = ? AND rt.expires_at > datetime('now')
+  `);
+  return stmt.get(token);
+}
+
+function deleteRememberToken(token) {
+  const stmt = getDb().prepare("DELETE FROM remember_tokens WHERE token = ?");
+  return stmt.run(token).changes;
+}
+
+function clearUserRememberTokens(userId) {
+  const stmt = getDb().prepare("DELETE FROM remember_tokens WHERE user_id = ?");
+  return stmt.run(userId).changes;
+}
+
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -1563,5 +1606,6 @@ module.exports = {
   getSettings, updateSettings, getUserByUsername, hashPassword, rebuildSummaryCache, rebuildAllSummaryCaches,
   getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages, getTargetFormula,
   getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula,
-  getAllUsers, createUser, updateUser, deleteUser
+  getAllUsers, createUser, updateUser, deleteUser,
+  saveRememberToken, getUserByRememberToken, deleteRememberToken, clearUserRememberTokens
 };

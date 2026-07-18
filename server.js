@@ -53,6 +53,39 @@ app.use(session({
 }));
 app.use(flash());
 
+// Auto-login from Remember Me cookie (Instagram Style)
+app.use((req, res, next) => {
+  const cookies = {};
+  if (req.headers.cookie) {
+    req.headers.cookie.split(';').forEach(c => {
+      const parts = c.split('=');
+      const name = parts.shift().trim();
+      const val = parts.join('=');
+      cookies[name] = decodeURIComponent(val);
+    });
+  }
+
+  if (!req.session.user && cookies.remember_token && !req.session.loggedOut) {
+    try {
+      const { getUserByRememberToken } = require('./database');
+      const user = getUserByRememberToken(cookies.remember_token);
+      if (user) {
+        req.session.user = {
+          id: user.id,
+          username: user.username,
+          role: user.role
+        };
+        req.session.isAdmin = (user.role === 'admin');
+      } else {
+        res.clearCookie('remember_token');
+      }
+    } catch (err) {
+      console.error("Auto-login error:", err);
+    }
+  }
+  next();
+});
+
 const APP_VERSION = Date.now(); // Startup timestamp for cache busting (updated to force reload)
 
 // Global locals
