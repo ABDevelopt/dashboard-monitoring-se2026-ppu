@@ -77,9 +77,11 @@
                 <tr>
                   <th rowspan="2" class="text-center" style="font-weight: 600; width: 40px;">No</th>
                   <th rowspan="2">Nama Desa/Kelurahan</th>
+                  <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">FASIH %</th>
+                  <th rowspan="2" class="text-right bg-cyan-soft muatan-col" style="min-width: 140px;">Muatan %</th>
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
-                  <th colspan="6" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
-                  <th colspan="3" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
+                  <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                  <th colspan="2" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
                 </tr>
                 <tr>
                   <th class="text-right bg-yellow-soft">Draft</th>
@@ -87,11 +89,9 @@
                   <th class="text-right bg-red-soft">Rejected</th>
                   <th class="text-right bg-green-soft">Approved</th>
                   <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : 'Tgt Statis' %></th>
-                  <th class="text-right bg-purple-soft">Progres %</th>
                   
                   <th class="text-right bg-cyan-soft muatan-col">Realisasi</th>
                   <th class="text-right bg-cyan-soft muatan-col">Target</th>
-                  <th class="text-right bg-cyan-soft muatan-col">Progres %</th>
                 </tr>
               </thead>
               <thead class="show-sm-table-header">
@@ -100,8 +100,8 @@
                   <th>Desa/Kelurahan</th>
                   <!-- <th class="text-right">Total SLS</th> -->
                   <!-- <th class="text-right">Selesai</th> -->
-                  <th class="text-right bg-purple-soft" data-column-idx="7">FASIH %</th>
-                  <th class="text-right bg-cyan-soft muatan-col" data-column-idx="10">Muatan %</th>
+                  <th class="text-right bg-purple-soft" data-column-idx="2">FASIH %</th>
+                  <th class="text-right bg-cyan-soft muatan-col" data-column-idx="3">Muatan %</th>
                 </tr>
               </thead>
               <tbody>
@@ -111,14 +111,7 @@
                   <tr>
                     <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                     <td class="td-primary"><a href="/subsls?kec=<%= encodeURIComponent(filterKec) %>&desa=<%= encodeURIComponent(d.desa) %>" style="color: inherit; text-decoration: none;"><i class="bi bi-pin-map"></i> <%= d.desa %></a></td>
-                    <!-- <td class="text-right" data-sort="<%= d.total_subsls %>"><%= d.total_subsls %></td> -->
-                    <!-- <td class="text-right fw-bold" data-sort="<%= d.selesai %>"><%= d.selesai %></td> -->
                     
-                    <td class="text-right bg-yellow-soft hide-sm status-draft-text" data-sort="<%= d.draft_total %>"><%= (d.draft_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-blue-soft hide-sm status-submit-text" data-sort="<%= d.submitted_total %>"><%= (d.submitted_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-red-soft hide-sm status-reject-text" data-sort="<%= d.rejected_total %>" style="font-weight: 600;"><%= (d.rejected_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-green-soft hide-sm status-approve-text" data-sort="<%= d.approved_total %>" style="font-weight: 600;"><%= (d.approved_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= d.target_fasih_total %>"><%= (d.target_fasih_total || 0).toLocaleString('id-ID') %></td>
                     <td class="bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>" style="min-width: 160px; padding: 6px 10px; vertical-align: middle;">
                       <%
                         const fReal = (d.submitted_total || 0) + (d.approved_total || 0) + (d.rejected_total || 0);
@@ -134,10 +127,7 @@
                         <div class="progress-bar <%= fW >= 100 ? 'green' : (fW < 25 ? 'red' : 'purple') %>" data-width="<%= fW %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
-                    
-                    <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= d.muatan_selesai !== undefined ? d.muatan_selesai : (d.usaha_total + d.keluarga_total) %>"><%= (d.muatan_selesai !== undefined ? d.muatan_selesai : (d.usaha_total + d.keluarga_total)).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= d.total_muatan %>"><%= d.total_muatan.toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>">
+                    <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>" style="min-width: 160px; padding: 6px 10px; vertical-align: middle;">
                       <% if (parseFloat(muatanPct) >= 100) { %>
                         <span class="badge badge-green">100%</span>
                       <% } else if (parseFloat(muatanPct) < activeTargetPct) { %>
@@ -146,6 +136,17 @@
                         <span class="badge badge-blue"><%= muatanPct %>%</span>
                       <% } %>
                     </td>
+
+                    <!-- <td class="text-right" data-sort="<%= d.total_subsls %>"><%= d.total_subsls %></td> -->
+                    <!-- <td class="text-right fw-bold" data-sort="<%= d.selesai %>"><%= d.selesai %></td> -->
+                    <td class="text-right bg-yellow-soft hide-sm status-draft-text" data-sort="<%= d.draft_total %>"><%= (d.draft_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-blue-soft hide-sm status-submit-text" data-sort="<%= d.submitted_total %>"><%= (d.submitted_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-red-soft hide-sm status-reject-text" data-sort="<%= d.rejected_total %>" style="font-weight: 600;"><%= (d.rejected_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-green-soft hide-sm status-approve-text" data-sort="<%= d.approved_total %>" style="font-weight: 600;"><%= (d.approved_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= d.target_fasih_total %>"><%= (d.target_fasih_total || 0).toLocaleString('id-ID') %></td>
+                    
+                    <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= d.muatan_selesai !== undefined ? d.muatan_selesai : (d.usaha_total + d.keluarga_total) %>"><%= (d.muatan_selesai !== undefined ? d.muatan_selesai : (d.usaha_total + d.keluarga_total)).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= d.total_muatan %>"><%= d.total_muatan.toLocaleString('id-ID') %></td>
                   </tr>
                 <% }) %>
               </tbody>

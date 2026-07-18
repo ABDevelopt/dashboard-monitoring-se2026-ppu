@@ -8,7 +8,6 @@
   }
 %>
 <div class="fade-in">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <% if (!uploadId) { %>
     <div class="card empty-state">
       <div class="empty-state-icon"><i class="bi bi-person-vcard"></i></div>
@@ -87,11 +86,13 @@
                 <tr>
                   <th rowspan="2" class="text-center th-no">No</th>
                   <th rowspan="2">Nama PCL</th>
+                  <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">FASIH %</th>
+                  <th rowspan="2" class="text-right bg-cyan-soft muatan-col" style="min-width: 140px;">Muatan %</th>
                   <th rowspan="2" class="hide-md">PML</th>
                   <th rowspan="2" class="hide-md">Kecamatan</th>
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
-                  <th colspan="6" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
-                   <th colspan="3" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
+                  <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                   <th colspan="2" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
                   <th colspan="6" class="text-center bg-green-soft muatan-col" style="border-bottom: 1px solid var(--border);">Temuan Keberadaan Usaha</th>
                   <th colspan="2" class="text-center bg-blue-soft hide-sm" style="border-bottom: 1px solid var(--border);">Proyeksi (Deadline: 31 Agt)</th>
                 </tr>
@@ -103,10 +104,8 @@
                   <th class="text-right bg-red-soft">Rejected</th>
                   <th class="text-right bg-green-soft">Approved</th>
                   <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : 'Tgt Statis' %></th>
-                  <th class="bg-purple-soft" style="min-width: 160px;">Bar Progres</th>
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Realisasi</th>
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Target</th>
-                  <th class="bg-cyan-soft muatan-col" style="min-width:160px;">Bar Progres</th>
                   <th class="text-right bg-green-soft hide-sm muatan-col">Total Usaha</th>
                   <th class="text-right bg-green-soft hide-sm muatan-col">Ditemukan</th>
                   <th class="text-right bg-green-soft hide-sm muatan-col">Baru</th>
@@ -124,8 +123,8 @@
                   <th class="text-center th-no">No</th>
                   <th>Nama PCL</th>
                   <!-- <th class="text-right">Selesai</th> -->
-                  <th class="text-right bg-purple-soft" data-column-idx="9">FASIH %</th>
-                  <th class="text-right bg-cyan-soft muatan-col" data-column-idx="12">Muatan %</th>
+                  <th class="text-right bg-purple-soft" data-column-idx="2">FASIH %</th>
+                  <th class="text-right bg-cyan-soft muatan-col" data-column-idx="3">Muatan %</th>
                 </tr>
               </thead>
               <tbody>
@@ -142,20 +141,6 @@
                         <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 4px;">KIPP</span>
                       <% } %>
                     </td>
-                    <td class="hide-md">
-                      <%= p.pml %>
-                      <% if (kippPmls.includes(p.pml.toUpperCase())) { %>
-                        <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 2px;">KIPP</span>
-                      <% } %>
-                    </td>
-                    <td class="hide-md"><%= p.kecamatan %></td>
-                    <!-- <td class="text-right hide-sm" data-sort="<%= p.total_subsls %>"><%= p.total_subsls %></td> -->
-                    <!-- <td class="text-right fw-bold" data-sort="<%= p.selesai %>" style="<%= p.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= p.selesai %></td> -->
-                     <td class="text-right bg-yellow-soft hide-sm status-draft-text" data-sort="<%= p.draft_total %>"><%= (p.draft_total || 0).toLocaleString('id-ID') %></td>
-                     <td class="text-right bg-blue-soft hide-sm status-submit-text" data-sort="<%= p.submitted_total %>"><%= (p.submitted_total || 0).toLocaleString('id-ID') %></td>
-                     <td class="text-right bg-red-soft hide-sm status-reject-text" data-sort="<%= p.rejected_total %>" style="font-weight: 600;"><%= (p.rejected_total || 0).toLocaleString('id-ID') %></td>
-                     <td class="text-right bg-green-soft hide-sm status-approve-text" data-sort="<%= p.approved_total %>" style="font-weight: 600;"><%= (p.approved_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.target_fasih_total %>"><%= (p.target_fasih_total || 0).toLocaleString('id-ID') %></td>
                     <td class="bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>" style="min-width: 160px; padding: 6px 10px;">
                       <%
                         const fasihRealPcl = (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
@@ -171,8 +156,6 @@
                         <div style="width:<%= fasihWPcl %>%; background:<%= fasihColorPcl %>; height:100%; border-radius:99px; transition:width 0.4s ease;"></div>
                       </div>
                     </td>
-                     <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.muatan_selesai %>"><%= (p.muatan_selesai || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
                     <td class="bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>" style="min-width: 160px; padding: 6px 10px;">
                       <%
                         const muatanRealPcl = p.muatan_selesai || 0;
@@ -188,6 +171,22 @@
                         <div class="progress-bar <%= muatanWPcl >= 100 ? 'green' : (muatanWPcl < activeTargetPct ? 'red' : 'blue') %>" data-width="<%= muatanWPcl %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
+                    <td class="hide-md">
+                      <%= p.pml %>
+                      <% if (kippPmls.includes(p.pml.toUpperCase())) { %>
+                        <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 2px;">KIPP</span>
+                      <% } %>
+                    </td>
+                    <td class="hide-md"><%= p.kecamatan %></td>
+                    <!-- <td class="text-right hide-sm" data-sort="<%= p.total_subsls %>"><%= p.total_subsls %></td> -->
+                    <!-- <td class="text-right fw-bold" data-sort="<%= p.selesai %>" style="<%= p.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= p.selesai %></td> -->
+                     <td class="text-right bg-yellow-soft hide-sm status-draft-text" data-sort="<%= p.draft_total %>"><%= (p.draft_total || 0).toLocaleString('id-ID') %></td>
+                     <td class="text-right bg-blue-soft hide-sm status-submit-text" data-sort="<%= p.submitted_total %>"><%= (p.submitted_total || 0).toLocaleString('id-ID') %></td>
+                     <td class="text-right bg-red-soft hide-sm status-reject-text" data-sort="<%= p.rejected_total %>" style="font-weight: 600;"><%= (p.rejected_total || 0).toLocaleString('id-ID') %></td>
+                     <td class="text-right bg-green-soft hide-sm status-approve-text" data-sort="<%= p.approved_total %>" style="font-weight: 600;"><%= (p.approved_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.target_fasih_total %>"><%= (p.target_fasih_total || 0).toLocaleString('id-ID') %></td>
+                     <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.muatan_selesai %>"><%= (p.muatan_selesai || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_ditemukan_total %>"><%= (p.usaha_ditemukan_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_baru_total %>"><%= (p.usaha_baru_total || 0).toLocaleString('id-ID') %></td>
