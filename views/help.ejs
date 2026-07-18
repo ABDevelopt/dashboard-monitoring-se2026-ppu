@@ -162,7 +162,7 @@ const sections = [
       </div>
     </div>
     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted);">
-      <i class="bi bi-info-circle"></i> <strong>Target kumulatif</strong> = persentase yang seharusnya tercapai pada tanggal data terkini, dihitung proporsional dari total waktu pendataan (15 Jun – 31 Agu 2026). Saat ini sistem menggunakan nilai <strong>25%</strong> (fase awal) atau <strong>40%</strong> (setelah 1 Juli).
+      <i class="bi bi-info-circle"></i> <strong>Target kumulatif</strong> = persentase yang seharusnya tercapai pada tanggal data terkini, dihitung proporsional dari total waktu pendataan (15 Jun – 31 Agu 2026). Saat ini sistem menggunakan nilai <strong>25%</strong> (fase awal) atau <strong>40%</strong> (setelah 1 Juli). Namun, secara umum warna progress bar akan berwarna merah jika progres di bawah <strong>40%</strong>.
     </div>
   </div>
 </div>
@@ -691,7 +691,7 @@ const sections = [
         <div style="width:40px; height:5px; background:var(--accent-red); border-radius:99px;"></div>
         <span style="font-size:12px; font-weight:700; color:var(--accent-red);">Merah — Tertinggal</span>
       </div>
-      <p style="font-size:12px; color:var(--text-secondary); margin:0;">Persentase di bawah target kumulatif periode saat ini (25% sebelum 1 Juli, 40% setelah 1 Juli). Perlu perhatian segera.</p>
+      <p style="font-size:12px; color:var(--text-secondary); margin:0;">Persentase progres di bawah ambang batas kinerja minimal (< 40%). Perlu perhatian segera.</p>
     </div>
     <div class="help-badge-item" style="border-left:3px solid var(--accent-cyan);">
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
@@ -756,11 +756,26 @@ const sections = [
     </div>
 
     <div style="display: flex; flex-direction: column; gap: 16px;">
-      <!-- Version 2.2 -->
+      <!-- Version 2.3 -->
       <div style="border-left: 3px solid var(--accent-cyan); padding-left: 14px; position: relative;">
         <div style="font-weight: 700; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-          <span>Versi 2.2</span>
+          <span>Versi 2.3</span>
           <span style="font-size: 9px; font-weight: 600; background: rgba(6,182,212,0.15); color: var(--accent-cyan); padding: 1px 6px; border-radius: 4px;">Aktif</span>
+        </div>
+        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">18 Juli 2026</div>
+        <ul style="margin: 8px 0 0 0; padding-left: 16px; font-size: 11.5px; color: var(--text-secondary); line-height: 1.6; list-style-type: square;">
+          <li><strong>Remember Me (Instagram Style)</strong>: Menambahkan fitur penyimpanan info login pada halaman login untuk mempermudah masuk kembali dengan satu klik.</li>
+          <li><strong>Persentase Pemeriksaan PML Baru</strong>: Menambahkan metrik persentase pemeriksaan PML yaitu <code>(Approved + Rejected) / Target</code> untuk mengukur capaian kerja PML secara akurat.</li>
+          <li><strong>Reorganisasi Posisi Kolom Progres</strong>: Memindahkan kolom persentase progres agar terletak tepat di sebelah kanan kolom nama petugas/wilayah demi navigasi data yang lebih intuitif.</li>
+          <li><strong>Penyembunyian Muatan Menyeluruh</strong>: Memperketat fitur penonaktifan progres muatan global sehingga seluruh indikator progres muatan pada detail PCL dan PML tersembunyi sepenuhnya.</li>
+          <li><strong>Ambang Batas Kinerja Minimal</strong>: Menyesuaikan aturan warna progress bar secara umum agar otomatis berwarna <strong>merah</strong> apabila capaian di bawah <strong>40%</strong>.</li>
+        </ul>
+      </div>
+
+      <!-- Version 2.2 -->
+      <div style="border-left: 3px solid var(--border); padding-left: 14px; position: relative; opacity: 0.85;">
+        <div style="font-weight: 700; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+          <span>Versi 2.2</span>
         </div>
         <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">14 Juli 2026</div>
         <ul style="margin: 8px 0 0 0; padding-left: 16px; font-size: 11.5px; color: var(--text-secondary); line-height: 1.6; list-style-type: square;">
