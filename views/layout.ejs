@@ -2801,6 +2801,10 @@
       const overlay = document.getElementById('pjax-loading-overlay');
       if (overlay) overlay.classList.add('active');
 
+      if (oldContent) {
+        oldContent.innerHTML = getSkeletonHTML(url);
+      }
+
       try {
       // Fetch target page
       const response = await fetch(url);
