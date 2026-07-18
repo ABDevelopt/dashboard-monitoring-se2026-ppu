@@ -111,30 +111,24 @@
     <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 4px;">Penajam Paser Utara</p>
   </div>
 
-  <% if (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed) { %>
-  <div class="sidebar-upload-info" style="margin: 4px 16px 12px; padding: 10px; background: rgba(var(--accent-rgb), 0.03); border: 1px solid var(--border); border-radius: 8px; font-size: 10px; display: flex; flex-direction: column; gap: 6px;">
-    <% if (latestUploadsDetailed.muatan) { %>
-      <div style="display: flex; flex-direction: column; gap: 2px;">
-        <span style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; display: flex; align-items: center; gap: 4px;">
-          <i class="bi bi-box-seam" style="color: var(--accent-cyan);"></i> Update Muatan
-        </span>
-        <span style="color: var(--text-primary); font-weight: 500; padding-left: 14px;">
-          <%= latestUploadsDetailed.muatan.created_at ? formatWita(latestUploadsDetailed.muatan.created_at) : latestUploadsDetailed.muatan.tanggal %>
-        </span>
-      </div>
-    <% } %>
-    <% if (latestUploadsDetailed.fasih) { %>
-      <div style="display: flex; flex-direction: column; gap: 2px; <%= latestUploadsDetailed.muatan ? 'border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px;' : '' %>">
-        <span style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; display: flex; align-items: center; gap: 4px;">
-          <i class="bi bi-phone" style="color: var(--accent-purple);"></i> Update FASIH
-        </span>
-        <span style="color: var(--text-primary); font-weight: 500; padding-left: 14px;">
-          <%= latestUploadsDetailed.fasih.created_at ? formatWita(latestUploadsDetailed.fasih.created_at) : latestUploadsDetailed.fasih.tanggal %>
-        </span>
-      </div>
-    <% } %>
+  <div class="sidebar-upload-info" style="margin: 4px 16px 12px; padding: 10px; background: rgba(var(--accent-rgb), 0.03); border: 1px solid var(--border); border-radius: 8px; font-size: 10px; display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && (latestUploadsDetailed.muatan || latestUploadsDetailed.fasih)) ? 'flex' : 'none' %>; flex-direction: column; gap: 6px;">
+    <div id="sidebarMuatanInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'flex' : 'none' %>; flex-direction: column; gap: 2px;">
+      <span style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+        <i class="bi bi-box-seam" style="color: var(--accent-cyan);"></i> Update Muatan
+      </span>
+      <span id="sidebarMuatanDate" style="color: var(--text-primary); font-weight: 500; padding-left: 14px;">
+        <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.created_at) ? formatWita(latestUploadsDetailed.muatan.created_at) : '' %>
+      </span>
+    </div>
+    <div id="sidebarFasihInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.fasih) ? 'flex' : 'none' %>; flex-direction: column; gap: 2px; <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px;' : '' %>">
+      <span style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+        <i class="bi bi-phone" style="color: var(--accent-purple);"></i> Update FASIH
+      </span>
+      <span id="sidebarFasihDate" style="color: var(--text-primary); font-weight: 500; padding-left: 14px;">
+        <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.created_at) ? formatWita(latestUploadsDetailed.fasih.created_at) : '' %>
+      </span>
+    </div>
   </div>
-  <% } %>
 
   <div class="sidebar-search" style="padding: 8px 16px; border-bottom: 1px solid var(--border);">
     <div style="position: relative;">
@@ -3102,6 +3096,7 @@
       // Trigger PTR only at scroll top and when there is exactly 1 touch
       if (window.scrollY === 0 && e.touches.length === 1) {
         ptrStartY = e.touches[0].pageY;
+        ptrCurrentY = ptrStartY; // Reset current Y to prevent using old touch coordinates
         ptrPulling = true;
       }
     }, { passive: true });
@@ -3364,16 +3359,20 @@
 <script>
   (function() {
     <% if (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed) { %>
-      const latestMuatanDate = <%- latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.created_at ? JSON.stringify(latestUploadsDetailed.muatan.created_at) : 'null' %>;
-      const latestFasihDate = <%- latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.created_at ? JSON.stringify(latestUploadsDetailed.fasih.created_at) : 'null' %>;
-      const latestMuatanFile = <%- latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.filename ? JSON.stringify(latestUploadsDetailed.muatan.filename) : 'null' %>;
-      const latestFasihFile = <%- latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.status_filename ? JSON.stringify(latestUploadsDetailed.fasih.status_filename) : 'null' %>;
+      let latestMuatanDate = <%- latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.created_at ? JSON.stringify(latestUploadsDetailed.muatan.created_at) : 'null' %>;
+      let latestFasihDate = <%- latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.created_at ? JSON.stringify(latestUploadsDetailed.fasih.created_at) : 'null' %>;
+      let latestMuatanFile = <%- latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.filename ? JSON.stringify(latestUploadsDetailed.muatan.filename) : 'null' %>;
+      let latestFasihFile = <%- latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.status_filename ? JSON.stringify(latestUploadsDetailed.fasih.status_filename) : 'null' %>;
     <% } else { %>
-      const latestMuatanDate = null;
-      const latestFasihDate = null;
-      const latestMuatanFile = null;
-      const latestFasihFile = null;
+      let latestMuatanDate = null;
+      let latestFasihDate = null;
+      let latestMuatanFile = null;
+      let latestFasihFile = null;
     <% } %>
+
+    // Track which dates have been displayed as toast in this session to prevent spamming
+    let notifiedMuatanDate = latestMuatanDate;
+    let notifiedFasihDate = latestFasihDate;
 
     // Client-side date formatter to display WITA timezone consistently
     function formatWitaString(dateStr) {
@@ -3535,9 +3534,51 @@
       let updates = [];
 
       if (storedMuatan === null && storedFasih === null) {
-        // First visit: initialize silently to avoid spamming the welcome toast
-        if (latestMuatanDate) localStorage.setItem('last_seen_muatan_date', latestMuatanDate);
-        if (latestFasihDate) localStorage.setItem('last_seen_fasih_date', latestFasihDate);
+        // First visit: check if the latest upload is recent (e.g., within 24 hours) to notify, otherwise initialize silently
+        const now = new Date();
+        const oneDayMs = 24 * 60 * 60 * 1000;
+        
+        let shouldShowMuatan = false;
+        let shouldShowFasih = false;
+
+        if (latestMuatanDate) {
+          const muatanTime = new Date(latestMuatanDate.endsWith('Z') ? latestMuatanDate : latestMuatanDate.replace(' ', 'T') + 'Z');
+          if (!isNaN(muatanTime.getTime()) && (now - muatanTime) < oneDayMs) {
+            shouldShowMuatan = true;
+          } else {
+            localStorage.setItem('last_seen_muatan_date', latestMuatanDate);
+          }
+        }
+
+        if (latestFasihDate) {
+          const fasihTime = new Date(latestFasihDate.endsWith('Z') ? latestFasihDate : latestFasihDate.replace(' ', 'T') + 'Z');
+          if (!isNaN(fasihTime.getTime()) && (now - fasihTime) < oneDayMs) {
+            shouldShowFasih = true;
+          } else {
+            localStorage.setItem('last_seen_fasih_date', latestFasihDate);
+          }
+        }
+
+        if (shouldShowMuatan) {
+          showNotification = true;
+          updates.push({
+            type: 'muatan',
+            title: 'Data Muatan Diperbarui',
+            desc: `Data Muatan/Progres Utama baru telah di-upload pada <strong>${formatWitaString(latestMuatanDate)}</strong>`,
+            file: latestMuatanFile,
+            date: latestMuatanDate
+          });
+        }
+        if (shouldShowFasih) {
+          showNotification = true;
+          updates.push({
+            type: 'fasih',
+            title: 'Data FASIH Diperbarui',
+            desc: `Status progres FASIH baru telah di-upload pada <strong>${formatWitaString(latestFasihDate)}</strong>`,
+            file: latestFasihFile,
+            date: latestFasihDate
+          });
+        }
       } else {
         if (latestMuatanDate && storedMuatan !== latestMuatanDate) {
           showNotification = true;
@@ -3574,30 +3615,56 @@
 
           let hasNewUpdate = false;
           let newUpdates = [];
-          const currentStoredMuatan = localStorage.getItem('last_seen_muatan_date');
-          const currentStoredFasih = localStorage.getItem('last_seen_fasih_date');
 
-          if (currentStoredMuatan !== null || currentStoredFasih !== null) {
-            if (data.muatan && data.muatan.created_at && currentStoredMuatan !== data.muatan.created_at) {
-              hasNewUpdate = true;
-              newUpdates.push({
-                type: 'muatan',
-                title: 'Data Muatan Diperbarui',
-                desc: `Data Muatan/Progres Utama baru telah di-upload pada <strong>${formatWitaString(data.muatan.created_at)}</strong>`,
-                file: data.muatan.filename,
-                date: data.muatan.created_at
-              });
+          if (data.muatan && data.muatan.created_at && data.muatan.created_at !== notifiedMuatanDate) {
+            hasNewUpdate = true;
+            newUpdates.push({
+              type: 'muatan',
+              title: 'Data Muatan Diperbarui',
+              desc: `Data Muatan/Progres Utama baru telah di-upload pada <strong>${formatWitaString(data.muatan.created_at)}</strong>`,
+              file: data.muatan.filename,
+              date: data.muatan.created_at
+            });
+            notifiedMuatanDate = data.muatan.created_at;
+            latestMuatanDate = data.muatan.created_at;
+            latestMuatanFile = data.muatan.filename;
+
+            // Dynamically update sidebar Muatan dates in DOM
+            const sidebarUploadInfo = document.querySelector('.sidebar-upload-info');
+            const sidebarMuatanInfo = document.getElementById('sidebarMuatanInfo');
+            const sidebarMuatanDateEl = document.getElementById('sidebarMuatanDate');
+            if (sidebarUploadInfo) sidebarUploadInfo.style.display = 'flex';
+            if (sidebarMuatanInfo) sidebarMuatanInfo.style.display = 'flex';
+            if (sidebarMuatanDateEl) sidebarMuatanDateEl.innerHTML = formatWitaString(data.muatan.created_at);
+          }
+
+          if (data.fasih && data.fasih.created_at && data.fasih.created_at !== notifiedFasihDate) {
+            hasNewUpdate = true;
+            newUpdates.push({
+              type: 'fasih',
+              title: 'Data FASIH Diperbarui',
+              desc: `Status progres FASIH baru telah di-upload pada <strong>${formatWitaString(data.fasih.created_at)}</strong>`,
+              file: data.fasih.status_filename,
+              date: data.fasih.created_at
+            });
+            notifiedFasihDate = data.fasih.created_at;
+            latestFasihDate = data.fasih.created_at;
+            latestFasihFile = data.fasih.status_filename;
+
+            // Dynamically update sidebar FASIH dates in DOM
+            const sidebarUploadInfo = document.querySelector('.sidebar-upload-info');
+            const sidebarFasihInfo = document.getElementById('sidebarFasihInfo');
+            const sidebarFasihDateEl = document.getElementById('sidebarFasihDate');
+            if (sidebarUploadInfo) sidebarUploadInfo.style.display = 'flex';
+            if (sidebarFasihInfo) {
+              sidebarFasihInfo.style.display = 'flex';
+              if (data.muatan || notifiedMuatanDate) {
+                sidebarFasihInfo.style.borderTop = '1px solid var(--border)';
+                sidebarFasihInfo.style.paddingTop = '6px';
+                sidebarFasihInfo.style.marginTop = '2px';
+              }
             }
-            if (data.fasih && data.fasih.created_at && currentStoredFasih !== data.fasih.created_at) {
-              hasNewUpdate = true;
-              newUpdates.push({
-                type: 'fasih',
-                title: 'Data FASIH Diperbarui',
-                desc: `Status progres FASIH baru telah di-upload pada <strong>${formatWitaString(data.fasih.created_at)}</strong>`,
-                file: data.fasih.status_filename,
-                date: data.fasih.created_at
-              });
-            }
+            if (sidebarFasihDateEl) sidebarFasihDateEl.innerHTML = formatWitaString(data.fasih.created_at);
           }
 
           if (hasNewUpdate && newUpdates.length > 0) {
@@ -3605,7 +3672,7 @@
             const existingToast = document.querySelector('.inapp-notification-toast');
             if (existingToast) existingToast.remove();
             createToastNotification(newUpdates);
-            if (typeof updateBellState === 'function') updateBellState();
+            updateBellState();
             
             // Re-check early warning on new data upload
             checkEarlyWarningSummary();
@@ -3614,7 +3681,6 @@
           console.error('Error checking for updates in background:', err);
         }
       }, 60000);
-
 
       function createToastNotification(items) {
         const toast = document.createElement('div');
@@ -3672,22 +3738,25 @@
 
         document.body.appendChild(toast);
 
-        const dismissToast = () => {
+        const dismissToast = (markAsRead = true) => {
           toast.classList.add('hide');
-          items.forEach(item => {
-            if (item.type === 'muatan') {
-              localStorage.setItem('last_seen_muatan_date', item.date);
-            } else if (item.type === 'fasih') {
-              localStorage.setItem('last_seen_fasih_date', item.date);
-            }
-          });
+          if (markAsRead) {
+            items.forEach(item => {
+              if (item.type === 'muatan') {
+                localStorage.setItem('last_seen_muatan_date', item.date);
+              } else if (item.type === 'fasih') {
+                localStorage.setItem('last_seen_fasih_date', item.date);
+              }
+            });
+            updateBellState();
+          }
           setTimeout(() => {
             toast.remove();
           }, 350);
         };
 
-        toast.querySelector('#closeNotificationBtn').addEventListener('click', dismissToast);
-        toast.querySelector('#dismissNotificationBtn').addEventListener('click', dismissToast);
+        toast.querySelector('#closeNotificationBtn').addEventListener('click', () => dismissToast(true));
+        toast.querySelector('#dismissNotificationBtn').addEventListener('click', () => dismissToast(true));
         toast.querySelector('#reloadPageBtn').addEventListener('click', () => {
           items.forEach(item => {
             if (item.type === 'muatan') {
@@ -3699,8 +3768,8 @@
           window.location.reload();
         });
 
-        // Auto close after 12 seconds
-        const autoDismissTimer = setTimeout(dismissToast, 12000);
+        // Auto close after 12 seconds but do NOT mark as read so bell badge remains active
+        const autoDismissTimer = setTimeout(() => dismissToast(false), 12000);
 
         toast.addEventListener('mouseenter', () => {
           clearTimeout(autoDismissTimer);
