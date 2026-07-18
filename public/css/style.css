@@ -72,6 +72,14 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
+a {
+  color: inherit;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: none;
+}
+
 .sidebar, .main-wrapper, .topbar, .card, .stat-card, .warning-card, .btn, select, input, table, tr, td, th, .nav-item, .summary-item, .detail-item, .progress-bar-wrap, .upload-zone {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
@@ -1066,7 +1074,7 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   text-decoration: none;
   font-weight: 600;
 }
-.empty-state-text a:hover { text-decoration: underline; }
+.empty-state-text a:hover { text-decoration: none; }
 
 /* Action button inside empty state */
 .empty-state-action {
@@ -3098,7 +3106,7 @@ body.light-mode .skeleton-block {
 
 /* --- Links --- */
 .link-plain       { color: inherit; text-decoration: none; }
-.link-plain:hover { text-decoration: underline; }
+.link-plain:hover { text-decoration: none; }
 
 /* --- Info / Panel Box (pola: bg subtle + border + rounded + padding) --- */
 .info-panel {
