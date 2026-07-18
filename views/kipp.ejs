@@ -319,7 +319,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     makeTableSortable('subslsTable');
-    makeTableSearchable('localSearch', 'subslsTable');
+    if (typeof makeTablePaginated === 'function') {
+      makeTablePaginated('subslsTable', 'localSearch', 50);
+    } else {
+      makeTableSearchable('localSearch', 'subslsTable');
+    }
 
     const filterForm = document.getElementById('filterForm');
     if (filterForm) {

@@ -198,8 +198,14 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
     lainnya: findCol(headers, ['lainnya', 'lain'])
   };
 
-  if (colIdx.kode === -1) {
-    throw new Error('Kolom identitas wilayah/SLS ("level_6_full_code" atau "smallcode") tidak ditemukan dalam file Excel.');
+  const missingCols = [];
+  if (colIdx.kode === -1) missingCols.push('level_6_full_code / kode');
+  if (colIdx.desa === -1) missingCols.push('desa / nama_desa');
+  if (colIdx.ditemukan === -1) missingCols.push('ditemukan / keluarga_ditemukan');
+  if (colIdx.usaha_ditemukan === -1) missingCols.push('usaha_ditemukan');
+
+  if (missingCols.length > 0) {
+    throw new Error(`Berkas Progres Utama tidak valid. Kolom wajib berikut tidak ditemukan: [${missingCols.join(', ')}]. Pastikan format kolom sesuai dengan template standard.`);
   }
 
   // Insert upload record
@@ -347,7 +353,6 @@ function findStatusColumnIndexes(headers) {
   const kodeIdx = findIndex(['level_6_full_code', 'smallcode', 'kode', 'code']);
   const draftIdx = findIndex(['draft']);
   const approvedIdx = findIndex(['approved', 'approved by pengawas']);
-
   // Collect ALL 'rejected' columns (e.g. "REJECTED BY Pengawas", "REJECTED BY Admin Kabupaten")
   const rejectedIdxs = findMultipleIndexes(['rejected']);
 
@@ -355,6 +360,17 @@ function findStatusColumnIndexes(headers) {
   const submittedIdxs = findMultipleIndexes(['submitted_by_pcl', 'submitted by pencacah', 'submitted respondent', 'submitted']);
 
   const totalIdx = findIndex(['total']);
+
+  const missingCols = [];
+  if (kodeIdx === -1) missingCols.push('level_6_full_code / kode');
+  if (draftIdx === -1) missingCols.push('draft');
+  if (submittedIdxs.length === 0) missingCols.push('submitted');
+  if (approvedIdx === -1) missingCols.push('approved');
+  if (rejectedIdxs.length === 0) missingCols.push('rejected');
+
+  if (missingCols.length > 0) {
+    throw new Error(`Berkas Status tidak valid. Kolom wajib berikut tidak ditemukan: [${missingCols.join(', ')}]. Pastikan format kolom sesuai dengan template standard.`);
+  }
 
   return {
     kode: kodeIdx,

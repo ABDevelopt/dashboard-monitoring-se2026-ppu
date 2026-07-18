@@ -848,3 +848,125 @@ function createPclHistoryChart(canvasId, historyData) {
   window.activeCharts.push(chart);
   return chart;
 }
+
+// ===== TABLE PAGINATION & SEARCH & SORT CONTROLLER =====
+function makeTablePaginated(tableId, inputId, pageSize = 50) {
+  const table = document.getElementById(tableId);
+  const input = document.getElementById(inputId);
+  if (!table) return;
+
+  const tbody = table.querySelector('tbody');
+  if (!tbody) return;
+
+  let currentPage = 1;
+  let searchQuery = '';
+
+  // Create pagination controls container
+  let controlsId = tableId + '-pagination-controls';
+  let controls = document.getElementById(controlsId);
+  if (!controls) {
+    controls = document.createElement('div');
+    controls.id = controlsId;
+    controls.className = 'pagination-controls';
+    controls.style.cssText = 'display: flex; align-items: center; justify-content: space-between; margin-top: 16px; font-size: 13px; color: var(--text-secondary); padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;';
+    const tableWrap = table.closest('.table-wrap') || table;
+    tableWrap.after(controls);
+  }
+
+  function update() {
+    const allRows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // 1. Filter rows by search query
+    const filteredRows = allRows.filter(row => {
+      const match = searchQuery ? row.textContent.toLowerCase().includes(searchQuery) : true;
+      if (!match) {
+        row.style.display = 'none';
+      }
+      return match;
+    });
+
+    const totalRows = filteredRows.length;
+    const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+
+    if (currentPage > totalPages) {
+      currentPage = totalPages;
+    }
+
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, totalRows);
+
+    // 2. Hide/Show rows based on page bounds
+    filteredRows.forEach((row, idx) => {
+      if (idx >= startIndex && idx < endIndex) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    // 3. Render pagination controls
+    controls.innerHTML = `
+      <div>
+        Menampilkan <strong>${totalRows > 0 ? startIndex + 1 : 0}</strong> - <strong>${endIndex}</strong> dari <strong>${totalRows}</strong> baris
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-secondary btn-xs" id="${tableId}-prev-btn" ${currentPage === 1 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}><i class="bi bi-chevron-left"></i> Prev</button>
+        <button class="btn btn-secondary btn-xs" id="${tableId}-next-btn" ${currentPage === totalPages ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>Next <i class="bi bi-chevron-right"></i></button>
+      </div>
+    `;
+
+    // 4. Attach event listeners to pagination buttons
+    const prevBtn = document.getElementById(`${tableId}-prev-btn`);
+    const nextBtn = document.getElementById(`${tableId}-next-btn`);
+
+    if (prevBtn && currentPage > 1) {
+      prevBtn.addEventListener('click', () => {
+        currentPage -= 1;
+        update();
+      });
+    }
+    if (nextBtn && currentPage < totalPages) {
+      nextBtn.addEventListener('click', () => {
+        currentPage += 1;
+        update();
+      });
+    }
+  }
+
+  // Bind search input (cloning to clean any old listeners)
+  if (input) {
+    const newInput = input.cloneNode(true);
+    input.parentNode.replaceChild(newInput, input);
+    
+    newInput.addEventListener('input', () => {
+      searchQuery = newInput.value.toLowerCase();
+      currentPage = 1;
+      update();
+    });
+    
+    // Auto-focus search input back
+    newInput.focus();
+  }
+
+  // Intercept sorting to update pagination after sort
+  const headers = Array.from(table.querySelectorAll('thead th'));
+  headers.forEach(th => {
+    th.addEventListener('click', () => {
+      setTimeout(() => {
+        currentPage = 1;
+        update();
+      }, 10);
+    });
+    th.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        setTimeout(() => {
+          currentPage = 1;
+          update();
+        }, 10);
+      }
+    });
+  });
+
+  // Initial update
+  update();
+}

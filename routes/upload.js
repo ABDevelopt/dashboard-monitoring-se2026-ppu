@@ -256,6 +256,11 @@ router.post('/delete/:id', (req, res) => {
     }
   }
   db.prepare('DELETE FROM uploads WHERE id = ?').run(id);
+  try {
+    rebuildAllSummaryCaches();
+  } catch (err) {
+    console.error("Error rebuilding summary caches after delete:", err);
+  }
   req.flash('success', 'Upload berhasil dihapus.');
   res.redirect('/admin/upload');
 });

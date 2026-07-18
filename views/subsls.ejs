@@ -482,7 +482,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Re-initialize sorting, searching, and progress bars
     makeTableSortable('subslsTable');
-    makeTableSearchable('localSearch', 'subslsTable');
+    if (typeof makeTablePaginated === 'function') {
+      makeTablePaginated('subslsTable', 'localSearch', 50);
+    } else {
+      makeTableSearchable('localSearch', 'subslsTable');
+    }
     if (window.initProgressBars) window.initProgressBars(container);
     initSubslsHistoryChart();
 
