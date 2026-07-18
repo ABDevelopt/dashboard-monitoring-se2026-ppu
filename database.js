@@ -1521,6 +1521,10 @@ function attachProgressPercentages(data) {
   data.fasih_pct = targetFasih > 0 ? parseFloat(((completedFasih / targetFasih) * 100).toFixed(2)) : 0.0;
   data.fasih_pct_str = targetFasih > 0 ? ((completedFasih / targetFasih) * 100).toFixed(2) : '0.00';
 
+  const verifiedFasih = approved + rejected;
+  data.fasih_verified_pct = targetFasih > 0 ? parseFloat(((verifiedFasih / targetFasih) * 100).toFixed(2)) : 0.0;
+  data.fasih_verified_pct_str = targetFasih > 0 ? ((verifiedFasih / targetFasih) * 100).toFixed(2) : '0.00';
+
   // Compute dual targets
   const targetStatic = data.target_static_total !== undefined ? data.target_static_total : (data.target_static || 0);
   const targetUpload = data.target_upload_total !== undefined ? data.target_upload_total : (data.target_upload || 0);

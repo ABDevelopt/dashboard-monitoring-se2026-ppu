@@ -1,4 +1,4 @@
-﻿<%
+<%
   let activeTargetPct = 25;
   let targetMonthName = '30 Juni';
   const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
@@ -43,7 +43,7 @@
                   <th rowspan="2" class="hide-md">Korlap</th>
                   <th rowspan="2" class="text-right">Jumlah PCL</th>
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
-                  <th colspan="6" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                  <th colspan="7" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
                   <th colspan="3" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
                 </tr>
                 <tr>
@@ -53,6 +53,7 @@
                   <th class="text-right bg-green-soft">Approved</th>
                   <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : 'Tgt Statis' %></th>
                   <th class="text-right bg-purple-soft">Progres %</th>
+                  <th class="text-right bg-purple-soft">Verifikasi %</th>
                    <th class="text-right bg-cyan-soft hide-sm muatan-col">Realisasi</th>
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Target</th>
                   <th class="bg-cyan-soft muatan-col" style="min-width:160px;">Bar Progres</th>
@@ -64,7 +65,8 @@
                   <th>Nama PML</th>
                   <!-- <th class="text-right">Selesai</th> -->
                   <th class="text-right bg-purple-soft" data-column-idx="9">FASIH %</th>
-                  <th class="text-right bg-cyan-soft muatan-col" data-column-idx="12">Muatan %</th>
+                  <th class="text-right bg-purple-soft" data-column-idx="10">Verif %</th>
+                  <th class="text-right bg-cyan-soft muatan-col" data-column-idx="13">Muatan %</th>
                 </tr>
               </thead>
               <tbody>
@@ -103,6 +105,21 @@
                       </div>
                       <div class="progress-track-sm">
                         <div class="progress-bar <%= fW >= 100 ? 'green' : (fW < 25 ? 'red' : 'purple') %>" data-width="<%= fW %>" style="width:0%; height:100%; border-radius:99px;"></div>
+                      </div>
+                    </td>
+                    <td class="bg-purple-soft" data-sort="<%= parseFloat(p.fasih_verified_pct_str) %>" style="min-width: 160px; padding: 6px 10px; vertical-align: middle;">
+                      <%
+                        const fVerifReal = (p.approved_total || 0) + (p.rejected_total || 0);
+                        const fVerifTgt = p.target_fasih_total || 0;
+                        const fVerifW = Math.min(parseFloat(p.fasih_verified_pct_str), 100);
+                        const fVerifColor = fVerifW >= 100 ? 'var(--accent-green)' : (fVerifW < 25 ? 'var(--accent-red)' : 'var(--accent-purple)');
+                      %>
+                      <div class="bar-label" style="font-size:10px; margin-bottom:3px;">
+                        <span style="font-weight:700; color:<%= fVerifColor %>"><%= p.fasih_verified_pct_str %>%</span>
+                        <span><%= fVerifReal.toLocaleString('id-ID') %> / <%= fVerifTgt.toLocaleString('id-ID') %></span>
+                      </div>
+                      <div class="progress-track-sm">
+                        <div class="progress-bar <%= fVerifW >= 100 ? 'green' : (fVerifW < 25 ? 'red' : 'purple') %>" data-width="<%= fVerifW %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
                     <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total) %>"><%= (p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total)).toLocaleString('id-ID') %></td>
@@ -158,6 +175,9 @@
                   let totalFasihTgt = selectedPmlStats ? selectedPmlStats.target_fasih_total : 0;
                   let totalFasihDone = selectedPmlStats ? ((selectedPmlStats.submitted_total || 0) + (selectedPmlStats.approved_total || 0) + (selectedPmlStats.rejected_total || 0)) : 0;
                   let totalFasihPct = selectedPmlStats ? selectedPmlStats.fasih_pct_str : '0.00';
+
+                  let totalFasihVerifDone = selectedPmlStats ? ((selectedPmlStats.approved_total || 0) + (selectedPmlStats.rejected_total || 0)) : 0;
+                  let totalFasihVerifPct = selectedPmlStats ? selectedPmlStats.fasih_verified_pct_str : '0.00';
                 %>
                 <!-- Progress FASIH -->
                 <div style="margin-bottom: 16px;">
@@ -167,6 +187,17 @@
                   </div>
                   <div class="progress-bar-wrap" style="height: 6px;">
                     <div class="progress-bar <%= parseFloat(totalFasihPct) >= 100 ? 'green' : (parseFloat(totalFasihPct) < 25 ? 'red' : 'purple') %>" data-width="<%= totalFasihPct %>" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <!-- Progress Verifikasi PML -->
+                <div style="margin-bottom: 16px;">
+                  <div class="bar-label">
+                    <span><i class="bi bi-shield-check"></i> Progres Verifikasi PML (Approve + Reject)</span>
+                    <span class="fw-bold"><%= totalFasihVerifDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihVerifPct %>%)</span>
+                  </div>
+                  <div class="progress-bar-wrap" style="height: 6px;">
+                    <div class="progress-bar <%= parseFloat(totalFasihVerifPct) >= 100 ? 'green' : (parseFloat(totalFasihVerifPct) < 25 ? 'red' : 'purple') %>" data-width="<%= totalFasihVerifPct %>" style="width: 0%;"></div>
                   </div>
                 </div>
 
