@@ -2042,14 +2042,15 @@
         </div>` : ''}
         ${showMuatan && rows.length > 0 ? `
         <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;" class="muatan-col">
-          ${makeSectionHeader('Rincian Per PML')}
+          ${makeSectionHeader('Rincian PML')}
           <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
             ${rows.map(r => {
-              const pct = r.muatan_pct_str || '0.00';
               const completed = r.muatan_selesai !== undefined ? r.muatan_selesai : ((r.usaha_total || 0) + (r.keluarga_total || 0));
-              return `<div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
-                <span style="font-size:12px; font-weight:500;">${r.pml}</span>
-                <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">${completed}/${r.total_muatan} (${pct}%)</span>
+              return `<div style="padding:8px 0; border-bottom:1px solid var(--border); display:flex; flex-direction:column; gap:4px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-size:12px; font-weight:600; color:var(--text-primary);">${r.pml}</span>
+                </div>
+                ${makeProgressBar(completed, r.total_muatan, 'var(--accent-blue)')}
               </div>`;
             }).join('')}
           </div>
@@ -2097,17 +2098,18 @@
         </div>` : ''}
         ${showMuatan && rows.length > 0 ? `
         <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;" class="muatan-col">
-          ${makeSectionHeader('Rincian Per PCL')}
+          ${makeSectionHeader('Rincian PCL')}
           <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
             ${rows.map(r => {
-              const pct = r.muatan_pct_str || '0.00';
               const completed = r.muatan_selesai !== undefined ? r.muatan_selesai : ((r.usaha_total || 0) + (r.keluarga_total || 0));
-              return `<div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
-                <div>
-                  <span style="font-size:12px; font-weight:500;">${r.pcl}</span>
-                  <span style="font-size:10px; color:var(--text-muted); margin-left:6px;">${r.kecamatan}</span>
+              return `<div style="padding:8px 0; border-bottom:1px solid var(--border); display:flex; flex-direction:column; gap:4px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <span style="font-size:12px; font-weight:600; color:var(--text-primary);">${r.pcl}</span>
+                    <span style="font-size:10px; color:var(--text-muted); margin-left:6px;">${r.kecamatan}</span>
+                  </div>
                 </div>
-                <span style="font-size:11px; color:var(--text-muted); font-family:monospace;">${completed}/${r.total_muatan} (${pct}%)</span>
+                ${makeProgressBar(completed, r.total_muatan, 'var(--accent-blue)')}
               </div>`;
             }).join('')}
           </div>
