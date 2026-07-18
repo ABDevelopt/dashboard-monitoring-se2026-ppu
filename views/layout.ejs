@@ -2703,86 +2703,170 @@
         path = url;
       }
 
+      // Title & Breadcrumb skeleton
+      const titleSkeleton = `
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px;">
+          <div class="skeleton-block" style="height: 12px; width: 120px; border-radius: 4px;"></div>
+          <div class="skeleton-block" style="height: 28px; width: 280px; border-radius: 6px;"></div>
+        </div>
+      `;
+
+      // Helper for stat row
+      const getStatRow = (count) => `
+        <div class="skeleton-stat-row" style="grid-template-columns: repeat(${count}, 1fr); margin-bottom: 20px;">
+          ${Array(count).fill().map(() => `<div class="skeleton-stat-card skeleton-block" style="height: 90px; border-radius: 12px; border: 1px solid var(--border);"></div>`).join('')}
+        </div>
+      `;
+
+      // Helper for table
+      const getTableSkeleton = (rows = 5, cols = 5) => `
+        <div class="skeleton-table-wrap" style="border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; background: var(--bg-card);">
+          <div class="skeleton-table-header skeleton-block" style="height: 16px; width: 150px; margin-bottom: 20px;"></div>
+          ${Array(rows).fill().map(() => `
+            <div class="skeleton-table-row" style="display: grid; grid-template-columns: 40px repeat(${cols - 1}, 1fr); gap: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+              ${Array(cols).fill().map((_, i) => `<div class="skeleton-block" style="height: 14px; border-radius: 4px; ${i === 0 ? 'width: 24px;' : ''}"></div>`).join('')}
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      // 1. MAP PAGE
       if (path === '/map') {
         return `
           <div class="skeleton-page">
-            <div class="skeleton-block" style="height: 30px; width: 25%; margin-bottom: 20px; border-radius: 6px;"></div>
-            <div style="display: flex; gap: 14px; height: 500px; flex-wrap: wrap;">
-              <div class="skeleton-block" style="width: 280px; height: 100%; min-width: 240px; border-radius: 12px;"></div>
-              <div class="skeleton-block" style="flex: 1; min-width: 300px; height: 100%; border-radius: 12px;"></div>
+            ${titleSkeleton}
+            <div style="display: flex; gap: 16px; height: 500px; flex-wrap: wrap;">
+              <div class="skeleton-block" style="width: 280px; height: 100%; min-width: 240px; border-radius: 12px; border: 1px solid var(--border);"></div>
+              <div class="skeleton-block" style="flex: 1; min-width: 300px; height: 100%; border-radius: 12px; border: 1px solid var(--border);"></div>
             </div>
           </div>
         `;
       }
 
+      // 2. HELP PAGE
       if (path === '/help') {
         return `
           <div class="skeleton-page" style="max-width: 800px; margin: 0 auto;">
-            <div class="skeleton-block" style="height: 34px; width: 40%; margin-bottom: 20px; border-radius: 6px;"></div>
+            ${titleSkeleton}
             <div class="skeleton-block" style="height: 48px; margin-bottom: 24px; border-radius: 10px;"></div>
             <div style="display: flex; flex-direction: column; gap: 12px;">
-              <div class="skeleton-block" style="height: 54px; border-radius: 8px;"></div>
-              <div class="skeleton-block" style="height: 54px; border-radius: 8px;"></div>
-              <div class="skeleton-block" style="height: 54px; border-radius: 8px;"></div>
-              <div class="skeleton-block" style="height: 54px; border-radius: 8px;"></div>
-            </div>
-          </div>
-        `;
-      }
-
-      if (path === '/subsls') {
-        return `
-          <div class="skeleton-page">
-            <div class="skeleton-block" style="height: 30px; width: 35%; margin-bottom: 14px; border-radius: 6px;"></div>
-            <div class="skeleton-block" style="height: 80px; margin-bottom: 16px; border-radius: 12px;"></div>
-            <div class="skeleton-table-wrap">
-              <div class="skeleton-table-header skeleton-block" style="height: 16px; width: 200px; margin-bottom: 16px;"></div>
-              ${[...Array(6)].map(() => `
-                <div class="skeleton-table-row">
-                  <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
-                  <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
-                  <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
-                  <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
-                  <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
-                </div>
+              ${Array(4).fill().map(() => `
+                <div class="skeleton-block" style="height: 54px; border-radius: 8px;"></div>
               `).join('')}
             </div>
           </div>
         `;
       }
 
-      // Default/Standard layout (Overview, PCL, PML, Korlap, Kecamatan, Early Warning)
+      // 3. PCL / PML / KORLAP / KECAMATAN (Side-by-side List & Sticky Detail Card)
+      if (path === '/pcl' || path === '/pml' || path === '/korlap' || path === '/kecamatan') {
+        return `
+          <div class="skeleton-page">
+            ${titleSkeleton}
+            <!-- Filter Bar -->
+            <div class="skeleton-block" style="height: 60px; border-radius: 12px; margin-bottom: 20px;"></div>
+            
+            <!-- Main Content Area -->
+            <div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 16px;">
+              <!-- Left: Table -->
+              ${getTableSkeleton(8, 6)}
+              <!-- Right: Detail panel / sidebar details -->
+              <div class="skeleton-block" style="height: 420px; border-radius: 12px; border: 1px solid var(--border); position: sticky; top: 80px;"></div>
+            </div>
+          </div>
+        `;
+      }
+
+      // 4. DETAIL SUB-SLS
+      if (path === '/subsls') {
+        return `
+          <div class="skeleton-page">
+            ${titleSkeleton}
+            <!-- Large Filter Card -->
+            <div class="skeleton-block" style="height: 120px; border-radius: 12px; margin-bottom: 20px;"></div>
+            
+            <div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 16px;">
+              <!-- Left: Table -->
+              ${getTableSkeleton(10, 6)}
+              <!-- Right: Detail Panel -->
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="skeleton-block" style="height: 280px; border-radius: 12px; border: 1px solid var(--border);"></div>
+                <div class="skeleton-block" style="height: 180px; border-radius: 12px; border: 1px solid var(--border);"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // 5. KIPP & PBI
+      if (path === '/kipp' || path === '/pbi') {
+        return `
+          <div class="skeleton-page">
+            ${titleSkeleton}
+            ${getStatRow(4)}
+            ${getTableSkeleton(10, 6)}
+          </div>
+        `;
+      }
+
+      // 6. DETEKSI ANOMALI
+      if (path === '/deteksianomali') {
+        return `
+          <div class="skeleton-page">
+            ${titleSkeleton}
+            <div class="skeleton-block" style="height: 60px; border-radius: 12px; margin-bottom: 20px;"></div>
+            ${getTableSkeleton(8, 6)}
+          </div>
+        `;
+      }
+
+      // 7. UPLOAD ADMIN
+      if (path === '/admin/upload') {
+        return `
+          <div class="skeleton-page">
+            ${titleSkeleton}
+            <!-- 3 Upload Zones -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px;">
+              <div class="skeleton-block" style="height: 180px; border-radius: 12px;"></div>
+              <div class="skeleton-block" style="height: 180px; border-radius: 12px;"></div>
+              <div class="skeleton-block" style="height: 180px; border-radius: 12px;"></div>
+            </div>
+            <!-- Target Honor Card -->
+            <div class="skeleton-block" style="height: 120px; border-radius: 12px; margin-bottom: 20px;"></div>
+            <!-- History Table -->
+            ${getTableSkeleton(6, 6)}
+          </div>
+        `;
+      }
+
+      // 8. SETTINGS ADMIN
+      if (path === '/admin/settings') {
+        return `
+          <div class="skeleton-page">
+            ${titleSkeleton}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+              <div class="skeleton-block" style="height: 250px; border-radius: 12px;"></div>
+              <div class="skeleton-block" style="height: 250px; border-radius: 12px;"></div>
+            </div>
+          </div>
+        `;
+      }
+
+      // 9. OVERVIEW / DEFAULT
       const isEarlyWarning = path === '/early-warning';
       const cardCount = isEarlyWarning ? 5 : 4;
       return `
         <div class="skeleton-page">
-          <div class="skeleton-block" style="height: 30px; width: 25%; margin-bottom: 14px; border-radius: 6px;"></div>
-          <div class="skeleton-stat-row" style="grid-template-columns: repeat(${cardCount}, 1fr);">
-            ${[...Array(cardCount)].map(() => `<div class="skeleton-stat-card skeleton-block"></div>`).join('')}
-          </div>
-          <div class="skeleton-main-row">
-            <div class="skeleton-chart skeleton-block"></div>
-            <div class="skeleton-list">
-              <div class="skeleton-list-item skeleton-block"></div>
-              <div class="skeleton-list-item skeleton-block"></div>
-              <div class="skeleton-list-item skeleton-block"></div>
-              <div class="skeleton-list-item skeleton-block"></div>
-              <div class="skeleton-list-item skeleton-block"></div>
-              <div class="skeleton-list-item skeleton-block"></div>
+          ${titleSkeleton}
+          ${getStatRow(cardCount)}
+          <div class="skeleton-main-row" style="margin-bottom: 20px;">
+            <div class="skeleton-chart skeleton-block" style="height: 300px; border-radius: 12px;"></div>
+            <div class="skeleton-list" style="height: 300px; border-radius: 12px; border: 1px solid var(--border); padding: 16px;">
+              <div class="skeleton-block" style="height: 18px; width: 140px; margin-bottom: 12px; border-radius: 4px;"></div>
+              ${Array(6).fill().map(() => `<div class="skeleton-block" style="height: 18px; border-radius: 6px;"></div>`).join('')}
             </div>
           </div>
-          <div class="skeleton-table-wrap">
-            <div class="skeleton-table-header skeleton-block" style="height: 16px; width: 180px; margin-bottom: 16px;"></div>
-            ${[...Array(5)].map(() => `
-              <div class="skeleton-table-row">
-                <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
-                <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
-                <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
-                <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
-                <div class="skeleton-table-cell skeleton-block" style="height: 16px;"></div>
-              </div>
-            `).join('')}
-          </div>
+          ${getTableSkeleton(6, 6)}
         </div>
       `;
     }
