@@ -1,4 +1,4 @@
-﻿<div class="fade-in">
+<div class="fade-in">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <% if (!uploadId) { %>
     <div class="card empty-state">
@@ -223,7 +223,7 @@
             let muatanDone = selectedSubsls.muatan_selesai || 0;
             let muatanTgt = selectedSubsls.muatan || 0;
             let muatanPct = muatanTgt > 0 ? ((muatanDone / muatanTgt) * 100).toFixed(2) : '0.00';
-            let muatanColor = parseFloat(muatanPct) >= 100 ? 'var(--accent-green)' : (parseFloat(muatanPct) < 25 ? 'var(--accent-red)' : 'var(--accent-cyan)');
+            let muatanColor = parseFloat(muatanPct) >= 100 ? 'var(--accent-green)' : (parseFloat(muatanPct) < 40 ? 'var(--accent-red)' : 'var(--accent-cyan)');
           %>
           <div class="card" style="border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 20px; position: sticky; top: 80px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
             <!-- Close Detail Button -->
@@ -325,7 +325,7 @@
                   <strong><%= muatanDone %> / <%= muatanTgt %></strong>
                 </div>
                 <div style="height: 6px; background: rgba(6,182,212,0.1); border-radius: 99px; overflow: hidden; margin-bottom: 12px;">
-                  <div class="progress-bar <%= parseFloat(muatanPct) >= 100 ? 'green' : (parseFloat(muatanPct) < 25 ? 'red' : 'blue') %>" data-width="<%= Math.min(parseFloat(muatanPct), 100) %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
+                  <div class="progress-bar <%= parseFloat(muatanPct) >= 100 ? 'green' : (parseFloat(muatanPct) < 40 ? 'red' : 'blue') %>" data-width="<%= Math.min(parseFloat(muatanPct), 100) %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
                 </div>
                 
                 <!-- Temuan Keberadaan Usaha -->

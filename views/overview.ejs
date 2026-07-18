@@ -648,20 +648,20 @@
                       const fReal = (k.submitted_total || 0) + (k.approved_total || 0) + (k.rejected_total || 0);
                       const fTgt = k.target_fasih_total || 0;
                       const fW = Math.min(parseFloat(fasihPct), 100);
-                      const fColor = fW >= 100 ? 'var(--accent-green)' : (fW < 25 ? 'var(--accent-red)' : 'var(--accent-purple)');
+                      const fColor = fW >= 100 ? 'var(--accent-green)' : (fW < 40 ? 'var(--accent-red)' : 'var(--accent-purple)');
                     %>
                     <div class="bar-label" style="font-size:10px; margin-bottom:3px;">
                       <span style="font-weight:700; color:<%= fColor %>"><%= fasihPct %>%</span>
                       <span><%= fReal.toLocaleString('id-ID') %> / <%= fTgt.toLocaleString('id-ID') %></span>
                     </div>
                     <div class="progress-track-sm">
-                      <div class="progress-bar <%= fW >= 100 ? 'green' : (fW < 25 ? 'red' : 'purple') %>" data-width="<%= fW %>" style="width:0%; height:100%; border-radius:99px;"></div>
+                      <div class="progress-bar <%= fW >= 100 ? 'green' : (fW < 40 ? 'red' : 'purple') %>" data-width="<%= fW %>" style="width:0%; height:100%; border-radius:99px;"></div>
                     </div>
                   </td>
                   <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>" style="min-width: 160px; padding: 6px 10px; vertical-align: middle;">
                     <% if (parseFloat(muatanPct) >= 100) { %>
                       <span class="badge badge-green">100%</span>
-                    <% } else if (parseFloat(muatanPct) < activeTargetPct) { %>
+                    <% } else if (parseFloat(muatanPct) < 40) { %>
                       <span class="badge badge-red"><%= muatanPct %>%</span>
                     <% } else { %>
                       <span class="badge badge-blue"><%= muatanPct %>%</span>
@@ -701,20 +701,20 @@
                       const fReal = (k.submitted_total || 0) + (k.approved_total || 0) + (k.rejected_total || 0);
                       const fTgt = k.target_fasih_total || 0;
                       const fW = Math.min(parseFloat(fasihPct), 100);
-                      const fColor = fW >= 100 ? 'var(--accent-green)' : (fW < 25 ? 'var(--accent-red)' : 'var(--accent-purple)');
+                      const fColor = fW >= 100 ? 'var(--accent-green)' : (fW < 40 ? 'var(--accent-red)' : 'var(--accent-purple)');
                     %>
                     <div class="bar-label" style="font-size:9px; margin-bottom:2px;">
                       <span style="font-weight:700; color:<%= fColor %>"><%= fasihPct %>%</span>
                       <span style="font-size: 8px;"><%= fReal %>/<%= fTgt %></span>
                     </div>
                     <div style="height:4px; background:var(--bg-progress-wrap); border-radius:99px; overflow:hidden;">
-                      <div class="progress-bar <%= fW >= 100 ? 'green' : (fW < 25 ? 'red' : 'purple') %>" data-width="<%= fW %>" style="width:0%; height:100%; border-radius:99px;"></div>
+                      <div class="progress-bar <%= fW >= 100 ? 'green' : (fW < 40 ? 'red' : 'purple') %>" data-width="<%= fW %>" style="width:0%; height:100%; border-radius:99px;"></div>
                     </div>
                   </td>
                   <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>">
                     <% if (parseFloat(muatanPct) >= 100) { %>
                       <span class="badge badge-green">100%</span>
-                    <% } else if (parseFloat(muatanPct) < activeTargetPct) { %>
+                    <% } else if (parseFloat(muatanPct) < 40) { %>
                       <span class="badge badge-red"><%= muatanPct %>%</span>
                     <% } else { %>
                       <span class="badge badge-blue"><%= muatanPct %>%</span>

@@ -2015,6 +2015,7 @@
     }
 
     const renderKorlapDetails = (rows, name) => {
+      const showMuatan = typeof globalSettings !== 'undefined' && globalSettings.show_progres_muatan !== '0';
       // Aggregate totals from all PML rows under this Korlap
       const totalSubSLS = rows.reduce((s, r) => s + (r.total_subsls || 0), 0);
       const totalSelesai = rows.reduce((s, r) => s + (r.selesai || 0), 0);
@@ -2046,15 +2047,16 @@
           ${makeProgressBar(totalFasihAll, totalFasihTarget, '#22c55e')}
           ${makeFasihCards(totalDraft, totalSubmit, totalApprove, totalReject)}
         </div>
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+        ${showMuatan ? `
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;" class="muatan-col">
           ${makeSectionHeader('Progres Muatan')}
           <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
             <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
           </div>
           ${makeProgressBar(totalMuatanSelesai, totalMuatan, 'var(--accent-blue)')}
-        </div>
-        ${rows.length > 0 ? `
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+        </div>` : ''}
+        ${showMuatan && rows.length > 0 ? `
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;" class="muatan-col">
           ${makeSectionHeader('Rincian Per PML')}
           <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
             ${rows.map(r => {
@@ -2071,6 +2073,7 @@
     };
 
     const renderPmlDetails = (rows, name) => {
+      const showMuatan = typeof globalSettings !== 'undefined' && globalSettings.show_progres_muatan !== '0';
       // Aggregate totals from all PCL rows under this PML
       const totalSubSLS = rows.reduce((s, r) => s + (r.total_subsls || 0), 0);
       const totalSelesai = rows.reduce((s, r) => s + (r.selesai || 0), 0);
@@ -2099,15 +2102,16 @@
           ${makeProgressBar(totalFasihAll, totalFasihTarget, '#22c55e')}
           ${makeFasihCards(totalDraft, totalSubmit, totalApprove, totalReject)}
         </div>
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+        ${showMuatan ? `
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;" class="muatan-col">
           ${makeSectionHeader('Progres Muatan')}
           <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
             <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
           </div>
           ${makeProgressBar(totalMuatanSelesai, totalMuatan, 'var(--accent-blue)')}
-        </div>
-        ${rows.length > 0 ? `
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
+        </div>` : ''}
+        ${showMuatan && rows.length > 0 ? `
+        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;" class="muatan-col">
           ${makeSectionHeader('Rincian Per PCL')}
           <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
             ${rows.map(r => {
@@ -2178,7 +2182,7 @@
               <span class="fw-bold">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} (${fasihPct}%)</span>
             </div>
             <div class="progress-bar-wrap" style="height: 6px;">
-              <div class="progress-bar ${parseFloat(fasihPct) >= 100 ? 'green' : (parseFloat(fasihPct) < 25 ? 'red' : 'purple')}" style="width: ${fasihPct}%;"></div>
+              <div class="progress-bar ${parseFloat(fasihPct) >= 100 ? 'green' : (parseFloat(fasihPct) < 40 ? 'red' : 'purple')}" style="width: ${fasihPct}%;"></div>
             </div>
           </div>
 
@@ -2191,7 +2195,7 @@
             </div>
             <div class="progress-bar-target-wrap" style="position: relative; height: 6px; margin-top: 16px; margin-bottom: 8px;">
               <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
-                <div class="progress-bar ${parseFloat(donePct) >= 100 ? 'green' : (parseFloat(donePct) < activeTargetPct ? 'red' : 'blue')}" style="width: ${donePct}%; height: 100%; border-radius: 99px;"></div>
+                <div class="progress-bar ${parseFloat(donePct) >= 100 ? 'green' : (parseFloat(donePct) < 40 ? 'red' : 'blue')}" style="width: ${donePct}%; height: 100%; border-radius: 99px;"></div>
               </div>
               <!-- Marker 25% (30 Juni) -->
               <div style="position: absolute; left: 25%; top: -3px; height: 12px; border-left: 1px dashed ${activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; opacity: ${activeTargetPct === 25 ? '1' : '0.5'}; z-index: 2; pointer-events: none;">
