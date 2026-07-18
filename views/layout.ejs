@@ -2804,6 +2804,10 @@
       try {
       // Fetch target page
       const response = await fetch(url);
+      if (response.status === 401 || response.redirected || (response.url && response.url.includes('/login'))) {
+        window.location.href = '/login';
+        return;
+      }
       if (!response.ok) {
         window.location.href = url;
         return;

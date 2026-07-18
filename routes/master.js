@@ -20,7 +20,7 @@ const upload = multer({
     if (ext === '.xlsx' || ext === '.xls' || ext === '.json') cb(null, true);
     else cb(new Error('Hanya file Excel (.xlsx/.xls) atau JSON (.json) yang diperbolehkan.'));
   },
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
 // GET: Master management dashboard

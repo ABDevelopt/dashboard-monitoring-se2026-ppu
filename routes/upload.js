@@ -21,7 +21,7 @@ const upload = multer({
     if (ext === '.xlsx' || ext === '.xls') cb(null, true);
     else cb(new Error('Hanya file Excel (.xlsx/.xls) yang diperbolehkan.'));
   },
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
 // GET: Upload page

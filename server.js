@@ -241,6 +241,9 @@ app.get('/help', (req, res) => {
 // Admin Auth Middleware
 function requireAdmin(req, res, next) {
   if (req.session.isAdmin) return next();
+  if (req.xhr || (req.headers.accept && req.headers.accept.includes('json'))) {
+    return res.status(401).json({ error: 'Sesi kedaluwarsa. Silakan login kembali.', redirectUrl: '/login' });
+  }
   req.flash('error', 'Akses ditolak. Silakan login sebagai admin.');
   res.redirect('/admin');
 }

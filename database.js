@@ -40,7 +40,7 @@ function getUserByUsername(username) {
 
 function getDb() {
   if (!db) {
-    db = new Database(DB_PATH);
+    db = new Database(DB_PATH, { timeout: 15000 });
     db.pragma('journal_mode = WAL');
     db.pragma('synchronous = NORMAL');
     db.pragma('cache_size = -32000');
@@ -876,7 +876,7 @@ function getEarlyWarning(uploadId, filters = {}) {
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
-      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 100.0 END AS pct,
+      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * CAST(SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS REAL) / CAST(SUM(${singleTargetFormula}) AS REAL), 2) ELSE 100.0 END AS pct,
       SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS muatan_realisasi,
       ROUND(SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) * 1.0 / ?, 2) AS rata_rata,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
@@ -1106,7 +1106,7 @@ function getTopPerformers(uploadId, filters = {}, settings = getSettings()) {
       COUNT(m.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
-      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 0.0 END AS pct,
+      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * CAST(SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS REAL) / CAST(SUM(${singleTargetFormula}) AS REAL), 2) ELSE 0.0 END AS pct,
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
@@ -1131,7 +1131,7 @@ function getTopPerformers(uploadId, filters = {}, settings = getSettings()) {
       COUNT(m.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
-      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 0.0 END AS pct,
+      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * CAST(SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS REAL) / CAST(SUM(${singleTargetFormula}) AS REAL), 2) ELSE 0.0 END AS pct,
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
@@ -1195,7 +1195,7 @@ function getBottomPerformers(uploadId, filters = {}, settings = getSettings()) {
       COUNT(m.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
-      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 100.0 END AS pct,
+      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * CAST(SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS REAL) / CAST(SUM(${singleTargetFormula}) AS REAL), 2) ELSE 100.0 END AS pct,
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
@@ -1220,7 +1220,7 @@ function getBottomPerformers(uploadId, filters = {}, settings = getSettings()) {
       COUNT(m.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
-      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${singleTargetFormula}), 2) ELSE 100.0 END AS pct,
+      CASE WHEN SUM(${singleTargetFormula}) > 0 THEN ROUND(100.0 * CAST(SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS REAL) / CAST(SUM(${singleTargetFormula}) AS REAL), 2) ELSE 100.0 END AS pct,
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
