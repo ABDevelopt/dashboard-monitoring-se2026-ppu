@@ -224,6 +224,11 @@
                       <% } %>
                     </div>
                     
+                    <!-- PML Progress Bar -->
+                    <div style="background: var(--bg-tertiary, rgba(255,255,255,0.06)); border-radius: 99px; height: 6px; overflow: hidden; margin: 4px 0 6px; border: 1px solid var(--border);">
+                      <div style="width: <%= Math.min(100, parseFloat(itemPct)) %>%; height: 100%; background: <%= typeof settings !== 'undefined' && settings.show_progres_muatan === '0' ? 'var(--accent-purple)' : 'var(--accent-blue)' %>; border-radius: 99px; transition: width 0.3s ease;"></div>
+                    </div>
+                    
                     <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); flex-wrap: wrap; gap: 4px;">
                       <div>Petugas: <%= item.jumlah_pcl %> PCL Â· Selesai: <%= item.selesai %>/<%= item.total_subsls %> SLS</div>
                       <div style="display: flex; gap: 6px; align-items: center;">
