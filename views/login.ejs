@@ -1,160 +1,309 @@
 <style>
+  /* =====================================================================
+     LOGIN PAGE — Full viewport, zero scroll (horizontal & vertical)
+     body.page-login locks both axes; inner card scales to fit the screen.
+     ===================================================================== */
+
+  /* Lock entire viewport — no scroll at all */
+  html.page-login,
+  body.page-login {
+    overflow: hidden !important;
+    height: 100dvh !important;
+    width: 100vw !important;
+  }
+
+  /* page-content on login must fill exactly the viewport minus the topbar */
+  body.page-login .page-content {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    padding: 12px !important;
+    /* height = viewport minus topbar */
+    height: calc(100dvh - var(--header-height)) !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Fade-in wrapper — flex container, no overflow */
+  .login-page-wrapper {
+    width: 100%;
+    max-width: 720px;
+    overflow: hidden;
+  }
+
+  /* Card container */
   .login-container-card {
     display: flex;
     flex-direction: row;
-    border-radius: 16px;
+    border-radius: 14px;
     overflow: hidden;
     padding: 0 !important;
     border: 1px solid var(--border);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    /* Never exceed the visible area */
+    max-height: calc(100dvh - var(--header-height) - 24px);
   }
+
+  /* LEFT: Logo column */
   .login-logo-col {
-    flex: 1;
+    flex: 0 0 220px;
     background: var(--bg-secondary);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 40px;
+    padding: 28px 24px;
     border-right: 1px solid var(--border);
-    min-width: 260px;
+    gap: 10px;
   }
+
+  .login-logo-col img {
+    width: clamp(100px, 12vw, 140px);
+    object-fit: contain;
+  }
+
+  .login-logo-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  /* RIGHT: Form column — scrollable internally only if absolutely needed */
   .login-form-col {
-    flex: 1.2;
-    padding: 40px 32px;
+    flex: 1;
+    padding: 28px 28px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-width: 320px;
+    overflow-y: auto; /* internal scroll only, outer body never scrolls */
+    min-width: 0;
   }
-  @media (max-width: 680px) {
+
+  /* Form element spacing compression on small heights */
+  .login-form-col h2 { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; text-align: center; }
+  .login-form-col .login-subtitle { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; text-align: center; }
+  .login-field { margin-bottom: 12px; text-align: left; }
+  .login-field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+  .login-field input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    background: var(--bg-body);
+    color: var(--text-primary);
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+  .login-field input:focus { outline: none; border-color: var(--accent-blue); }
+
+  .login-remember {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .login-remember input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent-blue); cursor: pointer; flex-shrink: 0; }
+  .login-remember label { font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; }
+
+  .login-submit-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .login-alt-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 9px;
+    font-size: 12px;
+  }
+
+  .login-back-link {
+    display: block;
+    text-align: center;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .login-back-link:hover { color: var(--text-primary); }
+
+  /* Avatar for saved account */
+  .login-avatar {
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #f97316, #ec4899, #8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 12px auto;
+    box-shadow: 0 4px 14px rgba(249,115,22,0.25);
+    border: 3px solid var(--border);
+  }
+  .login-avatar span { font-size: 24px; font-weight: 700; color: white; text-transform: uppercase; }
+
+  .login-danger-link {
+    display: block;
+    text-align: center;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--accent-red);
+    text-decoration: none;
+    font-weight: 500;
+    transition: opacity 0.2s;
+  }
+  .login-danger-link:hover { opacity: 0.8; }
+
+  /* ── Mobile: stack logo on top of form ── */
+  @media (max-width: 620px) {
     .login-container-card {
       flex-direction: column !important;
+      max-height: calc(100dvh - var(--header-height) - 24px);
     }
+
     .login-logo-col {
-      padding: 30px !important;
+      flex: none !important;
+      padding: 16px !important;
       border-right: none !important;
       border-bottom: 1px solid var(--border) !important;
-      min-width: 100% !important;
+      flex-direction: row !important;
+      gap: 10px !important;
+      justify-content: center !important;
     }
-    .login-form-col {
-      padding: 30px 24px !important;
-      min-width: 100% !important;
-    }
+
+    .login-logo-col img { width: 52px !important; }
+    .login-logo-label { font-size: 11px; }
+
+    .login-form-col { padding: 16px !important; }
+    .login-form-col h2 { font-size: 16px; }
+    .login-form-col .login-subtitle { margin-bottom: 12px; }
+    .login-field { margin-bottom: 8px; }
+    .login-field input { padding: 8px 10px; font-size: 12px; }
+    .login-remember { margin-bottom: 12px; }
+    .login-submit-btn { padding: 9px; }
+  }
+
+  /* ── Very small screens (e.g. 360px) ── */
+  @media (max-width: 400px) {
+    body.page-login .page-content { padding: 8px !important; }
+    .login-logo-col { padding: 10px !important; }
+    .login-form-col { padding: 12px !important; }
+    .login-avatar { width: 56px; height: 56px; }
+    .login-avatar span { font-size: 20px; }
   }
 </style>
 
-<div class="fade-in" style="max-width: 740px; margin: 60px auto; width: 90%;">
+<div class="login-page-wrapper fade-in">
   <div class="card login-container-card">
-    
-    <!-- LEFT SIDE: LOGO COLUMN -->
+
+    <!-- LEFT: Logo Column -->
     <div class="login-logo-col">
-      <img src="/logo-vertical.png" alt="Logo SE2026" class="logo-light" loading="eager" style="width: 150px; object-fit: contain;">
-      <img src="/logo-vertical-dark.png" alt="Logo SE2026" class="logo-dark" fetchpriority="high" loading="eager" style="width: 150px; object-fit: contain;">
-      <div style="margin-top: 16px; text-align: center; color: var(--text-muted); font-size: 13px; font-weight: 600;">
-        Monitoring SE2026 PPU
-      </div>
+      <img src="/logo-vertical.png"      alt="Logo SE2026" class="logo-light" loading="eager">
+      <img src="/logo-vertical-dark.png" alt="Logo SE2026" class="logo-dark"  fetchpriority="high" loading="eager">
+      <div class="login-logo-label">Monitoring SE2026<br>Penajam Paser Utara</div>
     </div>
-    
-    <!-- RIGHT SIDE: FORM COLUMN -->
+
+    <!-- RIGHT: Form Column -->
     <div class="login-form-col">
+
       <% if (typeof savedAccount !== 'undefined' && savedAccount) { %>
-        
-        <!-- PANEL A: Saved Account Card (Instagram style) -->
+
+        <!-- PANEL A: Saved Account -->
         <div id="saved-account-panel" class="fade-in">
-          <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(45deg, #f97316, #ec4899, #8b5cf6); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.25); border: 3px solid var(--border);">
-            <span style="font-size: 28px; font-weight: 700; color: white; text-transform: uppercase;">
-              <%= savedAccount.username.substring(0, 2) %>
-            </span>
+          <div class="login-avatar">
+            <span><%= savedAccount.username.substring(0, 2) %></span>
           </div>
-          
-          <h2 style="font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; text-align: center;"><%= savedAccount.username %></h2>
-          <p style="font-size: 12px; color: var(--text-muted); text-transform: capitalize; margin-bottom: 24px; text-align: center;"><i class="bi bi-shield-check"></i> <%= savedAccount.role %></p>
-          
+          <h2><%= savedAccount.username %></h2>
+          <p class="login-subtitle"><i class="bi bi-shield-check"></i> <%= savedAccount.role %></p>
+
           <form action="/login/token" method="POST">
-            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px; font-weight: 600; margin-bottom: 12px;">
+            <button type="submit" class="btn btn-primary login-submit-btn">
               <i class="bi bi-unlock-fill"></i> Masuk sebagai <%= savedAccount.username %>
             </button>
           </form>
 
-          <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px; align-items: center;">
-            <button onclick="switchToNormalForm()" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 10px; font-size: 13px;">
-              <i class="bi bi-people"></i> Gunakan Akun Lain
-            </button>
-            
-            <a href="/login/clear-saved" style="font-size: 12px; color: var(--accent-red); text-decoration: none; font-weight: 500; transition: opacity 0.2s; margin-top: 8px;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">
-              <i class="bi bi-trash3"></i> Hapus Info Login dari Browser Ini
-            </a>
-          </div>
+          <button onclick="switchToNormalForm()" class="btn btn-secondary login-alt-btn" style="margin-top:8px;">
+            <i class="bi bi-people"></i> Gunakan Akun Lain
+          </button>
+
+          <a href="/login/clear-saved" class="login-danger-link">
+            <i class="bi bi-trash3"></i> Hapus Info Login dari Browser Ini
+          </a>
         </div>
 
-        <!-- PANEL B: Normal Login Form (hidden by default) -->
-        <div id="normal-login-panel" style="display: none;" class="fade-in">
-          <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; text-align: center;">Login Pengguna</h2>
-          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; text-align: center;">Masukkan username dan password Anda.</p>
+        <!-- PANEL B: Normal Login (hidden by default) -->
+        <div id="normal-login-panel" style="display:none;" class="fade-in">
+          <h2>Login Pengguna</h2>
+          <p class="login-subtitle">Masukkan username dan password Anda.</p>
 
           <form action="/login" method="POST">
-            <div style="margin-bottom: 16px; text-align: left;">
-              <label for="username" style="display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Username</label>
-              <input type="text" id="username" name="username" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: var(--bg-body); color: var(--text-primary);" placeholder="Masukkan username">
+            <div class="login-field">
+              <label for="username2">Username</label>
+              <input type="text" id="username2" name="username" required placeholder="Masukkan username">
             </div>
-            <div style="margin-bottom: 16px; text-align: left;">
-              <label for="password" style="display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Password</label>
-              <input type="password" id="password" name="password" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: var(--bg-body); color: var(--text-primary);" placeholder="••••••••">
+            <div class="login-field">
+              <label for="password2">Password</label>
+              <input type="password" id="password2" name="password" required placeholder="••••••••">
             </div>
-            
-            <div style="margin-bottom: 24px; display: flex; align-items: center; text-align: left; gap: 8px;">
-              <input type="checkbox" id="remember" name="remember" style="width: 16px; height: 16px; accent-color: var(--accent-blue); cursor: pointer;">
-              <label for="remember" style="font-size: 13px; color: var(--text-secondary); cursor: pointer; user-select: none;">Simpan info login di browser ini</label>
+            <div class="login-remember">
+              <input type="checkbox" id="remember2" name="remember">
+              <label for="remember2">Simpan info login di browser ini</label>
             </div>
-
-            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px; margin-bottom: 16px;"><i class="bi bi-box-arrow-in-right"></i> Masuk ke Sistem</button>
+            <button type="submit" class="btn btn-primary login-submit-btn">
+              <i class="bi bi-box-arrow-in-right"></i> Masuk ke Sistem
+            </button>
           </form>
 
-          <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
-            <button onclick="switchToSavedAccount()" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 10px; font-size: 13px;">
-              <i class="bi bi-arrow-left"></i> Kembali ke Akun Tersimpan
-            </button>
-          </div>
+          <button onclick="switchToSavedAccount()" class="btn btn-secondary login-alt-btn" style="margin-top:8px;">
+            <i class="bi bi-arrow-left"></i> Kembali ke Akun Tersimpan
+          </button>
         </div>
 
       <% } else { %>
-        
-        <!-- PANEL C: Default Normal Login Form -->
+
+        <!-- PANEL C: Default Normal Login -->
         <div id="normal-login-panel">
-          <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; text-align: center;">Login Pengguna</h2>
-          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; text-align: center;">Masukkan username dan password Anda untuk masuk.</p>
+          <h2>Login Pengguna</h2>
+          <p class="login-subtitle">Masukkan username dan password Anda untuk masuk.</p>
 
           <form action="/login" method="POST">
-            <div style="margin-bottom: 16px; text-align: left;">
-              <label for="username" style="display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Username</label>
-              <input type="text" id="username" name="username" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: var(--bg-body); color: var(--text-primary);" placeholder="Masukkan username">
+            <div class="login-field">
+              <label for="username">Username</label>
+              <input type="text" id="username" name="username" required placeholder="Masukkan username">
             </div>
-            <div style="margin-bottom: 16px; text-align: left;">
-              <label for="password" style="display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Password</label>
-              <input type="password" id="password" name="password" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: var(--bg-body); color: var(--text-primary);" placeholder="••••••••">
+            <div class="login-field">
+              <label for="password">Password</label>
+              <input type="password" id="password" name="password" required placeholder="••••••••">
             </div>
-
-            <div style="margin-bottom: 24px; display: flex; align-items: center; text-align: left; gap: 8px;">
-              <input type="checkbox" id="remember" name="remember" style="width: 16px; height: 16px; accent-color: var(--accent-blue); cursor: pointer;">
-              <label for="remember" style="font-size: 13px; color: var(--text-secondary); cursor: pointer; user-select: none;">Simpan info login di browser ini</label>
+            <div class="login-remember">
+              <input type="checkbox" id="remember" name="remember">
+              <label for="remember">Simpan info login di browser ini</label>
             </div>
-
-            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px;"><i class="bi bi-box-arrow-in-right"></i> Masuk ke Sistem</button>
+            <button type="submit" class="btn btn-primary login-submit-btn">
+              <i class="bi bi-box-arrow-in-right"></i> Masuk ke Sistem
+            </button>
           </form>
         </div>
 
       <% } %>
-      
-      <div style="margin-top: 24px; text-align: center;">
-        <a href="/" style="font-size: 13px; color: var(--text-muted); text-decoration: none;"><i class="bi bi-arrow-left"></i> Kembali ke Halaman Publik</a>
-      </div>
+
+      <a href="/" class="login-back-link">
+        <i class="bi bi-arrow-left"></i> Kembali ke Halaman Publik
+      </a>
     </div>
-    
+
   </div>
 </div>
 
 <script>
+  // Apply page-login class to html element too (for overflow lock)
+  document.documentElement.classList.add('page-login');
+
   function switchToNormalForm() {
     document.getElementById('saved-account-panel').style.display = 'none';
     document.getElementById('normal-login-panel').style.display = 'block';

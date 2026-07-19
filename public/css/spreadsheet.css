@@ -1,0 +1,356 @@
+/* ================================================================
+   SPREADSHEET EDITOR — CSS
+   Toolbar, formula bar, cell editing, column management panel
+   ================================================================ */
+
+/* ---- Toolbar ---- */
+.sheet-toolbar {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sheet-toolbar::-webkit-scrollbar { display: none; }
+
+.card.card-expanded .sheet-toolbar { display: flex; }
+
+.sheet-toolbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+.sheet-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  height: 28px;
+}
+.sheet-btn:hover { background: var(--bg-card-hover); border-color: var(--accent-blue); }
+.sheet-btn.active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+.sheet-btn.danger { border-color: var(--accent-red); color: var(--accent-red); }
+.sheet-btn.danger:hover { background: rgba(239,68,68,0.1); }
+.sheet-btn i { font-size: 12px; }
+.sheet-btn-label { font-size: 10px; }
+
+/* Edit Mode indicator badge in header */
+.sheet-edit-badge {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid #f59e0b;
+  color: #f59e0b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.sheet-edit-mode .sheet-edit-badge { display: inline-flex; }
+
+/* ---- Formula Bar ---- */
+.sheet-formula-bar {
+  display: none;
+  align-items: center;
+  gap: 0;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  overflow: hidden;
+  flex-shrink: 0;
+  margin-bottom: 6px;
+  transition: border-color 0.2s;
+}
+.sheet-formula-bar:focus-within { border-color: var(--accent-blue); }
+
+.card.card-expanded.sheet-edit-mode .sheet-formula-bar { display: flex; }
+
+.sheet-cell-ref {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: monospace;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  height: 100%;
+  white-space: nowrap;
+}
+
+.sheet-fx-icon {
+  display: flex;
+  align-items: center;
+  padding: 0 7px;
+  color: var(--accent-blue);
+  font-style: italic;
+  font-size: 12px;
+  font-weight: 700;
+  border-right: 1px solid var(--border);
+  height: 100%;
+  background: var(--bg-secondary);
+}
+
+.sheet-formula-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  padding: 0 10px;
+  height: 100%;
+}
+
+/* ---- Editable Cell Styles ---- */
+
+/* Cells in edit mode: show hover cursor */
+.card.card-expanded.sheet-edit-mode td.sheet-editable {
+  cursor: cell;
+  transition: background 0.1s;
+}
+.card.card-expanded.sheet-edit-mode td.sheet-editable:hover {
+  background: rgba(59, 130, 246, 0.06) !important;
+  outline: 1px inset rgba(59, 130, 246, 0.35);
+}
+
+/* Selected / Active cell */
+td.sheet-cell-active {
+  outline: 2px solid var(--accent-blue) !important;
+  outline-offset: -1px !important;
+  background: rgba(59, 130, 246, 0.08) !important;
+  z-index: 5 !important;
+  position: relative !important;
+}
+
+/* In-cell editor input */
+.sheet-cell-input {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: inherit;
+  font-family: inherit;
+  padding: 6px 10px;
+  box-sizing: border-box;
+  z-index: 20;
+  box-shadow: 0 0 0 2px var(--accent-blue);
+}
+
+/* Cell that has been edited (has override) */
+.card.card-expanded td.sheet-modified {
+  background: rgba(245, 158, 11, 0.06) !important;
+}
+.card.card-expanded td.sheet-modified::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+td.sheet-modified { position: relative; }
+
+/* Formula cells */
+td.sheet-formula-cell {
+  font-style: italic;
+  color: var(--accent-cyan) !important;
+}
+td.sheet-formula-error {
+  color: var(--accent-red) !important;
+  font-weight: 600;
+}
+
+/* Custom column header */
+th.sheet-custom-col {
+  background: rgba(99, 102, 241, 0.12) !important;
+  color: var(--accent-purple) !important;
+  font-style: italic;
+}
+td.sheet-custom-col { background: rgba(99, 102, 241, 0.04) !important; }
+
+/* Hidden column placeholder (no display — driven by JS) */
+.sheet-col-hidden { display: none !important; }
+
+/* ---- Column Visibility Panel ---- */
+.sheet-col-panel {
+  position: fixed;
+  top: calc(var(--header-height) + 56px);
+  right: 16px;
+  width: 240px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.22);
+  z-index: 3000;
+  padding: 12px;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.sheet-col-panel.is-open { display: flex; }
+
+.sheet-col-panel-header {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sheet-col-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 3px 0;
+}
+.sheet-col-item:hover { opacity: 0.75; }
+.sheet-col-item input[type="checkbox"] {
+  width: 14px; height: 14px;
+  accent-color: var(--accent-blue);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.sheet-col-item label {
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
+}
+.sheet-col-item.is-custom label { color: var(--accent-purple); font-style: italic; }
+
+.sheet-col-panel-footer {
+  display: flex;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.sheet-col-panel-footer .sheet-btn { flex: 1; justify-content: center; }
+
+/* ---- Add Column Dialog (uses native sweetalert-style but inline) ---- */
+.sheet-add-col-dialog {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+  z-index: 4000;
+  width: 320px;
+  padding: 20px;
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+}
+.sheet-add-col-dialog.is-open { display: flex; }
+.sheet-dialog-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.sheet-dialog-field { display: flex; flex-direction: column; gap: 4px; }
+.sheet-dialog-field label { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.sheet-dialog-field input,
+.sheet-dialog-field select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+}
+.sheet-dialog-field input:focus,
+.sheet-dialog-field select:focus { border-color: var(--accent-blue); }
+.sheet-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ---- Context Menu ---- */
+.sheet-ctx-menu {
+  position: fixed;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  z-index: 5000;
+  min-width: 160px;
+  padding: 4px 0;
+  display: none;
+}
+.sheet-ctx-menu.is-open { display: block; }
+.sheet-ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.sheet-ctx-item:hover { background: var(--bg-secondary); }
+.sheet-ctx-item i { font-size: 13px; width: 16px; text-align: center; }
+.sheet-ctx-item.danger { color: var(--accent-red); }
+.sheet-ctx-sep { height: 1px; background: var(--border); margin: 3px 0; }
+
+/* ---- Undo indicator flash ---- */
+@keyframes sheet-undo-flash {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.35; }
+  100% { opacity: 1; }
+}
+.sheet-undo-flash { animation: sheet-undo-flash 0.25s ease; }
+
+/* ---- Backdrop for dialogs ---- */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3500;
+  background: rgba(0,0,0,0.4);
+  display: none;
+}
+.sheet-backdrop.is-open { display: block; }
