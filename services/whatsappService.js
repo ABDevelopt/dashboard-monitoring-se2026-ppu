@@ -124,6 +124,10 @@ function initialize() {
       '--mute-audio',
       '--safebrowsing-disable-auto-update',
       '--js-flags=--max-old-space-size=512',
+      // Tambahan khusus bypass Passenger restriction:
+      '--single-process',
+      '--disable-features=site-per-process',
+      '--disable-features=dbus',
     ],
   };
   
