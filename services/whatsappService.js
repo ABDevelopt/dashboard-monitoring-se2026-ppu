@@ -31,7 +31,7 @@ function removeSingletonLock() {
  */
 function initialize() {
   if (client) {
-    logger.info('WhatsApp Client already initialized or initializing.');
+    logger.info('[WA-Init] WhatsApp Client already initialized or initializing.');
     return;
   }
 
@@ -39,69 +39,55 @@ function initialize() {
   removeSingletonLock();
 
   clientStatus = 'CONNECTING';
-  logger.info('Initializing WhatsApp Client...');
+  logger.info('[WA-Init] Starting WhatsApp Client initialization sequence...');
 
   // Timeout lebih panjang untuk server yang lambat (60s)
   if (initTimeout) clearTimeout(initTimeout);
   initTimeout = setTimeout(() => {
     if (clientStatus === 'CONNECTING') {
-      logger.warn('[WA] Initialization timed out (60s stuck at CONNECTING). Resetting...');
+      logger.warn('[WA-Init] Timeout reached (60s stuck at CONNECTING). Destroying stuck client...');
       clientStatus = 'DISCONNECTED';
       qrCodeDataUri = '';
-      try { if (client) client.destroy(); } catch (e) {}
+      try { if (client) client.destroy(); } catch (e) {
+        logger.error('[WA-Init] Error during client destroy on timeout:', e.message);
+      }
       client = null;
     }
   }, 60000);
 
   /**
    * Deteksi executable Chromium/Chrome yang tersedia di server.
-   * Urutan prioritas:
-   * 1. Environment variable (PUPPETEER_EXECUTABLE_PATH / CHROME_PATH)
-   * 2. Chromium bundled dari package `puppeteer` (paling andal di shared hosting)
-   * 3. Deteksi otomatis via `which` (Linux/macOS)
-   * 4. Path statis umum di server Linux
    */
   function findChromiumExecutable() {
-    // 1. Environment variable override
     if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-      logger.info(`[WA] Using PUPPETEER_EXECUTABLE_PATH: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
+      logger.info(`[WA-Init] Using env PUPPETEER_EXECUTABLE_PATH: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
       return process.env.PUPPETEER_EXECUTABLE_PATH;
     }
     if (process.env.CHROME_PATH) {
-      logger.info(`[WA] Using CHROME_PATH: ${process.env.CHROME_PATH}`);
+      logger.info(`[WA-Init] Using env CHROME_PATH: ${process.env.CHROME_PATH}`);
       return process.env.CHROME_PATH;
     }
 
-    // 2. Chromium bundled dari package `puppeteer` (auto-download saat npm install)
     try {
-      // puppeteer >= 20: gunakan executablePath() dari browser yang didownload
       const puppeteer = require('puppeteer');
       const execPath = puppeteer.executablePath();
       if (execPath && fs.existsSync(execPath)) {
-        logger.info(`[WA] Using puppeteer bundled Chrome: ${execPath}`);
+        logger.info(`[WA-Init] Using puppeteer bundled Chrome: ${execPath}`);
         return execPath;
       }
     } catch (e) {
-      // puppeteer belum terinstall atau belum download Chrome
-      logger.warn('[WA] puppeteer package not available or Chrome not yet downloaded:', e.message);
+      logger.warn('[WA-Init] puppeteer package not available or Chrome not yet downloaded:', e.message);
     }
 
-    // 3. Deteksi otomatis via `which` (Linux/macOS)
     const { execSync } = require('child_process');
-    const candidates = [
-      'google-chrome-stable',
-      'google-chrome',
-      'chromium-browser',
-      'chromium',
-    ];
+    const candidates = ['google-chrome-stable', 'google-chrome', 'chromium-browser', 'chromium'];
     for (const name of candidates) {
       try {
         const p = execSync(`which ${name} 2>/dev/null`, { encoding: 'utf8' }).trim();
-        if (p) { logger.info(`[WA] Found system browser: ${p}`); return p; }
+        if (p) { logger.info(`[WA-Init] Found system browser via which: ${p}`); return p; }
       } catch (_) {}
     }
 
-    // 4. Path statis umum di server Linux
     const staticPaths = [
       '/usr/bin/google-chrome-stable',
       '/usr/bin/google-chrome',
@@ -111,10 +97,10 @@ function initialize() {
       '/usr/local/bin/google-chrome',
     ];
     for (const p of staticPaths) {
-      if (fs.existsSync(p)) { logger.info(`[WA] Found browser at: ${p}`); return p; }
+      if (fs.existsSync(p)) { logger.info(`[WA-Init] Found static browser path: ${p}`); return p; }
     }
 
-    logger.warn('[WA] No Chrome/Chromium found. WhatsApp may fail to start.');
+    logger.warn('[WA-Init] No Chrome/Chromium found on this system. WhatsApp may fail to start.');
     return undefined;
   }
 
@@ -140,10 +126,15 @@ function initialize() {
       '--js-flags=--max-old-space-size=512',
     ],
   };
-  // --single-process dihapus: menyebabkan crash di beberapa server
-  // executablePath hanya diset jika ditemukan
-  if (executablePath) puppeteerConfig.executablePath = executablePath;
+  
+  if (executablePath) {
+    logger.info(`[WA-Init] Configuring Puppeteer with executablePath: ${executablePath}`);
+    puppeteerConfig.executablePath = executablePath;
+  } else {
+    logger.warn('[WA-Init] Configuring Puppeteer WITHOUT custom executablePath (falling back to default launcher)');
+  }
 
+  logger.info('[WA-Init] Instantiating Client instance...');
   client = new Client({
     authStrategy: new LocalAuth({
       clientId: 'se2026-monitoring',
@@ -156,15 +147,17 @@ function initialize() {
     puppeteer: puppeteerConfig
   });
 
+  logger.info('[WA-Init] Binding connection event listeners...');
+
   client.on('qr', (qr) => {
     if (initTimeout) {
       clearTimeout(initTimeout);
       initTimeout = null;
     }
-    logger.info('WhatsApp QR Code generated.');
+    logger.info('[WA-Event] WhatsApp QR Code generated successfully. Ready to be scanned.');
     qrcode.toDataURL(qr, (err, url) => {
       if (err) {
-        logger.error('Failed to convert QR code to Data URL:', err);
+        logger.error('[WA-Event] Failed to convert QR code to Data URL:', err);
         clientStatus = 'DISCONNECTED';
       } else {
         qrCodeDataUri = url;
@@ -178,13 +171,14 @@ function initialize() {
       clearTimeout(initTimeout);
       initTimeout = null;
     }
-    logger.info('WhatsApp Client is ready!');
+    logger.info('[WA-Event] WhatsApp Client is fully READY and CONNECTED!');
     clientStatus = 'CONNECTED';
     qrCodeDataUri = '';
     try {
       userInfo = client.info;
+      logger.info(`[WA-Event] Connected user info: ${userInfo.pushname} (${userInfo.wid.user})`);
     } catch (err) {
-      logger.error('Failed to get WhatsApp user info:', err);
+      logger.error('[WA-Event] Failed to retrieve WhatsApp user info:', err);
     }
   });
 
@@ -193,7 +187,7 @@ function initialize() {
       clearTimeout(initTimeout);
       initTimeout = null;
     }
-    logger.info('WhatsApp Client authenticated successfully.');
+    logger.info('[WA-Event] Sesi WhatsApp terautentikasi (authenticated).');
   });
 
   client.on('auth_failure', (msg) => {
@@ -201,7 +195,7 @@ function initialize() {
       clearTimeout(initTimeout);
       initTimeout = null;
     }
-    logger.error('WhatsApp Authentication failure:', msg);
+    logger.error('[WA-Event] Authentication failed:', msg);
     clientStatus = 'DISCONNECTED';
     qrCodeDataUri = '';
   });
@@ -211,46 +205,36 @@ function initialize() {
       clearTimeout(initTimeout);
       initTimeout = null;
     }
-    logger.warn('WhatsApp Client disconnected:', reason);
+    logger.warn('[WA-Event] WhatsApp Client disconnected. Reason:', reason);
     clientStatus = 'DISCONNECTED';
     qrCodeDataUri = '';
     userInfo = null;
     
     try {
+      logger.info('[WA-Event] Destroying old client instance...');
       client.destroy();
-    } catch (e) {}
+    } catch (e) {
+      logger.error('[WA-Event] Error destroying client after disconnect:', e.message);
+    }
     client = null;
     
     // Auto reinitialize after 5 seconds to get a new QR code
+    logger.info('[WA-Event] Scheduling automatic reinitialization in 5 seconds...');
     setTimeout(() => {
       initialize();
     }, 5000);
   });
 
-  client.on('message', async (msg) => {
-    try {
-      if (msg.body && msg.body.trim() === '!groupid') {
-        const chat = await msg.getChat();
-        if (chat.isGroup) {
-          await chat.sendMessage(`📢 *INFO GRUP WHATSAPP*\n\n` +
-                                  `Nama Grup: *${chat.name}*\n` +
-                                  `ID Grup (JID): \`${chat.id._serialized}\`\n\n` +
-                                  `Salin ID di atas dan tempel di Pengaturan Integrasi WhatsApp Dashboard.`);
-        } else {
-          await msg.reply(`Ini bukan grup. ID Chat Anda adalah: \`${chat.id._serialized}\``);
-        }
-      }
-    } catch (err) {
-      logger.error('Error handling !groupid command:', err);
-    }
-  });
-
-  client.initialize().catch(err => {
+  logger.info('[WA-Init] Calling client.initialize() promise...');
+  client.initialize().then(() => {
+    logger.info('[WA-Init] client.initialize() promise resolved successfully.');
+  }).catch(err => {
     if (initTimeout) {
       clearTimeout(initTimeout);
       initTimeout = null;
     }
-    logger.error('Error during WhatsApp Client initialization:', err);
+    logger.error('[WA-Init] Fatal error during client.initialize() execution:', err.message);
+    if (err.stack) logger.error(err.stack);
     clientStatus = 'DISCONNECTED';
     client = null;
   });
