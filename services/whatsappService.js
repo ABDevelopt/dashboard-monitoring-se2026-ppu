@@ -144,9 +144,10 @@ function initialize() {
       clientId: 'se2026-monitoring',
       dataPath: path.join(__dirname, '../.wwebjs_auth')
     }),
+    // Gunakan versi web statis yang stabil dan cocok untuk Chrome 122+ untuk bypass link device rejection
+    webVersion: '2.3000.1017849495',
     webVersionCache: {
-      type: 'remote',
-      remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/{version}.html'
+      type: 'local'
     },
     puppeteer: puppeteerConfig
   });
