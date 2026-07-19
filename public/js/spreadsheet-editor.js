@@ -313,6 +313,13 @@
           <button class="sheet-btn danger" data-sh="reset" style="display:none" title="Reset semua perubahan ke data asli">
             <i class="bi bi-arrow-counterclockwise"></i><span class="sheet-btn-label"> Reset</span>
           </button>
+          
+          <!-- Tombol Collapse disematkan di paling kanan toolbar -->
+          <div style="margin-left: auto; display: flex; gap: 6px; align-items: center;">
+            <button class="sheet-btn" data-sh="collapse" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2);" title="Kembalikan ukuran tabel ke normal">
+              <i class="bi bi-fullscreen-exit"></i><span class="sheet-btn-label" style="color: #ef4444;"> Collapse</span>
+            </button>
+          </div>
         </div>
         <div class="sheet-formula-bar" id="shFxBar_${this.tableId}">
           <span class="sheet-cell-ref" id="shCellRef_${this.tableId}">—</span>
@@ -339,6 +346,7 @@
 
       this._updateResetBtn();
     }
+
     _mkEl(tag, cls, id) {
       const el = document.createElement(tag);
       el.className = cls; if (id) el.id = id;
@@ -368,6 +376,17 @@
         else if (a === 'add-col')   this._openAddColDlg();
         else if (a === 'col-panel') this._toggleColPanel();
         else if (a === 'reset')     this._confirmReset();
+        else if (a === 'collapse') {
+          // Trigger tombol expand bawaan card untuk meng-collapse kembali
+          const nativeCollapseBtn = this.card.querySelector('.btn-expand-table');
+          if (nativeCollapseBtn) {
+            nativeCollapseBtn.click();
+          } else {
+            // Fallback jika tombol tidak ditemukan, hapus kelas expanded langsung
+            this.card.classList.remove('card-expanded');
+            window.dispatchEvent(new Event('resize'));
+          }
+        }
       };
       this.toolbar.addEventListener('click', this._onToolbar);
 
