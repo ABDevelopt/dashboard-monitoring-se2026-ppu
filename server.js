@@ -55,6 +55,16 @@ app.use(express.static(path.join(__dirname, 'public'), {
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// Global API Status WhatsApp (Bypass Passenger & Admin middleware routing issues in cPanel)
+app.get('/whatsapp-status', (req, res) => {
+  try {
+    const whatsappService = require('./services/whatsappService');
+    res.json(whatsappService.getStatus());
+  } catch (e) {
+    res.status(500).json({ status: 'ERROR', message: e.message });
+  }
+});
+
 // Session & Flash
 app.use(session({
   secret: 'se2026-ppu-secret',
