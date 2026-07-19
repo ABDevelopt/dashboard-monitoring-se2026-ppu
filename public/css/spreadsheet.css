@@ -5,20 +5,18 @@
 
 /* ---- Toolbar ---- */
 .sheet-toolbar {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 6px;
   padding: 5px 0 6px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 6px;
+  margin-bottom: 0;
   flex-shrink: 0;
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
 }
 .sheet-toolbar::-webkit-scrollbar { display: none; }
-
-.card.card-expanded .sheet-toolbar { display: flex; }
 
 .sheet-toolbar-sep {
   width: 1px;
@@ -56,7 +54,7 @@
 .sheet-btn i { font-size: 12px; }
 .sheet-btn-label { font-size: 10px; }
 
-/* Edit Mode indicator badge in header */
+/* Edit Mode indicator badge */
 .sheet-edit-badge {
   display: none;
   align-items: center;
@@ -72,7 +70,7 @@
   letter-spacing: 0.04em;
   flex-shrink: 0;
 }
-.sheet-edit-mode .sheet-edit-badge { display: inline-flex; }
+.sheet-overlay.sheet-edit-mode .sheet-edit-badge { display: inline-flex; }
 
 /* ---- Formula Bar ---- */
 .sheet-formula-bar {
@@ -90,7 +88,7 @@
 }
 .sheet-formula-bar:focus-within { border-color: var(--accent-blue); }
 
-.card.card-expanded.sheet-edit-mode .sheet-formula-bar { display: flex; }
+/* Formula bar shown only in edit mode (controlled by JS via overlay class) */
 
 .sheet-cell-ref {
   display: flex;
@@ -136,11 +134,11 @@
 /* ---- Editable Cell Styles ---- */
 
 /* Cells in edit mode: show hover cursor */
-.card.card-expanded.sheet-edit-mode td.sheet-editable {
+.sheet-edit-mode td.sheet-editable {
   cursor: cell;
   transition: background 0.1s;
 }
-.card.card-expanded.sheet-edit-mode td.sheet-editable:hover {
+.sheet-edit-mode td.sheet-editable:hover {
   background: rgba(59, 130, 246, 0.06) !important;
   outline: 1px inset rgba(59, 130, 246, 0.35);
 }

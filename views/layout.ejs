@@ -1566,11 +1566,11 @@
       }
       window.dispatchEvent(new Event('resize'));
 
-      // Attach spreadsheet editor after card expands
+      // Attach or show spreadsheet editor overlay
       if (!isExpanded && card.classList.contains('card-expanded')) {
         setTimeout(() => {
           if (window.attachSpreadsheetEditor) window.attachSpreadsheetEditor(card);
-        }, 60);
+        }, 80);
       }
     };
 
