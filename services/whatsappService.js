@@ -237,8 +237,8 @@ function initialize() {
       clearTimeout(initTimeout);
       initTimeout = null;
     }
-    logger.error('[WA-Init] Fatal error during client.initialize() execution:', err.message);
-    if (err.stack) logger.error(err.stack);
+    logger.error('[WA-Init] Fatal error during client.initialize() execution:', err);
+    if (err.stack) logger.error('[WA-Init] Stack: ' + err.stack);
     clientStatus = 'DISCONNECTED';
     client = null;
   });
