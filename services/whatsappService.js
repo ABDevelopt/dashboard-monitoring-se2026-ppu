@@ -55,18 +55,39 @@ function initialize() {
 
   /**
    * Deteksi executable Chromium/Chrome yang tersedia di server.
-   * Mendukung Linux hosting (Dewaweb/cPanel), macOS, dan Windows.
+   * Urutan prioritas:
+   * 1. Environment variable (PUPPETEER_EXECUTABLE_PATH / CHROME_PATH)
+   * 2. Chromium bundled dari package `puppeteer` (paling andal di shared hosting)
+   * 3. Deteksi otomatis via `which` (Linux/macOS)
+   * 4. Path statis umum di server Linux
    */
   function findChromiumExecutable() {
-    // Prioritas: environment variable > lokasi umum di Linux
+    // 1. Environment variable override
     if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      logger.info(`[WA] Using PUPPETEER_EXECUTABLE_PATH: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
       return process.env.PUPPETEER_EXECUTABLE_PATH;
     }
     if (process.env.CHROME_PATH) {
+      logger.info(`[WA] Using CHROME_PATH: ${process.env.CHROME_PATH}`);
       return process.env.CHROME_PATH;
     }
+
+    // 2. Chromium bundled dari package `puppeteer` (auto-download saat npm install)
+    try {
+      // puppeteer >= 20: gunakan executablePath() dari browser yang didownload
+      const puppeteer = require('puppeteer');
+      const execPath = puppeteer.executablePath();
+      if (execPath && fs.existsSync(execPath)) {
+        logger.info(`[WA] Using puppeteer bundled Chrome: ${execPath}`);
+        return execPath;
+      }
+    } catch (e) {
+      // puppeteer belum terinstall atau belum download Chrome
+      logger.warn('[WA] puppeteer package not available or Chrome not yet downloaded:', e.message);
+    }
+
+    // 3. Deteksi otomatis via `which` (Linux/macOS)
     const { execSync } = require('child_process');
-    // Coba deteksi otomatis via `which` (Linux/macOS)
     const candidates = [
       'google-chrome-stable',
       'google-chrome',
@@ -76,10 +97,11 @@ function initialize() {
     for (const name of candidates) {
       try {
         const p = execSync(`which ${name} 2>/dev/null`, { encoding: 'utf8' }).trim();
-        if (p) { logger.info(`[WA] Found browser: ${p}`); return p; }
+        if (p) { logger.info(`[WA] Found system browser: ${p}`); return p; }
       } catch (_) {}
     }
-    // Path statis umum di server Linux
+
+    // 4. Path statis umum di server Linux
     const staticPaths = [
       '/usr/bin/google-chrome-stable',
       '/usr/bin/google-chrome',
@@ -91,8 +113,8 @@ function initialize() {
     for (const p of staticPaths) {
       if (fs.existsSync(p)) { logger.info(`[WA] Found browser at: ${p}`); return p; }
     }
-    // Fallback: biarkan puppeteer-core cari sendiri (lokal dev)
-    logger.warn('[WA] No system Chromium found, falling back to bundled/default.');
+
+    logger.warn('[WA] No Chrome/Chromium found. WhatsApp may fail to start.');
     return undefined;
   }
 
