@@ -1,8 +1,12 @@
-// Load environment variables from .env
-require('dotenv').config();
+// Load environment variables from .env using absolute path
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const Sentry = require("@sentry/node");
 const logger = require('./services/logger');
+
+// Debug WA Exec Path
+logger.info(`[Startup] PUPPETEER_EXECUTABLE_PATH from env: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
 
 // Global error handlers to prevent unhandled rejections/exceptions from crashing the server
 process.on('unhandledRejection', (reason, promise) => {
@@ -24,7 +28,6 @@ if (process.env.SENTRY_DSN) {
 }
 
 const express = require('express');
-const path = require('path');
 const session = require('express-session');
 const flash = require('connect-flash');
 const { loadMasterFromJson } = require('./services/excelParser');
