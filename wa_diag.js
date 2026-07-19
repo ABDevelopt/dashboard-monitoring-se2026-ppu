@@ -20,6 +20,9 @@ if (fs.existsSync(execPath)) {
   }
 }
 
+// Aktifkan debug log dari puppeteer/whatsapp-web.js
+process.env.DEBUG = 'puppeteer:*';
+
 console.log('\n--- Initializing test Puppeteer launch ---');
 
 const client = new Client({
@@ -27,13 +30,16 @@ const client = new Client({
     clientId: 'se2026-monitoring-test',
     dataPath: path.join(__dirname, './.wwebjs_auth')
   }),
+  // Gunakan cache local bawaan (jangan remote wa-version yang bisa diblokir network hosting)
   webVersionCache: {
-    type: 'remote',
-    remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/{version}.html'
+    type: 'local'
   },
   puppeteer: {
     headless: true,
     executablePath: execPath,
+    handleSIGINT: false,
+    handleSIGTERM: false,
+    handleSIGHUP: false,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -41,7 +47,12 @@ const client = new Client({
       '--disable-gpu',
       '--no-first-run',
       '--no-zygote',
-      '--disable-extensions'
+      '--disable-extensions',
+      '--single-process', // Coba aktifkan kembali di script diagnosa ini
+      '--disable-software-rasterizer',
+      '--disable-features=dbus',
+      '--disable-web-security',
+      '--disable-features=IsolateOrigins,site-per-process'
     ]
   }
 });
