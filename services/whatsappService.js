@@ -41,19 +41,86 @@ function initialize() {
   clientStatus = 'CONNECTING';
   logger.info('Initializing WhatsApp Client...');
 
-  // Setup safety timeout net (45s)
+  // Timeout lebih panjang untuk server yang lambat (60s)
   if (initTimeout) clearTimeout(initTimeout);
   initTimeout = setTimeout(() => {
     if (clientStatus === 'CONNECTING') {
-      logger.warn('WhatsApp Client initialization timed out (stuck in CONNECTING for 45s). Resetting...');
+      logger.warn('[WA] Initialization timed out (60s stuck at CONNECTING). Resetting...');
       clientStatus = 'DISCONNECTED';
       qrCodeDataUri = '';
-      try {
-        if (client) client.destroy();
-      } catch (e) {}
+      try { if (client) client.destroy(); } catch (e) {}
       client = null;
     }
-  }, 45000);
+  }, 60000);
+
+  /**
+   * Deteksi executable Chromium/Chrome yang tersedia di server.
+   * Mendukung Linux hosting (Dewaweb/cPanel), macOS, dan Windows.
+   */
+  function findChromiumExecutable() {
+    // Prioritas: environment variable > lokasi umum di Linux
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      return process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+    if (process.env.CHROME_PATH) {
+      return process.env.CHROME_PATH;
+    }
+    const { execSync } = require('child_process');
+    // Coba deteksi otomatis via `which` (Linux/macOS)
+    const candidates = [
+      'google-chrome-stable',
+      'google-chrome',
+      'chromium-browser',
+      'chromium',
+    ];
+    for (const name of candidates) {
+      try {
+        const p = execSync(`which ${name} 2>/dev/null`, { encoding: 'utf8' }).trim();
+        if (p) { logger.info(`[WA] Found browser: ${p}`); return p; }
+      } catch (_) {}
+    }
+    // Path statis umum di server Linux
+    const staticPaths = [
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium',
+      '/usr/local/bin/chromium',
+      '/usr/local/bin/google-chrome',
+    ];
+    for (const p of staticPaths) {
+      if (fs.existsSync(p)) { logger.info(`[WA] Found browser at: ${p}`); return p; }
+    }
+    // Fallback: biarkan puppeteer-core cari sendiri (lokal dev)
+    logger.warn('[WA] No system Chromium found, falling back to bundled/default.');
+    return undefined;
+  }
+
+  const executablePath = findChromiumExecutable();
+  const puppeteerConfig = {
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--disable-gpu',
+      '--no-first-run',
+      '--no-zygote',
+      '--disable-extensions',
+      '--disable-background-networking',
+      '--disable-default-apps',
+      '--disable-sync',
+      '--disable-translate',
+      '--metrics-recording-only',
+      '--mute-audio',
+      '--safebrowsing-disable-auto-update',
+      '--js-flags=--max-old-space-size=512',
+    ],
+  };
+  // --single-process dihapus: menyebabkan crash di beberapa server
+  // executablePath hanya diset jika ditemukan
+  if (executablePath) puppeteerConfig.executablePath = executablePath;
 
   client = new Client({
     authStrategy: new LocalAuth({
@@ -64,19 +131,7 @@ function initialize() {
       type: 'remote',
       remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/{version}.html'
     },
-    puppeteer: {
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process',
-        '--disable-gpu'
-      ]
-    }
+    puppeteer: puppeteerConfig
   });
 
   client.on('qr', (qr) => {
