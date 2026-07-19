@@ -28,7 +28,7 @@
     "qrcode-terminal": "^0.12.0",
     "@whiskeysockets/baileys": "^6.7.9",
     "pino": "^8.19.0",
-    "better-sqlite3-session-store": "^0.1.8",
+    "better-sqlite3-session-store": "^0.1.0",
     "whatsapp-web.js": "^1.34.7",
     "winston": "^3.19.0",
     "xlsx": "^0.18.5"
