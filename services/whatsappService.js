@@ -409,17 +409,34 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
         .replace(/\{target_muatan\}/g, targetMuatan)
         .replace(/\{persen_muatan\}/g, persenMuatan);
     } else {
-      // Pesan bawaan sistem
-      message = `📢 *NOTIFIKASI UPDATE DATA SE2026 PPU*\n` +
-                `Hari/Waktu: ${timeFormatted}\n\n` +
-                `Berhasil memproses unggah data progres:\n` +
-                `📦 Berkas: *${upload.filename}*\n` +
-                `📆 Tanggal Data: *${upload.tanggal}*\n` +
-                `🗺️ Jumlah SubSLS Baru Terproses: *${upload.total_subsls_terisi}*\n\n` +
-                `*Ringkasan Progres Kabupaten PPU:*\n` +
-                `👥 Realisasi Keluarga (${labelFasih}): *${persenFasih}%* (${realisasiFasih}/${targetFasih})\n` +
-                `💼 Realisasi Muatan Usaha: *${persenMuatan}%* (${realisasiMuatan}/${targetMuatan})\n\n` +
-                `Silakan cek dashboard lengkap untuk analisis lebih lanjut.`;
+      // Bar progres visual sederhana
+      const makeBar = (pctStr) => {
+        const pct = parseFloat(pctStr);
+        if (isNaN(pct)) return '░░░░░░░░░░';
+        const filled = Math.round(pct / 10);
+        return '▓'.repeat(Math.min(10, filled)) + '░'.repeat(Math.max(0, 10 - filled));
+      };
+
+      const barFasih  = makeBar(persenFasih);
+      const barMuatan = makeBar(persenMuatan);
+
+      // Pesan bawaan sistem baru (Desain Premium & Rapi)
+      message = `*📢 NOTIFIKASI MONITORING SE2026 PPU*\n` +
+                `═══════════════════════════\n` +
+                `📅 *Waktu:* ${timeFormatted}\n\n` +
+                `*🗂️ Informasi Berkas Terproses:*\n` +
+                `• Berkas: \`${upload.filename}\`\n` +
+                `• Tanggal Data: *${upload.tanggal}*\n` +
+                `• Jumlah SubSLS Baru: *${upload.total_subsls_terisi}*\n\n` +
+                `*📈 Ringkasan Progres Kabupaten:*\n\n` +
+                `👥 *Realisasi Keluarga (${labelFasih})*\n` +
+                `[${barFasih}] *${persenFasih}%*\n` +
+                `↳ Terdata: *${realisasiFasih.toLocaleString('id-ID')}* dari *${targetFasih.toLocaleString('id-ID')}* KK\n\n` +
+                `💼 *Realisasi Muatan Usaha*\n` +
+                `[${barMuatan}] *${persenMuatan}%*\n` +
+                `↳ Selesai: *${realisasiMuatan.toLocaleString('id-ID')}* dari *${targetMuatan.toLocaleString('id-ID')}* SLS\n` +
+                `═══════════════════════════\n` +
+                `🔗 _Silakan akses Dashboard Monitoring SE2026 untuk melihat peta analisis wilayah secara detail._`;
     }
 
     logger.info(`Sending data update notification to group ${groupId}...`);
