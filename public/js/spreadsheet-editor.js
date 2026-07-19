@@ -384,6 +384,8 @@
           } else {
             // Fallback jika tombol tidak ditemukan, hapus kelas expanded langsung
             this.card.classList.remove('card-expanded');
+            document.body.classList.remove('has-expanded-card');
+            window.lastExpandedTableId = null;
             window.dispatchEvent(new Event('resize'));
           }
         }

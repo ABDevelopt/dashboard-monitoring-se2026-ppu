@@ -1538,31 +1538,34 @@
 
     // Dynamic Expand Table Feature
     const toggleCardExpand = (card, btn) => {
+      if (!card) return;
       const isExpanded = card.classList.contains('card-expanded');
 
       if (isExpanded) {
         // ---- COLLAPSING ----
         card.classList.remove('card-expanded');
         document.body.classList.remove('has-expanded-card');
-        btn.innerHTML = '<i class="bi bi-arrows-angle-expand"></i> <span class="btn-text-desktop">Expand</span>';
-        btn.classList.remove('btn-danger');
-        btn.classList.add('btn-secondary');
+        if (btn) {
+          btn.innerHTML = '<i class="bi bi-arrows-angle-expand"></i> <span class="btn-text-desktop">Expand</span>';
+          btn.classList.remove('btn-danger');
+          btn.classList.add('btn-secondary');
+        }
         
         window.lastExpandedTableId = null;
       } else {
         // ---- EXPANDING ----
         card.classList.add('card-expanded');
         document.body.classList.add('has-expanded-card');
-        btn.innerHTML = '<i class="bi bi-fullscreen-exit"></i> <span class="btn-text-desktop">Collapse</span>';
-        btn.classList.remove('btn-secondary');
-        btn.classList.add('btn-danger');
+        if (btn) {
+          btn.innerHTML = '<i class="bi bi-fullscreen-exit"></i> <span class="btn-text-desktop">Collapse</span>';
+          btn.classList.remove('btn-secondary');
+          btn.classList.add('btn-danger');
+        }
 
         const table = card.querySelector('table');
         if (table) {
           window.lastExpandedTableId = table.id;
         }
-
-
       }
       window.dispatchEvent(new Event('resize'));
 
