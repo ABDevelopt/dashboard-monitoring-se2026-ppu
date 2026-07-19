@@ -65,12 +65,27 @@ app.get('/whatsapp-status', (req, res) => {
   }
 });
 
-// Session & Flash
+// Session & Flash with persistent SQLite store to prevent logouts on server restarts
+const SqliteStore = require('better-sqlite3-session-store')(session);
+const sqlite3 = require('better-sqlite3');
+const sessionDb = new sqlite3(path.join(__dirname, 'data/sessions.db'));
+
 app.use(session({
+  store: new SqliteStore({
+    client: sessionDb, 
+    expired: {
+      clear: true,
+      intervalMs: 900000 // Bersihkan expired sessions setiap 15 menit
+    }
+  }),
   secret: 'se2026-ppu-secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 }
+  cookie: { 
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 Hari
+    httpOnly: true,
+    secure: false // Set true jika menggunakan https saja, biarkan false agar flexibel
+  }
 }));
 app.use(flash());
 
