@@ -1,0 +1,491 @@
+<div class="fade-in">
+  <style>
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .settings-group {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .settings-group-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .settings-group-title i {
+      color: #25d366; /* WhatsApp Green */
+    }
+    
+    .settings-field {
+      margin-bottom: 16px;
+    }
+    .settings-field:last-child {
+      margin-bottom: 0;
+    }
+    .settings-field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+    .settings-field select,
+    .settings-field input[type="text"],
+    .settings-field textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-family: inherit;
+      transition: var(--transition);
+      resize: vertical;
+    }
+    .settings-field select:focus,
+    .settings-field input[type="text"]:focus,
+    .settings-field textarea:focus {
+      border-color: #25d366;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.15);
+    }
+    .settings-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    /* Connection status card specific */
+    .status-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 30px 20px;
+      min-height: 250px;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 50px;
+      margin-bottom: 16px;
+    }
+    .status-connected {
+      background-color: rgba(37, 211, 102, 0.15);
+      color: #25d366;
+    }
+    .status-disconnected {
+      background-color: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+    .status-connecting {
+      background-color: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+
+    .qr-frame {
+      border: 1px solid var(--border);
+      background: #ffffff;
+      padding: 10px;
+      border-radius: var(--radius-md);
+      margin: 15px 0;
+      max-width: 220px;
+      box-shadow: var(--shadow-sm);
+    }
+    .qr-frame img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* Toggle switch design */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--border-light);
+      transition: .3s;
+      border-radius: 24px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: var(--text-primary);
+      transition: .3s;
+      border-radius: 50%;
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: #25d366;
+    }
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Template Variable Tokens */
+    .token-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .token-badge {
+      font-size: 10px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+      transition: var(--transition);
+    }
+    .token-badge:hover {
+      background: rgba(37, 211, 102, 0.15);
+      border-color: #25d366;
+    }
+
+    /* Floating Save Button */
+    .floating-save-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      z-index: 1000;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 
+                  0 0 0 1px rgba(37, 211, 102, 0.2);
+      padding: 14px 28px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      background-color: #25d366;
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+    }
+    .floating-save-btn:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6), 
+                  0 0 0 2px #25d366;
+      background-color: #20ba5a;
+    }
+    .floating-save-btn:active {
+      transform: translateY(-1px) scale(0.98);
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border);
+      border-top: 4px solid #25d366;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 20px 0;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+
+  <div class="page-header" style="margin-bottom: 24px;">
+    <div>
+      <h1 class="page-title"><i class="bi bi-whatsapp" style="color: #25d366;"></i> Integrasi WhatsApp</h1>
+      <p class="page-subtitle">Hubungkan akun WhatsApp dan pilih grup untuk mengirim notifikasi unggah data otomatis</p>
+    </div>
+  </div>
+
+  <div class="settings-grid">
+    
+    <!-- CARD 1: STATUS KONEKSI WHATSAPP -->
+    <div class="settings-group status-card">
+      <div class="settings-group-title" style="border: none; margin-bottom: 0; justify-content: center; width: 100%;">
+        <i class="bi bi-link-45deg"></i> Status Hubungan WhatsApp
+      </div>
+      
+      <% if (waStatus.status === 'CONNECTED') { %>
+        <div class="status-badge status-connected">
+          <span style="display:inline-block; width: 8px; height: 8px; background: #25d366; border-radius:50%"></span>
+          Terhubung
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <p style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin: 0;">
+            <%= waStatus.user ? waStatus.user.name : 'Unknown' %>
+          </p>
+          <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">
+            WhatsApp ID: <%= waStatus.user ? waStatus.user.number : '' %>
+          </p>
+        </div>
+
+        <form action="/admin/whatsapp/logout" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin memutuskan hubungan WhatsApp?')">
+          <button type="submit" class="btn btn-danger" style="padding: 8px 16px; font-size: 13px;">
+            <i class="bi bi-box-arrow-right"></i> Putuskan Hubungan
+          </button>
+        </form>
+
+      <% } else if (waStatus.status === 'QR_READY') { %>
+        <div class="status-badge status-disconnected">
+          <span style="display:inline-block; width: 8px; height: 8px; background: #ef4444; border-radius:50%"></span>
+          Perlu Autentikasi
+        </div>
+        
+        <p class="settings-hint" style="max-width: 300px; margin-bottom: 10px;">
+          Pindai QR code di bawah menggunakan menu <strong>Perangkat Tertaut (Linked Devices)</strong> pada aplikasi WhatsApp ponsel Anda.
+        </p>
+
+        <div class="qr-frame" id="qr-container">
+          <img id="qr-image" src="<%= waStatus.qrCode %>" alt="WhatsApp QR Code">
+        </div>
+        <div class="spinner" id="loading-spinner" style="display: none;"></div>
+
+        <p class="settings-hint" id="connection-status-text" style="font-weight: bold; color: var(--accent-blue);">
+          Menunggu Scan QR Code...
+        </p>
+
+      <% } else { %>
+        <div class="status-badge status-connecting">
+          <span style="display:inline-block; width: 8px; height: 8px; background: #f59e0b; border-radius:50%"></span>
+          Menghubungkan
+        </div>
+
+        <div class="spinner" id="loading-spinner"></div>
+        <div class="qr-frame" id="qr-container" style="display: none;">
+          <img id="qr-image" src="" alt="WhatsApp QR Code">
+        </div>
+
+        <p class="settings-hint" id="connection-status-text" style="font-weight: bold;">
+          Menghubungkan ke WhatsApp Web...
+        </p>
+      <% } %>
+      
+      <% if (waStatus.status !== 'CONNECTED') { %>
+        <form action="/admin/whatsapp/reset" method="POST" style="margin-top: 16px; display: flex; justify-content: center;">
+          <button type="submit" class="btn btn-secondary btn-action-trigger" style="font-size: 12px; padding: 8px 16px; border-color: var(--accent-red); color: var(--accent-red); font-weight: bold;">
+            <i class="bi bi-arrow-clockwise" style="margin-right: 4px;"></i> Reset &amp; Hubungkan Ulang
+          </button>
+        </form>
+      <% } %>
+    </div>
+
+    <!-- CARD 2: PENGATURAN GRUP TUJUAN -->
+    <% if (waStatus.status === 'CONNECTED') { %>
+      <div class="settings-group">
+        <div class="settings-group-title">
+          <i class="bi bi-chat-text"></i> Konfigurasi Grup & Notifikasi
+        </div>
+
+        <form action="/admin/whatsapp/settings" method="POST" id="whatsapp-settings-form">
+          <!-- Toggle Notification -->
+          <div class="settings-field" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed var(--border);">
+            <div>
+              <label style="margin-bottom: 2px;">Aktifkan Notifikasi Otomatis</label>
+              <p class="settings-hint" style="margin-top: 0;">Kirim pesan secara otomatis ke grup terpilih saat proses unggah Excel sukses.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="whatsapp_enabled" value="1" <%= settings.whatsapp_enabled === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Input Grup ID (Manual) -->
+          <div class="settings-field">
+            <label for="whatsapp_group_id">ID Grup WhatsApp (JID)</label>
+            <input type="text" id="whatsapp_group_id" name="whatsapp_group_id" value="<%= settings.whatsapp_group_id || '' %>" placeholder="Contoh: 120363024890123456@g.us" required>
+            <p class="settings-hint">
+              ID grup WhatsApp berakhiran <code>@g.us</code>. 
+              <br>💡 <strong>Cara mendapatkan ID Grup:</strong> Masukkan bot ke grup Anda, lalu ketik pesan <code>!groupid</code> di grup tersebut. Bot akan membalas dengan ID grup secara otomatis. Anda tinggal menyalin dan menempelkannya di sini.
+            </p>
+          </div>
+
+          <!-- Dropdown Pilihan Grup Terdeteksi (jika berhasil diload) -->
+          <div class="settings-field">
+            <label for="group_select_helper">Pilih dari Grup Terdeteksi (Opsional)</label>
+            <select id="group_select_helper">
+              <option value="">-- Pilih Grup Terdeteksi (Membantu mengisi kolom di atas) --</option>
+              <% groups.forEach(group => { %>
+                <option value="<%= group.id %>" data-name="<%= group.name %>" <%= settings.whatsapp_group_id === group.id ? 'selected' : '' %>><%= group.name %></option>
+              <% }) %>
+            </select>
+            <input type="hidden" id="whatsapp_group_name" name="whatsapp_group_name" value="<%= settings.whatsapp_group_name || '' %>">
+            <p class="settings-hint">Gunakan pilihan ini jika daftar grup berhasil dimuat oleh sistem secara otomatis.</p>
+          </div>
+
+          <!-- Message Template -->
+          <div class="settings-field">
+            <label for="whatsapp_message_template">Template Notifikasi Kustom</label>
+            <textarea id="whatsapp_message_template" name="whatsapp_message_template" rows="8" placeholder="Biarkan kosong untuk menggunakan template bawaan sistem..."><%= settings.whatsapp_message_template || '' %></textarea>
+            <p class="settings-hint">
+              Anda dapat merancang format notifikasi kustom. Klik variabel di bawah ini untuk memasukkannya ke template:
+            </p>
+            <div class="token-list">
+              <span class="token-badge" data-token="{tanggal_sekarang}">{tanggal_sekarang}</span>
+              <span class="token-badge" data-token="{jam_sekarang}">{jam_sekarang}</span>
+              <span class="token-badge" data-token="{label_fasih}">{label_fasih}</span>
+              <span class="token-badge" data-token="{filename}">{filename}</span>
+              <span class="token-badge" data-token="{tanggal_data}">{tanggal_data}</span>
+              <span class="token-badge" data-token="{subsls_count}">{subsls_count}</span>
+              <span class="token-badge" data-token="{realisasi_fasih}">{realisasi_fasih}</span>
+              <span class="token-badge" data-token="{target_fasih}">{target_fasih}</span>
+              <span class="token-badge" data-token="{persen_fasih}">{persen_fasih}</span>
+              <span class="token-badge" data-token="{realisasi_muatan}">{realisasi_muatan}</span>
+              <span class="token-badge" data-token="{target_muatan}">{target_muatan}</span>
+              <span class="token-badge" data-token="{persen_muatan}">{persen_muatan}</span>
+            </div>
+          </div>
+
+          <!-- Floating Save Button -->
+          <button type="submit" class="floating-save-btn" title="Simpan Pengaturan WhatsApp">
+            <i class="bi bi-save-fill"></i> Simpan Pengaturan
+          </button>
+        </form>
+      </div>
+
+      <!-- CARD 3: UJI COBA PENGIRIMAN NOTIFIKASI -->
+      <% if (settings.whatsapp_group_id) { %>
+        <div class="settings-group" style="grid-column: 1 / -1;">
+          <div class="settings-group-title">
+            <i class="bi bi-send-check"></i> Uji Coba Pengiriman Pesan
+          </div>
+          <p class="settings-hint" style="margin-bottom: 16px;">
+            Kirimkan satu pesan tes langsung ke grup WhatsApp <strong><%= settings.whatsapp_group_name %></strong> untuk memverifikasi fungsionalitas pengiriman.
+          </p>
+          
+          <form action="/admin/whatsapp/test" method="POST">
+            <button type="submit" class="btn btn-secondary" style="padding: 10px 20px; font-size: 13px; font-weight: bold; border-color: #25d366; color: var(--text-primary);">
+              <i class="bi bi-whatsapp" style="color: #25d366; margin-right: 6px;"></i> Kirim Pesan Tes ke Grup
+            </button>
+          </form>
+        </div>
+      <% } %>
+
+    <% } else { %>
+      <!-- HINT APABILA BELUM TERHUBUNG -->
+      <div class="settings-group" style="display: flex; flex-direction: column; justify-content: center; padding: 30px;">
+        <h3 style="color: var(--text-primary); margin: 0 0 10px 0; font-size: 16px;">Pengaturan Menunggu Koneksi</h3>
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin: 0;">
+          Setelah Anda berhasil memindai kode QR dan menghubungkan nomor WhatsApp, halaman ini akan otomatis dimuat ulang untuk menampilkan pilihan grup tujuan, pengaturan toggle notifikasi otomatis, dan opsi pengiriman pesan uji coba.
+        </p>
+      </div>
+    <% } %>
+
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // 1. Polling Status Koneksi & QR Code (Hanya jika belum terhubung)
+    const statusEl = document.getElementById('connection-status-text');
+    const qrContainer = document.getElementById('qr-container');
+    const qrImage = document.getElementById('qr-image');
+    const loadingEl = document.getElementById('loading-spinner');
+    
+    const currentStatus = '<%= waStatus.status %>';
+    
+    if (currentStatus !== 'CONNECTED') {
+      const interval = setInterval(async () => {
+        try {
+          const res = await fetch('/admin/whatsapp/status');
+          const data = await res.json();
+          
+          if (data.status === 'CONNECTED') {
+            clearInterval(interval);
+            window.location.reload();
+          } else if (data.status === 'QR_READY') {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (qrContainer) qrContainer.style.display = 'block';
+            if (qrImage) qrImage.src = data.qrCode;
+            if (statusEl) statusEl.textContent = 'Menunggu Scan QR Code...';
+          } else if (data.status === 'CONNECTING') {
+            if (loadingEl) loadingEl.style.display = 'block';
+            if (qrContainer) qrContainer.style.display = 'none';
+            if (statusEl) statusEl.textContent = 'Menghubungkan ke WhatsApp Web...';
+          } else {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (qrContainer) qrContainer.style.display = 'none';
+            if (statusEl) statusEl.textContent = 'Terputus';
+          }
+        } catch (err) {
+          console.error('Error polling status:', err);
+        }
+      }, 2500);
+    }
+
+    // 2. Event Listener Pilihan Grup (Simpan JID dan nama grup terpilh saat helper dropdown dipilih)
+    const groupSelect = document.getElementById('group_select_helper');
+    const groupIdInput = document.getElementById('whatsapp_group_id');
+    const groupNameInput = document.getElementById('whatsapp_group_name');
+    
+    if (groupSelect && groupIdInput && groupNameInput) {
+      groupSelect.addEventListener('change', function() {
+        const selectedOption = groupSelect.options[groupSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+          groupIdInput.value = selectedOption.value;
+          groupNameInput.value = selectedOption.getAttribute('data-name') || '';
+        }
+      });
+    }
+
+    // 3. Memasukkan token kustom ke textarea template
+    const templateTextarea = document.getElementById('whatsapp_message_template');
+    const tokenBadges = document.querySelectorAll('.token-badge');
+    if (templateTextarea && tokenBadges.length > 0) {
+      tokenBadges.forEach(badge => {
+        badge.addEventListener('click', function() {
+          const token = this.getAttribute('data-token');
+          const startPos = templateTextarea.selectionStart;
+          const endPos = templateTextarea.selectionEnd;
+          const text = templateTextarea.value;
+          
+          // Masukkan token pada posisi kursor
+          templateTextarea.value = text.substring(0, startPos) + token + text.substring(endPos, text.length);
+          
+          // Kembalikan fokus dan kursor setelah token
+          templateTextarea.focus();
+          templateTextarea.selectionStart = templateTextarea.selectionEnd = startPos + token.length;
+        });
+      });
+    }
+  });
+</script>

@@ -37,6 +37,7 @@
   </noscript>
 
   <link rel="stylesheet" href="/css/style.css?v=<%= appVersion %>">
+  <script src="/js/search-helper.js?v=<%= appVersion %>"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
   <noscript>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -288,21 +289,32 @@
 
 
     <!-- Section 6: Data & Utilitas -->
-    <% if (typeof settings !== 'undefined' && (settings.page_export === '1' || (typeof isAdmin !== 'undefined' && isAdmin))) { %>
+    <% if (typeof settings !== 'undefined' && settings.page_export === '1') { %>
     <div class="nav-section-wrapper" data-section="data">
       <div class="nav-section-header">
         <span>Data &amp; Utilitas</span>
       </div>
       <div class="nav-section-content">
-        <% if (settings.page_export === '1') { %>
         <a href="/subsls/export" class="nav-item">
           <span class="nav-icon"><i class="bi bi-download"></i></span> Export CSV (Sub-SLS)
         </a>
         <a href="/pcl/export-excel" class="nav-item">
           <span class="nav-icon"><i class="bi bi-file-earmark-excel"></i></span> Export Excel Petugas
         </a>
-        <% } %>
-        <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Section Admin: Administrasi & Sistem -->
+    <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+    <div class="nav-section-wrapper" data-section="admin">
+      <div class="nav-section-header">
+        <span>Administrasi &amp; Sistem</span>
+      </div>
+      <div class="nav-section-content">
+        <a href="/admin" class="nav-item <%= activePage === 'admin-menu' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-grid-fill"></i></span> Menu Utama Admin
+        </a>
         <a href="/admin/upload" class="nav-item <%= activePage === 'upload' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-upload"></i></span> Upload Data
         </a>
@@ -318,7 +330,9 @@
         <a href="/admin/settings/chatbot" class="nav-item <%= activePage === 'chatbot-settings' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-chat-left-dots-fill"></i></span> Pengaturan Chatbot AI
         </a>
-        <% } %>
+        <a href="/admin/whatsapp" class="nav-item <%= activePage === 'whatsapp' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-whatsapp"></i></span> Integrasi WhatsApp
+        </a>
       </div>
     </div>
     <% } %>
@@ -378,81 +392,74 @@
 <div class="main-wrapper">
   <!-- TOPBAR -->
   <header class="topbar">
-    <button class="btn-toggle-sidebar" id="sidebarToggle" aria-label="Buka Sidebar" aria-expanded="false"><i class="bi bi-list"></i></button>
-    <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; overflow: hidden;">
-      <img src="/logo-horizontal.png" alt="Logo SE2026" class="logo-light" width="110" height="30" loading="eager" style="height: 30px; max-width: 110px; object-fit: contain; flex-shrink: 0;">
-      <img src="/logo-horizontal-dark.png" alt="Logo SE2026" class="logo-dark" width="110" height="30" fetchpriority="high" loading="eager" style="height: 30px; max-width: 110px; object-fit: contain; flex-shrink: 0;">
-      <div style="border-left: 1px solid var(--border); padding-left: 12px; min-height: 28px; display: flex; flex-direction: column; justify-content: center; min-width: 0; overflow: hidden;">
-        <div class="topbar-title" style="line-height: 1.2;"><%= typeof title !== 'undefined' ? title : 'Dashboard' %></div>
-        <div class="topbar-subtitle" style="font-size: 11px; margin-top: 2px; color: var(--text-muted);">
-          Penajam Paser Utara
-        </div>
+    <!-- LEFT: Logo + Title -->
+    <div class="topbar-left">
+      <img src="/logo-horizontal.png" alt="Logo SE2026" class="logo-light topbar-logo" loading="eager">
+      <img src="/logo-horizontal-dark.png" alt="Logo SE2026" class="logo-dark topbar-logo" fetchpriority="high" loading="eager">
+      <div class="topbar-title-container">
+        <div class="topbar-title"><%= typeof title !== 'undefined' ? title : 'Dashboard' %></div>
+        <div class="topbar-subtitle">Penajam Paser Utara</div>
       </div>
     </div>
 
-
-
+    <!-- RIGHT: Action Buttons -->
     <div class="topbar-actions">
-      <button class="btn btn-secondary" id="globalSearchBtn" title="Cari... (Ctrl+K)" aria-label="Pencarian Global" style="padding: 8px 12px; min-width: auto; gap: 6px; display: inline-flex; align-items: center;">
+      <!-- Search -->
+      <button class="btn btn-secondary topbar-action-btn" id="globalSearchBtn" title="Cari... (Ctrl+K)" aria-label="Pencarian Global">
         <i class="bi bi-search"></i>
-        <span class="search-hotkey-hint" style="font-size: 10px; opacity: 0.6; display: inline-block; background: var(--bg-primary); padding: 1px 4px; border-radius: 4px; border: 1px solid var(--border); font-family: inherit;">Ctrl K</span>
+        <span class="topbar-action-label">Ctrl K</span>
       </button>
 
       <!-- Notification Bell -->
-      <div class="notification-bell-wrapper" style="position: relative; display: inline-block;">
-        <button class="btn btn-secondary" id="notificationBellBtn" title="Notifikasi Update Data" aria-label="Notifikasi Update Data" style="padding: 8px 12px; min-width: auto; gap: 6px; display: inline-flex; align-items: center; position: relative; height: 35px; border-radius: 8px;">
-          <i class="bi bi-bell-fill" id="notificationBellIcon" style="color: var(--text-muted); transition: color 0.3s; font-size: 14px;"></i>
-          <span id="notificationBellBadge" style="display: none; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; background-color: #ef4444; border: 2px solid var(--bg-card); border-radius: 50%; animation: pulse-badge 1.5s infinite;"></span>
+      <div class="topbar-dropdown-wrapper" id="bellWrapper">
+        <button class="btn btn-secondary topbar-action-btn" id="notificationBellBtn" title="Notifikasi Update Data" aria-label="Notifikasi Update Data">
+          <i class="bi bi-bell-fill" id="notificationBellIcon"></i>
+          <span id="notificationBellBadge" class="topbar-badge"></span>
         </button>
-        <div id="notificationBellDropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2); z-index: 1050; width: 280px; padding: 12px; flex-direction: column; gap: 10px; text-align: left;">
-          <div style="font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 4px;">
+        <div id="notificationBellDropdown" class="topbar-dropdown topbar-dropdown--right">
+          <div class="topbar-dropdown-header">
             <span>Riwayat Update Data</span>
-            <span id="clearNotificationBadge" style="font-size: 9px; text-transform: none; cursor: pointer; color: var(--accent-cyan); display: none; font-weight: 600; text-decoration: underline;">Tandai Terbaca</span>
+            <span id="clearNotificationBadge" class="topbar-dropdown-action">Tandai Terbaca</span>
           </div>
-          <div id="notificationBellList" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; padding-right: 2px;">
+          <div id="notificationBellList" class="topbar-dropdown-list">
             <!-- content injected by JS -->
           </div>
         </div>
       </div>
 
-      <!-- Target Mode Selectors Dropdown -->
-      <div class="target-selector-wrapper" style="position: relative; display: inline-block;">
-        <button class="btn btn-secondary" id="targetSelectorBtn" title="Ubah Mode Target" aria-label="Ubah Mode Target" style="padding: 8px 12px; min-width: auto; gap: 6px; display: inline-flex; align-items: center;">
-          <i class="bi bi-bullseye" style="color: var(--accent-purple);"></i>
-          <span style="font-size: 11px; font-weight: 600;">
-            Target: <%= settings.target_fasih_mode === 'fasih-sm' ? 'FASIH-SM' : 'Statis' %>
-          </span>
-          <i class="bi bi-chevron-down" style="font-size: 9px; opacity: 0.7;"></i>
+      <!-- Target Mode Selector -->
+      <div class="topbar-dropdown-wrapper" id="targetWrapper">
+        <button class="btn btn-secondary topbar-action-btn" id="targetSelectorBtn" title="Ubah Mode Target" aria-label="Ubah Mode Target">
+          <i class="bi bi-bullseye topbar-target-icon"></i>
+          <span class="target-btn-text topbar-action-label">Target: <%= settings.target_fasih_mode === 'fasih-sm' ? 'FASIH-SM' : 'Statis' %></span>
+          <i class="bi bi-chevron-down topbar-chevron"></i>
         </button>
-        <div id="targetSelectorDropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); z-index: 1050; width: 220px; padding: 12px; flex-direction: column; gap: 10px; text-align: left;">
-          <!-- Target FASIH -->
-          <div>
-            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-              <i class="bi bi-phone" style="color: var(--accent-purple);"></i> Target FASIH
-            </div>
-            <select id="publicTargetFasihMode" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: 12px; font-weight: 500; cursor: pointer; outline: none;">
+        <div id="targetSelectorDropdown" class="topbar-dropdown topbar-dropdown--right">
+          <div class="topbar-dropdown-section">
+            <div class="topbar-dropdown-section-label"><i class="bi bi-phone" style="color:var(--accent-purple)"></i> Target FASIH</div>
+            <select id="publicTargetFasihMode" class="topbar-select">
               <option value="static" <%= settings.target_fasih_mode === 'static' || !settings.target_fasih_mode ? 'selected' : '' %>>Statis (Prelist)</option>
               <option value="fasih-sm" <%= settings.target_fasih_mode === 'fasih-sm' ? 'selected' : '' %>>FASIH-SM</option>
             </select>
           </div>
-          
-          <!-- Target Muatan -->
-          <div style="border-top: 1px solid var(--border); padding-top: 10px;">
-            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-              <i class="bi bi-box-seam" style="color: var(--accent-cyan);"></i> Target Muatan
-            </div>
-            <select id="publicTargetMuatanMode" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: 12px; font-weight: 500; cursor: pointer; outline: none;">
+          <div class="topbar-dropdown-section topbar-dropdown-section--bordered">
+            <div class="topbar-dropdown-section-label"><i class="bi bi-box-seam" style="color:var(--accent-cyan)"></i> Target Muatan</div>
+            <select id="publicTargetMuatanMode" class="topbar-select">
               <option value="prelist" <%= settings.target_muatan_mode === 'prelist' || !settings.target_muatan_mode ? 'selected' : '' %>>Muatan Prelist</option>
               <option value="honor" <%= settings.target_muatan_mode === 'honor' ? 'selected' : '' %>>Target Honor</option>
             </select>
           </div>
         </div>
       </div>
-      <button class="btn btn-secondary" id="themeToggle" title="Ubah Tema" aria-label="Ubah Tema" style="padding: 8px 12px; min-width: auto;">
+
+      <!-- Theme Toggle -->
+      <button class="btn btn-secondary topbar-action-btn" id="themeToggle" title="Ubah Tema" aria-label="Ubah Tema">
         <i class="bi bi-moon-fill" id="themeIcon"></i>
       </button>
+
+      <!-- Admin Upload (desktop only) -->
       <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-        <a href="/admin/upload" class="btn btn-primary"><i class="bi bi-upload"></i> Upload Data</a>
+        <a href="/admin/upload" class="btn btn-primary topbar-admin-btn"><i class="bi bi-upload"></i><span class="topbar-action-label"> Upload</span></a>
       <% } %>
     </div>
   </header>
@@ -487,7 +494,7 @@
     <div id="pjax-container">
       <%- body %>
       <!-- Footer Disclaimer -->
-      <% if (typeof activePage !== 'undefined' && activePage !== 'overview' && activePage !== 'agent') { %>
+      <% if (typeof activePage !== 'undefined' && activePage !== 'overview' && activePage !== 'agent' && activePage !== 'login') { %>
       <footer class="page-footer-disclaimer" style="margin-top: 30px; padding: 16px 0; border-top: 1px solid var(--border); text-align: center; width: 100%; flex-shrink: 0;">
         <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 0 16px;">
           <i class="bi bi-info-circle-fill" style="color: var(--accent-blue); margin-right: 4px;"></i>
@@ -623,11 +630,18 @@
       '/performa':          { label: 'Top Performers',    icon: 'bi-graph-up-arrow' },
       '/performa-terendah': { label: 'Performa Terendah', icon: 'bi-graph-down-arrow' },
       '/harian':            { label: 'Tren Harian',       icon: 'bi-bar-chart-line-fill' },
+      '/early-warning':     { label: 'Early Warning',     icon: 'bi-exclamation-triangle-fill' },
       '/earlywarning':      { label: 'Early Warning',     icon: 'bi-exclamation-triangle-fill' },
       '/deteksianomali':    { label: 'Deteksi Anomali',   icon: 'bi-bug-fill' },
       '/pbi':               { label: 'Power BI',          icon: 'bi-bar-chart-fill' },
       '/master':            { label: 'Data Master',       icon: 'bi-table' },
+      '/admin':             { label: 'Menu Admin',        icon: 'bi-grid-fill' },
       '/admin/upload':      { label: 'Upload Data',       icon: 'bi-upload' },
+      '/admin/master':      { label: 'Kelola Master Data', icon: 'bi-database-fill-gear' },
+      '/admin/users':       { label: 'Kelola Pengguna',   icon: 'bi-people-fill' },
+      '/admin/settings':    { label: 'Pengaturan Tampilan', icon: 'bi-sliders' },
+      '/admin/settings/chatbot': { label: 'Pengaturan Chatbot AI', icon: 'bi-chat-left-dots-fill' },
+      '/admin/whatsapp':    { label: 'Integrasi WhatsApp', icon: 'bi-whatsapp' },
       '/settings':          { label: 'Pengaturan',        icon: 'bi-gear-fill' },
       '/help':              { label: 'Panduan & Bantuan', icon: 'bi-life-preserver' },
     };
@@ -1363,6 +1377,14 @@
     const closeBtn = document.getElementById('sidebarClose');
     const overlay = document.getElementById('sidebarOverlay');
 
+    // ⚡ Safety reset: ensure overlay is always hidden on page load (never persists across navigations)
+    if (overlay) {
+      overlay.classList.remove('active');
+    }
+    if (sidebar) {
+      sidebar.classList.remove('active');
+    }
+
     // Sync collapsed state ARIA attribute on startup (desktop only)
     if (window.innerWidth > 768) {
       if (document.body.classList.contains('sidebar-collapsed')) {
@@ -1462,8 +1484,8 @@
           let hasMatch = false;
           
           items.forEach(item => {
-            const text = item.textContent.toLowerCase();
-            if (text.includes(query)) {
+            const text = item.textContent.trim();
+            if (fuzzyMatch(text, query, 0.5)) {
               item.style.display = 'flex';
               hasMatch = true;
             } else {
@@ -1526,50 +1548,6 @@
         btn.classList.add('btn-secondary');
         
         window.lastExpandedTableId = null;
-
-        // Restore filter form and search wrap if they were moved
-        const expandedRow = card.querySelector('.expanded-filter-row');
-        if (expandedRow) {
-          if (window._expandedFilterData) {
-            const data = window._expandedFilterData;
-            
-            // Remove created search label
-            if (data.createdSearchLabel) {
-              data.createdSearchLabel.remove();
-            }
-
-            // Restore search-wrap
-            if (data.searchWrap && data.searchWrapParent) {
-              if (data.searchWrapNextSibling) {
-                data.searchWrapParent.insertBefore(data.searchWrap, data.searchWrapNextSibling);
-              } else {
-                data.searchWrapParent.appendChild(data.searchWrap);
-              }
-            }
-
-            // Restore filterForm
-            if (data.filterForm && data.filterFormParent) {
-              if (data.filterFormNextSibling) {
-                data.filterFormParent.insertBefore(data.filterForm, data.filterFormNextSibling);
-              } else {
-                data.filterFormParent.appendChild(data.filterForm);
-              }
-            }
-
-            // Restore resetBtn
-            if (data.resetBtn && data.resetBtnParent) {
-              if (data.resetBtnNextSibling) {
-                data.resetBtnParent.insertBefore(data.resetBtn, data.resetBtnNextSibling);
-              } else {
-                data.resetBtnParent.appendChild(data.resetBtn);
-              }
-              data.resetBtn.classList.remove('btn-reset-expanded');
-            }
-
-            window._expandedFilterData = null;
-          }
-          expandedRow.remove();
-        }
       } else {
         // ---- EXPANDING ----
         card.classList.add('card-expanded');
@@ -1583,65 +1561,7 @@
           window.lastExpandedTableId = table.id;
         }
 
-        // Check for search wrap and filter form
-        const searchWrap = card.querySelector('.search-wrap');
-        const filterForm = document.getElementById('filterForm');
 
-        if (searchWrap && filterForm) {
-          // Find the reset button in the filter card
-          const filterCard = filterForm.closest('.card');
-          const resetBtn = filterCard ? filterCard.querySelector('a.btn-secondary') : null;
-
-          // Create the flex row
-          const expandedRow = document.createElement('div');
-          expandedRow.className = 'expanded-filter-row';
-
-          let createdSearchLabel = null;
-          let searchLabel = searchWrap.querySelector('label');
-          if (!searchLabel) {
-            searchLabel = document.createElement('label');
-            const searchInput = searchWrap.querySelector('input');
-            if (searchInput) {
-              searchLabel.htmlFor = searchInput.id;
-            }
-            searchLabel.textContent = 'Cari Petugas';
-            searchLabel.style.display = 'block';
-            searchLabel.style.fontSize = '11px';
-            searchLabel.style.marginBottom = '4px';
-            searchLabel.style.color = 'var(--text-muted)';
-            searchWrap.insertBefore(searchLabel, searchWrap.firstChild);
-            createdSearchLabel = searchLabel;
-          }
-
-          // Store original positions for restoration
-          window._expandedFilterData = {
-            searchWrap: searchWrap,
-            searchWrapParent: searchWrap.parentNode,
-            searchWrapNextSibling: searchWrap.nextSibling,
-            filterForm: filterForm,
-            filterFormParent: filterForm.parentNode,
-            filterFormNextSibling: filterForm.nextSibling,
-            resetBtn: resetBtn,
-            resetBtnParent: resetBtn ? resetBtn.parentNode : null,
-            resetBtnNextSibling: resetBtn ? resetBtn.nextSibling : null,
-            createdSearchLabel: createdSearchLabel
-          };
-
-          // Insert the expanded row before where the searchWrap was
-          searchWrap.parentNode.insertBefore(expandedRow, searchWrap);
-
-          // Move searchWrap into the expanded row
-          expandedRow.appendChild(searchWrap);
-
-          // Move filterForm into the expanded row
-          expandedRow.appendChild(filterForm);
-
-          // Move resetBtn into the expanded row if it exists
-          if (resetBtn) {
-            expandedRow.appendChild(resetBtn);
-            resetBtn.classList.add('btn-reset-expanded');
-          }
-        }
       }
       window.dispatchEvent(new Event('resize'));
     };
@@ -2854,6 +2774,18 @@
         `;
       }
 
+      // 8.5. ADMIN MENU CARDS
+      if (path === '/admin') {
+        return `
+          <div class="skeleton-page">
+            ${titleSkeleton}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+              ${Array(6).fill().map(() => `<div class="skeleton-block" style="height: 180px; border-radius: 16px;"></div>`).join('')}
+            </div>
+          </div>
+        `;
+      }
+
       // 9. OVERVIEW / DEFAULT
       const isEarlyWarning = path === '/early-warning';
       const cardCount = isEarlyWarning ? 5 : 4;
@@ -2956,6 +2888,10 @@
         const oldTopbarActions = document.querySelector('.topbar-actions');
         if (newTopbarActions && oldTopbarActions) {
           oldTopbarActions.innerHTML = newTopbarActions.innerHTML;
+          // Re-initialize notification bell after swapping topbar actions
+          if (typeof window.initNotificationBell === 'function') {
+            window.initNotificationBell();
+          }
         }
 
         // Sync theme toggle icon after PJAX page swap
@@ -3006,10 +2942,12 @@
         }
 
         // Close sidebar drawer overlay on mobile after clicking
-        if (sidebar && sidebar.classList.contains('active')) {
-          sidebar.classList.remove('active');
-          if (overlay) overlay.classList.remove('active');
-        }
+        const sidebarEl = document.getElementById('sidebar');
+        const sidebarOverlayEl = document.getElementById('sidebarOverlay');
+        const mainToggleBtn = document.getElementById('sidebarToggle');
+        if (sidebarEl) sidebarEl.classList.remove('active');
+        if (sidebarOverlayEl) sidebarOverlayEl.classList.remove('active');
+        if (mainToggleBtn) mainToggleBtn.setAttribute('aria-expanded', 'false');
 
         // Execute script elements inside the new content sequentially
         if (oldContent) {
@@ -3114,6 +3052,13 @@
         if (overlay) {
           overlay.classList.remove('active');
         }
+        // Hapus status loading secara global setelah navigasi selesai
+        document.querySelectorAll('.btn-loading').forEach(btn => {
+          btn.classList.remove('btn-loading');
+        });
+        document.querySelectorAll('.sidebar .nav-item, .bottom-nav .bottom-nav-item').forEach(item => {
+          item.classList.remove('nav-item-loading');
+        });
       }
     }
     window.loadPage = loadPage;
@@ -3145,6 +3090,13 @@
       }
 
       e.preventDefault();
+      
+      // Berikan visual feedback instan (denyut nadi) pada item menu yang diklik
+      const sidebarItem = a.closest('.sidebar .nav-item, .bottom-nav .bottom-nav-item');
+      if (sidebarItem) {
+        sidebarItem.classList.add('nav-item-loading');
+      }
+      
       loadPage(href);
     });
 
@@ -3312,12 +3264,11 @@
       const dropdown = document.getElementById('targetSelectorDropdown');
       if (btn && dropdown) {
         e.stopPropagation();
-        const isHidden = dropdown.style.display === 'none' || !dropdown.style.display;
-        dropdown.style.display = isHidden ? 'flex' : 'none';
-      } else if (dropdown) {
-        if (!dropdown.contains(e.target)) {
-          dropdown.style.display = 'none';
-        }
+        const isOpen = dropdown.classList.contains('is-open');
+        // Close bell dropdown
+        const bellDrop = document.getElementById('notificationBellDropdown');
+        if (bellDrop) bellDrop.classList.remove('is-open');
+        dropdown.classList.toggle('is-open', !isOpen);
       }
     });
 
@@ -3365,6 +3316,30 @@
         updateTargetMode({ target_fasih_mode: e.target.value });
       } else if (e.target.id === 'publicTargetMuatanMode') {
         updateTargetMode({ target_muatan_mode: e.target.value });
+      }
+    });
+
+    // 1. Interceptor Form Submit Global untuk feedback instan & cegah double-submit
+    document.addEventListener('submit', (e) => {
+      // Cari tombol submit utama dalam form
+      const submitBtn = e.target.querySelector('button[type="submit"], input[type="submit"]');
+      if (submitBtn) {
+        submitBtn.classList.add('btn-loading');
+        
+        // Revert kembali jika form default ditolak oleh JS validation di tengah jalan
+        setTimeout(() => {
+          if (e.defaultPrevented) {
+            submitBtn.classList.remove('btn-loading');
+          }
+        }, 50);
+      }
+    });
+
+    // 2. Interceptor klik tombol aksi/AJAX non-form
+    document.addEventListener('click', (e) => {
+      const actionBtn = e.target.closest('#viewEwModal, #sendTestBtn, .btn-action-trigger, button[data-action="loading"]');
+      if (actionBtn && !actionBtn.classList.contains('btn-loading')) {
+        actionBtn.classList.add('btn-loading');
       }
     });
   });
@@ -3562,7 +3537,7 @@
             <!-- Action Buttons -->
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
               <button id="dismissEwModal" class="btn btn-secondary" style="font-size: 12px; padding: 8px 16px;">Abaikan</button>
-              <a href="/earlywarning" id="viewEwModal" class="btn btn-primary" style="font-size: 12px; padding: 8px 16px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+              <a href="/early-warning" id="viewEwModal" class="btn btn-primary" style="font-size: 12px; padding: 8px 16px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                 <i class="bi bi-arrow-right-circle"></i> Lihat Rincian
               </a>
             </div>
@@ -3861,105 +3836,129 @@
       }
 
       // === Notification Bell Logic ===
-      const bellBtn = document.getElementById('notificationBellBtn');
-      const bellDropdown = document.getElementById('notificationBellDropdown');
-      const bellBadge = document.getElementById('notificationBellBadge');
-      const bellIcon = document.getElementById('notificationBellIcon');
-      const bellList = document.getElementById('notificationBellList');
-      const clearBadgeBtn = document.getElementById('clearNotificationBadge');
-
+      // Wrapper untuk pemanggilan dari cek background update data
       function updateBellState() {
-        const storedMuatan = localStorage.getItem('last_seen_muatan_date');
-        const storedFasih = localStorage.getItem('last_seen_fasih_date');
-
-        let isMuatanNew = latestMuatanDate && storedMuatan !== latestMuatanDate;
-        let isFasihNew = latestFasihDate && storedFasih !== latestFasihDate;
-
-        // Show/hide red badge and style bell
-        if (isMuatanNew || isFasihNew) {
-          if (bellBadge) bellBadge.style.display = 'block';
-          if (bellIcon) bellIcon.style.color = '#f59e0b'; // Gold color for active notifications
-          if (clearBadgeBtn) clearBadgeBtn.style.display = 'inline';
-        } else {
-          if (bellBadge) bellBadge.style.display = 'none';
-          if (bellIcon) bellIcon.style.color = 'var(--text-muted)';
-          if (clearBadgeBtn) clearBadgeBtn.style.display = 'none';
-        }
-
-        // Build list items
-        let html = '';
-        if (latestMuatanDate) {
-          html += `
-            <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px;">
-              <span style="font-weight: 700; font-size: 10px; color: var(--accent-cyan); display: flex; align-items: center; gap: 6px;">
-                <i class="bi bi-box-seam"></i> UPDATE MUATAN
-                ${isMuatanNew ? '<span style="background: #ef4444; color: white; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: 800;">BARU</span>' : ''}
-              </span>
-              <span style="font-size: 11px; color: var(--text-primary); font-weight: 500;">${formatWitaString(latestMuatanDate)}</span>
-              <span style="font-size: 9px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;">File: ${latestMuatanFile}</span>
-            </div>
-          `;
-        }
-        if (latestFasihDate) {
-          html += `
-            <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px;">
-              <span style="font-weight: 700; font-size: 10px; color: var(--accent-purple); display: flex; align-items: center; gap: 6px;">
-                <i class="bi bi-phone"></i> UPDATE FASIH
-                ${isFasihNew ? '<span style="background: #ef4444; color: white; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: 800;">BARU</span>' : ''}
-              </span>
-              <span style="font-size: 11px; color: var(--text-primary); font-weight: 500;">${formatWitaString(latestFasihDate)}</span>
-              <span style="font-size: 9px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;">File: ${latestFasihFile}</span>
-            </div>
-          `;
-        }
-        if (!latestMuatanDate && !latestFasihDate) {
-          html = '<div style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 12px 0;">Belum ada riwayat update.</div>';
-        }
-        if (bellList) bellList.innerHTML = html;
-      }
-
-      function markAllAsRead() {
-        if (latestMuatanDate) localStorage.setItem('last_seen_muatan_date', latestMuatanDate);
-        if (latestFasihDate) localStorage.setItem('last_seen_fasih_date', latestFasihDate);
-        updateBellState();
-        const existingToast = document.querySelector('.inapp-notification-toast');
-        if (existingToast) {
-          existingToast.classList.add('hide');
-          setTimeout(() => existingToast.remove(), 350);
+        if (typeof window.updateBellState === 'function') {
+          window.updateBellState();
         }
       }
 
-      // Initialize state on load
-      updateBellState();
+      function initNotificationBell() {
+        const bellBtn = document.getElementById('notificationBellBtn');
+        const bellDropdown = document.getElementById('notificationBellDropdown');
+        const bellBadge = document.getElementById('notificationBellBadge');
+        const bellIcon = document.getElementById('notificationBellIcon');
+        const bellList = document.getElementById('notificationBellList');
+        const clearBadgeBtn = document.getElementById('clearNotificationBadge');
 
-      if (bellBtn) {
-        bellBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const isDropdownVisible = bellDropdown.style.display === 'flex';
-          
-          // Close other dropdowns
-          const targetSelectorDropdown = document.getElementById('targetSelectorDropdown');
-          if (targetSelectorDropdown) targetSelectorDropdown.style.display = 'none';
+        if (!bellBtn || !bellDropdown) return;
 
-          if (isDropdownVisible) {
-            bellDropdown.style.display = 'none';
+        function updateBellStateInternal() {
+          const storedMuatan = localStorage.getItem('last_seen_muatan_date');
+          const storedFasih = localStorage.getItem('last_seen_fasih_date');
+
+          let isMuatanNew = latestMuatanDate && storedMuatan !== latestMuatanDate;
+          let isFasihNew = latestFasihDate && storedFasih !== latestFasihDate;
+
+          // Show/hide red badge and style bell
+          if (isMuatanNew || isFasihNew) {
+            if (bellBadge) bellBadge.style.display = 'block';
+            if (bellIcon) bellIcon.style.color = '#f59e0b'; // Gold color for active notifications
+            if (clearBadgeBtn) clearBadgeBtn.style.display = 'inline';
           } else {
-            updateBellState();
-            bellDropdown.style.display = 'flex';
+            if (bellBadge) bellBadge.style.display = 'none';
+            if (bellIcon) bellIcon.style.color = 'var(--text-muted)';
+            if (clearBadgeBtn) clearBadgeBtn.style.display = 'none';
           }
-        });
-      }
 
-      if (clearBadgeBtn) {
-        clearBadgeBtn.addEventListener('click', (e) => {
+          // Build list items
+          let html = '';
+          if (latestMuatanDate) {
+            html += `
+              <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-weight: 700; font-size: 10px; color: var(--accent-cyan); display: flex; align-items: center; gap: 6px;">
+                  <i class="bi bi-box-seam"></i> UPDATE MUATAN
+                  ${isMuatanNew ? '<span style="background: #ef4444; color: white; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: 800;">BARU</span>' : ''}
+                </span>
+                <span style="font-size: 11px; color: var(--text-primary); font-weight: 500;">${formatWitaString(latestMuatanDate)}</span>
+                <span style="font-size: 9px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;">File: ${latestMuatanFile}</span>
+              </div>
+            `;
+          }
+          if (latestFasihDate) {
+            html += `
+              <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-weight: 700; font-size: 10px; color: var(--accent-purple); display: flex; align-items: center; gap: 6px;">
+                  <i class="bi bi-phone"></i> UPDATE FASIH
+                  ${isFasihNew ? '<span style="background: #ef4444; color: white; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: 800;">BARU</span>' : ''}
+                </span>
+                <span style="font-size: 11px; color: var(--text-primary); font-weight: 500;">${formatWitaString(latestFasihDate)}</span>
+                <span style="font-size: 9px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;">File: ${latestFasihFile}</span>
+              </div>
+            `;
+          }
+          if (!latestMuatanDate && !latestFasihDate) {
+            html = '<div style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 12px 0;">Belum ada riwayat update.</div>';
+          }
+          if (bellList) bellList.innerHTML = html;
+        }
+
+        function markAllAsRead() {
+          if (latestMuatanDate) localStorage.setItem('last_seen_muatan_date', latestMuatanDate);
+          if (latestFasihDate) localStorage.setItem('last_seen_fasih_date', latestFasihDate);
+          updateBellStateInternal();
+          const existingToast = document.querySelector('.inapp-notification-toast');
+          if (existingToast) {
+            existingToast.classList.add('hide');
+            setTimeout(() => existingToast.remove(), 350);
+          }
+        }
+
+        // Expose state update globally
+        window.updateBellState = updateBellStateInternal;
+
+        // Initialize state
+        updateBellStateInternal();
+
+        bellBtn.onclick = (e) => {
           e.stopPropagation();
-          markAllAsRead();
-        });
+          const isOpen = bellDropdown.classList.contains('is-open');
+          
+          // Close target dropdown if open
+          const targetDrop = document.getElementById('targetSelectorDropdown');
+          if (targetDrop) targetDrop.classList.remove('is-open');
+
+          if (isOpen) {
+            bellDropdown.classList.remove('is-open');
+          } else {
+            updateBellStateInternal();
+            bellDropdown.classList.add('is-open');
+          }
+        };
+
+        if (clearBadgeBtn) {
+          clearBadgeBtn.onclick = (e) => {
+            e.stopPropagation();
+            markAllAsRead();
+          };
+        }
       }
 
+      window.initNotificationBell = initNotificationBell;
+      initNotificationBell();
+
+      // Document click listener to close all topbar dropdowns — registered once globally
       document.addEventListener('click', (e) => {
-        if (bellDropdown && !bellDropdown.contains(e.target) && e.target !== bellBtn && !bellBtn.contains(e.target)) {
-          bellDropdown.style.display = 'none';
+        const bellDropdown = document.getElementById('notificationBellDropdown');
+        const bellBtn = document.getElementById('notificationBellBtn');
+        const targetDrop = document.getElementById('targetSelectorDropdown');
+        const targetBtn = document.getElementById('targetSelectorBtn');
+        
+        if (bellDropdown && !bellDropdown.contains(e.target) && (!bellBtn || !bellBtn.contains(e.target))) {
+          bellDropdown.classList.remove('is-open');
+        }
+        if (targetDrop && !targetDrop.contains(e.target) && (!targetBtn || !targetBtn.contains(e.target))) {
+          targetDrop.classList.remove('is-open');
         }
       });
     });

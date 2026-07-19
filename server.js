@@ -4,6 +4,14 @@ require('dotenv').config();
 const Sentry = require("@sentry/node");
 const logger = require('./services/logger');
 
+// Global error handlers to prevent unhandled rejections/exceptions from crashing the server
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at promise:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err, origin) => {
+  logger.error(`Uncaught Exception: ${err.message}. Origin: ${origin}. Stack: ${err.stack}`);
+});
+
 // Initialize Sentry before importing Express for auto-instrumentation
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -219,6 +227,7 @@ app.use('/pcl', require('./routes/pcl'));
 app.use('/subsls', require('./routes/subsls'));
 app.use('/pbi', require('./routes/pbi'));
 app.use('/kipp', require('./routes/kipp'));
+app.get('/earlywarning', (req, res) => res.redirect('/early-warning'));
 app.use('/early-warning', require('./routes/earlywarning'));
 app.use('/leaderboard', require('./routes/leaderboard'));
 app.use('/performa-terendah', require('./routes/performa-terendah'));
@@ -253,6 +262,12 @@ const adminRouter = express.Router();
 app.use('/admin', adminRouter);
 
 adminRouter.get('/', (req, res) => {
+  if (req.session.isAdmin) {
+    return res.render('admin_menu', {
+      title: 'Menu Administrasi & Sistem',
+      activePage: 'admin-menu'
+    });
+  }
   res.redirect('/login');
 });
 
@@ -265,6 +280,7 @@ adminRouter.use('/upload', requireAdmin, require('./routes/upload'));
 adminRouter.use('/master', requireAdmin, require('./routes/master'));
 adminRouter.use('/settings', requireAdmin, require('./routes/settings'));
 adminRouter.use('/users', requireAdmin, require('./routes/users'));
+adminRouter.use('/whatsapp', requireAdmin, require('./routes/whatsapp'));
 // adminRouter.use('/agent', requireAdmin, require('./routes/agent'));
 
 // 404
@@ -309,6 +325,14 @@ function init() {
     }, 1000);
   } catch (err) {
     logger.error('❌ Error loading master data:', err);
+  }
+
+  // Inisialisasi WhatsApp Service saat startup
+  try {
+    const whatsappService = require('./services/whatsappService');
+    whatsappService.initialize();
+  } catch (err) {
+    logger.error('❌ Gagal menginisialisasi WhatsApp Service pada startup:', err);
   }
 
   app.listen(PORT, () => {

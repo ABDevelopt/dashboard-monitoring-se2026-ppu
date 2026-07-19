@@ -75,17 +75,15 @@ self.addEventListener('fetch', (event) => {
   }
 
   // For normal page navigation: Network First, fall back to cache when offline
+  const isHtml = event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html');
+  if (!isHtml) return; // Bypass API, AJAX, JSON, and other formats
+
   event.respondWith(
     fetch(event.request).catch(() => {
       return caches.match(event.request).then((response) => {
         if (response) return response;
         // Offline fallback for HTML pages: serve root cache
-        if (
-          event.request.headers.get('accept') &&
-          event.request.headers.get('accept').includes('text/html')
-        ) {
-          return caches.match('/');
-        }
+        return caches.match('/');
       });
     })
   );

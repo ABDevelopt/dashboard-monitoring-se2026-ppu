@@ -1534,7 +1534,7 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
 
 /* Expanded Filter Row containing search-wrap and filterForm side-by-side */
 .card.card-expanded .expanded-filter-row {
-  display: flex !important;
+  display: none !important;
   flex-direction: row !important;
   align-items: flex-end !important;
   gap: 8px !important; /* Reduced from 16px */
@@ -1543,6 +1543,13 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   flex-wrap: wrap !important;
   background: var(--bg-secondary) !important;
   padding: 6px 10px !important; /* Reduced from 12px 16px */
+}
+
+/* Hide pagination in expanded card */
+.card.card-expanded .pagination,
+.card.card-expanded .pagination-controls {
+  display: none !important;
+}
   border-radius: 6px !important; /* Reduced from 8px */
   border: 1px solid var(--border) !important;
   box-sizing: border-box !important;
@@ -2064,11 +2071,11 @@ body.light-mode .highlight-name {
   left: 0;
   height: 3px;
   width: 0;
-  background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+  background: linear-gradient(90deg, #6f42c1, #25d366);
   z-index: 999999;
   pointer-events: none;
   opacity: 0;
-  box-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+  box-shadow: 0 0 10px rgba(37, 211, 102, 0.8), 0 0 5px rgba(111, 66, 193, 0.5);
 }
 .top-loading-bar.loading {
   opacity: 1;
@@ -2656,9 +2663,8 @@ body.light-mode .skeleton-block {
     color: var(--text-primary) !important;
   }
 
-  /* Hide vertical logo, upload info and footer to save valuable sheet space */
+  /* Hide vertical logo and footer to save valuable sheet space */
   .sidebar-logo,
-  .sidebar-upload-info,
   .sidebar-footer {
     display: none !important;
   }
@@ -3159,3 +3165,300 @@ body.light-mode .skeleton-block {
 /* --- Skeleton Row Variants --- */
 .skeleton-row-sm { height: 12px; width: 50%; border-radius: 4px; }
 .skeleton-row-md { height: 12px; width: 80%; border-radius: 4px; }
+
+/* --- Global Instant Feedback Styles --- */
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+  opacity: 0.85;
+}
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: button-spinner 0.6s linear infinite;
+}
+
+@keyframes button-spinner {
+  to { transform: rotate(360deg); }
+}
+
+.nav-item-loading {
+  position: relative;
+  animation: nav-item-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes nav-item-pulse {
+  0%, 100% { opacity: 1; background-color: rgba(255, 255, 255, 0.05); }
+  50% { opacity: 0.6; background-color: rgba(255, 255, 255, 0.15); }
+}
+
+/* =====================================================================
+   TOPBAR DESIGN SYSTEM — Desktop baseline + Mobile progressive override
+   ===================================================================== */
+
+/* --- Left section: logo + title --- */
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.topbar-logo {
+  height: 30px;
+  max-width: 110px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.topbar-title-container {
+  border-left: 1px solid var(--border);
+  padding-left: 12px;
+  min-height: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* --- Action buttons --- */
+.topbar-action-btn {
+  padding: 8px 10px;
+  min-width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 35px;
+  border-radius: 8px;
+  position: relative;
+}
+
+.topbar-action-label {
+  font-size: 10px;
+  opacity: 0.65;
+  background: var(--bg-primary);
+  padding: 1px 4px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.target-btn-text.topbar-action-label {
+  background: transparent;
+  border: none;
+  opacity: 1;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0;
+}
+
+.topbar-target-icon { color: var(--accent-purple); }
+.topbar-chevron { font-size: 9px; opacity: 0.7; }
+
+.topbar-admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* --- Notification badge dot --- */
+.topbar-badge {
+  display: none;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border: 2px solid var(--bg-card);
+  border-radius: 50%;
+  animation: pulse-badge 1.5s infinite;
+}
+
+/* --- Dropdown wrapper (parent is relative on desktop, static on mobile) --- */
+.topbar-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* --- Dropdown panel --- */
+.topbar-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px -4px rgba(0,0,0,0.22), 0 6px 12px -6px rgba(0,0,0,0.16);
+  z-index: 1200;
+  padding: 12px;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  min-width: 260px;
+}
+
+.topbar-dropdown--right { right: 0; }
+
+/* visible state */
+.topbar-dropdown.is-open { display: flex; }
+
+/* --- Dropdown internals --- */
+.topbar-dropdown-header {
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.topbar-dropdown-action {
+  font-size: 9px;
+  text-transform: none;
+  cursor: pointer;
+  color: var(--accent-cyan);
+  display: none;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.topbar-dropdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.topbar-dropdown-section { width: 100%; }
+.topbar-dropdown-section--bordered {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 0;
+}
+
+.topbar-dropdown-section-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topbar-select {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+}
+
+/* =====================================================================
+   MOBILE TOPBAR — ≤ 640px
+   Strategy: icon-only buttons, fixed dropdowns anchored to viewport top,
+   no hamburger clutter, no horizontal overflow.
+   ===================================================================== */
+@media (max-width: 640px) {
+
+  /* Topbar becomes a tight strip */
+  .topbar {
+    padding: 0 8px;
+    gap: 4px;
+    left: 0 !important;
+  }
+
+  /* Left: hide horizontal logo, show only page title */
+  .topbar-logo {
+    display: none !important;
+  }
+
+  .topbar-title-container {
+    border-left: none !important;
+    padding-left: 0 !important;
+  }
+
+  .topbar-title { font-size: 13px !important; }
+  .topbar-subtitle { display: none !important; }
+
+  /* Right: icon-only — hide all text labels */
+  .topbar-action-label,
+  .target-btn-text,
+  .topbar-chevron {
+    display: none !important;
+  }
+
+  /* Compact square icon buttons */
+  .topbar-action-btn {
+    padding: 0 !important;
+    width: 34px !important;
+    height: 34px !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    border-radius: 8px !important;
+  }
+
+  /* Admin upload: icon + "Upload" text hidden → icon only */
+  .topbar-admin-btn {
+    padding: 0 !important;
+    width: 34px !important;
+    height: 34px !important;
+    justify-content: center !important;
+  }
+  .topbar-admin-btn .topbar-action-label { display: none !important; }
+
+  /* Dropdown wrapper: switch parent to static so dropdown
+     can be anchored to the viewport via fixed positioning */
+  .topbar-dropdown-wrapper {
+    position: static !important;
+  }
+
+  /* Fixed dropdown — anchored below topbar, full-safe width */
+  .topbar-dropdown {
+    position: fixed !important;
+    top: var(--header-height) !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    min-width: unset !important;
+    max-height: calc(100dvh - var(--header-height) - 16px) !important;
+    overflow-y: auto !important;
+    border-radius: 12px !important;
+    z-index: 1500 !important;
+    box-shadow: 0 16px 40px -8px rgba(0,0,0,0.35) !important;
+  }
+
+  /* On mobile: override --right class since we use fixed left/right */
+  .topbar-dropdown--right { right: 8px !important; }
+}
+

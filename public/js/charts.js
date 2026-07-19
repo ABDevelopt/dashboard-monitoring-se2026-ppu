@@ -154,9 +154,9 @@ function makeTableSearchable(inputId, tableId) {
   const table = document.getElementById(tableId);
   if (!input || !table) return;
   input.addEventListener('input', () => {
-    const q = input.value.toLowerCase();
+    const q = input.value.trim();
     table.querySelectorAll('tbody tr').forEach(row => {
-      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+      row.style.display = fuzzyMatch(row.textContent, q, 0.5) ? '' : 'none';
     });
   });
 }
@@ -167,9 +167,9 @@ function makeListSearchable(inputId, listContainerId, itemSelector) {
   const container = document.getElementById(listContainerId);
   if (!input || !container) return;
   input.addEventListener('input', () => {
-    const q = input.value.toLowerCase();
+    const q = input.value.trim();
     container.querySelectorAll(itemSelector).forEach(item => {
-      item.style.display = item.textContent.toLowerCase().includes(q) ? '' : 'none';
+      item.style.display = fuzzyMatch(item.textContent, q, 0.5) ? '' : 'none';
     });
   });
 }
@@ -878,7 +878,7 @@ function makeTablePaginated(tableId, inputId, pageSize = 50) {
     
     // 1. Filter rows by search query
     const filteredRows = allRows.filter(row => {
-      const match = searchQuery ? row.textContent.toLowerCase().includes(searchQuery) : true;
+      const match = searchQuery ? fuzzyMatch(row.textContent, searchQuery, 0.5) : true;
       if (!match) {
         row.style.display = 'none';
       }
@@ -939,7 +939,7 @@ function makeTablePaginated(tableId, inputId, pageSize = 50) {
     input.parentNode.replaceChild(newInput, input);
     
     newInput.addEventListener('input', () => {
-      searchQuery = newInput.value.toLowerCase();
+      searchQuery = newInput.value.trim();
       currentPage = 1;
       update();
     });

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../database');
+const { FuzzyBM25 } = require('../public/js/search-helper');
 
 router.get('/', (req, res) => {
   const q = req.query.q || '';
@@ -15,88 +16,124 @@ router.get('/', (req, res) => {
     });
   }
 
-  const queryStr = `%${q.trim()}%`;
   const db = getDb();
+  const query = q.trim();
 
   try {
     // 1. Search PCLs
-    const pcls = db.prepare(`
+    const pclsRaw = db.prepare(`
       SELECT DISTINCT pcl, pml, korlap, kecamatan 
       FROM subsls_master 
-      WHERE pcl LIKE ? AND pcl IS NOT NULL AND pcl != ''
-      LIMIT 5
-    `).all(queryStr);
+      WHERE pcl IS NOT NULL AND pcl != ''
+    `).all();
+    const pclDocs = pclsRaw.map((p, idx) => ({
+      id: idx,
+      text: `${p.pcl} ${p.pml || ''} ${p.korlap || ''} ${p.kecamatan || ''}`,
+      ref: p
+    }));
+    const pclBM25 = new FuzzyBM25(pclDocs);
+    const pclResults = pclBM25.search(query, 0.1).slice(0, 5);
 
     // 2. Search PMLs
-    const pmls = db.prepare(`
+    const pmlsRaw = db.prepare(`
       SELECT DISTINCT pml, korlap, kecamatan 
       FROM subsls_master 
-      WHERE pml LIKE ? AND pml IS NOT NULL AND pml != ''
-      LIMIT 5
-    `).all(queryStr);
+      WHERE pml IS NOT NULL AND pml != ''
+    `).all();
+    const pmlDocs = pmlsRaw.map((p, idx) => ({
+      id: idx,
+      text: `${p.pml} ${p.korlap || ''} ${p.kecamatan || ''}`,
+      ref: p
+    }));
+    const pmlBM25 = new FuzzyBM25(pmlDocs);
+    const pmlResults = pmlBM25.search(query, 0.1).slice(0, 5);
 
     // 3. Search Korlaps
-    const korlaps = db.prepare(`
+    const korlapsRaw = db.prepare(`
       SELECT DISTINCT korlap, kecamatan 
       FROM subsls_master 
-      WHERE korlap LIKE ? AND korlap IS NOT NULL AND korlap != ''
-      LIMIT 5
-    `).all(queryStr);
+      WHERE korlap IS NOT NULL AND korlap != ''
+    `).all();
+    const korlapDocs = korlapsRaw.map((k, idx) => ({
+      id: idx,
+      text: `${k.korlap} ${k.kecamatan || ''}`,
+      ref: k
+    }));
+    const korlapBM25 = new FuzzyBM25(korlapDocs);
+    const korlapResults = korlapBM25.search(query, 0.1).slice(0, 5);
 
     // 4. Search Kecamatan
-    const kecamatans = db.prepare(`
+    const kecamatansRaw = db.prepare(`
       SELECT DISTINCT kecamatan 
       FROM subsls_master 
-      WHERE kecamatan LIKE ? AND kecamatan IS NOT NULL AND kecamatan != ''
-      LIMIT 5
-    `).all(queryStr);
+      WHERE kecamatan IS NOT NULL AND kecamatan != ''
+    `).all();
+    const kecamatanDocs = kecamatansRaw.map((k, idx) => ({
+      id: idx,
+      text: k.kecamatan,
+      ref: k
+    }));
+    const kecamatanBM25 = new FuzzyBM25(kecamatanDocs);
+    const kecamatanResults = kecamatanBM25.search(query, 0.1).slice(0, 5);
 
     // 5. Search Desa/Kelurahan
-    const desas = db.prepare(`
+    const desasRaw = db.prepare(`
       SELECT DISTINCT desa, kecamatan 
       FROM subsls_master 
-      WHERE desa LIKE ? AND desa IS NOT NULL AND desa != ''
-      LIMIT 5
-    `).all(queryStr);
+      WHERE desa IS NOT NULL AND desa != ''
+    `).all();
+    const desaDocs = desasRaw.map((d, idx) => ({
+      id: idx,
+      text: `${d.desa} ${d.kecamatan || ''}`,
+      ref: d
+    }));
+    const desaBM25 = new FuzzyBM25(desaDocs);
+    const desaResults = desaBM25.search(query, 0.1).slice(0, 5);
 
     // 6. Search SLS
-    const sls = db.prepare(`
+    const slsRaw = db.prepare(`
       SELECT kode, nama_sls, desa, kecamatan, pcl 
       FROM subsls_master 
-      WHERE (nama_sls LIKE ? OR kode LIKE ?) AND nama_sls IS NOT NULL AND nama_sls != ''
-      LIMIT 10
-    `).all(queryStr, queryStr);
+      WHERE nama_sls IS NOT NULL AND nama_sls != ''
+    `).all();
+    const slsDocs = slsRaw.map((s, idx) => ({
+      id: idx,
+      text: `${s.nama_sls} ${s.kode} ${s.desa || ''} ${s.kecamatan || ''} ${s.pcl || ''}`,
+      ref: s
+    }));
+    const slsBM25 = new FuzzyBM25(slsDocs);
+    const slsResults = slsBM25.search(query, 0.1).slice(0, 10);
 
     return res.json({
-      pcl: pcls.map(p => ({
-        label: p.pcl,
-        sublabel: `PML: ${p.pml || '-'} · Korlap: ${p.korlap || '-'} (${p.kecamatan || '-'})`,
-        href: `/pcl?pcl=${encodeURIComponent(p.pcl)}`
+      pcl: pclResults.map(r => ({
+        label: r.doc.ref.pcl,
+        sublabel: `PML: ${r.doc.ref.pml || '-'} · Korlap: ${r.doc.ref.korlap || '-'} (${r.doc.ref.kecamatan || '-'})`,
+        href: `/pcl?pcl=${encodeURIComponent(r.doc.ref.pcl)}`
       })),
-      pml: pmls.map(p => ({
-        label: p.pml,
-        sublabel: `Korlap: ${p.korlap || '-'} (${p.kecamatan || '-'})`,
-        href: `/pml?pml=${encodeURIComponent(p.pml)}`
+      pml: pmlResults.map(r => ({
+        label: r.doc.ref.pml,
+        sublabel: `Korlap: ${r.doc.ref.korlap || '-'} (${r.doc.ref.kecamatan || '-'})`,
+        href: `/pml?pml=${encodeURIComponent(r.doc.ref.pml)}`
       })),
-      korlap: korlaps.map(k => ({
-        label: k.korlap,
-        sublabel: `Kecamatan: ${k.kecamatan || '-'}`,
-        href: `/korlap?korlap=${encodeURIComponent(k.korlap)}`
+      korlap: korlapResults.map(r => ({
+        label: r.doc.ref.korlap,
+        sublabel: `Kecamatan: ${r.doc.ref.kecamatan || '-'}`,
+        href: `/korlap?korlap=${encodeURIComponent(r.doc.ref.korlap)}`
       })),
-      kecamatan: kecamatans.map(k => ({
-        label: k.kecamatan,
+      kecamatan: kecamatanResults.map(r => ({
+        label: r.doc.ref.kecamatan,
         sublabel: `Kecamatan di PPU`,
-        href: `/kecamatan?kec=${encodeURIComponent(k.kecamatan)}`
+        href: `/kecamatan?kec=${encodeURIComponent(r.doc.ref.kecamatan)}`
       })),
-      desa: desas.map(d => ({
-        label: d.desa,
-        sublabel: `Kecamatan: ${d.kecamatan || '-'}`,
-        href: `/subsls?kec=${encodeURIComponent(d.kecamatan)}&desa=${encodeURIComponent(d.desa)}`
+      desa: desaResults.map(r => ({
+        label: r.doc.ref.desa,
+        sublabel: `Kecamatan: ${r.doc.ref.kecamatan || '-'}`,
+        href: `/subsls?kec=${encodeURIComponent(r.doc.ref.kecamatan)}&desa=${encodeURIComponent(r.doc.ref.desa)}`
       })),
-      sls: sls.map(s => ({
-        label: s.nama_sls,
-        sublabel: `${s.desa || '-'}, ${s.kecamatan || '-'} (PCL: ${s.pcl || '-'}) · Kode: ${s.kode}`,
-        href: `/subsls?kode=${encodeURIComponent(s.kode)}`
+      sls: slsResults.map(r => ({
+        label: r.doc.ref.nama_sls,
+        sublabel: `${r.doc.ref.desa || '-'}, ${r.doc.ref.kecamatan || '-'} (PCL: ${r.doc.ref.pcl || '-'}) · Kode: ${r.doc.ref.kode}`,
+        href: `/subsls?kode=${encodeURIComponent(r.doc.ref.kode)}`
       }))
     });
   } catch (err) {

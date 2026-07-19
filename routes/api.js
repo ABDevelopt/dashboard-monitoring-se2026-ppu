@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getTrenHarian, getKecamatanStats, getPclStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
+const { getTrenHarian, getKecamatanStats, getPclStats, getDb, getSettings, updateSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
 
 // Tren harian (untuk Chart.js)
 router.get('/tren', (req, res) => {
@@ -243,7 +243,7 @@ router.get('/weather/history', (req, res) => {
   res.json(getWeatherHistory());
 });
 
-// Ubah mode target utama progres secara dinamis per-user session
+// Ubah mode target utama progres secara dinamis per-user session dan global database
 router.post('/settings/target-mode', (req, res) => {
   const { target_fasih_mode, target_muatan_mode } = req.body;
   if (!req.session.settings) {
@@ -251,23 +251,33 @@ router.post('/settings/target-mode', (req, res) => {
   }
 
   let changed = false;
+  const dbUpdates = {};
+
   if (target_fasih_mode && ['static', 'fasih-sm'].includes(target_fasih_mode)) {
     req.session.settings.target_fasih_mode = target_fasih_mode;
+    dbUpdates.target_fasih_mode = target_fasih_mode;
     changed = true;
   }
   if (target_muatan_mode && ['prelist', 'honor'].includes(target_muatan_mode)) {
-    req.session.settings.target_muatan_mode = target_muvan_mode || target_muatan_mode; // safeguard spelling
     req.session.settings.target_muatan_mode = target_muatan_mode;
+    dbUpdates.target_muatan_mode = target_muatan_mode;
     changed = true;
   }
 
   if (changed) {
-    req.session.save((err) => {
-      if (err) {
-        return res.status(500).json({ error: `Gagal menyimpan session: ${err.message}` });
-      }
-      res.json({ success: true, target_fasih_mode, target_muatan_mode });
-    });
+    try {
+      // Perbarui di database global agar memicu rebuild cache dan sinkron dengan WA
+      updateSettings(dbUpdates);
+      
+      req.session.save((err) => {
+        if (err) {
+          return res.status(500).json({ error: `Gagal menyimpan session: ${err.message}` });
+        }
+        res.json({ success: true, target_fasih_mode, target_muatan_mode });
+      });
+    } catch (dbErr) {
+      res.status(500).json({ error: `Gagal memperbarui database: ${dbErr.message}` });
+    }
   } else {
     res.status(400).json({ error: 'Tidak ada perubahan target yang valid.' });
   }

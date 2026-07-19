@@ -211,6 +211,16 @@ router.post('/', upload.fields([
       if (statusFile) msg += `Status FASIH (${statusFile.originalname}) `;
       msg += `berhasil diproses (SubSLS: ${result ? result.uniqueSubsls : 0})`;
       successMessages.push(msg);
+
+      // Kirim Notifikasi WhatsApp jika diaktifkan
+      if (result && result.uploadId) {
+        try {
+          const whatsappService = require('../services/whatsappService');
+          whatsappService.sendUpdateNotification(result.uploadId);
+        } catch (waErr) {
+          console.error('Gagal mengirim notifikasi WhatsApp:', waErr);
+        }
+      }
     } catch (err) {
       console.error(`Error processing date ${date}:`, err);
       // Clean up uploaded files for this date
@@ -344,6 +354,16 @@ router.post('/import-local', (req, res) => {
     }
 
     req.flash('success', `File local "${filename}" berhasil diimport sebagai ${type === 'excel' ? 'File Progres Utama' : 'File Status FASIH'} untuk tanggal ${tanggal} (SubSLS: ${result.uniqueSubsls})`);
+
+    // Kirim Notifikasi WhatsApp jika diaktifkan
+    if (result && result.uploadId) {
+      try {
+        const whatsappService = require('../services/whatsappService');
+        whatsappService.sendUpdateNotification(result.uploadId);
+      } catch (waErr) {
+        console.error('Gagal mengirim notifikasi WhatsApp:', waErr);
+      }
+    }
   } catch (err) {
     console.error('Error importing local file:', err);
     if (fs.existsSync(destPath)) {

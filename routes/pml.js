@@ -105,7 +105,7 @@ function getReportData(selectedUploadIds, filterPml) {
   }
 
   // Get target_fasih_mode setting to determine formula
-  const settings = res.locals.settings;
+  const settings = getSettings();
   const targetFormula = getTargetFormula(settings.target_fasih_mode);
 
   // Query progress for each PCL on each selected upload_id

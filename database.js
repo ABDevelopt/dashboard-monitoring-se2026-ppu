@@ -365,6 +365,17 @@ function runMigrations() {
           db.exec(`CREATE INDEX IF NOT EXISTS idx_remember_tokens_token ON remember_tokens(token);`);
         } catch (_) {}
       }
+    },
+    {
+      version: '20260719000000_add_whatsapp_settings',
+      up: (db) => {
+        try {
+          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_enabled', '0')").run();
+          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_group_id', '')").run();
+          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_group_name', '')").run();
+          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_message_template', '')").run();
+        } catch (_) {}
+      }
     }
   ];
 
@@ -1322,7 +1333,11 @@ function initSettings() {
     'overview_bangunan': '1',
     'show_progres_muatan': '1',
     'target_fasih_mode': 'static',
-    'target_muatan_mode': 'prelist'
+    'target_muatan_mode': 'prelist',
+    'whatsapp_enabled': '0',
+    'whatsapp_group_id': '',
+    'whatsapp_group_name': '',
+    'whatsapp_message_template': ''
   };
 
   const insert = getDb().prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');

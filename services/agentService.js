@@ -208,7 +208,7 @@ Untuk mempermudah pembacaan data, Anda harus memformat jawaban Anda dengan stand
 4. **Ringkasan Singkat**: Sebelum menyajikan tabel data yang besar, berikan penjelasan/pengantar singkat (1-2 kalimat), dan akhiri dengan kesimpulan atau rekomendasi yang solutif.
 
 ### ATURAN PEMBATASAN & TAUTAN (TRUNCATION & LINKING):
-- Jika data yang diterima dari tool memiliki penanda terpotong ('truncated'), Anda WAJIB memberitahukan kepada user secara sopan bahwa data dibatasi demi kenyamanan chat, lalu berikan link markdown ke halaman data lengkap website yang bersangkutan (misal: [Halaman PCL](/pcl), [Halaman PML](/pml), [Halaman Korlap](/korlap), [Halaman Kecamatan](/kecamatan), [Halaman SubSLS](/subsls), [Halaman Early Warning](/earlywarning), [Halaman Deteksi Anomali](/deteksianomali), [Halaman Leaderboard](/leaderboard)).
+- Jika data yang diterima dari tool memiliki penanda terpotong ('truncated'), Anda WAJIB memberitahukan kepada user secara sopan bahwa data dibatasi demi kenyamanan chat, lalu berikan link markdown ke halaman data lengkap website yang bersangkutan (misal: [Halaman PCL](/pcl), [Halaman PML](/pml), [Halaman Korlap](/korlap), [Halaman Kecamatan](/kecamatan), [Halaman SubSLS](/subsls), [Halaman Early Warning](/early-warning), [Halaman Deteksi Anomali](/deteksianomali), [Halaman Leaderboard](/leaderboard)).
 
 ### DILARANG:
 - Jangan gunakan run_read_only_query untuk pertanyaan yang bisa dijawab fetch_page_data
@@ -967,7 +967,7 @@ function getPageLinkForLabel(label) {
   if (lbl.includes('pml')) return '/pml';
   if (lbl.includes('korlap')) return '/korlap';
   if (lbl.includes('kecamatan')) return '/kecamatan';
-  if (lbl.includes('earlywarning') || lbl.includes('early_warning')) return '/earlywarning';
+  if (lbl.includes('earlywarning') || lbl.includes('early_warning') || lbl.includes('early-warning')) return '/early-warning';
   if (lbl.includes('anomaly') || lbl.includes('anomali')) return '/deteksianomali';
   if (lbl.includes('topperformers') || lbl.includes('leaderboard')) return '/leaderboard';
   if (lbl.includes('bottomperformers') || lbl.includes('performaterendah') || lbl.includes('performa-terendah')) return '/performa-terendah';

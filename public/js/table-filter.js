@@ -332,12 +332,12 @@
 
             // Autocomplete Search input listener
             searchInput.addEventListener('input', () => {
-              const query = searchInput.value.toLowerCase().trim();
+              const query = searchInput.value.trim();
               let visibleCount = 0;
               optionCheckboxes.forEach(cb => {
-                const labelText = cb.value.toLowerCase();
+                const labelText = cb.value;
                 const item = cb.parentElement;
-                if (labelText.includes(query)) {
+                if (fuzzyMatch(labelText, query, 0.5)) {
                   item.style.display = 'flex';
                   visibleCount++;
                 } else {

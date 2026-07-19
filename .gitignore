@@ -29,3 +29,5 @@ uploads/*
 scratch/
 logs/
 
+# WhatsApp session files (contains large cache files that may be locked)
+.wwebjs_auth/

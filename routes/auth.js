@@ -27,7 +27,7 @@ function parseCookies(req) {
 router.get('/login', (req, res) => {
   if (req.session && req.session.user) {
     if (req.session.user.role === 'admin') {
-      return res.redirect('/admin/upload');
+      return res.redirect('/admin');
     } else {
       return res.redirect('/agent');
     }
@@ -105,7 +105,7 @@ router.post('/login', (req, res) => {
     if (user.role === 'admin') {
       req.session.isAdmin = true;
       req.flash('success', 'Selamat datang, Administrator!');
-      res.redirect('/admin/upload');
+      res.redirect('/admin');
     } else {
       req.session.isAdmin = false;
       req.flash('success', `Selamat datang, ${user.username}!`);
@@ -159,7 +159,7 @@ router.post('/login/token', (req, res) => {
     if (user.role === 'admin') {
       req.session.isAdmin = true;
       req.flash('success', 'Selamat datang kembali, Administrator!');
-      res.redirect('/admin/upload');
+      res.redirect('/admin');
     } else {
       req.session.isAdmin = false;
       req.flash('success', `Selamat datang kembali, ${user.username}!`);
