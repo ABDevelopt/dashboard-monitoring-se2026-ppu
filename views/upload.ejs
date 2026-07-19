@@ -150,7 +150,7 @@
       <div style="display: flex; gap: 8px; align-items: center;">
         <% if (uploads && uploads.length > 0) { %>
           <% const latestUpload = uploads[uploads.length - 1]; %>
-          <form action="/admin/upload/delete/<%= latestUpload.id %>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan/rollback upload terakhir (<%= latestUpload.filename || latestUpload.status_filename || \'ID: \' + latestUpload.id %>)? Data progres pada tanggal <%= latestUpload.tanggal %> akan dihapus secara permanen.');" style="margin: 0;">
+          <form action="/admin/upload/delete/<%= latestUpload.id %>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan/rollback upload terakhir (<%= latestUpload.filename || latestUpload.status_filename || 'ID: ' + latestUpload.id %>)? Data progres pada tanggal <%= latestUpload.tanggal %> akan dihapus secara permanen.');" style="margin: 0;">
             <button type="submit" class="btn btn-danger btn-sm" style="background: var(--accent-red); border-color: var(--accent-red); color: white; display: flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 12px; font-weight: 600; border-radius: 6px; transition: var(--transition);">
               <i class="bi bi-arrow-counterclockwise"></i> Rollback ke Data Sebelumnya
             </button>
