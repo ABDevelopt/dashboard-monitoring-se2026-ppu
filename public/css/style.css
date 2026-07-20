@@ -3303,6 +3303,15 @@ body.light-mode .skeleton-block {
   align-items: center;
   gap: 4px;
 }
+.topbar-admin-btn .topbar-action-label {
+  background: transparent;
+  border: none;
+  padding: 0;
+  opacity: 1;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
 
 /* --- Notification badge dot --- */
 .topbar-badge {
