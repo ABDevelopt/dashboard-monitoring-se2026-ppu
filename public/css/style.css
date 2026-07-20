@@ -1388,10 +1388,17 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
     z-index: 10 !important;
     border-right: 1px solid var(--border) !important;
   }
-  .table-wrap table thead tr:first-child th:nth-child(2),
-  .table-wrap table tbody tr td:nth-child(2) {
+  .table-wrap table th:nth-child(2),
+  .table-wrap table td:nth-child(2) {
     position: sticky !important;
     left: 40px !important;
+    width: 100px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
+    box-sizing: border-box;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
     background: var(--bg-card) !important;
     z-index: 10 !important;
     border-right: 2px solid var(--border) !important;
@@ -1547,6 +1554,17 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   to { opacity: 1; transform: scale(1); }
 }
 
+/* Hide drilldown details card when table is expanded to prevent resize layouts from breaking */
+.drilldown-grid:has(.card.card-expanded) > *:not(.card-expanded),
+.card.card-expanded ~ #pclDetailContainer,
+.card.card-expanded ~ #pmlDetailContainer,
+.card.card-expanded ~ #korlapDetailContainer,
+.card.card-expanded ~ #kecDetailContainer,
+.card.card-expanded ~ #subslsDetailContainer {
+  display: none !important;
+}
+
+
 .card.card-expanded .card-header {
   flex-shrink: 0 !important;
   margin-bottom: 0 !important;
@@ -1570,17 +1588,16 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   flex-wrap: wrap !important;
   background: var(--bg-secondary) !important;
   padding: 6px 10px !important; /* Reduced from 12px 16px */
+  border-radius: 6px !important; /* Reduced from 8px */
+  border: 1px solid var(--border) !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
 }
 
 /* Hide pagination in expanded card */
 .card.card-expanded .pagination,
 .card.card-expanded .pagination-controls {
   display: none !important;
-}
-  border-radius: 6px !important; /* Reduced from 8px */
-  border: 1px solid var(--border) !important;
-  box-sizing: border-box !important;
-  flex-shrink: 0 !important;
 }
 
 .card.card-expanded .expanded-filter-row .search-wrap {
@@ -1735,6 +1752,12 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
 .card.card-expanded th:last-child,
 .card.card-expanded td:last-child {
   border-right: none !important;
+}
+.card.card-expanded tbody td a {
+  pointer-events: none !important;
+  color: inherit !important;
+  text-decoration: none !important;
+  cursor: default !important;
 }
 
 /* Sticky Headers (Freeze Top Row) */
@@ -2072,8 +2095,37 @@ body.light-mode .logo-dark {
   }
   .card.card-expanded .card-header {
     padding-right: 0 !important;
-    padding-bottom: 6px !important;
-    padding-top: 4px !important;
+    padding-bottom: 8px !important;
+    padding-top: 6px !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .card.card-expanded .card-header .card-title {
+    max-width: 100% !important;
+    width: 100% !important;
+    font-size: 11px !important;
+    white-space: normal !important;
+  }
+  .card.card-expanded .card-header .card-actions {
+    width: 100% !important;
+    justify-content: flex-end !important;
+    margin-left: 0 !important;
+    margin-top: 4px !important;
+    gap: 6px !important;
+  }
+  .card.card-expanded .table-wrap {
+    margin: 0 -10px -10px -10px !important;
+  }
+  .card.card-expanded thead tr:first-child th:nth-child(2) {
+    z-index: 20 !important;
+    background: var(--bg-secondary) !important;
+    box-shadow: inset -1px -1px 0 var(--border) !important;
+  }
+  .card.card-expanded.has-sheet-overlay {
+    padding-top: 48px !important;
+  }
+  .card.card-expanded.has-sheet-overlay.sheet-edit-mode {
+    padding-top: 78px !important;
   }
 }
 
@@ -3302,6 +3354,15 @@ body.light-mode .skeleton-block {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+.topbar-admin-btn .topbar-action-label {
+  background: transparent;
+  border: none;
+  padding: 0;
+  opacity: 1;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
 }
 
 /* --- Notification badge dot --- */

@@ -44,6 +44,14 @@
   height: 28px;
 }
 .sheet-btn:hover { background: var(--bg-card-hover); border-color: var(--accent-blue); }
+.sheet-btn:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  background: var(--bg-secondary) !important;
+  border-color: var(--border) !important;
+  color: var(--text-muted) !important;
+}
 .sheet-btn.active {
   background: rgba(245, 158, 11, 0.15);
   border-color: #f59e0b;
@@ -353,3 +361,10 @@ td.sheet-custom-col { background: rgba(99, 102, 241, 0.04) !important; }
   display: none;
 }
 .sheet-backdrop.is-open { display: block; }
+
+@media (max-width: 768px) {
+  .sheet-btn[data-sh="undo"] .sheet-btn-label,
+  .sheet-btn[data-sh="redo"] .sheet-btn-label {
+    display: none !important;
+  }
+}
