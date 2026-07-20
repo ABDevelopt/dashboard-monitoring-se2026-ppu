@@ -2591,8 +2591,8 @@
       if (!a) return;
 
       const href = a.getAttribute('href');
-      // Skip hashes, JS calls, blank target, external targets
-      if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.getAttribute('target') === '_blank') {
+      // Skip hashes, JS calls, blank target, external targets, downloads, or export endpoints
+      if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.getAttribute('target') === '_blank' || a.hasAttribute('download') || href.includes('/export')) {
         return;
       }
       
