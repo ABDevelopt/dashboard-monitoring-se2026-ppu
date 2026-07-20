@@ -1554,6 +1554,17 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   to { opacity: 1; transform: scale(1); }
 }
 
+/* Hide drilldown details card when table is expanded to prevent resize layouts from breaking */
+.drilldown-grid:has(.card.card-expanded) > *:not(.card-expanded),
+.card.card-expanded ~ #pclDetailContainer,
+.card.card-expanded ~ #pmlDetailContainer,
+.card.card-expanded ~ #korlapDetailContainer,
+.card.card-expanded ~ #kecDetailContainer,
+.card.card-expanded ~ #subslsDetailContainer {
+  display: none !important;
+}
+
+
 .card.card-expanded .card-header {
   flex-shrink: 0 !important;
   margin-bottom: 0 !important;
