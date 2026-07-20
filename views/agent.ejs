@@ -2,25 +2,38 @@
   <style>
     /* Lock layout to viewport height specifically for the chatbot page */
     html, body {
-      height: 100%;
-      overflow: hidden;
+      height: 100% !important;
+      overflow: hidden !important;
     }
     .main-wrapper {
-      height: 100vh;
-      overflow: hidden;
+      height: 100vh !important;
+      overflow: hidden !important;
     }
     .page-content {
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      height: 100vh !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      padding: 0 !important;
+      padding-top: calc(var(--header-height) + 36px) !important; /* Header + Breadcrumb */
+      padding-bottom: 0 !important;
     }
+    
+    @media (max-width: 768px) {
+      .page-content {
+        padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px) + 32px) !important;
+        padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important; /* Offset by bottom nav */
+      }
+    }
+    
     #pjax-container, .fade-in {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      min-height: 0;
+      flex: 1 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      min-height: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
     }
     
     .chat-wrapper {
@@ -29,10 +42,10 @@
       flex: 1;
       min-height: 0;
       background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
+      border: none !important;
+      border-radius: 0 !important;
       overflow: hidden;
-      box-shadow: var(--shadow);
+      box-shadow: none !important;
     }
     
     .chat-header {
@@ -479,38 +492,95 @@
       to { transform: rotate(360deg); }
     }
     @media (max-width: 768px) {
-      .message {
-        max-width: 95%;
+      .chat-messages {
+        padding: 12px 10px !important;
+        gap: 12px !important;
       }
+      .message {
+        max-width: 95% !important;
+        gap: 8px !important;
+      }
+      .message-avatar {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 14px !important;
+      }
+      .message-bubble {
+        padding: 10px 12px !important;
+        font-size: 12px !important;
+      }
+      .message-bubble ul, .message-bubble ol {
+        padding-left: 16px !important;
+        margin: 8px 0 !important;
+      }
+      
       .chat-header {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 12px;
+        align-items: flex-start !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        padding: 12px 14px !important;
       }
       .chat-header-actions {
-        width: 100%;
-        justify-content: stretch;
-        gap: 8px;
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        justify-content: stretch !important;
       }
-      .agent-select {
-        flex: 1;
-        min-width: 0;
+      .chat-header-actions button,
+      .chat-header-actions .status-badge,
+      .chat-header-actions select {
+        height: 34px !important;
+        padding: 0 10px !important;
+        font-size: 11px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
       }
+      .chat-header-actions button {
+        grid-row: 1 !important;
+        grid-column: 1 !important;
+      }
+      .chat-header-actions .status-badge {
+        grid-row: 1 !important;
+        grid-column: 2 !important;
+        border-radius: var(--radius-sm) !important;
+      }
+      .chat-header-actions select#agentProvider {
+        grid-row: 2 !important;
+        grid-column: 1 !important;
+      }
+      .chat-header-actions select#agentModel {
+        grid-row: 2 !important;
+        grid-column: 2 !important;
+      }
+      
       .quick-prompts {
-        overflow-x: auto;
-        padding: 10px 12px;
+        overflow-x: auto !important;
+        padding: 10px 12px !important;
       }
       .prompt-btn {
-        font-size: 11px;
-        padding: 6px 12px;
+        font-size: 11px !important;
+        padding: 6px 12px !important;
       }
+      
       .chat-input-area {
-        padding: 12px;
-        gap: 8px;
+        padding: 10px !important;
+        gap: 6px !important;
       }
       .chat-input {
-        padding: 10px 12px;
-        font-size: 14px;
+        padding: 8px 10px !important;
+        font-size: 12px !important;
+        height: 36px !important;
+        box-sizing: border-box !important;
+      }
+      .chat-input-area button {
+        height: 36px !important;
+        padding: 0 12px !important;
+        font-size: 12px !important;
       }
     }
   </style>
