@@ -368,7 +368,7 @@
       // Toolbar clicks
       this._onToolbar = e => {
         const btn = e.target.closest('[data-sh]');
-        if (!btn) return;
+        if (!btn || btn.disabled) return;
         const a = btn.dataset.sh;
         if (a === 'toggle-edit') this._toggleEditMode();
         else if (a === 'undo')      this._undo();
@@ -474,6 +474,9 @@
       if (this._deactivating) return;   // Re-entrancy guard
       this._deactivating = true;
       try {
+        // Disconnect observer temporarily to prevent recursive loops from class list changes
+        if (this._observer) this._observer.disconnect();
+
         this._hideOverlay();
         if (this.editMode) {
           this.editMode = false;
@@ -484,18 +487,26 @@
         this._safeClose();
       } finally {
         this._deactivating = false;
+        // Reconnect observer
+        if (this._observer && this.card) {
+          this._observer.observe(this.card, { attributes: true, attributeFilter: ['class'] });
+        }
       }
     }
 
     showOverlay() {
       if (this.overlay) {
         this.overlay.style.display = 'flex';
+        this.card.classList.add('has-sheet-overlay');
         this._applyState(); // Re-apply karena mungkin ada perubahan saat tidak visible
       }
     }
 
     _hideOverlay() {
-      if (this.overlay) this.overlay.style.display = 'none';
+      if (this.overlay) {
+        this.overlay.style.display = 'none';
+        this.card.classList.remove('has-sheet-overlay');
+      }
       // Juga sembunyikan panels
       if (this.colPanel)  this.colPanel.classList.remove('is-open');
       if (this.ctxMenu)   this.ctxMenu.classList.remove('is-open');
@@ -1040,7 +1051,7 @@
       display: none;
       flex-direction: column;
       position: fixed;
-      top: var(--header-height, 56px);
+      top: calc(var(--header-height, 56px) + env(safe-area-inset-top, 0px));
       left: 0; right: 0;
       z-index: 2010;
       background: var(--bg-card);
