@@ -1612,11 +1612,6 @@ function deleteRememberToken(token) {
   return stmt.run(token).changes;
 }
 
-function clearUserRememberTokens(userId) {
-  const stmt = getDb().prepare("DELETE FROM remember_tokens WHERE user_id = ?");
-  return stmt.run(userId).changes;
-}
-
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -1626,5 +1621,5 @@ module.exports = {
   getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages, getTargetFormula,
   getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula,
   getAllUsers, createUser, updateUser, deleteUser,
-  saveRememberToken, getUserByRememberToken, deleteRememberToken, clearUserRememberTokens
+  saveRememberToken, getUserByRememberToken, deleteRememberToken
 };
