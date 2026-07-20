@@ -1742,6 +1742,12 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
 .card.card-expanded td:last-child {
   border-right: none !important;
 }
+.card.card-expanded tbody td a {
+  pointer-events: none !important;
+  color: inherit !important;
+  text-decoration: none !important;
+  cursor: default !important;
+}
 
 /* Sticky Headers (Freeze Top Row) */
 .card.card-expanded thead tr:first-child th {
