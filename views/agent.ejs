@@ -421,30 +421,43 @@
     }
     
     .chat-input-area {
-      padding: 14px 20px;
-      border-top: 1px solid var(--border);
+      padding: 6px 10px;
+      margin: 10px 24px 24px 24px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
       display: flex;
       gap: 10px;
-      background: rgba(255, 255, 255, 0.003);
+      background: var(--bg-card);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      align-items: center;
+    }
+    .chat-input-area:focus-within {
+      border-color: rgba(var(--accent-rgb), 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     }
     .chat-input {
       flex: 1;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
+      background: transparent;
+      border: none;
       color: var(--text-primary);
-      padding: 11px 14px;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
+      padding: 10px 14px;
+      font-size: 15px;
       outline: none;
       transition: var(--transition);
     }
     .chat-input::placeholder {
       color: var(--text-muted);
     }
-    .chat-input:focus {
-      border-color: var(--accent-blue);
-      box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
-      background: var(--bg-secondary);
+    .chat-input-area button {
+      height: 38px;
+      padding: 0 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     
     /* Typing Loader */
@@ -626,10 +639,9 @@
       </div>
     </div>
     
-    <!-- Input Form -->
     <form id="chatForm" class="chat-input-area" onsubmit="handleChatSubmit(event)">
       <input type="text" id="chatInput" class="chat-input" placeholder="Tulis pertanyaan mengenai data sensus Anda..." required autocomplete="off">
-      <button type="submit" class="btn btn-primary" style="height: auto; padding: 0 20px;"><i class="bi bi-send-fill"></i> Kirim</button>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-send-fill"></i> Kirim</button>
     </form>
   </div>
 </div>
