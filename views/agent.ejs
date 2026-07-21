@@ -1169,8 +1169,16 @@
 
       // FIX #5 — Gunakan appendMessageAsync agar render tidak blokir UI thread
       await appendMessageAsync('agent', reply);
-      chatHistory.push({ role: 'model', content: reply });
-      saveChatHistory();
+      
+      // Do not save technical error messages to chat history to prevent polluting AI context
+      const isErrorReply = reply.includes('Model tidak mengembalikan teks') || 
+                           reply.includes('API Provider Error') || 
+                           reply.includes('Kesalahan:') || 
+                           reply.includes('dibatalkan');
+      if (!isErrorReply) {
+        chatHistory.push({ role: 'model', content: reply });
+        saveChatHistory();
+      }
 
     } catch (err) {
       clearTimeout(browserTimeout);

@@ -1316,8 +1316,9 @@ function initSettings() {
     'page_aiagent': '0',
     'agent_provider': 'gemini',
     'gemini_api_key': '',
-    'gemini_model': 'gemini-2.5-flash',
-    'gemini_models_list': 'gemini-2.5-flash, gemini-2.5-flash-lite, gemini-3.5-flash',
+    'gemini_backup_api_keys': '[]',
+    'gemini_model': 'gemini-3.5-flash',
+    'gemini_models_list': 'gemini-3.5-flash, gemini-3.1-flash-lite, gemini-2.0-flash, gemini-2.5-pro',
     'openai_api_key': '',
     'openai_model': 'gpt-5.5',
     'openai_models_list': 'gpt-5.5, gpt-4o',
@@ -1356,8 +1357,13 @@ function initSettings() {
   }
 
   const geminiModel = getDb().prepare('SELECT value FROM settings WHERE key = ?').get('gemini_model');
-  if (geminiModel && geminiModel.value === 'gemini-1.5-flash') {
-    getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-2.5-flash', 'gemini_model');
+  if (geminiModel && (geminiModel.value === 'gemini-1.5-flash' || geminiModel.value === 'gemini-2.5-flash' || geminiModel.value === 'gemini-2.5-flash-lite')) {
+    getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-3.5-flash', 'gemini_model');
+  }
+
+  const geminiModelsList = getDb().prepare('SELECT value FROM settings WHERE key = ?').get('gemini_models_list');
+  if (geminiModelsList && (geminiModelsList.value.includes('gemini-2.5-flash-lite') || geminiModelsList.value.includes('gemini-1.5-flash'))) {
+    getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-3.5-flash, gemini-3.1-flash-lite, gemini-2.0-flash, gemini-2.5-pro', 'gemini_models_list');
   }
 }
 
