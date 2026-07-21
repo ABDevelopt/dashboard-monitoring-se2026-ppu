@@ -477,19 +477,38 @@
     <!-- PJAX CLICK-BLOCK OVERLAY (invisible, only prevents interaction during load) -->
     <div id="pjax-loading-overlay" class="pjax-loading-overlay"></div>
     <!-- Flash Messages -->
-    <% if (success && success.length) { %>
+    <% if ((success && success.length) || (error && error.length)) { %>
     <div class="flash-messages">
-      <% success.forEach(msg => { %>
-      <div class="alert alert-success"><i class="bi bi-check-circle-fill"></i> <%= msg %></div>
-      <% }) %>
+      <% if (success && success.length) { %>
+        <% success.forEach(msg => { %>
+        <div class="alert alert-success">
+          <i class="bi bi-check-circle-fill"></i>
+          <div class="alert-content"><%= msg %></div>
+          <button type="button" class="alert-close-btn" onclick="const alert = this.parentElement; alert.classList.add('fade-out'); setTimeout(() => alert.remove(), 400);"><i class="bi bi-x"></i></button>
+        </div>
+        <% }) %>
+      <% } %>
+      <% if (error && error.length) { %>
+        <% error.forEach(msg => { %>
+        <div class="alert alert-error">
+          <i class="bi bi-x-circle-fill"></i>
+          <div class="alert-content"><%= msg %></div>
+          <button type="button" class="alert-close-btn" onclick="const alert = this.parentElement; alert.classList.add('fade-out'); setTimeout(() => alert.remove(), 400);"><i class="bi bi-x"></i></button>
+        </div>
+        <% }) %>
+      <% } %>
     </div>
-    <% } %>
-    <% if (error && error.length) { %>
-    <div class="flash-messages">
-      <% error.forEach(msg => { %>
-      <div class="alert alert-error"><i class="bi bi-x-circle-fill"></i> <%= msg %></div>
-      <% }) %>
-    </div>
+    <script>
+      (function() {
+        const alerts = document.querySelectorAll('.flash-messages .alert');
+        alerts.forEach(alert => {
+          setTimeout(() => {
+            alert.classList.add('fade-out');
+            setTimeout(() => alert.remove(), 400);
+          }, 4000);
+        });
+      })();
+    </script>
     <% } %>
 
     <div id="pjax-container">

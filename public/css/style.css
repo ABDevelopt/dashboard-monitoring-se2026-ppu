@@ -295,24 +295,78 @@ body.light-mode .btn-primary { color: white; }
 }
 
 /* ====== FLASH MESSAGES ====== */
-.flash-messages { margin-bottom: 16px; }
-.alert {
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  margin-bottom: 8px;
+.flash-messages {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1100;
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  animation: slideIn 0.3s ease;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+  max-width: 400px;
+  width: calc(100% - 48px);
+}
+.alert {
+  pointer-events: auto;
+  padding: 14px 20px;
+  border-radius: var(--radius-md, 8px);
+  font-size: 13px;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: toastSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: opacity 0.4s ease, transform 0.4s ease, margin 0.4s ease;
   word-break: break-word;
 }
-.alert-success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #34d399; }
-.alert-error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
+.alert-success {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+.alert-error {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+.alert-content {
+  flex: 1;
+}
+.alert-close-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+  margin-left: auto;
+  font-size: 16px;
+}
+.alert-close-btn:hover {
+  opacity: 1;
+}
+.alert.fade-out {
+  opacity: 0;
+  transform: translateX(100px);
+}
 
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(50px) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
 }
 
 /* ====== STAT CARDS ====== */

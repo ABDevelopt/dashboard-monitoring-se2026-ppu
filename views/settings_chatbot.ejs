@@ -156,16 +156,7 @@
     </div>
   </div>
 
-  <% if (typeof error !== 'undefined' && error && error.length > 0) { %>
-    <div class="alert alert-danger" style="margin-bottom: 20px;">
-      <i class="bi bi-exclamation-octagon-fill"></i> <%= error %>
-    </div>
-  <% } %>
-  <% if (typeof success !== 'undefined' && success && success.length > 0) { %>
-    <div class="alert alert-success" style="margin-bottom: 20px;">
-      <i class="bi bi-check-circle-fill"></i> <%= success %>
-    </div>
-  <% } %>
+
 
   <div class="card-body">
     <form action="/admin/settings/chatbot" method="POST">
