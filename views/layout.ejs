@@ -2347,6 +2347,30 @@
 
     // PJAX router for seamless AJAX page transitions without reloading the sidebar
     async function loadPage(url, pushState = true) {
+      // Clean up any expanded cards & spreadsheet overlays before navigating away
+      const expandedCards = document.querySelectorAll('.card.card-expanded');
+      expandedCards.forEach(card => {
+        card.classList.remove('card-expanded');
+        card.classList.remove('has-sheet-overlay');
+        card.classList.remove('sheet-edit-mode');
+      });
+      document.body.classList.remove('has-expanded-card');
+      window.lastExpandedTableId = null;
+
+      // Dispatch pjax:start event so spreadsheet-editor & other modules clean up
+      window.dispatchEvent(new CustomEvent('pjax:start'));
+
+      // Clean up active spreadsheet editors & lingering overlay DOM nodes
+      if (window._sheetEditors) {
+        Object.values(window._sheetEditors).forEach(ed => {
+          try { ed.destroy(); } catch (_) {}
+        });
+        window._sheetEditors = {};
+      }
+      document.querySelectorAll('.sheet-overlay, .sheet-toolbar, .sheet-formula-bar, .sheet-col-panel, .sheet-dialog, .sheet-ctx-menu, .sheet-backdrop').forEach(el => {
+        try { el.remove(); } catch (_) {}
+      });
+
       const oldContent = document.getElementById('pjax-container');
 
       const loader = document.getElementById('topLoadingBar');
