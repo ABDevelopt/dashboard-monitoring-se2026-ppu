@@ -139,12 +139,34 @@
       transform: translateY(-1px) scale(0.98);
     }
     
-    @media (max-width: 576px) {
+    @media (max-width: 768px) {
+      .settings-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+      }
+      .settings-group {
+        grid-column: 1 / -1 !important;
+        padding: 16px !important;
+      }
       .floating-save-btn {
-        bottom: 20px;
-        right: 20px;
-        padding: 10px 20px;
-        font-size: 13px;
+        position: static !important;
+        width: 100% !important;
+        justify-content: center !important;
+        margin-top: 0 !important;
+        border-radius: 50px !important;
+        padding: 12px 24px !important;
+        font-size: 13.5px !important;
+        transform: none !important;
+        box-shadow: 0 4px 14px rgba(13, 110, 253, 0.25) !important;
+      }
+      .save-btn-container {
+        width: 100% !important;
+        margin-top: 16px !important;
+        padding-top: 16px !important;
+      }
+      #agent_provider {
+        min-width: 100% !important;
+        width: 100% !important;
       }
     }
   </style>
@@ -291,7 +313,7 @@
 
       </div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px;">
+      <div class="save-btn-container" style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px;">
         <button type="submit" class="btn btn-primary floating-save-btn">
           <i class="bi bi-save-fill"></i> Simpan Pengaturan Chatbot
         </button>
