@@ -191,14 +191,15 @@
 
         // Style the TH cell relative for dropdown positioning
         th.style.position = 'relative';
-        th.style.paddingRight = '32px'; // Dedicated space for funnel icon
+        th.style.paddingRight = '34px'; // Dedicated space for funnel icon
 
         // Wrap original TH contents in an inline-block span to ensure separation
         const wrapper = document.createElement('span');
         wrapper.className = 'filter-header-wrapper';
-        wrapper.style.marginRight = '8px';
+        wrapper.style.marginRight = '4px';
         wrapper.style.display = 'inline-block';
         wrapper.style.verticalAlign = 'middle';
+        wrapper.style.whiteSpace = 'nowrap';
         wrapper.innerHTML = th.innerHTML;
         th.innerHTML = '';
         th.appendChild(wrapper);
