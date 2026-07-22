@@ -30,7 +30,23 @@ function curlFetch(url, options = {}) {
 
     const args = ['-s', '-i', '-X', method];
 
-    for (const [key, val] of Object.entries(headers)) {
+    // Normalize headers (supporting Headers class and plain objects)
+    let headersObj = {};
+    if (headers) {
+      if (typeof headers.entries === 'function') {
+        for (const [key, val] of headers.entries()) {
+          headersObj[key] = val;
+        }
+      } else if (typeof headers.forEach === 'function') {
+        headers.forEach((val, key) => {
+          headersObj[key] = val;
+        });
+      } else {
+        headersObj = headers;
+      }
+    }
+
+    for (const [key, val] of Object.entries(headersObj)) {
       args.push('-H', `${key}: ${val}`);
     }
 
@@ -251,7 +267,7 @@ const PAGE_DATA_TOOL_DECLARATION = {
   }
 };
 
-const GEMINI_DEFAULT_MODEL        = 'gemini-2.5-flash';
+const GEMINI_DEFAULT_MODEL        = 'gemini-3.5-flash';
 const OPENAI_DEFAULT_MODEL        = 'gpt-5.5';
 const OPENROUTER_DEFAULT_MODEL    = 'openrouter/free';
 // Hirarki timeout wajib — JANGAN dibalik urutannya:
@@ -272,7 +288,7 @@ const DB_WORKER_TIMEOUT_MS          = 10000; // max query SQLite (harus < QUICK_
 const TOOL_RESULT_MAX_ROWS          =    20; // batas baris tool-result yang dikirim ke model
 const MAX_SWITCH_TRIES              =     5; // batas total percobaan SmartSwitch
 
-const GEMINI_USER_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.5-flash'];
+const GEMINI_USER_MODELS = ['gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-2.5-pro'];
 const OPENAI_USER_MODELS = ['gpt-5.5'];
 const OPENROUTER_USER_MODELS = [
   'meta-llama/llama-3.3-70b-instruct:free',
@@ -327,7 +343,7 @@ function getAllowedModels(provider, settings) {
     return Array.from(new Set(models));
   }
   // gemini
-  const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-2.5-flash-lite, gemini-3.5-flash';
+  const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.1-flash-lite, gemini-3.5-flash, gemini-2.5-pro';
   const models = listStr.split(',').map(m => m.trim()).filter(Boolean);
   if (settings.gemini_model) models.push(settings.gemini_model);
   return Array.from(new Set(models));
@@ -1119,12 +1135,12 @@ function getApiKeyForProvider(provider, settings) {
   return key && key.trim() ? key.trim() : null;
 }
 
-async function executeSingleProviderCall(provider, model, userMessage, chatHistory, settings, signal) {
+async function executeSingleProviderCall(provider, model, userMessage, chatHistory, settings, signal, customApiKey) {
   const task = provider === 'openai'
     ? sendMessageToOpenAI(userMessage, chatHistory, settings, model, signal)
     : provider === 'openrouter'
     ? sendMessageToOpenRouter(userMessage, chatHistory, settings, model, signal)
-    : sendMessageToGemini(userMessage, chatHistory, settings, model, signal);
+    : sendMessageToGemini(userMessage, chatHistory, settings, model, signal, customApiKey);
 
   return await timeoutPromise(task, AGENT_API_TIMEOUT_MS, `${provider} request timed out.`);
 }
@@ -1151,7 +1167,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}) {
     }
     // 2. Gemini models
     if (settings.gemini_api_key && settings.gemini_api_key.trim() && tries.length < MAX_SWITCH_TRIES) {
-      const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-2.5-flash-lite, gemini-3.5-flash';
+      const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.1-flash-lite, gemini-3.5-flash, gemini-2.5-pro';
       for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
         if (tries.length >= MAX_SWITCH_TRIES) break;
         tries.push({ provider: 'gemini', model: m });
@@ -1192,42 +1208,100 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}) {
   
   for (let i = 0; i < uniqueTries.length; i++) {
     const current = uniqueTries[i];
-    const apiKey = getApiKeyForProvider(current.provider, settings);
     
-    if (!apiKey) {
-      log.warn(`[SmartSwitch] Skip ${current.provider}/${current.model}: tidak ada API key`);
-      continue;
-    }
-    
-    log.info(`[SmartSwitch] Mencoba (${i + 1}/${uniqueTries.length}): ${current.provider} (${current.model})`);
-    
-    // FIX #2 — Abort semua sebelum mulai, bukan hanya provider yang sama
-    abortAllActive();
-    const serverController = registerActiveRequest(current.provider);
-    
-    try {
-      const result = await executeSingleProviderCall(
-        current.provider, current.model, userMessage, chatHistory, settings, serverController.signal
-      );
-      
-      if (i > 0) {
-        result.content =
-          `🤖 *Smart Switch: ${initialSelection.provider}/${initialSelection.model} tidak tersedia. ` +
-          `Dialihkan ke ${current.provider}/${current.model}.*\n\n` + result.content;
+    if (current.provider === 'gemini') {
+      let keysToTry = [settings.gemini_api_key];
+      try {
+        const backups = JSON.parse(settings.gemini_backup_api_keys || '[]');
+        if (Array.isArray(backups)) {
+          keysToTry = keysToTry.concat(backups);
+        }
+      } catch (e) {}
+      keysToTry = keysToTry.map(k => k ? k.trim() : '').filter(Boolean);
+      keysToTry = [...new Set(keysToTry)];
+
+      if (keysToTry.length === 0) {
+        log.warn(`[SmartSwitch] Skip gemini/${current.model}: tidak ada API key`);
+        continue;
+      }
+
+      let success = false;
+      let result = null;
+      for (let kIdx = 0; kIdx < keysToTry.length; kIdx++) {
+        const activeKey = keysToTry[kIdx];
+        log.info(`[SmartSwitch] Mencoba Gemini Key (${kIdx + 1}/${keysToTry.length}) dengan model ${current.model}`);
+        
+        abortAllActive();
+        const serverController = registerActiveRequest('gemini');
+        try {
+          result = await executeSingleProviderCall(
+            'gemini', current.model, userMessage, chatHistory, settings, serverController.signal, activeKey
+          );
+          
+          if (i > 0 || kIdx > 0) {
+            let switchMsg = `🤖 *Smart Switch: `;
+            if (kIdx > 0) {
+              switchMsg += `Gemini API Key utama/sebelumnya error. Menggunakan Gemini Backup Key #${kIdx}.*`;
+            } else {
+              switchMsg += `${initialSelection.provider}/${initialSelection.model} tidak tersedia. Dialihkan ke gemini/${current.model}.*`;
+            }
+            result.content = switchMsg + `\n\n` + result.content;
+          }
+          success = true;
+          break;
+        } catch (err) {
+          lastError = err;
+          log.error(`[SmartSwitch] Gemini Key #${kIdx} Gagal:`, err.message);
+        } finally {
+          clearActiveRequest('gemini');
+        }
       }
       
-      return result;
-    } catch (err) {
-      lastError = err;
-      log.error(`[SmartSwitch] Gagal pada ${current.provider}/${current.model}:`, err.message);
+      if (success) {
+        return result;
+      }
       
       if (settings.chatbot_smart_switch !== '1') {
         break;
       }
+      log.warn(`[SmartSwitch] Semua key Gemini gagal. Mencoba provider berikutnya...`);
+    } else {
+      const apiKey = getApiKeyForProvider(current.provider, settings);
       
-      log.warn(`[SmartSwitch] Mencoba berikutnya...`);
-    } finally {
-      clearActiveRequest(current.provider);
+      if (!apiKey) {
+        log.warn(`[SmartSwitch] Skip ${current.provider}/${current.model}: tidak ada API key`);
+        continue;
+      }
+      
+      log.info(`[SmartSwitch] Mencoba (${i + 1}/${uniqueTries.length}): ${current.provider} (${current.model})`);
+      
+      abortAllActive();
+      const serverController = registerActiveRequest(current.provider);
+      
+      try {
+        const result = await executeSingleProviderCall(
+          current.provider, current.model, userMessage, chatHistory, settings, serverController.signal
+        );
+        
+        if (i > 0) {
+          result.content =
+            `🤖 *Smart Switch: ${initialSelection.provider}/${initialSelection.model} tidak tersedia. ` +
+            `Dialihkan ke ${current.provider}/${current.model}.*\n\n` + result.content;
+        }
+        
+        return result;
+      } catch (err) {
+        lastError = err;
+        log.error(`[SmartSwitch] Gagal pada ${current.provider}/${current.model}:`, err.message);
+        
+        if (settings.chatbot_smart_switch !== '1') {
+          break;
+        }
+        
+        log.warn(`[SmartSwitch] Mencoba berikutnya...`);
+      } finally {
+        clearActiveRequest(current.provider);
+      }
     }
   }
 
@@ -1244,10 +1318,11 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}) {
 //  ROOT CAUSE #4 — functionCalls() bisa throw jika response finish_reason
 //  bukan STOP (misalnya SAFETY atau MAX_TOKENS). Perlu dicek sebelum akses.
 // ─────────────────────────────────────────────────────────────────────────
-async function sendMessageToGemini(userMessage, chatHistory, settings, selectedModel, abortSignal) {
+async function sendMessageToGemini(userMessage, chatHistory, settings, selectedModel, abortSignal, customApiKey) {
   try {
     const { GoogleGenerativeAI } = require("@google/generative-ai");
-    const genAI       = new GoogleGenerativeAI(settings.gemini_api_key);
+    const apiKey = customApiKey || settings.gemini_api_key;
+    const genAI       = new GoogleGenerativeAI(apiKey);
     const geminiModel = LEGACY_GEMINI_MODELS.has(selectedModel) ? GEMINI_DEFAULT_MODEL : (selectedModel || GEMINI_DEFAULT_MODEL);
 
     log.debug('Gemini model:', geminiModel);

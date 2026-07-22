@@ -210,12 +210,17 @@
       transform: translateY(-1px) scale(0.98);
     }
     
-    @media (max-width: 576px) {
+    @media (max-width: 768px) {
       .floating-save-btn {
-        bottom: 20px;
-        right: 20px;
-        padding: 10px 20px;
-        font-size: 13px;
+        position: static !important;
+        width: 100% !important;
+        justify-content: center !important;
+        margin-top: 16px !important;
+        border-radius: 50px !important;
+        padding: 12px 24px !important;
+        font-size: 13.5px !important;
+        transform: none !important;
+        box-shadow: 0 4px 14px rgba(13, 110, 253, 0.25) !important;
       }
     }
   </style>

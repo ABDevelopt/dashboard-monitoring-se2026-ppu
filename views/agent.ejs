@@ -41,6 +41,7 @@
       flex-direction: column;
       flex: 1;
       min-height: 0;
+      min-width: 0;
       background: var(--bg-card);
       border: none !important;
       border-radius: 0 !important;
@@ -49,7 +50,7 @@
     }
     
     .chat-header {
-      padding: 16px 20px;
+      padding: 14px 18px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
@@ -80,10 +81,10 @@
       border: 1px solid var(--border);
       color: var(--text-primary);
       border-radius: var(--radius-sm);
-      padding: 8px 10px;
+      padding: 6px 10px;
       font-size: 12px;
       outline: none;
-      min-width: 150px;
+      min-width: 130px;
     }
     .agent-select:focus {
       border-color: var(--accent-blue);
@@ -93,10 +94,10 @@
     .status-badge {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 9px 12px;
+      gap: 6px;
+      padding: 6px 10px;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       border: 1px solid transparent;
       transition: var(--transition);
@@ -121,8 +122,8 @@
     }
 
     .status-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: currentColor;
       box-shadow: 0 0 0 2px rgba(255,255,255,0.2);
@@ -131,12 +132,14 @@
     
     .chat-messages {
       flex: 1;
-      padding: 20px;
+      padding: 16px;
       overflow-y: auto;
+      overflow-x: hidden;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       background: rgba(0, 0, 0, 0.1);
+      min-width: 0;
     }
     body.light-mode .chat-messages {
       background: rgba(0, 0, 0, 0.02);
@@ -144,8 +147,9 @@
     
     .message {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       max-width: 90%;
+      min-width: 0;
       animation: msg-slide 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     @keyframes msg-slide {
@@ -167,13 +171,13 @@
     }
     
     .message-avatar {
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 15px;
       flex-shrink: 0;
       font-weight: 600;
     }
@@ -189,12 +193,16 @@
     }
     
     .message-bubble {
-      padding: 12px 16px;
+      padding: 10px 14px;
       border-radius: var(--radius-md);
-      font-size: 13px;
-      line-height: 1.6;
+      font-size: 12.5px;
+      line-height: 1.55;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
       word-wrap: break-word;
-      overflow-wrap: break-word;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     
     /* Code blocks */
@@ -203,7 +211,7 @@
       padding: 2px 6px;
       border-radius: 3px;
       font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-      font-size: 12px;
+      font-size: 11.5px;
     }
     body.light-mode .message-bubble code {
       background: rgba(0, 0, 0, 0.05);
@@ -212,11 +220,14 @@
     .message-bubble pre {
       background: rgba(0, 0, 0, 0.15);
       border: 1px solid rgba(0, 0, 0, 0.1);
-      padding: 12px;
+      padding: 10px 12px;
       border-radius: 6px;
       overflow-x: auto;
-      margin: 12px 0;
+      max-width: 100%;
+      box-sizing: border-box;
+      margin: 10px 0;
       position: relative;
+      -webkit-overflow-scrolling: touch;
     }
     body.light-mode .message-bubble pre {
       background: #f5f5f5;
@@ -227,7 +238,7 @@
       background: none;
       padding: 0;
       color: inherit;
-      font-size: 12px;
+      font-size: 11.5px;
     }
     
     .code-block-header {
@@ -235,10 +246,10 @@
       justify-content: space-between;
       align-items: center;
       background: rgba(0, 0, 0, 0.2);
-      padding: 8px 12px;
+      padding: 6px 10px;
       border-radius: 4px 4px 0 0;
-      margin: -12px -12px 12px -12px;
-      font-size: 11px;
+      margin: -10px -12px 10px -12px;
+      font-size: 10.5px;
       color: rgba(255, 255, 255, 0.7);
       font-weight: 600;
       font-family: monospace;
@@ -252,9 +263,9 @@
       background: rgba(255, 255, 255, 0.15);
       border: none;
       color: white;
-      padding: 4px 8px;
+      padding: 3px 7px;
       border-radius: 3px;
-      font-size: 11px;
+      font-size: 10.5px;
       cursor: pointer;
       transition: all 0.2s;
       font-weight: 500;
@@ -272,37 +283,37 @@
     
     /* Markdown elements */
     .message-bubble h1, .message-bubble h2, .message-bubble h3 {
-      margin: 16px 0 8px 0;
+      margin: 12px 0 6px 0;
       font-weight: 700;
       line-height: 1.3;
     }
     .message-bubble h1 {
-      font-size: 16px;
+      font-size: 15px;
       border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-      padding-bottom: 8px;
+      padding-bottom: 6px;
     }
     .message-bubble h2 {
-      font-size: 14px;
+      font-size: 13.5px;
       color: var(--accent-blue);
     }
     .message-bubble h3 {
-      font-size: 13px;
+      font-size: 12.5px;
     }
     
     .message-bubble blockquote {
-      border-left: 4px solid var(--accent-blue);
-      padding-left: 12px;
-      margin: 12px 0;
+      border-left: 3px solid var(--accent-blue);
+      padding-left: 10px;
+      margin: 10px 0;
       color: var(--text-secondary);
       font-style: italic;
     }
     
     .message-bubble ul, .message-bubble ol {
-      margin: 12px 0;
-      padding-left: 24px;
+      margin: 8px 0;
+      padding-left: 20px;
     }
     .message-bubble li {
-      margin: 6px 0;
+      margin: 4px 0;
     }
     
     .message-bubble strong {
@@ -326,7 +337,7 @@
     }
     
     .message-bubble p {
-      margin: 8px 0;
+      margin: 6px 0;
     }
     .message-bubble p:first-child {
       margin-top: 0;
@@ -336,10 +347,11 @@
     }
     
     .alert {
-      padding: 12px 14px;
+      padding: 10px 12px;
       border-radius: var(--radius-md);
       border: 1px solid;
       margin: 8px 0;
+      font-size: 12px;
     }
     .alert-error {
       background: rgba(220, 53, 69, 0.1);
@@ -371,30 +383,68 @@
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
     }
     
+    .table-container {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.05);
+      box-sizing: border-box;
+      display: block;
+    }
+    .table-container::-webkit-scrollbar {
+      height: 4px;
+    }
+    .table-container::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 2px;
+    }
+    .table-container::-webkit-scrollbar-thumb {
+      background: var(--accent-blue);
+      border-radius: 2px;
+    }
+    body.light-mode .table-container {
+      background: rgba(0, 0, 0, 0.01);
+    }
     .message-bubble table {
       width: 100%;
+      min-width: 480px;
       border-collapse: collapse;
-      margin: 12px 0;
-      font-size: 12px;
+      margin: 0;
+      font-size: 11.5px;
+    }
+    .message-bubble > table {
+      display: block;
+      overflow-x: auto;
+      max-width: 100%;
+      -webkit-overflow-scrolling: touch;
     }
     .message-bubble th, .message-bubble td {
-      border: 1px solid var(--border-light);
+      border: none;
+      border-bottom: 1px solid var(--border-light);
       padding: 8px 10px;
       text-align: left;
+      white-space: nowrap;
+    }
+    .message-bubble tr:last-child td {
+      border-bottom: none;
     }
     .message-bubble th {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.03);
       font-weight: 600;
     }
     body.light-mode .message-bubble th {
-      background: rgba(0, 0, 0, 0.03);
+      background: rgba(0, 0, 0, 0.02);
     }
     
     .quick-prompts {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      padding: 14px 20px;
+      gap: 8px;
+      padding: 10px 16px;
       border-top: 1px solid var(--border);
       background: rgba(255, 255, 255, 0.005);
     }
@@ -402,14 +452,14 @@
       background: rgba(var(--accent-rgb), 0.05);
       border: 1px solid var(--border);
       color: var(--text-secondary);
-      padding: 8px 14px;
+      padding: 6px 12px;
       border-radius: 20px;
-      font-size: 12px;
+      font-size: 11.5px;
       cursor: pointer;
       transition: var(--transition);
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       white-space: nowrap;
       flex-shrink: 0;
     }
@@ -421,43 +471,56 @@
     }
     
     .chat-input-area {
-      padding: 14px 20px;
-      border-top: 1px solid var(--border);
+      padding: 5px 8px;
+      margin: 8px 16px 16px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
       display: flex;
-      gap: 10px;
-      background: rgba(255, 255, 255, 0.003);
+      gap: 8px;
+      background: var(--bg-card);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      align-items: center;
+    }
+    .chat-input-area:focus-within {
+      border-color: rgba(var(--accent-rgb), 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     }
     .chat-input {
       flex: 1;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
+      background: transparent;
+      border: none;
       color: var(--text-primary);
-      padding: 11px 14px;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
+      padding: 8px 10px;
+      font-size: 13.5px;
       outline: none;
       transition: var(--transition);
     }
     .chat-input::placeholder {
       color: var(--text-muted);
     }
-    .chat-input:focus {
-      border-color: var(--accent-blue);
-      box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
-      background: var(--bg-secondary);
+    .chat-input-area button {
+      height: 34px;
+      padding: 0 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     
     /* Typing Loader */
     .typing-loader {
       display: flex;
-      gap: 6px;
-      padding: 6px 0;
+      gap: 5px;
+      padding: 4px 0;
       align-items: center;
-      height: 28px;
+      height: 24px;
     }
     .typing-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       background: var(--text-muted);
       border-radius: 50%;
       animation: typing-bounce 1.4s infinite ease-in-out both;
@@ -493,46 +556,105 @@
     }
     @media (max-width: 768px) {
       .chat-messages {
-        padding: 12px 10px !important;
-        gap: 12px !important;
+        padding: 10px 8px !important;
+        gap: 10px !important;
       }
       .message {
-        max-width: 95% !important;
-        gap: 8px !important;
+        max-width: 98% !important;
+        gap: 6px !important;
       }
       .message-avatar {
-        width: 28px !important;
-        height: 28px !important;
-        font-size: 14px !important;
-      }
-      .message-bubble {
-        padding: 10px 12px !important;
+        width: 24px !important;
+        height: 24px !important;
         font-size: 12px !important;
       }
+      .message-bubble {
+        padding: 8px 10px !important;
+        font-size: 11.5px !important;
+        line-height: 1.45 !important;
+      }
+      .message-bubble h1 {
+        font-size: 13px !important;
+        margin: 10px 0 4px 0 !important;
+        padding-bottom: 4px !important;
+      }
+      .message-bubble h2 {
+        font-size: 12px !important;
+        margin: 8px 0 4px 0 !important;
+      }
+      .message-bubble h3 {
+        font-size: 11.5px !important;
+        margin: 6px 0 4px 0 !important;
+      }
       .message-bubble ul, .message-bubble ol {
-        padding-left: 16px !important;
+        padding-left: 14px !important;
+        margin: 6px 0 !important;
+      }
+      .message-bubble li {
+        margin: 3px 0 !important;
+      }
+      .message-bubble p {
+        margin: 6px 0 !important;
+      }
+      .message-bubble blockquote {
         margin: 8px 0 !important;
+        padding-left: 8px !important;
+      }
+      .message-bubble pre {
+        padding: 8px !important;
+        margin: 8px 0 !important;
+        border-radius: 4px !important;
+      }
+      .code-block-header {
+        padding: 4px 8px !important;
+        font-size: 10px !important;
+        margin: -8px -8px 8px -8px !important;
+      }
+      .copy-code-btn {
+        padding: 2px 6px !important;
+        font-size: 10px !important;
+      }
+      .table-container {
+        margin: 8px 0 !important;
+        border-radius: 6px !important;
+      }
+      .message-bubble table {
+        min-width: 360px !important;
+        font-size: 10.5px !important;
+      }
+      .message-bubble th, .message-bubble td {
+        padding: 5px 6px !important;
       }
       
       .chat-header {
         align-items: flex-start !important;
         flex-direction: column !important;
-        gap: 12px !important;
-        padding: 12px 14px !important;
+        gap: 8px !important;
+        padding: 8px 10px !important;
+      }
+      .chat-header-title {
+        font-size: 13px !important;
+        gap: 6px !important;
+      }
+      .chat-header-title i {
+        font-size: 16px !important;
+      }
+      .chat-header-title p {
+        font-size: 9px !important;
       }
       .chat-header-actions {
         width: 100% !important;
         display: grid !important;
         grid-template-columns: 1fr 1fr !important;
-        gap: 8px !important;
+        gap: 6px !important;
         justify-content: stretch !important;
       }
       .chat-header-actions button,
       .chat-header-actions .status-badge,
       .chat-header-actions select {
-        height: 34px !important;
-        padding: 0 10px !important;
-        font-size: 11px !important;
+        height: 28px !important;
+        padding: 0 8px !important;
+        font-size: 10.5px !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -548,6 +670,8 @@
         grid-row: 1 !important;
         grid-column: 2 !important;
         border-radius: var(--radius-sm) !important;
+        font-size: 10px !important;
+        gap: 4px !important;
       }
       .chat-header-actions select#agentProvider {
         grid-row: 2 !important;
@@ -560,27 +684,39 @@
       
       .quick-prompts {
         overflow-x: auto !important;
-        padding: 10px 12px !important;
+        padding: 6px 8px !important;
+        gap: 6px !important;
       }
       .prompt-btn {
-        font-size: 11px !important;
-        padding: 6px 12px !important;
+        font-size: 10px !important;
+        padding: 4px 10px !important;
+        height: 26px !important;
       }
       
       .chat-input-area {
-        padding: 10px !important;
+        padding: 4px 6px !important;
         gap: 6px !important;
+        margin: 6px 8px 10px 8px !important;
+        border-radius: 10px !important;
       }
       .chat-input {
-        padding: 8px 10px !important;
-        font-size: 12px !important;
-        height: 36px !important;
+        padding: 6px 8px !important;
+        font-size: 11.5px !important;
+        height: 32px !important;
         box-sizing: border-box !important;
       }
       .chat-input-area button {
-        height: 36px !important;
-        padding: 0 12px !important;
-        font-size: 12px !important;
+        height: 32px !important;
+        padding: 0 10px !important;
+        font-size: 11.5px !important;
+        border-radius: 6px !important;
+      }
+      .agent-step-text {
+        font-size: 0.8rem !important;
+        max-width: 180px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
       }
     }
   </style>
@@ -626,10 +762,9 @@
       </div>
     </div>
     
-    <!-- Input Form -->
     <form id="chatForm" class="chat-input-area" onsubmit="handleChatSubmit(event)">
       <input type="text" id="chatInput" class="chat-input" placeholder="Tulis pertanyaan mengenai data sensus Anda..." required autocomplete="off">
-      <button type="submit" class="btn btn-primary" style="height: auto; padding: 0 20px;"><i class="bi bi-send-fill"></i> Kirim</button>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-send-fill"></i> Kirim</button>
     </form>
   </div>
 </div>
@@ -768,7 +903,7 @@
           rows.push(lines[i].trim().slice(1, -1).split('|').map(c => c.trim()));
           i++;
         }
-        blocks.push(`<table><thead><tr>${headers.map(h => `<th>${formatInline(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(c => `<td>${formatInline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
+        blocks.push(`<div class="table-container"><table><thead><tr>${headers.map(h => `<th>${formatInline(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(c => `<td>${formatInline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
         continue;
       }
 
@@ -920,7 +1055,7 @@
   }
 
   const sampleAnswers = {
-    "terendah": `🤖 **Menganalisis database SQLite...**<br>Berikut adalah daftar 3 petugas PCL dengan capaian terendah di Kecamatan Sepaku berdasarkan data upload terbaru:<br><br><table><thead><tr><th>Nama PCL</th><th>PML Pengawas</th><th>Realisasi FASIH</th><th>Progres (%)</th></tr></thead><tbody><tr><td>Ahmad Dahlan</td><td>Ismail</td><td>2 / 40 FASIH</td><td><span class="badge badge-red">5.00%</span></td></tr><tr><td>Dewi Lestari</td><td>Hartini</td><td>4 / 35 FASIH</td><td><span class="badge badge-red">11.43%</span></td></tr><tr><td>Budi Santoso</td><td>Abdul Basir</td><td>6 / 38 FASIH</td><td><span class="badge badge-red">15.79%</span></td></tr></tbody></table><br>**Rekomendasi Tindak Lanjut:**<br>PCL Ahmad Dahlan memiliki progres paling kritis (5.00%). Disarankan agar PML Ismail melakukan pendampingan lapangan langsung untuk mengidentifikasi kendala teknis (misal: kendala login aplikasi FASIH).`,
+    "terendah": `🤖 **Menganalisis database SQLite...**<br>Berikut adalah daftar 3 petugas PCL dengan capaian terendah di Kecamatan Sepaku berdasarkan data upload terbaru:<br><br><div class="table-container"><table><thead><tr><th>Nama PCL</th><th>PML Pengawas</th><th>Realisasi FASIH</th><th>Progres (%)</th></tr></thead><tbody><tr><td>Ahmad Dahlan</td><td>Ismail</td><td>2 / 40 FASIH</td><td><span class="badge badge-red">5.00%</span></td></tr><tr><td>Dewi Lestari</td><td>Hartini</td><td>4 / 35 FASIH</td><td><span class="badge badge-red">11.43%</span></td></tr><tr><td>Budi Santoso</td><td>Abdul Basir</td><td>6 / 38 FASIH</td><td><span class="badge badge-red">15.79%</span></td></tr></tbody></table></div><br>**Rekomendasi Tindak Lanjut:**<br>PCL Ahmad Dahlan memiliki progres paling kritis (5.00%). Disarankan agar PML Ismail melakukan pendampingan lapangan langsung untuk mengidentifikasi kendala teknis (misal: kendala login aplikasi FASIH).`,
     "rerata": `🤖 **Menganalisis database SQLite...**<br>Berdasarkan agregasi seluruh data progres terbaru pada tabel <strong>progres</strong>, rata-rata pencapaian realisasi di Kabupaten Penajam Paser Utara (BPS PPU) adalah sebagai berikut:<br><br><ul><li>Rata-rata Progres Realisasi Muatan: <strong>38.45%</strong> dari total beban prelist.</li><li>Kecamatan Tertinggi: Kecamatan Penajam (<strong>45.12%</strong>).</li><li>Kecamatan Terendah: Kecamatan Sepaku (<strong>29.80%</strong>).</li><li>Rata-rata Capaian Dokumen FASIH (Approved): <strong>32.10%</strong> dari total target.</li></ul><br>Progres Kecamatan Sepaku saat ini berada di bawah rata-rata kabupaten. Disarankan agar dilakukan monitoring harian terfokus pada wilayah Sepaku.`,
     "anomali": `🤖 **Mengecek tabel progres & anomali...**<br>Ditemukan beberapa indikasi anomali data kualitas pengumpulan di lapangan:<br><br><ol><li><strong>Indikasi Usaha Ganda (Double Input):</strong><br>Terdapat <strong>8 baris</strong> pada tabel progres yang memiliki kolom <code>ganda > 0</code>. Kasus terbanyak berada di PML Hartini (5 kasus ganda).</li><li><strong>Petugas Aktif Tanpa Progres:</strong><br>Ada <strong>3 PCL</strong> yang sudah memegang muatan SLS (>10) namun memiliki realisasi muatan = 0.</li><li><strong>Rasio Reject Tinggi:</strong><br>PML Ismail melakukan reject terhadap <strong>12 dokumen</strong> yang disubmit PCL.</li></ol><br>**Rekomendasi:**<br>1. Lakukan verifikasi koordinat SLS pada PML Hartini untuk menghapus entri ganda.<br>2. Hubungi PCL yang masih memiliki progres nol untuk memastikan mereka sudah turun ke lapangan.`
   };
@@ -1169,8 +1304,16 @@
 
       // FIX #5 — Gunakan appendMessageAsync agar render tidak blokir UI thread
       await appendMessageAsync('agent', reply);
-      chatHistory.push({ role: 'model', content: reply });
-      saveChatHistory();
+      
+      // Do not save technical error messages to chat history to prevent polluting AI context
+      const isErrorReply = reply.includes('Model tidak mengembalikan teks') || 
+                           reply.includes('API Provider Error') || 
+                           reply.includes('Kesalahan:') || 
+                           reply.includes('dibatalkan');
+      if (!isErrorReply) {
+        chatHistory.push({ role: 'model', content: reply });
+        saveChatHistory();
+      }
 
     } catch (err) {
       clearTimeout(browserTimeout);

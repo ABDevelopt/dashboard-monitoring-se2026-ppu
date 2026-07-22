@@ -198,10 +198,10 @@
 
                 <td class="text-center" style="display: flex; gap: 4px; justify-content: center; align-items: center;">
                   <% if (u.stored_filename) { %>
-                    <a href="/admin/upload/download/<%= u.id %>" class="btn btn-secondary" style="padding: 4px 8px;" title="Download File Excel Progres" aria-label="Unduh Excel Progres <%= u.filename %>"><i class="bi bi-download"></i></a>
+                    <a href="/admin/upload/download/<%= u.id %>" download class="btn btn-secondary" style="padding: 4px 8px;" title="Download File Excel Progres" aria-label="Unduh Excel Progres <%= u.filename %>"><i class="bi bi-download"></i></a>
                   <% } %>
                   <% if (u.status_filename) { %>
-                    <a href="/admin/upload/download-status/<%= u.id %>" class="btn btn-secondary" style="padding: 4px 8px; color: var(--accent-purple); border-color: rgba(139, 92, 246, 0.3);" title="Download File Status FASIH" aria-label="Unduh Status FASIH <%= u.status_filename %>"><i class="bi bi-phone"></i> <i class="bi bi-download"></i></a>
+                    <a href="/admin/upload/download-status/<%= u.id %>" download class="btn btn-secondary" style="padding: 4px 8px; color: var(--accent-purple); border-color: rgba(139, 92, 246, 0.3);" title="Download File Status FASIH" aria-label="Unduh Status FASIH <%= u.status_filename %>"><i class="bi bi-phone"></i> <i class="bi bi-download"></i></a>
                   <% } %>
                   <form action="/admin/upload/delete/<%= u.id %>" method="POST" onsubmit="return confirm('Yakin ingin menghapus data rekap ini?');" style="margin: 0;">
                     <button type="submit" class="btn btn-secondary text-red" style="padding: 4px 8px;" title="Hapus" aria-label="Hapus Rekap Progres ID <%= u.id %>"><i class="bi bi-trash"></i></button>
