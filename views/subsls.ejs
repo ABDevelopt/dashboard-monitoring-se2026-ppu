@@ -225,15 +225,19 @@
             let muatanPct = muatanTgt > 0 ? ((muatanDone / muatanTgt) * 100).toFixed(2) : '0.00';
             let muatanColor = parseFloat(muatanPct) >= 100 ? 'var(--accent-green)' : (parseFloat(muatanPct) < 40 ? 'var(--accent-red)' : 'var(--accent-cyan)');
           %>
-          <div class="card" style="border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 20px; position: sticky; top: 80px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
-            <!-- Close Detail Button -->
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;">
+          <div class="card" id="subslsDetailCard" style="border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 20px; position: sticky; top: 80px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+            <!-- Close & Action Buttons -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
               <div>
                 <span class="badge badge-purple" style="font-size: 9px; padding: 2px 6px; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; display: inline-block;">Rincian SubSLS</span>
                 <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.nama_sls %></h3>
                 <code style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 2px;"><%= selectedSubsls.kode %></code>
               </div>
-              <a href="/subsls?kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="btn-close-detail" style="color: var(--text-muted); font-size: 18px; text-decoration: none; padding: 4px; line-height: 1;"><i class="bi bi-x-lg"></i></a>
+              <div class="flex-start" style="gap: 6px; margin-left: auto;">
+                <button onclick="window.shareElementAsImage('subslsDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
+                <button onclick="window.copyElementAsImage('subslsDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
+                <a href="/subsls?kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="btn btn-secondary btn-xs" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
+              </div>
             </div>
 
             <!-- Identitas Wilayah & Petugas -->
