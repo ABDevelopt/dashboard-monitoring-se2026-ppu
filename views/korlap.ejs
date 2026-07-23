@@ -338,11 +338,11 @@
 
     // AJAX Tutup Detail handler
     function bindCloseDetail() {
-      const closeBtn = detailContainer.querySelector('.btn-secondary');
+      const closeBtn = detailContainer.querySelector('a[href*="/korlap"]');
       if (closeBtn) {
         closeBtn.addEventListener('click', (e) => {
           e.preventDefault();
-          const url = closeBtn.getAttribute('href');
+          const url = closeBtn.getAttribute('href') || '/korlap';
 
           // Reset active rows
           if (table) {
@@ -362,6 +362,9 @@
               if (newDetail) {
                 detailContainer.innerHTML = newDetail.innerHTML;
                 detailContainer.style.opacity = '1';
+                detailContainer.classList.remove('smooth-detail-animate');
+                void detailContainer.offsetWidth;
+                detailContainer.classList.add('smooth-detail-animate');
                 window.history.pushState(null, '', url);
 
                 // Toggle grid selection classes
@@ -371,6 +374,7 @@
                   grid.classList.add('no-selection');
                 }
                 if (window.initProgressBars) window.initProgressBars(detailContainer);
+                bindCloseDetail();
               }
             })
             .catch(err => {
