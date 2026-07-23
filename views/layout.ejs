@@ -2727,7 +2727,11 @@
 
       e.preventDefault();
       
-      // Berikan visual feedback instan (denyut nadi) pada item menu yang diklik
+      // ⚡ INSTANT FEEDBACK (0ms): Langsung ubah warna menu yang diklik menjadi active tanpa menunggu load halaman!
+      if (typeof window.setInstantMenuActive === 'function') {
+        window.setInstantMenuActive(href);
+      }
+      
       const sidebarItem = a.closest('.sidebar .nav-item, .bottom-nav .bottom-nav-item');
       if (sidebarItem) {
         sidebarItem.classList.add('nav-item-loading');
@@ -2735,6 +2739,36 @@
       
       loadPage(href);
     });
+
+    window.setInstantMenuActive = function(targetUrl) {
+      if (!targetUrl) return;
+      try {
+        const targetPath = new URL(targetUrl, window.location.origin).pathname;
+        document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+          const itemHref = item.getAttribute('href');
+          if (itemHref) {
+            const itemPath = new URL(itemHref, window.location.origin).pathname;
+            if (itemPath === targetPath || (targetPath === '/' && itemPath === '/')) {
+              item.classList.add('active');
+            } else {
+              item.classList.remove('active');
+            }
+          }
+        });
+
+        document.querySelectorAll('.bottom-nav .bottom-nav-item').forEach(item => {
+          const itemHref = item.getAttribute('href');
+          if (itemHref) {
+            const itemPath = new URL(itemHref, window.location.origin).pathname;
+            if (itemPath === targetPath || (targetPath === '/' && itemPath === '/')) {
+              item.classList.add('active');
+            } else {
+              item.classList.remove('active');
+            }
+          }
+        });
+      } catch (_) {}
+    };
 
     // Handle browser back/forward buttons
     window.addEventListener('popstate', (e) => {
