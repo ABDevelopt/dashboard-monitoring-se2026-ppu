@@ -454,7 +454,7 @@ body.has-breadcrumb .page-content {
 /* Desktop: offset breadcrumb to match sidebar */
 @media (min-width: 993px) {
   #breadcrumb-bar { left: var(--sidebar-width); }
-  body.sidebar-collapsed #breadcrumb-bar { left: 56px; }
+  body.sidebar-collapsed #breadcrumb-bar { left: 0; }
 }
 
 .breadcrumb-list {
@@ -1922,6 +1922,9 @@ body.has-expanded-card .fade-in {
     margin-left: 0;
   }
   body.sidebar-collapsed .topbar {
+    left: 0;
+  }
+  body.sidebar-collapsed #breadcrumb-bar {
     left: 0;
   }
 }
