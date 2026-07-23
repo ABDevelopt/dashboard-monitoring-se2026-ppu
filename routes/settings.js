@@ -67,6 +67,10 @@ router.post('/', (req, res) => {
     updatedSettings.target_muatan_mode = req.body.target_muatan_mode;
   }
 
+  if (req.body.google_sheets_anomaly_url !== undefined) {
+    updatedSettings.google_sheets_anomaly_url = req.body.google_sheets_anomaly_url.trim();
+  }
+
   try {
     updateSettings(updatedSettings);
     req.flash('success', 'Pengaturan tampilan berhasil diperbarui.');

@@ -464,6 +464,18 @@
           </div>
         </div>
 
+        <!-- GROUP: INTEGRASI GOOGLE SPREADSHEET ANOMALI -->
+        <div class="settings-group">
+          <div class="settings-group-title">
+            <i class="bi bi-file-earmark-spreadsheet-fill" style="color: var(--accent-yellow);"></i> Integrasi Google Spreadsheet Anomali
+          </div>
+          <div class="settings-field" style="margin-top: 8px;">
+            <label for="google_sheets_anomaly_url" style="font-weight: 600;">URL Google Spreadsheet (Publikasi Web)</label>
+            <input type="url" id="google_sheets_anomaly_url" name="google_sheets_anomaly_url" value="<%= settings.google_sheets_anomaly_url || '' %>" placeholder="https://docs.google.com/spreadsheets/d/e/.../pubhtml">
+            <div class="settings-hint" style="margin-top: 4px;">Link Spreadsheet pengawasan yang dipublikasikan ke web (File > Share > Publish to web) untuk menampilkan data Anomali di halaman Deteksi Anomali.</div>
+          </div>
+        </div>
+
         <!-- GROUP 2B: METODE TARGET FASIH -->
         <div class="settings-group">
           <div class="settings-group-title">

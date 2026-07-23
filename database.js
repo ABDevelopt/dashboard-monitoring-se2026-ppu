@@ -1336,6 +1336,7 @@ function initSettings() {
     'show_progres_muatan': '1',
     'target_fasih_mode': 'static',
     'target_muatan_mode': 'prelist',
+    'google_sheets_anomaly_url': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml',
     'whatsapp_enabled': '0',
     'whatsapp_group_id': '',
     'whatsapp_group_name': '',
