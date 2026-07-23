@@ -239,7 +239,7 @@
                   </td>
                   <td class="text-center">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-                      <button onclick="openEditModal('<%= item.assignment_id %>', 'usaha', `<%= item.nama_usaha.replace(/`/g, '') %>`, `<%= item.petugas.replace(/`/g, '') %>`, `<%= (item.tindak_lanjut || '').replace(/`/g, '') %>`, `<%= (item.penjelasan || '').replace(/`/g, '') %>`, '<%= item.no %>')" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-yellow);" title="Edit Status Tindak Lanjut &amp; Sync ke Google Sheets">
+                      <button onclick="openEditModal('<%= item.assignment_id %>', 'usaha', `<%= item.nama_usaha.replace(/`/g, '') %>`, `<%= item.petugas.replace(/`/g, '') %>`, `<%= (item.tindak_lanjut || '').replace(/`/g, '') %>`, `<%= (item.penjelasan || '').replace(/`/g, '') %>`, '<%= item.no %>', `<%= (item.nama_anomali || '').replace(/`/g, '') %>`)" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-yellow);" title="Edit Status Tindak Lanjut &amp; Sync ke Google Sheets">
                         <i class="bi bi-pencil-square"></i> Edit
                       </button>
 
@@ -325,7 +325,7 @@
                   </td>
                   <td class="text-center">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-                      <button onclick="openEditModal('<%= item.assignment_id %>', 'keluarga', `<%= item.nama_kk.replace(/`/g, '') %>`, `<%= item.petugas.replace(/`/g, '') %>`, `<%= (item.tindak_lanjut || '').replace(/`/g, '') %>`, `<%= (item.penjelasan || '').replace(/`/g, '') %>`, '<%= item.no %>')" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-yellow);" title="Edit Status Tindak Lanjut &amp; Sync ke Google Sheets">
+                      <button onclick="openEditModal('<%= item.assignment_id %>', 'keluarga', `<%= item.nama_kk.replace(/`/g, '') %>`, `<%= item.petugas.replace(/`/g, '') %>`, `<%= (item.tindak_lanjut || '').replace(/`/g, '') %>`, `<%= (item.penjelasan || '').replace(/`/g, '') %>`, '<%= item.no %>', `<%= (item.nama_anomali || '').replace(/`/g, '') %>`)" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-yellow);" title="Edit Status Tindak Lanjut &amp; Sync ke Google Sheets">
                         <i class="bi bi-pencil-square"></i> Edit
                       </button>
 
@@ -439,6 +439,7 @@
       <input type="hidden" id="modalType" name="type">
       <input type="hidden" id="modalNama" name="nama">
       <input type="hidden" id="modalNo" name="no">
+      <input type="hidden" id="modalNamaAnomali" name="nama_anomali">
 
       <div style="margin-bottom: 16px; background: var(--bg-secondary); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);">
         <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Target Anomali:</div>
@@ -481,11 +482,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function openEditModal(assignmentId, type, itemName, pclName, currentStatus, currentNotes, noVal) {
+function openEditModal(assignmentId, type, itemName, pclName, currentStatus, currentNotes, noVal, namaAnomaliVal) {
   document.getElementById('modalAssignmentId').value = assignmentId || '';
   document.getElementById('modalType').value = type || 'usaha';
   document.getElementById('modalNama').value = itemName || '';
   document.getElementById('modalNo').value = noVal || '';
+  document.getElementById('modalNamaAnomali').value = namaAnomaliVal || '';
   document.getElementById('modalItemName').textContent = itemName || '-';
   document.getElementById('modalPclName').textContent = 'PCL: ' + (pclName || '-');
 
@@ -517,6 +519,7 @@ async function saveAnomalyStatus(e) {
   const type = document.getElementById('modalType').value;
   const nama = document.getElementById('modalNama').value;
   const no = document.getElementById('modalNo').value;
+  const namaAnomali = document.getElementById('modalNamaAnomali').value;
   const tindakLanjut = document.getElementById('modalStatus').value;
   const penjelasan = document.getElementById('modalPenjelasan').value;
 
@@ -538,6 +541,7 @@ async function saveAnomalyStatus(e) {
         type: type,
         nama: nama,
         no: no,
+        nama_anomali: namaAnomali,
         tindak_lanjut: tindakLanjut,
         penjelasan: penjelasan
       })

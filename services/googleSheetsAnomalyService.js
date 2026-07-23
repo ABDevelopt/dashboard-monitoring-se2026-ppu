@@ -267,6 +267,7 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
     type: payload.type || 'usaha',
     nama: payload.nama || '',
     no: payload.no || '',
+    nama_anomali: payload.nama_anomali || '',
     tindak_lanjut: payload.tindak_lanjut,
     penjelasan: payload.penjelasan || '',
     is_test: payload.is_test ? 'true' : 'false'

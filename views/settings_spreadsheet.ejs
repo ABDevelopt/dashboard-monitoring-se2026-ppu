@@ -142,7 +142,7 @@
         Pasang kode Apps Script berikut di Google Spreadsheet Anda (<strong>Extensions</strong> ➔ <strong>Apps Script</strong>) agar perubahan status dari dasbor tersimpan ke spreadsheet:
       </p>
 
-      <pre id="appsScriptCode" style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px; padding: 16px; font-family: monospace; font-size: 12px; color: var(--text-primary); overflow-x: auto; max-height: 420px; line-height: 1.5;">
+      <pre id="appsScriptCode" style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px; padding: 16px; font-family: monospace; font-size: 12px; color: var(--text-primary); overflow-x: auto; max-height: 450px; line-height: 1.5;">
 function doGet(e) {
   return handleRequest(e);
 }
@@ -163,10 +163,11 @@ function handleRequest(e) {
     var targetAssignmentId = String(contents.assignment_id || '').trim().toLowerCase();
     var targetNama = String(contents.nama || '').trim().toLowerCase();
     var targetNo = String(contents.no || '').trim();
+    var targetNamaAnomali = String(contents.nama_anomali || '').trim().toLowerCase();
     var statusTL = contents.tindak_lanjut || '';
     var penjelasan = contents.penjelasan || '';
 
-    // Handle Ping Test Webhook from Admin
+    // Handle Ping Test Webhook dari Admin
     if (contents.is_test === true || contents.is_test === 'true' || targetAssignmentId === 'test_ping_connection') {
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
@@ -195,7 +196,7 @@ function handleRequest(e) {
       for (var c = 0; c < headerRow.length; c++) {
         var hName = String(headerRow[c] || '').toLowerCase().trim();
         if (hName.includes('assignment')) colAssignment = c;
-        else if (hName.includes('nama')) colNama = c;
+        else if (hName.includes('nama usaha') || hName.includes('nama kepala keluarga') || hName === 'nama') colNama = c;
         else if (hName === 'no' || hName === 'no.') colNo = c;
         else if (hName.includes('tindak lanjut') || hName.includes('tindak_lanjut')) colTindakLanjut = c;
         else if (hName.includes('penjelasan') || hName.includes('keterangan') || hName.includes('catatan')) colPenjelasan = c;
@@ -207,23 +208,50 @@ function handleRequest(e) {
       if (colTindakLanjut === -1) colTindakLanjut = 17;
       if (colPenjelasan === -1) colPenjelasan = 21;
 
+      // PASS 1: Strict Match (Assignment ID AND Nama Usaha/KK MUST BOTH MATCH!)
       for (var i = 1; i < data.length; i++) {
         var cellAssignment = String(data[i][colAssignment] || '').trim().toLowerCase();
         var cellNama = String(data[i][colNama] || '').trim().toLowerCase();
-        var cellNo = String(data[i][colNo] || '').trim();
 
-        var isMatch = false;
-        if (targetAssignmentId && cellAssignment && cellAssignment === targetAssignmentId) isMatch = true;
-        else if (targetNama && cellNama && cellNama === targetNama) isMatch = true;
-        else if (targetNo && cellNo && cellNo === targetNo) isMatch = true;
-
-        if (isMatch) {
+        if (targetAssignmentId && cellAssignment && cellAssignment === targetAssignmentId && targetNama && cellNama && cellNama === targetNama) {
           sheet.getRange(i + 1, colTindakLanjut + 1).setValue(statusTL);
           if (penjelasan) sheet.getRange(i + 1, colPenjelasan + 1).setValue(penjelasan);
           updated = true;
           updatedSheetName = sheet.getName();
           updatedRowIndex = i + 1;
           break;
+        }
+      }
+
+      // PASS 2: Match by No AND Nama Usaha/KK
+      if (!updated) {
+        for (var i = 1; i < data.length; i++) {
+          var cellNama = String(data[i][colNama] || '').trim().toLowerCase();
+          var cellNo = String(data[i][colNo] || '').trim();
+
+          if (targetNo && cellNo && cellNo === targetNo && targetNama && cellNama && cellNama === targetNama) {
+            sheet.getRange(i + 1, colTindakLanjut + 1).setValue(statusTL);
+            if (penjelasan) sheet.getRange(i + 1, colPenjelasan + 1).setValue(penjelasan);
+            updated = true;
+            updatedSheetName = sheet.getName();
+            updatedRowIndex = i + 1;
+            break;
+          }
+        }
+      }
+
+      // PASS 3: Fallback match by Assignment ID only
+      if (!updated && targetAssignmentId) {
+        for (var i = 1; i < data.length; i++) {
+          var cellAssignment = String(data[i][colAssignment] || '').trim().toLowerCase();
+          if (cellAssignment && cellAssignment === targetAssignmentId) {
+            sheet.getRange(i + 1, colTindakLanjut + 1).setValue(statusTL);
+            if (penjelasan) sheet.getRange(i + 1, colPenjelasan + 1).setValue(penjelasan);
+            updated = true;
+            updatedSheetName = sheet.getName();
+            updatedRowIndex = i + 1;
+            break;
+          }
         }
       }
 
