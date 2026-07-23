@@ -47,67 +47,43 @@
     width: 350px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
     height: 100%;
     max-height: 100%;
     overflow-y: auto !important;
     overflow-x: hidden;
-    padding-right: 6px;
+    padding-right: 4px;
     flex-shrink: 0;
     box-sizing: border-box;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) var(--bg-secondary);
-  }
-
-  .map-sidebar-panel .card {
-    min-height: 160px;
-    max-height: 380px;
-    overflow-y: auto !important;
-    overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
   }
 
-  .map-sidebar-panel .map-card-control {
-    min-height: 240px;
-  }
-
-  .map-sidebar-panel .map-card-stats {
-    min-height: 180px;
-  }
-
-  .map-sidebar-panel .map-card-legend {
-    min-height: 170px;
-  }
-
-  .map-sidebar-panel::-webkit-scrollbar,
-  .map-sidebar-panel .card::-webkit-scrollbar,
-  #mapSummaryStats::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  .map-sidebar-panel::-webkit-scrollbar-track,
-  .map-sidebar-panel .card::-webkit-scrollbar-track,
-  #mapSummaryStats::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.04);
-    border-radius: 4px;
-  }
-  .map-sidebar-panel::-webkit-scrollbar-thumb,
-  .map-sidebar-panel .card::-webkit-scrollbar-thumb,
-  #mapSummaryStats::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 4px;
-  }
-  .map-sidebar-panel::-webkit-scrollbar-thumb:hover,
-  .map-sidebar-panel .card::-webkit-scrollbar-thumb:hover,
-  #mapSummaryStats::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-blue);
+  .map-sidebar-panel .card {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: auto !important;
+    flex-shrink: 0;
   }
 
   #mapSummaryStats {
-    max-height: 280px;
-    overflow-y: auto !important;
-    padding-right: 4px;
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  .map-sidebar-panel::-webkit-scrollbar {
+    width: 5px;
+  }
+  .map-sidebar-panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .map-sidebar-panel::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+  }
+  .map-sidebar-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-blue);
   }
 
   .map-canvas-container {
