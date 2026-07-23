@@ -2012,6 +2012,25 @@ body.has-expanded-card .fade-in {
   body.sidebar-collapsed #breadcrumb-bar {
     left: 0;
   }
+
+  /* Enterprise Centered Container when Sidebar is Collapsed on Desktop */
+  body.sidebar-collapsed .page-content {
+    max-width: 1440px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 48px;
+    padding-right: 48px;
+    transition: max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1), padding 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body.sidebar-collapsed.page-map .page-content,
+  body.sidebar-collapsed.page-agent .page-content {
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
 }
 
 /* ====== LOGO SWITCHING (LIGHT/DARK MODE) ====== */
