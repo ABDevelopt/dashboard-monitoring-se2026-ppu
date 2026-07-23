@@ -18,8 +18,8 @@ const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (ext === '.xlsx' || ext === '.xls') cb(null, true);
-    else cb(new Error('Hanya file Excel (.xlsx/.xls) yang diperbolehkan.'));
+    if (ext === '.xlsx' || ext === '.xls' || ext === '.csv') cb(null, true);
+    else cb(new Error('Hanya file Excel (.xlsx/.xls) atau CSV (.csv) yang diperbolehkan.'));
   },
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
@@ -28,7 +28,7 @@ const upload = multer({
 router.get('/', (req, res) => {
   const uploads = getAllUploads();
   
-  // Scan workspace for Excel files
+  // Scan workspace for Excel & CSV files
   let workspaceFiles = [];
   const wsDir = path.join(__dirname, '../');
   try {
@@ -36,7 +36,7 @@ router.get('/', (req, res) => {
     workspaceFiles = items
       .filter(item => {
         const ext = path.extname(item).toLowerCase();
-        return (ext === '.xlsx' || ext === '.xls') && !item.startsWith('~');
+        return (ext === '.xlsx' || ext === '.xls' || ext === '.csv') && !item.startsWith('~');
       })
       .map(item => {
         const stats = fs.statSync(path.join(wsDir, item));
@@ -444,6 +444,71 @@ router.post('/honor', upload.single('honorFile'), (req, res) => {
     req.flash('error', `Gagal memproses file target honor: ${err.message}`);
   } finally {
     // Delete temp upload file to keep directory clean
+    if (fs.existsSync(tempPath)) {
+      try { fs.unlinkSync(tempPath); } catch (e) {}
+    }
+  }
+
+  res.redirect('/admin/upload');
+});
+
+// POST: Process Google Spreadsheet URL sync
+router.post('/google-sheets', async (req, res) => {
+  const { sheetUrl, date, dataType } = req.body;
+  if (!sheetUrl || !sheetUrl.trim()) {
+    req.flash('error', 'URL Google Spreadsheet tidak boleh kosong.');
+    return res.redirect('/admin/upload');
+  }
+
+  const targetDate = date || new Date().toISOString().slice(0, 10);
+  
+  // Convert URL to CSV export link
+  let downloadUrl = sheetUrl.trim();
+  if (downloadUrl.includes('/pubhtml')) {
+    downloadUrl = downloadUrl.replace(/\/pubhtml(\?.*)?$/, '/pub?output=csv');
+  } else if (downloadUrl.includes('/pub') && !downloadUrl.includes('output=csv')) {
+    const baseUrl = downloadUrl.split('?')[0];
+    downloadUrl = `${baseUrl}?output=csv`;
+  } else if (downloadUrl.includes('/edit')) {
+    const dMatch = downloadUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (dMatch) {
+      const docId = dMatch[1];
+      const gidMatch = downloadUrl.match(/gid=([0-9]+)/);
+      const gid = gidMatch ? `&gid=${gidMatch[1]}` : '';
+      downloadUrl = `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv${gid}`;
+    }
+  }
+
+  const ts = Date.now();
+  const tempPath = path.join(__dirname, `../uploads/gsheet_${ts}.csv`);
+  const filename = `GoogleSheet_${targetDate}.csv`;
+
+  try {
+    const response = await fetch(downloadUrl);
+    if (!response.ok) {
+      throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+    }
+    const csvBuffer = await response.arrayBuffer();
+    fs.writeFileSync(tempPath, Buffer.from(csvBuffer));
+
+    let result;
+    if (dataType === 'status') {
+      result = parseAndSaveStatusExcelOnly(tempPath, filename, targetDate);
+    } else if (dataType === 'keluarga') {
+      result = parseAndSaveSeparateExports(tempPath, null, filename, null, targetDate);
+    } else if (dataType === 'usaha') {
+      result = parseAndSaveSeparateExports(null, tempPath, null, filename, targetDate);
+    } else {
+      // Default: excel (rekap utama)
+      result = parseAndSaveExcel(tempPath, filename, filename, targetDate);
+    }
+
+    rebuildAllSummaryCaches();
+    req.flash('success', `Berhasil mengimpor & menyinkronkan data dari Google Spreadsheet untuk tanggal ${targetDate}!`);
+  } catch (err) {
+    console.error('Error syncing Google Spreadsheet:', err);
+    req.flash('error', `Gagal mengimpor dari Google Spreadsheet: ${err.message}`);
+  } finally {
     if (fs.existsSync(tempPath)) {
       try { fs.unlinkSync(tempPath); } catch (e) {}
     }

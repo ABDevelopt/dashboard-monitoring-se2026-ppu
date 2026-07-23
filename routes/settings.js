@@ -20,6 +20,7 @@ const generalSettingKeys = [
   'overview_muatan',
   'overview_tren_muatan',
   'overview_tren_fasih',
+  'overview_heatmap',
   'overview_kecamatan',
   'overview_bangunan',
   'show_progres_muatan'
@@ -64,6 +65,14 @@ router.post('/', (req, res) => {
 
   if (['prelist', 'honor'].includes(req.body.target_muatan_mode)) {
     updatedSettings.target_muatan_mode = req.body.target_muatan_mode;
+  }
+
+  if (req.body.google_sheets_anomaly_url !== undefined) {
+    updatedSettings.google_sheets_anomaly_url = req.body.google_sheets_anomaly_url.trim();
+  }
+
+  if (req.body.google_sheets_apps_script_url !== undefined) {
+    updatedSettings.google_sheets_apps_script_url = req.body.google_sheets_apps_script_url.trim();
   }
 
   try {

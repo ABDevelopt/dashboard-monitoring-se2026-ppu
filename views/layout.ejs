@@ -92,6 +92,39 @@
       loader.classList.remove('loading');
       loader.classList.add('finished');
     }
+
+    // Auto-dismiss success and error alerts after 5 seconds, with manual click-to-dismiss
+    const alerts = document.querySelectorAll('.flash-messages .alert');
+    alerts.forEach(alert => {
+      alert.style.transition = 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.4s ease, margin 0.4s ease, padding 0.4s ease';
+      alert.style.opacity = '1';
+      alert.style.transform = 'translateY(0)';
+      alert.style.maxHeight = alert.scrollHeight + 'px';
+      alert.style.cursor = 'pointer';
+
+      // Dismiss helper function
+      const dismissAlert = () => {
+        alert.style.opacity = '0';
+        alert.style.transform = 'translateY(-10px)';
+        setTimeout(() => {
+          alert.style.maxHeight = '0';
+          alert.style.marginTop = '0';
+          alert.style.marginBottom = '0';
+          alert.style.paddingTop = '0';
+          alert.style.paddingBottom = '0';
+          alert.style.borderWidth = '0';
+          setTimeout(() => {
+            alert.remove();
+          }, 400);
+        }, 300);
+      };
+
+      // Click to dismiss
+      alert.addEventListener('click', dismissAlert);
+
+      // Auto dismiss after 5 seconds (5000ms)
+      setTimeout(dismissAlert, 5000);
+    });
   });
 </script>
 
@@ -2166,41 +2199,52 @@
         path = url;
       }
 
-      // Title & Breadcrumb skeleton
+      const isMobile = window.innerWidth <= 768;
+
+      // Title & Breadcrumb skeleton (Adaptive)
       const titleSkeleton = `
         <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px;">
-          <div class="skeleton-block" style="height: 12px; width: 120px; border-radius: 4px;"></div>
-          <div class="skeleton-block" style="height: 28px; width: 280px; border-radius: 6px;"></div>
+          <div class="skeleton-block" style="height: 12px; width: ${isMobile ? '80px' : '120px'}; border-radius: 4px;"></div>
+          <div class="skeleton-block" style="height: 28px; width: ${isMobile ? '180px' : '280px'}; border-radius: 6px;"></div>
         </div>
       `;
 
-      // Helper for stat row
-      const getStatRow = (count) => `
-        <div class="skeleton-stat-row" style="grid-template-columns: repeat(${count}, 1fr); margin-bottom: 20px;">
-          ${Array(count).fill().map(() => `<div class="skeleton-stat-card skeleton-block" style="height: 90px; border-radius: 12px; border: 1px solid var(--border);"></div>`).join('')}
-        </div>
-      `;
+      // Helper for stat row (Adaptive)
+      const getStatRow = (count) => {
+        const gridTemplate = isMobile ? 'repeat(2, 1fr)' : `repeat(${count}, 1fr)`;
+        const cardHeight = isMobile ? '88px' : '90px';
+        const cardCount = isMobile ? Math.min(count, 4) : count;
+        return `
+          <div class="skeleton-stat-row" style="display: grid; grid-template-columns: ${gridTemplate}; gap: ${isMobile ? '10px' : '16px'}; margin-bottom: 20px;">
+            ${Array(cardCount).fill().map(() => `<div class="skeleton-stat-card skeleton-block" style="height: ${cardHeight}; border-radius: 12px; border: 1px solid var(--border);"></div>`).join('')}
+          </div>
+        `;
+      };
 
-      // Helper for table
-      const getTableSkeleton = (rows = 5, cols = 5) => `
-        <div class="skeleton-table-wrap" style="border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; background: var(--bg-card);">
-          <div class="skeleton-table-header skeleton-block" style="height: 16px; width: 150px; margin-bottom: 20px;"></div>
-          ${Array(rows).fill().map(() => `
-            <div class="skeleton-table-row" style="display: grid; grid-template-columns: 40px repeat(${cols - 1}, 1fr); gap: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
-              ${Array(cols).fill().map((_, i) => `<div class="skeleton-block" style="height: 14px; border-radius: 4px; ${i === 0 ? 'width: 24px;' : ''}"></div>`).join('')}
-            </div>
-          `).join('')}
-        </div>
-      `;
+      // Helper for table (Adaptive: fewer columns on mobile)
+      const getTableSkeleton = (rows = 5, cols = 5) => {
+        const displayCols = isMobile ? Math.min(cols, 3) : cols;
+        const colTemplate = `40px repeat(${displayCols - 1}, 1fr)`;
+        return `
+          <div class="skeleton-table-wrap" style="border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; background: var(--bg-card);">
+            <div class="skeleton-table-header skeleton-block" style="height: 16px; width: 150px; margin-bottom: 20px;"></div>
+            ${Array(rows).fill().map(() => `
+              <div class="skeleton-table-row" style="display: grid; grid-template-columns: ${colTemplate}; gap: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+                ${Array(displayCols).fill().map((_, i) => `<div class="skeleton-block" style="height: 14px; border-radius: 4px; ${i === 0 ? 'width: 24px;' : ''}"></div>`).join('')}
+              </div>
+            `).join('')}
+          </div>
+        `;
+      };
 
-      // 1. MAP PAGE
+      // 1. MAP PAGE (Adaptive)
       if (path === '/map') {
         return `
           <div class="skeleton-page">
             ${titleSkeleton}
-            <div style="display: flex; gap: 16px; height: 500px; flex-wrap: wrap;">
-              <div class="skeleton-block" style="width: 280px; height: 100%; min-width: 240px; border-radius: 12px; border: 1px solid var(--border);"></div>
-              <div class="skeleton-block" style="flex: 1; min-width: 300px; height: 100%; border-radius: 12px; border: 1px solid var(--border);"></div>
+            <div style="display: flex; gap: 16px; height: ${isMobile ? 'auto' : '500px'}; flex-direction: ${isMobile ? 'column' : 'row'}; flex-wrap: wrap;">
+              <div class="skeleton-block" style="width: ${isMobile ? '100%' : '280px'}; height: ${isMobile ? '200px' : '100%'}; min-width: 240px; border-radius: 12px; border: 1px solid var(--border);"></div>
+              <div class="skeleton-block" style="flex: 1; min-width: 300px; height: ${isMobile ? '350px' : '100%'}; border-radius: 12px; border: 1px solid var(--border);"></div>
             </div>
           </div>
         `;
@@ -2213,7 +2257,7 @@
             ${titleSkeleton}
             <div class="skeleton-block" style="height: 48px; margin-bottom: 24px; border-radius: 10px;"></div>
             <div style="display: flex; flex-direction: column; gap: 12px;">
-              ${Array(4).fill().map(() => `
+              ${Array(isMobile ? 3 : 4).fill().map(() => `
                 <div class="skeleton-block" style="height: 54px; border-radius: 8px;"></div>
               `).join('')}
             </div>
@@ -2221,7 +2265,7 @@
         `;
       }
 
-      // 3. PCL / PML / KORLAP / KECAMATAN (Side-by-side List & Sticky Detail Card)
+      // 3. PCL / PML / KORLAP / KECAMATAN (Adaptive)
       if (path === '/pcl' || path === '/pml' || path === '/korlap' || path === '/kecamatan') {
         return `
           <div class="skeleton-page">
@@ -2230,28 +2274,28 @@
             <div class="skeleton-block" style="height: 60px; border-radius: 12px; margin-bottom: 20px;"></div>
             
             <!-- Main Content Area -->
-            <div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 16px;">
-              <!-- Left: Table -->
-              ${getTableSkeleton(8, 6)}
-              <!-- Right: Detail panel / sidebar details -->
-              <div class="skeleton-block" style="height: 420px; border-radius: 12px; border: 1px solid var(--border); position: sticky; top: 80px;"></div>
+            <div style="display: grid; grid-template-columns: ${isMobile ? '1fr' : '2fr 1.2fr'}; gap: 16px;">
+              <!-- Left/Top: Table -->
+              ${getTableSkeleton(isMobile ? 6 : 8, 6)}
+              <!-- Right/Bottom: Detail panel -->
+              <div class="skeleton-block" style="height: 380px; border-radius: 12px; border: 1px solid var(--border); ${isMobile ? '' : 'position: sticky; top: 80px;'}"></div>
             </div>
           </div>
         `;
       }
 
-      // 4. DETAIL SUB-SLS
+      // 4. DETAIL SUB-SLS (Adaptive)
       if (path === '/subsls') {
         return `
           <div class="skeleton-page">
             ${titleSkeleton}
             <!-- Large Filter Card -->
-            <div class="skeleton-block" style="height: 120px; border-radius: 12px; margin-bottom: 20px;"></div>
+            <div class="skeleton-block" style="height: ${isMobile ? '160px' : '120px'}; border-radius: 12px; margin-bottom: 20px;"></div>
             
-            <div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 16px;">
-              <!-- Left: Table -->
-              ${getTableSkeleton(10, 6)}
-              <!-- Right: Detail Panel -->
+            <div style="display: grid; grid-template-columns: ${isMobile ? '1fr' : '2fr 1.2fr'}; gap: 16px;">
+              <!-- Left/Top: Table -->
+              ${getTableSkeleton(isMobile ? 6 : 10, 6)}
+              <!-- Right/Bottom: Detail Panel -->
               <div style="display: flex; flex-direction: column; gap: 16px;">
                 <div class="skeleton-block" style="height: 280px; border-radius: 12px; border: 1px solid var(--border);"></div>
                 <div class="skeleton-block" style="height: 180px; border-radius: 12px; border: 1px solid var(--border);"></div>
@@ -2267,7 +2311,7 @@
           <div class="skeleton-page">
             ${titleSkeleton}
             ${getStatRow(4)}
-            ${getTableSkeleton(10, 6)}
+            ${getTableSkeleton(isMobile ? 6 : 10, 6)}
           </div>
         `;
       }
@@ -2278,18 +2322,19 @@
           <div class="skeleton-page">
             ${titleSkeleton}
             <div class="skeleton-block" style="height: 60px; border-radius: 12px; margin-bottom: 20px;"></div>
-            ${getTableSkeleton(8, 6)}
+            ${getTableSkeleton(isMobile ? 6 : 8, 6)}
           </div>
         `;
       }
 
-      // 7. UPLOAD ADMIN
+      // 7. UPLOAD ADMIN (Adaptive)
       if (path === '/admin/upload') {
+        const uploadCols = isMobile ? '1fr' : 'repeat(auto-fit, minmax(220px, 1fr))';
         return `
           <div class="skeleton-page">
             ${titleSkeleton}
             <!-- 3 Upload Zones -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: ${uploadCols}; gap: 16px; margin-bottom: 20px;">
               <div class="skeleton-block" style="height: 180px; border-radius: 12px;"></div>
               <div class="skeleton-block" style="height: 180px; border-radius: 12px;"></div>
               <div class="skeleton-block" style="height: 180px; border-radius: 12px;"></div>
@@ -2302,12 +2347,13 @@
         `;
       }
 
-      // 8. SETTINGS ADMIN
+      // 8. SETTINGS ADMIN (Adaptive)
       if (path === '/admin/settings') {
+        const settingsCols = isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))';
         return `
           <div class="skeleton-page">
             ${titleSkeleton}
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+            <div style="display: grid; grid-template-columns: ${settingsCols}; gap: 16px;">
               <div class="skeleton-block" style="height: 250px; border-radius: 12px;"></div>
               <div class="skeleton-block" style="height: 250px; border-radius: 12px;"></div>
             </div>
@@ -2315,28 +2361,30 @@
         `;
       }
 
-      // 8.5. ADMIN MENU CARDS
+      // 8.5. ADMIN MENU CARDS (Adaptive)
       if (path === '/admin') {
+        const menuCols = isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))';
         return `
           <div class="skeleton-page">
             ${titleSkeleton}
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-              ${Array(6).fill().map(() => `<div class="skeleton-block" style="height: 180px; border-radius: 16px;"></div>`).join('')}
+            <div style="display: grid; grid-template-columns: ${menuCols}; gap: 20px;">
+              ${Array(isMobile ? 4 : 6).fill().map(() => `<div class="skeleton-block" style="height: 180px; border-radius: 16px;"></div>`).join('')}
             </div>
           </div>
         `;
       }
 
-      // 9. OVERVIEW / DEFAULT
+      // 9. OVERVIEW / DEFAULT (Adaptive)
       const isEarlyWarning = path === '/early-warning';
       const cardCount = isEarlyWarning ? 5 : 4;
+      const mainRowCols = isMobile ? '1fr' : '2fr 1.2fr';
       return `
         <div class="skeleton-page">
           ${titleSkeleton}
           ${getStatRow(cardCount)}
-          <div class="skeleton-main-row" style="margin-bottom: 20px;">
+          <div class="skeleton-main-row" style="display: grid; grid-template-columns: ${mainRowCols}; gap: 16px; margin-bottom: 20px;">
             <div class="skeleton-chart skeleton-block" style="height: 300px; border-radius: 12px;"></div>
-            <div class="skeleton-list" style="height: 300px; border-radius: 12px; border: 1px solid var(--border); padding: 16px;">
+            <div class="skeleton-list" style="height: 300px; border-radius: 12px; border: 1px solid var(--border); padding: 16px; ${isMobile ? 'display: none;' : ''}">
               <div class="skeleton-block" style="height: 18px; width: 140px; margin-bottom: 12px; border-radius: 4px;"></div>
               ${Array(6).fill().map(() => `<div class="skeleton-block" style="height: 18px; border-radius: 6px;"></div>`).join('')}
             </div>

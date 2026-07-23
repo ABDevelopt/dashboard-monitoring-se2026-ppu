@@ -1330,11 +1330,14 @@ function initSettings() {
     'overview_muatan': '1',
     'overview_tren_muatan': '1',
     'overview_tren_fasih': '1',
+    'overview_heatmap': '1',
     'overview_kecamatan': '1',
     'overview_bangunan': '1',
     'show_progres_muatan': '1',
     'target_fasih_mode': 'static',
     'target_muatan_mode': 'prelist',
+    'google_sheets_anomaly_url': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml',
+    'google_sheets_apps_script_url': 'https://script.google.com/macros/s/AKfycby3zpFtIN58xOf6GxnDqkl7gjwKX-oeUZwuAp93wL0OrejumH91ykBGa9XbsoMdhZQetA/exec',
     'whatsapp_enabled': '0',
     'whatsapp_group_id': '',
     'whatsapp_group_name': '',
@@ -1357,13 +1360,8 @@ function initSettings() {
   }
 
   const geminiModel = getDb().prepare('SELECT value FROM settings WHERE key = ?').get('gemini_model');
-  if (geminiModel && (geminiModel.value === 'gemini-1.5-flash' || geminiModel.value === 'gemini-2.5-flash' || geminiModel.value === 'gemini-2.5-flash-lite')) {
-    getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-3.5-flash', 'gemini_model');
-  }
-
-  const geminiModelsList = getDb().prepare('SELECT value FROM settings WHERE key = ?').get('gemini_models_list');
-  if (geminiModelsList && (geminiModelsList.value.includes('gemini-2.5-flash-lite') || geminiModelsList.value.includes('gemini-1.5-flash'))) {
-    getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-3.5-flash, gemini-3.1-flash-lite, gemini-2.0-flash, gemini-2.5-pro', 'gemini_models_list');
+  if (geminiModel && geminiModel.value === 'gemini-1.5-flash') {
+    getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-2.5-flash', 'gemini_model');
   }
 }
 

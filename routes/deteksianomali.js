@@ -1,35 +1,106 @@
 const express = require('express');
 const router = express.Router();
-const { getAnomalyStats, getDb } = require('../database');
+const { getDb } = require('../database');
+const { getAnomalySheetsData } = require('../services/googleSheetsAnomalyService');
 
-router.get('/', (req, res) => {
-  const uploadId = res.locals.uploadId;
+router.get('/', async (req, res) => {
   const filterKec = req.query.kec || '';
   const filterKorlap = req.query.korlap || '';
-  const filterPml = req.query.pml || '';
+  const filterStatus = req.query.status || '';
+  const searchQuery = (req.query.q || '').toLowerCase().trim();
+  const activeTab = req.query.tab || 'usaha';
+  const forceRefresh = req.query.refresh === 'true';
 
-  let anomalies = [];
+  let sheetsData = { 
+    summary: { total_anomali: 0, total_usaha: 0, total_keluarga: 0, total_sudah: 0, total_belum: 0, pct_sudah: 0 }, 
+    usahaList: [], 
+    keluargaList: [], 
+    pclStats: [],
+    lastUpdated: '-',
+    fromCache: false
+  };
 
-  if (uploadId) {
-    anomalies = getAnomalyStats(uploadId, { kec: filterKec, korlap: filterKorlap, pml: filterPml });
+  try {
+    sheetsData = await getAnomalySheetsData(res.locals.settings || {}, forceRefresh);
+  } catch (err) {
+    console.error('Error loading anomaly Google Sheets data:', err.message);
   }
 
-  // Get filter lists
+  // Get filter lists from master DB
   const kecList = getDb().prepare('SELECT DISTINCT kecamatan FROM subsls_master ORDER BY kecamatan').all();
   const korlapList = getDb().prepare('SELECT DISTINCT korlap FROM subsls_master ORDER BY korlap').all();
-  const pmlList = getDb().prepare('SELECT DISTINCT pml FROM subsls_master ORDER BY pml').all();
+
+  // Filter helper
+  const filterItems = (list, isKeluarga = false) => {
+    return (list || []).filter(item => {
+      if (filterKec && (item.kecamatan || '').toLowerCase() !== filterKec.toLowerCase()) return false;
+      if (filterKorlap && (item.korlap || '').toLowerCase() !== filterKorlap.toLowerCase()) return false;
+      if (filterStatus === 'sudah' && !item.is_done) return false;
+      if (filterStatus === 'belum' && item.is_done) return false;
+      if (searchQuery) {
+        const nameToSearch = isKeluarga ? item.nama_kk : item.nama_usaha;
+        const haystack = `${nameToSearch} ${item.petugas} ${item.korlap} ${item.nama_anomali} ${item.desa} ${item.kode_sls}`.toLowerCase();
+        if (!haystack.includes(searchQuery)) return false;
+      }
+      return true;
+    });
+  };
+
+  const filteredUsaha = filterItems(sheetsData.usahaList, false);
+  const filteredKeluarga = filterItems(sheetsData.keluargaList, true);
+
+  const filteredPcl = (sheetsData.pclStats || []).filter(p => {
+    if (filterKec && (p.kecamatan || '').toLowerCase() !== filterKec.toLowerCase()) return false;
+    if (filterKorlap && (p.korlap || '').toLowerCase() !== filterKorlap.toLowerCase()) return false;
+    if (searchQuery) {
+      const haystack = `${p.petugas} ${p.korlap} ${p.kecamatan}`.toLowerCase();
+      if (!haystack.includes(searchQuery)) return false;
+    }
+    return true;
+  });
 
   res.render('deteksianomali', {
-    title: 'Deteksi Awal Anomali Petugas',
+    title: 'Deteksi & Audit Anomali Data (Google Sheets)',
     activePage: 'deteksi-anomali',
-    anomalies,
+    sheetsData,
+    filteredUsaha,
+    filteredKeluarga,
+    filteredPcl,
     filterKec,
     filterKorlap,
-    filterPml,
+    filterStatus,
+    searchQuery,
+    activeTab,
     kecList,
-    korlapList,
-    pmlList
+    korlapList
   });
+});
+
+// POST: Update anomaly status via Google Apps Script
+router.post('/update-status', async (req, res) => {
+  const { assignment_id, type, nama, no, nama_anomali, tindak_lanjut, penjelasan } = req.body;
+
+  if (!assignment_id && !nama) {
+    return res.json({ success: false, error: 'Assignment ID atau Nama Anomali wajib diisi.' });
+  }
+
+  try {
+    const { updateAnomalyStatusInGoogleSheets } = require('../services/googleSheetsAnomalyService');
+    const result = await updateAnomalyStatusInGoogleSheets({
+      assignment_id: assignment_id || '',
+      type: type || 'usaha',
+      nama: nama || '',
+      no: no || '',
+      nama_anomali: nama_anomali || '',
+      tindak_lanjut: tindak_lanjut || 'Sudah Ditindaklanjuti',
+      penjelasan: penjelasan || ''
+    }, res.locals.settings || {});
+
+    res.json(result);
+  } catch (err) {
+    console.error('Error updating Google Sheets anomaly status:', err);
+    res.json({ success: false, error: err.message });
+  }
 });
 
 module.exports = router;

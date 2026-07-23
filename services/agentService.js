@@ -267,7 +267,7 @@ const PAGE_DATA_TOOL_DECLARATION = {
   }
 };
 
-const GEMINI_DEFAULT_MODEL        = 'gemini-3.5-flash';
+const GEMINI_DEFAULT_MODEL        = 'gemini-2.5-flash';
 const OPENAI_DEFAULT_MODEL        = 'gpt-5.5';
 const OPENROUTER_DEFAULT_MODEL    = 'openrouter/free';
 // Hirarki timeout wajib — JANGAN dibalik urutannya:
@@ -288,7 +288,7 @@ const DB_WORKER_TIMEOUT_MS          = 10000; // max query SQLite (harus < QUICK_
 const TOOL_RESULT_MAX_ROWS          =    20; // batas baris tool-result yang dikirim ke model
 const MAX_SWITCH_TRIES              =     5; // batas total percobaan SmartSwitch
 
-const GEMINI_USER_MODELS = ['gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-2.5-pro'];
+const GEMINI_USER_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.5-flash'];
 const OPENAI_USER_MODELS = ['gpt-5.5'];
 const OPENROUTER_USER_MODELS = [
   'meta-llama/llama-3.3-70b-instruct:free',
@@ -301,7 +301,7 @@ const OPENROUTER_USER_MODELS = [
   'moonshotai/moonshot-v1-32k',
   'moonshotai/moonshot-v1-128k'
 ];
-const LEGACY_GEMINI_MODELS = new Set(['gemini-1.5-flash']);
+const LEGACY_GEMINI_MODELS = new Set([]);
 
 // ─────────────────────────────────────────────
 //  REQUEST DEDUPLICATION — per-provider mutex

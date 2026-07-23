@@ -182,35 +182,30 @@
       border-color: #25d366;
     }
 
-    /* Floating Save Button */
-    .floating-save-btn {
-      position: fixed;
-      bottom: 30px;
-      right: 30px;
-      z-index: 1000;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 
-                  0 0 0 1px rgba(37, 211, 102, 0.2);
-      padding: 14px 28px;
-      font-size: 14px;
-      font-weight: 700;
-      border-radius: 50px;
+    /* Sticky Action Bar */
+    .sticky-action-bar {
+      position: sticky;
+      bottom: 20px;
+      background: rgba(30, 41, 59, 0.85); /* Semitransparent card color */
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 24px;
+      margin-top: 30px;
       display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      background-color: #25d366;
-      color: #ffffff;
-      border: none;
-      cursor: pointer;
+      justify-content: flex-end;
+      gap: 12px;
+      z-index: 100;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
-    .floating-save-btn:hover {
-      transform: translateY(-3px) scale(1.03);
-      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6), 
-                  0 0 0 2px #25d366;
-      background-color: #20ba5a;
-    }
-    .floating-save-btn:active {
-      transform: translateY(-1px) scale(0.98);
+    
+    @media (max-width: 576px) {
+      .sticky-action-bar {
+        bottom: 15px;
+        padding: 12px 16px;
+        margin-top: 20px;
+      }
     }
 
     /* Spinner */
@@ -251,10 +246,19 @@
     }
   </style>
 
-  <div class="page-header" style="margin-bottom: 24px;">
-    <div>
-      <h1 class="page-title"><i class="bi bi-whatsapp" style="color: #25d366;"></i> Integrasi WhatsApp</h1>
-      <p class="page-subtitle">Hubungkan akun WhatsApp dan pilih grup untuk mengirim notifikasi unggah data otomatis</p>
+  <!-- HERO TITLE -->
+  <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb),0.12) 0%, rgba(var(--accent-rgb),0.03) 100%); border: 1px solid rgba(var(--accent-rgb),0.2); border-radius: 16px; padding: 32px 28px; margin-bottom: 24px; position: relative; overflow: hidden;">
+    <div style="position: absolute; right: -20px; top: -20px; font-size: 120px; opacity: 0.04; line-height: 1; pointer-events: none;">
+      <i class="bi bi-whatsapp"></i>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <div style="width: 56px; height: 56px; border-radius: 14px; background: rgba(var(--accent-rgb),0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <i class="bi bi-whatsapp" style="font-size: 26px; color: #25d366;"></i>
+      </div>
+      <div>
+        <h1 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px 0;">Integrasi WhatsApp</h1>
+        <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Hubungkan akun WhatsApp dan pilih grup untuk mengirim notifikasi unggah data otomatis</p>
+      </div>
     </div>
   </div>
 
@@ -397,10 +401,12 @@
             </div>
           </div>
 
-          <!-- Floating Save Button -->
-          <button type="submit" class="floating-save-btn" title="Simpan Pengaturan WhatsApp">
-            <i class="bi bi-save-fill"></i> Simpan Pengaturan
-          </button>
+          <!-- Sticky Action Bar -->
+          <div class="sticky-action-bar">
+            <button type="submit" class="btn btn-primary" style="background-color: #25d366; border-color: #25d366; padding: 12px 28px; font-weight: 700; border-radius: 10px; display: flex; align-items: center; gap: 8px; color: white;">
+              <i class="bi bi-save-fill"></i> Simpan Pengaturan
+            </button>
+          </div>
         </form>
       </div>
 

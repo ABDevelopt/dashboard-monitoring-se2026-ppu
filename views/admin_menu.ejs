@@ -90,12 +90,21 @@
   }
 </style>
 
-<div class="page-header" style="margin-bottom: 24px;">
-  <div>
-    <h1 class="page-title"><i class="bi bi-shield-lock" style="color: var(--accent-purple);"></i> Menu Administrasi &amp; Sistem</h1>
-    <p class="page-subtitle">Pusat kendali konfigurasi, tata kelola data, manajemen pengguna, dan integrasi monitoring SE2026 PPU</p>
+  <!-- HERO TITLE -->
+  <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb),0.12) 0%, rgba(var(--accent-rgb),0.03) 100%); border: 1px solid rgba(var(--accent-rgb),0.2); border-radius: 16px; padding: 32px 28px; margin-bottom: 24px; position: relative; overflow: hidden;">
+    <div style="position: absolute; right: -20px; top: -20px; font-size: 120px; opacity: 0.04; line-height: 1; pointer-events: none;">
+      <i class="bi bi-shield-lock"></i>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <div style="width: 56px; height: 56px; border-radius: 14px; background: rgba(var(--accent-rgb),0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <i class="bi bi-shield-lock" style="font-size: 26px; color: var(--accent-purple);"></i>
+      </div>
+      <div>
+        <h1 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px 0;">Menu Administrasi &amp; Sistem</h1>
+        <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Pusat kendali konfigurasi, tata kelola data, manajemen pengguna, dan integrasi monitoring SE2026 PPU</p>
+      </div>
+    </div>
   </div>
-</div>
 
 <div class="admin-menu-grid">
 
@@ -180,6 +189,20 @@
     </div>
     <div class="admin-card-action">
       Buka Integrasi WA <i class="bi bi-arrow-right"></i>
+    </div>
+  </a>
+
+  <!-- CARD 7: SINKRONISASI SPREADSHEET -->
+  <a href="/admin/spreadsheet" class="admin-menu-card" style="--card-gradient: linear-gradient(135deg, #f59e0b, #06b6d4); --card-hover-border: #f59e0b;">
+    <div class="admin-card-icon-box">
+      <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+    </div>
+    <div>
+      <h2 class="admin-card-title">Kelola Spreadsheet Anomali</h2>
+      <p class="admin-card-desc">Kelola link publikasi live Google Spreadsheet anomali, atur webhook 2-arah Google Apps Script, serta tes koneksi.</p>
+    </div>
+    <div class="admin-card-action">
+      Kelola Spreadsheet <i class="bi bi-arrow-right"></i>
     </div>
   </a>
 

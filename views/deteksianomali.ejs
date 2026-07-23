@@ -1,128 +1,259 @@
 <div class="fade-in">
-  <% if (!uploadId) { %>
-    <div class="card empty-state">
-      <div class="empty-state-icon"><i class="bi bi-shield-exclamation"></i></div>
-      <div class="empty-state-title">Belum Ada Data untuk Analisis Anomali</div>
-      <div class="empty-state-text">Upload file Excel untuk mulai mendeteksi pola tidak wajar seperti lonjakan progres mendadak atau stagnansi berkepanjangan.</div>
-      <a href="/admin/upload" class="empty-state-action"><i class="bi bi-cloud-arrow-up-fill"></i> Upload Data Sekarang</a>
+  <!-- HERO BANNER -->
+  <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(239, 68, 68, 0.04) 100%); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 24px; position: relative; overflow: hidden;">
+    <div style="position: absolute; right: -15px; top: -15px; font-size: 110px; opacity: 0.04; line-height: 1; pointer-events: none; color: var(--accent-yellow);">
+      <i class="bi bi-shield-exclamation"></i>
     </div>
-  <% } else { %>
-    <!-- INFO ALERT FOR SOON STATUS -->
-    <div class="card" style="border-left: 4px solid var(--accent-yellow); background: rgba(251, 191, 36, 0.05); margin-bottom: 20px; padding: 16px;">
-      <div style="display: flex; gap: 12px; align-items: flex-start;">
-        <span style="font-size: 24px; color: var(--accent-yellow); line-height: 1;"><i class="bi bi-exclamation-triangle-fill"></i></span>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; position: relative; z-index: 2;">
+      <div style="display: flex; gap: 16px; align-items: center;">
+        <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-yellow); font-size: 26px; flex-shrink: 0; box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);">
+          <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+        </div>
         <div>
-          <h4 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 700; color: var(--text-primary);">Fitur Deteksi Awal Anomali Petugas (Dalam Pengembangan / Coming Soon)</h4>
-          <p style="margin: 0; font-size: 12px; color: var(--text-muted); line-height: 1.5;">
-            Halaman ini menampilkan agregat awal indikator ketidaknormalan (anomali) hasil pengisian survei/assignment oleh masing-masing PCL. Indikator saat ini mencakup temuan <strong>Usaha Ganda</strong>, entri keluarga/usaha <strong>Tidak Dapat Ditemui</strong>, serta isian yang <strong>Ditolak (Rejected)</strong> oleh PML. Versi mendatang akan dilengkapi dengan deteksi anomali statistik berbasis outlier, kesesuaian koordinat spasial (geotagging), dan analisis pola data (Hukum Benford).
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <h1 style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin: 0;">Deteksi &amp; Audit Anomali Data</h1>
+            <span class="badge badge-green" style="font-size: 10px; padding: 4px 8px; display: flex; align-items: center; gap: 4px;">
+              <i class="bi bi-arrow-repeat"></i> Sinkronkan 2 Arah Google Spreadsheet
+            </span>
+          </div>
+          <p style="font-size: 13px; color: var(--text-secondary); margin: 0; max-width: 720px; line-height: 1.5;">
+            Pengawas dapat langsung memperbarui status tindak lanjut &amp; catatan penjelasan di website ini. Hasil pengeditan otomatis tersinkronisasi kembali ke Google Spreadsheet secara <em>real-time</em>.
           </p>
         </div>
       </div>
-    </div>
-
-    <!-- FILTER BAR -->
-    <div class="card" style="margin-bottom: 20px;">
-      <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
-        <div class="card-title"><i class="bi bi-search"></i> Filter Pencarian Anomali</div>
-        <a href="/deteksi-anomali" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <% const sheetsUrlLink = (typeof settings !== 'undefined' && settings.google_sheets_anomaly_url) ? settings.google_sheets_anomaly_url : 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml'; %>
+        <a href="<%= sheetsUrlLink %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 10px 16px; font-size: 12px; font-weight: 600; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px; color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.08);" title="Buka Google Spreadsheet Anomali di Tab Baru">
+          <i class="bi bi-file-earmark-excel-fill"></i> Buka Spreadsheet Anomali
+        </a>
+        <a href="/deteksi-anomali?refresh=true&tab=<%= activeTab %>&kec=<%= encodeURIComponent(filterKec) %>&korlap=<%= encodeURIComponent(filterKorlap) %>&status=<%= encodeURIComponent(filterStatus) %>" onclick="this.innerHTML='<i class=\'bi bi-arrow-clockwise bi-spin\'></i> Menyinkronkan...'; this.style.pointerEvents='none';" class="btn btn-primary" style="padding: 10px 16px; font-size: 12px; font-weight: 700; border-radius: 10px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);" title="Segarkan Data dari Google Spreadsheet">
+          <i class="bi bi-arrow-clockwise"></i> Sync Google Sheets
+        </a>
       </div>
-      
-      <form action="/deteksi-anomali" method="GET" id="filterForm">
-        <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
-          
-          <div>
-            <label for="filterKec" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
-            <select id="filterKec" name="kec" onchange="this.form.submit();" style="width:100%;">
-              <option value="">-- Semua Kecamatan --</option>
-              <% kecList.forEach(k => { %>
-                <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
-              <% }) %>
-            </select>
-          </div>
+    </div>
+  </div>
 
-          <div>
-            <label for="filterKorlap" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
-            <select id="filterKorlap" name="korlap" onchange="this.form.submit();" style="width:100%;">
-              <option value="">-- Semua Korlap --</option>
-              <% korlapList.forEach(k => { %>
-                <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
-              <% }) %>
-            </select>
-          </div>
-
-          <div>
-            <label for="filterPml" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
-            <select id="filterPml" name="pml" onchange="this.form.submit();" style="width:100%;">
-              <option value="">-- Semua PML --</option>
-              <% pmlList.forEach(p => { %>
-                <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
-              <% }) %>
-            </select>
-          </div>
-          
+  <!-- STATS OVERVIEW CARDS -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 16px; margin-bottom: 24px;">
+    <!-- Card 1: Total Anomali -->
+    <div class="card" style="margin: 0; padding: 18px; background: var(--bg-card); border: 1px solid var(--border);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Total Anomali</div>
+          <div style="font-size: 26px; font-weight: 800; color: var(--text-primary);"><%= (sheetsData.summary.total_anomali || 0).toLocaleString('id-ID') %></div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Usaha + Keluarga</div>
         </div>
-      </form>
+        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(245, 158, 11, 0.12); color: var(--accent-yellow); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+      </div>
     </div>
 
-    <!-- MAIN ANOMALY TABLE -->
+    <!-- Card 2: Anomali Usaha -->
+    <div class="card" style="margin: 0; padding: 18px; background: var(--bg-card); border: 1px solid var(--border);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Anomali Usaha (UTP)</div>
+          <div style="font-size: 26px; font-weight: 800; color: var(--accent-cyan);"><%= (sheetsData.summary.total_usaha || 0).toLocaleString('id-ID') %></div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Sheet Usaha</div>
+        </div>
+        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+          <i class="bi bi-shop"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Anomali Keluarga -->
+    <div class="card" style="margin: 0; padding: 18px; background: var(--bg-card); border: 1px solid var(--border);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Anomali Keluarga (KK)</div>
+          <div style="font-size: 26px; font-weight: 800; color: var(--accent-purple);"><%= (sheetsData.summary.total_keluarga || 0).toLocaleString('id-ID') %></div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Sheet Keluarga</div>
+        </div>
+        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(139, 92, 246, 0.12); color: var(--accent-purple); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+          <i class="bi bi-house-door-fill"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Sudah Ditindaklanjuti -->
+    <div class="card" style="margin: 0; padding: 18px; background: var(--bg-card); border: 1px solid var(--border);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Sudah Ditindaklanjuti</div>
+          <div style="font-size: 26px; font-weight: 800; color: var(--accent-green);" id="statTotalSudah"><%= (sheetsData.summary.total_sudah || 0).toLocaleString('id-ID') %></div>
+          <div style="font-size: 11px; color: var(--accent-green); font-weight: 600; margin-top: 4px;" id="statPctSudah"><%= sheetsData.summary.pct_sudah %>% terselesaikan</div>
+        </div>
+        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: var(--accent-green); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 5: Belum Ditindaklanjuti -->
+    <div class="card" style="margin: 0; padding: 18px; background: var(--bg-card); border: 1px solid var(--border);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Belum Ditindaklanjuti</div>
+          <div style="font-size: 26px; font-weight: 800; color: var(--accent-red);" id="statTotalBelum"><%= (sheetsData.summary.total_belum || 0).toLocaleString('id-ID') %></div>
+          <div style="font-size: 11px; color: var(--accent-red); font-weight: 600; margin-top: 4px;">Perlu Pengawasan</div>
+        </div>
+        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(239, 68, 68, 0.12); color: var(--accent-red); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+          <i class="bi bi-x-circle-fill"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTER & SEARCH BAR -->
+  <div class="card" style="margin-bottom: 20px;">
+    <div class="card-header" style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
+      <div class="card-title" style="font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+        <i class="bi bi-funnel-fill text-cyan"></i> Filter &amp; Pencarian Anomali
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <small style="font-size: 11px; color: var(--text-muted);">Terakhir disinkronkan: <strong><%= sheetsData.lastUpdated %></strong></small>
+        <a href="/deteksi-anomali?tab=<%= activeTab %>" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
+      </div>
+    </div>
+    
+    <form action="/deteksi-anomali" method="GET" id="filterForm">
+      <input type="hidden" name="tab" value="<%= activeTab %>">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 14px; align-items: end;">
+        
+        <div>
+          <label for="filterKec" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text-secondary);">Kecamatan</label>
+          <select id="filterKec" name="kec" onchange="this.form.submit();" style="width:100%; padding: 8px 12px; font-size: 13px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary);">
+            <option value="">-- Semua Kecamatan --</option>
+            <% kecList.forEach(k => { %>
+              <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div>
+          <label for="filterKorlap" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text-secondary);">Koordinator Lapangan (Korlap)</label>
+          <select id="filterKorlap" name="korlap" onchange="this.form.submit();" style="width:100%; padding: 8px 12px; font-size: 13px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary);">
+            <option value="">-- Semua Korlap --</option>
+            <% korlapList.forEach(k => { %>
+              <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div>
+          <label for="filterStatus" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text-secondary);">Status Tindak Lanjut</label>
+          <select id="filterStatus" name="status" onchange="this.form.submit();" style="width:100%; padding: 8px 12px; font-size: 13px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary);">
+            <option value="">-- Semua Status --</option>
+            <option value="belum" <%= filterStatus === 'belum' ? 'selected' : '' %>>❌ Belum Ditindaklanjuti</option>
+            <option value="sudah" <%= filterStatus === 'sudah' ? 'selected' : '' %>>✅ Sudah Ditindaklanjuti</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="searchQuery" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text-secondary);">Cari Kata Kunci</label>
+          <div style="position: relative;">
+            <input type="search" id="searchQuery" name="q" value="<%= searchQuery %>" placeholder="Cari nama usaha, KK, PCL, anomali..." style="width: 100%; padding: 8px 12px 8px 34px; font-size: 13px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary);">
+            <i class="bi bi-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px;"></i>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  </div>
+
+  <!-- TAB NAVIGATION -->
+  <div style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid var(--border); padding-bottom: 2px; flex-wrap: wrap;">
+    <a href="/deteksi-anomali?tab=usaha&kec=<%= encodeURIComponent(filterKec) %>&korlap=<%= encodeURIComponent(filterKorlap) %>&status=<%= encodeURIComponent(filterStatus) %>&q=<%= encodeURIComponent(searchQuery) %>" class="btn" style="padding: 10px 18px; font-size: 13px; font-weight: 700; border-radius: 10px 10px 0 0; background: <%= activeTab === 'usaha' ? 'var(--accent-blue)' : 'transparent' %>; color: <%= activeTab === 'usaha' ? '#fff' : 'var(--text-secondary)' %>; border: none; display: flex; align-items: center; gap: 8px;">
+      <i class="bi bi-shop"></i> Anomali Usaha (UTP)
+      <span class="badge" style="background: <%= activeTab === 'usaha' ? 'rgba(255,255,255,0.25)' : 'var(--bg-subtle)' %>; color: <%= activeTab === 'usaha' ? '#fff' : 'var(--text-primary)' %>;"><%= filteredUsaha.length %></span>
+    </a>
+
+    <a href="/deteksi-anomali?tab=keluarga&kec=<%= encodeURIComponent(filterKec) %>&korlap=<%= encodeURIComponent(filterKorlap) %>&status=<%= encodeURIComponent(filterStatus) %>&q=<%= encodeURIComponent(searchQuery) %>" class="btn" style="padding: 10px 18px; font-size: 13px; font-weight: 700; border-radius: 10px 10px 0 0; background: <%= activeTab === 'keluarga' ? 'var(--accent-purple)' : 'transparent' %>; color: <%= activeTab === 'keluarga' ? '#fff' : 'var(--text-secondary)' %>; border: none; display: flex; align-items: center; gap: 8px;">
+      <i class="bi bi-house-door-fill"></i> Anomali Keluarga (KK)
+      <span class="badge" style="background: <%= activeTab === 'keluarga' ? 'rgba(255,255,255,0.25)' : 'var(--bg-subtle)' %>; color: <%= activeTab === 'keluarga' ? '#fff' : 'var(--text-primary)' %>;"><%= filteredKeluarga.length %></span>
+    </a>
+
+    <a href="/deteksi-anomali?tab=pcl&kec=<%= encodeURIComponent(filterKec) %>&korlap=<%= encodeURIComponent(filterKorlap) %>&status=<%= encodeURIComponent(filterStatus) %>&q=<%= encodeURIComponent(searchQuery) %>" class="btn" style="padding: 10px 18px; font-size: 13px; font-weight: 700; border-radius: 10px 10px 0 0; background: <%= activeTab === 'pcl' ? 'var(--accent-yellow)' : 'transparent' %>; color: <%= activeTab === 'pcl' ? '#000' : 'var(--text-secondary)' %>; border: none; display: flex; align-items: center; gap: 8px;">
+      <i class="bi bi-people-fill"></i> Rekap per Petugas (PCL)
+      <span class="badge" style="background: <%= activeTab === 'pcl' ? 'rgba(0,0,0,0.15)' : 'var(--bg-subtle)' %>; color: <%= activeTab === 'pcl' ? '#000' : 'var(--text-primary)' %>;"><%= filteredPcl.length %></span>
+    </a>
+  </div>
+
+  <!-- TAB CONTENTS -->
+  
+  <!-- TAB 1: ANOMALI USAHA (UTP) -->
+  <% if (activeTab === 'usaha') { %>
     <div class="card" style="margin-bottom: 0;">
       <div class="card-header">
-        <div class="card-title"><i class="bi bi-shield-exclamation"></i> Daftar Temuan Anomali Isian Petugas (PCL)</div>
-        <span class="badge badge-yellow"><%= anomalies.length %> Petugas Bermasalah</span>
+        <div class="card-title"><i class="bi bi-shop text-cyan"></i> Daftar Temuan Anomali Usaha (UTP)</div>
+        <span class="badge badge-cyan"><%= filteredUsaha.length %> Records</span>
       </div>
 
-      <div class="search-wrap mb-4">
-        <input type="search" id="anomalySearch" placeholder="Cari nama PCL..." aria-label="Cari nama Pencacah PCL" style="width: 100%; max-width: 280px;">
-      </div>
-
-      <% if (anomalies && anomalies.length > 0) { %>
-        <div class="table-wrap" style="max-height: 600px; overflow-y: auto; overflow-x: auto;">
-          <table id="anomalyTable">
+      <% if (filteredUsaha && filteredUsaha.length > 0) { %>
+        <div class="table-wrap" style="max-height: 650px; overflow-y: auto; overflow-x: auto;">
+          <table id="usahaTable">
             <thead>
               <tr>
-                <th rowspan="2" class="text-center" style="font-weight: 600; width: 40px;">No</th>
-                <th rowspan="2">Nama PCL</th>
-                <th rowspan="2">Kecamatan</th>
-                <th rowspan="2" class="hide-md">PML</th>
-                <th rowspan="2" class="hide-md">Korlap</th>
-                <th colspan="3" class="text-center" style="border-bottom: 1px solid var(--border);">Indikator Anomali</th>
-                <th colspan="6" class="text-center bg-green-soft muatan-col" style="border-bottom: 1px solid var(--border);">Temuan Keberadaan Usaha</th>
-                <th rowspan="2" class="text-right bg-yellow-soft">Total Temuan</th>
-              </tr>
-              <tr>
-                <th class="text-right text-red">Usaha Ganda</th>
-                <th class="text-right text-yellow">Tidak Dapat Ditemui</th>
-                <th class="text-right text-red">Ditolak PML</th>
-                <th class="text-right bg-green-soft muatan-col">Total Usaha</th>
-                <th class="text-right bg-green-soft muatan-col">Ditemukan</th>
-                <th class="text-right bg-green-soft muatan-col">Baru</th>
-                <th class="text-right bg-green-soft muatan-col">Tdk Ditemukan</th>
-                <th class="text-right bg-green-soft muatan-col">Tutup</th>
-                <th class="text-right bg-green-soft muatan-col">Ganda</th>
+                <th class="text-center" style="width: 45px;">No</th>
+                <th>Nama Usaha</th>
+                <th>PCL (Petugas)</th>
+                <th class="hide-md">Korlap</th>
+                <th>Kecamatan</th>
+                <th>Desa / SLS</th>
+                <th>Detail Anomali</th>
+                <th class="text-center">Status Tindak Lanjut</th>
+                <th class="text-center" style="width: 150px;">Aksi &amp; Sync</th>
               </tr>
             </thead>
             <tbody>
-              <% anomalies.forEach((item, index) => { %>
-                <tr>
-                  <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
+              <% filteredUsaha.forEach((item, idx) => { %>
+                <tr id="row-<%= item.id %>">
+                  <td class="text-center fw-bold" style="background: var(--bg-subtle);"><%= idx + 1 %></td>
                   <td class="td-primary">
-                    <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: inherit; text-decoration: none; display: block;">
-                      <i class="bi bi-person-exclamation text-yellow"></i> <%= item.pcl %>
+                    <strong style="color: var(--text-primary); font-size: 13.5px;" class="item-name"><%= item.nama_usaha %></strong>
+                    <div class="item-penjelasan" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                      <% if (item.penjelasan) { %>💬 <i><%= item.penjelasan %></i><% } %>
+                    </div>
+                  </td>
+                  <td>
+                    <a href="/pcl?pcl=<%= encodeURIComponent(item.petugas) %>" style="color: inherit; text-decoration: none; font-weight: 600;" class="item-pcl">
+                      <i class="bi bi-person text-cyan"></i> <%= item.petugas %>
                     </a>
                   </td>
-                  <td><%= item.kecamatan %></td>
-                  <td class="hide-md"><%= item.pml %></td>
                   <td class="hide-md"><%= item.korlap %></td>
-                  <td class="text-right fw-bold text-red" data-sort="<%= item.usaha_ganda %>"><%= item.usaha_ganda.toLocaleString('id-ID') %></td>
-                  <td class="text-right fw-bold text-yellow" data-sort="<%= item.tidak_dapat_ditemui %>"><%= item.tidak_dapat_ditemui.toLocaleString('id-ID') %></td>
-                  <td class="text-right fw-bold text-red" data-sort="<%= item.rejected %>"><%= item.rejected.toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-green-soft muatan-col" data-sort="<%= item.usaha_total %>"><%= (item.usaha_total || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-green-soft muatan-col" data-sort="<%= item.usaha_ditemukan %>"><%= (item.usaha_ditemukan || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-green-soft muatan-col" data-sort="<%= item.usaha_baru %>"><%= (item.usaha_baru || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-green-soft muatan-col" data-sort="<%= item.usaha_tidak_ditemukan %>"><%= (item.usaha_tidak_ditemukan || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-green-soft muatan-col" data-sort="<%= item.usaha_tutup %>"><%= (item.usaha_tutup || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-green-soft muatan-col" data-sort="<%= item.usaha_ganda %>"><%= (item.usaha_ganda || 0).toLocaleString('id-ID') %></td>
-                  <td class="text-right fw-bold bg-yellow-soft" data-sort="<%= item.total_anomali %>" style="color: var(--accent-yellow);"><%= item.total_anomali.toLocaleString('id-ID') %></td>
+                  <td><%= item.kecamatan %></td>
+                  <td><%= item.desa %> (SLS: <%= item.kode_sls %>)</td>
+                  <td style="max-width: 300px; font-size: 12px; line-height: 1.4;">
+                    <span class="badge badge-yellow" style="white-space: normal; text-align: left; line-height: 1.35; padding: 6px 10px; font-weight: 500;">
+                      <%= item.nama_anomali %>
+                    </span>
+                  </td>
+                  <td class="text-center item-status-td">
+                    <% if (item.is_done) { %>
+                      <span class="badge badge-green" style="font-size: 11px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="bi bi-check-circle-fill"></i> <%= item.tindak_lanjut %>
+                      </span>
+                    <% } else { %>
+                      <span class="badge badge-red" style="font-size: 11px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="bi bi-exclamation-triangle-fill"></i> <%= item.tindak_lanjut %>
+                      </span>
+                    <% } %>
+                  </td>
+                  <td class="text-center">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                      <button onclick="openEditModal('<%= item.id %>', '<%= item.assignment_id %>', 'usaha', `<%= item.nama_usaha.replace(/`/g, '') %>`, `<%= item.petugas.replace(/`/g, '') %>`, `<%= (item.tindak_lanjut || '').replace(/`/g, '') %>`, `<%= (item.penjelasan || '').replace(/`/g, '') %>`, '<%= item.no %>', `<%= (item.nama_anomali || '').replace(/`/g, '') %>`)" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-yellow);" title="Edit Status Tindak Lanjut &amp; Sync ke Google Sheets">
+                        <i class="bi bi-pencil-square"></i> Edit
+                      </button>
+
+                      <% if (item.link_fasih) { %>
+                        <a href="<%= item.link_fasih %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-blue);" title="Buka Detail Assignment di FASIH">
+                          <i class="bi bi-box-arrow-up-right"></i> FASIH
+                        </a>
+                      <% } %>
+                    </div>
+                  </td>
                 </tr>
               <% }) %>
             </tbody>
@@ -130,23 +261,342 @@
         </div>
       <% } else { %>
         <div style="padding: 40px; text-align: center; color: var(--text-muted);">
-          <i class="bi bi-shield-check text-green" style="font-size: 48px;"></i>
-          <p style="margin-top: 16px; font-size: 14px; font-weight: 600;">Tidak Ada Temuan Anomali Awal</p>
-          <p style="font-size: 12px; color: var(--text-muted); max-width: 320px; margin: 8px auto 0 auto;">Seluruh PCL saat ini memiliki data bersih dengan 0 usaha ganda, 0 entri tidak dapat ditemui, dan 0 penolakan.</p>
+          <i class="bi bi-search" style="font-size: 44px; opacity: 0.5;"></i>
+          <p style="margin-top: 12px; font-size: 14px; font-weight: 600;">Data Anomali Usaha Tidak Ditemukan</p>
+          <p style="font-size: 12px; color: var(--text-muted);">Coba ubah kriteria filter pencarian atau reset filter.</p>
         </div>
       <% } %>
     </div>
   <% } %>
+
+  <!-- TAB 2: ANOMALI KELUARGA (KK) -->
+  <% if (activeTab === 'keluarga') { %>
+    <div class="card" style="margin-bottom: 0;">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-house-door-fill text-purple"></i> Daftar Temuan Anomali Keluarga (KK)</div>
+        <span class="badge badge-purple"><%= filteredKeluarga.length %> Records</span>
+      </div>
+
+      <% if (filteredKeluarga && filteredKeluarga.length > 0) { %>
+        <div class="table-wrap" style="max-height: 650px; overflow-y: auto; overflow-x: auto;">
+          <table id="keluargaTable">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 45px;">No</th>
+                <th>Nama Kepala Keluarga (KK)</th>
+                <th>PCL (Petugas)</th>
+                <th class="hide-md">Korlap</th>
+                <th>Kecamatan</th>
+                <th>Desa / SLS</th>
+                <th>Detail Anomali</th>
+                <th class="text-center">Status Tindak Lanjut</th>
+                <th class="text-center" style="width: 150px;">Aksi &amp; Sync</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% filteredKeluarga.forEach((item, idx) => { %>
+                <tr id="row-<%= item.id %>">
+                  <td class="text-center fw-bold" style="background: var(--bg-subtle);"><%= idx + 1 %></td>
+                  <td class="td-primary">
+                    <strong style="color: var(--text-primary); font-size: 13.5px;" class="item-name"><%= item.nama_kk %></strong>
+                    <div class="item-penjelasan" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                      <% if (item.penjelasan) { %>💬 <i><%= item.penjelasan %></i><% } %>
+                    </div>
+                  </td>
+                  <td>
+                    <a href="/pcl?pcl=<%= encodeURIComponent(item.petugas) %>" style="color: inherit; text-decoration: none; font-weight: 600;" class="item-pcl">
+                      <i class="bi bi-person text-purple"></i> <%= item.petugas %>
+                    </a>
+                  </td>
+                  <td class="hide-md"><%= item.korlap %></td>
+                  <td><%= item.kecamatan %></td>
+                  <td><%= item.desa %> (SLS: <%= item.kode_sls %>)</td>
+                  <td style="max-width: 300px; font-size: 12px; line-height: 1.4;">
+                    <span class="badge badge-yellow" style="white-space: normal; text-align: left; line-height: 1.35; padding: 6px 10px; font-weight: 500;">
+                      <%= item.nama_anomali %>
+                    </span>
+                  </td>
+                  <td class="text-center item-status-td">
+                    <% if (item.is_done) { %>
+                      <span class="badge badge-green" style="font-size: 11px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="bi bi-check-circle-fill"></i> <%= item.tindak_lanjut %>
+                      </span>
+                    <% } else { %>
+                      <span class="badge badge-red" style="font-size: 11px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="bi bi-exclamation-triangle-fill"></i> <%= item.tindak_lanjut %>
+                      </span>
+                    <% } %>
+                  </td>
+                  <td class="text-center">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                      <button onclick="openEditModal('<%= item.id %>', '<%= item.assignment_id %>', 'keluarga', `<%= item.nama_kk.replace(/`/g, '') %>`, `<%= item.petugas.replace(/`/g, '') %>`, `<%= (item.tindak_lanjut || '').replace(/`/g, '') %>`, `<%= (item.penjelasan || '').replace(/`/g, '') %>`, '<%= item.no %>', `<%= (item.nama_anomali || '').replace(/`/g, '') %>`)" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-yellow);" title="Edit Status Tindak Lanjut &amp; Sync ke Google Sheets">
+                        <i class="bi bi-pencil-square"></i> Edit
+                      </button>
+
+                      <% if (item.link_fasih) { %>
+                        <a href="<%= item.link_fasih %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-blue);" title="Buka Detail Assignment di FASIH">
+                          <i class="bi bi-box-arrow-up-right"></i> FASIH
+                        </a>
+                      <% } %>
+                    </div>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div style="padding: 40px; text-align: center; color: var(--text-muted);">
+          <i class="bi bi-search" style="font-size: 44px; opacity: 0.5;"></i>
+          <p style="margin-top: 12px; font-size: 14px; font-weight: 600;">Data Anomali Keluarga Tidak Ditemukan</p>
+          <p style="font-size: 12px; color: var(--text-muted);">Coba ubah kriteria filter pencarian atau reset filter.</p>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+
+  <!-- TAB 3: REKAP PER PETUGAS (PCL) -->
+  <% if (activeTab === 'pcl') { %>
+    <div class="card" style="margin-bottom: 0;">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-people-fill text-yellow"></i> Rekap Penanganan Anomali per Petugas (PCL)</div>
+        <span class="badge badge-yellow"><%= filteredPcl.length %> Petugas</span>
+      </div>
+
+      <% if (filteredPcl && filteredPcl.length > 0) { %>
+        <div class="table-wrap" style="max-height: 650px; overflow-y: auto; overflow-x: auto;">
+          <table id="pclAnomalyTable">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 45px;">No</th>
+                <th>Nama Petugas (PCL)</th>
+                <th>Korlap</th>
+                <th>Kecamatan</th>
+                <th class="text-right text-cyan">Anomali Usaha</th>
+                <th class="text-right text-purple">Anomali Keluarga</th>
+                <th class="text-right text-yellow">Total Anomali</th>
+                <th class="text-right text-green">Sudah TL</th>
+                <th class="text-right text-red">Belum TL</th>
+                <th class="text-right" style="width: 140px;">Progres TL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% filteredPcl.forEach((item, idx) => { %>
+                <% const pct = item.total_anomali ? Number(((item.sudah_ditindaklanjuti / item.total_anomali) * 100).toFixed(1)) : 0; %>
+                <tr>
+                  <td class="text-center fw-bold" style="background: var(--bg-subtle);"><%= idx + 1 %></td>
+                  <td class="td-primary">
+                    <a href="/pcl?pcl=<%= encodeURIComponent(item.petugas) %>" style="color: inherit; text-decoration: none; font-weight: 700;">
+                      <i class="bi bi-person-badge text-yellow"></i> <%= item.petugas %>
+                    </a>
+                  </td>
+                  <td><%= item.korlap %></td>
+                  <td><%= item.kecamatan %></td>
+                  <td class="text-right fw-bold text-cyan" data-sort="<%= item.anomali_usaha %>"><%= item.anomali_usaha.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold text-purple" data-sort="<%= item.anomali_keluarga %>"><%= item.anomali_keluarga.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold text-yellow" data-sort="<%= item.total_anomali %>"><%= item.total_anomali.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold text-green" data-sort="<%= item.sudah_ditindaklanjuti %>"><%= item.sudah_ditindaklanjuti.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold text-red" data-sort="<%= item.belum_ditindaklanjuti %>"><%= item.belum_ditindaklanjuti.toLocaleString('id-ID') %></td>
+                  <td class="text-right fw-bold" data-sort="<%= pct %>">
+                    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                      <div style="flex: 1; max-width: 60px; height: 6px; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
+                        <div style="width: <%= Math.min(100, pct) %>%; height: 100%; background: <%= pct >= 80 ? 'var(--accent-green)' : (pct >= 40 ? 'var(--accent-yellow)' : 'var(--accent-red)') %>; border-radius: 99px;"></div>
+                      </div>
+                      <span style="font-size: 12px; color: <%= pct >= 80 ? 'var(--accent-green)' : (pct >= 40 ? 'var(--accent-yellow)' : 'var(--accent-red)') %>;"><%= pct %>%</span>
+                    </div>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div style="padding: 40px; text-align: center; color: var(--text-muted);">
+          <i class="bi bi-people" style="font-size: 44px; opacity: 0.5;"></i>
+          <p style="margin-top: 12px; font-size: 14px; font-weight: 600;">Data Rekap Petugas Tidak Ditemukan</p>
+          <p style="font-size: 12px; color: var(--text-muted);">Coba ubah kriteria filter pencarian atau reset filter.</p>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+
+</div>
+
+<!-- MODAL EDIT STATUS ANOMALI -->
+<div id="editAnomalyModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; max-width: 500px; width: 100%; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); animation: modalFade 0.2s ease;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); display: flex; align-items: center; justify-content: center; font-size: 18px;">
+          <i class="bi bi-pencil-square"></i>
+        </div>
+        <div>
+          <h3 style="font-size: 15px; font-weight: 700; margin: 0; color: var(--text-primary);">Update Status Anomali</h3>
+          <span style="font-size: 11px; color: var(--text-muted);">Tersinkronisasi otomatis ke Google Spreadsheet</span>
+        </div>
+      </div>
+      <button type="button" onclick="closeEditModal()" style="background: transparent; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <form id="editAnomalyForm" onsubmit="saveAnomalyStatus(event)">
+      <input type="hidden" id="modalItemId" name="item_id">
+      <input type="hidden" id="modalAssignmentId" name="assignment_id">
+      <input type="hidden" id="modalType" name="type">
+      <input type="hidden" id="modalNama" name="nama">
+      <input type="hidden" id="modalNo" name="no">
+      <input type="hidden" id="modalNamaAnomali" name="nama_anomali">
+
+      <div style="margin-bottom: 16px; background: var(--bg-secondary); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);">
+        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Target Anomali:</div>
+        <div id="modalItemName" style="font-size: 14px; font-weight: 700; color: var(--text-primary); font-family: monospace;">...</div>
+        <div id="modalPclName" style="font-size: 12px; color: var(--accent-cyan); margin-top: 4px; font-weight: 500;">...</div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label for="modalStatus" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Status Tindak Lanjut Baru</label>
+        <select id="modalStatus" name="tindak_lanjut" required style="width: 100%; padding: 10px 12px; font-size: 13px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); outline: none;">
+          <option value="Sudah Ditindaklanjuti dengan Perbaikan">✅ Sudah Ditindaklanjuti dengan Perbaikan</option>
+          <option value="Sudah Ditindaklanjuti dengan Penjelasan (Sesuai Kondisi Lapangan)">📝 Sudah Ditindaklanjuti dengan Penjelasan (Sesuai Kondisi Lapangan)</option>
+          <option value="Belum Ditindaklanjuti">❌ Belum Ditindaklanjuti</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label for="modalPenjelasan" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Catatan / Penjelasan Lapangan (Opsional)</label>
+        <textarea id="modalPenjelasan" name="penjelasan" rows="3" placeholder="Tuliskan keterangan verifikasi atau penjelasan kondisi lapangan..." style="width: 100%; padding: 10px 12px; font-size: 13px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); resize: vertical; outline: none;"></textarea>
+      </div>
+
+      <div id="modalAlert" style="display: none; padding: 10px 12px; border-radius: 8px; font-size: 12px; margin-bottom: 16px;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" onclick="closeEditModal()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px; border-radius: 8px;">Batal</button>
+        <button type="submit" id="modalSaveBtn" class="btn btn-primary" style="padding: 9px 20px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, var(--accent-yellow), #d97706); color: #000; border: none; border-radius: 8px; display: flex; align-items: center; gap: 6px;">
+          <i class="bi bi-save-fill"></i> Simpan &amp; Sync ke Google Sheets
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  // Bind sorting and searching
   if (typeof makeTableSortable === 'function') {
-    makeTableSortable('anomalyTable');
-  }
-  if (typeof makeTableSearchable === 'function') {
-    makeTableSearchable('anomalySearch', 'anomalyTable');
+    makeTableSortable('usahaTable');
+    makeTableSortable('keluargaTable');
+    makeTableSortable('pclAnomalyTable');
   }
 });
+
+function openEditModal(itemId, assignmentId, type, itemName, pclName, currentStatus, currentNotes, noVal, namaAnomaliVal) {
+  document.getElementById('modalItemId').value = itemId || '';
+  document.getElementById('modalAssignmentId').value = assignmentId || '';
+  document.getElementById('modalType').value = type || 'usaha';
+  document.getElementById('modalNama').value = itemName || '';
+  document.getElementById('modalNo').value = noVal || '';
+  document.getElementById('modalNamaAnomali').value = namaAnomaliVal || '';
+  document.getElementById('modalItemName').textContent = itemName || '-';
+  document.getElementById('modalPclName').textContent = 'PCL: ' + (pclName || '-');
+
+  const statusSelect = document.getElementById('modalStatus');
+  if (currentStatus) {
+    statusSelect.value = currentStatus;
+  }
+  document.getElementById('modalPenjelasan').value = currentNotes || '';
+
+  const alertBox = document.getElementById('modalAlert');
+  alertBox.style.display = 'none';
+
+  const modal = document.getElementById('editAnomalyModal');
+  modal.style.display = 'flex';
+}
+
+function closeEditModal() {
+  const modal = document.getElementById('editAnomalyModal');
+  modal.style.display = 'none';
+}
+
+async function saveAnomalyStatus(e) {
+  e.preventDefault();
+  const form = document.getElementById('editAnomalyForm');
+  const saveBtn = document.getElementById('modalSaveBtn');
+  const alertBox = document.getElementById('modalAlert');
+  
+  const itemId = document.getElementById('modalItemId').value;
+  const assignmentId = document.getElementById('modalAssignmentId').value;
+  const type = document.getElementById('modalType').value;
+  const nama = document.getElementById('modalNama').value;
+  const no = document.getElementById('modalNo').value;
+  const namaAnomali = document.getElementById('modalNamaAnomali').value;
+  const tindakLanjut = document.getElementById('modalStatus').value;
+  const penjelasan = document.getElementById('modalPenjelasan').value;
+
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<i class="bi bi-arrow-repeat bi-spin"></i> Menghubungkan Apps Script (max 30s)...';
+  
+  alertBox.style.display = 'block';
+  alertBox.style.background = 'rgba(6, 182, 212, 0.15)';
+  alertBox.style.border = '1px solid rgba(6, 182, 212, 0.3)';
+  alertBox.style.color = 'var(--accent-cyan)';
+  alertBox.innerHTML = '<i class="bi bi-arrow-clockwise bi-spin"></i> Memproses sinkronisasi ke Google Spreadsheet... Harap tunggu.';
+
+  try {
+    const res = await fetch('/deteksi-anomali/update-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        assignment_id: assignmentId,
+        type: type,
+        nama: nama,
+        no: no,
+        nama_anomali: namaAnomali,
+        tindak_lanjut: tindakLanjut,
+        penjelasan: penjelasan
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      const latencySec = data.latencyMs ? (data.latencyMs / 1000).toFixed(1) : null;
+      alertBox.className = 'badge-green';
+      alertBox.style.background = 'rgba(16, 185, 129, 0.15)';
+      alertBox.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+      alertBox.style.color = 'var(--accent-green)';
+      alertBox.innerHTML = `<i class="bi bi-check-circle-fill"></i> ${data.message || 'Tersinkronisasi ke Google Spreadsheet!'}` + (latencySec ? ` <small style="opacity: 0.85;">(${latencySec}s)</small>` : '');
+
+      // Update exact target row in DOM without full reload
+      const row = document.getElementById('row-' + itemId);
+      if (row) {
+        const isDone = tindakLanjut.toLowerCase().includes('sudah') || tindakLanjut.toLowerCase().includes('selesai');
+        const statusTd = row.querySelector('.item-status-td');
+        if (statusTd) {
+          if (isDone) {
+            statusTd.innerHTML = `<span class="badge badge-green" style="font-size: 11px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;"><i class="bi bi-check-circle-fill"></i> ${tindakLanjut}</span>`;
+          } else {
+            statusTd.innerHTML = `<span class="badge badge-red" style="font-size: 11px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;"><i class="bi bi-exclamation-triangle-fill"></i> ${tindakLanjut}</span>`;
+          }
+        }
+
+        const penjelasanDiv = row.querySelector('.item-penjelasan');
+        if (penjelasanDiv) {
+          penjelasanDiv.innerHTML = penjelasan ? `💬 <i>${penjelasan}</i>` : '';
+        }
+      }
+
+      setTimeout(() => {
+        closeEditModal();
+      }, 1500);
+    } else {
+      throw new Error(data.error || 'Terjadi kesalahan saat mengupdate data.');
+    }
+  } catch (err) {
+    alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+    alertBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+    alertBox.style.color = 'var(--accent-red)';
+    alertBox.innerHTML = `<i class="bi bi-exclamation-octagon-fill"></i> <strong>Gagal Sync:</strong> ${err.message}<br><small style="margin-top: 4px; display: block; opacity: 0.9;">Periksa kembali Apps Script di Google Sheets atau coba klik Simpan lagi.</small>`;
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = '<i class="bi bi-save-fill"></i> Simpan &amp; Sync ke Google Sheets';
+  }
+}
 </script>
