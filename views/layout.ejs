@@ -39,6 +39,7 @@
   <link rel="stylesheet" href="/css/style.css?v=<%= appVersion %>">
   <script src="/js/search-helper.js?v=<%= appVersion %>"></script>
   <link rel="stylesheet" href="/css/spreadsheet.css?v=<%= appVersion %>">
+  <link rel="stylesheet" href="/css/ai-widget.css?v=<%= appVersion %>">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
   <noscript>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -2607,6 +2608,9 @@
         if (typeof renderWeatherFromCache === 'function') {
           renderWeatherFromCache();
         }
+        if (typeof window.updateAiWidgetVisibility === 'function') {
+          window.updateAiWidgetVisibility();
+        }
       }
 
       } catch (err) {
@@ -3530,5 +3534,6 @@
 </script>
 <%- typeof scripts !== 'undefined' ? scripts : '' %>
 <script src="/js/spreadsheet-editor.js?v=<%= appVersion %>" defer></script>
+<script src="/js/ai-widget.js?v=<%= appVersion %>" defer></script>
 </body>
 </html>
