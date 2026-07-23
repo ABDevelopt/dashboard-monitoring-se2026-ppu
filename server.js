@@ -311,6 +311,7 @@ adminRouter.use('/master', requireAdmin, require('./routes/master'));
 adminRouter.use('/settings', requireAdmin, require('./routes/settings'));
 adminRouter.use('/users', requireAdmin, require('./routes/users'));
 adminRouter.use('/whatsapp', requireAdmin, require('./routes/whatsapp'));
+adminRouter.use('/spreadsheet', requireAdmin, require('./routes/admin_spreadsheet'));
 
 // 404
 app.use((req, res) => {
