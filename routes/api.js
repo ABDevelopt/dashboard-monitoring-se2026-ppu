@@ -334,89 +334,173 @@ let aiInsightsCache = {
   timestamp: 0
 };
 
-// Helper function to call Gemini directly (tool-free and very fast!)
-async function callGeminiDirect(prompt, settings) {
-  const apiKey = settings.gemini_api_key;
-  const modelName = settings.gemini_model || 'gemini-2.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-  const requestBody = JSON.stringify({
-    contents: [{
-      parts: [{ text: prompt }]
-    }]
-  });
-
-  const TIMEOUT_MS = 5000;
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: requestBody,
-      signal: controller.signal
-    });
-
-    clearTimeout(timeoutId);
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.error) {
-        throw new Error(`Gemini API Error (${data.error.status || data.error.code}): ${data.error.message}`);
-      }
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (text) return text;
-    } else {
-      let errText = '';
-      try { errText = await response.text(); } catch (e) {}
-      let parsedErr;
-      try { parsedErr = JSON.parse(errText); } catch (e) {}
-      if (parsedErr && parsedErr.error) {
-        throw new Error(`Gemini API Error: ${parsedErr.error.message}`);
-      }
-      throw new Error(`Gemini API returned status ${response.status}: ${errText || 'Unknown Error'}`);
-    }
-  } catch (fetchErr) {
-    console.warn('Native fetch in callGeminiDirect failed or timed out, trying curl fallback...', fetchErr.message);
-    
-    // Curl fallback with 5 seconds timeout
-    return new Promise((resolve, reject) => {
-      const { spawn } = require('child_process');
-      const child = spawn('curl', [
-        '-s', '-X', 'POST',
-        '--connect-timeout', '5',
-        '-m', '5',
-        '-H', 'Content-Type: application/json',
-        '-d', requestBody,
-        url
-      ]);
-
-      const stdoutChunks = [];
-      const stderrChunks = [];
-
-      child.stdout.on('data', (chunk) => stdoutChunks.push(chunk));
-      child.stderr.on('data', (chunk) => stderrChunks.push(chunk));
-
-      child.on('close', (code) => {
-        if (code !== 0) {
-          return reject(new Error(`curl failed with code ${code}: ${Buffer.concat(stderrChunks).toString() || 'Timeout'}`));
-        }
-        try {
-          const resText = Buffer.concat(stdoutChunks).toString();
-          const data = JSON.parse(resText);
-          if (data.error) {
-            return reject(new Error(`Gemini API Error (${data.error.status || data.error.code}): ${data.error.message}`));
-          }
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) resolve(text);
-          else reject(new Error('Format respons Gemini curl tidak valid'));
-        } catch (parseErr) {
-          reject(new Error(`Gagal mem-parsing respons curl: ${parseErr.message}`));
-        }
-      });
-    });
+// Helper function to call Gemini / LLM directly (multi-key & multi-provider fallback)
+async function callGeminiDirect(prompt, settings = {}) {
+  // Collect all potential Gemini API keys
+  let keysToTry = [];
+  
+  if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
+    keysToTry.push(settings.gemini_api_key.trim());
   }
+  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() && !keysToTry.includes(process.env.GEMINI_API_KEY.trim())) {
+    keysToTry.push(process.env.GEMINI_API_KEY.trim());
+  }
+  if (settings.gemini_backup_api_keys) {
+    try {
+      let backups = typeof settings.gemini_backup_api_keys === 'string' 
+        ? JSON.parse(settings.gemini_backup_api_keys) 
+        : settings.gemini_backup_api_keys;
+      if (Array.isArray(backups)) {
+        backups.forEach(k => {
+          if (typeof k === 'string' && k.trim() && !keysToTry.includes(k.trim())) {
+            keysToTry.push(k.trim());
+          }
+        });
+      }
+    } catch (e) {}
+  }
+
+  const modelName = settings.gemini_model || 'gemini-2.5-flash';
+  const TIMEOUT_MS = 12000; // Increased to 12s for reliable hosting connection
+
+  // Try Gemini keys
+  for (const apiKey of keysToTry) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+    const requestBody = JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }]
+    });
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: requestBody,
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        if (!data.error) {
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) return text;
+        }
+      } else {
+        let errText = '';
+        try { errText = await response.text(); } catch (e) {}
+        console.warn(`[AI Insights] Gemini API key (ending ...${apiKey.slice(-4)}) status ${response.status}: ${errText}`);
+      }
+    } catch (fetchErr) {
+      console.warn(`[AI Insights] Fetch attempt failed for Gemini key (...${apiKey.slice(-4)}): ${fetchErr.message}, trying curl fallback...`);
+      try {
+        const curlRes = await new Promise((resolve, reject) => {
+          const { spawn } = require('child_process');
+          const child = spawn('curl', [
+            '-s', '-X', 'POST',
+            '--connect-timeout', '8',
+            '-m', '10',
+            '-H', 'Content-Type: application/json',
+            '-d', requestBody,
+            url
+          ]);
+
+          const stdoutChunks = [];
+          const stderrChunks = [];
+          child.stdout.on('data', chunk => stdoutChunks.push(chunk));
+          child.stderr.on('data', chunk => stderrChunks.push(chunk));
+
+          child.on('close', code => {
+            if (code !== 0) return reject(new Error(`curl exit code ${code}`));
+            try {
+              const resText = Buffer.concat(stdoutChunks).toString();
+              const data = JSON.parse(resText);
+              if (data.error) return reject(new Error(data.error.message));
+              const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (text) resolve(text);
+              else reject(new Error('Empty candidate text'));
+            } catch (e) {
+              reject(e);
+            }
+          });
+        });
+        if (curlRes) return curlRes;
+      } catch (curlErr) {
+        console.warn(`[AI Insights] Curl fallback failed: ${curlErr.message}`);
+      }
+    }
+  }
+
+  // Fallback 2: Try OpenRouter if configured
+  const openrouterKey = (settings.openrouter_api_key || process.env.OPENROUTER_API_KEY || '').trim();
+  if (openrouterKey) {
+    try {
+      const orModel = settings.openrouter_model || 'meta-llama/llama-3.3-70b-instruct:free';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openrouterKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: orModel,
+          messages: [{ role: 'user', content: prompt }]
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content;
+        if (text) return text;
+      }
+    } catch (orErr) {
+      console.warn(`[AI Insights] OpenRouter fallback failed: ${orErr.message}`);
+    }
+  }
+
+  // Fallback 3: Try OpenAI if configured
+  const openaiKey = (settings.openai_api_key || process.env.OPENAI_API_KEY || '').trim();
+  if (openaiKey) {
+    try {
+      const oaModel = settings.openai_model || 'gpt-4o-mini';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+      const response = await fetch('https://api.openai.com/v1:chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: oaModel,
+          messages: [{ role: 'user', content: prompt }]
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content;
+        if (text) return text;
+      }
+    } catch (oaErr) {
+      console.warn(`[AI Insights] OpenAI fallback failed: ${oaErr.message}`);
+    }
+  }
+
+  throw new Error('Tidak ada API Key yang valid (Gemini / OpenRouter / OpenAI) atau semua permintaan mengalami timeout / error.');
 }
 
 // Rule-based fallback summary insights generator (offline and quota-exhausted guard)
