@@ -315,9 +315,13 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
     }
   }
 
-  // Check if response contains HTML login/access error
+  // Check if response contains HTML login/access error or missing doGet error
   if (responseText.includes('Anda memerlukan akses') || responseText.includes('accounts.google.com')) {
     throw new Error('Akses ditolak oleh Google. Silakan buka Apps Script ➔ Deploy ➔ Manage Deployments ➔ Ubah "Who has access" menjadi "Anyone" (Siapa saja).');
+  }
+
+  if (responseText.includes('Fungsi skrip tidak ditemukan: doGet') || (responseText.includes('tidak ditemukan') && responseText.includes('doGet'))) {
+    throw new Error('Fungsi doGet(e) belum terpasang di Apps Script. Buka Google Spreadsheet ➔ Ekstensi ➔ Apps Script, salin kode terbaru yang memiliki fungsi doGet(e) dan doPost(e), lalu Deploy Versi Baru.');
   }
 
   let jsonRes;
