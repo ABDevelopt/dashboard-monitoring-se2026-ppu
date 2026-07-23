@@ -188,7 +188,7 @@
           <span class="nav-icon"><i class="bi bi-map"></i></span> Peta Progres
         </a>
         <% } %>
-        <% if (typeof settings !== 'undefined' && settings.page_agent === '1') { %>
+        <% if (typeof settings === 'undefined' || !settings || settings.page_aiagent !== '0') { %>
         <a href="/agent" class="nav-item <%= activePage === 'agent' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-sparkles text-purple"></i></span> Pananyo Taka
         </a>
