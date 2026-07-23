@@ -249,21 +249,60 @@
     gap: 8px;
   }
 
+  .mobile-map-toggle-bar {
+    display: none;
+  }
+
   @media (max-width: 992px) {
+    .map-kpi-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .mobile-map-toggle-bar {
+      display: block !important;
+      margin-bottom: 12px;
+    }
+
     .map-container-wrap {
-      flex-direction: column-reverse;
+      flex-direction: column;
       height: auto;
+      min-height: 0;
     }
-    .map-sidebar-panel {
-      width: 100%;
-      height: auto;
-      overflow-y: visible;
+
+    .map-container-wrap.show-info-mobile .map-canvas-container {
+      display: none !important;
     }
-    .map-canvas-container {
-      flex: none;
-      width: 100%;
-      height: 480px;
-      min-height: 480px;
+
+    .map-container-wrap.show-info-mobile .map-sidebar-panel {
+      display: flex !important;
+      width: 100% !important;
+    }
+
+    .map-container-wrap.show-map-mobile .map-sidebar-panel {
+      display: none !important;
+    }
+
+    .map-container-wrap.show-map-mobile .map-canvas-container {
+      display: block !important;
+      width: 100% !important;
+      height: calc(100vh - var(--header-height) - 220px) !important;
+      min-height: 420px !important;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .map-kpi-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .map-kpi-card {
+      padding: 10px 12px;
+      gap: 8px;
+    }
+    .map-kpi-icon {
+      width: 32px;
+      height: 32px;
+      font-size: 16px;
     }
   }
 </style>
@@ -316,8 +355,16 @@
       </div>
     </div>
 
+    <!-- MOBILE VIEW TOGGLE BAR -->
+    <div class="mobile-map-toggle-bar">
+      <div class="map-layer-selector" style="margin: 0; background: var(--bg-card);">
+        <button id="btnMobileMapTab" class="map-layer-btn active"><i class="bi bi-map"></i> Tampilan Peta Spasial</button>
+        <button id="btnMobileInfoTab" class="map-layer-btn"><i class="bi bi-sliders"></i> Filter &amp; Detail Wilayah</button>
+      </div>
+    </div>
+
     <!-- MAIN MAP CONTENT CONTAINER -->
-    <div class="map-container-wrap">
+    <div id="mapContainerWrap" class="map-container-wrap show-map-mobile">
       
       <!-- SIDEBAR PANEL -->
       <div class="map-sidebar-panel">
@@ -325,7 +372,7 @@
         <!-- CONTROL CARD -->
         <div class="card" style="margin-bottom: 0;">
           <div class="card-header" style="margin-bottom: 10px; padding-bottom: 0; display: flex; justify-content: space-between; align-items: center;">
-            <div class="card-title"><i class="bi bi-sliders"></i> Kontrol & Filter Peta</div>
+            <div class="card-title"><i class="bi bi-sliders"></i> Kontrol &amp; Filter Peta</div>
             <button id="btnResetView" class="btn btn-secondary btn-xs" title="Reset Pandangan Peta">
               <i class="bi bi-arrow-counterclockwise"></i> Reset
             </button>
@@ -499,6 +546,29 @@
         const legendDesa = document.getElementById('legendDesa');
         const legendSls = document.getElementById('legendSls');
         const sidebarStats = document.getElementById('mapSummaryStats');
+        const mapContainerWrap = document.getElementById('mapContainerWrap');
+        const btnMobileMapTab = document.getElementById('btnMobileMapTab');
+        const btnMobileInfoTab = document.getElementById('btnMobileInfoTab');
+
+        // Mobile View Toggle Logic
+        if (btnMobileMapTab && btnMobileInfoTab && mapContainerWrap) {
+          btnMobileMapTab.addEventListener('click', () => {
+            btnMobileInfoTab.classList.remove('active');
+            btnMobileMapTab.classList.add('active');
+            mapContainerWrap.classList.remove('show-info-mobile');
+            mapContainerWrap.classList.add('show-map-mobile');
+            setTimeout(() => {
+              map.invalidateSize();
+            }, 100);
+          });
+
+          btnMobileInfoTab.addEventListener('click', () => {
+            btnMobileMapTab.classList.remove('active');
+            btnMobileInfoTab.classList.add('active');
+            mapContainerWrap.classList.remove('show-map-mobile');
+            mapContainerWrap.classList.add('show-info-mobile');
+          });
+        }
 
         // Styles
         function getBorderColor() {
@@ -629,7 +699,7 @@
           }
         }
 
-        // Show details in Sidebar
+        // Show details in Sidebar + Integrated Drilldown Links
         function showDesaDetails(properties) {
           const stat = desaStats.find(s => s.iddesa === properties.iddesa);
           const total = stat ? stat.total_subsls : 0;
@@ -693,9 +763,18 @@
               <span class="map-card-value">${keluarga.toLocaleString('id-ID')}</span>
             </div>
 
-            <button class="btn btn-primary btn-xs" id="btnFocusDesa" style="width: 100%; margin-top: 12px; display: flex; justify-content: center; align-items: center; gap: 6px; padding: 6px 10px;">
-              <i class="bi bi-search"></i> Zoom &amp; Tampilkan Batas SLS
-            </button>
+            <!-- Integrated Drilldown Navigation Links -->
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+              <button class="btn btn-primary btn-xs" id="btnFocusDesa" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 6px; padding: 6px 10px;">
+                <i class="bi bi-search"></i> Zoom &amp; Tampilkan Batas SLS
+              </button>
+              <a href="/subsls?kec=${encodeURIComponent(properties.nmkec)}&amp;desa=${encodeURIComponent(properties.nmdesa)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; text-decoration: none;">
+                <i class="bi bi-table"></i> Drilldown Tabel SLS Desa ${properties.nmdesa}
+              </a>
+              <a href="/kecamatan?kec=${encodeURIComponent(properties.nmkec)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; text-decoration: none;">
+                <i class="bi bi-diagram-3"></i> Drilldown Kec. ${properties.nmkec}
+              </a>
+            </div>
           `;
 
           // Focus Desa Button Listener
@@ -786,6 +865,18 @@
               <span class="map-card-label">Keluarga Terdata</span>
               <span class="map-card-value">${keluarga.toLocaleString('id-ID')}</span>
             </div>
+
+            <!-- Integrated Drilldown Action Links for SLS -->
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
+              <a href="/subsls?search=${encodeURIComponent(properties.kode)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; text-decoration: none;">
+                <i class="bi bi-table"></i> Buka Tabel SLS (${properties.kode})
+              </a>
+              ${pcl &amp;&amp; pcl !== 'Belum Ditentukan' ? `
+                <a href="/pcl?pcl=${encodeURIComponent(pcl)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; text-decoration: none;">
+                  <i class="bi bi-person"></i> Drilldown PCL (${pcl})
+                </a>
+              ` : ''}
+            </div>
           `;
         }
 
@@ -815,7 +906,7 @@
                   const pct = totalMuatan ? ((usaha / totalMuatan) * 100).toFixed(2) : '0.00';
                   
                   const popupHtml = `
-                    <div style="font-family: 'Inter', sans-serif; min-width: 180px; padding: 2px;">
+                    <div style="font-family: 'Inter', sans-serif; min-width: 190px; padding: 2px;">
                       <strong style="font-size: 13px; color: var(--text-primary);">Desa ${feature.properties.nmdesa}</strong><br>
                       <span style="font-size: 11px; color: var(--text-secondary);">Kec. ${feature.properties.nmkec}</span>
                       <table class="info-table">
@@ -823,6 +914,11 @@
                         <tr><td class="label">Progres FASIH</td><td class="value" style="color: ${fasihPct >= 100 ? 'var(--accent-green)' : 'var(--accent-blue)'};">${fasihPct}%</td></tr>
                         <tr class="muatan-col"><td class="label">Progres Muatan</td><td class="value">${pct}%</td></tr>
                       </table>
+                      <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
+                        <a href="/subsls?kec=${encodeURIComponent(feature.properties.nmkec)}&amp;desa=${encodeURIComponent(feature.properties.nmdesa)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
+                          <i class="bi bi-arrow-right-circle"></i> Buka Drilldown Wilayah
+                        </a>
+                      </div>
                     </div>
                   `;
                   layer.bindPopup(popupHtml).openPopup();
@@ -861,6 +957,11 @@
                         <tr><td class="label">FASIH %</td><td class="value">${fasihPct}% (${realisasiFasih}/${targetFasih})</td></tr>
                         <tr class="muatan-col"><td class="label">Usaha</td><td class="value">${stat ? stat.usaha_total : 0}</td></tr>
                       </table>
+                      <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
+                        <a href="/subsls?search=${encodeURIComponent(feature.properties.kode)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
+                          <i class="bi bi-arrow-right-circle"></i> Detail SubSLS (${feature.properties.kode})
+                        </a>
+                      </div>
                     </div>
                   `;
                   layer.bindPopup(popupHtml).openPopup();
