@@ -1,35 +1,27 @@
 <div class="fade-in">
-  <!-- HERO BANNER -->
-  <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(239, 68, 68, 0.04) 100%); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 24px; position: relative; overflow: hidden;">
-    <div style="position: absolute; right: -15px; top: -15px; font-size: 110px; opacity: 0.04; line-height: 1; pointer-events: none; color: var(--accent-yellow);">
-      <i class="bi bi-shield-exclamation"></i>
+  <!-- COMPACT ENTERPRISE HEADER -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <h1 style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+          <i class="bi bi-shield-exclamation text-yellow"></i> Deteksi &amp; Audit Anomali Data
+        </h1>
+        <span class="badge badge-green" style="font-size: 10px; padding: 3px 8px;">
+          <i class="bi bi-arrow-repeat"></i> Auto-Sync
+        </span>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0 0;">
+        Audit kualitas data &amp; perbarui status tindak lanjut langsung ke Google Spreadsheet.
+      </p>
     </div>
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; position: relative; z-index: 2;">
-      <div style="display: flex; gap: 16px; align-items: center;">
-        <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-yellow); font-size: 26px; flex-shrink: 0; box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);">
-          <i class="bi bi-file-earmark-spreadsheet-fill"></i>
-        </div>
-        <div>
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-            <h1 style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin: 0;">Deteksi &amp; Audit Anomali Data</h1>
-            <span class="badge badge-green" style="font-size: 10px; padding: 4px 8px; display: flex; align-items: center; gap: 4px;">
-              <i class="bi bi-arrow-repeat"></i> Sinkronkan 2 Arah Google Spreadsheet
-            </span>
-          </div>
-          <p style="font-size: 13px; color: var(--text-secondary); margin: 0; max-width: 720px; line-height: 1.5;">
-            Pengawas dapat langsung memperbarui status tindak lanjut &amp; catatan penjelasan di website ini. Hasil pengeditan otomatis tersinkronisasi kembali ke Google Spreadsheet secara <em>real-time</em>.
-          </p>
-        </div>
-      </div>
-      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-        <% const sheetsUrlLink = (typeof settings !== 'undefined' && settings.google_sheets_anomaly_url) ? settings.google_sheets_anomaly_url : 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml'; %>
-        <a href="<%= sheetsUrlLink %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 10px 16px; font-size: 12px; font-weight: 600; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px; color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.08);" title="Buka Google Spreadsheet Anomali di Tab Baru">
-          <i class="bi bi-file-earmark-excel-fill"></i> Buka Spreadsheet Anomali
-        </a>
-        <a href="/deteksi-anomali?refresh=true&tab=<%= activeTab %>&kec=<%= encodeURIComponent(filterKec) %>&korlap=<%= encodeURIComponent(filterKorlap) %>&status=<%= encodeURIComponent(filterStatus) %>" onclick="this.innerHTML='<i class=\'bi bi-arrow-clockwise bi-spin\'></i> Menyinkronkan...'; this.style.pointerEvents='none';" class="btn btn-primary" style="padding: 10px 16px; font-size: 12px; font-weight: 700; border-radius: 10px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);" title="Segarkan Data dari Google Spreadsheet">
-          <i class="bi bi-arrow-clockwise"></i> Sync Google Sheets
-        </a>
-      </div>
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      <% const sheetsUrlLink = (typeof settings !== 'undefined' && settings.google_sheets_anomaly_url) ? settings.google_sheets_anomaly_url : 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml'; %>
+      <a href="<%= sheetsUrlLink %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="color: var(--accent-green);" title="Buka Google Spreadsheet Anomali">
+        <i class="bi bi-file-earmark-excel-fill"></i> Buka Spreadsheet
+      </a>
+      <a href="/deteksi-anomali?refresh=true&tab=<%= activeTab %>&kec=<%= encodeURIComponent(filterKec) %>&korlap=<%= encodeURIComponent(filterKorlap) %>&status=<%= encodeURIComponent(filterStatus) %>" onclick="this.innerHTML='<i class=\'bi bi-arrow-clockwise bi-spin\'></i> Syncing...'; this.style.pointerEvents='none';" class="btn btn-primary btn-sm" title="Segarkan Data dari Google Spreadsheet">
+        <i class="bi bi-arrow-clockwise"></i> Sync Data
+      </a>
     </div>
   </div>
 
