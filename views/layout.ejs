@@ -2438,13 +2438,19 @@
         void loader.offsetWidth;
         loader.classList.add('loading');
       }
-      const overlay = document.getElementById('pjax-loading-overlay');
-      if (overlay) overlay.classList.add('active');
 
-      // Temporarily bypass skeleton insertion during PJAX to allow seamless content-to-content slide transition
-      // if (oldContent) {
-      //   oldContent.innerHTML = getSkeletonHTML(url);
-      // }
+      // ⏳ Skeleton Threshold Timer (250ms Threshold)
+      // Halaman yang merespon secara instan (< 250ms) tidak akan memicu skeleton loader
+      let skeletonTimer = null;
+      if (oldContent) {
+        skeletonTimer = setTimeout(() => {
+          if (oldContent && document.getElementById('pjax-container') === oldContent) {
+            oldContent.innerHTML = getSkeletonHTML(url);
+            const overlay = document.getElementById('pjax-loading-overlay');
+            if (overlay) overlay.classList.add('active');
+          }
+        }, 250);
+      }
 
       try {
       // Fetch target page
@@ -2477,79 +2483,11 @@
             window._pjaxCleanups = [];
           }
 
-          // Spatial vertical page order index mapping for desktop/tablet (min-width: 769px)
-          const pageOrderMap = [
-            '/',
-            '/map',
-            '/agent',
-            '/kecamatan',
-            '/korlap',
-            '/pml',
-            '/pcl',
-            '/harian',
-            '/performa',
-            '/leaderboard',
-            '/performa-terendah',
-            '/early-warning',
-            '/deteksi-anomali',
-            '/subsls',
-            '/kipp',
-            '/pbi',
-            '/help',
-            '/admin'
-          ];
-
-          const getPageIndex = (pathStr) => {
-            if (!pathStr) return 0;
-            try {
-              const urlObj = new URL(pathStr, window.location.origin);
-              const cleanPath = (urlObj.pathname || '/').toLowerCase().replace(/\/$/, '') || '/';
-              const idx = pageOrderMap.findIndex(p => p === cleanPath);
-              if (idx !== -1) return idx;
-              for (let i = 0; i < pageOrderMap.length; i++) {
-                if (pageOrderMap[i] !== '/' && cleanPath.startsWith(pageOrderMap[i])) {
-                  return i;
-                }
-              }
-            } catch (e) {}
-            return 99;
-          };
-
-          const currentIdx = getPageIndex(window.location.pathname);
-          const targetIdx = getPageIndex(url);
-
-          const isLargeScreen = window.innerWidth >= 769;
-          const isDirectional = isLargeScreen && currentIdx !== targetIdx && currentIdx !== 99 && targetIdx !== 99;
-
-          if (isDirectional) {
-            const isNavigatingDown = targetIdx > currentIdx;
-            const oldHTML = oldContent.innerHTML;
-            const newHTML = newContent.innerHTML;
-
-            const exitClass = isNavigatingDown ? 'canvas-exit-up' : 'canvas-exit-down';
-            const enterClass = isNavigatingDown ? 'canvas-enter-up' : 'canvas-enter-down';
-
-            oldContent.style.position = 'relative';
-            oldContent.style.overflow = 'hidden';
-            oldContent.innerHTML = `
-              <div class="${exitClass}" style="position: absolute; width: 100%; top: 0; left: 0; z-index: 1;">
-                ${oldHTML}
-              </div>
-              <div class="${enterClass}" style="position: relative; width: 100%; z-index: 2;">
-                ${newHTML}
-              </div>
-            `;
-
-            setTimeout(() => {
-              oldContent.innerHTML = newHTML;
-              oldContent.removeAttribute('style');
-            }, 380);
-          } else {
-            oldContent.innerHTML = newContent.innerHTML;
-            oldContent.classList.remove('pjax-animate-enter');
-            void oldContent.offsetWidth;
-            oldContent.classList.add('pjax-animate-enter');
-          }
+          // Swap content immediately and trigger smooth layout entrance animation
+          oldContent.innerHTML = newContent.innerHTML;
+          oldContent.classList.remove('pjax-animate-enter');
+          void oldContent.offsetWidth;
+          oldContent.classList.add('pjax-animate-enter');
         } else {
           window.location.href = url;
           return;
@@ -2743,8 +2681,12 @@
         console.error('AJAX page navigation error:', err);
         window.location.href = url;
       } finally {
-        if (overlay) {
-          overlay.classList.remove('active');
+        if (skeletonTimer) {
+          clearTimeout(skeletonTimer);
+        }
+        const overlayEl = document.getElementById('pjax-loading-overlay');
+        if (overlayEl) {
+          overlayEl.classList.remove('active');
         }
         // Hapus status loading secara global setelah navigasi selesai
         document.querySelectorAll('.btn-loading').forEach(btn => {
