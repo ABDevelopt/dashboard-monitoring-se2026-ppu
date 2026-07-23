@@ -999,9 +999,9 @@
         <button class="btn btn-secondary btn-sm" id="sidebarToggleAgent" onclick="document.body.classList.toggle('sidebar-collapsed'); if(typeof window.dispatchEvent==='function') window.dispatchEvent(new Event('resize'));" style="padding: 4px 8px; font-size: 13px; margin-right: 6px; display: inline-flex; align-items: center; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer;" title="Sembunyikan / Tampilkan Sidebar">
           <i class="bi bi-layout-sidebar-inset"></i>
         </button>
-        <div style="display: inline-flex; align-items: center; margin-right: 2px;">
-          <i class="bi bi-robot" style="font-size: 20px; color: #4285F4;"></i>
-          <i class="bi bi-sparkles gemini-sparkle-icon" style="font-size: 15px; margin-left: -5px;"></i>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <i class="bi bi-robot" style="font-size: 20px; color: var(--accent-cyan);"></i>
+          <i class="bi bi-sparkles gemini-sparkle-icon" style="font-size: 18px;"></i>
         </div>
         <div>
           <span style="font-weight: 700; font-size: 15.5px;" class="gemini-gradient-text">Pananyo Taka</span>
@@ -1009,15 +1009,32 @@
         </div>
       </div>
       <div class="chat-header-actions">
-        <button type="button" class="theme-toggle-btn" onclick="if(window.showNotifications) window.showNotifications(); else alert('Tidak ada notifikasi baru');" title="Notifikasi" style="width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer;">
-          <i class="bi bi-bell"></i>
-        </button>
-        <button type="button" id="themeToggleBtnAgent" class="theme-toggle-btn" onclick="if(typeof toggleTheme==='function') toggleTheme(); else document.body.classList.toggle('light-mode');" title="Ganti Tema" style="width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer;">
-          <i class="bi bi-moon-stars-fill"></i>
-        </button>
         <button class="btn btn-secondary btn-sm" onclick="clearChatHistory()" style="padding: 6px 12px; font-size: 11px; height: 32px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; border-radius: 99px;" title="Hapus riwayat obrolan">
           <i class="bi bi-plus-lg"></i> Percakapan Baru
         </button>
+
+        <!-- Notification Bell -->
+        <div class="topbar-dropdown-wrapper" id="bellWrapperAgent">
+          <button class="btn btn-secondary topbar-action-btn notification-bell-btn" id="notificationBellBtnAgent" title="Notifikasi Update Data" aria-label="Notifikasi Update Data" style="height: 32px; width: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+            <i class="bi bi-bell-fill notification-bell-icon" id="notificationBellIconAgent" style="font-size: 13px;"></i>
+            <span id="notificationBellBadgeAgent" class="topbar-badge notification-bell-badge"></span>
+          </button>
+          <div id="notificationBellDropdownAgent" class="topbar-dropdown topbar-dropdown--right notification-bell-dropdown">
+            <div class="topbar-dropdown-header">
+              <span>Riwayat Update Data</span>
+              <span id="clearNotificationBadgeAgent" class="topbar-dropdown-action clear-notification-badge">Tandai Terbaca</span>
+            </div>
+            <div id="notificationBellListAgent" class="topbar-dropdown-list notification-bell-list">
+              <!-- content injected by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button class="btn btn-secondary topbar-action-btn theme-toggle-btn" id="themeToggleAgent" title="Ubah Tema" aria-label="Ubah Tema" style="height: 32px; width: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+          <i class="bi bi-moon-fill theme-icon" style="font-size: 13px;"></i>
+        </button>
+
         <span id="agentStatus" class="status-badge ready" style="border-radius: 99px;"><span class="status-dot"></span><span class="status-text">Pananyo Taka Active</span></span>
         <input type="hidden" id="agentProvider" value="<%= typeof provider !== 'undefined' && provider ? provider : 'gemini' %>">
         <input type="hidden" id="agentModel" value="<%= typeof model !== 'undefined' && model ? model : 'gemini-1.5-flash' %>">
@@ -1028,9 +1045,9 @@
       <!-- Gemini Welcome Hero Screen -->
       <div class="gemini-welcome-container" id="geminiWelcomeHero">
         <div class="gemini-hero-header">
-          <div style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 12px;">
-            <i class="bi bi-robot" style="font-size: 38px; color: #4285F4;"></i>
-            <i class="bi bi-sparkles gemini-hero-sparkle" style="font-size: 28px; margin-left: -6px;"></i>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+            <i class="bi bi-robot" style="font-size: 38px; color: var(--accent-cyan);"></i>
+            <i class="bi bi-sparkles gemini-hero-sparkle" style="font-size: 34px; margin-bottom: 0;"></i>
           </div>
           <h1 class="gemini-hero-title">Halo, <span class="gemini-gradient-text">Saya Pananyo Taka</span></h1>
           <p class="gemini-hero-subtitle">Asisten Pintar Sensus Ekonomi 2026 Penajam Paser Utara. Apa yang ingin Anda analisis atau tanyakan hari ini?</p>
@@ -1437,7 +1454,7 @@
     
     const avatar = document.createElement('div');
     avatar.className = 'message-avatar';
-    avatar.innerHTML = sender === 'user' ? '<i class="bi bi-person-circle"></i>' : '<i class="bi bi-robot"></i>';
+    avatar.innerHTML = sender === 'user' ? '<i class="bi bi-person-circle"></i>' : '<i class="bi bi-sparkles gemini-sparkle-icon"></i>';
     
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
@@ -1488,7 +1505,7 @@
 
       const avatar = document.createElement('div');
       avatar.className = 'message-avatar';
-      avatar.innerHTML = sender === 'user' ? '<i class="bi bi-person-circle"></i>' : '<i class="bi bi-robot"></i>';
+      avatar.innerHTML = sender === 'user' ? '<i class="bi bi-person-circle"></i>' : '<i class="bi bi-sparkles gemini-sparkle-icon"></i>';
 
       const bubble = document.createElement('div');
       bubble.className = 'message-bubble';

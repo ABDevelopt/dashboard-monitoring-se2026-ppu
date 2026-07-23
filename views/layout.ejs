@@ -1464,15 +1464,14 @@
       }
 
       // 3. Theme Toggle Button Click
-      const themeToggleBtn = e.target.closest('#themeToggle');
+      const themeToggleBtn = e.target.closest('#themeToggle, #themeToggleAgent, .theme-toggle-btn');
       if (themeToggleBtn) {
         e.preventDefault();
         document.body.classList.toggle('light-mode');
         const isLight = document.body.classList.contains('light-mode');
         localStorage.setItem('theme', isLight ? 'light' : 'dark');
         
-        const themeIcon = document.getElementById('themeIcon');
-        if (themeIcon) {
+        document.querySelectorAll('#themeIcon, .theme-icon').forEach(themeIcon => {
           if (isLight) {
             themeIcon.classList.remove('bi-moon-fill');
             themeIcon.classList.add('bi-sun-fill');
@@ -1480,7 +1479,7 @@
             themeIcon.classList.remove('bi-sun-fill');
             themeIcon.classList.add('bi-moon-fill');
           }
-        }
+        });
         
         // Dispatch event for charts to adapt
         window.dispatchEvent(new Event('themechange'));
@@ -3581,14 +3580,8 @@
       }
 
       function initNotificationBell() {
-        const bellBtn = document.getElementById('notificationBellBtn');
-        const bellDropdown = document.getElementById('notificationBellDropdown');
-        const bellBadge = document.getElementById('notificationBellBadge');
-        const bellIcon = document.getElementById('notificationBellIcon');
-        const bellList = document.getElementById('notificationBellList');
-        const clearBadgeBtn = document.getElementById('clearNotificationBadge');
-
-        if (!bellBtn || !bellDropdown) return;
+        const bellBtns = document.querySelectorAll('#notificationBellBtn, #notificationBellBtnAgent, .notification-bell-btn');
+        if (!bellBtns.length) return;
 
         function updateBellStateInternal() {
           const storedMuatan = localStorage.getItem('last_seen_muatan_date');
@@ -3597,16 +3590,15 @@
           let isMuatanNew = latestMuatanDate && storedMuatan !== latestMuatanDate;
           let isFasihNew = latestFasihDate && storedFasih !== latestFasihDate;
 
+          const bellBadges = document.querySelectorAll('#notificationBellBadge, #notificationBellBadgeAgent, .notification-bell-badge');
+          const bellIcons = document.querySelectorAll('#notificationBellIcon, #notificationBellIconAgent, .notification-bell-icon');
+          const clearBadgeBtns = document.querySelectorAll('#clearNotificationBadge, #clearNotificationBadgeAgent, .clear-notification-badge');
+          const bellLists = document.querySelectorAll('#notificationBellList, #notificationBellListAgent, .notification-bell-list');
+
           // Show/hide red badge and style bell
-          if (isMuatanNew || isFasihNew) {
-            if (bellBadge) bellBadge.style.display = 'block';
-            if (bellIcon) bellIcon.style.color = '#f59e0b'; // Gold color for active notifications
-            if (clearBadgeBtn) clearBadgeBtn.style.display = 'inline';
-          } else {
-            if (bellBadge) bellBadge.style.display = 'none';
-            if (bellIcon) bellIcon.style.color = 'var(--text-muted)';
-            if (clearBadgeBtn) clearBadgeBtn.style.display = 'none';
-          }
+          bellBadges.forEach(badge => badge.style.display = (isMuatanNew || isFasihNew) ? 'block' : 'none');
+          bellIcons.forEach(icon => icon.style.color = (isMuatanNew || isFasihNew) ? '#f59e0b' : 'var(--text-muted)');
+          clearBadgeBtns.forEach(btn => btn.style.display = (isMuatanNew || isFasihNew) ? 'inline' : 'none');
 
           // Build list items
           let html = '';
@@ -3637,7 +3629,7 @@
           if (!latestMuatanDate && !latestFasihDate) {
             html = '<div style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 12px 0;">Belum ada riwayat update.</div>';
           }
-          if (bellList) bellList.innerHTML = html;
+          bellLists.forEach(list => list.innerHTML = html);
         }
 
         function markAllAsRead() {
@@ -3657,28 +3649,30 @@
         // Initialize state
         updateBellStateInternal();
 
-        bellBtn.onclick = (e) => {
-          e.stopPropagation();
-          const isOpen = bellDropdown.classList.contains('is-open');
-          
-          // Close target dropdown if open
-          const targetDrop = document.getElementById('targetSelectorDropdown');
-          if (targetDrop) targetDrop.classList.remove('is-open');
+        bellBtns.forEach(btn => {
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            const wrapper = btn.closest('.topbar-dropdown-wrapper');
+            const dropdown = wrapper ? wrapper.querySelector('.topbar-dropdown') : null;
+            if (!dropdown) return;
+            const isOpen = dropdown.classList.contains('is-open');
+            
+            // Close all topbar dropdowns first
+            document.querySelectorAll('.topbar-dropdown').forEach(d => d.classList.remove('is-open'));
 
-          if (isOpen) {
-            bellDropdown.classList.remove('is-open');
-          } else {
-            updateBellStateInternal();
-            bellDropdown.classList.add('is-open');
-          }
-        };
+            if (!isOpen) {
+              updateBellStateInternal();
+              dropdown.classList.add('is-open');
+            }
+          };
+        });
 
-        if (clearBadgeBtn) {
-          clearBadgeBtn.onclick = (e) => {
+        document.querySelectorAll('#clearNotificationBadge, #clearNotificationBadgeAgent, .clear-notification-badge').forEach(btn => {
+          btn.onclick = (e) => {
             e.stopPropagation();
             markAllAsRead();
           };
-        }
+        });
       }
 
       window.initNotificationBell = initNotificationBell;
@@ -3686,17 +3680,12 @@
 
       // Document click listener to close all topbar dropdowns — registered once globally
       document.addEventListener('click', (e) => {
-        const bellDropdown = document.getElementById('notificationBellDropdown');
-        const bellBtn = document.getElementById('notificationBellBtn');
-        const targetDrop = document.getElementById('targetSelectorDropdown');
-        const targetBtn = document.getElementById('targetSelectorBtn');
-        
-        if (bellDropdown && !bellDropdown.contains(e.target) && (!bellBtn || !bellBtn.contains(e.target))) {
-          bellDropdown.classList.remove('is-open');
-        }
-        if (targetDrop && !targetDrop.contains(e.target) && (!targetBtn || !targetBtn.contains(e.target))) {
-          targetDrop.classList.remove('is-open');
-        }
+        document.querySelectorAll('.topbar-dropdown').forEach(dropdown => {
+          const wrapper = dropdown.closest('.topbar-dropdown-wrapper');
+          if (wrapper && !wrapper.contains(e.target)) {
+            dropdown.classList.remove('is-open');
+          }
+        });
       });
     });
   })();
