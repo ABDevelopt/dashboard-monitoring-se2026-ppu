@@ -35,73 +35,261 @@
     flex-shrink: 0;
   }
 
-  .map-container-wrap {
-    display: flex;
-    gap: 20px;
-    height: calc(100vh - var(--header-height) - 150px);
-    min-height: 540px;
-    margin-top: 4px;
-  }
-  
-  .map-sidebar-panel {
-    width: 350px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    height: 100%;
-    max-height: 100%;
-    overflow-y: auto !important;
-    overflow-x: hidden;
-    padding-right: 4px;
-    flex-shrink: 0;
-    box-sizing: border-box;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-  }
-
-  .map-sidebar-panel .card {
-    overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
-    min-height: auto !important;
-    flex-shrink: 0;
-  }
-
-  #mapSummaryStats {
-    overflow: visible !important;
-    max-height: none !important;
-  }
-
-  .map-sidebar-panel::-webkit-scrollbar {
-    width: 5px;
-  }
-  .map-sidebar-panel::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .map-sidebar-panel::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 4px;
-  }
-  .map-sidebar-panel::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-blue);
-  }
-
-  .map-canvas-container {
-    flex: 1;
+  /* Google Maps Style Floating Overlay Layout */
+  .gmaps-container-wrap {
     position: relative;
-    height: 100%;
-    min-height: 480px;
+    width: 100%;
+    height: calc(100vh - var(--header-height) - 30px);
+    min-height: 580px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
   }
 
-  #map {
+  .gmaps-container-wrap .map-canvas-container {
     width: 100%;
     height: 100%;
-    min-height: 480px;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+  }
+
+  .gmaps-container-wrap #map {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    border-radius: 0;
+    border: none;
     background: var(--bg-secondary);
-    box-shadow: var(--shadow);
     z-index: 10;
+  }
+
+  /* Floating Search & Filter Bar (Top Left) */
+  .gmaps-floating-search-panel {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 1000;
+    width: 440px;
+    max-width: calc(100% - 28px);
+    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  body.light-mode .gmaps-floating-search-panel {
+    background: rgba(255, 255, 255, 0.92);
+  }
+
+  .gmaps-search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 4px 12px;
+  }
+
+  .gmaps-search-box .search-icon {
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .gmaps-search-box input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-size: 12px;
+  }
+
+  .gmaps-icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+
+  .gmaps-icon-btn:hover {
+    color: var(--accent-blue);
+  }
+
+  .gmaps-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .gmaps-filter-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gmaps-select-pill {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-size: 11px;
+    border-radius: 99px;
+    padding: 4px 10px;
+    cursor: pointer;
+  }
+
+  .gmaps-pill-group {
+    display: inline-flex;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 2px;
+  }
+
+  .gmaps-pill-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 10.5px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 99px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+
+  .gmaps-pill-btn.active {
+    background: var(--accent-blue);
+    color: white;
+    font-weight: 600;
+  }
+
+  /* Floating KPI Bar (Top Right) */
+  .gmaps-floating-kpi-bar {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .gmaps-kpi-pill {
+    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 5px 12px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  }
+
+  body.light-mode .gmaps-kpi-pill {
+    background: rgba(255, 255, 255, 0.92);
+  }
+
+  /* Floating Info & Legend Drawer Card (Bottom Left) */
+  .gmaps-floating-drawer-card {
+    position: absolute;
+    bottom: 20px;
+    left: 14px;
+    z-index: 1000;
+    width: 360px;
+    max-width: calc(100% - 28px);
+    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.90);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    transition: max-height 0.3s ease, transform 0.3s ease;
+  }
+
+  body.light-mode .gmaps-floating-drawer-card {
+    background: rgba(255, 255, 255, 0.94);
+  }
+
+  .gmaps-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .gmaps-drawer-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .gmaps-tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .gmaps-tab-btn.active {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--accent-blue);
+  }
+
+  .gmaps-collapse-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .gmaps-drawer-content {
+    padding: 12px;
+    max-height: 280px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  .gmaps-floating-drawer-card.collapsed .gmaps-drawer-content {
+    display: none;
   }
 
   .map-legend-item {
@@ -239,268 +427,127 @@
     color: var(--accent-blue) !important;
   }
 
-  .map-layer-selector {
-    display: flex;
-    background: var(--bg-secondary);
-    border-radius: var(--radius-sm);
-    padding: 3px;
-    margin-top: 6px;
-    border: 1px solid var(--border);
-  }
-
-  .map-layer-btn {
-    flex: 1;
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
-    padding: 7px 10px;
-    font-size: 11px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: var(--transition);
-  }
-
-  .map-layer-btn.active {
-    background: var(--bg-card);
-    color: var(--accent-blue);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .map-card-stat {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .map-card-stat:last-child {
-    border-bottom: none;
-  }
-  .map-card-label {
-    font-size: 12px;
-    color: var(--text-secondary);
-  }
-  .map-card-value {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .map-quick-tools {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    z-index: 1000;
-    display: flex;
-    gap: 8px;
-  }
-
-  .mobile-map-toggle-bar {
-    display: none;
-  }
-
-  @media (max-width: 992px) {
-    .map-kpi-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
+  @media (max-width: 768px) {
+    .gmaps-container-wrap {
+      height: calc(100vh - var(--header-height) - 80px);
+      min-height: 480px;
     }
-
-    .mobile-map-toggle-bar {
-      display: block !important;
-      margin-bottom: 12px;
+    .gmaps-floating-search-panel {
+      width: calc(100% - 24px);
+      left: 12px;
+      top: 12px;
     }
-
-    .map-container-wrap {
-      flex-direction: column !important;
-      height: auto !important;
-      min-height: 0 !important;
+    .gmaps-floating-kpi-bar {
+      top: auto;
+      bottom: 210px;
+      right: 12px;
+      left: 12px;
+      justify-content: space-between;
     }
-
-    .map-canvas-container {
-      width: 100% !important;
-      height: 480px !important;
-      min-height: 480px !important;
-    }
-
-    #map {
-      width: 100% !important;
-      height: 480px !important;
-      min-height: 480px !important;
-    }
-
-    .map-sidebar-panel {
-      width: 100% !important;
-      max-height: none !important;
-    }
-
-    .map-container-wrap.show-info-mobile .map-canvas-container {
-      display: none !important;
-    }
-
-    .map-container-wrap.show-info-mobile .map-sidebar-panel {
-      display: flex !important;
-      width: 100% !important;
-    }
-
-    .map-container-wrap.show-map-mobile .map-sidebar-panel {
-      display: none !important;
-    }
-
-    .map-container-wrap.show-map-mobile .map-canvas-container {
-      display: block !important;
-      width: 100% !important;
-      height: 480px !important;
-      min-height: 480px !important;
-    }
-  }
-
-  @media (max-width: 576px) {
-    .map-kpi-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    .map-kpi-card {
-      padding: 10px 12px;
-      gap: 8px;
-    }
-    .map-kpi-icon {
-      width: 32px;
-      height: 32px;
-      font-size: 16px;
+    .gmaps-floating-drawer-card {
+      left: 12px;
+      bottom: 12px;
+      width: calc(100% - 24px);
     }
   }
 </style>
 
 <div class="fade-in">
-    <!-- SUMMARY KPI CARDS -->
-    <div class="map-kpi-grid">
-      <!-- KPI 1: Total Wilayah -->
-      <div class="map-kpi-card">
-        <div class="map-kpi-icon" style="background: rgba(59, 130, 246, 0.12); color: var(--accent-blue);">
-          <i class="bi bi-map-fill"></i>
-        </div>
-        <div>
-          <div style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">Total Wilayah Desa</div>
-          <div id="statTotalDesa" style="font-size: 16px; font-weight: 700; color: var(--text-primary);">-- Desa</div>
-        </div>
+  <div id="gmapsWrapper" class="gmaps-container-wrap">
+    
+    <!-- 1. FULLSCREEN MAP CANVAS (PETA UTAMA SEBAGAI FOKUS LENGKAP) -->
+    <div class="map-canvas-container">
+      <div id="mapLoading" class="loading-overlay">
+        <div class="spinner"></div>
+        <div id="loadingStatusText" style="font-size: 13px; font-weight: 500;">Memuat Peta Spasial Penajam Paser Utara...</div>
       </div>
-
-      <!-- KPI 2: 100% Selesai -->
-      <div class="map-kpi-card">
-        <div class="map-kpi-icon" style="background: rgba(34, 197, 94, 0.12); color: var(--accent-green);">
-          <i class="bi bi-check-circle-fill"></i>
-        </div>
-        <div>
-          <div style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">Target 100% FASIH</div>
-          <div id="statDesa100" style="font-size: 16px; font-weight: 700; color: var(--accent-green);">-- Desa</div>
-        </div>
-      </div>
-
-      <!-- KPI 3: Progres 25%-99% -->
-      <div class="map-kpi-card">
-        <div class="map-kpi-icon" style="background: rgba(234, 179, 8, 0.12); color: var(--accent-yellow);">
-          <i class="bi bi-hourglass-split"></i>
-        </div>
-        <div>
-          <div style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">Progres On Track (25-99%)</div>
-          <div id="statDesaHigh" style="font-size: 16px; font-weight: 700; color: var(--accent-yellow);">-- Desa</div>
-        </div>
-      </div>
-
-      <!-- KPI 4: Perlu Perhatian (<25%) -->
-      <div class="map-kpi-card">
-        <div class="map-kpi-icon" style="background: rgba(239, 68, 68, 0.12); color: var(--accent-red);">
-          <i class="bi bi-exclamation-triangle-fill"></i>
-        </div>
-        <div>
-          <div style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">Perlu Perhatian (&lt;25%)</div>
-          <div id="statDesaLow" style="font-size: 16px; font-weight: 700; color: var(--accent-red);">-- Desa</div>
-        </div>
-      </div>
+      <div id="map"></div>
     </div>
 
-    <!-- MOBILE VIEW TOGGLE BAR -->
-    <div class="mobile-map-toggle-bar">
-      <div class="map-layer-selector" style="margin: 0; background: var(--bg-card);">
-        <button id="btnMobileMapTab" class="map-layer-btn active"><i class="bi bi-map"></i> Tampilan Peta Spasial</button>
-        <button id="btnMobileInfoTab" class="map-layer-btn"><i class="bi bi-sliders"></i> Filter &amp; Detail Wilayah</button>
+    <!-- 2. FLOATING TOP SEARCH & FILTER BAR (GOOGLE MAPS STYLE SEARCH PILL) -->
+    <div class="gmaps-floating-search-panel">
+      <div class="gmaps-search-box">
+        <i class="bi bi-search search-icon"></i>
+        <input type="text" id="mapSearchInput" placeholder="Cari nama desa atau SLS..." />
+        <button id="btnResetView" class="gmaps-icon-btn" title="Reset Pandangan Peta">
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
       </div>
-    </div>
-
-    <!-- MAIN MAP CONTENT CONTAINER -->
-    <div id="mapContainerWrap" class="map-container-wrap show-map-mobile">
       
-      <!-- SIDEBAR PANEL -->
-      <div class="map-sidebar-panel">
+      <div class="gmaps-filter-row">
+        <select id="kecFilter" class="gmaps-select-pill">
+          <option value="">-- Semua Kecamatan --</option>
+          <option value="BABULU">Kec. Babulu</option>
+          <option value="WARU">Kec. Waru</option>
+          <option value="PENAJAM">Kec. Penajam</option>
+          <option value="SEPAKU">Kec. Sepaku</option>
+        </select>
         
-        <!-- CONTROL CARD -->
-        <div class="card map-card-control" style="margin-bottom: 0;">
-          <div class="card-header" style="margin-bottom: 10px; padding-bottom: 0; display: flex; justify-content: space-between; align-items: center;">
-            <div class="card-title"><i class="bi bi-sliders"></i> Kontrol &amp; Filter Peta</div>
-            <button id="btnResetView" class="btn btn-secondary btn-xs" title="Reset Pandangan Peta">
-              <i class="bi bi-arrow-counterclockwise"></i> Reset
-            </button>
-          </div>
-          
-          <!-- SEARCH WILAYAH -->
-          <div class="form-group" style="margin-bottom: 10px;">
-            <label for="mapSearchInput" style="font-size: 11px; font-weight: 600; margin-bottom: 4px; display: block; color: var(--text-secondary);">Cari Nama Desa / SLS</label>
-            <div style="position: relative;">
-              <input type="text" id="mapSearchInput" placeholder="Ketik nama desa atau SLS..." style="width: 100%; padding: 7px 30px 7px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 12px;" />
-              <i class="bi bi-search" style="position: absolute; right: 10px; top: 8px; color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
-            </div>
-          </div>
-
-          <!-- KECAMATAN FILTER -->
-          <div class="form-group" style="margin-bottom: 10px;">
-            <label for="kecFilter" style="font-size: 11px; font-weight: 600; margin-bottom: 4px; display: block; color: var(--text-secondary);">Kecamatan</label>
-            <select id="kecFilter" style="width: 100%; padding: 7px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 12px; cursor: pointer;">
-              <option value="">-- Tampilkan Semua Kecamatan --</option>
-              <option value="BABULU">Kec. Babulu</option>
-              <option value="WARU">Kec. Waru</option>
-              <option value="PENAJAM">Kec. Penajam</option>
-              <option value="SEPAKU">Kec. Sepaku</option>
-            </select>
-          </div>
-
-          <!-- TINGKAT WILAYAH -->
-          <div class="form-group" style="margin-bottom: 10px;">
-            <label style="font-size: 11px; font-weight: 600; margin-bottom: 4px; display: block; color: var(--text-secondary);">Tingkat Batas Wilayah</label>
-            <div class="map-layer-selector">
-              <button id="btnLayerDesa" class="map-layer-btn active" aria-pressed="true">Batas Desa</button>
-              <button id="btnLayerSls" class="map-layer-btn" aria-pressed="false">Batas SLS</button>
-            </div>
-          </div>
-
-          <!-- BASEMAP TYPE SELECTOR -->
-          <div class="form-group">
-            <label style="font-size: 11px; font-weight: 600; margin-bottom: 4px; display: block; color: var(--text-secondary);">Tipe Peta Dasar (Basemap)</label>
-            <div class="map-layer-selector">
-              <button id="btnBasemapDefault" class="map-layer-btn active">Vektor Standard</button>
-              <button id="btnBasemapSatellite" class="map-layer-btn">Foto Satelit</button>
-            </div>
-          </div>
+        <div class="gmaps-pill-group">
+          <button id="btnLayerDesa" class="gmaps-pill-btn active"><i class="bi bi-geo"></i> Desa</button>
+          <button id="btnLayerSls" class="gmaps-pill-btn"><i class="bi bi-pin-map"></i> SLS</button>
         </div>
 
-        <!-- STATS CARD -->
-        <div class="card map-card-stats" style="margin-bottom: 0;">
-          <div class="card-header" style="margin-bottom: 8px; padding-bottom: 0;">
-            <div class="card-title"><i class="bi bi-card-list"></i> Detail Wilayah Terpilih</div>
-          </div>
+        <div class="gmaps-pill-group">
+          <button id="btnBasemapDefault" class="gmaps-pill-btn active"><i class="bi bi-map"></i> Vektor</button>
+          <button id="btnBasemapSatellite" class="gmaps-pill-btn"><i class="bi bi-globe-americas"></i> Satelit</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. FLOATING KPI OVERLAY BAR (TOP RIGHT) -->
+    <div class="gmaps-floating-kpi-bar">
+      <div class="gmaps-kpi-pill">
+        <i class="bi bi-map-fill" style="color: var(--accent-blue);"></i>
+        <span class="label">Total:</span>
+        <strong id="statTotalDesa">-- Desa</strong>
+      </div>
+      <div class="gmaps-kpi-pill">
+        <i class="bi bi-check-circle-fill" style="color: var(--accent-green);"></i>
+        <span class="label">100%:</span>
+        <strong id="statDesa100" style="color: var(--accent-green);">-- Desa</strong>
+      </div>
+      <div class="gmaps-kpi-pill">
+        <i class="bi bi-hourglass-split" style="color: var(--accent-yellow);"></i>
+        <span class="label">25-99%:</span>
+        <strong id="statDesaHigh" style="color: var(--accent-yellow);">-- Desa</strong>
+      </div>
+      <div class="gmaps-kpi-pill">
+        <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red);"></i>
+        <span class="label">&lt;25%:</span>
+        <strong id="statDesaLow" style="color: var(--accent-red);">-- Desa</strong>
+      </div>
+    </div>
+
+    <!-- 4. FLOATING SIDE CARD DRAWER (LEFT SIDE) FOR STATS & LEGEND -->
+    <div class="gmaps-floating-drawer-card" id="gmapsDrawerCard">
+      <div class="gmaps-drawer-header">
+        <div class="gmaps-drawer-tabs">
+          <button type="button" class="gmaps-tab-btn active" id="tabBtnStats" onclick="switchGmapsTab('stats')">
+            <i class="bi bi-card-list"></i> Detail Wilayah
+          </button>
+          <button type="button" class="gmaps-tab-btn" id="tabBtnLegend" onclick="switchGmapsTab('legend')">
+            <i class="bi bi-palette"></i> Legenda
+          </button>
+        </div>
+        <button type="button" class="gmaps-collapse-btn" onclick="toggleGmapsDrawer()" title="Sembunyikan / Tampilkan Panel">
+          <i class="bi bi-chevron-down" id="drawerCollapseIcon"></i>
+        </button>
+      </div>
+
+      <div class="gmaps-drawer-content" id="gmapsDrawerContent">
+        <!-- TAB 1: STATS -->
+        <div id="gmapsStatsTabContent">
           <div id="mapSummaryStats">
-            <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 24px 12px;">
-              <i class="bi bi-geo-alt-fill" style="font-size: 28px; color: var(--accent-blue); display: block; margin-bottom: 8px; opacity: 0.7;"></i>
-              Klik salah satu batas desa atau SLS pada peta untuk melihat rincian progres kinerja di sini.
+            <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 20px 10px;">
+              <i class="bi bi-geo-alt-fill" style="font-size: 26px; color: var(--accent-blue); display: block; margin-bottom: 6px; opacity: 0.8;"></i>
+              Klik salah satu wilayah pada peta untuk melihat rincian progres di sini.
             </div>
           </div>
         </div>
 
-        <!-- LEGEND CARD -->
-        <div class="card map-card-legend" style="margin-bottom: 0;">
-          <div class="card-header" style="margin-bottom: 8px; padding-bottom: 0;">
-            <div class="card-title"><i class="bi bi-info-circle"></i> Legenda Warna Capaian</div>
-          </div>
-          
+        <!-- TAB 2: LEGEND -->
+        <div id="gmapsLegendTabContent" style="display: none;">
           <div id="legendDesa">
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Persentase Realisasi FASIH Desa:</div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>100%</strong> FASIH (Target Selesai)</span></div>
@@ -516,22 +563,47 @@
             <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span>Target FASIH Belum Tercapai</span></div>
           </div>
         </div>
-
       </div>
-
-      <!-- MAP CANVAS -->
-      <div class="map-canvas-container">
-        <div id="mapLoading" class="loading-overlay">
-          <div class="spinner"></div>
-          <div id="loadingStatusText" style="font-size: 13px; font-weight: 500;">Memuat Peta Spasial Penajam Paser Utara...</div>
-        </div>
-        <div id="map"></div>
-      </div>
-
     </div>
+
+  </div>
+</div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+      window.switchGmapsTab = function(tabName) {
+        const statsTab = document.getElementById('gmapsStatsTabContent');
+        const legendTab = document.getElementById('gmapsLegendTabContent');
+        const btnStats = document.getElementById('tabBtnStats');
+        const btnLegend = document.getElementById('tabBtnLegend');
+        
+        if (tabName === 'stats') {
+          if (statsTab) statsTab.style.display = 'block';
+          if (legendTab) legendTab.style.display = 'none';
+          if (btnStats) btnStats.classList.add('active');
+          if (btnLegend) btnLegend.classList.remove('active');
+        } else {
+          if (statsTab) statsTab.style.display = 'none';
+          if (legendTab) legendTab.style.display = 'block';
+          if (btnStats) btnStats.classList.remove('active');
+          if (btnLegend) btnLegend.classList.add('active');
+        }
+      };
+
+      window.toggleGmapsDrawer = function() {
+        const card = document.getElementById('gmapsDrawerCard');
+        const icon = document.getElementById('drawerCollapseIcon');
+        if (!card) return;
+        card.classList.toggle('collapsed');
+        if (icon) {
+          if (card.classList.contains('collapsed')) {
+            icon.className = 'bi bi-chevron-up';
+          } else {
+            icon.className = 'bi bi-chevron-down';
+          }
+        }
+      };
+
       document.addEventListener('DOMContentLoaded', () => {
         // Initial setup
         const centerCoords = [-1.30, 116.65];
