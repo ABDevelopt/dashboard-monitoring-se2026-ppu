@@ -59,30 +59,55 @@
     scrollbar-color: var(--border) var(--bg-secondary);
   }
 
-  .map-sidebar-panel::-webkit-scrollbar {
-    width: 6px;
+  .map-sidebar-panel .card {
+    max-height: 380px;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
   }
-  .map-sidebar-panel::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
+
+  .map-sidebar-panel::-webkit-scrollbar,
+  .map-sidebar-panel .card::-webkit-scrollbar,
+  #mapSummaryStats::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .map-sidebar-panel::-webkit-scrollbar-track,
+  .map-sidebar-panel .card::-webkit-scrollbar-track,
+  #mapSummaryStats::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.04);
     border-radius: 4px;
   }
-  .map-sidebar-panel::-webkit-scrollbar-thumb {
+  .map-sidebar-panel::-webkit-scrollbar-thumb,
+  .map-sidebar-panel .card::-webkit-scrollbar-thumb,
+  #mapSummaryStats::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 4px;
   }
-  .map-sidebar-panel::-webkit-scrollbar-thumb:hover {
-    background: var(--text-muted);
+  .map-sidebar-panel::-webkit-scrollbar-thumb:hover,
+  .map-sidebar-panel .card::-webkit-scrollbar-thumb:hover,
+  #mapSummaryStats::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-blue);
+  }
+
+  #mapSummaryStats {
+    max-height: 280px;
+    overflow-y: auto !important;
+    padding-right: 4px;
   }
 
   .map-canvas-container {
     flex: 1;
     position: relative;
     height: 100%;
+    min-height: 480px;
   }
 
   #map {
     width: 100%;
     height: 100%;
+    min-height: 480px;
     border-radius: var(--radius);
     border: 1px solid var(--border);
     background: var(--bg-secondary);
@@ -298,9 +323,26 @@
     }
 
     .map-container-wrap {
-      flex-direction: column;
-      height: auto;
-      min-height: 0;
+      flex-direction: column !important;
+      height: auto !important;
+      min-height: 0 !important;
+    }
+
+    .map-canvas-container {
+      width: 100% !important;
+      height: 480px !important;
+      min-height: 480px !important;
+    }
+
+    #map {
+      width: 100% !important;
+      height: 480px !important;
+      min-height: 480px !important;
+    }
+
+    .map-sidebar-panel {
+      width: 100% !important;
+      max-height: none !important;
     }
 
     .map-container-wrap.show-info-mobile .map-canvas-container {
@@ -319,8 +361,8 @@
     .map-container-wrap.show-map-mobile .map-canvas-container {
       display: block !important;
       width: 100% !important;
-      height: calc(100vh - var(--header-height) - 220px) !important;
-      min-height: 420px !important;
+      height: 480px !important;
+      min-height: 480px !important;
     }
   }
 
@@ -590,9 +632,9 @@
             btnMobileMapTab.classList.add('active');
             mapContainerWrap.classList.remove('show-info-mobile');
             mapContainerWrap.classList.add('show-map-mobile');
-            setTimeout(() => {
-              map.invalidateSize();
-            }, 100);
+            map.invalidateSize();
+            setTimeout(() => map.invalidateSize(), 150);
+            setTimeout(() => map.invalidateSize(), 400);
           });
 
           btnMobileInfoTab.addEventListener('click', () => {
@@ -602,6 +644,11 @@
             mapContainerWrap.classList.add('show-info-mobile');
           });
         }
+
+        // Global resize and initial invalidate to ensure mobile map renders
+        setTimeout(() => map.invalidateSize(), 200);
+        setTimeout(() => map.invalidateSize(), 600);
+        window.addEventListener('resize', () => map.invalidateSize());
 
         // Styles
         function getBorderColor() {
