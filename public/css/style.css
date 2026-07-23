@@ -3702,3 +3702,29 @@ body.light-mode .skeleton-block {
   .topbar-dropdown--right { right: 8px !important; }
 }
 
+/* Fullscreen AI Chat View (Keep Sidebar, Hide Topbar & Breadcrumb) */
+body.page-agent .topbar,
+body.page-agent #breadcrumb-bar {
+  display: none !important;
+}
+
+body.page-agent .main-wrapper {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+body.page-agent .page-content {
+  padding: 0 !important;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+
+body.page-agent .sidebar {
+  height: 100vh !important;
+}
+

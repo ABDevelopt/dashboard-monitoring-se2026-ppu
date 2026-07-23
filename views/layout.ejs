@@ -57,7 +57,7 @@
     }
   </style>
 </head>
-<body<% if (typeof activePage !== 'undefined' && activePage === 'login') { %> class="page-login"<% } %>>
+<body class="<%= (typeof activePage !== 'undefined' && activePage === 'login') ? 'page-login' : '' %> <%= (typeof activePage !== 'undefined' && activePage === 'agent') ? 'page-agent' : '' %>">
 <script>
   // Apply saved theme immediately to prevent flashing
   if (localStorage.getItem('theme') === 'light') {
@@ -2795,6 +2795,12 @@
       if (!targetUrl) return;
       try {
         const targetPath = new URL(targetUrl, window.location.origin).pathname;
+        if (targetPath === '/agent') {
+          document.body.classList.add('page-agent');
+        } else {
+          document.body.classList.remove('page-agent');
+        }
+
         document.querySelectorAll('.sidebar .nav-item').forEach(item => {
           const itemHref = item.getAttribute('href');
           if (itemHref) {

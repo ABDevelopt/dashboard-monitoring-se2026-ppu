@@ -15,13 +15,13 @@
       flex-direction: column !important;
       overflow: hidden !important;
       padding: 0 !important;
-      padding-top: calc(var(--header-height) + 36px) !important; /* Header + Breadcrumb */
+      padding-top: 0 !important;
       padding-bottom: 0 !important;
     }
     
     @media (max-width: 768px) {
       .page-content {
-        padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px) + 32px) !important;
+        padding-top: 0 !important;
         padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important; /* Offset by bottom nav */
       }
     }
@@ -731,6 +731,9 @@
   <div class="chat-wrapper">
     <div class="chat-header">
       <div class="chat-header-title">
+        <button class="btn btn-secondary btn-sm" id="sidebarToggleAgent" onclick="document.body.classList.toggle('sidebar-collapsed'); if(typeof window.dispatchEvent==='function') window.dispatchEvent(new Event('resize'));" style="padding: 4px 8px; font-size: 13px; margin-right: 6px; display: inline-flex; align-items: center; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer;" title="Sembunyikan / Tampilkan Sidebar">
+          <i class="bi bi-layout-sidebar-inset"></i>
+        </button>
         <i class="bi bi-robot"></i>
         <div>
           <span>Asisten AI Sensus Ekonomi 2026</span>
