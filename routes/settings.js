@@ -100,6 +100,20 @@ router.post('/chatbot', (req, res) => {
     }
   }
 
+  // Handle backup API keys specifically
+  let backupKeys = req.body.gemini_backup_keys;
+  if (!backupKeys) {
+    updatedSettings['gemini_backup_api_keys'] = '[]';
+  } else {
+    if (!Array.isArray(backupKeys)) {
+      backupKeys = [backupKeys];
+    }
+    const cleanedKeys = backupKeys
+      .map(k => k.trim())
+      .filter(k => k.length > 0);
+    updatedSettings['gemini_backup_api_keys'] = JSON.stringify(cleanedKeys);
+  }
+
   try {
     updateSettings(updatedSettings);
     req.flash('success', 'Pengaturan Chatbot AI berhasil diperbarui.');

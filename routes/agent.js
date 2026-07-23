@@ -46,7 +46,7 @@ router.get('/', (req, res) => {
 
   const geminiModels = settings.gemini_models_list
     ? settings.gemini_models_list.split(',').map(m => m.trim()).filter(Boolean)
-    : ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.5-flash'];
+    : ['gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-2.5-pro'];
   if (settings.gemini_model && !geminiModels.includes(settings.gemini_model)) {
     geminiModels.push(settings.gemini_model);
   }

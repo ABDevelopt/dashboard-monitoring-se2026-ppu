@@ -131,11 +131,34 @@
       -webkit-backdrop-filter: blur(12px);
     }
     
-    @media (max-width: 576px) {
-      .sticky-action-bar {
-        bottom: 15px;
-        padding: 12px 16px;
-        margin-top: 20px;
+    @media (max-width: 768px) {
+      .settings-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+      }
+      .settings-group {
+        grid-column: 1 / -1 !important;
+        padding: 16px !important;
+      }
+      .floating-save-btn {
+        position: static !important;
+        width: 100% !important;
+        justify-content: center !important;
+        margin-top: 0 !important;
+        border-radius: 50px !important;
+        padding: 12px 24px !important;
+        font-size: 13.5px !important;
+        transform: none !important;
+        box-shadow: 0 4px 14px rgba(13, 110, 253, 0.25) !important;
+      }
+      .save-btn-container {
+        width: 100% !important;
+        margin-top: 16px !important;
+        padding-top: 16px !important;
+      }
+      #agent_provider {
+        min-width: 100% !important;
+        width: 100% !important;
       }
     }
   </style>
@@ -201,8 +224,42 @@
             <i class="bi bi-google" style="color: #4285F4;"></i> Google Gemini
           </div>
           <div class="settings-field">
-            <label for="gemini_api_key">Gemini API Key</label>
+            <label for="gemini_api_key">Gemini API Key Utama</label>
             <input type="password" id="gemini_api_key" name="gemini_api_key" value="<%= settings.gemini_api_key || '' %>" autocomplete="off" placeholder="Masukkan Gemini API key">
+          </div>
+          <%
+            let backupKeys = [];
+            try {
+              if (settings.gemini_backup_api_keys) {
+                backupKeys = JSON.parse(settings.gemini_backup_api_keys);
+              }
+            } catch (e) {
+              if (settings.gemini_backup_api_keys) {
+                backupKeys = settings.gemini_backup_api_keys.split(',').map(k => k.trim());
+              }
+            }
+          %>
+          <div class="settings-field">
+            <label>Gemini API Key Cadangan (Backup)</label>
+            <div id="gemini-backup-keys-container" style="display: flex; flex-direction: column; gap: 8px;">
+              <% if (backupKeys.length === 0) { %>
+                <div class="backup-key-row" style="display: flex; gap: 8px; align-items: center;">
+                  <input type="password" name="gemini_backup_keys" placeholder="Masukkan Backup API key" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
+                  <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;"><i class="bi bi-trash"></i></button>
+                </div>
+              <% } else { %>
+                <% backupKeys.forEach((key, idx) => { %>
+                  <div class="backup-key-row" style="display: flex; gap: 8px; align-items: center; margin-top: <%= idx > 0 ? '8px' : '0' %>;">
+                    <input type="password" name="gemini_backup_keys" value="<%= key %>" placeholder="Masukkan Backup API key" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
+                    <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;"><i class="bi bi-trash"></i></button>
+                  </div>
+                <% }) %>
+              <% } %>
+            </div>
+            <button type="button" class="btn btn-secondary btn-xs" onclick="addBackupKey()" style="font-size: 11px; padding: 6px 12px; margin-top: 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="bi bi-plus-lg"></i> Tambah Backup Key
+            </button>
+            <p class="settings-hint" style="margin-top: 6px;">Kunci cadangan akan digunakan secara bergilir jika API Key utama mengalami error atau tidak memberikan respons.</p>
           </div>
           <div class="settings-field">
             <label for="gemini_model">Default Gemini Model</label>
@@ -257,11 +314,39 @@
 
       </div>
 
-      <div class="sticky-action-bar">
-        <button type="submit" class="btn btn-primary" style="padding: 12px 28px; font-weight: 700; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+      <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px;">
+        <button type="submit" class="btn btn-primary floating-save-btn">
           <i class="bi bi-save-fill"></i> Simpan Pengaturan Chatbot
         </button>
       </div>
     </form>
   </div>
+
+  <script>
+    function addBackupKey() {
+      const container = document.getElementById('gemini-backup-keys-container');
+      const row = document.createElement('div');
+      row.className = 'backup-key-row';
+      row.style.display = 'flex';
+      row.style.gap = '8px';
+      row.style.alignItems = 'center';
+      row.style.marginTop = '8px';
+      row.innerHTML = `
+        <input type="password" name="gemini_backup_keys" placeholder="Masukkan Backup API key" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
+        <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;"><i class="bi bi-trash"></i></button>
+      `;
+      container.appendChild(row);
+    }
+    
+    function removeBackupKey(button) {
+      const row = button.closest('.backup-key-row');
+      const container = document.getElementById('gemini-backup-keys-container');
+      if (container.querySelectorAll('.backup-key-row').length > 1) {
+        row.remove();
+      } else {
+        // If it's the last one, just clear the input value instead of removing the row
+        row.querySelector('input').value = '';
+      }
+    }
+  </script>
 </div>

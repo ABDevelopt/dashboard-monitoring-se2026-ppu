@@ -18,49 +18,6 @@
   <% } else { %>
     <div id="ajax-container">
 
-    <!-- FILTER BAR -->
-    <div class="card">
-      <div class="card-header section-divider">
-        <div class="card-title"><i class="bi bi-search"></i> Filter Pencarian PCL</div>
-        <a href="/pcl" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
-      </div>
-      
-      <form action="/pcl" method="GET" id="filterForm">
-        <div class="filter-form-grid auto-grid">
-          
-          <div>
-            <label for="filterKec" class="ui-label">Kecamatan</label>
-            <select id="filterKec" name="kec" class="w-full">
-              <option value="">-- Semua Kecamatan --</option>
-              <% kecList.forEach(k => { %>
-                <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
-              <% }) %>
-            </select>
-          </div>
-
-          <div>
-            <label for="filterKorlap" class="ui-label">Koordinator Lapangan</label>
-            <select id="filterKorlap" name="korlap" class="w-full">
-              <option value="">-- Semua Korlap --</option>
-              <% korlapList.forEach(k => { %>
-                <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
-              <% }) %>
-            </select>
-          </div>
-
-          <div>
-            <label for="filterPml" class="ui-label">PML (Pengawas)</label>
-            <select id="filterPml" name="pml" class="w-full">
-              <option value="">-- Semua PML --</option>
-              <% pmlList.forEach(p => { %>
-                <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
-              <% }) %>
-            </select>
-          </div>
-
-        </div>
-      </form>
-    </div>
 
     <!-- TWO-COLUMN GRID FOR DRILLDOWN -->
     <div class="drilldown-grid <%= filterPcl ? 'has-selection' : 'no-selection' %> mt-4">

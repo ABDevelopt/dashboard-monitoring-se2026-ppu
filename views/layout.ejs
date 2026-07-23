@@ -510,25 +510,44 @@
     <!-- PJAX CLICK-BLOCK OVERLAY (invisible, only prevents interaction during load) -->
     <div id="pjax-loading-overlay" class="pjax-loading-overlay"></div>
     <!-- Flash Messages -->
-    <% if (success && success.length) { %>
+    <% if ((success && success.length) || (error && error.length)) { %>
     <div class="flash-messages">
-      <% success.forEach(msg => { %>
-      <div class="alert alert-success"><i class="bi bi-check-circle-fill"></i> <%= msg %></div>
-      <% }) %>
+      <% if (success && success.length) { %>
+        <% success.forEach(msg => { %>
+        <div class="alert alert-success">
+          <i class="bi bi-check-circle-fill"></i>
+          <div class="alert-content"><%= msg %></div>
+          <button type="button" class="alert-close-btn" onclick="const alert = this.parentElement; alert.classList.add('fade-out'); setTimeout(() => alert.remove(), 400);"><i class="bi bi-x"></i></button>
+        </div>
+        <% }) %>
+      <% } %>
+      <% if (error && error.length) { %>
+        <% error.forEach(msg => { %>
+        <div class="alert alert-error">
+          <i class="bi bi-x-circle-fill"></i>
+          <div class="alert-content"><%= msg %></div>
+          <button type="button" class="alert-close-btn" onclick="const alert = this.parentElement; alert.classList.add('fade-out'); setTimeout(() => alert.remove(), 400);"><i class="bi bi-x"></i></button>
+        </div>
+        <% }) %>
+      <% } %>
     </div>
-    <% } %>
-    <% if (error && error.length) { %>
-    <div class="flash-messages">
-      <% error.forEach(msg => { %>
-      <div class="alert alert-error"><i class="bi bi-x-circle-fill"></i> <%= msg %></div>
-      <% }) %>
-    </div>
+    <script>
+      (function() {
+        const alerts = document.querySelectorAll('.flash-messages .alert');
+        alerts.forEach(alert => {
+          setTimeout(() => {
+            alert.classList.add('fade-out');
+            setTimeout(() => alert.remove(), 400);
+          }, 4000);
+        });
+      })();
+    </script>
     <% } %>
 
     <div id="pjax-container">
       <%- body %>
       <!-- Footer Disclaimer -->
-      <% if (typeof activePage !== 'undefined' && activePage !== 'overview' && activePage !== 'agent' && activePage !== 'login') { %>
+      <% if (typeof activePage !== 'undefined' && activePage !== 'overview' && activePage !== 'agent' && activePage !== 'login' && activePage !== 'chatbot-settings') { %>
       <footer class="page-footer-disclaimer" style="margin-top: 30px; padding: 16px 0; border-top: 1px solid var(--border); text-align: center; width: 100%; flex-shrink: 0;">
         <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 0 16px;">
           <i class="bi bi-info-circle-fill" style="color: var(--accent-blue); margin-right: 4px;"></i>
@@ -540,25 +559,6 @@
   </main>
 </div>
 
-<!-- GLOBAL DETAIL MODAL -->
-<div class="custom-modal-backdrop" id="globalDetailModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.65); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(6px); padding: 20px;">
-  <div class="card" id="globalDetailModalCard" style="width: 100%; max-width: 520px; max-height: 90vh; margin: 0; display: flex; flex-direction: column; overflow: hidden; animation: slideIn 0.25s ease; border-radius: 16px;">
-    <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: none; flex-shrink: 0;">
-      <div>
-        <div class="card-title" id="globalDetailModalTitle" style="font-size: 15px; font-weight: 700; line-height: 1.3; margin-bottom: 0;"><i class="bi bi-person-bounding-box"></i> Rincian Tugas SLS</div>
-        <div id="globalDetailModalSubtitle" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;"></div>
-      </div>
-      <div style="display: flex; gap: 6px; align-items: center; margin-left: auto;">
-        <button onclick="window.shareElementAsImage('globalDetailModalCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
-        <button onclick="window.copyElementAsImage('globalDetailModalCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
-        <button class="btn btn-secondary btn-xs" id="btnCloseGlobalDetailModal" aria-label="Tutup" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></button>
-      </div>
-    </div>
-    <div class="card-body" id="globalDetailModalBody" style="flex: 1; overflow-y: auto; padding: 16px 20px 20px 20px; display: flex; flex-direction: column; gap: 16px;">
-      <!-- Content injected by JS -->
-    </div>
-  </div>
-</div>
 
 <!-- GLOBAL SEARCH MODAL -->
 <div id="globalSearchModal" class="search-modal-backdrop hidden" aria-hidden="true" role="dialog">
@@ -1923,482 +1923,11 @@
     window.initExpandButtons(document);
 
 
-    // ============================================================
-    // Modal Detail Renderers — Summary Card Style
-    // ============================================================
 
-    function makeProgressBar(value, total, color) {
-      const pct = total > 0 ? Math.min(100, (value / total) * 100) : 0;
-      const pctText = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
-      return `
-        <div style="display:flex; align-items:center; gap:10px; margin-top:6px;">
-          <div style="flex:1; background:var(--bg-tertiary,rgba(255,255,255,0.08)); border-radius:999px; height:10px; overflow:hidden;">
-            <div style="width:${pct}%; height:100%; background:${color}; border-radius:999px; transition:width 0.6s ease;"></div>
-          </div>
-          <span style="font-size:12px; font-weight:600; color:var(--text-primary); min-width:56px; text-align:right;">${value.toLocaleString('id-ID')} / ${total.toLocaleString('id-ID')}</span>
-          <span style="font-size:11px; color:var(--text-muted); min-width:46px;">(${pctText}%)</span>
-        </div>
-      `;
-    }
-
-    function makeFasihCards(draft, submit, approve, reject) {
-      const cards = [
-        { label: 'Draft',   value: draft,   color: '#6b7280', icon: 'bi-pencil' },
-        { label: 'Submit',  value: submit,  color: '#3b82f6', icon: 'bi-send'   },
-        { label: 'Approve', value: approve, color: '#22c55e', icon: 'bi-check-circle' },
-        { label: 'Reject',  value: reject,  color: '#ef4444', icon: 'bi-x-circle' },
-      ];
-      return `<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:8px;">
-        ${cards.map(c => `
-          <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:10px; padding:10px 8px; text-align:center;">
-            <i class="bi ${c.icon}" style="font-size:16px; color:${c.color};"></i>
-            <div style="font-size:18px; font-weight:700; color:var(--text-primary); margin-top:4px;">${c.value.toLocaleString('id-ID')}</div>
-            <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">${c.label}</div>
-          </div>
-        `).join('')}
-      </div>`;
-    }
-
-    function makeSectionHeader(label) {
-      return `<div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--accent-blue); margin-bottom:2px; display:flex; align-items:center; gap:6px;"><span style="display:inline-block; width:3px; height:14px; background:var(--accent-blue); border-radius:2px;"></span>${label}</div>`;
-    }
-
-    const renderKorlapDetails = (rows, name) => {
-      const showMuatan = typeof globalSettings !== 'undefined' && globalSettings.show_progres_muatan !== '0';
-      // Aggregate totals from all PML rows under this Korlap
-      const totalSubSLS = rows.reduce((s, r) => s + (r.total_subsls || 0), 0);
-      const totalSelesai = rows.reduce((s, r) => s + (r.selesai || 0), 0);
-      const totalMuatan = rows.reduce((s, r) => s + (r.total_muatan || 0), 0);
-      const totalUsaha = rows.reduce((s, r) => s + (r.usaha_total || 0), 0);
-      const totalKeluarga = rows.reduce((s, r) => s + (r.keluarga_total || 0), 0);
-      const totalMuatanSelesai = totalUsaha + totalKeluarga;
-      const totalFasihTarget = rows.reduce((s, r) => s + (r.target_fasih_total || 0), 0);
-      const totalDraft = rows.reduce((s, r) => s + (r.draft_total || 0), 0);
-      const totalSubmit = rows.reduce((s, r) => s + (r.submitted_total || 0), 0);
-      const totalApprove = rows.reduce((s, r) => s + (r.approved_total || 0), 0);
-      const totalReject = rows.reduce((s, r) => s + (r.rejected_total || 0), 0);
-      const totalFasihAll = totalSubmit + totalApprove + totalReject; // Exclude Draft: matches page-level fasih formula
-
-      // Get first row for metadata (PML name for korlap, korlap for all)
-      const firstPml = rows.length > 0 ? rows[0].pml : '-';
-      const korlapName = rows.length > 0 ? rows[0].korlap : name;
-
-      // Update subtitle in modal header
-      const subtitle = document.getElementById('globalDetailModalSubtitle');
-      if (subtitle) subtitle.textContent = `Korlap: ${korlapName} · ${rows.length} PML bawahan`;
-
-      return `
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
-          ${makeSectionHeader('Progres FASIH (Submit + Approve + Reject)')}
-          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
-            <span style="font-size:13px; color:var(--text-muted);">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} entri</span>
-          </div>
-          ${makeProgressBar(totalFasihAll, totalFasihTarget, '#22c55e')}
-          ${makeFasihCards(totalDraft, totalSubmit, totalApprove, totalReject)}
-        </div>
-        ${showMuatan ? `
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;" class="muatan-col">
-          ${makeSectionHeader('Progres Muatan')}
-          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
-            <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
-          </div>
-          ${makeProgressBar(totalMuatanSelesai, totalMuatan, 'var(--accent-blue)')}
-        </div>` : ''}
-        ${showMuatan && rows.length > 0 ? `
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;" class="muatan-col">
-          ${makeSectionHeader('Rincian PML')}
-          <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
-            ${rows.map(r => {
-              const completed = r.muatan_selesai !== undefined ? r.muatan_selesai : ((r.usaha_total || 0) + (r.keluarga_total || 0));
-              return `<div style="padding:8px 0; border-bottom:1px solid var(--border); display:flex; flex-direction:column; gap:4px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <span style="font-size:12px; font-weight:600; color:var(--text-primary);">${r.pml}</span>
-                </div>
-                ${makeProgressBar(completed, r.total_muatan, 'var(--accent-blue)')}
-              </div>`;
-            }).join('')}
-          </div>
-        </div>` : ''}
-      `;
-    };
-
-    const renderPmlDetails = (rows, name) => {
-      const showMuatan = typeof globalSettings !== 'undefined' && globalSettings.show_progres_muatan !== '0';
-      // Aggregate totals from all PCL rows under this PML
-      const totalSubSLS = rows.reduce((s, r) => s + (r.total_subsls || 0), 0);
-      const totalSelesai = rows.reduce((s, r) => s + (r.selesai || 0), 0);
-      const totalMuatan = rows.reduce((s, r) => s + (r.total_muatan || 0), 0);
-      const totalUsaha = rows.reduce((s, r) => s + (r.usaha_total || 0), 0);
-      const totalKeluarga = rows.reduce((s, r) => s + (r.keluarga_total || 0), 0);
-      const totalMuatanSelesai = totalUsaha + totalKeluarga;
-      const totalFasihTarget = rows.reduce((s, r) => s + (r.target_fasih_total || 0), 0);
-      const totalDraft = rows.reduce((s, r) => s + (r.draft_total || 0), 0);
-      const totalSubmit = rows.reduce((s, r) => s + (r.submitted_total || 0), 0);
-      const totalApprove = rows.reduce((s, r) => s + (r.approved_total || 0), 0);
-      const totalReject = rows.reduce((s, r) => s + (r.rejected_total || 0), 0);
-      const totalFasihAll = totalSubmit + totalApprove + totalReject; // Exclude Draft: matches page-level fasih formula
-
-      const korlapName = rows.length > 0 ? rows[0].korlap : '-';
-
-      const subtitle = document.getElementById('globalDetailModalSubtitle');
-      if (subtitle) subtitle.textContent = `Korlap: ${korlapName} · PML: ${name} · ${rows.length} PCL bawahan`;
-
-      return `
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;">
-          ${makeSectionHeader('Progres FASIH (Submit + Approve + Reject)')}
-          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
-            <span style="font-size:13px; color:var(--text-muted);">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} entri</span>
-          </div>
-          ${makeProgressBar(totalFasihAll, totalFasihTarget, '#22c55e')}
-          ${makeFasihCards(totalDraft, totalSubmit, totalApprove, totalReject)}
-        </div>
-        ${showMuatan ? `
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;" class="muatan-col">
-          ${makeSectionHeader('Progres Muatan')}
-          <div style="display:flex; align-items:baseline; gap:6px; margin-top:4px;">
-            <span style="font-size:13px; color:var(--text-muted);">${totalSubSLS} SubSLS total · ${totalSelesai} selesai</span>
-          </div>
-          ${makeProgressBar(totalMuatanSelesai, totalMuatan, 'var(--accent-blue)')}
-        </div>` : ''}
-        ${showMuatan && rows.length > 0 ? `
-        <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:14px 16px;" class="muatan-col">
-          ${makeSectionHeader('Rincian PCL')}
-          <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
-            ${rows.map(r => {
-              const completed = r.muatan_selesai !== undefined ? r.muatan_selesai : ((r.usaha_total || 0) + (r.keluarga_total || 0));
-              return `<div style="padding:8px 0; border-bottom:1px solid var(--border); display:flex; flex-direction:column; gap:4px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <div>
-                    <span style="font-size:12px; font-weight:600; color:var(--text-primary);">${r.pcl}</span>
-                    <span style="font-size:10px; color:var(--text-muted); margin-left:6px;">${r.kecamatan}</span>
-                  </div>
-                </div>
-                ${makeProgressBar(completed, r.total_muatan, 'var(--accent-blue)')}
-              </div>`;
-            }).join('')}
-          </div>
-        </div>` : ''}
-      `;
-    };
-
-    const renderPclDetails = (rows, name) => {
-      // Aggregate totals from all SLS rows for this PCL
-      const totalSubSLS = rows.length;
-      const totalSelesai = rows.filter(r => r.sudah_diisi).length;
-      const totalMuatan = rows.reduce((s, r) => s + (r.muatan || 0), 0);
-      const totalUsaha = rows.reduce((s, r) => s + (r.usaha_total || 0), 0);
-      const totalKeluarga = rows.reduce((s, r) => s + (r.keluarga_total || 0), 0);
-      const totalMuatanSelesai = totalUsaha + totalKeluarga;
-      const totalFasihTarget = rows.reduce((s, r) => s + (r.target_fasih || 0), 0);
-      const totalDraft = rows.reduce((s, r) => s + (r.draft || 0), 0);
-      const totalSubmit = rows.reduce((s, r) => s + (r.submitted_by_pcl || 0), 0);
-      const totalApprove = rows.reduce((s, r) => s + (r.approved || 0), 0);
-      const totalReject = rows.reduce((s, r) => s + (r.rejected || 0), 0);
-      const totalFasihAll = totalSubmit + totalApprove + totalReject; // Exclude Draft, match page logic
-
-      const pmlName = rows.length > 0 ? rows[0].pml : '-';
-      const korlapName = rows.length > 0 ? rows[0].korlap : '-';
-
-      const subtitle = document.getElementById('globalDetailModalSubtitle');
-      if (subtitle) {
-        const isKippPml = kippPmls.includes(pmlName.toUpperCase());
-        const isKippKorlap = kippKorlaps.includes(korlapName.toUpperCase());
-        subtitle.innerHTML = `
-          PML: <strong>${pmlName}</strong>${isKippPml ? ' <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle;">KIPP</span>' : ''} · 
-          Korlap: <strong>${korlapName}</strong>${isKippKorlap ? ' <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle;">KIPP</span>' : ''}
-        `;
-      }
-
-      // Calculations for Speed Analysis
-      const remainingFasih = Math.max(0, totalFasihTarget - totalFasihAll);
-      const currentSpeed = diffDays > 0 ? (totalFasihAll / diffDays) : 0;
-      const currentSpeedText = currentSpeed.toFixed(2);
-      const estDaysToFinish = currentSpeed > 0 ? (remainingFasih / currentSpeed) : null;
-      const isOfftrack = (currentSpeed === 0 && remainingFasih > 0) || (estDaysToFinish !== null && estDaysToFinish > daysRemaining);
-      const reqSpeed = daysRemaining > 0 ? (remainingFasih / daysRemaining) : remainingFasih;
-      const projectedFinalVal = totalFasihAll + (currentSpeed * daysRemaining);
-      const projectedPctVal = totalFasihTarget > 0 ? (projectedFinalVal / totalFasihTarget) * 100 : 100;
-
-      const donePct = totalMuatan ? ((totalMuatanSelesai / totalMuatan) * 100).toFixed(2) : '0.00';
-      const fasihPct = totalFasihTarget ? ((totalFasihAll / totalFasihTarget) * 100).toFixed(2) : '0.00';
-
-      const showMuatan = typeof globalSettings !== 'undefined' && globalSettings.show_progres_muatan !== '0';
-
-      let html = `
-        <div class="mb-4">
-          <!-- Progress FASIH -->
-          <div style="margin-bottom: 12px; text-align: left;">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
-              <span><i class="bi bi-phone"></i> Progres FASIH (Submit + Approve + Reject)</span>
-              <span class="fw-bold">${totalFasihAll.toLocaleString('id-ID')} / ${totalFasihTarget.toLocaleString('id-ID')} (${fasihPct}%)</span>
-            </div>
-            <div class="progress-bar-wrap" style="height: 6px;">
-              <div class="progress-bar ${parseFloat(fasihPct) >= 100 ? 'green' : (parseFloat(fasihPct) < 40 ? 'red' : 'purple')}" style="width: ${fasihPct}%;"></div>
-            </div>
-          </div>
-
-          <!-- Progress Muatan -->
-          ${showMuatan ? `
-          <div style="margin-bottom: 12px; text-align: left;" class="muatan-col">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text-secondary);">
-              <span><i class="bi bi-briefcase"></i> Progres Muatan</span>
-              <span class="fw-bold">${totalMuatanSelesai.toLocaleString('id-ID')} / ${totalMuatan.toLocaleString('id-ID')} (${donePct}%)</span>
-            </div>
-            <div class="progress-bar-target-wrap" style="position: relative; height: 6px; margin-top: 16px; margin-bottom: 8px;">
-              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
-                <div class="progress-bar ${parseFloat(donePct) >= 100 ? 'green' : (parseFloat(donePct) < 40 ? 'red' : 'blue')}" style="width: ${donePct}%; height: 100%; border-radius: 99px;"></div>
-              </div>
-              <!-- Marker 25% (30 Juni) -->
-              <div style="position: absolute; left: 25%; top: -3px; height: 12px; border-left: 1px dashed ${activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; opacity: ${activeTargetPct === 25 ? '1' : '0.5'}; z-index: 2; pointer-events: none;">
-                <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: ${activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; white-space: nowrap;">30 Jun: 25%</span>
-              </div>
-              <!-- Marker 40% (15 Juli) -->
-              <div style="position: absolute; left: 40%; top: -3px; height: 12px; border-left: 1px dashed ${activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; opacity: ${activeTargetPct === 40 ? '1' : '0.5'}; z-index: 2; pointer-events: none;">
-                <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: ${activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)'}; white-space: nowrap;">15 Jul: 40%</span>
-              </div>
-            </div>
-          </div>
-          ` : ''}
-
-          <!-- Mini Grid Status FASIH -->
-          <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; text-align: center;">
-            <div class="fasih-grid-item fasih-item-draft">
-              <div class="fasih-grid-item-label">Draft</div>
-              <div class="fasih-grid-item-value">${totalDraft}</div>
-            </div>
-            <div class="fasih-grid-item fasih-item-submit">
-              <div class="fasih-grid-item-label">Submit</div>
-              <div class="fasih-grid-item-value">${totalSubmit}</div>
-            </div>
-            <div class="fasih-grid-item fasih-item-approve">
-              <div class="fasih-grid-item-label">Approve</div>
-              <div class="fasih-grid-item-value">${totalApprove}</div>
-            </div>
-            <div class="fasih-grid-item fasih-item-reject">
-              <div class="fasih-grid-item-label">Reject</div>
-              <div class="fasih-grid-item-value">${totalReject}</div>
-            </div>
-          </div>
-
-          <!-- Analisis Kecepatan & Estimasi Pendataan -->
-          <div style="margin-top: 18px; padding: 14px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; text-align: left;">
-            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-cyan); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-              <i class="bi bi-speedometer2" style="font-size: 14px;"></i> Analisis Kecepatan & Sisa Waktu
-            </div>
-            
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;">
-              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
-                <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Kecepatan Saat Ini</div>
-                <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-top: 2px;">${currentSpeedText} <span style="font-size: 8px; font-weight: 500; color: var(--text-muted);">dok/hari</span></div>
-              </div>
-              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
-                <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Status Target</div>
-                <div style="font-size: 12px; font-weight: 700; margin-top: 4px;">
-                  ${remainingFasih === 0 ? `
-                    <span class="badge badge-green" style="font-size: 9px; padding: 2px 6px;">Selesai</span>
-                  ` : isOfftrack ? `
-                    <span class="badge badge-red" style="font-size: 9px; padding: 2px 6px;"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
-                  ` : `
-                    <span class="badge badge-green" style="font-size: 9px; padding: 2px 6px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
-                  `}
-                </div>
-              </div>
-              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
-                <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Prediksi Capaian</div>
-                <div style="font-size: 14px; font-weight: 700; color: ${projectedPctVal < 40 ? 'var(--accent-red)' : (projectedPctVal < 100 ? 'var(--accent-yellow)' : 'var(--accent-green)')}; margin-top: 2px;">
-                  ${projectedPctVal.toFixed(1)}%
-                </div>
-              </div>
-            </div>
-            
-            <div style="font-size: 11px; line-height: 1.5; color: var(--text-secondary);">
-              ${remainingFasih === 0 ? `
-                Petugas <strong>${name}</strong> telah menyelesaikan seluruh target pengisian dokumen FASIH sebanyak <strong>${totalFasihTarget}</strong> dokumen. Kinerja luar biasa!
-              ` : `
-                Hari berjalan pendataan: <strong>${diffDays} hari</strong> (sejak 15 Juni). Sisa hari menuju deadline (31 Agustus): <strong>${daysRemaining} hari</strong>.<br>
-                Sisa beban kerja: <strong>${remainingFasih} dokumen</strong>. 
-                Dengan kecepatan saat ini (<strong>${currentSpeedText} dok/hari</strong>), 
-                ${currentSpeed === 0 ? `
-                  petugas belum merealisasikan dokumen FASIH sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.
-                ` : `
-                  petugas diprediksi akan menyelesaikan sisa dokumen dalam waktu sekitar <strong>${Math.ceil(estDaysToFinish)} hari</strong>.
-                `}
-                
-                ${isOfftrack ? `
-                  <div style="margin-top: 8px; padding: 8px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--accent-red); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
-                    <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red); font-size: 13px; margin-top: 1px;"></i>
-                    <div><strong>Off-Track:</strong> Petugas diprediksi terlambat/tidak selesai tepat waktu. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong>${reqSpeed.toFixed(2)} dok/hari</strong> agar selesai sesuai target pada 31 Agustus 2026.</div>
-                  </div>
-                ` : `
-                  <div style="margin-top: 8px; padding: 8px; background: rgba(34, 197, 94, 0.08); border-left: 3px solid var(--accent-green); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
-                    <i class="bi bi-check-circle-fill" style="color: var(--accent-green); font-size: 13px; margin-top: 1px;"></i>
-                    <div><strong>On-Track:</strong> Kecepatan petugas sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum 31 Agustus 2026).</div>
-                  </div>
-                `}
-              `}
-            </div>
-          </div>
-        </div>
-
-        <!-- Search box for SLS -->
-        <div class="search-wrap mb-4" style="max-width: 100%; margin-bottom: 12px; margin-top: 16px;">
-          <input type="search" id="modalSubslsSearch" placeholder="Cari nama SLS/kode..." aria-label="Cari nama SLS atau kode wilayah">
-        </div>
-
-        <!-- List of SLS -->
-        <div id="modalSubslsList" style="max-height: 250px; overflow-y: auto; padding-right: 4px; text-align: left;">
-          ${rows.map(s => `
-            <div class="detail-item" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 4px; font-size: 11px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                <div style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%;">
-                  <span class="td-code" style="font-size: 9px; padding: 1px 3px; font-weight: normal; margin-right: 4px;">${s.kode}</span>
-                  ${s.nama_sls}
-                </div>
-                ${s.sudah_diisi ? `
-                  <span class="badge badge-green btn-xs" style="font-size: 8px; padding: 1px 4px;">Selesai</span>
-                ` : `
-                  <span class="badge badge-red btn-xs" style="font-size: 8px; padding: 1px 4px;">Belum</span>
-                `}
-              </div>
-              
-              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); flex-wrap: wrap; gap: 4px;">
-                <div>${s.desa}</div>
-                <div style="display: flex; gap: 6px; align-items: center;">
-                  ${showMuatan ? `
-                  <span class="muatan-col" style="color: var(--accent-cyan);">
-                    Muatan: <strong>${s.usaha_total}</strong>/${s.muatan}
-                  </span>
-                  ` : ''}
-                  <span style="color: var(--accent-purple);">
-                    FASIH: <strong>${(s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0)}</strong>/${s.target_fasih} 
-                    <span style="font-size: 9px; color: var(--text-muted);">(D${s.draft} S${s.submitted_by_pcl} A${s.approved} R${s.rejected})</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `;
-
-      // Set timeout to initialize search filtering on modal list load
-      setTimeout(() => {
-        if (typeof makeListSearchable === 'function') {
-          makeListSearchable('modalSubslsSearch', 'modalSubslsList', '.detail-item');
-        }
-      }, 50);
-
-      return html;
-    };
-
-    // Intercept click on PML/PCL/Korlap links — works inside expanded table or any table on page
-    function openDetailModal(type, name) {
-      const modal = document.getElementById('globalDetailModal');
-      const modalTitle = document.getElementById('globalDetailModalTitle');
-      const modalSubtitle = document.getElementById('globalDetailModalSubtitle');
-      const modalBody = document.getElementById('globalDetailModalBody');
-
-      const typeLabel = type === 'korlap' ? 'Korlap' : type === 'pml' ? 'PML' : 'PCL';
-      modalTitle.innerHTML = `<i class="bi bi-person-bounding-box"></i> Rincian Tugas SLS: <mark class="highlight-name">${name}</mark>`;
-      if (modalSubtitle) modalSubtitle.textContent = 'Memuat data...';
-      modalBody.innerHTML = `
-        <div style="display:flex; justify-content:center; align-items:center; padding:40px; gap:12px; color:var(--text-muted);">
-          <div style="border:3px solid var(--border); border-top:3px solid var(--accent-blue); border-radius:50%; width:24px; height:24px; animation:gdm-spin 0.8s linear infinite;"></div>
-          <span>Memuat rincian data...</span>
-        </div>
-        <style>@keyframes gdm-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>
-      `;
-      modal.style.display = 'flex';
-
-      fetch(`/api/detail/${type}?name=${encodeURIComponent(name)}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.error) {
-            modalBody.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
-            return;
-          }
-          if (data.length === 0) {
-            modalBody.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);"><i class="bi bi-inbox" style="font-size:32px;"></i><br><br>Tidak ada data yang ditemukan untuk <strong>${name}</strong>.</div>`;
-            return;
-          }
-          if (type === 'korlap') {
-            modalBody.innerHTML = renderKorlapDetails(data, name);
-          } else if (type === 'pml') {
-            modalBody.innerHTML = renderPmlDetails(data, name);
-          } else if (type === 'pcl') {
-            modalBody.innerHTML = renderPclDetails(data, name);
-          }
-          if (window.initTableExport) {
-            window.initTableExport(modalBody);
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          modalBody.innerHTML = `<div class="alert alert-error">Gagal memuat data: ${err.message}</div>`;
-        });
-    }
-
-    document.addEventListener('click', (e) => {
-      const a = e.target.closest('a');
-      if (!a) return;
-
-      // Works inside expanded table cards
-      const card = a.closest('.card.card-expanded');
-      if (!card) return;
-
-      const href = a.getAttribute('href');
-      if (!href) return;
-
-      let type = '';
-      let name = '';
-
-      // Use URL parsing for robust multi-param extraction
-      try {
-        const url = new URL(href, window.location.origin);
-        const path = url.pathname;
-        if (path === '/korlap' && url.searchParams.has('korlap')) {
-          type = 'korlap';
-          name = url.searchParams.get('korlap');
-        } else if (path === '/pml' && url.searchParams.has('pml')) {
-          type = 'pml';
-          name = url.searchParams.get('pml');
-        } else if (path === '/pcl' && url.searchParams.has('pcl')) {
-          type = 'pcl';
-          name = url.searchParams.get('pcl');
-        }
-      } catch (_) {
-        // Fallback: ignore malformed URLs
-      }
-
-      if (type && name) {
-        e.preventDefault();
-        openDetailModal(type, name);
-      }
-    });
-
-    // Close Modal Events
-    const detailModal = document.getElementById('globalDetailModal');
-    const closeDetailModalBtn = document.getElementById('btnCloseGlobalDetailModal');
-    if (detailModal && closeDetailModalBtn) {
-      const closeDetailModal = () => {
-        detailModal.style.display = 'none';
-      };
-      closeDetailModalBtn.addEventListener('click', closeDetailModal);
-      detailModal.addEventListener('click', (e) => {
-        if (e.target === detailModal) closeDetailModal();
-      });
-    }
 
     // Close expanded table on ESC key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        const modal = document.getElementById('globalDetailModal');
-        if (modal && modal.style.display === 'flex') {
-          modal.style.display = 'none';
-          e.stopPropagation();
-          e.preventDefault();
-          return;
-        }
-
         const expandedCard = document.querySelector('.card.card-expanded');
         if (expandedCard) {
           const btn = expandedCard.querySelector('.btn-expand-table');
@@ -2866,6 +2395,30 @@
 
     // PJAX router for seamless AJAX page transitions without reloading the sidebar
     async function loadPage(url, pushState = true) {
+      // Clean up any expanded cards & spreadsheet overlays before navigating away
+      const expandedCards = document.querySelectorAll('.card.card-expanded');
+      expandedCards.forEach(card => {
+        card.classList.remove('card-expanded');
+        card.classList.remove('has-sheet-overlay');
+        card.classList.remove('sheet-edit-mode');
+      });
+      document.body.classList.remove('has-expanded-card');
+      window.lastExpandedTableId = null;
+
+      // Dispatch pjax:start event so spreadsheet-editor & other modules clean up
+      window.dispatchEvent(new CustomEvent('pjax:start'));
+
+      // Clean up active spreadsheet editors & lingering overlay DOM nodes
+      if (window._sheetEditors) {
+        Object.values(window._sheetEditors).forEach(ed => {
+          try { ed.destroy(); } catch (_) {}
+        });
+        window._sheetEditors = {};
+      }
+      document.querySelectorAll('.sheet-overlay, .sheet-toolbar, .sheet-formula-bar, .sheet-col-panel, .sheet-dialog, .sheet-ctx-menu, .sheet-backdrop').forEach(el => {
+        try { el.remove(); } catch (_) {}
+      });
+
       const oldContent = document.getElementById('pjax-container');
 
       const loader = document.getElementById('topLoadingBar');
@@ -3129,8 +2682,8 @@
       if (!a) return;
 
       const href = a.getAttribute('href');
-      // Skip hashes, JS calls, blank target, external targets
-      if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.getAttribute('target') === '_blank') {
+      // Skip hashes, JS calls, blank target, external targets, downloads, export, or download endpoints
+      if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.getAttribute('target') === '_blank' || a.hasAttribute('download') || href.includes('/export') || href.includes('/download')) {
         return;
       }
       

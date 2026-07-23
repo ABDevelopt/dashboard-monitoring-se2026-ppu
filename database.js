@@ -1316,8 +1316,9 @@ function initSettings() {
     'page_aiagent': '0',
     'agent_provider': 'gemini',
     'gemini_api_key': '',
-    'gemini_model': 'gemini-1.5-flash',
-    'gemini_models_list': 'gemini-1.5-flash, gemini-2.5-flash, gemini-2.5-flash-lite, gemini-3.5-flash',
+    'gemini_backup_api_keys': '[]',
+    'gemini_model': 'gemini-3.5-flash',
+    'gemini_models_list': 'gemini-3.5-flash, gemini-3.1-flash-lite, gemini-2.0-flash, gemini-2.5-pro',
     'openai_api_key': '',
     'openai_model': 'gpt-5.5',
     'openai_models_list': 'gpt-5.5, gpt-4o',
@@ -1356,6 +1357,10 @@ function initSettings() {
     getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run('openrouter/free', 'openrouter_model');
   }
 
+  const geminiModel = getDb().prepare('SELECT value FROM settings WHERE key = ?').get('gemini_model');
+  if (geminiModel && geminiModel.value === 'gemini-1.5-flash') {
+    getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-2.5-flash', 'gemini_model');
+  }
 }
 
 function getSettings() {
@@ -1609,11 +1614,6 @@ function deleteRememberToken(token) {
   return stmt.run(token).changes;
 }
 
-function clearUserRememberTokens(userId) {
-  const stmt = getDb().prepare("DELETE FROM remember_tokens WHERE user_id = ?");
-  return stmt.run(userId).changes;
-}
-
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -1623,5 +1623,5 @@ module.exports = {
   getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages, getTargetFormula,
   getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula,
   getAllUsers, createUser, updateUser, deleteUser,
-  saveRememberToken, getUserByRememberToken, deleteRememberToken, clearUserRememberTokens
+  saveRememberToken, getUserByRememberToken, deleteRememberToken
 };

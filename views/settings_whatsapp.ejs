@@ -222,6 +222,28 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    @media (max-width: 768px) {
+      .settings-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+      }
+      .settings-group {
+        grid-column: 1 / -1 !important;
+        padding: 16px !important;
+      }
+      .floating-save-btn {
+        position: static !important;
+        width: 100% !important;
+        justify-content: center !important;
+        margin-top: 16px !important;
+        border-radius: 50px !important;
+        padding: 12px 24px !important;
+        font-size: 13.5px !important;
+        transform: none !important;
+        box-shadow: 0 4px 14px rgba(37, 211, 102, 0.25) !important;
+      }
+    }
   </style>
 
   <!-- HERO TITLE -->
