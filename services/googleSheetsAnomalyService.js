@@ -259,8 +259,10 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
   }
 
   const payloadObj = {
-    assignment_id: payload.assignment_id,
+    assignment_id: payload.assignment_id || '',
     type: payload.type || 'usaha',
+    nama: payload.nama || '',
+    no: payload.no || '',
     tindak_lanjut: payload.tindak_lanjut,
     penjelasan: payload.penjelasan || ''
   };

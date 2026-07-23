@@ -142,20 +142,29 @@
         Pasang kode Apps Script berikut di Google Spreadsheet Anda (<strong>Extensions</strong> ➔ <strong>Apps Script</strong>) agar perubahan status dari dasbor tersimpan ke spreadsheet:
       </p>
 
-      <pre id="appsScriptCode" style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px; padding: 16px; font-family: monospace; font-size: 12px; color: var(--text-primary); overflow-x: auto; max-height: 380px; line-height: 1.5;">
-function doPost(e) {
-  try {
-    var contents = JSON.parse(e.postData.contents);
-    var targetAssignmentId = String(contents.assignment_id || '').trim();
-    var statusTL = contents.tindak_lanjut;
-    var penjelasan = contents.penjelasan || '';
+      <pre id="appsScriptCode" style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px; padding: 16px; font-family: monospace; font-size: 12px; color: var(--text-primary); overflow-x: auto; max-height: 420px; line-height: 1.5;">
+function doGet(e) {
+  return handleRequest(e);
+}
 
-    if (!targetAssignmentId) {
-      return ContentService.createTextOutput(JSON.stringify({
-        success: false,
-        error: 'Assignment ID tidak boleh kosong'
-      })).setMimeType(ContentService.MimeType.JSON);
+function doPost(e) {
+  return handleRequest(e);
+}
+
+function handleRequest(e) {
+  try {
+    var contents = {};
+    if (e && e.postData && e.postData.contents) {
+      try { contents = JSON.parse(e.postData.contents); } catch (err) { contents = e.parameter || {}; }
+    } else if (e && e.parameter) {
+      contents = e.parameter;
     }
+
+    var targetAssignmentId = String(contents.assignment_id || '').trim().toLowerCase();
+    var targetNama = String(contents.nama || '').trim().toLowerCase();
+    var targetNo = String(contents.no || '').trim();
+    var statusTL = contents.tindak_lanjut || '';
+    var penjelasan = contents.penjelasan || '';
 
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheets = ss.getSheets();
@@ -163,33 +172,46 @@ function doPost(e) {
     var updatedSheetName = '';
     var updatedRowIndex = -1;
 
-    // Cari di SELURUH tab sheet Google Spreadsheet
     for (var s = 0; s < sheets.length; s++) {
       var sheet = sheets[s];
       var data = sheet.getDataRange().getValues();
       if (!data || data.length < 2) continue;
 
       var headerRow = data[0];
-      var colAssignment = 15; // Default kolom P (Index 15)
-      var colTindakLanjut = 17; // Default kolom R (Index 17)
-      var colPenjelasan = 21; // Default kolom V (Index 21)
+      var colAssignment = -1;
+      var colNama = -1;
+      var colNo = -1;
+      var colTindakLanjut = -1;
+      var colPenjelasan = -1;
 
-      // Deteksi dinamis nama kolom dari header
       for (var c = 0; c < headerRow.length; c++) {
-        var hName = String(headerRow[c] || '').toLowerCase();
-        if (hName.includes('assignment') || hName.includes('id assignment')) colAssignment = c;
-        if (hName.includes('tindak lanjut') || hName.includes('tindak_lanjut')) colTindakLanjut = c;
-        if (hName.includes('penjelasan') || hName.includes('keterangan') || hName.includes('catatan')) colPenjelasan = c;
+        var hName = String(headerRow[c] || '').toLowerCase().trim();
+        if (hName.includes('assignment')) colAssignment = c;
+        else if (hName.includes('nama')) colNama = c;
+        else if (hName === 'no' || hName === 'no.') colNo = c;
+        else if (hName.includes('tindak lanjut') || hName.includes('tindak_lanjut')) colTindakLanjut = c;
+        else if (hName.includes('penjelasan') || hName.includes('keterangan') || hName.includes('catatan')) colPenjelasan = c;
       }
 
+      if (colAssignment === -1) colAssignment = 15;
+      if (colNama === -1) colNama = 4;
+      if (colNo === -1) colNo = 3;
+      if (colTindakLanjut === -1) colTindakLanjut = 17;
+      if (colPenjelasan === -1) colPenjelasan = 21;
+
       for (var i = 1; i < data.length; i++) {
-        var cellVal = String(data[i][colAssignment] || '').trim();
-        if (cellVal && cellVal === targetAssignmentId) {
-          // Update Status Tindak Lanjut & Penjelasan
+        var cellAssignment = String(data[i][colAssignment] || '').trim().toLowerCase();
+        var cellNama = String(data[i][colNama] || '').trim().toLowerCase();
+        var cellNo = String(data[i][colNo] || '').trim();
+
+        var isMatch = false;
+        if (targetAssignmentId && cellAssignment && cellAssignment === targetAssignmentId) isMatch = true;
+        else if (targetNama && cellNama && cellNama === targetNama) isMatch = true;
+        else if (targetNo && cellNo && cellNo === targetNo) isMatch = true;
+
+        if (isMatch) {
           sheet.getRange(i + 1, colTindakLanjut + 1).setValue(statusTL);
-          if (penjelasan) {
-            sheet.getRange(i + 1, colPenjelasan + 1).setValue(penjelasan);
-          }
+          if (penjelasan) sheet.getRange(i + 1, colPenjelasan + 1).setValue(penjelasan);
           updated = true;
           updatedSheetName = sheet.getName();
           updatedRowIndex = i + 1;
@@ -203,8 +225,8 @@ function doPost(e) {
     return ContentService.createTextOutput(JSON.stringify({
       success: updated,
       message: updated 
-        ? ('Berhasil mengupdate sheet "' + updatedSheetName + '" baris ' + updatedRowIndex)
-        : ('Assignment ID (' + targetAssignmentId + ') tidak ditemukan di Google Spreadsheet.')
+        ? ('Berhasil memperbarui tab "' + updatedSheetName + '" baris ke-' + updatedRowIndex)
+        : ('Data anomali tidak ditemukan di Google Spreadsheet.')
     })).setMimeType(ContentService.MimeType.JSON);
 
   } catch (err) {

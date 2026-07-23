@@ -78,19 +78,21 @@ router.get('/', async (req, res) => {
 
 // POST: Update anomaly status via Google Apps Script
 router.post('/update-status', async (req, res) => {
-  const { assignment_id, type, tindak_lanjut, penjelasan } = req.body;
+  const { assignment_id, type, nama, no, tindak_lanjut, penjelasan } = req.body;
 
-  if (!assignment_id || !tindak_lanjut) {
-    return res.json({ success: false, error: 'Assignment ID dan Status Tindak Lanjut wajib diisi.' });
+  if (!assignment_id && !nama) {
+    return res.json({ success: false, error: 'Assignment ID atau Nama Anomali wajib diisi.' });
   }
 
   try {
     const { updateAnomalyStatusInGoogleSheets } = require('../services/googleSheetsAnomalyService');
     const result = await updateAnomalyStatusInGoogleSheets({
-      assignment_id,
+      assignment_id: assignment_id || '',
       type: type || 'usaha',
-      tindak_lanjut,
-      penjelasan
+      nama: nama || '',
+      no: no || '',
+      tindak_lanjut: tindak_lanjut || 'Sudah Ditindaklanjuti',
+      penjelasan: penjelasan || ''
     }, res.locals.settings || {});
 
     res.json(result);
