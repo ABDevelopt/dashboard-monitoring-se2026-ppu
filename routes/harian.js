@@ -21,10 +21,12 @@ router.get('/', (req, res) => {
     ORDER BY tanggal ASC
   `).all();
 
-  // Attach weather details to each upload day
+  // Attach weather details and session_count to each upload day
   recentUploads.forEach(u => {
     const weather = getDb().prepare('SELECT temp, code, humidity FROM weather_history WHERE tanggal = ?').get(u.tanggal);
     u.weather = weather || null;
+    const countStmt = getDb().prepare('SELECT COUNT(*) AS cnt FROM uploads WHERE tanggal = ?').get(u.tanggal);
+    u.session_count = countStmt ? countStmt.cnt : 1;
   });
 
 

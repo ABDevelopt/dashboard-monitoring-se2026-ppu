@@ -970,3 +970,98 @@ function makeTablePaginated(tableId, inputId, pageSize = 50) {
   // Initial update
   update();
 }
+
+// ===== INTRADAY CANDLESTICK / DRILLDOWN CHART =====
+function createIntradayCandlestickChart(canvasId, intradayData) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx || !intradayData || !intradayData.sessions || !intradayData.sessions.length) return null;
+
+  const theme = getThemeColors();
+  const labels = intradayData.sessions.map(s => `${s.time} WIB (ID #${s.upload_id})`);
+  const dataDelta = intradayData.sessions.map(s => s.delta);
+  const dataTotal = intradayData.sessions.map(s => s.selesai_total);
+
+  if (typeof Chart !== 'undefined') {
+    const existing = Chart.getChart(canvasId);
+    if (existing) existing.destroy();
+  }
+
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Penambahan Dokumen (Delta Sesi)',
+          data: dataDelta,
+          backgroundColor: dataDelta.map((d, i) => i === 0 ? '#3b82f6' : (d > 0 ? '#10b981' : '#64748b')),
+          borderRadius: 6,
+          yAxisID: 'yDelta'
+        },
+        {
+          type: 'line',
+          label: 'Akumulasi Dokumen Selesai (OHLC Close)',
+          data: dataTotal,
+          borderColor: '#06b6d4',
+          backgroundColor: 'rgba(6, 182, 212, 0.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#06b6d4',
+          yAxisID: 'yTotal'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: theme.text, font: { size: 11, family: 'Inter' } } },
+        title: {
+          display: true,
+          text: `Linimasa Sesi Upload (${intradayData.session_count} Upload) - Tanggal ${intradayData.tanggal}`,
+          color: theme.title,
+          font: { size: 13, weight: '700' }
+        },
+        tooltip: {
+          backgroundColor: theme.bgCard,
+          borderColor: theme.border,
+          borderWidth: 1,
+          titleColor: theme.title,
+          bodyColor: theme.text,
+          callbacks: {
+            footer: (tooltipItems) => {
+              const idx = tooltipItems[0].dataIndex;
+              const s = intradayData.sessions[idx];
+              return `Submit: ${s.submitted_total.toLocaleString('id-ID')} | Approve: ${s.approved_total.toLocaleString('id-ID')} | Reject: ${s.rejected_total.toLocaleString('id-ID')} | Draft: ${s.draft_total.toLocaleString('id-ID')}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: theme.text, font: { size: 10 } }, grid: { color: theme.grid } },
+        yDelta: {
+          type: 'linear',
+          position: 'left',
+          ticks: { color: theme.text, font: { size: 10 } },
+          grid: { color: theme.grid },
+          title: { display: true, text: 'Penambahan (Dok)', color: theme.text, font: { size: 9 } }
+        },
+        yTotal: {
+          type: 'linear',
+          position: 'right',
+          ticks: { color: theme.text, font: { size: 10 } },
+          grid: { display: false },
+          title: { display: true, text: 'Akumulasi (Dok)', color: theme.text, font: { size: 9 } }
+        }
+      }
+    }
+  });
+
+  window.activeCharts = window.activeCharts || [];
+  window.activeCharts.push(chart);
+  return chart;
+}

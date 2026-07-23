@@ -1645,6 +1645,75 @@ function deleteRememberToken(token) {
   return stmt.run(token).changes;
 }
 
+function getIntradayUploadsByDate(tanggal) {
+  if (!tanggal) return null;
+
+  const uploadSessions = getDb().prepare(`
+    SELECT id, filename, tanggal, created_at
+    FROM uploads
+    WHERE tanggal = ?
+    ORDER BY created_at ASC, id ASC
+  `).all(tanggal);
+
+  if (!uploadSessions || uploadSessions.length === 0) return null;
+
+  const sessionDetails = uploadSessions.map((u, idx) => {
+    const stats = getDb().prepare(`
+      SELECT 
+        SUM(COALESCE(draft, 0)) AS draft_total,
+        SUM(COALESCE(submitted_by_pcl, 0)) AS submitted_total,
+        SUM(COALESCE(approved, 0)) AS approved_total,
+        SUM(COALESCE(rejected, 0)) AS rejected_total,
+        SUM(COALESCE(submitted_by_pcl, 0) + COALESCE(approved, 0) + COALESCE(rejected, 0)) AS selesai_total,
+        SUM(COALESCE(usaha_tidak_ditemukan, 0) + COALESCE(usaha_ditemukan, 0) + COALESCE(usaha_baru, 0) + COALESCE(usaha_tutup, 0) + COALESCE(usaha_ganda, 0)) AS usaha_total,
+        SUM(COALESCE(tidak_ditemukan, 0) + COALESCE(ditemukan, 0) + COALESCE(keluarga_baru, 0) + COALESCE(meninggal, 0) + COALESCE(tidak_eligible, 0) + COALESCE(tidak_dapat_ditemui, 0)) AS keluarga_total
+      FROM progres
+      WHERE upload_id = ?
+    `).get(u.id);
+
+    let timeStr = `Sesi ${idx + 1}`;
+    if (u.created_at) {
+      try {
+        timeStr = new Date(u.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        timeStr = `Sesi ${idx + 1}`;
+      }
+    }
+
+    return {
+      upload_id: u.id,
+      filename: u.filename,
+      created_at: u.created_at,
+      time: timeStr,
+      draft_total: stats ? stats.draft_total || 0 : 0,
+      submitted_total: stats ? stats.submitted_total || 0 : 0,
+      approved_total: stats ? stats.approved_total || 0 : 0,
+      rejected_total: stats ? stats.rejected_total || 0 : 0,
+      selesai_total: stats ? stats.selesai_total || 0 : 0,
+      usaha_total: stats ? stats.usaha_total || 0 : 0,
+      keluarga_total: stats ? stats.keluarga_total || 0 : 0
+    };
+  });
+
+  const open = sessionDetails[0].selesai_total;
+  const close = sessionDetails[sessionDetails.length - 1].selesai_total;
+  const high = Math.max(...sessionDetails.map(s => s.selesai_total));
+  const low = Math.min(...sessionDetails.map(s => s.selesai_total));
+
+  let prevSelesai = 0;
+  sessionDetails.forEach((s, idx) => {
+    s.delta = idx === 0 ? s.selesai_total : Math.max(0, s.selesai_total - prevSelesai);
+    prevSelesai = s.selesai_total;
+  });
+
+  return {
+    tanggal,
+    session_count: sessionDetails.length,
+    ohlc: { open, high, low, close },
+    sessions: sessionDetails
+  };
+}
+
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -1654,5 +1723,5 @@ module.exports = {
   getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages, getTargetFormula,
   getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula,
   getAllUsers, createUser, updateUser, deleteUser,
-  saveRememberToken, getUserByRememberToken, deleteRememberToken
+  saveRememberToken, getUserByRememberToken, deleteRememberToken, getIntradayUploadsByDate
 };

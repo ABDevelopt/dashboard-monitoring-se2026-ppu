@@ -78,8 +78,13 @@
                 <th>Desa</th>
                 <th>Wilayah Kerja SLS</th>
                 <% recentUploads.forEach(u => { %>
-                  <th class="text-right" style="width: 120px; vertical-align: top;">
-                    <div style="font-weight: 700;"><%= new Date(u.tanggal).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) %></div>
+                  <th class="text-right" style="width: 125px; vertical-align: top;">
+                    <div style="font-weight: 700; display: flex; align-items: center; justify-content: flex-end; gap: 4px;">
+                      <%= new Date(u.tanggal).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) %>
+                      <% if (u.session_count && u.session_count > 1) { %>
+                        <span class="badge badge-blue" onclick="openIntradayModal('<%= u.tanggal %>')" style="cursor: pointer; font-size: 8px; padding: 1px 4px; border-radius: 4px;" title="Ada <%= u.session_count %> kali upload di tanggal ini. Klik untuk lihat rincian intra-day."><i class="bi bi-clock-history"></i> <%= u.session_count %>x</span>
+                      <% } %>
+                    </div>
                     <% if (u.weather) { %>
                       <div style="font-size: 10px; font-weight: 500; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; justify-content: flex-end; gap: 4px;" class="weather-th-badge">
                         <% 
@@ -226,4 +231,105 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchAndReplace(window.location.search);
   });
 });
+
+function openIntradayModal(tanggal) {
+  const modal = document.getElementById('intradayModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  document.getElementById('intradayModalDate').textContent = tanggal;
+
+  fetch(`/api/detail/intraday-candlestick?tanggal=${encodeURIComponent(tanggal)}`)
+    .then(res => res.json())
+    .then(res => {
+      if (!res.success || !res.data) return;
+      const data = res.data;
+      
+      document.getElementById('ohlcOpen').textContent = (data.ohlc.open || 0).toLocaleString('id-ID');
+      document.getElementById('ohlcHigh').textContent = (data.ohlc.high || 0).toLocaleString('id-ID');
+      document.getElementById('ohlcLow').textContent = (data.ohlc.low || 0).toLocaleString('id-ID');
+      document.getElementById('ohlcClose').textContent = (data.ohlc.close || 0).toLocaleString('id-ID');
+
+      if (typeof createIntradayCandlestickChart === 'function') {
+        createIntradayCandlestickChart('intradayChartCanvas', data);
+      }
+
+      const tbody = document.getElementById('intradayTableBody');
+      tbody.innerHTML = data.sessions.map(s => `
+        <tr>
+          <td><strong style="color: var(--accent-cyan);"><i class="bi bi-clock"></i> ${s.time} WIB</strong></td>
+          <td><span class="badge badge-gray">#${s.upload_id}</span></td>
+          <td class="text-right">${s.submitted_total.toLocaleString('id-ID')}</td>
+          <td class="text-right">${s.approved_total.toLocaleString('id-ID')}</td>
+          <td class="text-right">${s.rejected_total.toLocaleString('id-ID')}</td>
+          <td class="text-right">${s.draft_total.toLocaleString('id-ID')}</td>
+          <td class="text-right fw-bold">${s.selesai_total.toLocaleString('id-ID')}</td>
+          <td class="text-right fw-bold" style="color: ${s.delta > 0 ? 'var(--accent-green)' : 'var(--text-muted)'};">+${s.delta.toLocaleString('id-ID')}</td>
+        </tr>
+      `).join('');
+    })
+    .catch(err => console.error(err));
+}
+
+function closeIntradayModal() {
+  const modal = document.getElementById('intradayModal');
+  if (modal) modal.style.display = 'none';
+}
 </script>
+
+<!-- MODAL INTRADAY DRILLDOWN CANDLESTICK -->
+<div id="intradayModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+  <div class="card" style="width: 100%; max-width: 860px; max-height: 90vh; overflow-y: auto; margin: 0; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); border-radius: 12px; background: var(--bg-card);">
+    <div class="card-header flex-between" style="border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+      <div class="card-title" style="font-size: 14px; font-weight: 700;">
+        <i class="bi bi-clock-history" style="color: var(--accent-cyan);"></i> Rincian Intra-Day Sesi Upload & Candlestick (<span id="intradayModalDate">-</span>)
+      </div>
+      <button type="button" onclick="closeIntradayModal()" style="background: none; border: none; font-size: 22px; color: var(--text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <!-- Summary Metrics (OHLC) -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; margin-bottom: 14px;" id="intradayOhlcCards">
+      <div style="background: var(--bg-subtle); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">OPEN (Awal)</div>
+        <div id="ohlcOpen" style="font-size: 15px; font-weight: 700; color: #3b82f6;">-</div>
+      </div>
+      <div style="background: var(--bg-subtle); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">HIGH (Puncak)</div>
+        <div id="ohlcHigh" style="font-size: 15px; font-weight: 700; color: #10b981;">-</div>
+      </div>
+      <div style="background: var(--bg-subtle); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">LOW (Terendah)</div>
+        <div id="ohlcLow" style="font-size: 15px; font-weight: 700; color: #f59e0b;">-</div>
+      </div>
+      <div style="background: var(--bg-subtle); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
+        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">CLOSE (Akhir)</div>
+        <div id="ohlcClose" style="font-size: 15px; font-weight: 700; color: #06b6d4;">-</div>
+      </div>
+    </div>
+
+    <!-- Intra-Day Chart Container -->
+    <div style="height: 260px; position: relative; margin-bottom: 16px;">
+      <canvas id="intradayChartCanvas"></canvas>
+    </div>
+
+    <!-- Table Details per Session -->
+    <div class="table-wrap" style="max-height: 220px; overflow-y: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Jam Upload</th>
+            <th>ID Upload</th>
+            <th class="text-right">Submitted</th>
+            <th class="text-right">Approved</th>
+            <th class="text-right">Rejected</th>
+            <th class="text-right">Draft</th>
+            <th class="text-right">Total Selesai</th>
+            <th class="text-right">Penambahan (+Delta)</th>
+          </tr>
+        </thead>
+        <tbody id="intradayTableBody">
+          <!-- Dynamic JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

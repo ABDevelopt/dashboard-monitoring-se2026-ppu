@@ -274,6 +274,22 @@ router.get('/detail/pcl-daily-history', (req, res) => {
   res.json({ success: true, pcl, data: history });
 });
 
+// API Intraday Candlestick & Multiple Upload Sessions By Date
+router.get('/detail/intraday-candlestick', (req, res) => {
+  const { getIntradayUploadsByDate } = require('../database');
+  const tanggal = req.query.tanggal || req.query.date || '';
+  if (!tanggal) {
+    return res.status(400).json({ success: false, message: 'Parameter tanggal diperlukan.' });
+  }
+
+  const intradayData = getIntradayUploadsByDate(tanggal);
+  if (!intradayData) {
+    return res.json({ success: true, data: null, message: `Tidak ada data upload pada tanggal ${tanggal}` });
+  }
+
+  res.json({ success: true, data: intradayData });
+});
+
 // Simpan data cuaca harian
 router.post('/weather', (req, res) => {
   const { tanggal, temp, code, humidity } = req.body;
