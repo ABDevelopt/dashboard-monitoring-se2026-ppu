@@ -1070,43 +1070,51 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   will-change: opacity, transform;
 }
 
-/* ====== SEAMLESS DIRECTIONAL VERTICAL SLIDE TRANSITIONS (DESKTOP & TABLET >= 769px) ====== */
+/* ====== CONTINUOUS PAGE CANVAS SPATIAL TRANSITIONS (DESKTOP & TABLET >= 769px) ====== */
 @media (min-width: 769px) {
   #pjax-container {
     position: relative;
     width: 100%;
+    overflow: hidden;
   }
 
-  @keyframes pageSlideFromBottom {
-    0% {
-      opacity: 0;
-      transform: translateY(70px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  /* Navigating DOWN menu (Slide Up / Push Down Canvas effect) */
+  @keyframes canvasCurrentExitUp {
+    0% { transform: translateY(0); opacity: 1; filter: blur(0px); }
+    100% { transform: translateY(-50px); opacity: 0; filter: blur(1px); }
   }
 
-  @keyframes pageSlideFromTop {
-    0% {
-      opacity: 0;
-      transform: translateY(-70px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  @keyframes canvasNextEnterUp {
+    0% { transform: translateY(60px); opacity: 0; filter: blur(1px); }
+    100% { transform: translateY(0); opacity: 1; filter: blur(0px); }
   }
 
-  .pjax-slide-up {
-    animation: pageSlideFromBottom 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-    will-change: opacity, transform;
+  /* Navigating UP menu (Slide Down / Push Up Canvas effect) */
+  @keyframes canvasCurrentExitDown {
+    0% { transform: translateY(0); opacity: 1; filter: blur(0px); }
+    100% { transform: translateY(50px); opacity: 0; filter: blur(1px); }
   }
 
-  .pjax-slide-down {
-    animation: pageSlideFromTop 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-    will-change: opacity, transform;
+  @keyframes canvasNextEnterDown {
+    0% { transform: translateY(-60px); opacity: 0; filter: blur(1px); }
+    100% { transform: translateY(0); opacity: 1; filter: blur(0px); }
+  }
+
+  .canvas-exit-up {
+    animation: canvasCurrentExitUp 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    will-change: transform, opacity;
+  }
+  .canvas-enter-up {
+    animation: canvasNextEnterUp 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    will-change: transform, opacity;
+  }
+  .canvas-exit-down {
+    animation: canvasCurrentExitDown 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    will-change: transform, opacity;
+  }
+  .canvas-enter-down {
+    animation: canvasNextEnterDown 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    will-change: transform, opacity;
   }
 }
 

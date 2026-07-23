@@ -2518,20 +2518,38 @@
           const currentIdx = getPageIndex(window.location.pathname);
           const targetIdx = getPageIndex(url);
 
-          let animClass = 'pjax-animate-enter';
-          if (window.innerWidth >= 769 && currentIdx !== targetIdx && currentIdx !== 99 && targetIdx !== 99) {
-            if (targetIdx > currentIdx) {
-              animClass = 'pjax-slide-up'; // Navigating DOWN menu -> slide UP from bottom
-            } else {
-              animClass = 'pjax-slide-down'; // Navigating UP menu -> slide DOWN from top
-            }
-          }
+          const isLargeScreen = window.innerWidth >= 769;
+          const isDirectional = isLargeScreen && currentIdx !== targetIdx && currentIdx !== 99 && targetIdx !== 99;
 
-          // Swap content immediately and trigger spatial vertical slide transition
-          oldContent.innerHTML = newContent.innerHTML;
-          oldContent.classList.remove('pjax-animate-enter', 'pjax-slide-up', 'pjax-slide-down');
-          void oldContent.offsetWidth;
-          oldContent.classList.add(animClass);
+          if (isDirectional) {
+            const isNavigatingDown = targetIdx > currentIdx;
+            const oldHTML = oldContent.innerHTML;
+            const newHTML = newContent.innerHTML;
+
+            const exitClass = isNavigatingDown ? 'canvas-exit-up' : 'canvas-exit-down';
+            const enterClass = isNavigatingDown ? 'canvas-enter-up' : 'canvas-enter-down';
+
+            oldContent.style.position = 'relative';
+            oldContent.style.overflow = 'hidden';
+            oldContent.innerHTML = `
+              <div class="${exitClass}" style="position: absolute; width: 100%; top: 0; left: 0; z-index: 1;">
+                ${oldHTML}
+              </div>
+              <div class="${enterClass}" style="position: relative; width: 100%; z-index: 2;">
+                ${newHTML}
+              </div>
+            `;
+
+            setTimeout(() => {
+              oldContent.innerHTML = newHTML;
+              oldContent.removeAttribute('style');
+            }, 380);
+          } else {
+            oldContent.innerHTML = newContent.innerHTML;
+            oldContent.classList.remove('pjax-animate-enter');
+            void oldContent.offsetWidth;
+            oldContent.classList.add('pjax-animate-enter');
+          }
         } else {
           window.location.href = url;
           return;
