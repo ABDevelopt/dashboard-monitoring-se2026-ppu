@@ -329,11 +329,8 @@
         <span>Data &amp; Utilitas</span>
       </div>
       <div class="nav-section-content">
-        <a href="/subsls/export" class="nav-item">
-          <span class="nav-icon"><i class="bi bi-download"></i></span> Export CSV (Sub-SLS)
-        </a>
-        <a href="/pcl/export-excel" class="nav-item">
-          <span class="nav-icon"><i class="bi bi-file-earmark-excel"></i></span> Export Excel Petugas
+        <a href="#" onclick="window.showExportDialog(event)" class="nav-item">
+          <span class="nav-icon"><i class="bi bi-download"></i></span> Export Data
         </a>
       </div>
     </div>
@@ -1748,6 +1745,60 @@
           confirmButtonText: 'Tutup'
         });
       }
+    };
+
+    window.showExportDialog = function(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      
+      Swal.fire({
+        title: '<i class="bi bi-file-earmark-arrow-down" style="color: var(--accent-blue); margin-right: 6px;"></i> Dialog Export Data &amp; Utilitas',
+        html: `
+          <div style="text-align: left; font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+            Pilih dataset &amp; format berkas yang ingin Anda unduh dari sistem:
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
+            <label style="border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; background: var(--bg-secondary);">
+              <input type="radio" name="exportOption" value="/subsls/export" checked style="accent-color: var(--accent-blue); width: 16px; height: 16px;">
+              <div>
+                <div style="font-weight: 600; color: var(--text-primary); font-size: 13px;">
+                  <i class="bi bi-file-earmark-text text-green" style="margin-right: 4px;"></i> Export Data Sub-SLS (CSV)
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Rincian lengkap status progres per satuan lingkungan setempat</div>
+              </div>
+            </label>
+
+            <label style="border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; background: var(--bg-secondary);">
+              <input type="radio" name="exportOption" value="/pcl/export-excel" style="accent-color: var(--accent-blue); width: 16px; height: 16px;">
+              <div>
+                <div style="font-weight: 600; color: var(--text-primary); font-size: 13px;">
+                  <i class="bi bi-file-earmark-excel text-green" style="margin-right: 4px;"></i> Export Kinerja Petugas (Excel .xlsx)
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Data realisasi, target, dan performa PCL &amp; PML</div>
+              </div>
+            </label>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '<i class="bi bi-download"></i> Unduh Berkas',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: 'var(--accent-blue)',
+        focusConfirm: false,
+        preConfirm: () => {
+          const selected = document.querySelector('input[name="exportOption"]:checked');
+          if (!selected) {
+            Swal.showValidationMessage('Silakan pilih salah satu format data.');
+            return false;
+          }
+          return selected.value;
+        }
+      }).then((result) => {
+        if (result.isConfirmed && result.value) {
+          window.location.href = result.value;
+        }
+      });
     };
 
     window.initTableExport = (container = document) => {
