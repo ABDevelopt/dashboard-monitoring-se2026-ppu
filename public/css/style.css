@@ -121,7 +121,8 @@ a:hover {
   top: 0;
   bottom: 0;
   z-index: 100;
-  transition: transform 0.3s ease, background-color 0.3s ease;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease;
+  will-change: transform;
   overflow-y: auto;
   overflow-x: hidden;
   transform: translateX(-100%); /* Mobile-first: hidden off-screen by default */
@@ -225,7 +226,8 @@ a:hover {
   min-height: 100vh;
   max-width: 100%;
   overflow-x: hidden;
-  transition: margin-left 0.3s ease;
+  transition: margin-left 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: margin-left;
 }
 
 /* ====== TOPBAR ====== */
@@ -243,7 +245,8 @@ a:hover {
   right: 0;
   z-index: 50;
   min-width: 0;
-  transition: left 0.3s ease;
+  transition: left 0.35s cubic-bezier(0.16, 1, 0.3, 1), padding 0.35s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease;
+  will-change: left;
 }
 .topbar::before {
   content: '';
@@ -425,7 +428,8 @@ body.light-mode .btn-primary { color: white; }
   left: 0;
   right: 0;
   z-index: 49;
-  transition: background-color 0.3s ease, border-color 0.3s ease, left 0.3s ease, opacity 0.2s ease, transform 0.2s ease;
+  transition: left 0.35s cubic-bezier(0.16, 1, 0.3, 1), top 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, opacity 0.2s ease, transform 0.2s ease;
+  will-change: left;
 }
 #breadcrumb-bar.hidden {
   opacity: 0;
@@ -1003,19 +1007,54 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(10, 14, 26, 0.6);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 98;
   opacity: 0;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
 }
 .sidebar-overlay.active { display: block; opacity: 1; }
+
+/* ====== SMOOTH DETAIL & LAYOUT ANIMATIONS ====== */
+@keyframes smoothDetailEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.988);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.smooth-detail-animate {
+  animation: smoothDetailEntrance 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  will-change: opacity, transform;
+}
+
+@keyframes pjaxContainerEnter {
+  0% {
+    opacity: 0.2;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pjax-animate-enter {
+  animation: pjaxContainerEnter 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  will-change: opacity, transform;
+}
 
 /* ====== DRILLDOWN & COMPARISON GRID LAYOUTS ====== */
 .drilldown-grid {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
   gap: 16px;
-  transition: grid-template-columns 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: grid-template-columns 0.38s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .drilldown-grid.no-selection {
   grid-template-columns: 1.62fr 0.38fr;

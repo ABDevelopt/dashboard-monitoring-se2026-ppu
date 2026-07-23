@@ -2469,8 +2469,11 @@
             window._pjaxCleanups = [];
           }
 
-          // Swap content immediately with no delays, fades, or class changes
+          // Swap content immediately and trigger smooth layout entrance animation
           oldContent.innerHTML = newContent.innerHTML;
+          oldContent.classList.remove('pjax-animate-enter');
+          void oldContent.offsetWidth;
+          oldContent.classList.add('pjax-animate-enter');
         } else {
           window.location.href = url;
           return;

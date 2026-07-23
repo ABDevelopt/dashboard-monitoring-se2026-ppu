@@ -722,6 +722,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (newDetail) {
         detailContainer.innerHTML = newDetail.innerHTML;
         detailContainer.style.opacity = '1';
+        detailContainer.classList.remove('smooth-detail-animate');
+        void detailContainer.offsetWidth;
+        detailContainer.classList.add('smooth-detail-animate');
 
         // Toggle grid selection classes
         const grid = document.querySelector('.drilldown-grid');
