@@ -1198,7 +1198,8 @@
 
   // Synchronous Markdown Renderer for instant, non-blocking UI updates
   function renderMarkdownBlocks(text) {
-    const lines = String(text || '').split(/\r?\n/);
+    text = String(text || '').replace(/🤖\s*\*Smart Switch:[^*]*\*\s*/gi, '').trim();
+    const lines = text.split(/\r?\n/);
     const blocks = [];
     let i = 0;
 
