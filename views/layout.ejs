@@ -1585,12 +1585,115 @@
       }
       window.dispatchEvent(new Event('resize'));
 
-      // Attach or show spreadsheet editor overlay
+      // Attach or show spreadsheet editor overlay & Infinite Scroll for expanded card
       if (!isExpanded && card.classList.contains('card-expanded')) {
         setTimeout(() => {
           if (window.attachSpreadsheetEditor) window.attachSpreadsheetEditor(card);
+          if (window.initInfiniteScrollForExpandedCard) window.initInfiniteScrollForExpandedCard(card);
         }, 80);
       }
+    };
+
+    // Global Infinite Scroll Handler for Expanded Tables
+    window.initInfiniteScrollForExpandedCard = (card) => {
+      if (!card) return;
+      const tableWrap = card.querySelector('.table-wrap');
+      const table = card.querySelector('table');
+      if (!tableWrap || !table) return;
+
+      // Reveal hidden client-side rows upon initial expand
+      const initialHidden = Array.from(table.querySelectorAll('tbody tr')).filter(tr => tr.style.display === 'none' || tr.classList.contains('hidden-by-pagination'));
+      if (initialHidden.length > 0) {
+        initialHidden.forEach((tr, i) => {
+          if (i < 50) {
+            tr.style.display = '';
+            tr.classList.remove('hidden-by-pagination');
+          } else {
+            tr.setAttribute('data-infinite-hidden', 'true');
+          }
+        });
+      }
+
+      if (tableWrap._infiniteScrollBound) return;
+      tableWrap._infiniteScrollBound = true;
+
+      let isLoading = false;
+
+      const onScroll = async () => {
+        if (!card.classList.contains('card-expanded') || isLoading) return;
+
+        const scrollTop = tableWrap.scrollTop;
+        const clientHeight = tableWrap.clientHeight;
+        const scrollHeight = tableWrap.scrollHeight;
+
+        // Near bottom (150px buffer)
+        if (scrollTop + clientHeight >= scrollHeight - 150) {
+          // 1. Reveal client-side hidden rows
+          const hiddenRows = Array.from(table.querySelectorAll('tbody tr[data-infinite-hidden="true"]'));
+          if (hiddenRows.length > 0) {
+            isLoading = true;
+            hiddenRows.slice(0, 40).forEach(tr => {
+              tr.style.display = '';
+              tr.removeAttribute('data-infinite-hidden');
+            });
+            setTimeout(() => { isLoading = false; }, 100);
+            return;
+          }
+
+          // 2. Fetch server-side next page if available
+          const nextBtn = card.querySelector('a[href*="page="], .pagination a:last-child');
+          if (nextBtn && nextBtn.href) {
+            const nextUrl = nextBtn.href;
+            if (nextUrl && !nextBtn.classList.contains('disabled') && card._lastLoadedUrl !== nextUrl) {
+              card._lastLoadedUrl = nextUrl;
+              isLoading = true;
+
+              let toast = card.querySelector('.infinite-scroll-toast');
+              if (!toast) {
+                toast = document.createElement('div');
+                toast.className = 'infinite-scroll-toast';
+                toast.style.cssText = 'position: absolute; bottom: 20px; right: 24px; background: rgba(15, 23, 42, 0.92); color: var(--accent-cyan); font-size: 11px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 999; pointer-events: none; backdrop-filter: blur(8px); display: flex; align-items: center; gap: 6px;';
+                toast.innerHTML = '<i class="bi bi-arrow-repeat bi-spin"></i> Memuat baris berikutnya...';
+                card.style.position = 'relative';
+                card.appendChild(toast);
+              }
+              toast.style.display = 'flex';
+
+              try {
+                const res = await fetch(nextUrl, { headers: { 'X-PJAX-Partial': 'true' } });
+                if (res.ok) {
+                  const text = await res.text();
+                  const doc = new DOMParser().parseFromString(text, 'text/html');
+                  const newTable = doc.querySelector(`#${table.id}`) || doc.querySelector('table');
+                  const newCard = doc.querySelector('.card.card-expanded') || doc.querySelector('.card');
+
+                  if (newTable) {
+                    const newRows = newTable.querySelectorAll('tbody tr');
+                    const tbody = table.querySelector('tbody');
+                    if (tbody && newRows.length > 0) {
+                      newRows.forEach(tr => tbody.appendChild(document.importNode(tr, true)));
+                    }
+                  }
+                  if (newCard) {
+                    const newPagination = newCard.querySelector('.pagination, div:has(> select[onchange*="getPageUrl"])');
+                    const oldPagination = card.querySelector('.pagination, div:has(> select[onchange*="getPageUrl"])');
+                    if (newPagination && oldPagination) {
+                      oldPagination.innerHTML = newPagination.innerHTML;
+                    }
+                  }
+                }
+              } catch (e) {
+                console.warn('Infinite scroll error:', e.message);
+              } finally {
+                isLoading = false;
+                if (toast) toast.style.display = 'none';
+              }
+            }
+          }
+        }
+      };
+
+      tableWrap.addEventListener('scroll', onScroll, { passive: true });
     };
 
     window.isElementHidden = (el) => {
