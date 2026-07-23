@@ -329,6 +329,7 @@ router.get('/early-warning-summary', (req, res) => {
 // AI Insights memory cache
 let aiInsightsCache = {
   uploadId: null,
+  key: null,
   insights: null,
   timestamp: 0
 };
@@ -336,7 +337,7 @@ let aiInsightsCache = {
 // Helper function to call Gemini directly (tool-free and very fast!)
 async function callGeminiDirect(prompt, settings) {
   const apiKey = settings.gemini_api_key;
-  const modelName = settings.gemini_model || 'gemini-1.5-flash';
+  const modelName = settings.gemini_model || 'gemini-2.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
   const requestBody = JSON.stringify({
     contents: [{
@@ -420,30 +421,68 @@ async function callGeminiDirect(prompt, settings) {
 
 // Rule-based fallback summary insights generator (offline and quota-exhausted guard)
 function generateSimulatedInsights(payload) {
-  const lowKec = [...payload.kecamatan_stats].sort((a, b) => a.persen_selesai - b.persen_selesai)[0];
-  const lowKecText = lowKec ? `khususnya pengawasan intensif di Kecamatan **${lowKec.nama}** yang mencatat capaian terendah (${lowKec.persen_selesai}% selesai)` : 'khususnya pengawasan intensif di wilayah kecamatan tertinggal';
+  let parts = [];
   
-  const ewText = payload.early_warning.zero_progress_pcl > 0 
-    ? `serta terdeteksinya **${payload.early_warning.zero_progress_pcl} PCL tanpa progres**`
-    : `meskipun kinerja petugas relatif stabil tanpa ada yang sepenuhnya mandek`;
+  if (payload.show_fasih && payload.fasih) {
+    parts.push(`realisasi pengisian Dokumen FASIH saat ini mencatat pencapaian sebesar **${payload.fasih.persen}%** (${payload.fasih.realisasi} dari target ${payload.fasih.target} dokumen, mode ${payload.target_fasih_mode})`);
+  }
+
+  if (payload.show_muatan && payload.muatan) {
+    parts.push(`capaian pengumpulan data muatan berada di angka **${payload.muatan.persen}%** (${payload.muatan.realisasi} dari target ${payload.muatan.total} muatan, mode ${payload.target_muatan_mode})`);
+  }
+
+  let ewText = '';
+  if (payload.show_early_warning && payload.early_warning) {
+    if (payload.early_warning.zero_progress_pcl > 0) {
+      ewText = `terdeteksi **${payload.early_warning.zero_progress_pcl} PCL tanpa progres** dan **${payload.early_warning.slow_progress_pcl} PCL berkinerja lambat** yang memerlukan evaluasi lapangan`;
+    } else {
+      ewText = `kinerja petugas pencacah relatif stabil tanpa adanya indikasi petugas yang sepenuhnya stagnan`;
+    }
+  }
+
+  let lowKecText = '';
+  if (payload.show_kecamatan && payload.kecamatan_stats && payload.kecamatan_stats.length > 0) {
+    const sorted = [...payload.kecamatan_stats].sort((a, b) => {
+      const valA = payload.show_fasih ? a.persen_fasih : a.persen_muatan;
+      const valB = payload.show_fasih ? b.persen_fasih : b.persen_muatan;
+      return valA - valB;
+    });
+    const lowKec = sorted[0];
+    if (lowKec) {
+      const metricVal = payload.show_fasih ? `${lowKec.persen_fasih}% FASIH` : `${lowKec.persen_muatan}% Muatan`;
+      lowKecText = `Fokus pendampingan dan akselerasi hendaknya diprioritaskan pada Kecamatan **${lowKec.nama}** yang saat ini mencatat progres terendah (${metricVal})`;
+    }
+  }
+
+  const mainStatsText = parts.length > 0 ? parts.join(', serta ') : 'monitoring progres lapangan berjalan secara berkala';
+  const ewSection = ewText ? `. Terkait kendala lapangan, ${ewText}` : '';
+  const kecSection = lowKecText ? `. ${lowKecText}.` : '.';
 
   return `<div class="ai-insight-paragraph" style="font-size: 13.5px; line-height: 1.6; color: var(--text-primary); padding: 14px 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light); border-radius: 12px;">
-    💡 **Analisis Taktis (Offline Fallback):** Progres sensus lapangan saat ini mencatat tingkat penyelesaian SLS sebesar **${payload.persen_selesai}%** dengan realisasi pengisian FASIH di angka **${payload.fasih.persen}%**. Hambatan kritis utama terletak pada capaian muatan yang masih rendah (**${payload.muatan.persen}%**), ${ewText}. Direkomendasikan untuk segera melakukan konsolidasi tim pengawas lapangan demi melakukan akselerasi penginputan data, ${lowKecText}.
+    💡 **Analisis Taktis (Offline Fallback):** Berdasarkan data pengawasan aktif, ${mainStatsText}${ewSection}${kecSection}
   </div>`;
 }
 
 // Endpoint untuk mendapatkan AI Smart Insights (proactive analytics)
 router.get('/ai-insights', async (req, res) => {
   const uploadId = res.locals.uploadId;
-  const settings = res.locals.settings;
+  const settings = res.locals.settings || {};
 
   if (!uploadId) {
     return res.json({ success: false, error: 'Belum ada data upload' });
   }
 
+  // Cek visibilitas data sesuai pengaturan admin
+  const showMuatan = settings.show_progres_muatan !== '0' && settings.overview_muatan !== '0';
+  const showFasih = settings.overview_fasih !== '0';
+  const showKecamatan = settings.overview_kecamatan !== '0';
+  const showEarlyWarning = settings.page_earlywarning !== '0';
+
+  const settingsKey = `${uploadId}_m${showMuatan ? 1 : 0}_f${showFasih ? 1 : 0}_k${showKecamatan ? 1 : 0}_e${showEarlyWarning ? 1 : 0}_tm${settings.target_muatan_mode}_tf${settings.target_fasih_mode}`;
+
   // Cek cache jika bukan force refresh
   const forceRefresh = req.query.refresh === 'true';
-  if (!forceRefresh && aiInsightsCache.uploadId === uploadId && aiInsightsCache.insights) {
+  if (!forceRefresh && aiInsightsCache.uploadId === uploadId && aiInsightsCache.key === settingsKey && aiInsightsCache.insights) {
     return res.json({ success: true, insights: aiInsightsCache.insights, fromCache: true });
   }
 
@@ -454,20 +493,18 @@ router.get('/ai-insights', async (req, res) => {
       return res.json({ success: false, error: 'Gagal memuat ringkasan progres data' });
     }
 
-    const kecs = getKecamatanStats(uploadId, settings);
-    const ew = getEarlyWarning(uploadId);
-
     const payload = {
       tanggal_data: summary.tanggal_data || 'Tidak diketahui',
-      total_sls: summary.total,
-      sls_selesai: summary.selesai,
-      persen_selesai: summary.total ? Number(((summary.selesai / summary.total) * 100).toFixed(2)) : 0,
-      muatan: {
-        total: summary.total_muatan,
-        realisasi: summary.muatan_selesai,
-        persen: summary.muatan_pct || 0
-      },
-      fasih: {
+      target_fasih_mode: settings.target_fasih_mode === 'fasih-sm' ? 'Target FASIH-SM' : 'Target Statis',
+      target_muatan_mode: settings.target_muatan_mode === 'honor' ? 'Target Honor' : 'Target Prelist',
+      show_muatan: showMuatan,
+      show_fasih: showFasih,
+      show_kecamatan: showKecamatan,
+      show_early_warning: showEarlyWarning
+    };
+
+    if (showFasih) {
+      payload.fasih = {
         target: summary.target_fasih_total,
         realisasi: (summary.submitted_total + summary.approved_total + summary.rejected_total),
         persen: summary.fasih_pct || 0,
@@ -475,46 +512,86 @@ router.get('/ai-insights', async (req, res) => {
         submitted: summary.submitted_total,
         approved: summary.approved_total,
         rejected: summary.rejected_total
-      },
-      early_warning: {
+      };
+    }
+
+    if (showMuatan) {
+      payload.muatan = {
+        total: summary.total_muatan,
+        realisasi: summary.muatan_selesai,
+        persen: summary.muatan_pct || 0
+      };
+    }
+
+    if (showEarlyWarning) {
+      const ew = getEarlyWarning(uploadId);
+      payload.early_warning = {
         zero_progress_pcl: ew.zeroPcl ? ew.zeroPcl.length : 0,
         slow_progress_pcl: ew.slowPcl ? ew.slowPcl.length : 0,
         stagnant_pcl: ew.stagnanPcl ? ew.stagnanPcl.length : 0,
         low_projected_pcl: ew.lowProjectedPcl ? ew.lowProjectedPcl.length : 0
-      },
-      kecamatan_stats: (kecs || []).map(k => ({
-        nama: k.kecamatan,
-        total_sls: k.total_subsls,
-        persen_selesai: k.total_subsls ? Number(((k.selesai / k.total_subsls) * 100).toFixed(2)) : 0,
-        muatan_total: k.total_muatan,
-        muatan_selesai: k.muatan_selesai,
-        persen_muatan: k.muatan_pct || 0,
-        persen_fasih: k.fasih_pct || 0
-      }))
-    };
+      };
+    }
+
+    if (showKecamatan) {
+      const kecs = getKecamatanStats(uploadId, settings);
+      payload.kecamatan_stats = (kecs || []).map(k => {
+        const item = {
+          nama: k.kecamatan,
+          persen_fasih: k.fasih_pct || 0
+        };
+        if (showMuatan) {
+          item.muatan_total = k.total_muatan;
+          item.muatan_selesai = k.muatan_selesai;
+          item.persen_muatan = k.muatan_pct || 0;
+        }
+        return item;
+      });
+    }
+
+    let promptSections = [];
+    promptSections.push(`DATA PROGRES TERKINI (Tanggal Rekap Data: ${payload.tanggal_data}):`);
+    
+    if (showFasih && payload.fasih) {
+      promptSections.push(`- Dokumen FASIH (${payload.target_fasih_mode} - Target vs Realisasi): ${payload.fasih.realisasi} / ${payload.fasih.target} (${payload.fasih.persen}%)`);
+      promptSections.push(`  - Rincian Dokumen FASIH: Draft: ${payload.fasih.draft}, Submitted: ${payload.fasih.submitted}, Approved: ${payload.fasih.approved}, Rejected: ${payload.fasih.rejected}`);
+    }
+
+    if (showMuatan && payload.muatan) {
+      promptSections.push(`- Progres Muatan (${payload.target_muatan_mode} - Target vs Realisasi): ${payload.muatan.realisasi} / ${payload.muatan.total} (${payload.muatan.persen}%)`);
+    }
+
+    if (showEarlyWarning && payload.early_warning) {
+      promptSections.push(`- Early Warning Petugas:`);
+      promptSections.push(`  - Petugas tanpa progres (Zero Progress): ${payload.early_warning.zero_progress_pcl} PCL`);
+      promptSections.push(`  - Petugas berkinerja lambat (Slow Progress): ${payload.early_warning.slow_progress_pcl} PCL`);
+      promptSections.push(`  - Petugas dengan progres stagnan: ${payload.early_warning.stagnant_pcl} PCL`);
+      promptSections.push(`  - Proyeksi target rendah: ${payload.early_warning.low_projected_pcl} PCL`);
+    }
+
+    if (showKecamatan && payload.kecamatan_stats && payload.kecamatan_stats.length > 0) {
+      promptSections.push(`- Progres Per Kecamatan:`);
+      payload.kecamatan_stats.forEach(k => {
+        let kecDetail = `  * Kecamatan ${k.nama}: Dokumen FASIH: ${k.persen_fasih}%`;
+        if (showMuatan) {
+          kecDetail += `, Muatan: ${k.persen_muatan}%`;
+        }
+        promptSections.push(kecDetail);
+      });
+    }
+
+    const promptDataText = promptSections.join('\n');
 
     const prompt = `
 Anda adalah AI Analyst senior untuk sistem Monitoring Lapangan SE2026 PPU BPS.
-Tugas Anda adalah menganalisis data progres lapangan berikut dan memberikan analisis strategis mendalam, tajam, dan solutif dalam satu paragraf utuh (single block).
+Tugas Anda adalah menganalisis data progres lapangan berikut yang DITAMPILKAN SANGAT SPESIFIK SESUAI DENGAN PENGATURAN DASBOR ADMIN dan memberikan analisis strategis mendalam, tajam, serta solutif dalam satu paragraf utuh (single block).
 
-DATA PROGRES TERKINI (Tanggal Rekap Data: ${payload.tanggal_data}):
-- Total SLS Terdaftar: ${payload.total_sls} SLS
-- SLS Selesai (FASIH): ${payload.sls_selesai} SLS (${payload.persen_selesai}%)
-- Progres Muatan (Target vs Realisasi): ${payload.muatan.realisasi} / ${payload.muatan.total} (${payload.muatan.persen}%)
-- Dokumen FASIH (Target vs Realisasi): ${payload.fasih.realisasi} / ${payload.fasih.target} (${payload.fasih.percent || payload.fasih.persen}%)
-  - Rincian Dokumen FASIH: Draft: ${payload.fasih.draft}, Submitted: ${payload.fasih.submitted}, Approved: ${payload.fasih.approved}, Rejected: ${payload.fasih.rejected}
-- Early Warning Petugas:
-  - Petugas tanpa progres (Zero Progress): ${payload.early_warning.zero_progress_pcl} PCL
-  - Petugas berkinerja lambat (Slow Progress): ${payload.early_warning.slow_progress_pcl} PCL
-  - Petugas dengan progres stagnan: ${payload.early_warning.stagnant_pcl} PCL
-  - Proyeksi target rendah: ${payload.early_warning.low_projected_pcl} PCL
-- Progres Per Kecamatan:
-${payload.kecamatan_stats.map(k => `  * Kecamatan ${k.nama}: SLS Selesai: ${k.persen_selesai}%, Muatan: ${k.persen_muatan}%, Dokumen FASIH: ${k.persen_fasih}%`).join('\n')}
+${promptDataText}
 
-ATURAN FORMAT JAWABAN (WAJIB DIIKUTI):
-1. Hasil analisis harus berupa SATU PARAGRAF saja (TIDAK BOLEH dibuat terpisah-pisah, bullet points, daftar list, kolom, atau jeda baris).
-2. Tulis kalimat yang mengalir secara natural, profesional, mendalam, tajam, dan langsung menyoroti isu kritis.
-3. Hubungkan data progres SLS selesai (${payload.persen_selesai}%), realisasi muatan (${payload.muatan.percent || payload.muatan.persen}%), dokumen FASIH (${payload.fasih.persen}%), serta peta status petugas peringatan dini (${payload.early_warning.zero_progress_pcl} tanpa progres, ${payload.early_warning.slow_progress_pcl} lambat) untuk merumuskan simpulan dan saran taktis.
+ATURAN STRICT & FORMAT JAWABAN (WAJIB DIIKUTI TANPA PENGECUALIAN):
+1. Hasil analisis HARUS HANYA MENGGUNAKAN INDIKATOR DATA DI ATAS. JANGAN PERNAH menyebutkan atau mengarang indikator yang tidak ditampilkan di atas (khususnya JANGAN sebutkan persen SLS Selesai atau SLS Selesai karena data belum valid).
+2. Hasil analisis harus berupa SATU PARAGRAF saja (TIDAK BOLEH dibuat terpisah-pisah, bullet points, daftar list, kolom, atau jeda baris).
+3. Tulis kalimat yang mengalir secara natural, profesional, mendalam, tajam, dan langsung menyoroti isu kritis berdasarkan data aktif yang tersedia.
 4. Bungkus paragraf analisis Anda menggunakan struktur HTML berikut agar menyatu dengan UI dasbor:
    <div class="ai-insight-paragraph" style="font-size: 13.5px; line-height: 1.6; color: var(--text-primary); padding: 14px 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light); border-radius: 12px;">
      💡 **Analisis Lapangan Terpadu:** [Tulis paragraf analisis strategis Anda di sini secara menyatu. Gunakan format markdown **bold** untuk menebalkan angka statistik, nama kecamatan terendah, atau kata kunci penting]
@@ -543,6 +620,7 @@ ATURAN FORMAT JAWABAN (WAJIB DIIKUTI):
       }
       aiInsightsCache = {
         uploadId,
+        key: settingsKey,
         insights: content,
         timestamp: Date.now()
       };

@@ -722,29 +722,29 @@
     <!-- HEATMAP AKTIVITAS HARIAN -->
     <% if (settings.overview_heatmap === '1') { %>
     <div class="card mt-4" style="margin-bottom: 20px;">
-      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-        <div class="card-title"><i class="bi bi-grid-3x3-gap-fill text-cyan"></i> Heatmap Aktivitas Harian</div>
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 16px 20px;">
+        <div class="card-title" style="font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;"><i class="bi bi-grid-3x3-gap-fill text-cyan" style="font-size: 18px;"></i> Heatmap Aktivitas Harian</div>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <select id="heatmapMetricSelect" class="form-select form-select-sm" style="font-size: 11px; padding: 4px 8px; width: auto; border-radius: 6px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer;">
+          <select id="heatmapMetricSelect" class="form-select form-select-sm" style="font-size: 12px; padding: 6px 12px; width: auto; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer; font-weight: 500;">
             <option value="fasih">Progres FASIH (Submit + Approve + Reject)</option>
             <option value="survey">Survei Terdata (Usaha + Keluarga)</option>
             <option value="sls">SLS Selesai</option>
           </select>
         </div>
       </div>
-      <div class="card-body" style="padding: 16px 20px; overflow-x: auto;">
-        <div class="heatmap-container" style="min-width: 800px; display: flex; flex-direction: column; gap: 8px;">
-          <div id="heatmapGrid" style="display: flex; gap: 3px; position: relative;"></div>
-          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); margin-top: 8px; padding: 0 4px;">
-            <div id="heatmapDateRange">...</div>
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <span>Kurang</span>
-              <div class="heatmap-square" style="width: 11px; height: 11px; border-radius: 2px; background: var(--bg-progress-wrap); border: 1px solid var(--border-light);"></div>
-              <div class="heatmap-square" style="width: 11px; height: 11px; border-radius: 2px; background: rgba(6, 182, 212, 0.25);"></div>
-              <div class="heatmap-square" style="width: 11px; height: 11px; border-radius: 2px; background: rgba(6, 182, 212, 0.5);"></div>
-              <div class="heatmap-square" style="width: 11px; height: 11px; border-radius: 2px; background: rgba(6, 182, 212, 0.75);"></div>
-              <div class="heatmap-square" style="width: 11px; height: 11px; border-radius: 2px; background: rgb(6, 182, 212); box-shadow: 0 0 4px rgba(6, 182, 212, 0.3);"></div>
-              <span>Lebih</span>
+      <div class="card-body" style="padding: 20px 24px; overflow-x: auto;">
+        <div class="heatmap-container" style="min-width: 900px; display: flex; flex-direction: column; gap: 12px;">
+          <div id="heatmapGrid" style="display: flex; gap: 4px; position: relative;"></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); margin-top: 12px; padding: 0 4px;">
+            <div id="heatmapDateRange" style="font-weight: 600; color: var(--text-secondary);">...</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-weight: 500;">Kurang</span>
+              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: var(--bg-progress-wrap); border: 1px solid var(--border-light);"></div>
+              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.25);"></div>
+              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.5);"></div>
+              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.75);"></div>
+              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgb(6, 182, 212); box-shadow: 0 0 6px rgba(6, 182, 212, 0.4);"></div>
+              <span style="font-weight: 500;">Lebih</span>
             </div>
           </div>
         </div>
@@ -1225,11 +1225,12 @@
     weekdayCol.style.display = 'flex';
     weekdayCol.style.flexDirection = 'column';
     weekdayCol.style.justifyContent = 'space-between';
-    weekdayCol.style.paddingRight = '8px';
-    weekdayCol.style.fontSize = '9px';
+    weekdayCol.style.paddingRight = '10px';
+    weekdayCol.style.fontSize = '11px';
+    weekdayCol.style.fontWeight = '500';
     weekdayCol.style.color = 'var(--text-muted)';
-    weekdayCol.style.height = '95px';
-    weekdayCol.style.marginTop = '18px';
+    weekdayCol.style.height = '129px';
+    weekdayCol.style.marginTop = '22px';
     weekdayCol.innerHTML = `
       <div>Min</div>
       <div>Sel</div>
@@ -1243,8 +1244,8 @@
     
     const columnsContainer = document.createElement('div');
     columnsContainer.style.display = 'flex';
-    columnsContainer.style.gap = '3px';
-    columnsContainer.style.marginTop = '18px';
+    columnsContainer.style.gap = '4px';
+    columnsContainer.style.marginTop = '22px';
 
     let currentMonthStr = '';
 
@@ -1252,7 +1253,7 @@
       const weekCol = document.createElement('div');
       weekCol.style.display = 'flex';
       weekCol.style.flexDirection = 'column';
-      weekCol.style.gap = '3px';
+      weekCol.style.gap = '4px';
       weekCol.style.position = 'relative';
 
       const sunDate = new Date(dates[w * 7]);
@@ -1260,10 +1261,11 @@
       
       if (monthStr !== currentMonthStr) {
         const monthHeader = document.createElement('div');
-        monthHeader.style.fontSize = '9px';
+        monthHeader.style.fontSize = '11px';
+        monthHeader.style.fontWeight = '600';
         monthHeader.style.color = 'var(--text-muted)';
         monthHeader.style.position = 'absolute';
-        monthHeader.style.top = '-15px';
+        monthHeader.style.top = '-20px';
         monthHeader.style.left = '0';
         monthHeader.style.whiteSpace = 'nowrap';
         monthHeader.textContent = monthStr;
@@ -1277,9 +1279,9 @@
         const dayData = dailyIncrements[idx];
         const square = document.createElement('div');
         square.className = 'heatmap-square';
-        square.style.width = '11px';
-        square.style.height = '11px';
-        square.style.borderRadius = '2px';
+        square.style.width = '15px';
+        square.style.height = '15px';
+        square.style.borderRadius = '3px';
         square.style.cursor = 'pointer';
 
         let level = 0;
@@ -1301,7 +1303,7 @@
           square.style.background = 'rgba(6, 182, 212, 0.75)';
         } else {
           square.style.background = 'rgb(6, 182, 212)';
-          square.style.boxShadow = '0 0 4px rgba(6, 182, 212, 0.3)';
+          square.style.boxShadow = '0 0 6px rgba(6, 182, 212, 0.4)';
         }
 
         const dateObj = new Date(dayData.date);
@@ -1319,7 +1321,7 @@
         square.title = tooltipText;
         
         square.addEventListener('mouseenter', () => {
-          square.style.transform = 'scale(1.2)';
+          square.style.transform = 'scale(1.25)';
           square.style.zIndex = '10';
           square.style.transition = 'transform 0.1s ease';
         });
