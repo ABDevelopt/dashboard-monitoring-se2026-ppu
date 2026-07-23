@@ -252,27 +252,29 @@ async function getAnomalySheetsData(settings = {}, forceRefresh = false) {
 
 async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
   const DEFAULT_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycby3zpFtIN58xOf6GxnDqkl7gjwKX-oeUZwuAp93wL0OrejumH91ykBGa9XbsoMdhZQetA/exec';
-  const appsScriptUrl = settings.google_sheets_apps_script_url || DEFAULT_APPS_SCRIPT;
+  const appsScriptUrl = (settings.google_sheets_apps_script_url || DEFAULT_APPS_SCRIPT).trim();
 
-  if (!appsScriptUrl || !appsScriptUrl.trim()) {
+  if (!appsScriptUrl) {
     throw new Error('URL Google Apps Script Web App belum dikonfigurasi.');
   }
 
-  const postData = JSON.stringify({
+  const payloadObj = {
     assignment_id: payload.assignment_id,
     type: payload.type || 'usaha',
     tindak_lanjut: payload.tindak_lanjut,
     penjelasan: payload.penjelasan || ''
-  });
+  };
 
+  const postData = JSON.stringify(payloadObj);
   const TIMEOUT_MS = 12000;
   let responseText = '';
 
+  // Attempt 1: Fetch POST
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-    const res = await fetch(appsScriptUrl.trim(), {
+    const res = await fetch(appsScriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: postData,
@@ -283,25 +285,26 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
     clearTimeout(timeoutId);
     responseText = await res.text();
   } catch (fetchErr) {
-    console.warn(`[GoogleSheetsService] Fetch to Apps Script failed: ${fetchErr.message}, trying curl fallback...`);
-    // Curl fallback
-    responseText = await new Promise((resolve, reject) => {
-      const child = spawn('curl', [
-        '-sL',
-        '-X', 'POST',
-        '--connect-timeout', '8',
-        '-m', '12',
-        '-H', 'Content-Type: application/json',
-        '-d', postData,
-        appsScriptUrl.trim()
-      ]);
-      const stdoutChunks = [];
-      child.stdout.on('data', chunk => stdoutChunks.push(chunk));
-      child.on('close', code => {
-        if (code === 0) resolve(Buffer.concat(stdoutChunks).toString());
-        else reject(new Error(`curl exit code ${code}`));
-      });
-    });
+    console.warn(`[GoogleSheetsService] Fetch POST to Apps Script failed: ${fetchErr.message}`);
+  }
+
+  // Attempt 2: If POST returned HTML or was empty, try GET with query string
+  if (!responseText || responseText.includes('<html') || responseText.includes('<!DOCTYPE')) {
+    try {
+      const queryParams = new URLSearchParams(payloadObj).toString();
+      const getUrl = `${appsScriptUrl}?${queryParams}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+      const resGet = await fetch(getUrl, { redirect: 'follow', signal: controller.signal });
+      clearTimeout(timeoutId);
+      const getBody = await resGet.text();
+      if (getBody && !getBody.includes('<html') && !getBody.includes('<!DOCTYPE')) {
+        responseText = getBody;
+      }
+    } catch (getErr) {
+      console.warn(`[GoogleSheetsService] Fetch GET fallback failed: ${getErr.message}`);
+    }
   }
 
   // Check if response contains HTML login/access error
@@ -314,11 +317,11 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
     jsonRes = JSON.parse(responseText);
   } catch (e) {
     console.warn('[GoogleSheetsService] Raw Apps Script response:', responseText.slice(0, 300));
-    throw new Error('Format respons Google Apps Script tidak valid.');
+    throw new Error('Format respons Google Apps Script tidak valid. Pastikan Apps Script di-deploy ulang sebagai Version Baru dengan opsi "Anyone".');
   }
 
   if (jsonRes.success === false) {
-    throw new Error(jsonRes.error || jsonRes.message || 'Gagal memperbarui Google Sheet');
+    throw new Error(jsonRes.error || jsonRes.message || 'Assignment ID tidak ditemukan di Google Spreadsheet');
   }
 
   // Invalidate / update memory cache locally as well
@@ -333,7 +336,7 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
     }
   }
 
-  return { success: true, message: 'Berhasil mengupdate data di Google Spreadsheet' };
+  return { success: true, message: jsonRes.message || 'Berhasil mengupdate data di Google Spreadsheet' };
 }
 
 module.exports = {
