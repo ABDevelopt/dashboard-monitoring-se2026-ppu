@@ -188,9 +188,9 @@
           <span class="nav-icon"><i class="bi bi-map"></i></span> Peta Progres
         </a>
         <% } %>
-        <% if (typeof settings !== 'undefined' && settings.page_aiagent === '1') { %>
+        <% if (typeof settings !== 'undefined' && settings.page_agent === '1') { %>
         <a href="/agent" class="nav-item <%= activePage === 'agent' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-robot"></i></span> Asisten AI Chat
+          <span class="nav-icon"><i class="bi bi-sparkles text-purple"></i></span> Pananyo Taka
         </a>
         <% } %>
       </div>
@@ -410,8 +410,8 @@
     <span>Petugas</span>
   </a>
   <a href="/agent" class="bottom-nav-item <%= activePage === 'agent' ? 'active' : '' %>">
-    <i class="bi bi-robot"></i>
-    <span>Chat AI</span>
+    <i class="bi bi-sparkles"></i>
+    <span>Pananyo Taka</span>
   </a>
   <button id="bottomNavMenuBtn" class="bottom-nav-item" aria-label="Buka Menu Lainnya">
     <i class="bi bi-grid"></i>
@@ -644,7 +644,7 @@
     const PAGE_MAP = {
       '/':                  { label: 'Overview',          icon: 'bi-house-door-fill' },
       '/map':               { label: 'Peta Progres',      icon: 'bi-map-fill' },
-      '/agent':             { label: 'Asisten AI',        icon: 'bi-robot' },
+      '/agent':             { label: 'Pananyo Taka',      icon: 'bi-sparkles' },
       '/kecamatan':         { label: 'Kecamatan',         icon: 'bi-geo-alt-fill' },
       '/korlap':            { label: 'Korlap',            icon: 'bi-person-lines-fill' },
       '/pml':               { label: 'PML',               icon: 'bi-person-badge-fill' },

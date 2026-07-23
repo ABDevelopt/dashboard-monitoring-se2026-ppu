@@ -628,12 +628,13 @@
       background: var(--bg-secondary);
       border: 1.5px solid var(--border);
       border-radius: 30px;
-      padding: 6px 8px 6px 18px;
+      padding: 4px 6px 4px 18px;
       display: flex;
       align-items: center;
       gap: 10px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-sizing: border-box;
     }
 
     .gemini-input-bar:focus-within {
@@ -647,13 +648,17 @@
       background: transparent;
       border: none;
       color: var(--text-primary);
-      padding: 8px 0;
-      font-size: 14.5px;
+      padding: 9px 0 7px 0;
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.35;
       outline: none;
       resize: none;
-      min-height: 40px;
+      height: 38px;
+      min-height: 38px;
       max-height: 120px;
       font-family: inherit;
+      box-sizing: border-box;
     }
 
     .gemini-input::placeholder {
@@ -927,15 +932,15 @@
         </button>
         <i class="bi bi-sparkles gemini-sparkle-icon" style="font-size: 20px;"></i>
         <div>
-          <span style="font-weight: 700; font-size: 15px;" class="gemini-gradient-text">Gemini AI SE2026</span>
-          <p style="margin: 2px 0 0 0; font-size: 10px; font-weight: 500; color: var(--text-muted);">Model AI Generatif Sensus Ekonomi Penajam Paser Utara</p>
+          <span style="font-weight: 700; font-size: 15.5px;" class="gemini-gradient-text">Pananyo Taka</span>
+          <p style="margin: 2px 0 0 0; font-size: 10px; font-weight: 500; color: var(--text-muted);">Asisten AI Pintar Sensus Ekonomi 2026 Penajam Paser Utara</p>
         </div>
       </div>
       <div class="chat-header-actions">
         <button class="btn btn-secondary btn-sm" onclick="clearChatHistory()" style="padding: 6px 12px; font-size: 11px; height: 32px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; border-radius: 99px;" title="Hapus riwayat obrolan">
           <i class="bi bi-plus-lg"></i> Percakapan Baru
         </button>
-        <span id="agentStatus" class="status-badge ready" style="border-radius: 99px;"><span class="status-dot"></span><span class="status-text">Gemini 2.5 Flash</span></span>
+        <span id="agentStatus" class="status-badge ready" style="border-radius: 99px;"><span class="status-dot"></span><span class="status-text">Pananyo Taka Active</span></span>
         <input type="hidden" id="agentProvider" value="<%= typeof provider !== 'undefined' && provider ? provider : 'gemini' %>">
         <input type="hidden" id="agentModel" value="<%= typeof model !== 'undefined' && model ? model : 'gemini-1.5-flash' %>">
       </div>
@@ -946,8 +951,8 @@
       <div class="gemini-welcome-container" id="geminiWelcomeHero">
         <div class="gemini-hero-header">
           <i class="bi bi-sparkles gemini-hero-sparkle"></i>
-          <h1 class="gemini-hero-title">Halo, <span class="gemini-gradient-text">Apa yang bisa saya bantu hari ini?</span></h1>
-          <p class="gemini-hero-subtitle">Analisis real-time data Sensus Ekonomi 2026 Penajam Paser Utara. Pilih topik cepat atau ketik pertanyaan Anda:</p>
+          <h1 class="gemini-hero-title">Halo, <span class="gemini-gradient-text">Saya Pananyo Taka</span></h1>
+          <p class="gemini-hero-subtitle">Asisten Pintar Sensus Ekonomi 2026 Penajam Paser Utara. Apa yang ingin Anda analisis atau tanyakan hari ini?</p>
         </div>
 
         <div class="gemini-suggestion-grid">
@@ -980,7 +985,7 @@
     
     <div class="chat-footer-wrapper">
       <form id="chatForm" class="gemini-input-bar" onsubmit="handleChatSubmit(event)">
-        <textarea id="chatInput" class="gemini-input" rows="1" placeholder="Tanyakan apapun pada Gemini..." required autocomplete="off"></textarea>
+        <textarea id="chatInput" class="gemini-input" rows="1" placeholder="Tanyakan sesuatu pada Pananyo Taka..." required autocomplete="off"></textarea>
         <button type="submit" class="gemini-send-btn" title="Kirim Pesan">
           <i class="bi bi-send-fill" style="font-size: 15px;"></i>
         </button>
