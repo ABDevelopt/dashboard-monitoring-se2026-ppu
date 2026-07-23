@@ -768,7 +768,7 @@
               <button class="btn btn-primary btn-xs" id="btnFocusDesa" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 6px; padding: 6px 10px;">
                 <i class="bi bi-search"></i> Zoom &amp; Tampilkan Batas SLS
               </button>
-              <a href="/subsls?kec=${encodeURIComponent(properties.nmkec)}&amp;desa=${encodeURIComponent(properties.nmdesa)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; text-decoration: none;">
+              <a href="/subsls?kec=${encodeURIComponent(properties.nmkec)}&desa=${encodeURIComponent(properties.nmdesa)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; text-decoration: none;">
                 <i class="bi bi-table"></i> Drilldown Tabel SLS Desa ${properties.nmdesa}
               </a>
               <a href="/kecamatan?kec=${encodeURIComponent(properties.nmkec)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; text-decoration: none;">
@@ -871,7 +871,7 @@
               <a href="/subsls?search=${encodeURIComponent(properties.kode)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; text-decoration: none;">
                 <i class="bi bi-table"></i> Buka Tabel SLS (${properties.kode})
               </a>
-              ${pcl &amp;&amp; pcl !== 'Belum Ditentukan' ? `
+              ${(pcl && pcl !== 'Belum Ditentukan') ? `
                 <a href="/pcl?pcl=${encodeURIComponent(pcl)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; text-decoration: none;">
                   <i class="bi bi-person"></i> Drilldown PCL (${pcl})
                 </a>
@@ -915,7 +915,7 @@
                         <tr class="muatan-col"><td class="label">Progres Muatan</td><td class="value">${pct}%</td></tr>
                       </table>
                       <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
-                        <a href="/subsls?kec=${encodeURIComponent(feature.properties.nmkec)}&amp;desa=${encodeURIComponent(feature.properties.nmdesa)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
+                        <a href="/subsls?kec=${encodeURIComponent(feature.properties.nmkec)}&desa=${encodeURIComponent(feature.properties.nmdesa)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
                           <i class="bi bi-arrow-right-circle"></i> Buka Drilldown Wilayah
                         </a>
                       </div>
