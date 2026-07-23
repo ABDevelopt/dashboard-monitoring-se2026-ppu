@@ -208,12 +208,16 @@ function handleRequest(e) {
       if (colTindakLanjut === -1) colTindakLanjut = 17;
       if (colPenjelasan === -1) colPenjelasan = 21;
 
-      // PASS 1: Strict Match (Assignment ID AND Nama Usaha/KK MUST BOTH MATCH!)
+      // PASS 1: Exact Unique Match by No (No Urut Column D) + Assignment ID / Nama
       for (var i = 1; i < data.length; i++) {
+        var cellNo = String(data[i][colNo] || '').trim();
         var cellAssignment = String(data[i][colAssignment] || '').trim().toLowerCase();
         var cellNama = String(data[i][colNama] || '').trim().toLowerCase();
 
-        if (targetAssignmentId && cellAssignment && cellAssignment === targetAssignmentId && targetNama && cellNama && cellNama === targetNama) {
+        if (targetNo && cellNo && cellNo === targetNo && (
+          (targetAssignmentId && cellAssignment && cellAssignment === targetAssignmentId) ||
+          (targetNama && cellNama && cellNama === targetNama)
+        )) {
           sheet.getRange(i + 1, colTindakLanjut + 1).setValue(statusTL);
           if (penjelasan) sheet.getRange(i + 1, colPenjelasan + 1).setValue(penjelasan);
           updated = true;
@@ -223,13 +227,16 @@ function handleRequest(e) {
         }
       }
 
-      // PASS 2: Match by No AND Nama Usaha/KK
+      // PASS 2: Match by Assignment ID + Nama + Nama Anomali
       if (!updated) {
         for (var i = 1; i < data.length; i++) {
+          var cellAssignment = String(data[i][colAssignment] || '').trim().toLowerCase();
           var cellNama = String(data[i][colNama] || '').trim().toLowerCase();
-          var cellNo = String(data[i][colNo] || '').trim();
+          var cellNamaAnomali = String(data[i][colNamaAnomali] || '').trim().toLowerCase();
 
-          if (targetNo && cellNo && cellNo === targetNo && targetNama && cellNama && cellNama === targetNama) {
+          if (targetAssignmentId && cellAssignment && cellAssignment === targetAssignmentId &&
+              targetNama && cellNama && cellNama === targetNama &&
+              targetNamaAnomali && cellNamaAnomali && cellNamaAnomali === targetNamaAnomali) {
             sheet.getRange(i + 1, colTindakLanjut + 1).setValue(statusTL);
             if (penjelasan) sheet.getRange(i + 1, colPenjelasan + 1).setValue(penjelasan);
             updated = true;
@@ -240,11 +247,29 @@ function handleRequest(e) {
         }
       }
 
-      // PASS 3: Fallback match by Assignment ID only
-      if (!updated && targetAssignmentId) {
+      // PASS 3: Match by Assignment ID + Nama
+      if (!updated) {
         for (var i = 1; i < data.length; i++) {
           var cellAssignment = String(data[i][colAssignment] || '').trim().toLowerCase();
-          if (cellAssignment && cellAssignment === targetAssignmentId) {
+          var cellNama = String(data[i][colNama] || '').trim().toLowerCase();
+
+          if (targetAssignmentId && cellAssignment && cellAssignment === targetAssignmentId &&
+              targetNama && cellNama && cellNama === targetNama) {
+            sheet.getRange(i + 1, colTindakLanjut + 1).setValue(statusTL);
+            if (penjelasan) sheet.getRange(i + 1, colPenjelasan + 1).setValue(penjelasan);
+            updated = true;
+            updatedSheetName = sheet.getName();
+            updatedRowIndex = i + 1;
+            break;
+          }
+        }
+      }
+
+      // PASS 4: Fallback match by No only
+      if (!updated && targetNo) {
+        for (var i = 1; i < data.length; i++) {
+          var cellNo = String(data[i][colNo] || '').trim();
+          if (cellNo && cellNo === targetNo) {
             sheet.getRange(i + 1, colTindakLanjut + 1).setValue(statusTL);
             if (penjelasan) sheet.getRange(i + 1, colPenjelasan + 1).setValue(penjelasan);
             updated = true;

@@ -205,7 +205,7 @@
             </thead>
             <tbody>
               <% filteredUsaha.forEach((item, idx) => { %>
-                <tr id="row-<%= item.assignment_id %>">
+                <tr id="row-<%= item.id %>">
                   <td class="text-center fw-bold" style="background: var(--bg-subtle);"><%= idx + 1 %></td>
                   <td class="td-primary">
                     <strong style="color: var(--text-primary); font-size: 13.5px;" class="item-name"><%= item.nama_usaha %></strong>
@@ -239,7 +239,7 @@
                   </td>
                   <td class="text-center">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-                      <button onclick="openEditModal('<%= item.assignment_id %>', 'usaha', `<%= item.nama_usaha.replace(/`/g, '') %>`, `<%= item.petugas.replace(/`/g, '') %>`, `<%= (item.tindak_lanjut || '').replace(/`/g, '') %>`, `<%= (item.penjelasan || '').replace(/`/g, '') %>`, '<%= item.no %>', `<%= (item.nama_anomali || '').replace(/`/g, '') %>`)" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-yellow);" title="Edit Status Tindak Lanjut &amp; Sync ke Google Sheets">
+                      <button onclick="openEditModal('<%= item.id %>', '<%= item.assignment_id %>', 'usaha', `<%= item.nama_usaha.replace(/`/g, '') %>`, `<%= item.petugas.replace(/`/g, '') %>`, `<%= (item.tindak_lanjut || '').replace(/`/g, '') %>`, `<%= (item.penjelasan || '').replace(/`/g, '') %>`, '<%= item.no %>', `<%= (item.nama_anomali || '').replace(/`/g, '') %>`)" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-yellow);" title="Edit Status Tindak Lanjut &amp; Sync ke Google Sheets">
                         <i class="bi bi-pencil-square"></i> Edit
                       </button>
 
@@ -291,7 +291,7 @@
             </thead>
             <tbody>
               <% filteredKeluarga.forEach((item, idx) => { %>
-                <tr id="row-<%= item.assignment_id %>">
+                <tr id="row-<%= item.id %>">
                   <td class="text-center fw-bold" style="background: var(--bg-subtle);"><%= idx + 1 %></td>
                   <td class="td-primary">
                     <strong style="color: var(--text-primary); font-size: 13.5px;" class="item-name"><%= item.nama_kk %></strong>
@@ -325,7 +325,7 @@
                   </td>
                   <td class="text-center">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-                      <button onclick="openEditModal('<%= item.assignment_id %>', 'keluarga', `<%= item.nama_kk.replace(/`/g, '') %>`, `<%= item.petugas.replace(/`/g, '') %>`, `<%= (item.tindak_lanjut || '').replace(/`/g, '') %>`, `<%= (item.penjelasan || '').replace(/`/g, '') %>`, '<%= item.no %>', `<%= (item.nama_anomali || '').replace(/`/g, '') %>`)" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-yellow);" title="Edit Status Tindak Lanjut &amp; Sync ke Google Sheets">
+                      <button onclick="openEditModal('<%= item.id %>', '<%= item.assignment_id %>', 'keluarga', `<%= item.nama_kk.replace(/`/g, '') %>`, `<%= item.petugas.replace(/`/g, '') %>`, `<%= (item.tindak_lanjut || '').replace(/`/g, '') %>`, `<%= (item.penjelasan || '').replace(/`/g, '') %>`, '<%= item.no %>', `<%= (item.nama_anomali || '').replace(/`/g, '') %>`)" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-yellow);" title="Edit Status Tindak Lanjut &amp; Sync ke Google Sheets">
                         <i class="bi bi-pencil-square"></i> Edit
                       </button>
 
@@ -435,6 +435,7 @@
     </div>
 
     <form id="editAnomalyForm" onsubmit="saveAnomalyStatus(event)">
+      <input type="hidden" id="modalItemId" name="item_id">
       <input type="hidden" id="modalAssignmentId" name="assignment_id">
       <input type="hidden" id="modalType" name="type">
       <input type="hidden" id="modalNama" name="nama">
@@ -482,7 +483,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function openEditModal(assignmentId, type, itemName, pclName, currentStatus, currentNotes, noVal, namaAnomaliVal) {
+function openEditModal(itemId, assignmentId, type, itemName, pclName, currentStatus, currentNotes, noVal, namaAnomaliVal) {
+  document.getElementById('modalItemId').value = itemId || '';
   document.getElementById('modalAssignmentId').value = assignmentId || '';
   document.getElementById('modalType').value = type || 'usaha';
   document.getElementById('modalNama').value = itemName || '';
@@ -515,6 +517,7 @@ async function saveAnomalyStatus(e) {
   const saveBtn = document.getElementById('modalSaveBtn');
   const alertBox = document.getElementById('modalAlert');
   
+  const itemId = document.getElementById('modalItemId').value;
   const assignmentId = document.getElementById('modalAssignmentId').value;
   const type = document.getElementById('modalType').value;
   const nama = document.getElementById('modalNama').value;
@@ -557,8 +560,8 @@ async function saveAnomalyStatus(e) {
       alertBox.style.color = 'var(--accent-green)';
       alertBox.innerHTML = `<i class="bi bi-check-circle-fill"></i> ${data.message || 'Tersinkronisasi ke Google Spreadsheet!'}` + (latencySec ? ` <small style="opacity: 0.85;">(${latencySec}s)</small>` : '');
 
-      // Update row in DOM without full reload
-      const row = document.getElementById('row-' + assignmentId);
+      // Update exact target row in DOM without full reload
+      const row = document.getElementById('row-' + itemId);
       if (row) {
         const isDone = tindakLanjut.toLowerCase().includes('sudah') || tindakLanjut.toLowerCase().includes('selesai');
         const statusTd = row.querySelector('.item-status-td');

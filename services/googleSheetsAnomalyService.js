@@ -343,7 +343,7 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
   if (cache.data) {
     const isDone = payload.tindak_lanjut.toLowerCase().includes('sudah') || payload.tindak_lanjut.toLowerCase().includes('selesai');
     const targetList = payload.type === 'keluarga' ? cache.data.keluargaList : cache.data.usahaList;
-    const item = targetList.find(i => (payload.assignment_id && i.assignment_id === payload.assignment_id) || (payload.nama && (i.nama_usaha === payload.nama || i.nama_kk === payload.nama)));
+    const item = targetList.find(i => (payload.no && String(i.no) === String(payload.no)) || (payload.assignment_id && i.assignment_id === payload.assignment_id && payload.nama && (i.nama_usaha === payload.nama || i.nama_kk === payload.nama)));
     if (item) {
       item.tindak_lanjut = payload.tindak_lanjut;
       item.is_done = isDone;
