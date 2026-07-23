@@ -1072,10 +1072,15 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
 
 /* ====== SEAMLESS DIRECTIONAL VERTICAL SLIDE TRANSITIONS (DESKTOP & TABLET >= 769px) ====== */
 @media (min-width: 769px) {
+  #pjax-container {
+    position: relative;
+    width: 100%;
+  }
+
   @keyframes pageSlideFromBottom {
     0% {
-      opacity: 0.15;
-      transform: translateY(45px);
+      opacity: 0;
+      transform: translateY(70px);
     }
     100% {
       opacity: 1;
@@ -1085,8 +1090,8 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
 
   @keyframes pageSlideFromTop {
     0% {
-      opacity: 0.15;
-      transform: translateY(-45px);
+      opacity: 0;
+      transform: translateY(-70px);
     }
     100% {
       opacity: 1;
@@ -1095,12 +1100,12 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   }
 
   .pjax-slide-up {
-    animation: pageSlideFromBottom 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    animation: pageSlideFromBottom 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
     will-change: opacity, transform;
   }
 
   .pjax-slide-down {
-    animation: pageSlideFromTop 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    animation: pageSlideFromTop 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
     will-change: opacity, transform;
   }
 }

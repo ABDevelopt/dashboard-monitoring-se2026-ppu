@@ -2499,9 +2499,19 @@
           ];
 
           const getPageIndex = (pathStr) => {
-            const cleanPath = (pathStr || '/').split('?')[0].replace(/\/$/, '') || '/';
-            const idx = pageOrderMap.findIndex(p => p === cleanPath);
-            return idx !== -1 ? idx : 99;
+            if (!pathStr) return 0;
+            try {
+              const urlObj = new URL(pathStr, window.location.origin);
+              const cleanPath = (urlObj.pathname || '/').toLowerCase().replace(/\/$/, '') || '/';
+              const idx = pageOrderMap.findIndex(p => p === cleanPath);
+              if (idx !== -1) return idx;
+              for (let i = 0; i < pageOrderMap.length; i++) {
+                if (pageOrderMap[i] !== '/' && cleanPath.startsWith(pageOrderMap[i])) {
+                  return i;
+                }
+              }
+            } catch (e) {}
+            return 99;
           };
 
           const currentIdx = getPageIndex(window.location.pathname);
