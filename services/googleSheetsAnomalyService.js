@@ -250,7 +250,94 @@ async function getAnomalySheetsData(settings = {}, forceRefresh = false) {
   return result;
 }
 
+async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
+  const DEFAULT_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycby3zpFtIN58xOf6GxnDqkl7gjwKX-oeUZwuAp93wL0OrejumH91ykBGa9XbsoMdhZQetA/exec';
+  const appsScriptUrl = settings.google_sheets_apps_script_url || DEFAULT_APPS_SCRIPT;
+
+  if (!appsScriptUrl || !appsScriptUrl.trim()) {
+    throw new Error('URL Google Apps Script Web App belum dikonfigurasi.');
+  }
+
+  const postData = JSON.stringify({
+    assignment_id: payload.assignment_id,
+    type: payload.type || 'usaha',
+    tindak_lanjut: payload.tindak_lanjut,
+    penjelasan: payload.penjelasan || ''
+  });
+
+  const TIMEOUT_MS = 12000;
+  let responseText = '';
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    const res = await fetch(appsScriptUrl.trim(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: postData,
+      redirect: 'follow',
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+    responseText = await res.text();
+  } catch (fetchErr) {
+    console.warn(`[GoogleSheetsService] Fetch to Apps Script failed: ${fetchErr.message}, trying curl fallback...`);
+    // Curl fallback
+    responseText = await new Promise((resolve, reject) => {
+      const child = spawn('curl', [
+        '-sL',
+        '-X', 'POST',
+        '--connect-timeout', '8',
+        '-m', '12',
+        '-H', 'Content-Type: application/json',
+        '-d', postData,
+        appsScriptUrl.trim()
+      ]);
+      const stdoutChunks = [];
+      child.stdout.on('data', chunk => stdoutChunks.push(chunk));
+      child.on('close', code => {
+        if (code === 0) resolve(Buffer.concat(stdoutChunks).toString());
+        else reject(new Error(`curl exit code ${code}`));
+      });
+    });
+  }
+
+  // Check if response contains HTML login/access error
+  if (responseText.includes('Anda memerlukan akses') || responseText.includes('accounts.google.com')) {
+    throw new Error('Izin Apps Script belum diatur ke "Anyone" (Siapa saja). Silakan ubah opsi "Who has access" di Apps Script ke "Anyone".');
+  }
+
+  let jsonRes;
+  try {
+    jsonRes = JSON.parse(responseText);
+  } catch (e) {
+    console.warn('[GoogleSheetsService] Raw Apps Script response:', responseText.slice(0, 300));
+    throw new Error('Format respons Google Apps Script tidak valid.');
+  }
+
+  if (jsonRes.success === false) {
+    throw new Error(jsonRes.error || jsonRes.message || 'Gagal memperbarui Google Sheet');
+  }
+
+  // Invalidate / update memory cache locally as well
+  if (cache.data) {
+    const isDone = payload.tindak_lanjut.toLowerCase().includes('sudah') || payload.tindak_lanjut.toLowerCase().includes('selesai');
+    const targetList = payload.type === 'keluarga' ? cache.data.keluargaList : cache.data.usahaList;
+    const item = targetList.find(i => i.assignment_id === payload.assignment_id);
+    if (item) {
+      item.tindak_lanjut = payload.tindak_lanjut;
+      item.is_done = isDone;
+      if (payload.penjelasan) item.penjelasan = payload.penjelasan;
+    }
+  }
+
+  return { success: true, message: 'Berhasil mengupdate data di Google Spreadsheet' };
+}
+
 module.exports = {
   getAnomalySheetsData,
+  updateAnomalyStatusInGoogleSheets,
   DEFAULT_SHEETS_URL
 };

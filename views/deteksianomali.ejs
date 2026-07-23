@@ -13,11 +13,11 @@
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
             <h1 style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin: 0;">Deteksi &amp; Audit Anomali Data</h1>
             <span class="badge badge-green" style="font-size: 10px; padding: 4px 8px; display: flex; align-items: center; gap: 4px;">
-              <i class="bi bi-link-45deg"></i> Terintegrasi Google Spreadsheet
+              <i class="bi bi-arrow-repeat"></i> Sinkronkan 2 Arah Google Spreadsheet
             </span>
           </div>
           <p style="font-size: 13px; color: var(--text-secondary); margin: 0; max-width: 720px; line-height: 1.5;">
-            Sinkronisasi live data indikator anomali isian lapangan (Usaha UTP &amp; Keluarga KK) langsung dari Google Spreadsheet pengawasan BPS PPU.
+            Pengawas dapat langsung memperbarui status tindak lanjut &amp; catatan penjelasan di website ini. Hasil pengeditan otomatis tersinkronisasi kembali ke Google Spreadsheet secara <em>real-time</em>.
           </p>
         </div>
       </div>
@@ -78,8 +78,8 @@
       <div style="display: flex; justify-content: space-between; align-items: flex-start;">
         <div>
           <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Sudah Ditindaklanjuti</div>
-          <div style="font-size: 26px; font-weight: 800; color: var(--accent-green);"><%= (sheetsData.summary.total_sudah || 0).toLocaleString('id-ID') %></div>
-          <div style="font-size: 11px; color: var(--accent-green); font-weight: 600; margin-top: 4px;"><%= sheetsData.summary.pct_sudah %>% terselesaikan</div>
+          <div style="font-size: 26px; font-weight: 800; color: var(--accent-green);" id="statTotalSudah"><%= (sheetsData.summary.total_sudah || 0).toLocaleString('id-ID') %></div>
+          <div style="font-size: 11px; color: var(--accent-green); font-weight: 600; margin-top: 4px;" id="statPctSudah"><%= sheetsData.summary.pct_sudah %>% terselesaikan</div>
         </div>
         <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(16, 185, 129, 0.12); color: var(--accent-green); display: flex; align-items: center; justify-content: center; font-size: 20px;">
           <i class="bi bi-check-circle-fill"></i>
@@ -92,7 +92,7 @@
       <div style="display: flex; justify-content: space-between; align-items: flex-start;">
         <div>
           <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Belum Ditindaklanjuti</div>
-          <div style="font-size: 26px; font-weight: 800; color: var(--accent-red);"><%= (sheetsData.summary.total_belum || 0).toLocaleString('id-ID') %></div>
+          <div style="font-size: 26px; font-weight: 800; color: var(--accent-red);" id="statTotalBelum"><%= (sheetsData.summary.total_belum || 0).toLocaleString('id-ID') %></div>
           <div style="font-size: 11px; color: var(--accent-red); font-weight: 600; margin-top: 4px;">Perlu Pengawasan</div>
         </div>
         <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(239, 68, 68, 0.12); color: var(--accent-red); display: flex; align-items: center; justify-content: center; font-size: 20px;">
@@ -200,21 +200,21 @@
                 <th>Desa / SLS</th>
                 <th>Detail Anomali</th>
                 <th class="text-center">Status Tindak Lanjut</th>
-                <th class="text-center" style="width: 110px;">Aksi FASIH</th>
+                <th class="text-center" style="width: 150px;">Aksi &amp; Sync</th>
               </tr>
             </thead>
             <tbody>
               <% filteredUsaha.forEach((item, idx) => { %>
-                <tr>
+                <tr id="row-<%= item.assignment_id %>">
                   <td class="text-center fw-bold" style="background: var(--bg-subtle);"><%= idx + 1 %></td>
                   <td class="td-primary">
-                    <strong style="color: var(--text-primary); font-size: 13.5px;"><%= item.nama_usaha %></strong>
-                    <% if (item.penjelasan) { %>
-                      <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">💬 <i><%= item.penjelasan %></i></div>
-                    <% } %>
+                    <strong style="color: var(--text-primary); font-size: 13.5px;" class="item-name"><%= item.nama_usaha %></strong>
+                    <div class="item-penjelasan" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                      <% if (item.penjelasan) { %>💬 <i><%= item.penjelasan %></i><% } %>
+                    </div>
                   </td>
                   <td>
-                    <a href="/pcl?pcl=<%= encodeURIComponent(item.petugas) %>" style="color: inherit; text-decoration: none; font-weight: 600;">
+                    <a href="/pcl?pcl=<%= encodeURIComponent(item.petugas) %>" style="color: inherit; text-decoration: none; font-weight: 600;" class="item-pcl">
                       <i class="bi bi-person text-cyan"></i> <%= item.petugas %>
                     </a>
                   </td>
@@ -226,7 +226,7 @@
                       <%= item.nama_anomali %>
                     </span>
                   </td>
-                  <td class="text-center">
+                  <td class="text-center item-status-td">
                     <% if (item.is_done) { %>
                       <span class="badge badge-green" style="font-size: 11px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;">
                         <i class="bi bi-check-circle-fill"></i> <%= item.tindak_lanjut %>
@@ -238,13 +238,17 @@
                     <% } %>
                   </td>
                   <td class="text-center">
-                    <% if (item.link_fasih) { %>
-                      <a href="<%= item.link_fasih %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-blue);" title="Buka Detail Assignment di FASIH">
-                        <i class="bi bi-box-arrow-up-right"></i> FASIH
-                      </a>
-                    <% } else { %>
-                      <span style="font-size: 11px; color: var(--text-muted);">-</span>
-                    <% } %>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                      <button onclick="openEditModal('<%= item.assignment_id %>', 'usaha', `<%= item.nama_usaha.replace(/`/g, '') %>`, `<%= item.petugas.replace(/`/g, '') %>`, `<%= (item.tindak_lanjut || '').replace(/`/g, '') %>`, `<%= (item.penjelasan || '').replace(/`/g, '') %>`)" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-yellow);" title="Edit Status Tindak Lanjut &amp; Sync ke Google Sheets">
+                        <i class="bi bi-pencil-square"></i> Edit
+                      </button>
+
+                      <% if (item.link_fasih) { %>
+                        <a href="<%= item.link_fasih %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-blue);" title="Buka Detail Assignment di FASIH">
+                          <i class="bi bi-box-arrow-up-right"></i> FASIH
+                        </a>
+                      <% } %>
+                    </div>
                   </td>
                 </tr>
               <% }) %>
@@ -282,21 +286,21 @@
                 <th>Desa / SLS</th>
                 <th>Detail Anomali</th>
                 <th class="text-center">Status Tindak Lanjut</th>
-                <th class="text-center" style="width: 110px;">Aksi FASIH</th>
+                <th class="text-center" style="width: 150px;">Aksi &amp; Sync</th>
               </tr>
             </thead>
             <tbody>
               <% filteredKeluarga.forEach((item, idx) => { %>
-                <tr>
+                <tr id="row-<%= item.assignment_id %>">
                   <td class="text-center fw-bold" style="background: var(--bg-subtle);"><%= idx + 1 %></td>
                   <td class="td-primary">
-                    <strong style="color: var(--text-primary); font-size: 13.5px;"><%= item.nama_kk %></strong>
-                    <% if (item.penjelasan) { %>
-                      <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">💬 <i><%= item.penjelasan %></i></div>
-                    <% } %>
+                    <strong style="color: var(--text-primary); font-size: 13.5px;" class="item-name"><%= item.nama_kk %></strong>
+                    <div class="item-penjelasan" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                      <% if (item.penjelasan) { %>💬 <i><%= item.penjelasan %></i><% } %>
+                    </div>
                   </td>
                   <td>
-                    <a href="/pcl?pcl=<%= encodeURIComponent(item.petugas) %>" style="color: inherit; text-decoration: none; font-weight: 600;">
+                    <a href="/pcl?pcl=<%= encodeURIComponent(item.petugas) %>" style="color: inherit; text-decoration: none; font-weight: 600;" class="item-pcl">
                       <i class="bi bi-person text-purple"></i> <%= item.petugas %>
                     </a>
                   </td>
@@ -308,7 +312,7 @@
                       <%= item.nama_anomali %>
                     </span>
                   </td>
-                  <td class="text-center">
+                  <td class="text-center item-status-td">
                     <% if (item.is_done) { %>
                       <span class="badge badge-green" style="font-size: 11px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;">
                         <i class="bi bi-check-circle-fill"></i> <%= item.tindak_lanjut %>
@@ -320,13 +324,17 @@
                     <% } %>
                   </td>
                   <td class="text-center">
-                    <% if (item.link_fasih) { %>
-                      <a href="<%= item.link_fasih %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-blue);" title="Buka Detail Assignment di FASIH">
-                        <i class="bi bi-box-arrow-up-right"></i> FASIH
-                      </a>
-                    <% } else { %>
-                      <span style="font-size: 11px; color: var(--text-muted);">-</span>
-                    <% } %>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                      <button onclick="openEditModal('<%= item.assignment_id %>', 'keluarga', `<%= item.nama_kk.replace(/`/g, '') %>`, `<%= item.petugas.replace(/`/g, '') %>`, `<%= (item.tindak_lanjut || '').replace(/`/g, '') %>`, `<%= (item.penjelasan || '').replace(/`/g, '') %>`)" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-yellow);" title="Edit Status Tindak Lanjut &amp; Sync ke Google Sheets">
+                        <i class="bi bi-pencil-square"></i> Edit
+                      </button>
+
+                      <% if (item.link_fasih) { %>
+                        <a href="<%= item.link_fasih %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs" style="font-size: 11px; padding: 5px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent-blue);" title="Buka Detail Assignment di FASIH">
+                          <i class="bi bi-box-arrow-up-right"></i> FASIH
+                        </a>
+                      <% } %>
+                    </div>
                   </td>
                 </tr>
               <% }) %>
@@ -410,6 +418,58 @@
 
 </div>
 
+<!-- MODAL EDIT STATUS ANOMALI -->
+<div id="editAnomalyModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; max-width: 500px; width: 100%; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); animation: modalFade 0.2s ease;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); display: flex; align-items: center; justify-content: center; font-size: 18px;">
+          <i class="bi bi-pencil-square"></i>
+        </div>
+        <div>
+          <h3 style="font-size: 15px; font-weight: 700; margin: 0; color: var(--text-primary);">Update Status Anomali</h3>
+          <span style="font-size: 11px; color: var(--text-muted);">Tersinkronisasi otomatis ke Google Spreadsheet</span>
+        </div>
+      </div>
+      <button type="button" onclick="closeEditModal()" style="background: transparent; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <form id="editAnomalyForm" onsubmit="saveAnomalyStatus(event)">
+      <input type="hidden" id="modalAssignmentId" name="assignment_id">
+      <input type="hidden" id="modalType" name="type">
+
+      <div style="margin-bottom: 16px; background: var(--bg-secondary); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);">
+        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Target Anomali:</div>
+        <div id="modalItemName" style="font-size: 14px; font-weight: 700; color: var(--text-primary); font-family: monospace;">...</div>
+        <div id="modalPclName" style="font-size: 12px; color: var(--accent-cyan); margin-top: 4px; font-weight: 500;">...</div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label for="modalStatus" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Status Tindak Lanjut Baru</label>
+        <select id="modalStatus" name="tindak_lanjut" required style="width: 100%; padding: 10px 12px; font-size: 13px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); outline: none;">
+          <option value="Sudah Ditindaklanjuti dengan Perbaikan">✅ Sudah Ditindaklanjuti dengan Perbaikan</option>
+          <option value="Sudah Ditindaklanjuti dengan Penjelasan (Sesuai Kondisi Lapangan)">📝 Sudah Ditindaklanjuti dengan Penjelasan (Sesuai Kondisi Lapangan)</option>
+          <option value="Belum Ditindaklanjuti">❌ Belum Ditindaklanjuti</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label for="modalPenjelasan" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Catatan / Penjelasan Lapangan (Opsional)</label>
+        <textarea id="modalPenjelasan" name="penjelasan" rows="3" placeholder="Tuliskan keterangan verifikasi atau penjelasan kondisi lapangan..." style="width: 100%; padding: 10px 12px; font-size: 13px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); resize: vertical; outline: none;"></textarea>
+      </div>
+
+      <div id="modalAlert" style="display: none; padding: 10px 12px; border-radius: 8px; font-size: 12px; margin-bottom: 16px;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" onclick="closeEditModal()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px; border-radius: 8px;">Batal</button>
+        <button type="submit" id="modalSaveBtn" class="btn btn-primary" style="padding: 9px 20px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, var(--accent-yellow), #d97706); color: #000; border: none; border-radius: 8px; display: flex; align-items: center; gap: 6px;">
+          <i class="bi bi-save-fill"></i> Simpan &amp; Sync ke Google Sheets
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof makeTableSortable === 'function') {
@@ -418,4 +478,102 @@ document.addEventListener('DOMContentLoaded', () => {
     makeTableSortable('pclAnomalyTable');
   }
 });
+
+function openEditModal(assignmentId, type, itemName, pclName, currentStatus, currentNotes) {
+  document.getElementById('modalAssignmentId').value = assignmentId;
+  document.getElementById('modalType').value = type;
+  document.getElementById('modalItemName').textContent = itemName || '-';
+  document.getElementById('modalPclName').textContent = 'PCL: ' + (pclName || '-');
+
+  const statusSelect = document.getElementById('modalStatus');
+  if (currentStatus) {
+    statusSelect.value = currentStatus;
+  }
+  document.getElementById('modalPenjelasan').value = currentNotes || '';
+
+  const alertBox = document.getElementById('modalAlert');
+  alertBox.style.display = 'none';
+
+  const modal = document.getElementById('editAnomalyModal');
+  modal.style.display = 'flex';
+}
+
+function closeEditModal() {
+  const modal = document.getElementById('editAnomalyModal');
+  modal.style.display = 'none';
+}
+
+async function saveAnomalyStatus(e) {
+  e.preventDefault();
+  const form = document.getElementById('editAnomalyForm');
+  const saveBtn = document.getElementById('modalSaveBtn');
+  const alertBox = document.getElementById('modalAlert');
+  
+  const assignmentId = document.getElementById('modalAssignmentId').value;
+  const type = document.getElementById('modalType').value;
+  const tindakLanjut = document.getElementById('modalStatus').value;
+  const penjelasan = document.getElementById('modalPenjelasan').value;
+
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<i class="bi bi-arrow-repeat bi-spin"></i> Menyimpan ke Google Sheets...';
+  alertBox.style.display = 'none';
+
+  try {
+    const res = await fetch('/deteksi-anomali/update-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        assignment_id: assignmentId,
+        type: type,
+        tindak_lanjut: tindakLanjut,
+        penjelasan: penjelasan
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alertBox.className = 'badge-green';
+      alertBox.style.background = 'rgba(16, 185, 129, 0.15)';
+      alertBox.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+      alertBox.style.color = 'var(--accent-green)';
+      alertBox.style.display = 'block';
+      alertBox.innerHTML = '<i class="bi bi-check-circle-fill"></i> Berhasil disimpan &amp; tersinkronisasi ke Google Spreadsheet!';
+
+      // Update row in DOM without full reload
+      const row = document.getElementById('row-' + assignmentId);
+      if (row) {
+        const isDone = tindakLanjut.toLowerCase().includes('sudah') || tindakLanjut.toLowerCase().includes('selesai');
+        const statusTd = row.querySelector('.item-status-td');
+        if (statusTd) {
+          if (isDone) {
+            statusTd.innerHTML = `<span class="badge badge-green" style="font-size: 11px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;"><i class="bi bi-check-circle-fill"></i> ${tindakLanjut}</span>`;
+          } else {
+            statusTd.innerHTML = `<span class="badge badge-red" style="font-size: 11px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;"><i class="bi bi-exclamation-triangle-fill"></i> ${tindakLanjut}</span>`;
+          }
+        }
+
+        const penjelasanDiv = row.querySelector('.item-penjelasan');
+        if (penjelasanDiv) {
+          penjelasanDiv.innerHTML = penjelasan ? `💬 <i>${penjelasan}</i>` : '';
+        }
+      }
+
+      setTimeout(() => {
+        closeEditModal();
+      }, 1200);
+    } else {
+      throw new Error(data.error || 'Terjadi kesalahan saat mengupdate data.');
+    }
+  } catch (err) {
+    alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+    alertBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+    alertBox.style.color = 'var(--accent-red)';
+    alertBox.style.display = 'block';
+    alertBox.innerHTML = `<i class="bi bi-exclamation-octagon-fill"></i> Gagal sync: ${err.message}`;
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = '<i class="bi bi-save-fill"></i> Simpan &amp; Sync ke Google Sheets';
+  }
+}
 </script>

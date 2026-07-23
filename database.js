@@ -1337,6 +1337,7 @@ function initSettings() {
     'target_fasih_mode': 'static',
     'target_muatan_mode': 'prelist',
     'google_sheets_anomaly_url': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml',
+    'google_sheets_apps_script_url': 'https://script.google.com/macros/s/AKfycby3zpFtIN58xOf6GxnDqkl7gjwKX-oeUZwuAp93wL0OrejumH91ykBGa9XbsoMdhZQetA/exec',
     'whatsapp_enabled': '0',
     'whatsapp_group_id': '',
     'whatsapp_group_name': '',

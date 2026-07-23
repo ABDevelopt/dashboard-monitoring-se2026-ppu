@@ -470,9 +470,15 @@
             <i class="bi bi-file-earmark-spreadsheet-fill" style="color: var(--accent-yellow);"></i> Integrasi Google Spreadsheet Anomali
           </div>
           <div class="settings-field" style="margin-top: 8px;">
-            <label for="google_sheets_anomaly_url" style="font-weight: 600;">URL Google Spreadsheet (Publikasi Web)</label>
+            <label for="google_sheets_anomaly_url" style="font-weight: 600;">URL Google Spreadsheet (Publikasi Web / Read-Only)</label>
             <input type="url" id="google_sheets_anomaly_url" name="google_sheets_anomaly_url" value="<%= settings.google_sheets_anomaly_url || '' %>" placeholder="https://docs.google.com/spreadsheets/d/e/.../pubhtml">
             <div class="settings-hint" style="margin-top: 4px;">Link Spreadsheet pengawasan yang dipublikasikan ke web (File > Share > Publish to web) untuk menampilkan data Anomali di halaman Deteksi Anomali.</div>
+          </div>
+
+          <div class="settings-field" style="margin-top: 14px;">
+            <label for="google_sheets_apps_script_url" style="font-weight: 600;">URL Apps Script Web App (2-Way Sync / Edit Write-Back)</label>
+            <input type="url" id="google_sheets_apps_script_url" name="google_sheets_apps_script_url" value="<%= settings.google_sheets_apps_script_url || '' %>" placeholder="https://script.google.com/macros/s/.../exec">
+            <div class="settings-hint" style="margin-top: 4px;">URL Web App dari Google Apps Script untuk mengirimkan pembaruan status &amp; catatan tindak lanjut dari website kembali ke Google Spreadsheet.</div>
           </div>
         </div>
 

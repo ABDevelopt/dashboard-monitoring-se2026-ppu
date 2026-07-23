@@ -76,4 +76,28 @@ router.get('/', async (req, res) => {
   });
 });
 
+// POST: Update anomaly status via Google Apps Script
+router.post('/update-status', async (req, res) => {
+  const { assignment_id, type, tindak_lanjut, penjelasan } = req.body;
+
+  if (!assignment_id || !tindak_lanjut) {
+    return res.json({ success: false, error: 'Assignment ID dan Status Tindak Lanjut wajib diisi.' });
+  }
+
+  try {
+    const { updateAnomalyStatusInGoogleSheets } = require('../services/googleSheetsAnomalyService');
+    const result = await updateAnomalyStatusInGoogleSheets({
+      assignment_id,
+      type: type || 'usaha',
+      tindak_lanjut,
+      penjelasan
+    }, res.locals.settings || {});
+
+    res.json(result);
+  } catch (err) {
+    console.error('Error updating Google Sheets anomaly status:', err);
+    res.json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
