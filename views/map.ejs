@@ -49,9 +49,29 @@
     flex-direction: column;
     gap: 14px;
     height: 100%;
-    overflow-y: auto;
-    padding-right: 4px;
+    max-height: 100%;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    padding-right: 6px;
     flex-shrink: 0;
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) var(--bg-secondary);
+  }
+
+  .map-sidebar-panel::-webkit-scrollbar {
+    width: 6px;
+  }
+  .map-sidebar-panel::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+  }
+  .map-sidebar-panel::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+  }
+  .map-sidebar-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
   }
 
   .map-canvas-container {
@@ -172,6 +192,19 @@
   .leaflet-container a.leaflet-popup-close-button {
     color: var(--text-secondary) !important;
     padding: 6px !important;
+  }
+
+  .leaflet-popup-content-wrapper a.btn-primary,
+  .leaflet-popup-content-wrapper .btn-primary {
+    color: #ffffff !important;
+    background: var(--accent-blue) !important;
+    font-weight: 600 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .leaflet-popup-content-wrapper a.btn-primary:hover {
+    background: #ea580c !important;
+    color: #ffffff !important;
   }
 
   .leaflet-bar {
