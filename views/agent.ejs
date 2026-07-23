@@ -392,13 +392,51 @@
       box-shadow: var(--shadow-sm);
     }
 
-    /* Resend Action Button on User Message */
-    .user-message-actions {
+    /* Copy & Resend Action Buttons on Messages */
+    .user-message-actions,
+    .agent-message-actions {
       display: flex;
       align-items: center;
+      gap: 6px;
       margin-top: 4px;
       opacity: 0.85;
       transition: opacity 0.2s ease;
+    }
+
+    .message.user .user-message-actions {
+      margin-right: 42px;
+      justify-content: flex-end;
+    }
+
+    .message.agent .agent-message-actions {
+      margin-left: 42px;
+    }
+
+    .chat-action-icon-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      padding: 0;
+    }
+
+    .chat-action-icon-btn:hover {
+      color: #4285F4;
+      border-color: #4285F4;
+      background: rgba(66, 133, 244, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .chat-action-icon-btn:active {
+      transform: scale(0.95);
     }
 
     .chat-resend-btn {
@@ -412,7 +450,9 @@
       align-items: center;
       gap: 4px;
       padding: 3px 10px;
-      border-radius: 12px;
+      border-radius: 8px;
+      height: 28px;
+      box-sizing: border-box;
       transition: all 0.2s ease;
     }
 
@@ -1334,6 +1374,50 @@
 
   const defaultAnswer = `🤖 **Menganalisis database SQLite...**<br>Saya telah membaca skema tabel <code>subsls_master</code> and <code>progres</code>. Pertanyaan Anda berkaitan dengan analisis data sensus harian.<br><br>Untuk memberikan informasi real-time, saya dapat menjalankan query pembacaan data. Namun, saat ini fitur AI Agent berjalan dalam **Mode Simulasi (Preview)**.<br><br>**Menu yang Terdeteksi pada Database:**<br><ul><li>Jumlah SLS Terisi: <strong>1.042 SLS</strong></li><li>Jumlah Kecamatan: <strong>4 Kecamatan</strong> (Penajam, Waru, Babulu, Sepaku)</li></ul><br>Apabila integrasi Gemini API key telah selesai dikonfigurasi di file <code>.env</code> server, saya akan dapat menjawab kueri dinamis apa pun secara langsung dari SQLite.`;
 
+  window.copyChatMessage = function(btn) {
+    const messageDiv = btn.closest('.message');
+    if (!messageDiv) return;
+    const bubble = messageDiv.querySelector('.message-bubble');
+    if (!bubble) return;
+
+    const textToCopy = bubble.innerText || bubble.textContent;
+    if (!textToCopy) return;
+
+    const showCopiedFeedback = () => {
+      const icon = btn.querySelector('i');
+      if (icon) {
+        const origClass = icon.className;
+        icon.className = 'bi bi-check2 text-green';
+        btn.title = 'Tersalin!';
+        setTimeout(() => {
+          icon.className = origClass;
+          btn.title = 'Salin Pesan';
+        }, 1800);
+      }
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(textToCopy.trim()).then(showCopiedFeedback).catch(() => {
+        fallbackCopyText(textToCopy.trim());
+        showCopiedFeedback();
+      });
+    } else {
+      fallbackCopyText(textToCopy.trim());
+      showCopiedFeedback();
+    }
+  };
+
+  function fallbackCopyText(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try { document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(textarea);
+  }
+
   window.resendUserMessage = function(btn) {
     const messageDiv = btn.closest('.message.user');
     if (!messageDiv) return;
@@ -1377,8 +1461,20 @@
       const actionsDiv = document.createElement('div');
       actionsDiv.className = 'user-message-actions';
       actionsDiv.innerHTML = `
+        <button type="button" class="chat-action-icon-btn" onclick="window.copyChatMessage(this)" title="Salin Pesan">
+          <i class="bi bi-copy"></i>
+        </button>
         <button type="button" class="chat-resend-btn" onclick="window.resendUserMessage(this)" title="Salin & Kirim Ulang Pesan">
           <i class="bi bi-arrow-repeat"></i> Kirim Ulang
+        </button>
+      `;
+      msgDiv.appendChild(actionsDiv);
+    } else {
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'agent-message-actions';
+      actionsDiv.innerHTML = `
+        <button type="button" class="chat-action-icon-btn" onclick="window.copyChatMessage(this)" title="Salin Jawaban">
+          <i class="bi bi-copy"></i>
         </button>
       `;
       msgDiv.appendChild(actionsDiv);
@@ -1412,6 +1508,9 @@
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'user-message-actions';
         actionsDiv.innerHTML = `
+          <button type="button" class="chat-action-icon-btn" onclick="window.copyChatMessage(this)" title="Salin Pesan">
+            <i class="bi bi-copy"></i>
+          </button>
           <button type="button" class="chat-resend-btn" onclick="window.resendUserMessage(this)" title="Salin & Kirim Ulang Pesan">
             <i class="bi bi-arrow-repeat"></i> Kirim Ulang
           </button>
@@ -1452,6 +1551,14 @@
           const delay = Math.max(30, Math.min(100, Math.ceil(800 / blocksHtml.length)));
           setTimeout(appendNextBlock, delay);
         } else {
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'agent-message-actions';
+          actionsDiv.innerHTML = `
+            <button type="button" class="chat-action-icon-btn" onclick="window.copyChatMessage(this)" title="Salin Jawaban">
+              <i class="bi bi-copy"></i>
+            </button>
+          `;
+          msgDiv.appendChild(actionsDiv);
           resolve(msgDiv);
         }
       }
