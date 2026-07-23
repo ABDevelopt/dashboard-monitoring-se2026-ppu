@@ -244,9 +244,13 @@ function openIntradayModal(tanggal) {
       if (!res.success || !res.data) return;
       const data = res.data;
       
-      document.getElementById('ohlcOpen').textContent = (data.ohlc.open || 0).toLocaleString('id-ID');
-      document.getElementById('ohlcHigh').textContent = (data.ohlc.high || 0).toLocaleString('id-ID');
-      document.getElementById('ohlcLow').textContent = (data.ohlc.low || 0).toLocaleString('id-ID');
+      const firstSessionDelta = data.sessions && data.sessions.length > 0 ? (data.sessions[0].delta || 0) : 0;
+      const peakDelta = data.sessions && data.sessions.length > 0 ? Math.max(...data.sessions.map(s => s.delta || 0)) : 0;
+      const lastSessionDelta = data.sessions && data.sessions.length > 0 ? (data.sessions[data.sessions.length - 1].delta || 0) : 0;
+
+      document.getElementById('ohlcOpen').textContent = `+${firstSessionDelta.toLocaleString('id-ID')}`;
+      document.getElementById('ohlcHigh').textContent = `+${peakDelta.toLocaleString('id-ID')}`;
+      document.getElementById('ohlcLow').textContent = `+${lastSessionDelta.toLocaleString('id-ID')}`;
       document.getElementById('ohlcClose').textContent = (data.ohlc.close || 0).toLocaleString('id-ID');
 
       if (typeof createIntradayCandlestickChart === 'function') {
@@ -276,32 +280,32 @@ function closeIntradayModal() {
 }
 </script>
 
-<!-- MODAL INTRADAY DRILLDOWN CANDLESTICK -->
+<!-- MODAL INTRADAY DRILLDOWN LINE CHART -->
 <div id="intradayModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
   <div class="card" style="width: 100%; max-width: 860px; max-height: 90vh; overflow-y: auto; margin: 0; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); border-radius: 12px; background: var(--bg-card);">
     <div class="card-header flex-between" style="border-bottom: 1px solid var(--border); padding-bottom: 12px;">
       <div class="card-title" style="font-size: 14px; font-weight: 700;">
-        <i class="bi bi-clock-history" style="color: var(--accent-cyan);"></i> Rincian Intra-Day Sesi Upload & Candlestick (<span id="intradayModalDate">-</span>)
+        <i class="bi bi-graph-up-arrow" style="color: var(--accent-cyan);"></i> Tren Penambahan Intra-Day Sesi Upload (<span id="intradayModalDate">-</span>)
       </div>
       <button type="button" onclick="closeIntradayModal()" style="background: none; border: none; font-size: 22px; color: var(--text-muted); cursor: pointer; line-height: 1;">&times;</button>
     </div>
 
-    <!-- Summary Metrics (OHLC) -->
+    <!-- Summary Metrics Line Chart -->
     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; margin-bottom: 14px;" id="intradayOhlcCards">
       <div style="background: var(--bg-subtle); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
-        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">OPEN (Awal)</div>
+        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">Sesi Pertama</div>
         <div id="ohlcOpen" style="font-size: 15px; font-weight: 700; color: #3b82f6;">-</div>
       </div>
       <div style="background: var(--bg-subtle); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
-        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">HIGH (Puncak)</div>
+        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">Penambahan Puncak</div>
         <div id="ohlcHigh" style="font-size: 15px; font-weight: 700; color: #10b981;">-</div>
       </div>
       <div style="background: var(--bg-subtle); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
-        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">LOW (Terendah)</div>
+        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">Sesi Terakhir</div>
         <div id="ohlcLow" style="font-size: 15px; font-weight: 700; color: #f59e0b;">-</div>
       </div>
       <div style="background: var(--bg-subtle); padding: 10px; border-radius: 8px; border: 1px solid var(--border);">
-        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">CLOSE (Akhir)</div>
+        <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">Total Akumulasi</div>
         <div id="ohlcClose" style="font-size: 15px; font-weight: 700; color: #06b6d4;">-</div>
       </div>
     </div>

@@ -971,59 +971,15 @@ function makeTablePaginated(tableId, inputId, pageSize = 50) {
   update();
 }
 
-// ===== INTRADAY CANDLESTICK / DRILLDOWN CHART (STOCK CANDLESTICK OHLC) =====
-const stockCandlestickPlugin = {
-  id: 'stockCandlestickPlugin',
-  afterDatasetsDraw(chart) {
-    const { ctx, scales: { x, yTotal } } = chart;
-    const intradayData = chart.options.intradayData;
-    if (!intradayData || !intradayData.sessions || !yTotal) return;
-
-    ctx.save();
-    intradayData.sessions.forEach((s, idx) => {
-      const xPos = x.getPixelForValue(idx);
-      const openY = yTotal.getPixelForValue(s.open);
-      const closeY = yTotal.getPixelForValue(s.close);
-      const highY = yTotal.getPixelForValue(s.high);
-      const lowY = yTotal.getPixelForValue(s.low);
-
-      const isBullish = s.close >= s.open;
-      const color = isBullish ? '#10b981' : '#ef4444';
-      const fillColor = isBullish ? 'rgba(16, 185, 129, 0.85)' : 'rgba(239, 68, 68, 0.85)';
-
-      // 1. Draw High-Low Wick (Sumbu Candlestick)
-      ctx.beginPath();
-      ctx.moveTo(xPos, highY);
-      ctx.lineTo(xPos, lowY);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // 2. Draw Open-Close Body (Badan Candlestick Saham)
-      const candleWidth = 24;
-      const bodyTop = Math.min(openY, closeY);
-      const bodyHeight = Math.max(5, Math.abs(closeY - openY));
-
-      ctx.fillStyle = fillColor;
-      ctx.fillRect(xPos - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
-
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(xPos - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
-    });
-    ctx.restore();
-  }
-};
-
-function createIntradayCandlestickChart(canvasId, intradayData) {
+// ===== INTRADAY LINE CHART (TREN PENAMBAHAN INTRA-DAY SESI UPLOAD) =====
+function createIntradayLineChart(canvasId, intradayData) {
   const ctx = document.getElementById(canvasId);
   if (!ctx || !intradayData || !intradayData.sessions || !intradayData.sessions.length) return null;
 
   const theme = getThemeColors();
   const labels = intradayData.sessions.map(s => `${s.time} WIB (#${s.upload_id})`);
   const dataDelta = intradayData.sessions.map(s => s.delta);
-  const dataHigh = intradayData.sessions.map(s => s.high);
-  const dataLow = intradayData.sessions.map(s => s.low);
+  const dataTotal = intradayData.sessions.map(s => s.selesai_total);
 
   if (typeof Chart !== 'undefined') {
     const existing = Chart.getChart(canvasId);
@@ -1031,35 +987,35 @@ function createIntradayCandlestickChart(canvasId, intradayData) {
   }
 
   const chart = new Chart(ctx, {
-    type: 'bar',
-    plugins: [stockCandlestickPlugin],
+    type: 'line',
     data: {
       labels,
       datasets: [
         {
-          type: 'bar',
           label: 'Penambahan Dokumen (Delta Sesi)',
           data: dataDelta,
-          backgroundColor: dataDelta.map((d, i) => i === 0 ? 'rgba(59, 130, 246, 0.7)' : (d >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)')),
-          borderRadius: 6,
+          borderColor: '#06b6d4',
+          backgroundColor: 'rgba(6, 182, 212, 0.12)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#06b6d4',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
           yAxisID: 'yDelta'
         },
         {
-          type: 'line',
-          label: 'Candlestick Level (High)',
-          data: dataHigh,
-          borderColor: 'transparent',
-          backgroundColor: 'transparent',
-          pointRadius: 0,
-          yAxisID: 'yTotal'
-        },
-        {
-          type: 'line',
-          label: 'Candlestick Level (Low)',
-          data: dataLow,
-          borderColor: 'transparent',
-          backgroundColor: 'transparent',
-          pointRadius: 0,
+          label: 'Total Akumulasi Terdata',
+          data: dataTotal,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.05)',
+          fill: false,
+          borderDash: [4, 4],
+          tension: 0.35,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#10b981',
           yAxisID: 'yTotal'
         }
       ]
@@ -1067,13 +1023,12 @@ function createIntradayCandlestickChart(canvasId, intradayData) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      intradayData: intradayData,
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { labels: { color: theme.text, font: { size: 11, family: 'Inter' } } },
         title: {
           display: true,
-          text: `Candlestick Intra-Day (${intradayData.session_count} Upload) - Tanggal ${intradayData.tanggal}`,
+          text: `Tren Penambahan Intra-Day (${intradayData.session_count} Sesi Upload) - Tanggal ${intradayData.tanggal}`,
           color: theme.title,
           font: { size: 13, weight: '700' }
         },
@@ -1086,12 +1041,12 @@ function createIntradayCandlestickChart(canvasId, intradayData) {
           callbacks: {
             label: (ctxItem) => {
               const s = intradayData.sessions[ctxItem.dataIndex];
-              if (!s || ctxItem.datasetIndex !== 0) return null;
-              return [
-                ` 🕯️ Open: ${s.open.toLocaleString('id-ID')} | Close: ${s.close.toLocaleString('id-ID')}`,
-                ` 📈 High: ${s.high.toLocaleString('id-ID')} | Low: ${s.low.toLocaleString('id-ID')}`,
-                ` ➕ Penambahan: ${s.delta >= 0 ? '+' : ''}${s.delta.toLocaleString('id-ID')} dok`
-              ];
+              if (!s) return null;
+              if (ctxItem.datasetIndex === 0) {
+                return ` ➕ Penambahan Sesi: +${s.delta.toLocaleString('id-ID')} dokumen`;
+              } else {
+                return ` 📊 Total Akumulasi: ${s.selesai_total.toLocaleString('id-ID')} dokumen`;
+              }
             },
             footer: (tooltipItems) => {
               const idx = tooltipItems[0].dataIndex;
@@ -1108,14 +1063,14 @@ function createIntradayCandlestickChart(canvasId, intradayData) {
           position: 'left',
           ticks: { color: theme.text, font: { size: 10 } },
           grid: { color: theme.grid },
-          title: { display: true, text: 'Delta Dokumen', color: theme.text, font: { size: 9 } }
+          title: { display: true, text: 'Penambahan (Delta)', color: theme.text, font: { size: 9 } }
         },
         yTotal: {
           type: 'linear',
           position: 'right',
           ticks: { color: theme.text, font: { size: 10 } },
           grid: { display: false },
-          title: { display: true, text: 'Stock Level (OHLC)', color: theme.text, font: { size: 9 } }
+          title: { display: true, text: 'Total Akumulasi', color: theme.text, font: { size: 9 } }
         }
       }
     }
@@ -1124,4 +1079,8 @@ function createIntradayCandlestickChart(canvasId, intradayData) {
   window.activeCharts = window.activeCharts || [];
   window.activeCharts.push(chart);
   return chart;
+}
+
+function createIntradayCandlestickChart(canvasId, intradayData) {
+  return createIntradayLineChart(canvasId, intradayData);
 }
