@@ -22,7 +22,7 @@
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 10px;">
-        <a href="/deteksi-anomali?refresh=true&tab=<%= activeTab %>&kec=<%= encodeURIComponent(filterKec) %>&korlap=<%= encodeURIComponent(filterKorlap) %>&status=<%= encodeURIComponent(filterStatus) %>" class="btn btn-primary" style="padding: 10px 16px; font-size: 12px; font-weight: 700; border-radius: 10px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);" title="Segarkan Data dari Google Spreadsheet">
+        <a href="/deteksi-anomali?refresh=true&tab=<%= activeTab %>&kec=<%= encodeURIComponent(filterKec) %>&korlap=<%= encodeURIComponent(filterKorlap) %>&status=<%= encodeURIComponent(filterStatus) %>" onclick="this.innerHTML='<i class=\'bi bi-arrow-clockwise bi-spin\'></i> Menyinkronkan...'; this.style.pointerEvents='none';" class="btn btn-primary" style="padding: 10px 16px; font-size: 12px; font-weight: 700; border-radius: 10px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);" title="Segarkan Data dari Google Spreadsheet">
           <i class="bi bi-arrow-clockwise"></i> Sync Google Sheets
         </a>
       </div>
@@ -521,8 +521,13 @@ async function saveAnomalyStatus(e) {
   const penjelasan = document.getElementById('modalPenjelasan').value;
 
   saveBtn.disabled = true;
-  saveBtn.innerHTML = '<i class="bi bi-arrow-repeat bi-spin"></i> Menyimpan ke Google Sheets...';
-  alertBox.style.display = 'none';
+  saveBtn.innerHTML = '<i class="bi bi-arrow-repeat bi-spin"></i> Menghubungkan Apps Script (max 30s)...';
+  
+  alertBox.style.display = 'block';
+  alertBox.style.background = 'rgba(6, 182, 212, 0.15)';
+  alertBox.style.border = '1px solid rgba(6, 182, 212, 0.3)';
+  alertBox.style.color = 'var(--accent-cyan)';
+  alertBox.innerHTML = '<i class="bi bi-arrow-clockwise bi-spin"></i> Memproses sinkronisasi ke Google Spreadsheet... Harap tunggu.';
 
   try {
     const res = await fetch('/deteksi-anomali/update-status', {
@@ -541,12 +546,12 @@ async function saveAnomalyStatus(e) {
     const data = await res.json();
 
     if (data.success) {
+      const latencySec = data.latencyMs ? (data.latencyMs / 1000).toFixed(1) : null;
       alertBox.className = 'badge-green';
       alertBox.style.background = 'rgba(16, 185, 129, 0.15)';
       alertBox.style.border = '1px solid rgba(16, 185, 129, 0.3)';
       alertBox.style.color = 'var(--accent-green)';
-      alertBox.style.display = 'block';
-      alertBox.innerHTML = '<i class="bi bi-check-circle-fill"></i> Berhasil disimpan &amp; tersinkronisasi ke Google Spreadsheet!';
+      alertBox.innerHTML = `<i class="bi bi-check-circle-fill"></i> ${data.message || 'Tersinkronisasi ke Google Spreadsheet!'}` + (latencySec ? ` <small style="opacity: 0.85;">(${latencySec}s)</small>` : '');
 
       // Update row in DOM without full reload
       const row = document.getElementById('row-' + assignmentId);
@@ -569,7 +574,7 @@ async function saveAnomalyStatus(e) {
 
       setTimeout(() => {
         closeEditModal();
-      }, 1200);
+      }, 1500);
     } else {
       throw new Error(data.error || 'Terjadi kesalahan saat mengupdate data.');
     }
@@ -577,8 +582,7 @@ async function saveAnomalyStatus(e) {
     alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
     alertBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
     alertBox.style.color = 'var(--accent-red)';
-    alertBox.style.display = 'block';
-    alertBox.innerHTML = `<i class="bi bi-exclamation-octagon-fill"></i> Gagal sync: ${err.message}`;
+    alertBox.innerHTML = `<i class="bi bi-exclamation-octagon-fill"></i> <strong>Gagal Sync:</strong> ${err.message}<br><small style="margin-top: 4px; display: block; opacity: 0.9;">Periksa kembali Apps Script di Google Sheets atau coba klik Simpan lagi.</small>`;
   } finally {
     saveBtn.disabled = false;
     saveBtn.innerHTML = '<i class="bi bi-save-fill"></i> Simpan &amp; Sync ke Google Sheets';

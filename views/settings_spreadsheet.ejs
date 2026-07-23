@@ -107,13 +107,13 @@
         </button>
 
         <div style="display: flex; gap: 10px;">
-          <form action="/admin/spreadsheet/sync-now" method="POST" style="margin: 0; display: inline;">
+          <form action="/admin/spreadsheet/sync-now" method="POST" onsubmit="const b=this.querySelector('button'); b.disabled=true; b.innerHTML='<i class=\'bi bi-arrow-clockwise bi-spin\'></i> Menyinkronkan...';" style="margin: 0; display: inline;">
             <button type="submit" class="btn btn-secondary" style="padding: 10px 16px; font-size: 12px; font-weight: 600; border-radius: 8px;" title="Menghapus cache dan mengambil data terbaru dari Google Spreadsheet">
               <i class="bi bi-arrow-clockwise"></i> Paksa Sync Data Sekarang
             </button>
           </form>
 
-          <form action="/admin/spreadsheet/test-webhook" method="POST" style="margin: 0; display: inline;">
+          <form action="/admin/spreadsheet/test-webhook" method="POST" onsubmit="const b=this.querySelector('button'); b.disabled=true; b.innerHTML='<i class=\'bi bi-arrow-repeat bi-spin\'></i> Menguji Webhook...';" style="margin: 0; display: inline;">
             <button type="submit" class="btn btn-secondary" style="padding: 10px 16px; font-size: 12px; font-weight: 600; border-radius: 8px; color: var(--accent-cyan);" title="Kirim paket data uji coba ke URL Apps Script Web App">
               <i class="bi bi-send-fill"></i> Tes Webhook (Ping)
             </button>

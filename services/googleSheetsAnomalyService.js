@@ -48,7 +48,7 @@ function parseCSV(text) {
 }
 
 async function fetchCsvContent(csvUrl) {
-  const TIMEOUT_MS = 8000;
+  const TIMEOUT_MS = 25000;
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -61,19 +61,19 @@ async function fetchCsvContent(csvUrl) {
     console.warn(`[GoogleSheetsService] Fetch failed for ${csvUrl}: ${err.message}, trying curl fallback...`);
   }
 
-  // Curl fallback
+  // Curl fallback with 30s timeout
   return new Promise((resolve, reject) => {
     const child = spawn('curl', [
       '-sL',
-      '--connect-timeout', '8',
-      '-m', '10',
+      '--connect-timeout', '15',
+      '-m', '30',
       csvUrl
     ]);
     const stdoutChunks = [];
     child.stdout.on('data', chunk => stdoutChunks.push(chunk));
     child.on('close', code => {
       if (code === 0) resolve(Buffer.concat(stdoutChunks).toString());
-      else reject(new Error(`curl exit code ${code}`));
+      else reject(new Error(`Koneksi Google Sheets timeout / curl exit code ${code}`));
     });
   });
 }
@@ -96,6 +96,7 @@ async function getAnomalySheetsData(settings = {}, forceRefresh = false) {
     return { ...cache.data, fromCache: true };
   }
 
+  const startTime = Date.now();
   const urlUsaha = `${baseUrl}/pub?single=true&output=csv&gid=0`;
   const urlKeluarga = `${baseUrl}/pub?single=true&output=csv&gid=1116284119`;
 
@@ -138,9 +139,9 @@ async function getAnomalySheetsData(settings = {}, forceRefresh = false) {
         assignment_id: assignmentId,
         nama_anomali: row[16] || '-',
         tindak_lanjut: statusTL,
+        penjelasan: row[21] || '',
         is_done: isDone,
-        link_fasih: linkFasih,
-        penjelasan: row[21] && row[21] !== '-' ? row[21] : ''
+        link_fasih: linkFasih
       });
     }
   }
@@ -176,16 +177,15 @@ async function getAnomalySheetsData(settings = {}, forceRefresh = false) {
         assignment_id: assignmentId,
         nama_anomali: row[16] || '-',
         tindak_lanjut: statusTL,
+        penjelasan: row[21] || '',
         is_done: isDone,
-        link_fasih: linkFasih,
-        penjelasan: row[21] && row[21] !== '-' ? row[21] : ''
+        link_fasih: linkFasih
       });
     }
   }
 
-  // Summary grouped by PCL
+  // Aggregate by PCL Officer
   const pclMap = {};
-
   const processPclItem = (item, type) => {
     const key = item.petugas;
     if (!pclMap[key]) {
@@ -224,6 +224,7 @@ async function getAnomalySheetsData(settings = {}, forceRefresh = false) {
   const totalAnomali = totalUsaha + totalKeluarga;
   const totalSudah = usahaList.filter(u => u.is_done).length + keluargaList.filter(k => k.is_done).length;
   const totalBelum = totalAnomali - totalSudah;
+  const latencyMs = Date.now() - startTime;
 
   const result = {
     summary: {
@@ -238,7 +239,8 @@ async function getAnomalySheetsData(settings = {}, forceRefresh = false) {
     keluargaList,
     pclStats,
     lastUpdated: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-    fromCache: false
+    fromCache: false,
+    latencyMs
   };
 
   cache = {
@@ -258,6 +260,8 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
     throw new Error('URL Google Apps Script Web App belum dikonfigurasi.');
   }
 
+  const startTime = Date.now();
+
   const payloadObj = {
     assignment_id: payload.assignment_id || '',
     type: payload.type || 'usaha',
@@ -269,7 +273,7 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
   };
 
   const postData = JSON.stringify(payloadObj);
-  const TIMEOUT_MS = 12000;
+  const TIMEOUT_MS = 30000; // Increased to 30s timeout
   let responseText = '';
 
   // Attempt 1: Fetch POST
@@ -320,7 +324,7 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
     jsonRes = JSON.parse(responseText);
   } catch (e) {
     console.warn('[GoogleSheetsService] Raw Apps Script response:', responseText ? responseText.slice(0, 300) : '(empty)');
-    throw new Error('Respons Google Apps Script bukan JSON. Pastikan Anda telah men-deploy ulang Apps Script sebagai "New Version" dengan akses "Anyone".');
+    throw new Error('Respons Google Apps Script bukan JSON (Koneksi Timeout / Server Google lambat). Silakan coba simpan kembali.');
   }
 
   if (jsonRes.success === false) {
@@ -331,7 +335,7 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
   if (cache.data) {
     const isDone = payload.tindak_lanjut.toLowerCase().includes('sudah') || payload.tindak_lanjut.toLowerCase().includes('selesai');
     const targetList = payload.type === 'keluarga' ? cache.data.keluargaList : cache.data.usahaList;
-    const item = targetList.find(i => i.assignment_id === payload.assignment_id);
+    const item = targetList.find(i => (payload.assignment_id && i.assignment_id === payload.assignment_id) || (payload.nama && (i.nama_usaha === payload.nama || i.nama_kk === payload.nama)));
     if (item) {
       item.tindak_lanjut = payload.tindak_lanjut;
       item.is_done = isDone;
@@ -339,7 +343,13 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
     }
   }
 
-  return { success: true, message: jsonRes.message || 'Berhasil mengupdate data di Google Spreadsheet' };
+  const latencyMs = Date.now() - startTime;
+
+  return {
+    success: true,
+    message: jsonRes.message || 'Berhasil mengupdate data di Google Spreadsheet',
+    latencyMs
+  };
 }
 
 module.exports = {
