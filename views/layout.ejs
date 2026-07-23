@@ -246,7 +246,7 @@
         <% } %>
         <% if (settings.page_deteksianomali === '1') { %>
         <a href="/deteksi-anomali" class="nav-item <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-shield-exclamation"></i></span> Deteksi Awal Anomali
+          <span class="nav-icon"><i class="bi bi-shield-exclamation"></i></span> Anomali
         </a>
         <% } %>
       </div>
@@ -293,12 +293,12 @@
       <div class="nav-section-content">
         <% if (settings.page_kecamatan === '1') { %>
         <a href="/kecamatan" class="nav-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-geo-alt"></i></span> Per Kecamatan
+          <span class="nav-icon"><i class="bi bi-geo-alt"></i></span> Kecamatan
         </a>
         <% } %>
         <% if (settings.page_subsls === '1') { %>
         <a href="/subsls" class="nav-item <%= activePage === 'subsls' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-box-seam"></i></span> Per SubSLS
+          <span class="nav-icon"><i class="bi bi-box-seam"></i></span> Subsls
         </a>
         <% } %>
       </div>
@@ -648,11 +648,11 @@
       '/':                  { label: 'Overview',          icon: 'bi-house-door-fill' },
       '/map':               { label: 'Peta Progres',      icon: 'bi-map-fill' },
       '/agent':             { label: 'Asisten AI',        icon: 'bi-robot' },
-      '/kecamatan':         { label: 'Per Kecamatan',     icon: 'bi-geo-alt-fill' },
+      '/kecamatan':         { label: 'Kecamatan',         icon: 'bi-geo-alt-fill' },
       '/korlap':            { label: 'Korlap',            icon: 'bi-person-lines-fill' },
       '/pml':               { label: 'PML',               icon: 'bi-person-badge-fill' },
       '/pcl':               { label: 'PCL',               icon: 'bi-person-gear' },
-      '/subsls':            { label: 'Detail SLS',        icon: 'bi-grid-3x3-gap-fill' },
+      '/subsls':            { label: 'Subsls',            icon: 'bi-grid-3x3-gap-fill' },
       '/kipp':              { label: 'KIPP IKN',          icon: 'bi-building-check' },
       '/leaderboard':       { label: 'Leaderboard',       icon: 'bi-trophy-fill' },
       '/performa':          { label: 'Top Performers',    icon: 'bi-graph-up-arrow' },
@@ -660,7 +660,7 @@
       '/harian':            { label: 'Tren Harian',       icon: 'bi-bar-chart-line-fill' },
       '/early-warning':     { label: 'Early Warning',     icon: 'bi-exclamation-triangle-fill' },
       '/earlywarning':      { label: 'Early Warning',     icon: 'bi-exclamation-triangle-fill' },
-      '/deteksianomali':    { label: 'Deteksi Anomali',   icon: 'bi-bug-fill' },
+      '/deteksi-anomali':   { label: 'Anomali',           icon: 'bi-shield-exclamation' },
       '/pbi':               { label: 'Power BI',          icon: 'bi-bar-chart-fill' },
       '/master':            { label: 'Data Master',       icon: 'bi-table' },
       '/admin':             { label: 'Menu Admin',        icon: 'bi-grid-fill' },
