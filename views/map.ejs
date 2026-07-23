@@ -1,18 +1,53 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
+  .map-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .map-kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .map-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+
+  .map-kpi-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
   .map-container-wrap {
     display: flex;
     gap: 20px;
-    height: calc(100vh - var(--header-height) - 75px);
-    min-height: 520px;
-    margin-top: 15px;
+    height: calc(100vh - var(--header-height) - 150px);
+    min-height: 540px;
+    margin-top: 4px;
   }
   
   .map-sidebar-panel {
-    width: 340px;
+    width: 350px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
     height: 100%;
     overflow-y: auto;
     padding-right: 4px;
@@ -40,7 +75,7 @@
     align-items: center;
     gap: 10px;
     font-size: 12px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
 
   .map-legend-color {
@@ -56,7 +91,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(21, 21, 27, 0.7);
+    background: rgba(21, 21, 27, 0.75);
+    backdrop-filter: blur(4px);
     z-index: 99;
     display: flex;
     flex-direction: column;
@@ -70,7 +106,7 @@
   }
 
   body.light-mode .loading-overlay {
-    background: rgba(245, 239, 230, 0.7);
+    background: rgba(245, 239, 230, 0.75);
   }
 
   .spinner {
@@ -95,7 +131,7 @@
 
   .info-table {
     width: 100%;
-    margin-top: 10px;
+    margin-top: 8px;
     border-collapse: collapse;
     font-size: 12px;
   }
@@ -121,9 +157,10 @@
     background: var(--bg-card) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--border) !important;
-    border-radius: var(--radius-sm) !important;
+    border-radius: var(--radius) !important;
     font-family: 'Inter', system-ui, sans-serif !important;
     box-shadow: var(--shadow-lg) !important;
+    padding: 4px !important;
   }
 
   .leaflet-popup-tip {
@@ -134,6 +171,7 @@
 
   .leaflet-container a.leaflet-popup-close-button {
     color: var(--text-secondary) !important;
+    padding: 6px !important;
   }
 
   .leaflet-bar {
@@ -156,10 +194,10 @@
 
   .map-layer-selector {
     display: flex;
-    background: var(--bg-summary);
+    background: var(--bg-secondary);
     border-radius: var(--radius-sm);
     padding: 3px;
-    margin-top: 8px;
+    margin-top: 6px;
     border: 1px solid var(--border);
   }
 
@@ -168,18 +206,18 @@
     border: none;
     background: transparent;
     color: var(--text-secondary);
-    padding: 8px 12px;
-    font-size: 12px;
+    padding: 7px 10px;
+    font-size: 11px;
     border-radius: 6px;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
     transition: var(--transition);
   }
 
   .map-layer-btn.active {
     background: var(--bg-card);
     color: var(--accent-blue);
-    box-shadow: var(--shadow);
+    box-shadow: var(--shadow-sm);
   }
 
   .map-card-stat {
@@ -197,9 +235,18 @@
     color: var(--text-secondary);
   }
   .map-card-value {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--text-primary);
+  }
+
+  .map-quick-tools {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 1000;
+    display: flex;
+    gap: 8px;
   }
 
   @media (max-width: 992px) {
@@ -215,13 +262,61 @@
     .map-canvas-container {
       flex: none;
       width: 100%;
-      height: 450px;
-      min-height: 450px;
+      height: 480px;
+      min-height: 480px;
     }
   }
 </style>
 
 <div class="fade-in">
+    <!-- SUMMARY KPI CARDS -->
+    <div class="map-kpi-grid">
+      <!-- KPI 1: Total Wilayah -->
+      <div class="map-kpi-card">
+        <div class="map-kpi-icon" style="background: rgba(59, 130, 246, 0.12); color: var(--accent-blue);">
+          <i class="bi bi-map-fill"></i>
+        </div>
+        <div>
+          <div style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">Total Wilayah Desa</div>
+          <div id="statTotalDesa" style="font-size: 16px; font-weight: 700; color: var(--text-primary);">-- Desa</div>
+        </div>
+      </div>
+
+      <!-- KPI 2: 100% Selesai -->
+      <div class="map-kpi-card">
+        <div class="map-kpi-icon" style="background: rgba(34, 197, 94, 0.12); color: var(--accent-green);">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <div>
+          <div style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">Target 100% FASIH</div>
+          <div id="statDesa100" style="font-size: 16px; font-weight: 700; color: var(--accent-green);">-- Desa</div>
+        </div>
+      </div>
+
+      <!-- KPI 3: Progres 25%-99% -->
+      <div class="map-kpi-card">
+        <div class="map-kpi-icon" style="background: rgba(234, 179, 8, 0.12); color: var(--accent-yellow);">
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div>
+          <div style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">Progres On Track (25-99%)</div>
+          <div id="statDesaHigh" style="font-size: 16px; font-weight: 700; color: var(--accent-yellow);">-- Desa</div>
+        </div>
+      </div>
+
+      <!-- KPI 4: Perlu Perhatian (<25%) -->
+      <div class="map-kpi-card">
+        <div class="map-kpi-icon" style="background: rgba(239, 68, 68, 0.12); color: var(--accent-red);">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <div>
+          <div style="font-size: 11px; color: var(--text-secondary); font-weight: 500;">Perlu Perhatian (&lt;25%)</div>
+          <div id="statDesaLow" style="font-size: 16px; font-weight: 700; color: var(--accent-red);">-- Desa</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN MAP CONTENT CONTAINER -->
     <div class="map-container-wrap">
       
       <!-- SIDEBAR PANEL -->
@@ -229,14 +324,27 @@
         
         <!-- CONTROL CARD -->
         <div class="card" style="margin-bottom: 0;">
-          <div class="card-header" style="margin-bottom: 10px; padding-bottom: 0;">
-            <div class="card-title"><i class="bi bi-sliders"></i> Kontrol Wilayah</div>
+          <div class="card-header" style="margin-bottom: 10px; padding-bottom: 0; display: flex; justify-content: space-between; align-items: center;">
+            <div class="card-title"><i class="bi bi-sliders"></i> Kontrol & Filter Peta</div>
+            <button id="btnResetView" class="btn btn-secondary btn-xs" title="Reset Pandangan Peta">
+              <i class="bi bi-arrow-counterclockwise"></i> Reset
+            </button>
           </div>
           
-          <div class="form-group" style="margin-bottom: 12px;">
-            <label for="kecFilter" style="font-size: 12px; font-weight: 500; margin-bottom: 6px; display: block; color: var(--text-secondary);">Kecamatan</label>
-            <select id="kecFilter" style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); cursor: pointer; transition: var(--transition);">
-              <option value="">-- Tampilkan Semua --</option>
+          <!-- SEARCH WILAYAH -->
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label for="mapSearchInput" style="font-size: 11px; font-weight: 600; margin-bottom: 4px; display: block; color: var(--text-secondary);">Cari Nama Desa / SLS</label>
+            <div style="position: relative;">
+              <input type="text" id="mapSearchInput" placeholder="Ketik nama desa atau SLS..." style="width: 100%; padding: 7px 30px 7px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 12px;" />
+              <i class="bi bi-search" style="position: absolute; right: 10px; top: 8px; color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
+            </div>
+          </div>
+
+          <!-- KECAMATAN FILTER -->
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label for="kecFilter" style="font-size: 11px; font-weight: 600; margin-bottom: 4px; display: block; color: var(--text-secondary);">Kecamatan</label>
+            <select id="kecFilter" style="width: 100%; padding: 7px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 12px; cursor: pointer;">
+              <option value="">-- Tampilkan Semua Kecamatan --</option>
               <option value="BABULU">Kec. Babulu</option>
               <option value="WARU">Kec. Waru</option>
               <option value="PENAJAM">Kec. Penajam</option>
@@ -244,46 +352,56 @@
             </select>
           </div>
 
-          <div class="form-group">
-            <label style="font-size: 12px; font-weight: 500; margin-bottom: 6px; display: block; color: var(--text-secondary);">Tingkat Wilayah</label>
+          <!-- TINGKAT WILAYAH -->
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label style="font-size: 11px; font-weight: 600; margin-bottom: 4px; display: block; color: var(--text-secondary);">Tingkat Batas Wilayah</label>
             <div class="map-layer-selector">
               <button id="btnLayerDesa" class="map-layer-btn active" aria-pressed="true">Batas Desa</button>
               <button id="btnLayerSls" class="map-layer-btn" aria-pressed="false">Batas SLS</button>
+            </div>
+          </div>
+
+          <!-- BASEMAP TYPE SELECTOR -->
+          <div class="form-group">
+            <label style="font-size: 11px; font-weight: 600; margin-bottom: 4px; display: block; color: var(--text-secondary);">Tipe Peta Dasar (Basemap)</label>
+            <div class="map-layer-selector">
+              <button id="btnBasemapDefault" class="map-layer-btn active">Vektor Standard</button>
+              <button id="btnBasemapSatellite" class="map-layer-btn">Foto Satelit</button>
             </div>
           </div>
         </div>
 
         <!-- STATS CARD -->
         <div class="card" style="margin-bottom: 0;">
-          <div class="card-header" style="margin-bottom: 10px; padding-bottom: 0;">
-            <div class="card-title"><i class="bi bi-card-list"></i> Informasi Wilayah</div>
+          <div class="card-header" style="margin-bottom: 8px; padding-bottom: 0;">
+            <div class="card-title"><i class="bi bi-card-list"></i> Detail Wilayah Terpilih</div>
           </div>
           <div id="mapSummaryStats">
-            <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 20px 0;">
-              <i class="bi bi-geo-alt" style="font-size: 24px; color: var(--text-muted); display: block; margin-bottom: 8px;"></i>
-              Klik suatu wilayah pada peta untuk memuat data progres kinerja di sini.
+            <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 24px 12px;">
+              <i class="bi bi-geo-alt-fill" style="font-size: 28px; color: var(--accent-blue); display: block; margin-bottom: 8px; opacity: 0.7;"></i>
+              Klik salah satu batas desa atau SLS pada peta untuk melihat rincian progres kinerja di sini.
             </div>
           </div>
         </div>
 
         <!-- LEGEND CARD -->
         <div class="card" style="margin-bottom: 0;">
-          <div class="card-header" style="margin-bottom: 10px; padding-bottom: 0;">
-            <div class="card-title"><i class="bi bi-info-circle"></i> Legenda Warna</div>
+          <div class="card-header" style="margin-bottom: 8px; padding-bottom: 0;">
+            <div class="card-title"><i class="bi bi-info-circle"></i> Legenda Warna Capaian</div>
           </div>
           
           <div id="legendDesa">
-            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Persentase Progres Capaian FASIH:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span>100% FASIH</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span>75% - 99% FASIH</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #eab308;"></div><span>25% - 74% FASIH</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span>1% - 24% FASIH</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span>0% FASIH / Belum Ada Progres</span></div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Persentase Realisasi FASIH Desa:</div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>100%</strong> FASIH (Target Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>75% - 99%</strong> FASIH (Sangat Baik)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #eab308;"></div><span><strong>25% - 74%</strong> FASIH (Sedang)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>1% - 24%</strong> FASIH (Awal Progres)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>0%</strong> FASIH (Belum Ada Progres)</span></div>
           </div>
 
           <div id="legendSls" style="display: none;">
-            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Status SLS/SubSLS:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span>Target FASIH Tercapai</span></div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Status Target SLS:</div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span>Target FASIH Tercapai (100%)</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span>Target FASIH Belum Tercapai</span></div>
           </div>
         </div>
@@ -294,7 +412,7 @@
       <div class="map-canvas-container">
         <div id="mapLoading" class="loading-overlay">
           <div class="spinner"></div>
-          <div id="loadingStatusText" style="font-size: 13px; font-weight: 500;">Memuat Peta dan Data Batas Wilayah...</div>
+          <div id="loadingStatusText" style="font-size: 13px; font-weight: 500;">Memuat Peta Spasial Penajam Paser Utara...</div>
         </div>
         <div id="map"></div>
       </div>
@@ -314,26 +432,38 @@
           minZoom: 9
         }).setView(centerCoords, defaultZoom);
 
-        // Basemaps (Light Mode / Dark Mode switcher)
+        // Basemaps (CartoDB Light/Dark Vector + Esri Satellite)
         const lightBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          attribution: '&copy; OpenStreetMap &copy; CARTO',
           subdomains: 'abcd'
         });
 
         const darkBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          attribution: '&copy; OpenStreetMap &copy; CARTO',
           subdomains: 'abcd'
         });
 
-        // Set current basemap based on body theme class
+        const satelliteBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          attribution: 'Tiles &copy; Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP'
+        });
+
+        let currentBasemapType = 'default'; // 'default' or 'satellite'
+
         function updateBasemap() {
-          const isLight = document.body.classList.contains('light-mode');
-          if (isLight) {
-            if (map.hasLayer(darkBasemap)) map.removeLayer(darkBasemap);
-            lightBasemap.addTo(map);
-          } else {
+          if (currentBasemapType === 'satellite') {
             if (map.hasLayer(lightBasemap)) map.removeLayer(lightBasemap);
-            darkBasemap.addTo(map);
+            if (map.hasLayer(darkBasemap)) map.removeLayer(darkBasemap);
+            satelliteBasemap.addTo(map);
+          } else {
+            if (map.hasLayer(satelliteBasemap)) map.removeLayer(satelliteBasemap);
+            const isLight = document.body.classList.contains('light-mode');
+            if (isLight) {
+              if (map.hasLayer(darkBasemap)) map.removeLayer(darkBasemap);
+              lightBasemap.addTo(map);
+            } else {
+              if (map.hasLayer(lightBasemap)) map.removeLayer(lightBasemap);
+              darkBasemap.addTo(map);
+            }
           }
         }
         updateBasemap();
@@ -341,7 +471,6 @@
         // Listen for theme toggle events
         window.addEventListener('themechange', () => {
           updateBasemap();
-          // Force update styles of map layers if loaded
           if (desaLayer) desaLayer.setStyle(desaStyle);
           if (slsLayer) slsLayer.setStyle(slsStyle);
         });
@@ -361,14 +490,19 @@
         const loadingOverlay = document.getElementById('mapLoading');
         const loadingText = document.getElementById('loadingStatusText');
         const kecFilter = document.getElementById('kecFilter');
+        const mapSearchInput = document.getElementById('mapSearchInput');
+        const btnResetView = document.getElementById('btnResetView');
         const btnLayerDesa = document.getElementById('btnLayerDesa');
         const btnLayerSls = document.getElementById('btnLayerSls');
+        const btnBasemapDefault = document.getElementById('btnBasemapDefault');
+        const btnBasemapSatellite = document.getElementById('btnBasemapSatellite');
         const legendDesa = document.getElementById('legendDesa');
         const legendSls = document.getElementById('legendSls');
         const sidebarStats = document.getElementById('mapSummaryStats');
 
         // Styles
         function getBorderColor() {
+          if (currentBasemapType === 'satellite') return '#ffffff';
           return document.body.classList.contains('light-mode') ? '#ffffff' : '#1b1b24';
         }
 
@@ -380,8 +514,8 @@
         function getDesaColor(iddesa) {
           const stat = desaStats.find(s => s.iddesa === iddesa);
           if (!stat) return '#94a3b8'; // gray for no data
-          const pct = stat.target_fasih_total ? ( (stat.submitted_total + stat.approved_total + stat.rejected_total) / stat.target_fasih_total ) * 100 : 0;
-          if (pct === 100) return '#10b981'; // Green
+          const pct = stat.target_fasih_total ? ((stat.submitted_total + stat.approved_total + stat.rejected_total) / stat.target_fasih_total) * 100 : 0;
+          if (pct >= 100) return '#10b981'; // Green
           if (pct >= 75) return '#0284c7';  // Blue
           if (pct >= 25) return '#eab308';  // Yellow
           if (pct > 0) return '#f97316';    // Orange
@@ -403,7 +537,7 @@
             weight: 1.5,
             opacity: isSelectedKec ? 1 : 0.08,
             color: getBorderColor(),
-            fillOpacity: isSelectedKec ? 0.65 : 0.02
+            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.45 : 0.65) : 0.02
           };
         }
 
@@ -414,7 +548,7 @@
             weight: 1.2,
             opacity: isSelectedKec ? 1 : 0.08,
             color: getBorderColor(),
-            fillOpacity: isSelectedKec ? 0.6 : 0.02
+            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.45 : 0.6) : 0.02
           };
         }
 
@@ -424,7 +558,7 @@
           layer.setStyle({
             weight: 3,
             color: getHoverBorderColor(),
-            fillOpacity: 0.8
+            fillOpacity: 0.85
           });
           if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
             layer.bringToFront();
@@ -437,6 +571,35 @@
 
         function resetHighlightSls(e) {
           slsLayer.resetStyle(e.target);
+        }
+
+        // Top Statistics Calculator
+        function updateTopStats(statsList) {
+          if (!statsList || !statsList.length) return;
+          let totalDesa = statsList.length;
+          let count100 = 0;
+          let countHigh = 0;
+          let countLow = 0;
+
+          statsList.forEach(s => {
+            const totalFasih = s.target_fasih_total || 0;
+            const realisasi = (s.submitted_total || 0) + (s.approved_total || 0) + (s.rejected_total || 0);
+            const pct = totalFasih ? (realisasi / totalFasih) * 100 : 0;
+
+            if (pct >= 100) count100++;
+            else if (pct >= 25) countHigh++;
+            else countLow++;
+          });
+
+          const statTotal = document.getElementById('statTotalDesa');
+          const stat100 = document.getElementById('statDesa100');
+          const statHigh = document.getElementById('statDesaHigh');
+          const statLow = document.getElementById('statDesaLow');
+
+          if (statTotal) statTotal.textContent = `${totalDesa} Desa`;
+          if (stat100) stat100.textContent = `${count100} Desa`;
+          if (statHigh) statHigh.textContent = `${countHigh} Desa`;
+          if (statLow) statLow.textContent = `${countLow} Desa`;
         }
 
         // Fit map bounds to filtered subdistrict
@@ -482,27 +645,40 @@
           const approved = stat ? stat.approved_total : 0;
           const rejected = stat ? stat.rejected_total : 0;
           const totalRealisasiFasih = submitted + approved + rejected;
-          const fasihPct = targetFasih ? ((totalRealisasiFasih / targetFasih) * 100).toFixed(2) : '0.00';
+          const fasihPct = targetFasih ? Math.min(parseFloat(((totalRealisasiFasih / targetFasih) * 100).toFixed(2)), 100) : 0;
+          const fasihColor = fasihPct >= 100 ? 'var(--accent-green)' : (fasihPct < 25 ? 'var(--accent-red)' : 'var(--accent-purple)');
 
           sidebarStats.innerHTML = `
-            <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--accent-blue);"><i class="bi bi-geo-alt-fill"></i> Desa/Kel. ${properties.nmdesa}</div>
-            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 12px;">Kecamatan ${properties.nmkec}</div>
+            <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px; color: var(--accent-blue); display: flex; align-items: center; gap: 6px;">
+              <i class="bi bi-geo-alt-fill"></i> Desa/Kel. ${properties.nmdesa}
+            </div>
+            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 10px;">Kecamatan ${properties.nmkec}</div>
             
+            <!-- Progress Bar Vis -->
+            <div style="background: var(--bg-secondary); padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; margin-bottom: 4px;">
+                <span>Progres Realisasi FASIH</span>
+                <span style="color: ${fasihColor};">${fasihPct}%</span>
+              </div>
+              <div class="progress-track-sm" style="height: 8px;">
+                <div class="progress-bar ${fasihPct >= 100 ? 'green' : (fasihPct < 25 ? 'red' : 'purple')}" data-width="${fasihPct}" style="width: ${fasihPct}%; height: 100%; border-radius: 99px;"></div>
+              </div>
+              <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px; text-align: right;">
+                ${totalRealisasiFasih.toLocaleString('id-ID')} / ${targetFasih.toLocaleString('id-ID')} Dokumen
+              </div>
+            </div>
+
             <div class="map-card-stat">
               <span class="map-card-label">Jumlah SubSLS</span>
               <span class="map-card-value">${total} SLS</span>
             </div>
             <div class="map-card-stat">
-              <span class="map-card-label">Target FASIH Tercapai</span>
-              <span class="map-card-value">${selesai} SLS</span>
-            </div>
-            <div class="map-card-stat">
-              <span class="map-card-label">Progres Capaian FASIH</span>
-               <span class="map-card-value" style="color: ${parseFloat(fasihPct) >= 100 ? 'var(--accent-green)' : 'inherit'}">${fasihPct}% (${totalRealisasiFasih.toLocaleString('id-ID')} / ${targetFasih.toLocaleString('id-ID')})</span>
+              <span class="map-card-label">Target FASIH Selesai</span>
+              <span class="map-card-value" style="color: var(--accent-green);">${selesai} SLS</span>
             </div>
             <div class="map-card-stat muatan-col">
               <span class="map-card-label">Progres Muatan</span>
-               <span class="map-card-value">${pct}%</span>
+              <span class="map-card-value">${pct}%</span>
             </div>
             <div class="map-card-stat muatan-col">
               <span class="map-card-label">Muatan Target</span>
@@ -517,8 +693,8 @@
               <span class="map-card-value">${keluarga.toLocaleString('id-ID')}</span>
             </div>
 
-            <button class="btn btn-secondary btn-xs" id="btnFocusDesa" style="width: 100%; margin-top: 14px; display: flex; justify-content: center; gap: 6px;">
-              <i class="bi bi-search"></i> Zoom & Tampilkan Batas SLS
+            <button class="btn btn-primary btn-xs" id="btnFocusDesa" style="width: 100%; margin-top: 12px; display: flex; justify-content: center; align-items: center; gap: 6px; padding: 6px 10px;">
+              <i class="bi bi-search"></i> Zoom &amp; Tampilkan Batas SLS
             </button>
           `;
 
@@ -530,15 +706,16 @@
 
         function fitBoundsToDesa(iddesa) {
           let bounds = null;
-          desaLayer.eachLayer(layer => {
-            if (layer.feature.properties.iddesa === iddesa) {
-              bounds = layer.getBounds();
-            }
-          });
+          if (desaLayer) {
+            desaLayer.eachLayer(layer => {
+              if (layer.feature.properties.iddesa === iddesa) {
+                bounds = layer.getBounds();
+              }
+            });
+          }
           
           if (bounds) {
             map.fitBounds(bounds, { padding: [40, 40] });
-            // Switch to SLS level
             switchToSlsLayer();
           }
         }
@@ -559,11 +736,11 @@
           const approved = stat ? stat.approved : 0;
           const rejected = stat ? stat.rejected : 0;
           const realisasiFasih = submitted + approved + rejected;
-          const fasihPct = targetFasih ? ((realisasiFasih / targetFasih) * 100).toFixed(2) : '0.00';
+          const fasihPct = targetFasih ? Math.min(parseFloat(((realisasiFasih / targetFasih) * 100).toFixed(2)), 100) : 0;
 
           sidebarStats.innerHTML = `
-            <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--accent-blue);"><i class="bi bi-box-seam"></i> SLS: ${properties.nmsls}</div>
-            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 12px;">Desa ${properties.nmdesa}, Kec. ${properties.nmkec}</div>
+            <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px; color: var(--accent-blue); flex-wrap: wrap;"><i class="bi bi-box-seam"></i> SLS: ${properties.nmsls}</div>
+            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 10px;">Desa ${properties.nmdesa}, Kec. ${properties.nmkec}</div>
             
             <div class="map-card-stat">
               <span class="map-card-label">Kode SLS</span>
@@ -594,7 +771,7 @@
               <span class="map-card-value">${realisasiFasih.toLocaleString('id-ID')} (${fasihPct}%)</span>
             </div>
             <div class="map-card-stat">
-              <span class="map-card-label">Rincian FASIH</span>
+              <span class="map-card-label">Rincian Status</span>
               <span class="map-card-value" style="font-size: 11px;">D: ${draft} | S: ${submitted} | A: ${approved} | R: ${rejected}</span>
             </div>
             <div class="map-card-stat muatan-col">
@@ -632,18 +809,18 @@
                   const approved = stat ? stat.approved_total : 0;
                   const rejected = stat ? stat.rejected_total : 0;
                   const totalRealisasiFasih = submitted + approved + rejected;
-                  const fasihPct = targetFasih ? ((totalRealisasiFasih / targetFasih) * 100).toFixed(2) : '0.00';
+                  const fasihPct = targetFasih ? Math.min(parseFloat(((totalRealisasiFasih / targetFasih) * 100).toFixed(2)), 100) : 0;
                   const totalMuatan = stat ? stat.total_muatan : 0;
                   const usaha = stat ? stat.usaha_total : 0;
                   const pct = totalMuatan ? ((usaha / totalMuatan) * 100).toFixed(2) : '0.00';
                   
                   const popupHtml = `
-                    <div style="font-family: 'Inter', sans-serif; min-width: 170px;">
+                    <div style="font-family: 'Inter', sans-serif; min-width: 180px; padding: 2px;">
                       <strong style="font-size: 13px; color: var(--text-primary);">Desa ${feature.properties.nmdesa}</strong><br>
                       <span style="font-size: 11px; color: var(--text-secondary);">Kec. ${feature.properties.nmkec}</span>
                       <table class="info-table">
-                        <tr><td class="label">Target FASIH</td><td class="value">${selesai} / ${total} SLS</td></tr>
-                        <tr><td class="label">Progres FASIH</td><td class="value">${fasihPct}%</td></tr>
+                        <tr><td class="label">SLS Selesai</td><td class="value">${selesai} / ${total} SLS</td></tr>
+                        <tr><td class="label">Progres FASIH</td><td class="value" style="color: ${fasihPct >= 100 ? 'var(--accent-green)' : 'var(--accent-blue)'};">${fasihPct}%</td></tr>
                         <tr class="muatan-col"><td class="label">Progres Muatan</td><td class="value">${pct}%</td></tr>
                       </table>
                     </div>
@@ -668,20 +845,19 @@
                   const stat = slsStats.find(s => s.kode === feature.properties.kode);
                   const status = stat && stat.selesai === 1 ? 'Target Tercapai' : 'Belum Tercapai';
                   const targetFasih = stat ? stat.target_fasih : 0;
-                  const draft = stat ? stat.draft : 0;
                   const submitted = stat ? stat.submitted_by_pcl : 0;
                   const approved = stat ? stat.approved : 0;
                   const rejected = stat ? stat.rejected : 0;
                   const realisasiFasih = submitted + approved + rejected;
-                  const fasihPct = targetFasih ? ((realisasiFasih / targetFasih) * 100).toFixed(2) : '0.00';
+                  const fasihPct = targetFasih ? Math.min(parseFloat(((realisasiFasih / targetFasih) * 100).toFixed(2)), 100) : 0;
                   
                   const popupHtml = `
-                    <div style="font-family: 'Inter', sans-serif; min-width: 190px;">
+                    <div style="font-family: 'Inter', sans-serif; min-width: 190px; padding: 2px;">
                       <strong style="font-size: 13px; color: var(--text-primary);">${feature.properties.nmsls}</strong><br>
                       <span style="font-size: 11px; color: var(--text-secondary);">${feature.properties.nmdesa}, ${feature.properties.nmkec}</span>
                       <table class="info-table">
                         <tr><td class="label">PCL</td><td class="value">${stat ? stat.pcl : '-'}</td></tr>
-                        <tr><td class="label">Target FASIH</td><td class="value" style="color: ${status === 'Target Tercapai' ? 'var(--accent-green)' : 'var(--accent-red)'}">${status}</td></tr>
+                        <tr><td class="label">Status Target</td><td class="value" style="color: ${status === 'Target Tercapai' ? 'var(--accent-green)' : 'var(--accent-red)'}">${status}</td></tr>
                         <tr><td class="label">FASIH %</td><td class="value">${fasihPct}% (${realisasiFasih}/${targetFasih})</td></tr>
                         <tr class="muatan-col"><td class="label">Usaha</td><td class="value">${stat ? stat.usaha_total : 0}</td></tr>
                       </table>
@@ -708,6 +884,9 @@
             slsStats = stats.slsStats;
             desaGeoJson = await desaGeoRes.json();
 
+            // Update top KPI cards
+            updateTopStats(desaStats);
+
             // Setup Desa boundary mapping layer
             setupDesaLayer();
             desaLayer.addTo(map);
@@ -730,7 +909,6 @@
             const res = await fetch('/data/sls_boundaries.geojson');
             slsGeoJson = await res.json();
             setupSlsLayer();
-            console.log('SLS Boundaries lazy loaded successfully!');
           } catch (err) {
             console.error('Error lazy loading SLS geojson:', err);
           }
@@ -776,6 +954,25 @@
         btnLayerDesa.addEventListener('click', switchToDesaLayer);
         btnLayerSls.addEventListener('click', switchToSlsLayer);
 
+        // Basemap Switcher Listeners
+        btnBasemapDefault.addEventListener('click', () => {
+          currentBasemapType = 'default';
+          btnBasemapSatellite.classList.remove('active');
+          btnBasemapDefault.classList.add('active');
+          updateBasemap();
+          if (desaLayer) desaLayer.setStyle(desaStyle);
+          if (slsLayer) slsLayer.setStyle(slsStyle);
+        });
+
+        btnBasemapSatellite.addEventListener('click', () => {
+          currentBasemapType = 'satellite';
+          btnBasemapDefault.classList.remove('active');
+          btnBasemapSatellite.classList.add('active');
+          updateBasemap();
+          if (desaLayer) desaLayer.setStyle(desaStyle);
+          if (slsLayer) slsLayer.setStyle(slsStyle);
+        });
+
         // Filter Dropdown Listener
         kecFilter.addEventListener('change', (e) => {
           currentFilteredKec = e.target.value;
@@ -785,6 +982,64 @@
 
           fitBoundsToKecamatan(currentFilteredKec);
         });
+
+        // Reset View Button
+        btnResetView.addEventListener('click', () => {
+          kecFilter.value = '';
+          currentFilteredKec = '';
+          if (mapSearchInput) mapSearchInput.value = '';
+          map.setView(centerCoords, defaultZoom);
+          if (desaLayer) desaLayer.setStyle(desaStyle);
+          if (slsLayer) slsLayer.setStyle(slsStyle);
+        });
+
+        // Search Input Listener with auto-focus/highlight
+        if (mapSearchInput) {
+          mapSearchInput.addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase().trim();
+            if (!q) {
+              if (desaLayer) desaLayer.setStyle(desaStyle);
+              if (slsLayer) slsLayer.setStyle(slsStyle);
+              return;
+            }
+
+            let foundBounds = L.latLngBounds();
+            let hasMatch = false;
+
+            if (activeLayerName === 'desa' && desaLayer) {
+              desaLayer.eachLayer(layer => {
+                const nmdesa = (layer.feature.properties.nmdesa || '').toLowerCase();
+                const nmkec = (layer.feature.properties.nmkec || '').toLowerCase();
+                if (nmdesa.includes(q) || nmkec.includes(q)) {
+                  layer.bringToFront();
+                  layer.setStyle({ weight: 3, color: 'var(--accent-cyan)', fillOpacity: 0.85 });
+                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
+                  hasMatch = true;
+                } else {
+                  layer.setStyle({ opacity: 0.1, fillOpacity: 0.05 });
+                }
+              });
+            } else if (activeLayerName === 'sls' && slsLayer) {
+              slsLayer.eachLayer(layer => {
+                const nmsls = (layer.feature.properties.nmsls || '').toLowerCase();
+                const nmdesa = (layer.feature.properties.nmdesa || '').toLowerCase();
+                const kode = (layer.feature.properties.kode || '').toLowerCase();
+                if (nmsls.includes(q) || nmdesa.includes(q) || kode.includes(q)) {
+                  layer.bringToFront();
+                  layer.setStyle({ weight: 3, color: 'var(--accent-cyan)', fillOpacity: 0.85 });
+                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
+                  hasMatch = true;
+                } else {
+                  layer.setStyle({ opacity: 0.1, fillOpacity: 0.05 });
+                }
+              });
+            }
+
+            if (hasMatch && foundBounds.isValid()) {
+              map.fitBounds(foundBounds, { padding: [40, 40] });
+            }
+          });
+        }
 
         // Initialize!
         bootstrap();
