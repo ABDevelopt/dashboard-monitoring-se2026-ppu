@@ -2476,11 +2476,51 @@
             window._pjaxCleanups = [];
           }
 
-          // Swap content immediately and trigger smooth layout entrance animation
+          // Spatial vertical page order index mapping for desktop/tablet (min-width: 769px)
+          const pageOrderMap = [
+            '/',
+            '/map',
+            '/agent',
+            '/kecamatan',
+            '/korlap',
+            '/pml',
+            '/pcl',
+            '/harian',
+            '/performa',
+            '/leaderboard',
+            '/performa-terendah',
+            '/early-warning',
+            '/deteksi-anomali',
+            '/subsls',
+            '/kipp',
+            '/pbi',
+            '/help',
+            '/admin'
+          ];
+
+          const getPageIndex = (pathStr) => {
+            const cleanPath = (pathStr || '/').split('?')[0].replace(/\/$/, '') || '/';
+            const idx = pageOrderMap.findIndex(p => p === cleanPath);
+            return idx !== -1 ? idx : 99;
+          };
+
+          const currentIdx = getPageIndex(window.location.pathname);
+          const targetIdx = getPageIndex(url);
+
+          let animClass = 'pjax-animate-enter';
+          if (window.innerWidth >= 769 && currentIdx !== targetIdx && currentIdx !== 99 && targetIdx !== 99) {
+            if (targetIdx > currentIdx) {
+              animClass = 'pjax-slide-up'; // Navigating DOWN menu -> slide UP from bottom
+            } else {
+              animClass = 'pjax-slide-down'; // Navigating UP menu -> slide DOWN from top
+            }
+          }
+
+          // Swap content immediately and trigger spatial vertical slide transition
           oldContent.innerHTML = newContent.innerHTML;
-          oldContent.classList.remove('pjax-animate-enter');
+          oldContent.classList.remove('pjax-animate-enter', 'pjax-slide-up', 'pjax-slide-down');
           void oldContent.offsetWidth;
-          oldContent.classList.add('pjax-animate-enter');
+          oldContent.classList.add(animClass);
         } else {
           window.location.href = url;
           return;
