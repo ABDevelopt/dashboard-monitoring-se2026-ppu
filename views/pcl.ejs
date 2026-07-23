@@ -167,8 +167,8 @@
                         <span style="font-weight:700; color:<%= fasihColorPcl %>"><%= fasihPct %>%</span>
                         <span><%= fasihRealPcl.toLocaleString('id-ID') %> / <%= fasihTgtPcl.toLocaleString('id-ID') %></span>
                       </div>
-                      <div class="progress-bar-container" style="background:rgba(255,255,255,0.08); border:1px solid var(--border); border-radius:99px; height:8px; overflow:hidden;">
-                        <div style="width:<%= fasihWPcl %>%; background:<%= fasihColorPcl %>; height:100%; border-radius:99px; transition:width 0.4s ease;"></div>
+                      <div class="progress-track-sm">
+                        <div class="progress-bar <%= fasihWPcl >= 100 ? 'green' : (fasihWPcl < 40 ? 'red' : 'purple') %>" data-width="<%= fasihWPcl %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
                     <td class="bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>" style="min-width: 160px; padding: 6px 10px;">
