@@ -3728,3 +3728,164 @@ body.page-agent .sidebar {
   height: 100vh !important;
 }
 
+/* ==========================================================================
+   ULTRA-PREMIUM SWEETALERT2 DIALOG STYLING
+   ========================================================================== */
+.swal2-container.swal2-backdrop-show {
+  backdrop-filter: blur(8px);
+  background: rgba(15, 15, 18, 0.65) !important;
+}
+
+body.light-mode .swal2-container.swal2-backdrop-show {
+  background: rgba(15, 23, 42, 0.4) !important;
+}
+
+.swal2-popup.swal2-dark-popup,
+.swal2-popup {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+  padding: 24px !important;
+  max-width: 480px !important;
+  animation: swalEntrance 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes swalEntrance {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.swal2-title {
+  color: var(--text-primary) !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  padding: 0 0 12px 0 !important;
+  border-bottom: 1px solid var(--border) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+}
+
+.swal2-html-container {
+  color: var(--text-secondary) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  margin: 16px 0 0 0 !important;
+  padding: 0 !important;
+}
+
+.swal2-actions {
+  margin-top: 20px !important;
+  gap: 10px !important;
+  width: 100% !important;
+  justify-content: flex-end !important;
+}
+
+.swal2-styled.swal2-confirm {
+  background: linear-gradient(135deg, var(--accent-blue), #2563eb) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  border-radius: 10px !important;
+  padding: 10px 18px !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.swal2-styled.swal2-confirm:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45) !important;
+}
+
+.swal2-styled.swal2-confirm:active {
+  transform: scale(0.97) !important;
+}
+
+.swal2-styled.swal2-cancel {
+  background: var(--bg-secondary) !important;
+  color: var(--text-secondary) !important;
+  border: 1px solid var(--border) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  border-radius: 10px !important;
+  padding: 10px 18px !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.swal2-styled.swal2-cancel:hover {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--text-muted) !important;
+}
+
+.swal2-styled.swal2-cancel:active {
+  transform: scale(0.97) !important;
+}
+
+/* Custom Interactive Option Card in Dialog */
+.export-option-card {
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  background: var(--bg-secondary);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.export-option-card:hover {
+  border-color: var(--accent-blue);
+  background: var(--bg-card-hover);
+  transform: translateY(-1px);
+}
+
+.export-option-card:has(input:checked),
+.export-option-card.active {
+  border-color: var(--accent-blue) !important;
+  background: rgba(var(--accent-rgb), 0.08) !important;
+  box-shadow: 0 0 0 1px var(--accent-blue) !important;
+}
+
+.export-option-card input[type="radio"] {
+  accent-color: var(--accent-blue);
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.export-icon-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.export-icon-badge.green {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--accent-green);
+}
+
+.export-icon-badge.blue {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--accent-blue);
+}
+
