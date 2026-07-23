@@ -744,13 +744,9 @@
         <button class="btn btn-secondary btn-sm" onclick="clearChatHistory()" style="padding: 6px 10px; font-size: 11px; height: 32px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer;" title="Hapus riwayat obrolan">
           <i class="bi bi-trash"></i> Bersihkan
         </button>
-        <select id="agentProvider" class="agent-select" aria-label="Pilih provider AI">
-          <option value="gemini" <%= provider === 'gemini' ? 'selected' : '' %> <%= hasGeminiKey ? '' : 'disabled' %>>Gemini</option>
-          <option value="openai" <%= provider === 'openai' ? 'selected' : '' %> <%= hasOpenAIKey ? '' : 'disabled' %>>OpenAI</option>
-          <option value="openrouter" <%= provider === 'openrouter' ? 'selected' : '' %> <%= hasOpenRouterKey ? '' : 'disabled' %>>OpenRouter</option>
-        </select>
-        <select id="agentModel" class="agent-select" aria-label="Pilih model AI"></select>
         <span id="agentStatus" class="status-badge not-ready"><span class="status-dot"></span><span class="status-text">Memeriksa status...</span></span>
+        <input type="hidden" id="agentProvider" value="<%= typeof provider !== 'undefined' && provider ? provider : 'gemini' %>">
+        <input type="hidden" id="agentModel" value="<%= typeof model !== 'undefined' && model ? model : 'gemini-1.5-flash' %>">
       </div>
     </div>
     
@@ -800,7 +796,7 @@
   function refreshModelSelect() {
     const providerSelect = document.getElementById('agentProvider');
     const modelSelect = document.getElementById('agentModel');
-    if (!providerSelect || !modelSelect) return;
+    if (!providerSelect || !modelSelect || modelSelect.tagName !== 'SELECT') return;
 
     const provider = providerSelect.value;
     const models = modelOptions[provider] || [];
