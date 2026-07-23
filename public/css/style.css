@@ -2295,18 +2295,9 @@ body.light-mode .highlight-name {
   color: #0891b2 !important;
 }
 
-/* Premium Top Loading Progress Bar */
+/* Top Loading Progress Bar - Disabled */
 .top-loading-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 3px;
-  width: 0;
-  background: linear-gradient(90deg, #6f42c1, #25d366);
-  z-index: 999999;
-  pointer-events: none;
-  opacity: 0;
-  box-shadow: 0 0 10px rgba(37, 211, 102, 0.8), 0 0 5px rgba(111, 66, 193, 0.5);
+  display: none !important;
 }
 .top-loading-bar.loading {
   opacity: 1;

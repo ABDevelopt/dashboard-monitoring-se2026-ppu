@@ -81,16 +81,9 @@
   };
 </script>
 
-<!-- TOP LOADING BAR -->
-<div id="topLoadingBar" class="top-loading-bar loading" style="width: 35%;"></div>
 <script>
-  // Fast feedback: finish loading progress bar once DOM has loaded
+  // Fast feedback: DOM loaded setup
   document.addEventListener('DOMContentLoaded', () => {
-    const loader = document.getElementById('topLoadingBar');
-    if (loader) {
-      loader.classList.remove('loading');
-      loader.classList.add('finished');
-    }
 
     // Auto-dismiss success and error alerts after 5 seconds, with manual click-to-dismiss
     const alerts = document.querySelectorAll('.flash-messages .alert');
