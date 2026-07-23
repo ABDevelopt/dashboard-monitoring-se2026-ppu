@@ -31,3 +31,6 @@ logs/
 
 # WhatsApp session files (contains large cache files that may be locked)
 .wwebjs_auth/
+
+# Anomaly Disk Cache
+data/anomaly_cache.json

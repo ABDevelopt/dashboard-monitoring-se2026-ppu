@@ -1,10 +1,50 @@
 const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+
+const CACHE_DIR = path.join(__dirname, '../data');
+const CACHE_FILE = path.join(__dirname, '../data/anomaly_cache.json');
 
 let cache = {
   data: null,
   timestamp: 0,
   url: null
 };
+
+let isRevalidating = false;
+
+// Load persistent cache from disk on startup
+function loadDiskCache() {
+  try {
+    if (!fs.existsSync(CACHE_DIR)) {
+      fs.mkdirSync(CACHE_DIR, { recursive: true });
+    }
+    if (fs.existsSync(CACHE_FILE)) {
+      const raw = fs.readFileSync(CACHE_FILE, 'utf8');
+      const saved = JSON.parse(raw);
+      if (saved && saved.data) {
+        cache = saved;
+        console.log('[GoogleSheetsService] 💾 Loaded persistent anomaly cache from disk.');
+      }
+    }
+  } catch (err) {
+    console.warn('[GoogleSheetsService] Could not load disk cache:', err.message);
+  }
+}
+
+function saveDiskCache() {
+  try {
+    if (!fs.existsSync(CACHE_DIR)) {
+      fs.mkdirSync(CACHE_DIR, { recursive: true });
+    }
+    fs.writeFileSync(CACHE_FILE, JSON.stringify(cache), 'utf8');
+  } catch (err) {
+    console.warn('[GoogleSheetsService] Could not save disk cache:', err.message);
+  }
+}
+
+// Initial disk cache load
+loadDiskCache();
 
 const DEFAULT_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml';
 
@@ -48,7 +88,7 @@ function parseCSV(text) {
 }
 
 async function fetchCsvContent(csvUrl) {
-  const TIMEOUT_MS = 25000;
+  const TIMEOUT_MS = 20000;
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -61,12 +101,12 @@ async function fetchCsvContent(csvUrl) {
     console.warn(`[GoogleSheetsService] Fetch failed for ${csvUrl}: ${err.message}, trying curl fallback...`);
   }
 
-  // Curl fallback with 30s timeout
+  // Curl fallback with 25s timeout
   return new Promise((resolve, reject) => {
     const child = spawn('curl', [
       '-sL',
-      '--connect-timeout', '15',
-      '-m', '30',
+      '--connect-timeout', '10',
+      '-m', '25',
       csvUrl
     ]);
     const stdoutChunks = [];
@@ -85,17 +125,7 @@ function extractBasePublishedUrl(url) {
   return cleanUrl;
 }
 
-async function getAnomalySheetsData(settings = {}, forceRefresh = false) {
-  const rawUrl = settings.google_sheets_anomaly_url || DEFAULT_SHEETS_URL;
-  const baseUrl = extractBasePublishedUrl(rawUrl);
-  
-  const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
-  const now = Date.now();
-
-  if (!forceRefresh && cache.data && cache.url === baseUrl && (now - cache.timestamp < CACHE_TTL_MS)) {
-    return { ...cache.data, fromCache: true };
-  }
-
+async function fetchFreshDataFromGoogleSheets(baseUrl) {
   const startTime = Date.now();
   const urlUsaha = `${baseUrl}/pub?single=true&output=csv&gid=0`;
   const urlKeluarga = `${baseUrl}/pub?single=true&output=csv&gid=1116284119`;
@@ -245,11 +275,63 @@ async function getAnomalySheetsData(settings = {}, forceRefresh = false) {
 
   cache = {
     data: result,
-    timestamp: now,
+    timestamp: Date.now(),
     url: baseUrl
   };
 
+  saveDiskCache();
   return result;
+}
+
+// Background revalidation helper (Stale-While-Revalidate)
+async function triggerBackgroundRevalidation(baseUrl) {
+  if (isRevalidating) return;
+  isRevalidating = true;
+  try {
+    console.log('[GoogleSheetsService] 🔄 Triggering background revalidation for anomaly data...');
+    await fetchFreshDataFromGoogleSheets(baseUrl);
+    console.log('[GoogleSheetsService] ✅ Background revalidation completed successfully.');
+  } catch (err) {
+    console.warn('[GoogleSheetsService] Background revalidation failed:', err.message);
+  } finally {
+    isRevalidating = false;
+  }
+}
+
+// Auto-refresh background timer every 10 minutes
+setInterval(() => {
+  if (cache.url) {
+    triggerBackgroundRevalidation(cache.url);
+  }
+}, 10 * 60 * 1000);
+
+async function getAnomalySheetsData(settings = {}, forceRefresh = false) {
+  const rawUrl = settings.google_sheets_anomaly_url || DEFAULT_SHEETS_URL;
+  const baseUrl = extractBasePublishedUrl(rawUrl);
+  
+  const FRESH_TTL_MS = 5 * 60 * 1000; // 5 minutes fresh
+  const now = Date.now();
+
+  // If forceRefresh is requested, bypass cache completely
+  if (forceRefresh) {
+    return await fetchFreshDataFromGoogleSheets(baseUrl);
+  }
+
+  // If cache exists and matches URL
+  if (cache.data && cache.url === baseUrl) {
+    const ageMs = now - cache.timestamp;
+
+    // Stale-While-Revalidate: Return cached data immediately (< 10ms)
+    // If older than 5 minutes, trigger background fetch silently
+    if (ageMs > FRESH_TTL_MS) {
+      triggerBackgroundRevalidation(baseUrl);
+    }
+
+    return { ...cache.data, fromCache: true };
+  }
+
+  // If no cache exists at all, fetch synchronously
+  return await fetchFreshDataFromGoogleSheets(baseUrl);
 }
 
 async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
@@ -348,6 +430,7 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
       item.tindak_lanjut = payload.tindak_lanjut;
       item.is_done = isDone;
       if (payload.penjelasan) item.penjelasan = payload.penjelasan;
+      saveDiskCache();
     }
   }
 

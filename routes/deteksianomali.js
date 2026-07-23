@@ -4,6 +4,8 @@ const { getDb } = require('../database');
 const { getAnomalySheetsData } = require('../services/googleSheetsAnomalyService');
 
 router.get('/', async (req, res) => {
+  res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
+
   const filterKec = req.query.kec || '';
   const filterKorlap = req.query.korlap || '';
   const filterStatus = req.query.status || '';
