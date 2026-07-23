@@ -292,10 +292,13 @@ body.light-mode .btn-primary { color: white; }
 button:active, 
 .nav-item:active, 
 .topbar-action-btn:active,
-.bottom-nav-item:active,
-tbody tr:active {
+.bottom-nav-item:active {
   transform: scale(0.975) !important;
   transition: transform 0.08s ease-out !important;
+}
+
+tbody tr:active {
+  transform: none !important;
 }
 
 .export-menu-dropdown button:hover {
@@ -628,7 +631,7 @@ thead th {
 thead th:hover { color: var(--text-primary); }
 tbody tr { 
   border-bottom: 1px solid var(--border); 
-  transition: background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1); 
+  transition: background-color 0.2s ease; 
 }
 tbody tr:hover { background: var(--bg-card-hover); }
 tbody tr.active { background: rgba(var(--accent-rgb), 0.12) !important; }
