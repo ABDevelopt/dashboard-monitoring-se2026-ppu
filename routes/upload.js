@@ -452,4 +452,69 @@ router.post('/honor', upload.single('honorFile'), (req, res) => {
   res.redirect('/admin/upload');
 });
 
+// POST: Process Google Spreadsheet URL sync
+router.post('/google-sheets', async (req, res) => {
+  const { sheetUrl, date, dataType } = req.body;
+  if (!sheetUrl || !sheetUrl.trim()) {
+    req.flash('error', 'URL Google Spreadsheet tidak boleh kosong.');
+    return res.redirect('/admin/upload');
+  }
+
+  const targetDate = date || new Date().toISOString().slice(0, 10);
+  
+  // Convert URL to CSV export link
+  let downloadUrl = sheetUrl.trim();
+  if (downloadUrl.includes('/pubhtml')) {
+    downloadUrl = downloadUrl.replace(/\/pubhtml(\?.*)?$/, '/pub?output=csv');
+  } else if (downloadUrl.includes('/pub') && !downloadUrl.includes('output=csv')) {
+    const baseUrl = downloadUrl.split('?')[0];
+    downloadUrl = `${baseUrl}?output=csv`;
+  } else if (downloadUrl.includes('/edit')) {
+    const dMatch = downloadUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (dMatch) {
+      const docId = dMatch[1];
+      const gidMatch = downloadUrl.match(/gid=([0-9]+)/);
+      const gid = gidMatch ? `&gid=${gidMatch[1]}` : '';
+      downloadUrl = `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv${gid}`;
+    }
+  }
+
+  const ts = Date.now();
+  const tempPath = path.join(__dirname, `../uploads/gsheet_${ts}.csv`);
+  const filename = `GoogleSheet_${targetDate}.csv`;
+
+  try {
+    const response = await fetch(downloadUrl);
+    if (!response.ok) {
+      throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+    }
+    const csvBuffer = await response.arrayBuffer();
+    fs.writeFileSync(tempPath, Buffer.from(csvBuffer));
+
+    let result;
+    if (dataType === 'status') {
+      result = parseAndSaveStatusExcelOnly(tempPath, filename, targetDate);
+    } else if (dataType === 'keluarga') {
+      result = parseAndSaveSeparateExports(tempPath, null, filename, null, targetDate);
+    } else if (dataType === 'usaha') {
+      result = parseAndSaveSeparateExports(null, tempPath, null, filename, targetDate);
+    } else {
+      // Default: excel (rekap utama)
+      result = parseAndSaveExcel(tempPath, filename, filename, targetDate);
+    }
+
+    rebuildAllSummaryCaches();
+    req.flash('success', `Berhasil mengimpor & menyinkronkan data dari Google Spreadsheet untuk tanggal ${targetDate}!`);
+  } catch (err) {
+    console.error('Error syncing Google Spreadsheet:', err);
+    req.flash('error', `Gagal mengimpor dari Google Spreadsheet: ${err.message}`);
+  } finally {
+    if (fs.existsSync(tempPath)) {
+      try { fs.unlinkSync(tempPath); } catch (e) {}
+    }
+  }
+
+  res.redirect('/admin/upload');
+});
+
 module.exports = router;

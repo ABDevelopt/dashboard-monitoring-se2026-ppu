@@ -67,6 +67,47 @@
     </form>
   </div>
 
+  <!-- GOOGLE SPREADSHEET SYNC CARD -->
+  <div class="card mt-4">
+    <div class="card-header">
+      <div class="card-title">
+        <span><i class="bi bi-file-earmark-spreadsheet-fill text-cyan"></i> Sinkronisasi Langsung dari Google Spreadsheet</span>
+      </div>
+    </div>
+    
+    <form action="/admin/upload/google-sheets" method="POST" id="g-sheets-form">
+      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">
+        Masukkan URL Google Spreadsheet yang dipublikasikan (contoh: <code>/pubhtml</code> atau link ekspor CSV) untuk mengimpor dan menyinkronkan data secara langsung tanpa perlu mengunduh file secara manual.
+      </p>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; margin-bottom: 16px;">
+        <div style="grid-column: span 2;">
+          <label for="sheetUrl" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-link-45deg"></i> URL Google Spreadsheet</label>
+          <input type="url" id="sheetUrl" name="sheetUrl" required placeholder="https://docs.google.com/spreadsheets/d/e/.../pubhtml" style="width: 100%; padding: 10px 12px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml">
+        </div>
+
+        <div>
+          <label for="gDate" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-calendar3"></i> Tanggal Data Rekap</label>
+          <input type="date" id="gDate" name="date" required style="width: 100%; padding: 10px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);" value="<%= new Date().toISOString().slice(0, 10) %>">
+        </div>
+
+        <div>
+          <label for="dataType" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-layers"></i> Tipe Data Spreadsheet</label>
+          <select id="dataType" name="dataType" style="width: 100%; padding: 10px 12px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+            <option value="excel">Progres Sensus Rekap Utama (Pivot/SLS)</option>
+            <option value="keluarga">Progres Keluarga Only</option>
+            <option value="usaha">Progres Usaha Only</option>
+            <option value="status">Status FASIH Only</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end;">
+        <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, var(--accent-cyan), #0284c7); border: none;"><i class="bi bi-arrow-repeat"></i> Sinkronkan Google Sheets</button>
+      </div>
+    </form>
+  </div>
+
   <div class="card mt-4">
     <div class="card-header">
       <div class="card-title">
