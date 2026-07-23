@@ -719,43 +719,43 @@
     </div>
     <% } %>
 
-    <!-- HEATMAP AKTIVITAS HARIAN -->
-    <% if (settings.overview_heatmap === '1') { %>
-    <div class="card mt-4" style="margin-bottom: 20px;">
-      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 16px 20px;">
-        <div class="card-title" style="font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;"><i class="bi bi-grid-3x3-gap-fill text-cyan" style="font-size: 18px;"></i> Heatmap Aktivitas Harian</div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <select id="heatmapMetricSelect" class="form-select form-select-sm" style="font-size: 12px; padding: 6px 12px; width: auto; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer; font-weight: 500;">
-            <option value="fasih">Progres FASIH (Submit + Approve + Reject)</option>
-            <option value="survey">Survei Terdata (Usaha + Keluarga)</option>
-            <option value="sls">SLS Selesai</option>
-          </select>
+    <!-- TREN CHARTS & HEATMAP GRID -->
+    <% if (settings.overview_heatmap === '1' || settings.overview_tren_muatan === '1' || settings.overview_tren_fasih === '1') { %>
+    <div class="trend-charts-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); gap: 20px; margin-top: 24px;">
+      
+      <!-- HEATMAP AKTIVITAS HARIAN -->
+      <% if (settings.overview_heatmap === '1') { %>
+      <div class="card" style="margin: 0;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 16px 20px;">
+          <div class="card-title" style="font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;"><i class="bi bi-grid-3x3-gap-fill text-cyan" style="font-size: 18px;"></i> Heatmap Aktivitas Harian</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <select id="heatmapMetricSelect" class="form-select form-select-sm" style="font-size: 12px; padding: 6px 12px; width: auto; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer; font-weight: 500;">
+              <option value="fasih">Progres FASIH (Submit + Approve + Reject)</option>
+              <option value="survey">Survei Terdata (Usaha + Keluarga)</option>
+              <option value="sls">SLS Selesai</option>
+            </select>
+          </div>
         </div>
-      </div>
-      <div class="card-body" style="padding: 20px 24px; overflow-x: auto;">
-        <div class="heatmap-container" style="min-width: 900px; display: flex; flex-direction: column; gap: 12px;">
-          <div id="heatmapGrid" style="display: flex; gap: 4px; position: relative;"></div>
-          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); margin-top: 12px; padding: 0 4px;">
-            <div id="heatmapDateRange" style="font-weight: 600; color: var(--text-secondary);">...</div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-weight: 500;">Kurang</span>
-              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: var(--bg-progress-wrap); border: 1px solid var(--border-light);"></div>
-              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.25);"></div>
-              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.5);"></div>
-              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.75);"></div>
-              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgb(6, 182, 212); box-shadow: 0 0 6px rgba(6, 182, 212, 0.4);"></div>
-              <span style="font-weight: 500;">Lebih</span>
+        <div class="card-body" style="padding: 20px 24px; overflow-x: auto;">
+          <div class="heatmap-container" style="min-width: max-content; display: flex; flex-direction: column; gap: 12px;">
+            <div id="heatmapGrid" style="display: flex; gap: 4px; position: relative;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); margin-top: 12px; padding: 0 4px;">
+              <div id="heatmapDateRange" style="font-weight: 600; color: var(--text-secondary);">...</div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-weight: 500;">Kurang</span>
+                <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: var(--bg-progress-wrap); border: 1px solid var(--border-light);"></div>
+                <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.25);"></div>
+                <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.5);"></div>
+                <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.75);"></div>
+                <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgb(6, 182, 212); box-shadow: 0 0 6px rgba(6, 182, 212, 0.4);"></div>
+                <span style="font-weight: 500;">Lebih</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <% } %>
+      <% } %>
 
-    <!-- TREN CHARTS GRID -->
-    <% if (settings.overview_tren_muatan === '1' || settings.overview_tren_fasih === '1') { %>
-    <div class="trend-charts-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); gap: 20px; margin-top: 24px;">
-      
       <!-- TREN HARIAN MUATAN -->
       <% if (settings.overview_tren_muatan === '1') { %>
       <div class="card muatan-col" style="margin: 0;">
@@ -1123,15 +1123,13 @@
       };
     });
 
-    const latestDateStr = trenData[trenData.length - 1].tanggal;
-    const endDate = new Date(latestDateStr);
-    
-    const endDay = endDate.getDay();
-    const gridEndDate = new Date(endDate);
-    gridEndDate.setDate(gridEndDate.getDate() + (6 - endDay));
+    const gridStartDate = new Date('2026-06-01T00:00:00');
+    const startDay = gridStartDate.getDay();
+    gridStartDate.setDate(gridStartDate.getDate() - startDay);
 
-    const gridStartDate = new Date(gridEndDate);
-    gridStartDate.setDate(gridStartDate.getDate() - (24 * 7 - 1));
+    const gridEndDate = new Date('2026-09-30T00:00:00');
+    const endDay = gridEndDate.getDay();
+    gridEndDate.setDate(gridEndDate.getDate() + (6 - endDay));
 
     const dates = [];
     let curr = new Date(gridStartDate);
@@ -1213,12 +1211,9 @@
       q3 = nonZero[Math.floor(nonZero.length * 0.75)];
     }
 
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    const startFmt = new Date(dates[0]).toLocaleDateString('id-ID', options);
-    const endFmt = new Date(dates[dates.length - 1]).toLocaleDateString('id-ID', options);
     const dateRangeEl = document.getElementById('heatmapDateRange');
     if (dateRangeEl) {
-      dateRangeEl.textContent = `${startFmt} - ${endFmt}`;
+      dateRangeEl.textContent = `1 Juni 2026 - 30 September 2026`;
     }
 
     const weekdayCol = document.createElement('div');
@@ -1239,7 +1234,7 @@
     `;
     container.appendChild(weekdayCol);
 
-    const weekCount = 24;
+    const weekCount = Math.floor(dates.length / 7);
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
     
     const columnsContainer = document.createElement('div');
@@ -1256,8 +1251,8 @@
       weekCol.style.gap = '4px';
       weekCol.style.position = 'relative';
 
-      const sunDate = new Date(dates[w * 7]);
-      const monthStr = monthNames[sunDate.getMonth()];
+      const midOfWeekDate = new Date(dates[w * 7 + 3]);
+      const monthStr = monthNames[midOfWeekDate.getMonth()];
       
       if (monthStr !== currentMonthStr) {
         const monthHeader = document.createElement('div');
