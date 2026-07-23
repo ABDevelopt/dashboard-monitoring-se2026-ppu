@@ -60,11 +60,24 @@
   }
 
   .map-sidebar-panel .card {
+    min-height: 160px;
     max-height: 380px;
     overflow-y: auto !important;
     overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
+  }
+
+  .map-sidebar-panel .map-card-control {
+    min-height: 240px;
+  }
+
+  .map-sidebar-panel .map-card-stats {
+    min-height: 180px;
+  }
+
+  .map-sidebar-panel .map-card-legend {
+    min-height: 170px;
   }
 
   .map-sidebar-panel::-webkit-scrollbar,
@@ -445,7 +458,7 @@
       <div class="map-sidebar-panel">
         
         <!-- CONTROL CARD -->
-        <div class="card" style="margin-bottom: 0;">
+        <div class="card map-card-control" style="margin-bottom: 0;">
           <div class="card-header" style="margin-bottom: 10px; padding-bottom: 0; display: flex; justify-content: space-between; align-items: center;">
             <div class="card-title"><i class="bi bi-sliders"></i> Kontrol &amp; Filter Peta</div>
             <button id="btnResetView" class="btn btn-secondary btn-xs" title="Reset Pandangan Peta">
@@ -494,7 +507,7 @@
         </div>
 
         <!-- STATS CARD -->
-        <div class="card" style="margin-bottom: 0;">
+        <div class="card map-card-stats" style="margin-bottom: 0;">
           <div class="card-header" style="margin-bottom: 8px; padding-bottom: 0;">
             <div class="card-title"><i class="bi bi-card-list"></i> Detail Wilayah Terpilih</div>
           </div>
@@ -507,7 +520,7 @@
         </div>
 
         <!-- LEGEND CARD -->
-        <div class="card" style="margin-bottom: 0;">
+        <div class="card map-card-legend" style="margin-bottom: 0;">
           <div class="card-header" style="margin-bottom: 8px; padding-bottom: 0;">
             <div class="card-title"><i class="bi bi-info-circle"></i> Legenda Warna Capaian</div>
           </div>
