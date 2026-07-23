@@ -65,14 +65,20 @@ router.post('/sync-now', async (req, res) => {
 router.post('/test-webhook', async (req, res) => {
   const settings = getSettings();
   try {
+    const sheetsData = await getAnomalySheetsData(settings, false).catch(() => null);
+    const sampleItem = sheetsData && ((sheetsData.usahaList && sheetsData.usahaList[0]) || (sheetsData.keluargaList && sheetsData.keluargaList[0]));
+
     const testResult = await updateAnomalyStatusInGoogleSheets({
-      assignment_id: 'test_ping_connection',
-      type: 'usaha',
-      tindak_lanjut: 'Belum Ditindaklanjuti',
-      penjelasan: 'Test koneksi dari admin dashboard'
+      assignment_id: sampleItem ? sampleItem.assignment_id : 'test_ping_connection',
+      type: sampleItem ? sampleItem.type : 'usaha',
+      nama: sampleItem ? (sampleItem.nama_usaha || sampleItem.nama_kk) : 'Test Ping',
+      no: sampleItem ? sampleItem.no : '1',
+      tindak_lanjut: sampleItem ? sampleItem.tindak_lanjut : 'Belum Ditindaklanjuti',
+      penjelasan: sampleItem ? sampleItem.penjelasan : 'Test ping koneksi',
+      is_test: true
     }, settings);
 
-    req.flash('success', `Tes koneksi Apps Script Web App BERHASIL! Respons: ${testResult.message}`);
+    req.flash('success', `Tes koneksi Apps Script Web App BERHASIL! Webhook terhubung secara 2-arah. ${testResult.message}`);
   } catch (err) {
     req.flash('error', `Tes koneksi Apps Script GAGAL: ${err.message}`);
   }

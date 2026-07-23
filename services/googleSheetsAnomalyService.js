@@ -264,7 +264,8 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
     nama: payload.nama || '',
     no: payload.no || '',
     tindak_lanjut: payload.tindak_lanjut,
-    penjelasan: payload.penjelasan || ''
+    penjelasan: payload.penjelasan || '',
+    is_test: payload.is_test ? 'true' : 'false'
   };
 
   const postData = JSON.stringify(payloadObj);

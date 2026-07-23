@@ -166,6 +166,14 @@ function handleRequest(e) {
     var statusTL = contents.tindak_lanjut || '';
     var penjelasan = contents.penjelasan || '';
 
+    // Handle Ping Test Webhook from Admin
+    if (contents.is_test === true || contents.is_test === 'true' || targetAssignmentId === 'test_ping_connection') {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        message: 'Ping Webhook Apps Script BERHASIL! Koneksi 2-arah terhubung dengan baik ke Google Spreadsheet.'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheets = ss.getSheets();
     var updated = false;
