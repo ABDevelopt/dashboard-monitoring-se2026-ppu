@@ -516,37 +516,173 @@
       transform: translateY(-1px);
     }
     
-    .chat-input-area {
-      padding: 6px 8px 6px 14px;
-      margin: 0;
-      border: 1.5px solid var(--border);
-      border-radius: 16px;
-      display: flex;
-      gap: 10px;
-      background: var(--bg-secondary);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-      transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
-      align-items: center;
+    /* Google Gemini Gradient Text & Iconic Sparkle */
+    .gemini-gradient-text {
+      background: linear-gradient(135deg, #4285F4 0%, #9b72cb 45%, #d96570 75%, #d97706 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
-    .chat-input-area:focus-within {
-      border-color: var(--accent-blue);
-      box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
+    
+    .gemini-sparkle-icon {
+      color: #4285F4;
+      animation: geminiSparkle 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes geminiSparkle {
+      0% { transform: scale(1) rotate(0deg); filter: hue-rotate(0deg); }
+      100% { transform: scale(1.15) rotate(15deg); filter: hue-rotate(90deg); }
+    }
+
+    /* Gemini Hero & Suggestion Cards */
+    .gemini-welcome-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 36px 20px 20px 20px;
+      max-width: 860px;
+      margin: 0 auto;
+      text-align: center;
+      animation: msg-slide 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .gemini-hero-sparkle {
+      font-size: 38px;
+      color: #4285F4;
+      margin-bottom: 12px;
+      animation: geminiSparkle 3s ease-in-out infinite alternate;
+    }
+
+    .gemini-hero-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .gemini-hero-subtitle {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin-bottom: 28px;
+      max-width: 620px;
+      line-height: 1.5;
+    }
+
+    .gemini-suggestion-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px;
+      width: 100%;
+    }
+
+    .gemini-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .gemini-card:hover {
+      border-color: #4285F4;
+      background: var(--bg-card-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px -8px rgba(66, 133, 244, 0.25);
+    }
+
+    .gemini-card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .gemini-card-icon.blue { background: rgba(66, 133, 244, 0.12); color: #4285F4; }
+    .gemini-card-icon.red { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+    .gemini-card-icon.purple { background: rgba(155, 114, 203, 0.12); color: #9b72cb; }
+    .gemini-card-icon.green { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+
+    .gemini-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .gemini-card-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Gemini Pill Input Box */
+    .gemini-input-bar {
+      background: var(--bg-secondary);
+      border: 1.5px solid var(--border);
+      border-radius: 30px;
+      padding: 6px 8px 6px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .gemini-input-bar:focus-within {
+      border-color: #4285F4;
+      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.2), 0 8px 24px rgba(0, 0, 0, 0.18);
       background: var(--bg-card);
     }
-    .chat-input {
+
+    .gemini-input {
       flex: 1;
       background: transparent;
       border: none;
       color: var(--text-primary);
       padding: 8px 0;
-      font-size: 14px;
-      line-height: 1.4;
+      font-size: 14.5px;
       outline: none;
       resize: none;
       min-height: 40px;
       max-height: 120px;
       font-family: inherit;
-      transition: var(--transition);
+    }
+
+    .gemini-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .gemini-send-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #4285F4 0%, #9b72cb 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+    }
+
+    .gemini-send-btn:hover {
+      transform: scale(1.06);
+      box-shadow: 0 6px 18px rgba(66, 133, 244, 0.45);
+    }
+
+    .gemini-send-btn:active {
+      transform: scale(0.94);
     }
     .chat-input::placeholder {
       color: var(--text-muted);
@@ -789,61 +925,64 @@
         <button class="btn btn-secondary btn-sm" id="sidebarToggleAgent" onclick="document.body.classList.toggle('sidebar-collapsed'); if(typeof window.dispatchEvent==='function') window.dispatchEvent(new Event('resize'));" style="padding: 4px 8px; font-size: 13px; margin-right: 6px; display: inline-flex; align-items: center; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer;" title="Sembunyikan / Tampilkan Sidebar">
           <i class="bi bi-layout-sidebar-inset"></i>
         </button>
-        <i class="bi bi-robot"></i>
+        <i class="bi bi-sparkles gemini-sparkle-icon" style="font-size: 20px;"></i>
         <div>
-          <span>Asisten AI Sensus Ekonomi 2026</span>
-          <p style="margin: 2px 0 0 0; font-size: 10px; font-weight: 500; color: var(--text-muted);">Menganalisis data dari SQLite database secara real-time</p>
+          <span style="font-weight: 700; font-size: 15px;" class="gemini-gradient-text">Gemini AI SE2026</span>
+          <p style="margin: 2px 0 0 0; font-size: 10px; font-weight: 500; color: var(--text-muted);">Model AI Generatif Sensus Ekonomi Penajam Paser Utara</p>
         </div>
       </div>
       <div class="chat-header-actions">
-        <button class="btn btn-secondary btn-sm" onclick="clearChatHistory()" style="padding: 6px 10px; font-size: 11px; height: 32px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer;" title="Hapus riwayat obrolan">
-          <i class="bi bi-trash"></i> Bersihkan
+        <button class="btn btn-secondary btn-sm" onclick="clearChatHistory()" style="padding: 6px 12px; font-size: 11px; height: 32px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; border-radius: 99px;" title="Hapus riwayat obrolan">
+          <i class="bi bi-plus-lg"></i> Percakapan Baru
         </button>
-        <span id="agentStatus" class="status-badge not-ready"><span class="status-dot"></span><span class="status-text">Memeriksa status...</span></span>
+        <span id="agentStatus" class="status-badge ready" style="border-radius: 99px;"><span class="status-dot"></span><span class="status-text">Gemini 2.5 Flash</span></span>
         <input type="hidden" id="agentProvider" value="<%= typeof provider !== 'undefined' && provider ? provider : 'gemini' %>">
         <input type="hidden" id="agentModel" value="<%= typeof model !== 'undefined' && model ? model : 'gemini-1.5-flash' %>">
       </div>
     </div>
     
     <div class="chat-messages" id="chatMessages">
-      <!-- Welcome Message -->
-      <div class="message agent">
-        <div class="message-avatar"><i class="bi bi-robot"></i></div>
-        <div class="message-bubble">
-          <h2>👋 Selamat Datang di Asisten AI</h2>
-          Saya adalah Asisten AI Sensus Ekonomi 2026 yang siap membantu Anda dengan:
-          <ul>
-            <li><strong>Analisis Data Progres</strong> - Lihat statistik capaian realisasi muatan per PML/PCL</li>
-            <li><strong>Evaluasi Kinerja</strong> - Identifikasi petugas dengan performa terendah dan masalah</li>
-            <li><strong>Deteksi Anomali</strong> - Temukan data ganda, petugas tidak aktif, dan tingkat reject tinggi</li>
-            <li><strong>Query Real-time</strong> - Tanyakan data apapun langsung dari database Sensus</li>
-          </ul>
-          <p>Ketik pertanyaan Anda di bawah untuk memulai! 🚀</p>
+      <!-- Gemini Welcome Hero Screen -->
+      <div class="gemini-welcome-container" id="geminiWelcomeHero">
+        <div class="gemini-hero-header">
+          <i class="bi bi-sparkles gemini-hero-sparkle"></i>
+          <h1 class="gemini-hero-title">Halo, <span class="gemini-gradient-text">Apa yang bisa saya bantu hari ini?</span></h1>
+          <p class="gemini-hero-subtitle">Analisis real-time data Sensus Ekonomi 2026 Penajam Paser Utara. Pilih topik cepat atau ketik pertanyaan Anda:</p>
+        </div>
+
+        <div class="gemini-suggestion-grid">
+          <div class="gemini-card" onclick="sendQuickPrompt('Bagaimana ringkasan progres pengolahan SE2026 Kabupaten Penajam Paser Utara saat ini?')">
+            <div class="gemini-card-icon blue"><i class="bi bi-bar-chart-line-fill"></i></div>
+            <div class="gemini-card-title">Ringkasan Progres SE2026</div>
+            <div class="gemini-card-desc">Cek capaian realisasi muatan &amp; FASIH per kecamatan secara otomatis</div>
+          </div>
+
+          <div class="gemini-card" onclick="sendQuickPrompt('Identifikasi PCL dan PML dengan performa terendah atau membutuhkan evaluasi')">
+            <div class="gemini-card-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            <div class="gemini-card-title">Evaluasi Kinerja Petugas</div>
+            <div class="gemini-card-desc">Temukan PCL/PML dengan tingkat reject tinggi atau progres terlambat</div>
+          </div>
+
+          <div class="gemini-card" onclick="sendQuickPrompt('Tampilkan deteksi anomali data, petugas tidak aktif, dan potensi data ganda')">
+            <div class="gemini-card-icon purple"><i class="bi bi-shield-exclamation"></i></div>
+            <div class="gemini-card-title">Deteksi Anomali Data</div>
+            <div class="gemini-card-desc">Analisis potensi kesalahan entri data dan beban SLS tidak seimbang</div>
+          </div>
+
+          <div class="gemini-card" onclick="sendQuickPrompt('Berapa rincian target prelist SLS dan realisasi per kecamatan?')">
+            <div class="gemini-card-icon green"><i class="bi bi-geo-alt-fill"></i></div>
+            <div class="gemini-card-title">Analisis Drilldown Wilayah</div>
+            <div class="gemini-card-desc">Bandingkan statistik SLS dan muatan antar 4 kecamatan di PPU</div>
+          </div>
         </div>
       </div>
     </div>
     
     <div class="chat-footer-wrapper">
-      <div class="quick-prompts-bar">
-        <button type="button" class="prompt-pill" onclick="sendQuickPrompt('Bagaimana progres pengolahan SE2026 Kabupaten Penajam Paser Utara?')">
-          <i class="bi bi-bar-chart-line"></i> Progres PPU
-        </button>
-        <button type="button" class="prompt-pill" onclick="sendQuickPrompt('Siapa saja PCL dengan performa terendah?')">
-          <i class="bi bi-exclamation-triangle"></i> Performa Terendah
-        </button>
-        <button type="button" class="prompt-pill" onclick="sendQuickPrompt('Tampilkan daftar anomali data terdeteksi')">
-          <i class="bi bi-shield-exclamation"></i> Deteksi Anomali
-        </button>
-        <button type="button" class="prompt-pill" onclick="sendQuickPrompt('Berapa total muatan dan realisasi per kecamatan?')">
-          <i class="bi bi-geo-alt"></i> Per Kecamatan
-        </button>
-      </div>
-
-      <form id="chatForm" class="chat-input-area" onsubmit="handleChatSubmit(event)">
-        <textarea id="chatInput" class="chat-input" rows="1" placeholder="Tulis pertanyaan mengenai data sensus... (Enter untuk kirim)" required autocomplete="off"></textarea>
-        <button type="submit" class="btn btn-primary" title="Kirim Pesan">
-          <i class="bi bi-send-fill" style="font-size: 14px;"></i>
-          <span class="btn-send-text">Kirim</span>
+      <form id="chatForm" class="gemini-input-bar" onsubmit="handleChatSubmit(event)">
+        <textarea id="chatInput" class="gemini-input" rows="1" placeholder="Tanyakan apapun pada Gemini..." required autocomplete="off"></textarea>
+        <button type="submit" class="gemini-send-btn" title="Kirim Pesan">
+          <i class="bi bi-send-fill" style="font-size: 15px;"></i>
         </button>
       </form>
     </div>
