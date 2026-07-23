@@ -163,7 +163,9 @@
     </form>
   </div>
 
-  <!-- TAB NAVIGATION -->
+  <!-- PARTIAL PJAX TAB CONTAINER -->
+  <div id="anomalyTabContainer" style="transition: opacity 0.15s ease;">
+    <!-- TAB NAVIGATION -->
   <div style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid var(--border); padding-bottom: 2px; flex-wrap: wrap;">
     <a href="/deteksi-anomali?tab=usaha&kec=<%= encodeURIComponent(filterKec) %>&korlap=<%= encodeURIComponent(filterKorlap) %>&status=<%= encodeURIComponent(filterStatus) %>&q=<%= encodeURIComponent(searchQuery) %>" class="btn" style="padding: 10px 18px; font-size: 13px; font-weight: 700; border-radius: 10px 10px 0 0; background: <%= activeTab === 'usaha' ? 'var(--accent-blue)' : 'transparent' %>; color: <%= activeTab === 'usaha' ? '#fff' : 'var(--text-secondary)' %>; border: none; display: flex; align-items: center; gap: 8px;">
       <i class="bi bi-shop"></i> Anomali Usaha (UTP)
@@ -521,6 +523,7 @@
       <% } %>
     </div>
   <% } %>
+  </div> <!-- END PARTIAL PJAX TAB CONTAINER -->
 
 </div>
 
@@ -701,4 +704,63 @@ async function saveAnomalyStatus(e) {
     saveBtn.innerHTML = '<i class="bi bi-save-fill"></i> Simpan &amp; Sync ke Google Sheets';
   }
 }
+
+// PARTIAL PJAX TAB & PAGINATION SWITCHER (NO FULL PAGE FLICKER)
+(function() {
+  document.addEventListener('click', function(e) {
+    const link = e.target.closest('#anomalyTabContainer a');
+    if (!link) return;
+
+    const href = link.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+
+    if (href.includes('/deteksi-anomali')) {
+      e.preventDefault();
+      loadAnomalyPartial(href);
+    }
+  });
+
+  window.loadAnomalyPartial = async function(url) {
+    const container = document.getElementById('anomalyTabContainer');
+    if (!container) {
+      location.href = url;
+      return;
+    }
+
+    container.style.opacity = '0.4';
+    container.style.pointerEvents = 'none';
+
+    try {
+      const res = await fetch(url, { headers: { 'X-PJAX-Partial': 'true' } });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const html = await res.text();
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const newContainer = doc.getElementById('anomalyTabContainer');
+
+      if (newContainer) {
+        container.innerHTML = newContainer.innerHTML;
+        history.pushState(null, '', url);
+      } else {
+        location.href = url;
+      }
+    } catch (err) {
+      console.warn('Partial PJAX error:', err.message);
+      location.href = url;
+    } finally {
+      if (container) {
+        container.style.opacity = '1';
+        container.style.pointerEvents = 'auto';
+      }
+    }
+  };
+
+  // Support browser Back / Forward buttons
+  window.addEventListener('popstate', function() {
+    if (location.pathname.includes('/deteksi-anomali')) {
+      window.loadAnomalyPartial(location.href);
+    }
+  });
+})();
 </script>
