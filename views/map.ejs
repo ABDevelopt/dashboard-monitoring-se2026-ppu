@@ -35,12 +35,17 @@
     flex-shrink: 0;
   }
 
+  /* Prevent window vertical scroll on map page */
+  html, body, .main-wrapper, #pjax-container {
+    overflow: hidden !important;
+  }
+
   /* Google Maps Style Floating Overlay Layout */
   .gmaps-container-wrap {
     position: relative;
     width: 100%;
-    height: calc(100vh - var(--header-height) - 30px);
-    min-height: 580px;
+    height: calc(100vh - var(--header-height, 60px) - 24px);
+    min-height: 0;
     border-radius: 16px;
     overflow: hidden;
     border: 1px solid var(--border);
@@ -429,8 +434,8 @@
 
   @media (max-width: 768px) {
     .gmaps-container-wrap {
-      height: calc(100vh - var(--header-height) - 80px);
-      min-height: 480px;
+      height: calc(100vh - var(--header-height, 60px) - 68px);
+      min-height: 0;
     }
     .gmaps-floating-search-panel {
       width: calc(100% - 24px);
