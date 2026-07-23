@@ -1695,16 +1695,35 @@ function getIntradayUploadsByDate(tanggal) {
     };
   });
 
-  const open = sessionDetails[0].selesai_total;
-  const close = sessionDetails[sessionDetails.length - 1].selesai_total;
-  const high = Math.max(...sessionDetails.map(s => s.selesai_total));
-  const low = Math.min(...sessionDetails.map(s => s.selesai_total));
+  // Get closing total from previous upload date if available
+  const prevUpload = getDb().prepare(`
+    SELECT id FROM uploads WHERE tanggal < ? ORDER BY tanggal DESC, created_at DESC LIMIT 1
+  `).get(tanggal);
 
-  let prevSelesai = 0;
-  sessionDetails.forEach((s, idx) => {
-    s.delta = idx === 0 ? s.selesai_total : Math.max(0, s.selesai_total - prevSelesai);
-    prevSelesai = s.selesai_total;
+  let baseline = 0;
+  if (prevUpload) {
+    const prevStats = getDb().prepare(`
+      SELECT SUM(COALESCE(submitted_by_pcl, 0) + COALESCE(approved, 0) + COALESCE(rejected, 0)) AS total
+      FROM progres WHERE upload_id = ?
+    `).get(prevUpload.id);
+    baseline = prevStats ? prevStats.total || 0 : 0;
+  }
+
+  let lastClose = baseline;
+  sessionDetails.forEach((s) => {
+    s.open = lastClose;
+    s.close = s.selesai_total;
+    s.high = Math.max(s.open, s.close);
+    s.low = Math.min(s.open, s.close);
+    s.is_bullish = s.close >= s.open;
+    s.delta = s.close - s.open;
+    lastClose = s.close;
   });
+
+  const open = sessionDetails[0].open;
+  const close = sessionDetails[sessionDetails.length - 1].close;
+  const high = Math.max(...sessionDetails.map(s => s.high));
+  const low = Math.min(...sessionDetails.map(s => s.low));
 
   return {
     tanggal,
