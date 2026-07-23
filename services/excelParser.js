@@ -350,23 +350,25 @@ function findStatusColumnIndexes(headers) {
     return indexes;
   };
 
-  const kodeIdx = findIndex(['level_6_full_code', 'smallcode', 'kode', 'code']);
+  const kodeIdx = findIndex(['level_6_full_code', 'smallcode', 'kode subsls', 'idsubsls', 'kode', 'code']);
   const draftIdx = findIndex(['draft']);
   const approvedIdx = findIndex(['approved', 'approved by pengawas']);
-  // Collect ALL 'rejected' columns (e.g. "REJECTED BY Pengawas", "REJECTED BY Admin Kabupaten")
-  const rejectedIdxs = findMultipleIndexes(['rejected']);
+  // Collect ALL 'rejected' / 'reject' columns (e.g. "REJECTED BY Pengawas", "REJECTED BY Admin Kabupaten", "Reject")
+  const rejectedIdxs = findMultipleIndexes(['rejected', 'reject']);
 
-  // Look for submitted columns
-  const submittedIdxs = findMultipleIndexes(['submitted_by_pcl', 'submitted by pencacah', 'submitted respondent', 'submitted']);
+  // Look for submitted / submit columns
+  const submittedIdxs = findMultipleIndexes(['submitted_by_pcl', 'submitted by pencacah', 'submitted respondent', 'submitted', 'submit']);
 
-  const totalIdx = findIndex(['total']);
+  const totalIdx = findIndex(['total', 'target']);
+  const desaIdx = findIndex(['desa', 'nama_desa', 'kelurahan']);
+  const slsIdx = findIndex(['sls', 'nama_sls', 'subsls']);
 
   const missingCols = [];
-  if (kodeIdx === -1) missingCols.push('level_6_full_code / kode');
+  if (kodeIdx === -1 && (desaIdx === -1 || slsIdx === -1)) missingCols.push('level_6_full_code / kode subsls');
   if (draftIdx === -1) missingCols.push('draft');
-  if (submittedIdxs.length === 0) missingCols.push('submitted');
+  if (submittedIdxs.length === 0) missingCols.push('submitted / submit');
   if (approvedIdx === -1) missingCols.push('approved');
-  if (rejectedIdxs.length === 0) missingCols.push('rejected');
+  if (rejectedIdxs.length === 0) missingCols.push('rejected / reject');
 
   if (missingCols.length > 0) {
     throw new Error(`Berkas Status tidak valid. Kolom wajib berikut tidak ditemukan: [${missingCols.join(', ')}]. Pastikan format kolom sesuai dengan template standard.`);
@@ -378,7 +380,9 @@ function findStatusColumnIndexes(headers) {
     submittedIdxs: submittedIdxs,
     approved: approvedIdx,
     rejectedIdxs: rejectedIdxs,
-    total: totalIdx
+    total: totalIdx,
+    desa: desaIdx,
+    sls: slsIdx
   };
 }
 
@@ -395,7 +399,39 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
   const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
   const colIdx = findStatusColumnIndexes(headers);
 
-  if (colIdx.kode === -1) throw new Error('Kolom identitas wilayah/SLS ("level_6_full_code" atau "smallcode") tidak ditemukan dalam file rekap status.');
+  // Pre-fetch masterMap for fallback matching if needed
+  let masterMap = null;
+  const getMasterMap = () => {
+    if (!masterMap) {
+      masterMap = {};
+      const masterRows = db.prepare('SELECT kode, desa, nama_sls FROM subsls_master').all();
+      for (const m of masterRows) {
+        const key = (m.desa + '|' + m.nama_sls).toLowerCase().trim();
+        masterMap[key] = m.kode;
+      }
+    }
+    return masterMap;
+  };
+
+  const resolveKode = (row) => {
+    let rawKode = colIdx.kode !== -1 ? String(row[colIdx.kode] || '').trim() : '';
+    if (rawKode.endsWith('.0')) rawKode = rawKode.slice(0, -2);
+
+    if (rawKode.length >= 10 && !rawKode.includes('E+') && !rawKode.endsWith('000000000')) {
+      return rawKode;
+    }
+
+    if (colIdx.desa !== -1 && colIdx.sls !== -1) {
+      const desa = String(row[colIdx.desa] || '').trim();
+      const sls = String(row[colIdx.sls] || '').trim();
+      if (desa && sls) {
+        const map = getMasterMap();
+        const key = (desa + '|' + sls).toLowerCase().trim();
+        if (map[key]) return map[key];
+      }
+    }
+    return rawKode;
+  };
 
   const insertStmt = db.prepare(`
     INSERT OR IGNORE INTO progres (upload_id, kode) VALUES (?, ?)
@@ -410,7 +446,7 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
   const updateTx = db.transaction((list) => {
     for (let i = 1; i < list.length; i++) {
       const row = list[i];
-      const kode = String(row[colIdx.kode] || '').trim();
+      const kode = resolveKode(row);
       if (!kode || kode.length < 10) continue;
 
       const draft = colIdx.draft !== -1 ? toInt(row[colIdx.draft]) : 0;
@@ -441,7 +477,39 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
   const colIdx = findStatusColumnIndexes(headers);
 
-  if (colIdx.kode === -1) throw new Error('Kolom identitas wilayah/SLS ("level_6_full_code" atau "smallcode") tidak ditemukan dalam file rekap status.');
+  // Pre-fetch masterMap for fallback matching if needed
+  let masterMap = null;
+  const getMasterMap = () => {
+    if (!masterMap) {
+      masterMap = {};
+      const masterRows = db.prepare('SELECT kode, desa, nama_sls FROM subsls_master').all();
+      for (const m of masterRows) {
+        const key = (m.desa + '|' + m.nama_sls).toLowerCase().trim();
+        masterMap[key] = m.kode;
+      }
+    }
+    return masterMap;
+  };
+
+  const resolveKode = (row) => {
+    let rawKode = colIdx.kode !== -1 ? String(row[colIdx.kode] || '').trim() : '';
+    if (rawKode.endsWith('.0')) rawKode = rawKode.slice(0, -2);
+
+    if (rawKode.length >= 10 && !rawKode.includes('E+') && !rawKode.endsWith('000000000')) {
+      return rawKode;
+    }
+
+    if (colIdx.desa !== -1 && colIdx.sls !== -1) {
+      const desa = String(row[colIdx.desa] || '').trim();
+      const sls = String(row[colIdx.sls] || '').trim();
+      if (desa && sls) {
+        const map = getMasterMap();
+        const key = (desa + '|' + sls).toLowerCase().trim();
+        if (map[key]) return map[key];
+      }
+    }
+    return rawKode;
+  };
 
   // Create uploads record first so uploadId exists for FK constraint
   const uploadResult = db.prepare(`
@@ -491,7 +559,7 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   const updateTx = db.transaction((list) => {
     for (let i = 1; i < list.length; i++) {
       const row = list[i];
-      const kode = String(row[colIdx.kode] || '').trim();
+      const kode = resolveKode(row);
       if (!kode || kode.length < 10) continue;
 
       const draft = colIdx.draft !== -1 ? toInt(row[colIdx.draft]) : 0;

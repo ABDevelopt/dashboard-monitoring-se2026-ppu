@@ -20,6 +20,7 @@ const generalSettingKeys = [
   'overview_muatan',
   'overview_tren_muatan',
   'overview_tren_fasih',
+  'overview_heatmap',
   'overview_kecamatan',
   'overview_bangunan',
   'show_progres_muatan'

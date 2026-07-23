@@ -326,6 +326,236 @@ router.get('/early-warning-summary', (req, res) => {
   });
 });
 
+// AI Insights memory cache
+let aiInsightsCache = {
+  uploadId: null,
+  insights: null,
+  timestamp: 0
+};
+
+// Helper function to call Gemini directly (tool-free and very fast!)
+async function callGeminiDirect(prompt, settings) {
+  const apiKey = settings.gemini_api_key;
+  const modelName = settings.gemini_model || 'gemini-1.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+  const requestBody = JSON.stringify({
+    contents: [{
+      parts: [{ text: prompt }]
+    }]
+  });
+
+  const TIMEOUT_MS = 5000;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: requestBody,
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(`Gemini API Error (${data.error.status || data.error.code}): ${data.error.message}`);
+      }
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) return text;
+    } else {
+      let errText = '';
+      try { errText = await response.text(); } catch (e) {}
+      let parsedErr;
+      try { parsedErr = JSON.parse(errText); } catch (e) {}
+      if (parsedErr && parsedErr.error) {
+        throw new Error(`Gemini API Error: ${parsedErr.error.message}`);
+      }
+      throw new Error(`Gemini API returned status ${response.status}: ${errText || 'Unknown Error'}`);
+    }
+  } catch (fetchErr) {
+    console.warn('Native fetch in callGeminiDirect failed or timed out, trying curl fallback...', fetchErr.message);
+    
+    // Curl fallback with 5 seconds timeout
+    return new Promise((resolve, reject) => {
+      const { spawn } = require('child_process');
+      const child = spawn('curl', [
+        '-s', '-X', 'POST',
+        '--connect-timeout', '5',
+        '-m', '5',
+        '-H', 'Content-Type: application/json',
+        '-d', requestBody,
+        url
+      ]);
+
+      const stdoutChunks = [];
+      const stderrChunks = [];
+
+      child.stdout.on('data', (chunk) => stdoutChunks.push(chunk));
+      child.stderr.on('data', (chunk) => stderrChunks.push(chunk));
+
+      child.on('close', (code) => {
+        if (code !== 0) {
+          return reject(new Error(`curl failed with code ${code}: ${Buffer.concat(stderrChunks).toString() || 'Timeout'}`));
+        }
+        try {
+          const resText = Buffer.concat(stdoutChunks).toString();
+          const data = JSON.parse(resText);
+          if (data.error) {
+            return reject(new Error(`Gemini API Error (${data.error.status || data.error.code}): ${data.error.message}`));
+          }
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) resolve(text);
+          else reject(new Error('Format respons Gemini curl tidak valid'));
+        } catch (parseErr) {
+          reject(new Error(`Gagal mem-parsing respons curl: ${parseErr.message}`));
+        }
+      });
+    });
+  }
+}
+
+// Rule-based fallback summary insights generator (offline and quota-exhausted guard)
+function generateSimulatedInsights(payload) {
+  const lowKec = [...payload.kecamatan_stats].sort((a, b) => a.persen_selesai - b.persen_selesai)[0];
+  const lowKecText = lowKec ? `khususnya pengawasan intensif di Kecamatan **${lowKec.nama}** yang mencatat capaian terendah (${lowKec.persen_selesai}% selesai)` : 'khususnya pengawasan intensif di wilayah kecamatan tertinggal';
+  
+  const ewText = payload.early_warning.zero_progress_pcl > 0 
+    ? `serta terdeteksinya **${payload.early_warning.zero_progress_pcl} PCL tanpa progres**`
+    : `meskipun kinerja petugas relatif stabil tanpa ada yang sepenuhnya mandek`;
+
+  return `<div class="ai-insight-paragraph" style="font-size: 13.5px; line-height: 1.6; color: var(--text-primary); padding: 14px 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light); border-radius: 12px;">
+    💡 **Analisis Taktis (Offline Fallback):** Progres sensus lapangan saat ini mencatat tingkat penyelesaian SLS sebesar **${payload.persen_selesai}%** dengan realisasi pengisian FASIH di angka **${payload.fasih.persen}%**. Hambatan kritis utama terletak pada capaian muatan yang masih rendah (**${payload.muatan.persen}%**), ${ewText}. Direkomendasikan untuk segera melakukan konsolidasi tim pengawas lapangan demi melakukan akselerasi penginputan data, ${lowKecText}.
+  </div>`;
+}
+
+// Endpoint untuk mendapatkan AI Smart Insights (proactive analytics)
+router.get('/ai-insights', async (req, res) => {
+  const uploadId = res.locals.uploadId;
+  const settings = res.locals.settings;
+
+  if (!uploadId) {
+    return res.json({ success: false, error: 'Belum ada data upload' });
+  }
+
+  // Cek cache jika bukan force refresh
+  const forceRefresh = req.query.refresh === 'true';
+  if (!forceRefresh && aiInsightsCache.uploadId === uploadId && aiInsightsCache.insights) {
+    return res.json({ success: true, insights: aiInsightsCache.insights, fromCache: true });
+  }
+
+  try {
+    const { getOverviewSummary, getKecamatanStats, getEarlyWarning } = require('../database');
+    const summary = getOverviewSummary(uploadId, settings);
+    if (!summary) {
+      return res.json({ success: false, error: 'Gagal memuat ringkasan progres data' });
+    }
+
+    const kecs = getKecamatanStats(uploadId, settings);
+    const ew = getEarlyWarning(uploadId);
+
+    const payload = {
+      tanggal_data: summary.tanggal_data || 'Tidak diketahui',
+      total_sls: summary.total,
+      sls_selesai: summary.selesai,
+      persen_selesai: summary.total ? Number(((summary.selesai / summary.total) * 100).toFixed(2)) : 0,
+      muatan: {
+        total: summary.total_muatan,
+        realisasi: summary.muatan_selesai,
+        persen: summary.muatan_pct || 0
+      },
+      fasih: {
+        target: summary.target_fasih_total,
+        realisasi: (summary.submitted_total + summary.approved_total + summary.rejected_total),
+        persen: summary.fasih_pct || 0,
+        draft: summary.draft_total,
+        submitted: summary.submitted_total,
+        approved: summary.approved_total,
+        rejected: summary.rejected_total
+      },
+      early_warning: {
+        zero_progress_pcl: ew.zeroPcl ? ew.zeroPcl.length : 0,
+        slow_progress_pcl: ew.slowPcl ? ew.slowPcl.length : 0,
+        stagnant_pcl: ew.stagnanPcl ? ew.stagnanPcl.length : 0,
+        low_projected_pcl: ew.lowProjectedPcl ? ew.lowProjectedPcl.length : 0
+      },
+      kecamatan_stats: (kecs || []).map(k => ({
+        nama: k.kecamatan,
+        total_sls: k.total_subsls,
+        persen_selesai: k.total_subsls ? Number(((k.selesai / k.total_subsls) * 100).toFixed(2)) : 0,
+        muatan_total: k.total_muatan,
+        muatan_selesai: k.muatan_selesai,
+        persen_muatan: k.muatan_pct || 0,
+        persen_fasih: k.fasih_pct || 0
+      }))
+    };
+
+    const prompt = `
+Anda adalah AI Analyst senior untuk sistem Monitoring Lapangan SE2026 PPU BPS.
+Tugas Anda adalah menganalisis data progres lapangan berikut dan memberikan analisis strategis mendalam, tajam, dan solutif dalam satu paragraf utuh (single block).
+
+DATA PROGRES TERKINI (Tanggal Rekap Data: ${payload.tanggal_data}):
+- Total SLS Terdaftar: ${payload.total_sls} SLS
+- SLS Selesai (FASIH): ${payload.sls_selesai} SLS (${payload.persen_selesai}%)
+- Progres Muatan (Target vs Realisasi): ${payload.muatan.realisasi} / ${payload.muatan.total} (${payload.muatan.persen}%)
+- Dokumen FASIH (Target vs Realisasi): ${payload.fasih.realisasi} / ${payload.fasih.target} (${payload.fasih.percent || payload.fasih.persen}%)
+  - Rincian Dokumen FASIH: Draft: ${payload.fasih.draft}, Submitted: ${payload.fasih.submitted}, Approved: ${payload.fasih.approved}, Rejected: ${payload.fasih.rejected}
+- Early Warning Petugas:
+  - Petugas tanpa progres (Zero Progress): ${payload.early_warning.zero_progress_pcl} PCL
+  - Petugas berkinerja lambat (Slow Progress): ${payload.early_warning.slow_progress_pcl} PCL
+  - Petugas dengan progres stagnan: ${payload.early_warning.stagnant_pcl} PCL
+  - Proyeksi target rendah: ${payload.early_warning.low_projected_pcl} PCL
+- Progres Per Kecamatan:
+${payload.kecamatan_stats.map(k => `  * Kecamatan ${k.nama}: SLS Selesai: ${k.persen_selesai}%, Muatan: ${k.persen_muatan}%, Dokumen FASIH: ${k.persen_fasih}%`).join('\n')}
+
+ATURAN FORMAT JAWABAN (WAJIB DIIKUTI):
+1. Hasil analisis harus berupa SATU PARAGRAF saja (TIDAK BOLEH dibuat terpisah-pisah, bullet points, daftar list, kolom, atau jeda baris).
+2. Tulis kalimat yang mengalir secara natural, profesional, mendalam, tajam, dan langsung menyoroti isu kritis.
+3. Hubungkan data progres SLS selesai (${payload.persen_selesai}%), realisasi muatan (${payload.muatan.percent || payload.muatan.persen}%), dokumen FASIH (${payload.fasih.persen}%), serta peta status petugas peringatan dini (${payload.early_warning.zero_progress_pcl} tanpa progres, ${payload.early_warning.slow_progress_pcl} lambat) untuk merumuskan simpulan dan saran taktis.
+4. Bungkus paragraf analisis Anda menggunakan struktur HTML berikut agar menyatu dengan UI dasbor:
+   <div class="ai-insight-paragraph" style="font-size: 13.5px; line-height: 1.6; color: var(--text-primary); padding: 14px 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light); border-radius: 12px;">
+     💡 **Analisis Lapangan Terpadu:** [Tulis paragraf analisis strategis Anda di sini secara menyatu. Gunakan format markdown **bold** untuk menebalkan angka statistik, nama kecamatan terendah, atau kata kunci penting]
+   </div>
+5. PENTING: Gunakan markdown sederhana seperti **bold** untuk penekanan teks penting. Jangan gunakan tag <ul>, <li>, <ol>, atau format markdown list/kolom apa pun.
+`;
+
+    let content = null;
+    let isFallback = false;
+    try {
+      content = await callGeminiDirect(prompt, settings);
+      if (content) {
+        // Bersihkan markdown code block wraps (```html ... ```) jika ada
+        content = content.replace(/^```html\s*/i, '').replace(/```\s*$/, '').trim();
+      }
+    } catch (apiErr) {
+      console.warn('Gagal memanggil Gemini API, menggunakan local fallback generator:', apiErr.message);
+      content = generateSimulatedInsights(payload);
+      isFallback = true;
+    }
+
+    // Simpan ke cache jika sukses
+    if (content) {
+      if (isFallback) {
+        content = content.replace('</div>', '<br><small style="opacity:0.75; font-size:10px;">💡 <i>Statistik teranalisis otomatis oleh sistem internal (Offline Fallback).</i></small></div>');
+      }
+      aiInsightsCache = {
+        uploadId,
+        insights: content,
+        timestamp: Date.now()
+      };
+      res.json({ success: true, insights: content, fromCache: false, fallback: isFallback });
+    } else {
+      throw new Error('Respons kosong dari Gemini API');
+    }
+  } catch (error) {
+    console.error('Error generating AI Insights:', error);
+    res.json({ success: false, error: 'Gagal menghasilkan AI Smart Insights: ' + error.message });
+  }
+});
+
 module.exports = router;
 
 

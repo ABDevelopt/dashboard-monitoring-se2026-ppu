@@ -1316,8 +1316,8 @@ function initSettings() {
     'page_aiagent': '0',
     'agent_provider': 'gemini',
     'gemini_api_key': '',
-    'gemini_model': 'gemini-2.5-flash',
-    'gemini_models_list': 'gemini-2.5-flash, gemini-2.5-flash-lite, gemini-3.5-flash',
+    'gemini_model': 'gemini-1.5-flash',
+    'gemini_models_list': 'gemini-1.5-flash, gemini-2.5-flash, gemini-2.5-flash-lite, gemini-3.5-flash',
     'openai_api_key': '',
     'openai_model': 'gpt-5.5',
     'openai_models_list': 'gpt-5.5, gpt-4o',
@@ -1329,6 +1329,7 @@ function initSettings() {
     'overview_muatan': '1',
     'overview_tren_muatan': '1',
     'overview_tren_fasih': '1',
+    'overview_heatmap': '1',
     'overview_kecamatan': '1',
     'overview_bangunan': '1',
     'show_progres_muatan': '1',
@@ -1355,10 +1356,6 @@ function initSettings() {
     getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run('openrouter/free', 'openrouter_model');
   }
 
-  const geminiModel = getDb().prepare('SELECT value FROM settings WHERE key = ?').get('gemini_model');
-  if (geminiModel && geminiModel.value === 'gemini-1.5-flash') {
-    getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-2.5-flash', 'gemini_model');
-  }
 }
 
 function getSettings() {

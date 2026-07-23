@@ -18,8 +18,8 @@ const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (ext === '.xlsx' || ext === '.xls') cb(null, true);
-    else cb(new Error('Hanya file Excel (.xlsx/.xls) yang diperbolehkan.'));
+    if (ext === '.xlsx' || ext === '.xls' || ext === '.csv') cb(null, true);
+    else cb(new Error('Hanya file Excel (.xlsx/.xls) atau CSV (.csv) yang diperbolehkan.'));
   },
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
@@ -28,7 +28,7 @@ const upload = multer({
 router.get('/', (req, res) => {
   const uploads = getAllUploads();
   
-  // Scan workspace for Excel files
+  // Scan workspace for Excel & CSV files
   let workspaceFiles = [];
   const wsDir = path.join(__dirname, '../');
   try {
@@ -36,7 +36,7 @@ router.get('/', (req, res) => {
     workspaceFiles = items
       .filter(item => {
         const ext = path.extname(item).toLowerCase();
-        return (ext === '.xlsx' || ext === '.xls') && !item.startsWith('~');
+        return (ext === '.xlsx' || ext === '.xls' || ext === '.csv') && !item.startsWith('~');
       })
       .map(item => {
         const stats = fs.statSync(path.join(wsDir, item));
