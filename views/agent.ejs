@@ -195,10 +195,10 @@
     }
     
     .message-bubble {
-      padding: 10px 14px;
-      border-radius: var(--radius-md);
-      font-size: 12.5px;
-      line-height: 1.55;
+      padding: 12px 18px;
+      border-radius: 22px;
+      font-size: 13.5px;
+      line-height: 1.6;
       min-width: 0;
       max-width: 100%;
       box-sizing: border-box;
@@ -371,18 +371,56 @@
       color: #17a2b8;
     }
     .message.user .message-bubble {
-      background: linear-gradient(135deg, var(--accent-blue), rgba(var(--accent-rgb), 0.8));
-      color: white;
-      font-weight: 500;
-      border-top-right-radius: 6px;
-      box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.2);
+      background: rgba(66, 133, 244, 0.12);
+      color: var(--text-primary);
+      border: 1px solid rgba(66, 133, 244, 0.25);
+      border-radius: 22px 22px 4px 22px;
+      box-shadow: var(--shadow-sm);
     }
+    
+    body.light-mode .message.user .message-bubble {
+      background: #e8f0fe;
+      color: #1e293b;
+      border-color: #d2e3fc;
+    }
+
     .message.agent .message-bubble {
-      background: var(--bg-secondary);
+      background: var(--bg-card);
       border: 1px solid var(--border);
       color: var(--text-primary);
-      border-top-left-radius: 6px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      border-radius: 4px 22px 22px 22px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Resend Action Button on User Message */
+    .user-message-actions {
+      display: flex;
+      align-items: center;
+      margin-top: 4px;
+      opacity: 0.85;
+      transition: opacity 0.2s ease;
+    }
+
+    .chat-resend-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .chat-resend-btn:hover {
+      color: #4285F4;
+      border-color: #4285F4;
+      background: rgba(66, 133, 244, 0.1);
+      transform: translateY(-1px);
     }
     
     .table-container {
@@ -1296,6 +1334,24 @@
 
   const defaultAnswer = `🤖 **Menganalisis database SQLite...**<br>Saya telah membaca skema tabel <code>subsls_master</code> and <code>progres</code>. Pertanyaan Anda berkaitan dengan analisis data sensus harian.<br><br>Untuk memberikan informasi real-time, saya dapat menjalankan query pembacaan data. Namun, saat ini fitur AI Agent berjalan dalam **Mode Simulasi (Preview)**.<br><br>**Menu yang Terdeteksi pada Database:**<br><ul><li>Jumlah SLS Terisi: <strong>1.042 SLS</strong></li><li>Jumlah Kecamatan: <strong>4 Kecamatan</strong> (Penajam, Waru, Babulu, Sepaku)</li></ul><br>Apabila integrasi Gemini API key telah selesai dikonfigurasi di file <code>.env</code> server, saya akan dapat menjawab kueri dinamis apa pun secara langsung dari SQLite.`;
 
+  window.resendUserMessage = function(btn) {
+    const messageDiv = btn.closest('.message.user');
+    if (!messageDiv) return;
+    const bubble = messageDiv.querySelector('.message-bubble');
+    if (!bubble) return;
+    
+    const text = bubble.innerText || bubble.textContent;
+    const chatInput = document.getElementById('chatInput');
+    
+    if (chatInput) {
+      chatInput.value = text.trim();
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+      chatInput.focus();
+      chatInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
   function appendMessage(sender, content, isHtml = false) {
     const container = document.getElementById('chatMessages');
     const msgDiv = document.createElement('div');
@@ -1303,7 +1359,7 @@
     
     const avatar = document.createElement('div');
     avatar.className = 'message-avatar';
-    avatar.innerHTML = sender === 'user' ? '<i class="bi bi-person"></i>' : '<i class="bi bi-robot"></i>';
+    avatar.innerHTML = sender === 'user' ? '<i class="bi bi-person-circle"></i>' : '<i class="bi bi-sparkles gemini-sparkle-icon"></i>';
     
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
@@ -1316,6 +1372,18 @@
     
     msgDiv.appendChild(avatar);
     msgDiv.appendChild(bubble);
+
+    if (sender === 'user') {
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'user-message-actions';
+      actionsDiv.innerHTML = `
+        <button type="button" class="chat-resend-btn" onclick="window.resendUserMessage(this)" title="Salin & Kirim Ulang Pesan">
+          <i class="bi bi-arrow-repeat"></i> Kirim Ulang
+        </button>
+      `;
+      msgDiv.appendChild(actionsDiv);
+    }
+
     container.appendChild(msgDiv);
     container.scrollTop = container.scrollHeight;
     return msgDiv;
@@ -1330,21 +1398,34 @@
 
       const avatar = document.createElement('div');
       avatar.className = 'message-avatar';
-      avatar.innerHTML = sender === 'user' ? '<i class="bi bi-person"></i>' : '<i class="bi bi-robot"></i>';
+      avatar.innerHTML = sender === 'user' ? '<i class="bi bi-person-circle"></i>' : '<i class="bi bi-sparkles gemini-sparkle-icon"></i>';
 
       const bubble = document.createElement('div');
       bubble.className = 'message-bubble';
 
       msgDiv.appendChild(avatar);
       msgDiv.appendChild(bubble);
-      container.appendChild(msgDiv);
-      container.scrollTop = container.scrollHeight;
 
       if (sender === 'user') {
         bubble.innerHTML = renderMarkdown(replyText);
+        
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'user-message-actions';
+        actionsDiv.innerHTML = `
+          <button type="button" class="chat-resend-btn" onclick="window.resendUserMessage(this)" title="Salin & Kirim Ulang Pesan">
+            <i class="bi bi-arrow-repeat"></i> Kirim Ulang
+          </button>
+        `;
+        msgDiv.appendChild(actionsDiv);
+
+        container.appendChild(msgDiv);
+        container.scrollTop = container.scrollHeight;
         resolve(msgDiv);
         return;
       }
+
+      container.appendChild(msgDiv);
+      container.scrollTop = container.scrollHeight;
 
       // Pre-render blocks to avoid repeating O(N^2) Markdown parsing in animation frames
       const blocksHtml = renderMarkdownBlocks(replyText);
