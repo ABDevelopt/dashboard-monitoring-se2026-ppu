@@ -8,14 +8,18 @@ router.get('/', (req, res) => {
   const filterKorlap = req.query.korlap || '';
   const filterPml = req.query.pml || '';
 
-  // Get recent 5 uploads for daily progress tracking
+  // Get recent 5 distinct upload dates for daily progress tracking
   const recentUploads = getDb().prepare(`
     SELECT id, tanggal 
-    FROM uploads 
-    ORDER BY tanggal DESC 
-    LIMIT 5
+    FROM (
+      SELECT MAX(id) AS id, tanggal 
+      FROM uploads 
+      GROUP BY tanggal 
+      ORDER BY tanggal DESC 
+      LIMIT 5
+    ) 
+    ORDER BY tanggal ASC
   `).all();
-  recentUploads.reverse(); // Chronological order (oldest to newest)
 
   // Attach weather details to each upload day
   recentUploads.forEach(u => {
@@ -92,11 +96,18 @@ router.get('/', (req, res) => {
         row.desa = row.desa.split(',').join(', ');
       }
       // Calculate daily increment & total documents per day
+      let lastValidReal = 0;
       recentUploads.forEach((u, i) => {
         const real = row['realisasi_' + i] || 0;
-        const prevReal = i > 0 ? (row['realisasi_' + (i - 1)] || 0) : 0;
-        const inc = Math.max(0, real - prevReal);
-
+        let inc = 0;
+        if (real > 0) {
+          if (lastValidReal > 0) {
+            inc = Math.max(0, real - lastValidReal);
+          } else {
+            inc = real;
+          }
+          lastValidReal = real;
+        }
         row['inc_' + i] = inc;
         row['real_' + i] = real;
         const target = row['target_' + i] || 0;
