@@ -855,13 +855,42 @@
         </div>
       </div>
 
-      <!-- PENAMBAHAN HARIAN FASIH (BATANG) -->
+      <!-- PERGERAKAN INTRA-DAY SESI UPLOAD & CANDLESTICK (OHLC) -->
       <div class="card" style="margin: 0;">
-        <div class="card-header">
-          <div class="card-title"><i class="bi bi-bar-chart-fill text-purple"></i> Penambahan Harian FASIH</div>
+        <div class="card-header flex-between" style="flex-wrap: wrap; gap: 8px;">
+          <div class="card-title">
+            <i class="bi bi-clock-history" style="color: var(--accent-cyan);"></i> Pergerakan Intra-Day Sesi Upload & Candlestick (OHLC)
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <select id="candlestickDateSelect" class="form-select" style="font-size: 11px; padding: 4px 8px; border-radius: 6px; background: var(--bg-subtle); color: var(--text-primary); border: 1px solid var(--border);">
+              <!-- Options populated dynamically -->
+            </select>
+            <span id="candlestickSessionBadge" class="badge badge-blue" style="font-size: 9px;">0 Upload</span>
+          </div>
         </div>
-        <div style="height: 300px; position: relative;">
-          <canvas id="fasihDailyIncrementChartCanvas"></canvas>
+
+        <!-- Summary Cards OHLC -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 110px), 1fr)); gap: 8px; margin-top: 10px; margin-bottom: 12px;">
+          <div style="background: var(--bg-subtle); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="font-size: 9px; color: var(--text-muted); font-weight: 600;">OPEN (Awal)</div>
+            <div id="overviewOhlcOpen" style="font-size: 13px; font-weight: 700; color: #3b82f6;">-</div>
+          </div>
+          <div style="background: var(--bg-subtle); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="font-size: 9px; color: var(--text-muted); font-weight: 600;">HIGH (Puncak)</div>
+            <div id="overviewOhlcHigh" style="font-size: 13px; font-weight: 700; color: #10b981;">-</div>
+          </div>
+          <div style="background: var(--bg-subtle); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="font-size: 9px; color: var(--text-muted); font-weight: 600;">LOW (Terendah)</div>
+            <div id="overviewOhlcLow" style="font-size: 13px; font-weight: 700; color: #f59e0b;">-</div>
+          </div>
+          <div style="background: var(--bg-subtle); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="font-size: 9px; color: var(--text-muted); font-weight: 600;">CLOSE (Akhir)</div>
+            <div id="overviewOhlcClose" style="font-size: 13px; font-weight: 700; color: #06b6d4;">-</div>
+          </div>
+        </div>
+
+        <div style="height: 280px; position: relative;">
+          <canvas id="overviewCandlestickChartCanvas"></canvas>
         </div>
       </div>
       <% } %>
@@ -1463,6 +1492,48 @@
       }
 
       createDailyFasihStatusChart('fasihDailyIncrementChartCanvas', dailyIncrementLabels, dailyIncrements, 'Penambahan Harian FASIH Per Status (Daily Increment)', rawTrenData);
+
+      // Inisialisasi grafik Candlestick Intra-day di Overview
+      if (rawTrenData && rawTrenData.length > 0) {
+        const selectEl = document.getElementById('candlestickDateSelect');
+        if (selectEl) {
+          const reversedDates = [...rawTrenData].reverse();
+          selectEl.innerHTML = reversedDates.map(d => `<option value="${d.tanggal}">${d.tanggal}</option>`).join('');
+          
+          function loadOverviewCandlestick(tanggal) {
+            fetch(`/api/detail/intraday-candlestick?tanggal=${encodeURIComponent(tanggal)}`)
+              .then(res => res.json())
+              .then(res => {
+                if (!res.success || !res.data) return;
+                const data = res.data;
+                
+                const sessionBadge = document.getElementById('candlestickSessionBadge');
+                if (sessionBadge) sessionBadge.textContent = `${data.session_count} Upload`;
+                
+                const openEl = document.getElementById('overviewOhlcOpen');
+                const highEl = document.getElementById('overviewOhlcHigh');
+                const lowEl = document.getElementById('overviewOhlcLow');
+                const closeEl = document.getElementById('overviewOhlcClose');
+                
+                if (openEl) openEl.textContent = (data.ohlc.open || 0).toLocaleString('id-ID');
+                if (highEl) highEl.textContent = (data.ohlc.high || 0).toLocaleString('id-ID');
+                if (lowEl) lowEl.textContent = (data.ohlc.low || 0).toLocaleString('id-ID');
+                if (closeEl) closeEl.textContent = (data.ohlc.close || 0).toLocaleString('id-ID');
+
+                if (typeof createIntradayCandlestickChart === 'function') {
+                  createIntradayCandlestickChart('overviewCandlestickChartCanvas', data);
+                }
+              })
+              .catch(err => console.error(err));
+          }
+
+          selectEl.addEventListener('change', () => {
+            loadOverviewCandlestick(selectEl.value);
+          });
+
+          loadOverviewCandlestick(selectEl.value);
+        }
+      }
       <% } %>
 
       // Initialize kecamatan comparison bar chart
