@@ -556,6 +556,82 @@
 
           </div>
         </div>
+
+        <!-- RATA-RATA ASSIGNMENT & REALISASI PER PETUGAS (PCL) -->
+        <div style="border-top: 1px dashed var(--border); padding-top: 16px; margin-top: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+              <i class="bi bi-people-fill text-blue"></i> Rata-rata Assignment & Realisasi Didata per Petugas (PCL)
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">
+              Total: <span style="color: var(--accent-blue); font-weight: 800;"><%= summary.total_pcl || 0 %> PCL</span> 
+              (<span style="color: var(--accent-green); font-weight: 700;"><%= summary.active_pcl || 0 %> Aktif</span>)
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 10px;">
+            
+            <!-- Rata-rata Target FASIH per Petugas -->
+            <div style="background: rgba(124, 58, 237, 0.04); border: 1px solid rgba(124, 58, 237, 0.15); border-radius: var(--radius-md); padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+                <i class="bi bi-journal-bookmark-fill" style="color: var(--accent-purple);"></i> RATA TARGET FASIH
+              </div>
+              <div style="margin-top: 6px;">
+                <div style="font-size: 15px; font-weight: 800; color: var(--accent-purple);">
+                  <%= (summary.avg_target_fasih_per_pcl || 0).toLocaleString('id-ID') %>
+                  <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">dok/PCL</span>
+                </div>
+                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">Beban target FASIH</div>
+              </div>
+            </div>
+
+            <!-- Rata-rata Realisasi Didata per Petugas -->
+            <div style="background: rgba(6, 182, 212, 0.04); border: 1px solid rgba(6, 182, 212, 0.15); border-radius: var(--radius-md); padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+                <i class="bi bi-check2-square" style="color: var(--accent-cyan);"></i> RATA DIDATA (FASIH)
+              </div>
+              <div style="margin-top: 6px;">
+                <div style="font-size: 15px; font-weight: 800; color: var(--accent-cyan);">
+                  <%= (summary.avg_didata_per_pcl || 0).toLocaleString('id-ID') %>
+                  <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">dok/PCL</span>
+                </div>
+                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">Submit + Approve + Reject</div>
+              </div>
+            </div>
+
+            <!-- Rata-rata Sub-SLS per Petugas -->
+            <div style="background: rgba(59, 130, 246, 0.04); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: var(--radius-md); padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+                <i class="bi bi-grid-3x3-gap-fill" style="color: var(--accent-blue);"></i> BEBAN SUB-SLS
+              </div>
+              <div style="margin-top: 6px;">
+                <div style="font-size: 15px; font-weight: 800; color: var(--accent-blue);">
+                  <%= summary.avg_subsls_per_pcl || 0 %>
+                  <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">Sub-SLS/PCL</span>
+                </div>
+                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">
+                  Selesai: <strong><%= summary.avg_selesai_subsls_per_pcl || 0 %></strong> Sub-SLS
+                </div>
+              </div>
+            </div>
+
+            <!-- Rata-rata Realisasi Muatan per Petugas -->
+            <div style="background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: var(--radius-md); padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+                <i class="bi bi-bar-chart-fill" style="color: var(--accent-green);"></i> RATA REALISASI MUATAN
+              </div>
+              <div style="margin-top: 6px;">
+                <div style="font-size: 15px; font-weight: 800; color: var(--accent-green);">
+                  <%= (summary.avg_muatan_per_pcl || 0).toLocaleString('id-ID') %>
+                  <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">muatan/PCL</span>
+                </div>
+                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">Usaha/Keluarga terdata</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
       <% } %>
 

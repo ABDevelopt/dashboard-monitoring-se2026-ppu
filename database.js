@@ -791,6 +791,26 @@ function getOverviewSummary(uploadId, settings = getSettings()) {
   const target_static_total = stats.target_static_total || 0;
   const target_upload_total = stats.target_upload_total || 0;
 
+  const total_pcl = getDb().prepare("SELECT COUNT(DISTINCT pcl) AS n FROM subsls_master WHERE pcl IS NOT NULL AND pcl != ''").get().n || 0;
+  const total_pml = getDb().prepare("SELECT COUNT(DISTINCT pml) AS n FROM subsls_master WHERE pml IS NOT NULL AND pml != ''").get().n || 0;
+
+  const active_pcl = getDb().prepare(`
+    SELECT COUNT(DISTINCT m.pcl) AS n 
+    FROM subsls_master m 
+    JOIN progres p ON m.kode = p.kode AND p.upload_id = ? 
+    WHERE m.pcl IS NOT NULL AND m.pcl != '' 
+      AND (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
+  `).get(uploadId).n || 0;
+
+  const total_pengerjaan = (stats.submitted_total || 0) + (stats.approved_total || 0) + (stats.rejected_total || 0);
+
+  const avg_subsls_per_pcl = total_pcl > 0 ? parseFloat((total / total_pcl).toFixed(2)) : 0;
+  const avg_target_fasih_per_pcl = total_pcl > 0 ? parseFloat((target_fasih_total / total_pcl).toFixed(1)) : 0;
+  const avg_didata_per_pcl = total_pcl > 0 ? parseFloat((total_pengerjaan / total_pcl).toFixed(1)) : 0;
+  const avg_didata_per_active_pcl = active_pcl > 0 ? parseFloat((total_pengerjaan / active_pcl).toFixed(1)) : 0;
+  const avg_selesai_subsls_per_pcl = total_pcl > 0 ? parseFloat((selesai / total_pcl).toFixed(2)) : 0;
+  const avg_muatan_per_pcl = total_pcl > 0 ? parseFloat((muatan_selesai / total_pcl).toFixed(1)) : 0;
+
   return attachProgressPercentages({ 
     total, 
     selesai, 
@@ -802,6 +822,15 @@ function getOverviewSummary(uploadId, settings = getSettings()) {
     target_fasih_total, 
     target_static_total,
     target_upload_total,
+    total_pcl,
+    total_pml,
+    active_pcl,
+    avg_subsls_per_pcl,
+    avg_target_fasih_per_pcl,
+    avg_didata_per_pcl,
+    avg_didata_per_active_pcl,
+    avg_selesai_subsls_per_pcl,
+    avg_muatan_per_pcl,
     ...stats 
   });
 }

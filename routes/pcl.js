@@ -377,4 +377,51 @@ router.get('/export-excel', (req, res) => {
   res.send(buf);
 });
 
+// Export rekap count assignment harian seluruh petugas
+router.get('/export-daily-assignments', (req, res) => {
+  const history = getDb().prepare(`
+    SELECT 
+      u.tanggal,
+      c.pcl,
+      c.pml,
+      c.korlap,
+      c.kecamatan,
+      c.draft_total,
+      c.submitted_total,
+      c.approved_total,
+      c.rejected_total,
+      (c.submitted_total + c.approved_total + c.rejected_total) AS selesai_total,
+      c.target_fasih_total
+    FROM summary_cache c
+    JOIN uploads u ON c.upload_id = u.id
+    ORDER BY u.tanggal DESC, c.kecamatan, c.pml, c.pcl
+  `).all();
+
+  const dailySheetData = history.map((r, idx) => ({
+    'No': idx + 1,
+    'Tanggal': r.tanggal,
+    'Nama PCL': r.pcl || '-',
+    'PML': r.pml || '-',
+    'Korlap': r.korlap || '-',
+    'Kecamatan': r.kecamatan || '-',
+    'Draft': r.draft_total || 0,
+    'Submitted (PCL)': r.submitted_total || 0,
+    'Approved (PML)': r.approved_total || 0,
+    'Rejected (PML)': r.rejected_total || 0,
+    'Total Pengerjaan FASIH': r.selesai_total || 0,
+    'Target FASIH': r.target_fasih_total || 0,
+    'Capaian (%)': r.target_fasih_total ? ((r.selesai_total / r.target_fasih_total) * 100).toFixed(2) + '%' : '0%'
+  }));
+
+  const XLSX = require('xlsx');
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(dailySheetData);
+  XLSX.utils.book_append_sheet(wb, ws, "Count Assignment Harian");
+
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="count_assignment_harian_petugas_${new Date().toISOString().slice(0,10)}.xlsx"`);
+  res.send(buf);
+});
+
 module.exports = router;
