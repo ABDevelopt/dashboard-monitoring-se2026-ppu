@@ -1730,11 +1730,9 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   flex-shrink: 0 !important;
 }
 
-/* Hide pagination in expanded card (replaced by Infinite Scroll) */
+/* Hide pagination in expanded card */
 .card.card-expanded .pagination,
-.card.card-expanded .pagination-controls,
-.card.card-expanded div:has(> .pagination),
-.card.card-expanded div:has(> select[onchange*="getPageUrl"]) {
+.card.card-expanded .pagination-controls {
   display: none !important;
 }
 

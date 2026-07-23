@@ -31,8 +31,8 @@ router.get('/', async (req, res) => {
   const activeTab = req.query.tab || 'usaha';
   const forceRefresh = req.query.refresh === 'true';
 
-  const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = Math.max(10, Math.min(200, parseInt(req.query.limit) || 50));
+  const limitParam = req.query.limit || '';
+  const limit = limitParam === 'all' ? 999999 : Math.max(10, Math.min(200, parseInt(limitParam) || 50));
 
   let sheetsData = { 
     summary: { total_anomali: 0, total_usaha: 0, total_keluarga: 0, total_sudah: 0, total_belum: 0, pct_sudah: 0 }, 

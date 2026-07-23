@@ -892,10 +892,21 @@ function makeTablePaginated(tableId, inputId, pageSize = 50) {
       currentPage = totalPages;
     }
 
+    const isExpanded = card && card.classList.contains('card-expanded');
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = Math.min(startIndex + pageSize, totalRows);
 
-    // 2. Hide/Show rows based on page bounds
+    // 2. Hide/Show rows based on page bounds or Expanded Infinite Scroll Mode
+    if (isExpanded) {
+      filteredRows.forEach(row => {
+        row.style.display = '';
+      });
+      if (controls) controls.style.display = 'none';
+      return;
+    }
+
+    if (controls) controls.style.display = 'flex';
+
     filteredRows.forEach((row, idx) => {
       if (idx >= startIndex && idx < endIndex) {
         row.style.display = '';
