@@ -133,13 +133,13 @@
               <i id="aiRefreshIcon" class="bi bi-arrow-clockwise"></i> Segarkan
             </button>
             <button onclick="toggleAiInsightsCollapse(event)" class="btn btn-secondary btn-xs ai-btn-collapse" style="padding: 6px 8px; border-radius: 8px; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); min-width: 32px;" title="Tampilkan/Sembunyikan Insight">
-              <i id="aiCollapseIcon" class="bi bi-chevron-down"></i>
+              <i id="aiCollapseIcon" class="bi bi-chevron-up"></i>
             </button>
           </div>
         </div>
         
         <!-- Collapsible Container -->
-        <div id="aiInsightsCollapseContainer" style="display: none; border-top: 1px dashed rgba(6, 182, 212, 0.2); padding-top: 16px; margin-top: 16px; position: relative; z-index: 2;">
+        <div id="aiInsightsCollapseContainer" style="display: block; border-top: 1px dashed rgba(6, 182, 212, 0.2); padding-top: 16px; margin-top: 16px; position: relative; z-index: 2;">
           <!-- Insight content / Loader -->
           <div id="aiInsightsContent">
             <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -1341,7 +1341,8 @@
     <% if (summary) { %>
       const rawTrenData = <%- tren %>;
 
-      // AI Smart Insights will load when expanded via the dropdown button
+      // Automatically render AI Smart Insights on page load
+      loadAiInsights(false);
 
       // Initialize Heatmap
       <% if (settings.overview_heatmap === '1') { %>
