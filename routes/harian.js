@@ -83,7 +83,7 @@ router.get('/', (req, res) => {
 
     harianStats = getDb().prepare(harianStatsQuery).all(...queryParams);
     
-    // Format list fields with space padding
+    // Format list fields with space padding and calculate daily document additions
     harianStats.forEach(row => {
       if (row.wilayah_kerja) {
         row.wilayah_kerja = row.wilayah_kerja.split(',').join(', ');
@@ -91,9 +91,14 @@ router.get('/', (req, res) => {
       if (row.desa) {
         row.desa = row.desa.split(',').join(', ');
       }
-      // Centralized daily progress percentage calculation
+      // Calculate daily increment & total documents per day
       recentUploads.forEach((u, i) => {
         const real = row['realisasi_' + i] || 0;
+        const prevReal = i > 0 ? (row['realisasi_' + (i - 1)] || 0) : 0;
+        const inc = Math.max(0, real - prevReal);
+
+        row['inc_' + i] = inc;
+        row['real_' + i] = real;
         const target = row['target_' + i] || 0;
         row['pct_' + i] = target > 0 ? parseFloat(((100 * real) / target).toFixed(2)) : 0.0;
         row['pct_str_' + i] = target > 0 ? ((100 * real) / target).toFixed(2) : '0.00';
