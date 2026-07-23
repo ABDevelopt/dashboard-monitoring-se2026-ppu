@@ -469,50 +469,6 @@
                   </div>
                 </div>
 
-                <!-- Tabel Count Assignment Harian per Petugas -->
-                <% if (pclHistory && pclHistory.length > 0) { %>
-                  <div style="margin-top: 14px; margin-bottom: 20px; border-top: 1px dashed var(--border); padding-top: 14px;">
-                    <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
-                      <span style="display: flex; align-items: center; gap: 6px;"><i class="bi bi-calendar3-range text-purple"></i> Rincian Count Assignment Harian (<%= filterPcl %>)</span>
-                      <span class="badge badge-purple badge-xs"><%= pclHistory.length %> Tanggal Data</span>
-                    </div>
-                    <div class="table-wrap" style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
-                      <table style="font-size: 11px; width: 100%; margin: 0;">
-                        <thead style="position: sticky; top: 0; background: var(--bg-card); z-index: 2;">
-                          <tr>
-                            <th style="padding: 6px 8px; text-align: left;">Tanggal</th>
-                            <th class="text-right text-yellow" style="padding: 6px 8px;">Draft</th>
-                            <th class="text-right text-blue" style="padding: 6px 8px;">Submitted</th>
-                            <th class="text-right text-green" style="padding: 6px 8px;">Approved</th>
-                            <th class="text-right text-red" style="padding: 6px 8px;">Rejected</th>
-                            <th class="text-right text-purple" style="padding: 6px 8px;">Total Didata</th>
-                            <th class="text-right" style="padding: 6px 8px;">Laju Harian</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <% pclHistory.forEach((h, i) => { %>
-                            <% 
-                              let prevTotal = i > 0 ? (pclHistory[i-1].submitted_total + pclHistory[i-1].approved_total + pclHistory[i-1].rejected_total) : 0;
-                              let inc = Math.max(0, h.selesai_total - prevTotal);
-                            %>
-                            <tr style="border-bottom: 1px solid var(--border-light);">
-                              <td style="padding: 5px 8px; font-weight: 600; white-space: nowrap;"><%= h.tanggal %></td>
-                              <td class="text-right text-yellow" style="padding: 5px 8px;"><%= (h.draft_total || 0).toLocaleString('id-ID') %></td>
-                              <td class="text-right text-blue" style="padding: 5px 8px; font-weight: 700;"><%= (h.submitted_total || 0).toLocaleString('id-ID') %></td>
-                              <td class="text-right text-green" style="padding: 5px 8px; font-weight: 700;"><%= (h.approved_total || 0).toLocaleString('id-ID') %></td>
-                              <td class="text-right text-red" style="padding: 5px 8px; font-weight: 700;"><%= (h.rejected_total || 0).toLocaleString('id-ID') %></td>
-                              <td class="text-right text-purple" style="padding: 5px 8px; font-weight: 800;"><%= (h.selesai_total || 0).toLocaleString('id-ID') %></td>
-                              <td class="text-right" style="padding: 5px 8px; font-weight: 700; color: <%= inc > 0 ? 'var(--accent-green)' : 'var(--text-muted)' %>;">
-                                <%= inc > 0 ? '+' + inc.toLocaleString('id-ID') : '0' %>
-                              </td>
-                            </tr>
-                          <% }); %>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                <% } %>
-
                 <!-- Analisis Kecepatan & Estimasi Pendataan -->
                 <%
                   let remainingFasih = Math.max(0, totalFasih - doneFasih);
