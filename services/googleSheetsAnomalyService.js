@@ -273,16 +273,18 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
     is_test: payload.is_test ? 'true' : 'false'
   };
 
+  const queryParams = new URLSearchParams(payloadObj).toString();
+  const targetUrl = appsScriptUrl.includes('?') ? `${appsScriptUrl}&${queryParams}` : `${appsScriptUrl}?${queryParams}`;
   const postData = JSON.stringify(payloadObj);
-  const TIMEOUT_MS = 30000; // Increased to 30s timeout
+  const TIMEOUT_MS = 30000;
   let responseText = '';
 
-  // Attempt 1: Fetch POST
+  // Attempt 1: Fetch POST with query params to survive 302 redirects
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-    const res = await fetch(appsScriptUrl, {
+    const res = await fetch(targetUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: postData,
@@ -296,15 +298,13 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
     console.warn(`[GoogleSheetsService] Fetch POST to Apps Script failed: ${fetchErr.message}`);
   }
 
-  // Attempt 2: If POST returned HTML or was empty, try GET with query string
+  // Attempt 2: If POST returned HTML or was empty, try GET fallback
   if (!responseText || responseText.includes('<html') || responseText.includes('<!DOCTYPE')) {
     try {
-      const queryParams = new URLSearchParams(payloadObj).toString();
-      const getUrl = `${appsScriptUrl}?${queryParams}`;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-      const resGet = await fetch(getUrl, { redirect: 'follow', signal: controller.signal });
+      const resGet = await fetch(targetUrl, { redirect: 'follow', signal: controller.signal });
       clearTimeout(timeoutId);
       const getBody = await resGet.text();
       if (getBody && !getBody.includes('<html') && !getBody.includes('<!DOCTYPE')) {
@@ -325,6 +325,9 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
     jsonRes = JSON.parse(responseText);
   } catch (e) {
     console.warn('[GoogleSheetsService] Raw Apps Script response:', responseText ? responseText.slice(0, 300) : '(empty)');
+    if (responseText.includes('<title>Salah</title>') || responseText.includes('Script error') || responseText.includes('<!DOCTYPE')) {
+      throw new Error('Google Apps Script mengalami Script Error. Pastikan Anda telah men-deploy ulang Apps Script sebagai "New Version" di Google Sheets.');
+    }
     throw new Error('Respons Google Apps Script bukan JSON (Koneksi Timeout / Server Google lambat). Silakan coba simpan kembali.');
   }
 
