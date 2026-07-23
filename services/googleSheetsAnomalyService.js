@@ -312,15 +312,15 @@ async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
 
   // Check if response contains HTML login/access error
   if (responseText.includes('Anda memerlukan akses') || responseText.includes('accounts.google.com')) {
-    throw new Error('Izin Apps Script belum diatur ke "Anyone" (Siapa saja). Silakan ubah opsi "Who has access" di Apps Script ke "Anyone".');
+    throw new Error('Akses ditolak oleh Google. Silakan buka Apps Script ➔ Deploy ➔ Manage Deployments ➔ Ubah "Who has access" menjadi "Anyone" (Siapa saja).');
   }
 
   let jsonRes;
   try {
     jsonRes = JSON.parse(responseText);
   } catch (e) {
-    console.warn('[GoogleSheetsService] Raw Apps Script response:', responseText.slice(0, 300));
-    throw new Error('Format respons Google Apps Script tidak valid. Pastikan Apps Script di-deploy ulang sebagai Version Baru dengan opsi "Anyone".');
+    console.warn('[GoogleSheetsService] Raw Apps Script response:', responseText ? responseText.slice(0, 300) : '(empty)');
+    throw new Error('Respons Google Apps Script bukan JSON. Pastikan Anda telah men-deploy ulang Apps Script sebagai "New Version" dengan akses "Anyone".');
   }
 
   if (jsonRes.success === false) {
