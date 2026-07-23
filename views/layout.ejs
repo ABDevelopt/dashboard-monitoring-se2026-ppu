@@ -1780,36 +1780,52 @@
           }
         }
 
-        const btnGroup = document.createElement('div');
-        btnGroup.className = 'btn-group table-export-buttons';
-        btnGroup.style.display = 'inline-flex';
-        btnGroup.style.gap = '4px';
-        btnGroup.style.alignItems = 'center';
+        // Consolidated single Export Dropdown Button to remove redundancy
+        const exportDropdown = document.createElement('div');
+        exportDropdown.className = 'topbar-dropdown-wrapper table-export-dropdown';
+        exportDropdown.style.position = 'relative';
+        exportDropdown.style.display = 'inline-block';
 
-        const btnXlsx = document.createElement('button');
-        btnXlsx.className = 'btn btn-secondary btn-xs';
-        btnXlsx.type = 'button';
-        btnXlsx.style.padding = '3px 8px';
-        btnXlsx.style.fontSize = '11px';
-        btnXlsx.innerHTML = '<i class="bi bi-file-earmark-excel"></i><span class="btn-text-desktop"> XLSX</span>';
-        btnXlsx.onclick = (e) => {
+        exportDropdown.innerHTML = `
+          <button class="btn btn-secondary btn-xs dropdown-toggle" type="button" title="Export Data Tabel" style="padding: 4px 10px; font-size: 11px; font-weight: 600;">
+            <i class="bi bi-download"></i><span class="btn-text-desktop"> Export</span> <i class="bi bi-chevron-down" style="font-size: 9px; margin-left: 2px;"></i>
+          </button>
+          <div class="topbar-dropdown-menu export-menu-dropdown" style="display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 1000; min-width: 150px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.25); padding: 4px;">
+            <button type="button" class="export-opt-xlsx" style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 10px; font-size: 11px; font-weight: 500; border: none; background: transparent; color: var(--text-primary); cursor: pointer; border-radius: 6px; text-align: left;">
+              <i class="bi bi-file-earmark-excel text-green" style="font-size: 13px;"></i> Excel (.xlsx)
+            </button>
+            <button type="button" class="export-opt-pdf" style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 10px; font-size: 11px; font-weight: 500; border: none; background: transparent; color: var(--text-primary); cursor: pointer; border-radius: 6px; text-align: left;">
+              <i class="bi bi-file-pdf text-red" style="font-size: 13px;"></i> PDF (.pdf)
+            </button>
+          </div>
+        `;
+
+        const toggleBtn = exportDropdown.querySelector('.dropdown-toggle');
+        const menu = exportDropdown.querySelector('.export-menu-dropdown');
+
+        toggleBtn.addEventListener('click', (e) => {
           e.preventDefault();
+          e.stopPropagation();
+          const isVisible = menu.style.display === 'block';
+          document.querySelectorAll('.export-menu-dropdown').forEach(m => m.style.display = 'none');
+          menu.style.display = isVisible ? 'none' : 'block';
+        });
+
+        exportDropdown.querySelector('.export-opt-xlsx').addEventListener('click', (e) => {
+          e.preventDefault();
+          menu.style.display = 'none';
           window.exportTableToXLSX(table.id, title);
-        };
+        });
 
-        const btnPdf = document.createElement('button');
-        btnPdf.className = 'btn btn-secondary btn-xs';
-        btnPdf.type = 'button';
-        btnPdf.style.padding = '3px 8px';
-        btnPdf.style.fontSize = '11px';
-        btnPdf.innerHTML = '<i class="bi bi-file-pdf"></i><span class="btn-text-desktop"> PDF</span>';
-        btnPdf.onclick = (e) => {
+        exportDropdown.querySelector('.export-opt-pdf').addEventListener('click', (e) => {
           e.preventDefault();
+          menu.style.display = 'none';
           window.exportTableToPDF(table.id, title);
-        };
+        });
 
-        btnGroup.appendChild(btnXlsx);
-        btnGroup.appendChild(btnPdf);
+        document.addEventListener('click', () => {
+          menu.style.display = 'none';
+        });
 
         if (card) {
           const header = card.querySelector('.card-header');
@@ -1831,14 +1847,14 @@
               }
               header.appendChild(actionsWrap);
             }
-            actionsWrap.insertBefore(btnGroup, actionsWrap.firstChild);
+            actionsWrap.insertBefore(exportDropdown, actionsWrap.firstChild);
           } else {
             const target = tableWrap || table;
             const wrap = document.createElement('div');
             wrap.style.display = 'flex';
             wrap.style.justifyContent = 'flex-end';
             wrap.style.marginBottom = '8px';
-            wrap.appendChild(btnGroup);
+            wrap.appendChild(exportDropdown);
             target.parentNode.insertBefore(wrap, target);
           }
         } else {

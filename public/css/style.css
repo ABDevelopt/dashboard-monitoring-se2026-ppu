@@ -287,6 +287,21 @@ body.light-mode .btn-primary { color: white; }
 .btn-sm { padding: 5px 10px; font-size: 12px; }
 .btn-xs { padding: 3px 8px; font-size: 11px; }
 
+/* Instant Feedback Active Press Effects */
+.btn:active, 
+button:active, 
+.nav-item:active, 
+.topbar-action-btn:active,
+.bottom-nav-item:active,
+tbody tr:active {
+  transform: scale(0.975) !important;
+  transition: transform 0.08s ease-out !important;
+}
+
+.export-menu-dropdown button:hover {
+  background: var(--bg-card-hover) !important;
+}
+
 /* ====== PAGE CONTENT ====== */
 .page-content {
   flex: 1;
