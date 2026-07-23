@@ -471,43 +471,50 @@
     }
     
     .chat-input-area {
-      padding: 5px 8px;
-      margin: 8px 16px 16px 16px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
+      padding: 8px 12px;
+      margin: 12px 20px 20px 20px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
       display: flex;
-      gap: 8px;
+      gap: 12px;
       background: var(--bg-card);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
       transition: border-color 0.25s ease, box-shadow 0.25s ease;
-      align-items: center;
+      align-items: flex-end;
     }
     .chat-input-area:focus-within {
-      border-color: rgba(var(--accent-rgb), 0.4);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      border-color: rgba(var(--accent-rgb), 0.5);
+      box-shadow: 0 6px 24px rgba(var(--accent-rgb), 0.15);
     }
     .chat-input {
       flex: 1;
       background: transparent;
       border: none;
       color: var(--text-primary);
-      padding: 8px 10px;
-      font-size: 13.5px;
+      padding: 10px 12px;
+      font-size: 14.5px;
+      line-height: 1.5;
       outline: none;
+      resize: none;
+      min-height: 48px;
+      max-height: 140px;
+      font-family: inherit;
       transition: var(--transition);
     }
     .chat-input::placeholder {
       color: var(--text-muted);
     }
     .chat-input-area button {
-      height: 34px;
-      padding: 0 16px;
-      border-radius: 8px;
-      font-size: 12px;
+      height: 44px;
+      padding: 0 20px;
+      border-radius: 10px;
+      font-size: 13.5px;
       font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      margin-bottom: 2px;
+      flex-shrink: 0;
     }
     
     /* Typing Loader */
@@ -763,8 +770,8 @@
     </div>
     
     <form id="chatForm" class="chat-input-area" onsubmit="handleChatSubmit(event)">
-      <input type="text" id="chatInput" class="chat-input" placeholder="Tulis pertanyaan mengenai data sensus Anda..." required autocomplete="off">
-      <button type="submit" class="btn btn-primary"><i class="bi bi-send-fill"></i> Kirim</button>
+      <textarea id="chatInput" class="chat-input" rows="1" placeholder="Tulis pertanyaan mengenai data sensus Anda... (Tekan Enter untuk kirim, Shift+Enter untuk baris baru)" required autocomplete="off"></textarea>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-send-fill" style="font-size: 14px;"></i> Kirim</button>
     </form>
   </div>
 </div>
@@ -1369,6 +1376,19 @@
       modelSelect.addEventListener('change', () => {
         const provider = providerSelect ? providerSelect.value : 'gemini';
         selectedModels[provider] = modelSelect.value;
+      });
+    }
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+      chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+        }
+      });
+      chatInput.addEventListener('input', () => {
+        chatInput.style.height = 'auto';
+        chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
       });
     }
   });
