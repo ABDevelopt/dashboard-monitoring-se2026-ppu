@@ -1664,6 +1664,13 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   will-change: opacity, transform;
 }
 
+.card.card-expanded.has-sheet-overlay {
+  padding-top: 48px !important;
+}
+.card.card-expanded.has-sheet-overlay.sheet-edit-mode {
+  padding-top: 78px !important;
+}
+
 @keyframes cardExpandEntrance {
   0% {
     opacity: 0;
