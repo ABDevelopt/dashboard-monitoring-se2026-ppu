@@ -33,8 +33,11 @@ router.get('/', (req, res) => {
     if (filterKorlap) { cond.push('m.korlap = ?'); params.push(filterKorlap); }
     if (filterPml) { cond.push('m.pml = ?'); params.push(filterPml); }
     if (filterPcl) { cond.push('m.pcl = ?'); params.push(filterPcl); }
-    if (filterKode) { cond.push('m.kode = ?'); params.push(filterKode); }
-    if (filterQ) { cond.push('(m.nama_sls LIKE ? OR m.kode LIKE ?)'); params.push(`%${filterQ}%`, `%${filterQ}%`); }
+    if (filterQ) {
+      cond.push('(m.nama_sls LIKE ? OR m.kode LIKE ? OR m.kecamatan LIKE ? OR m.desa LIKE ? OR m.korlap LIKE ? OR m.pml LIKE ? OR m.pcl LIKE ?)');
+      const qParam = `%${filterQ}%`;
+      params.push(qParam, qParam, qParam, qParam, qParam, qParam, qParam);
+    }
     
     if (filterStatus === 'belum_mulai') {
       cond.push('(p.kode IS NULL OR (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
@@ -278,12 +281,48 @@ router.get('/export', (req, res) => {
   const uploadId = res.locals.uploadId;
   if (!uploadId) return res.status(400).send('Belum ada data yang diupload.');
 
+  const filterKec = req.query.kec || '';
+  const filterDesa = req.query.desa || '';
+  const filterKorlap = req.query.korlap || '';
+  const filterPml = req.query.pml || '';
+  const filterPcl = req.query.pcl || '';
+  const filterStatus = req.query.status || '';
+  const filterKode = req.query.kode || '';
+  const filterQ = req.query.q || '';
+
   const settings = res.locals.settings;
   const targetFormula = getTargetFormula(settings.target_fasih_mode);
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
   const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
   const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+
+  let cond = [];
+  let params = [uploadId];
+
+  if (filterKec) { cond.push('m.kecamatan = ?'); params.push(filterKec); }
+  if (filterDesa) { cond.push('m.desa = ?'); params.push(filterDesa); }
+  if (filterKorlap) { cond.push('m.korlap = ?'); params.push(filterKorlap); }
+  if (filterPml) { cond.push('m.pml = ?'); params.push(filterPml); }
+  if (filterPcl) { cond.push('m.pcl = ?'); params.push(filterPcl); }
+  if (filterKode) { cond.push('m.kode = ?'); params.push(filterKode); }
+  if (filterQ) {
+    cond.push('(m.nama_sls LIKE ? OR m.kode LIKE ? OR m.kecamatan LIKE ? OR m.desa LIKE ? OR m.korlap LIKE ? OR m.pml LIKE ? OR m.pcl LIKE ?)');
+    const qParam = `%${filterQ}%`;
+    params.push(qParam, qParam, qParam, qParam, qParam, qParam, qParam);
+  }
+
+  if (filterStatus === 'belum_mulai') {
+    cond.push('(p.kode IS NULL OR (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
+  } else if (filterStatus === 'sedang_didata') {
+    cond.push('(p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) > 0 OR COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0) AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) < m.muatan)');
+  } else if (filterStatus === 'memenuhi_target') {
+    cond.push('(p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) = m.muatan AND NOT (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
+  } else if (filterStatus === 'melebihi_target') {
+    cond.push('(p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) > m.muatan)');
+  }
+
+  const where = cond.length ? 'AND ' + cond.join(' AND ') : '';
 
   const data = attachProgressPercentages(getDb().prepare(`
     SELECT 
@@ -329,8 +368,9 @@ router.get('/export', (req, res) => {
       COALESCE(p.lainnya, 0) AS lainnya
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    WHERE 1=1 ${where}
     ORDER BY m.kecamatan, m.desa, m.kode
-  `).all(uploadId));
+  `).all(...params));
 
   const headers = Object.keys(data[0] || {});
   const csv = [
