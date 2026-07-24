@@ -1593,8 +1593,16 @@
           tr.style.display = '';
         });
 
-        // Special handling for deteksi-anomali server-paginated page
-        if (window.location.pathname.includes('/deteksi-anomali') && window.loadAnomalyPartial) {
+        // Special handling for server-paginated pages (subsls & deteksi-anomali) to load ALL data when expanded
+        if (window.location.pathname.includes('/subsls')) {
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('limit') !== 'all') {
+            urlParams.set('limit', 'all');
+            if (typeof loadPage === 'function') {
+              loadPage('/subsls?' + urlParams.toString());
+            }
+          }
+        } else if (window.location.pathname.includes('/deteksi-anomali') && window.loadAnomalyPartial) {
           const urlParams = new URLSearchParams(window.location.search);
           if (urlParams.get('limit') !== 'all') {
             urlParams.set('limit', 'all');

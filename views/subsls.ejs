@@ -93,15 +93,13 @@
 
       <!-- MAIN DATA TABLE -->
       <div class="card" id="subslsTableContainer" style="margin-bottom: 0;">
-        <div class="card-header">
-          <div class="card-title">
-            <span><i class="bi bi-box-seam"></i> Daftar Rincian SubSLS (Blok Sensus)</span>
-          </div>
-          <div>
-            <span style="font-size:12px; margin-right:12px; color:var(--text-secondary);">
+        <div class="card-header flex-between">
+          <div class="card-title"><i class="bi bi-box-seam"></i> Daftar Rincian SubSLS (Blok Sensus)</div>
+          <div class="flex-start" style="gap: 6px;">
+            <span style="font-size:11px; color:var(--text-muted); font-weight: 600;">
               Menampilkan <%= data.length %> dari <%= total.toLocaleString('id-ID') %> SubSLS
             </span>
-            <a href="/subsls/export" class="btn btn-success btn-sm"><i class="bi bi-download"></i> Export ke CSV</a>
+            <a href="/subsls/export" class="btn btn-xs" style="background: #22c55e; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Data SubSLS (CSV)"><i class="bi bi-file-earmark-excel"></i> Export CSV</a>
           </div>
         </div>
 
@@ -205,6 +203,27 @@
             </table>
           </div>
 
+          <!-- BOTTOM BAR (ROW INFO & LIMIT SELECTOR) -->
+          <% if (typeof total !== 'undefined' && total > 0) { %>
+            <div class="table-pagination-bar flex-between" style="padding: 10px 16px; border-top: 1px solid var(--border); background: var(--bg-secondary); border-radius: 0 0 var(--radius-sm) var(--radius-sm); font-size: 12px; flex-wrap: wrap; gap: 8px;">
+              <div style="color: var(--text-muted);">
+                <% if (limit === 'all' || limit >= total) { %>
+                  Menampilkan <strong>Semua <%= total.toLocaleString('id-ID') %></strong> SubSLS
+                <% } else { %>
+                  Menampilkan <strong><%= Math.min(limit, total).toLocaleString('id-ID') %></strong> dari <strong><%= total.toLocaleString('id-ID') %></strong> SubSLS
+                <% } %>
+              </div>
+              <div class="flex-start" style="gap: 6px; align-items: center; font-size: 11px; color: var(--text-muted);">
+                <span><i class="bi bi-list-task"></i> Tampilkan:</span>
+                <select onchange="window.location.href=this.value" aria-label="Pilih jumlah baris yang ditampilkan" style="padding: 3px 8px; font-size: 11px; border-radius: 6px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); cursor: pointer; font-weight: 600;">
+                  <option value="<%= getPageUrl(1, '100') %>" <%= limit === 100 ? 'selected' : '' %>>100 Baris</option>
+                  <option value="<%= getPageUrl(1, '200') %>" <%= limit === 200 ? 'selected' : '' %>>200 Baris</option>
+                  <option value="<%= getPageUrl(1, '500') %>" <%= limit === 500 ? 'selected' : '' %>>500 Baris</option>
+                  <option value="<%= getPageUrl(1, 'all') %>" <%= limit === 'all' || limit >= total ? 'selected' : '' %>>Semua Baris (<%= total.toLocaleString('id-ID') %>)</option>
+                </select>
+              </div>
+            </div>
+          <% } %>
         <% } else { %>
           <div class="no-data">
             <i class="bi bi-slash-circle-fill text-red" style="font-size: 18px; margin-right: 6px;"></i> Tidak ditemukan data SubSLS yang sesuai dengan kriteria filter Anda.
