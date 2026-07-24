@@ -791,6 +791,26 @@ function getOverviewSummary(uploadId, settings = getSettings()) {
   const target_static_total = stats.target_static_total || 0;
   const target_upload_total = stats.target_upload_total || 0;
 
+  const total_pcl = getDb().prepare("SELECT COUNT(DISTINCT pcl) AS n FROM subsls_master WHERE pcl IS NOT NULL AND pcl != ''").get().n || 0;
+  const total_pml = getDb().prepare("SELECT COUNT(DISTINCT pml) AS n FROM subsls_master WHERE pml IS NOT NULL AND pml != ''").get().n || 0;
+
+  const active_pcl = getDb().prepare(`
+    SELECT COUNT(DISTINCT m.pcl) AS n 
+    FROM subsls_master m 
+    JOIN progres p ON m.kode = p.kode AND p.upload_id = ? 
+    WHERE m.pcl IS NOT NULL AND m.pcl != '' 
+      AND (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
+  `).get(uploadId).n || 0;
+
+  const total_pengerjaan = (stats.submitted_total || 0) + (stats.approved_total || 0) + (stats.rejected_total || 0);
+
+  const avg_subsls_per_pcl = total_pcl > 0 ? parseFloat((total / total_pcl).toFixed(2)) : 0;
+  const avg_target_fasih_per_pcl = total_pcl > 0 ? parseFloat((target_fasih_total / total_pcl).toFixed(1)) : 0;
+  const avg_didata_per_pcl = total_pcl > 0 ? parseFloat((total_pengerjaan / total_pcl).toFixed(1)) : 0;
+  const avg_didata_per_active_pcl = active_pcl > 0 ? parseFloat((total_pengerjaan / active_pcl).toFixed(1)) : 0;
+  const avg_selesai_subsls_per_pcl = total_pcl > 0 ? parseFloat((selesai / total_pcl).toFixed(2)) : 0;
+  const avg_muatan_per_pcl = total_pcl > 0 ? parseFloat((muatan_selesai / total_pcl).toFixed(1)) : 0;
+
   return attachProgressPercentages({ 
     total, 
     selesai, 
@@ -802,6 +822,15 @@ function getOverviewSummary(uploadId, settings = getSettings()) {
     target_fasih_total, 
     target_static_total,
     target_upload_total,
+    total_pcl,
+    total_pml,
+    active_pcl,
+    avg_subsls_per_pcl,
+    avg_target_fasih_per_pcl,
+    avg_didata_per_pcl,
+    avg_didata_per_active_pcl,
+    avg_selesai_subsls_per_pcl,
+    avg_muatan_per_pcl,
     ...stats 
   });
 }
@@ -1622,6 +1651,94 @@ function deleteRememberToken(token) {
   return stmt.run(token).changes;
 }
 
+function getIntradayUploadsByDate(tanggal) {
+  if (!tanggal) return null;
+
+  const uploadSessions = getDb().prepare(`
+    SELECT id, filename, tanggal, created_at
+    FROM uploads
+    WHERE tanggal = ?
+    ORDER BY created_at ASC, id ASC
+  `).all(tanggal);
+
+  if (!uploadSessions || uploadSessions.length === 0) return null;
+
+  const sessionDetails = uploadSessions.map((u, idx) => {
+    const stats = getDb().prepare(`
+      SELECT 
+        SUM(COALESCE(draft, 0)) AS draft_total,
+        SUM(COALESCE(submitted_by_pcl, 0)) AS submitted_total,
+        SUM(COALESCE(approved, 0)) AS approved_total,
+        SUM(COALESCE(rejected, 0)) AS rejected_total,
+        SUM(COALESCE(submitted_by_pcl, 0) + COALESCE(approved, 0) + COALESCE(rejected, 0)) AS selesai_total,
+        SUM(COALESCE(usaha_tidak_ditemukan, 0) + COALESCE(usaha_ditemukan, 0) + COALESCE(usaha_baru, 0) + COALESCE(usaha_tutup, 0) + COALESCE(usaha_ganda, 0)) AS usaha_total,
+        SUM(COALESCE(tidak_ditemukan, 0) + COALESCE(ditemukan, 0) + COALESCE(keluarga_baru, 0) + COALESCE(meninggal, 0) + COALESCE(tidak_eligible, 0) + COALESCE(tidak_dapat_ditemui, 0)) AS keluarga_total
+      FROM progres
+      WHERE upload_id = ?
+    `).get(u.id);
+
+    let timeStr = `Sesi ${idx + 1}`;
+    if (u.created_at) {
+      try {
+        timeStr = new Date(u.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        timeStr = `Sesi ${idx + 1}`;
+      }
+    }
+
+    return {
+      upload_id: u.id,
+      filename: u.filename,
+      created_at: u.created_at,
+      time: timeStr,
+      draft_total: stats ? stats.draft_total || 0 : 0,
+      submitted_total: stats ? stats.submitted_total || 0 : 0,
+      approved_total: stats ? stats.approved_total || 0 : 0,
+      rejected_total: stats ? stats.rejected_total || 0 : 0,
+      selesai_total: stats ? stats.selesai_total || 0 : 0,
+      usaha_total: stats ? stats.usaha_total || 0 : 0,
+      keluarga_total: stats ? stats.keluarga_total || 0 : 0
+    };
+  });
+
+  // Get closing total from previous upload date if available
+  const prevUpload = getDb().prepare(`
+    SELECT id FROM uploads WHERE tanggal < ? ORDER BY tanggal DESC, created_at DESC LIMIT 1
+  `).get(tanggal);
+
+  let baseline = 0;
+  if (prevUpload) {
+    const prevStats = getDb().prepare(`
+      SELECT SUM(COALESCE(submitted_by_pcl, 0) + COALESCE(approved, 0) + COALESCE(rejected, 0)) AS total
+      FROM progres WHERE upload_id = ?
+    `).get(prevUpload.id);
+    baseline = prevStats ? prevStats.total || 0 : 0;
+  }
+
+  let lastClose = baseline;
+  sessionDetails.forEach((s) => {
+    s.open = lastClose;
+    s.close = s.selesai_total;
+    s.high = Math.max(s.open, s.close);
+    s.low = Math.min(s.open, s.close);
+    s.is_bullish = s.close >= s.open;
+    s.delta = s.close - s.open;
+    lastClose = s.close;
+  });
+
+  const open = sessionDetails[0].open;
+  const close = sessionDetails[sessionDetails.length - 1].close;
+  const high = Math.max(...sessionDetails.map(s => s.high));
+  const low = Math.min(...sessionDetails.map(s => s.low));
+
+  return {
+    tanggal,
+    session_count: sessionDetails.length,
+    ohlc: { open, high, low, close },
+    sessions: sessionDetails
+  };
+}
+
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -1631,5 +1748,5 @@ module.exports = {
   getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages, getTargetFormula,
   getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula,
   getAllUsers, createUser, updateUser, deleteUser,
-  saveRememberToken, getUserByRememberToken, deleteRememberToken
+  saveRememberToken, getUserByRememberToken, deleteRememberToken, getIntradayUploadsByDate
 };

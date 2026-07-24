@@ -1365,13 +1365,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}) {
           );
           
           if (i > 0 || kIdx > 0) {
-            let switchMsg = `🤖 *Smart Switch: `;
-            if (kIdx > 0) {
-              switchMsg += `Gemini API Key utama/sebelumnya error. Menggunakan Gemini Backup Key #${kIdx}.*`;
-            } else {
-              switchMsg += `${initialSelection.provider}/${initialSelection.model} tidak tersedia. Dialihkan ke gemini/${current.model}.*`;
-            }
-            result.content = switchMsg + `\n\n` + result.content;
+            log.info(`[SmartSwitch] Fallback aktif: Gemini Key #${kIdx}, model: gemini/${current.model}`);
           }
           success = true;
           break;
@@ -1410,9 +1404,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}) {
         );
         
         if (i > 0) {
-          result.content =
-            `🤖 *Smart Switch: ${initialSelection.provider}/${initialSelection.model} tidak tersedia. ` +
-            `Dialihkan ke ${current.provider}/${current.model}.*\n\n` + result.content;
+          log.info(`[SmartSwitch] Dialihkan dari ${initialSelection.provider}/${initialSelection.model} ke ${current.provider}/${current.model}`);
         }
         
         return result;

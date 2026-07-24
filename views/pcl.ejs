@@ -19,6 +19,63 @@
     <div id="ajax-container">
 
 
+    <% if (pclStats && pclStats.length > 0) { %>
+      <%
+        let totalPclCount = pclStats.length;
+        let sumTargetFasih = 0;
+        let sumRealFasih = 0;
+        let sumTotalSubsls = 0;
+        let sumSelesaiSubsls = 0;
+        let sumRealMuatan = 0;
+        let activePclCount = 0;
+
+        pclStats.forEach(p => {
+          let pFasihReal = (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
+          sumTargetFasih += (p.target_fasih_total || 0);
+          sumRealFasih += pFasihReal;
+          sumTotalSubsls += (p.total_subsls || 0);
+          sumSelesaiSubsls += (p.selesai || 0);
+          sumRealMuatan += (p.muatan_selesai || 0);
+          if (pFasihReal > 0 || (p.draft_total || 0) > 0) activePclCount++;
+        });
+
+        let avgTargetFasihPcl = totalPclCount > 0 ? (sumTargetFasih / totalPclCount).toFixed(1) : 0;
+        let avgRealFasihPcl = totalPclCount > 0 ? (sumRealFasih / totalPclCount).toFixed(1) : 0;
+        let avgSubslsPcl = totalPclCount > 0 ? (sumTotalSubsls / totalPclCount).toFixed(2) : 0;
+        let avgRealMuatanPcl = totalPclCount > 0 ? (sumRealMuatan / totalPclCount).toFixed(1) : 0;
+      %>
+      <!-- SUMMARY CARD: RATA-RATA ASSIGNMENT PETUGAS -->
+      <div class="card mt-3 mb-3" style="padding: 16px 20px; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(59, 130, 246, 0.03) 100%); border: 1px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <i class="bi bi-calculator-fill text-blue" style="font-size: 16px;"></i> Ringkasan Rata-rata Assignment per Petugas (PCL)
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">
+            Total Terdaftar: <span style="color: var(--accent-blue); font-weight: 800;"><%= totalPclCount %> PCL</span> | 
+            Aktif Mengisi: <span style="color: var(--accent-green); font-weight: 800;"><%= activePclCount %> PCL</span>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); gap: 12px;">
+          <div style="background: rgba(124, 58, 237, 0.05); border: 1px solid rgba(124, 58, 237, 0.15); border-radius: 10px; padding: 10px 14px;">
+            <div style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">RATA TARGET FASIH</div>
+            <div style="font-size: 16px; font-weight: 800; color: var(--accent-purple); margin-top: 4px;"><%= Number(avgTargetFasihPcl).toLocaleString('id-ID') %> <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">dok/PCL</span></div>
+          </div>
+          <div style="background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.15); border-radius: 10px; padding: 10px 14px;">
+            <div style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">RATA DIDATA (FASIH)</div>
+            <div style="font-size: 16px; font-weight: 800; color: var(--accent-cyan); margin-top: 4px;"><%= Number(avgRealFasihPcl).toLocaleString('id-ID') %> <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">dok/PCL</span></div>
+          </div>
+          <div style="background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: 10px; padding: 10px 14px;">
+            <div style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">BEBAN SUB-SLS</div>
+            <div style="font-size: 16px; font-weight: 800; color: var(--accent-blue); margin-top: 4px;"><%= avgSubslsPcl %> <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">Sub-SLS/PCL</span></div>
+          </div>
+          <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 10px; padding: 10px 14px;">
+            <div style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">RATA REALISASI MUATAN</div>
+            <div style="font-size: 16px; font-weight: 800; color: var(--accent-green); margin-top: 4px;"><%= Number(avgRealMuatanPcl).toLocaleString('id-ID') %> <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">muatan/PCL</span></div>
+          </div>
+        </div>
+      </div>
+    <% } %>
+
     <!-- TWO-COLUMN GRID FOR DRILLDOWN -->
     <div class="drilldown-grid <%= filterPcl ? 'has-selection' : 'no-selection' %> mt-4">
       
@@ -26,8 +83,9 @@
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header flex-between">
           <div class="card-title"><i class="bi bi-person-gear"></i> Progres Kinerja per PCL (Pencacah)</div>
-          <div class="flex-start">
-            <a href="/pcl/export-excel" class="btn btn-xs" style="background: #22c55e; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download><i class="bi bi-file-earmark-excel"></i> Export Excel Petugas</a>
+          <div class="flex-start" style="gap: 6px;">
+            <a href="/pcl/export-daily-assignments" class="btn btn-xs" style="background: #06b6d4; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Rekap Count Assignment Harian Seluruh Petugas"><i class="bi bi-calendar3-range"></i> Export Assignment Harian</a>
+            <a href="/pcl/export-excel" class="btn btn-xs" style="background: #22c55e; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Progres Kinerja Terbaru"><i class="bi bi-file-earmark-excel"></i> Export Excel Petugas</a>
             <span class="badge badge-blue"><%= pclStats.length %> PCL</span>
           </div>
         </div>
@@ -109,8 +167,8 @@
                         <span style="font-weight:700; color:<%= fasihColorPcl %>"><%= fasihPct %>%</span>
                         <span><%= fasihRealPcl.toLocaleString('id-ID') %> / <%= fasihTgtPcl.toLocaleString('id-ID') %></span>
                       </div>
-                      <div class="progress-bar-container" style="background:rgba(255,255,255,0.08); border:1px solid var(--border); border-radius:99px; height:8px; overflow:hidden;">
-                        <div style="width:<%= fasihWPcl %>%; background:<%= fasihColorPcl %>; height:100%; border-radius:99px; transition:width 0.4s ease;"></div>
+                      <div class="progress-track-sm">
+                        <div class="progress-bar <%= fasihWPcl >= 100 ? 'green' : (fasihWPcl < 40 ? 'red' : 'purple') %>" data-width="<%= fasihWPcl %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
                     <td class="bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>" style="min-width: 160px; padding: 6px 10px;">
@@ -664,6 +722,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (newDetail) {
         detailContainer.innerHTML = newDetail.innerHTML;
         detailContainer.style.opacity = '1';
+        detailContainer.classList.remove('smooth-detail-animate');
+        void detailContainer.offsetWidth;
+        detailContainer.classList.add('smooth-detail-animate');
 
         // Toggle grid selection classes
         const grid = document.querySelector('.drilldown-grid');

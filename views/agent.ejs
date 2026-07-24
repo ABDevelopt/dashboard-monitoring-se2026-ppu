@@ -15,14 +15,16 @@
       flex-direction: column !important;
       overflow: hidden !important;
       padding: 0 !important;
-      padding-top: calc(var(--header-height) + 36px) !important; /* Header + Breadcrumb */
+      padding-top: 0 !important;
       padding-bottom: 0 !important;
     }
     
     @media (max-width: 768px) {
-      .page-content {
-        padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px) + 32px) !important;
-        padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important; /* Offset by bottom nav */
+      body.page-agent .page-content {
+        height: calc(100dvh - 56px - env(safe-area-inset-bottom, 0px)) !important;
+        max-height: calc(100dvh - 56px - env(safe-area-inset-bottom, 0px)) !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
       }
     }
     
@@ -147,8 +149,8 @@
     
     .message {
       display: flex;
-      gap: 10px;
-      max-width: 90%;
+      flex-direction: column;
+      max-width: 85%;
       min-width: 0;
       animation: msg-slide 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
@@ -164,10 +166,24 @@
     }
     .message.user {
       align-self: flex-end;
-      flex-direction: row-reverse;
+      align-items: flex-end;
     }
     .message.agent {
       align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .message-body {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      max-width: 100%;
+    }
+    .message.user .message-body {
+      flex-direction: row-reverse;
+    }
+    .message.agent .message-body {
+      flex-direction: row;
     }
     
     .message-avatar {
@@ -193,16 +209,15 @@
     }
     
     .message-bubble {
-      padding: 10px 14px;
-      border-radius: var(--radius-md);
-      font-size: 12.5px;
-      line-height: 1.55;
-      min-width: 0;
+      padding: 12px 18px;
+      border-radius: 22px;
+      font-size: 13.5px;
+      line-height: 1.6;
       max-width: 100%;
+      width: fit-content;
       box-sizing: border-box;
-      word-wrap: break-word;
-      overflow-wrap: anywhere;
       word-break: break-word;
+      overflow-wrap: break-word;
     }
     
     /* Code blocks */
@@ -369,18 +384,77 @@
       color: #17a2b8;
     }
     .message.user .message-bubble {
-      background: linear-gradient(135deg, var(--accent-blue), rgba(var(--accent-rgb), 0.8));
-      color: white;
-      font-weight: 500;
-      border-top-right-radius: 6px;
-      box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.2);
+      background: rgba(66, 133, 244, 0.12);
+      color: var(--text-primary);
+      border: 1px solid rgba(66, 133, 244, 0.25);
+      border-radius: 22px 22px 4px 22px;
+      box-shadow: var(--shadow-sm);
     }
+    
+    body.light-mode .message.user .message-bubble {
+      background: #e8f0fe;
+      color: #1e293b;
+      border-color: #d2e3fc;
+    }
+
     .message.agent .message-bubble {
-      background: var(--bg-secondary);
+      background: var(--bg-card);
       border: 1px solid var(--border);
       color: var(--text-primary);
-      border-top-left-radius: 6px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      border-radius: 4px 22px 22px 22px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Google Gemini Style Action Buttons (Icon-only & Below Chat Bubble) */
+    .user-message-actions,
+    .agent-message-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-top: 4px;
+      opacity: 0.75;
+      transition: opacity 0.2s ease;
+    }
+
+    .user-message-actions {
+      justify-content: flex-end;
+      padding-right: 4px;
+    }
+
+    .agent-message-actions {
+      justify-content: flex-start;
+      padding-left: 4px;
+    }
+
+    .message:hover .user-message-actions,
+    .message:hover .agent-message-actions {
+      opacity: 1;
+    }
+
+    .chat-action-icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 0;
+    }
+
+    .chat-action-icon-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+      transform: scale(1.08);
+    }
+
+    .chat-action-icon-btn:active {
+      transform: scale(0.92);
     }
     
     .table-container {
@@ -470,44 +544,245 @@
       transform: translateY(-1px);
     }
     
-    .chat-input-area {
-      padding: 5px 8px;
-      margin: 8px 16px 16px 16px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
+    .chat-footer-wrapper {
+      padding: 12px 20px 16px 20px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 20;
+      flex-shrink: 0;
+    }
+
+    .quick-prompts-bar {
       display: flex;
       gap: 8px;
-      background: var(--bg-card);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    .quick-prompts-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .prompt-pill {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      border-radius: 99px;
+      padding: 5px 12px;
+      font-size: 11.5px;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+      display: inline-flex;
       align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
     }
-    .chat-input-area:focus-within {
-      border-color: rgba(var(--accent-rgb), 0.4);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    .prompt-pill:hover {
+      border-color: var(--accent-blue);
+      color: var(--text-primary);
+      background: rgba(var(--accent-rgb), 0.08);
+      transform: translateY(-1px);
     }
-    .chat-input {
+    
+    /* Google Gemini Gradient Text & Iconic Sparkle */
+    .gemini-gradient-text {
+      background: linear-gradient(135deg, #4285F4 0%, #9b72cb 45%, #d96570 75%, #d97706 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .gemini-sparkle-icon {
+      color: #4285F4;
+      animation: geminiSparkle 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes geminiSparkle {
+      0% { transform: scale(1) rotate(0deg); filter: hue-rotate(0deg); }
+      100% { transform: scale(1.15) rotate(15deg); filter: hue-rotate(90deg); }
+    }
+
+    /* Gemini Hero & Suggestion Cards */
+    .gemini-welcome-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 36px 20px 20px 20px;
+      max-width: 860px;
+      margin: 0 auto;
+      text-align: center;
+      animation: msg-slide 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .gemini-hero-sparkle {
+      font-size: 38px;
+      color: #4285F4;
+      margin-bottom: 12px;
+      animation: geminiSparkle 3s ease-in-out infinite alternate;
+    }
+
+    .gemini-hero-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .gemini-hero-subtitle {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin-bottom: 28px;
+      max-width: 620px;
+      line-height: 1.5;
+    }
+
+    .gemini-suggestion-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px;
+      width: 100%;
+    }
+
+    .gemini-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .gemini-card:hover {
+      border-color: #4285F4;
+      background: var(--bg-card-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px -8px rgba(66, 133, 244, 0.25);
+    }
+
+    .gemini-card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .gemini-card-icon.blue { background: rgba(66, 133, 244, 0.12); color: #4285F4; }
+    .gemini-card-icon.red { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+    .gemini-card-icon.purple { background: rgba(155, 114, 203, 0.12); color: #9b72cb; }
+    .gemini-card-icon.green { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+
+    .gemini-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .gemini-card-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Gemini Pill Input Box */
+    .gemini-input-bar {
+      background: var(--bg-secondary);
+      border: 1.5px solid var(--border);
+      border-radius: 30px;
+      padding: 4px 6px 4px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-sizing: border-box;
+    }
+
+    .gemini-input-bar:focus-within {
+      border-color: #4285F4;
+      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.2), 0 8px 24px rgba(0, 0, 0, 0.18);
+      background: var(--bg-card);
+    }
+
+    .gemini-input {
       flex: 1;
       background: transparent;
       border: none;
       color: var(--text-primary);
-      padding: 8px 10px;
-      font-size: 13.5px;
+      padding: 9px 0 7px 0;
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.35;
       outline: none;
-      transition: var(--transition);
+      resize: none;
+      height: 38px;
+      min-height: 38px;
+      max-height: 120px;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+
+    .gemini-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .gemini-send-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #4285F4 0%, #9b72cb 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+      padding: 0;
+    }
+
+    .gemini-send-btn i {
+      font-size: 15px;
+      line-height: 1;
+      display: inline-block;
+      margin-top: 2px;
+      margin-left: -1px;
+    }
+
+    .gemini-send-btn:hover {
+      transform: scale(1.06);
+      box-shadow: 0 6px 18px rgba(66, 133, 244, 0.45);
+    }
+
+    .gemini-send-btn:active {
+      transform: scale(0.94);
     }
     .chat-input::placeholder {
       color: var(--text-muted);
     }
     .chat-input-area button {
-      height: 34px;
-      padding: 0 16px;
-      border-radius: 8px;
-      font-size: 12px;
+      height: 40px;
+      padding: 0 18px;
+      border-radius: 10px;
+      font-size: 13px;
       font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      flex-shrink: 0;
     }
     
     /* Typing Loader */
@@ -627,59 +902,69 @@
       }
       
       .chat-header {
-        align-items: flex-start !important;
-        flex-direction: column !important;
-        gap: 8px !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 6px !important;
         padding: 8px 10px !important;
       }
       .chat-header-title {
         font-size: 13px !important;
         gap: 6px !important;
+        flex: 1 !important;
+        min-width: 0 !important;
       }
       .chat-header-title i {
         font-size: 16px !important;
       }
       .chat-header-title p {
-        font-size: 9px !important;
+        display: none !important;
       }
       .chat-header-actions {
-        width: 100% !important;
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 6px !important;
-        justify-content: stretch !important;
+        width: auto !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        gap: 4px !important;
+        flex-shrink: 0 !important;
       }
-      .chat-header-actions button,
-      .chat-header-actions .status-badge,
-      .chat-header-actions select {
-        height: 28px !important;
-        padding: 0 8px !important;
-        font-size: 10.5px !important;
+      .chat-header-actions button.btn-secondary {
+        padding: 4px 8px !important;
+        font-size: 11px !important;
+        height: 30px !important;
+        margin: 0 !important;
+      }
+      .chat-header-actions .btn-text-mobile {
+        display: none !important;
+      }
+      .chat-header-actions .topbar-action-btn {
+        width: 30px !important;
+        height: 30px !important;
+        padding: 0 !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
         margin: 0 !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-      }
-      .chat-header-actions button {
-        grid-row: 1 !important;
-        grid-column: 1 !important;
+        flex-shrink: 0 !important;
       }
       .chat-header-actions .status-badge {
-        grid-row: 1 !important;
-        grid-column: 2 !important;
-        border-radius: var(--radius-sm) !important;
-        font-size: 10px !important;
-        gap: 4px !important;
+        padding: 2px 6px !important;
+        font-size: 9px !important;
+        height: 26px !important;
       }
-      .chat-header-actions select#agentProvider {
-        grid-row: 2 !important;
-        grid-column: 1 !important;
+      .chat-header-actions .status-text {
+        display: none !important;
       }
-      .chat-header-actions select#agentModel {
-        grid-row: 2 !important;
-        grid-column: 2 !important;
+      #notificationBellDropdownAgent {
+        position: fixed !important;
+        top: 50px !important;
+        right: 10px !important;
+        left: 10px !important;
+        width: auto !important;
+        max-width: none !important;
+        z-index: 1100 !important;
       }
       
       .quick-prompts {
@@ -693,23 +978,32 @@
         height: 26px !important;
       }
       
-      .chat-input-area {
-        padding: 4px 6px !important;
+      .chat-footer-wrapper {
+        padding: 8px 10px 10px 10px !important;
         gap: 6px !important;
-        margin: 6px 8px 10px 8px !important;
-        border-radius: 10px !important;
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2) !important;
+      }
+      
+      .chat-input-area {
+        padding: 4px 6px 4px 10px !important;
+        gap: 6px !important;
+        margin: 0 !important;
+        border-radius: 12px !important;
       }
       .chat-input {
-        padding: 6px 8px !important;
-        font-size: 11.5px !important;
-        height: 32px !important;
+        padding: 6px 0 !important;
+        font-size: 13px !important;
+        min-height: 36px !important;
         box-sizing: border-box !important;
       }
       .chat-input-area button {
-        height: 32px !important;
-        padding: 0 10px !important;
-        font-size: 11.5px !important;
-        border-radius: 6px !important;
+        height: 36px !important;
+        padding: 0 12px !important;
+        font-size: 12px !important;
+        border-radius: 8px !important;
+      }
+      .btn-send-text {
+        display: none !important;
       }
       .agent-step-text {
         font-size: 0.8rem !important;
@@ -724,48 +1018,99 @@
   <div class="chat-wrapper">
     <div class="chat-header">
       <div class="chat-header-title">
-        <i class="bi bi-robot"></i>
+        <button class="btn btn-secondary btn-sm" id="sidebarToggleAgent" onclick="document.body.classList.toggle('sidebar-collapsed'); if(typeof window.dispatchEvent==='function') window.dispatchEvent(new Event('resize'));" style="padding: 4px 8px; font-size: 13px; margin-right: 6px; display: inline-flex; align-items: center; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer;" title="Sembunyikan / Tampilkan Sidebar">
+          <i class="bi bi-layout-sidebar-inset"></i>
+        </button>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <i class="bi bi-robot" style="font-size: 20px; color: var(--accent-cyan);"></i>
+          <i class="bi bi-sparkles gemini-sparkle-icon" style="font-size: 18px;"></i>
+        </div>
         <div>
-          <span>Asisten AI Sensus Ekonomi 2026</span>
-          <p style="margin: 2px 0 0 0; font-size: 10px; font-weight: 500; color: var(--text-muted);">Menganalisis data dari SQLite database secara real-time</p>
+          <span style="font-weight: 700; font-size: 15.5px;" class="gemini-gradient-text">Pananyo Taka</span>
+          <p style="margin: 2px 0 0 0; font-size: 10px; font-weight: 500; color: var(--text-muted);">Asisten AI Pintar Sensus Ekonomi 2026 Penajam Paser Utara</p>
         </div>
       </div>
       <div class="chat-header-actions">
-        <button class="btn btn-secondary btn-sm" onclick="clearChatHistory()" style="padding: 6px 10px; font-size: 11px; height: 32px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer;" title="Hapus riwayat obrolan">
-          <i class="bi bi-trash"></i> Bersihkan
+        <button class="btn btn-secondary btn-sm" onclick="clearChatHistory()" style="padding: 6px 12px; font-size: 11px; height: 32px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; border-radius: 99px;" title="Hapus riwayat obrolan">
+          <i class="bi bi-plus-lg"></i> Percakapan Baru
         </button>
-        <select id="agentProvider" class="agent-select" aria-label="Pilih provider AI">
-          <option value="gemini" <%= provider === 'gemini' ? 'selected' : '' %> <%= hasGeminiKey ? '' : 'disabled' %>>Gemini</option>
-          <option value="openai" <%= provider === 'openai' ? 'selected' : '' %> <%= hasOpenAIKey ? '' : 'disabled' %>>OpenAI</option>
-          <option value="openrouter" <%= provider === 'openrouter' ? 'selected' : '' %> <%= hasOpenRouterKey ? '' : 'disabled' %>>OpenRouter</option>
-        </select>
-        <select id="agentModel" class="agent-select" aria-label="Pilih model AI"></select>
-        <span id="agentStatus" class="status-badge not-ready"><span class="status-dot"></span><span class="status-text">Memeriksa status...</span></span>
+
+        <!-- Notification Bell -->
+        <div class="topbar-dropdown-wrapper" id="bellWrapperAgent">
+          <button class="btn btn-secondary topbar-action-btn notification-bell-btn" id="notificationBellBtnAgent" title="Notifikasi Update Data" aria-label="Notifikasi Update Data" style="height: 32px; width: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+            <i class="bi bi-bell-fill notification-bell-icon" id="notificationBellIconAgent" style="font-size: 13px;"></i>
+            <span id="notificationBellBadgeAgent" class="topbar-badge notification-bell-badge"></span>
+          </button>
+          <div id="notificationBellDropdownAgent" class="topbar-dropdown topbar-dropdown--right notification-bell-dropdown">
+            <div class="topbar-dropdown-header">
+              <span>Riwayat Update Data</span>
+              <span id="clearNotificationBadgeAgent" class="topbar-dropdown-action clear-notification-badge">Tandai Terbaca</span>
+            </div>
+            <div id="notificationBellListAgent" class="topbar-dropdown-list notification-bell-list">
+              <!-- content injected by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button class="btn btn-secondary topbar-action-btn theme-toggle-btn" id="themeToggleAgent" title="Ubah Tema" aria-label="Ubah Tema" style="height: 32px; width: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+          <i class="bi bi-moon-fill theme-icon" style="font-size: 13px;"></i>
+        </button>
+
+        <span id="agentStatus" class="status-badge ready" style="border-radius: 99px;"><span class="status-dot"></span><span class="status-text">Pananyo Taka Active</span></span>
+        <input type="hidden" id="agentProvider" value="<%= typeof provider !== 'undefined' && provider ? provider : 'gemini' %>">
+        <input type="hidden" id="agentModel" value="<%= typeof model !== 'undefined' && model ? model : 'gemini-1.5-flash' %>">
       </div>
     </div>
     
     <div class="chat-messages" id="chatMessages">
-      <!-- Welcome Message -->
-      <div class="message agent">
-        <div class="message-avatar"><i class="bi bi-robot"></i></div>
-        <div class="message-bubble">
-          <h2>👋 Selamat Datang di Asisten AI</h2>
-          Saya adalah Asisten AI Sensus Ekonomi 2026 yang siap membantu Anda dengan:
-          <ul>
-            <li><strong>Analisis Data Progres</strong> - Lihat statistik capaian realisasi muatan per PML/PCL</li>
-            <li><strong>Evaluasi Kinerja</strong> - Identifikasi petugas dengan performa terendah dan masalah</li>
-            <li><strong>Deteksi Anomali</strong> - Temukan data ganda, petugas tidak aktif, dan tingkat reject tinggi</li>
-            <li><strong>Query Real-time</strong> - Tanyakan data apapun langsung dari database Sensus</li>
-          </ul>
-          <p>Ketik pertanyaan Anda di bawah untuk memulai! 🚀</p>
+      <!-- Gemini Welcome Hero Screen -->
+      <div class="gemini-welcome-container" id="geminiWelcomeHero">
+        <div class="gemini-hero-header">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+            <i class="bi bi-robot" style="font-size: 38px; color: var(--accent-cyan);"></i>
+            <i class="bi bi-sparkles gemini-hero-sparkle" style="font-size: 34px; margin-bottom: 0;"></i>
+          </div>
+          <h1 class="gemini-hero-title">Halo, <span class="gemini-gradient-text">Saya Pananyo Taka</span></h1>
+          <p class="gemini-hero-subtitle">Asisten Pintar Sensus Ekonomi 2026 Penajam Paser Utara. Apa yang ingin Anda analisis atau tanyakan hari ini?</p>
+        </div>
+
+        <div class="gemini-suggestion-grid">
+          <div class="gemini-card" onclick="sendQuickPrompt('Bagaimana ringkasan progres pengolahan SE2026 Kabupaten Penajam Paser Utara saat ini?')">
+            <div class="gemini-card-icon blue"><i class="bi bi-bar-chart-line-fill"></i></div>
+            <div class="gemini-card-title">Ringkasan Progres SE2026</div>
+            <div class="gemini-card-desc">Cek capaian realisasi muatan &amp; FASIH per kecamatan secara otomatis</div>
+          </div>
+
+          <div class="gemini-card" onclick="sendQuickPrompt('Identifikasi PCL dan PML dengan performa terendah atau membutuhkan evaluasi')">
+            <div class="gemini-card-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            <div class="gemini-card-title">Evaluasi Kinerja Petugas</div>
+            <div class="gemini-card-desc">Temukan PCL/PML dengan tingkat reject tinggi atau progres terlambat</div>
+          </div>
+
+          <div class="gemini-card" onclick="sendQuickPrompt('Tampilkan deteksi anomali data, petugas tidak aktif, dan potensi data ganda')">
+            <div class="gemini-card-icon purple"><i class="bi bi-shield-exclamation"></i></div>
+            <div class="gemini-card-title">Deteksi Anomali Data</div>
+            <div class="gemini-card-desc">Analisis potensi kesalahan entri data dan beban SLS tidak seimbang</div>
+          </div>
+
+          <div class="gemini-card" onclick="sendQuickPrompt('Berapa rincian target prelist SLS dan realisasi per kecamatan?')">
+            <div class="gemini-card-icon green"><i class="bi bi-geo-alt-fill"></i></div>
+            <div class="gemini-card-title">Analisis Drilldown Wilayah</div>
+            <div class="gemini-card-desc">Bandingkan statistik SLS dan muatan antar 4 kecamatan di PPU</div>
+          </div>
         </div>
       </div>
     </div>
     
-    <form id="chatForm" class="chat-input-area" onsubmit="handleChatSubmit(event)">
-      <input type="text" id="chatInput" class="chat-input" placeholder="Tulis pertanyaan mengenai data sensus Anda..." required autocomplete="off">
-      <button type="submit" class="btn btn-primary"><i class="bi bi-send-fill"></i> Kirim</button>
-    </form>
+    <div class="chat-footer-wrapper">
+      <form id="chatForm" class="gemini-input-bar" onsubmit="handleChatSubmit(event)">
+        <textarea id="chatInput" class="gemini-input" rows="1" placeholder="Tanyakan sesuatu pada Pananyo Taka..." required autocomplete="off"></textarea>
+        <button type="submit" class="gemini-send-btn" title="Kirim Pesan">
+          <i class="bi bi-send-fill" style="font-size: 15px;"></i>
+        </button>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -790,7 +1135,7 @@
   function refreshModelSelect() {
     const providerSelect = document.getElementById('agentProvider');
     const modelSelect = document.getElementById('agentModel');
-    if (!providerSelect || !modelSelect) return;
+    if (!providerSelect || !modelSelect || modelSelect.tagName !== 'SELECT') return;
 
     const provider = providerSelect.value;
     const models = modelOptions[provider] || [];
@@ -869,7 +1214,8 @@
 
   // Synchronous Markdown Renderer for instant, non-blocking UI updates
   function renderMarkdownBlocks(text) {
-    const lines = String(text || '').split(/\r?\n/);
+    text = String(text || '').replace(/🤖\s*\*Smart Switch:[^*]*\*\s*/gi, '').trim();
+    const lines = text.split(/\r?\n/);
     const blocks = [];
     let i = 0;
 
@@ -1078,14 +1424,75 @@
 
   const defaultAnswer = `🤖 **Menganalisis database SQLite...**<br>Saya telah membaca skema tabel <code>subsls_master</code> and <code>progres</code>. Pertanyaan Anda berkaitan dengan analisis data sensus harian.<br><br>Untuk memberikan informasi real-time, saya dapat menjalankan query pembacaan data. Namun, saat ini fitur AI Agent berjalan dalam **Mode Simulasi (Preview)**.<br><br>**Menu yang Terdeteksi pada Database:**<br><ul><li>Jumlah SLS Terisi: <strong>1.042 SLS</strong></li><li>Jumlah Kecamatan: <strong>4 Kecamatan</strong> (Penajam, Waru, Babulu, Sepaku)</li></ul><br>Apabila integrasi Gemini API key telah selesai dikonfigurasi di file <code>.env</code> server, saya akan dapat menjawab kueri dinamis apa pun secara langsung dari SQLite.`;
 
+  window.copyChatMessage = function(btn) {
+    const messageDiv = btn.closest('.message');
+    if (!messageDiv) return;
+    const bubble = messageDiv.querySelector('.message-bubble');
+    if (!bubble) return;
+
+    const textToCopy = bubble.innerText || bubble.textContent;
+    if (!textToCopy) return;
+
+    const showCopiedFeedback = () => {
+      const icon = btn.querySelector('i');
+      if (icon) {
+        const origClass = icon.className;
+        icon.className = 'bi bi-check2 text-green';
+        btn.title = 'Tersalin!';
+        setTimeout(() => {
+          icon.className = origClass;
+          btn.title = 'Salin Pesan';
+        }, 1800);
+      }
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(textToCopy.trim()).then(showCopiedFeedback).catch(() => {
+        fallbackCopyText(textToCopy.trim());
+        showCopiedFeedback();
+      });
+    } else {
+      fallbackCopyText(textToCopy.trim());
+      showCopiedFeedback();
+    }
+  };
+
+  function fallbackCopyText(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try { document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(textarea);
+  }
+
+  window.resendUserMessage = function(btn) {
+    const messageDiv = btn.closest('.message.user');
+    if (!messageDiv) return;
+    const bubble = messageDiv.querySelector('.message-bubble');
+    if (!bubble) return;
+    
+    const text = bubble.innerText || bubble.textContent;
+    const chatInput = document.getElementById('chatInput');
+    
+    if (chatInput) {
+      chatInput.value = text.trim();
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+      chatInput.focus();
+      chatInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
   function appendMessage(sender, content, isHtml = false) {
     const container = document.getElementById('chatMessages');
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${sender}`;
     
-    const avatar = document.createElement('div');
-    avatar.className = 'message-avatar';
-    avatar.innerHTML = sender === 'user' ? '<i class="bi bi-person"></i>' : '<i class="bi bi-robot"></i>';
+    const bodyDiv = document.createElement('div');
+    bodyDiv.className = 'message-body';
     
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
@@ -1096,8 +1503,32 @@
       bubble.textContent = content;
     }
     
-    msgDiv.appendChild(avatar);
-    msgDiv.appendChild(bubble);
+    bodyDiv.appendChild(bubble);
+    msgDiv.appendChild(bodyDiv);
+
+    if (sender === 'user') {
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'user-message-actions';
+      actionsDiv.innerHTML = `
+        <button type="button" class="chat-action-icon-btn" onclick="window.copyChatMessage(this)" title="Salin Pesan">
+          <i class="bi bi-copy"></i>
+        </button>
+        <button type="button" class="chat-action-icon-btn" onclick="window.resendUserMessage(this)" title="Kirim Ulang Pesan">
+          <i class="bi bi-arrow-repeat"></i>
+        </button>
+      `;
+      msgDiv.appendChild(actionsDiv);
+    } else {
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'agent-message-actions';
+      actionsDiv.innerHTML = `
+        <button type="button" class="chat-action-icon-btn" onclick="window.copyChatMessage(this)" title="Salin Jawaban">
+          <i class="bi bi-copy"></i>
+        </button>
+      `;
+      msgDiv.appendChild(actionsDiv);
+    }
+
     container.appendChild(msgDiv);
     container.scrollTop = container.scrollHeight;
     return msgDiv;
@@ -1110,23 +1541,38 @@
       const msgDiv = document.createElement('div');
       msgDiv.className = `message ${sender}`;
 
-      const avatar = document.createElement('div');
-      avatar.className = 'message-avatar';
-      avatar.innerHTML = sender === 'user' ? '<i class="bi bi-person"></i>' : '<i class="bi bi-robot"></i>';
+      const bodyDiv = document.createElement('div');
+      bodyDiv.className = 'message-body';
 
       const bubble = document.createElement('div');
       bubble.className = 'message-bubble';
 
-      msgDiv.appendChild(avatar);
-      msgDiv.appendChild(bubble);
-      container.appendChild(msgDiv);
-      container.scrollTop = container.scrollHeight;
+      bodyDiv.appendChild(bubble);
+      msgDiv.appendChild(bodyDiv);
 
       if (sender === 'user') {
         bubble.innerHTML = renderMarkdown(replyText);
+        
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'user-message-actions';
+        actionsDiv.innerHTML = `
+          <button type="button" class="chat-action-icon-btn" onclick="window.copyChatMessage(this)" title="Salin Pesan">
+            <i class="bi bi-copy"></i>
+          </button>
+          <button type="button" class="chat-action-icon-btn" onclick="window.resendUserMessage(this)" title="Kirim Ulang Pesan">
+            <i class="bi bi-arrow-repeat"></i>
+          </button>
+        `;
+        msgDiv.appendChild(actionsDiv);
+
+        container.appendChild(msgDiv);
+        container.scrollTop = container.scrollHeight;
         resolve(msgDiv);
         return;
       }
+
+      container.appendChild(msgDiv);
+      container.scrollTop = container.scrollHeight;
 
       // Pre-render blocks to avoid repeating O(N^2) Markdown parsing in animation frames
       const blocksHtml = renderMarkdownBlocks(replyText);
@@ -1153,6 +1599,14 @@
           const delay = Math.max(30, Math.min(100, Math.ceil(800 / blocksHtml.length)));
           setTimeout(appendNextBlock, delay);
         } else {
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'agent-message-actions';
+          actionsDiv.innerHTML = `
+            <button type="button" class="chat-action-icon-btn" onclick="window.copyChatMessage(this)" title="Salin Jawaban">
+              <i class="bi bi-copy"></i>
+            </button>
+          `;
+          msgDiv.appendChild(actionsDiv);
           resolve(msgDiv);
         }
       }
@@ -1166,9 +1620,8 @@
     const loaderDiv = document.createElement('div');
     loaderDiv.className = 'message agent temp-loader';
     
-    const avatar = document.createElement('div');
-    avatar.className = 'message-avatar';
-    avatar.innerHTML = '<i class="bi bi-robot"></i>';
+    const bodyDiv = document.createElement('div');
+    bodyDiv.className = 'message-body';
     
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
@@ -1180,13 +1633,14 @@
             <div class="typing-dot"></div>
             <div class="typing-dot"></div>
           </div>
-          <span class="agent-step-text" style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500; opacity: 1; transition: opacity 0.3s ease; white-space: nowrap;">🔍 Menganalisis pertanyaan...</span>
+          <span class="typing-loader-text" style="font-size: 11.5px; font-weight: 600; color: var(--accent-cyan); display: flex; align-items: center; gap: 6px;">
+            <i class="bi bi-robot" style="font-size: 13px;"></i> Pananyo Taka berpikir...
+          </span>
         </div>
       </div>
     `;
-    
-    loaderDiv.appendChild(avatar);
-    loaderDiv.appendChild(bubble);
+    bodyDiv.appendChild(bubble);
+    loaderDiv.appendChild(bodyDiv);
     container.appendChild(loaderDiv);
     container.scrollTop = container.scrollHeight;
 
@@ -1386,6 +1840,19 @@
         const provider = providerSelect ? providerSelect.value : 'gemini';
         selectedModels[provider] = modelSelect.value;
         syncSelectedAIToStorage();
+      });
+    }
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+      chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+        }
+      });
+      chatInput.addEventListener('input', () => {
+        chatInput.style.height = 'auto';
+        chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
       });
     }
   });

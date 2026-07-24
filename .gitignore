@@ -31,9 +31,6 @@ logs/
 
 # WhatsApp session files (contains large cache files that may be locked)
 .wwebjs_auth/
-<<<<<<< Updated upstream
-=======
-
 # Anomaly Disk Cache
 data/anomaly_cache.json
 
@@ -47,4 +44,3 @@ firebase-service-account.json
 *firebase*.json
 *-firebase-adminsdk-*.json
 *.pem
->>>>>>> Stashed changes

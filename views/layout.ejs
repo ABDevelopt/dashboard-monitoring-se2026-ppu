@@ -58,7 +58,7 @@
     }
   </style>
 </head>
-<body<% if (typeof activePage !== 'undefined' && activePage === 'login') { %> class="page-login"<% } %>>
+<body class="<%= (typeof activePage !== 'undefined' && activePage === 'login') ? 'page-login' : '' %> <%= (typeof activePage !== 'undefined' && activePage === 'agent') ? 'page-agent' : '' %>">
 <script>
   // Apply saved theme immediately to prevent flashing
   if (localStorage.getItem('theme') === 'light') {
@@ -82,16 +82,9 @@
   };
 </script>
 
-<!-- TOP LOADING BAR -->
-<div id="topLoadingBar" class="top-loading-bar loading" style="width: 35%;"></div>
 <script>
-  // Fast feedback: finish loading progress bar once DOM has loaded
+  // Fast feedback: DOM loaded setup
   document.addEventListener('DOMContentLoaded', () => {
-    const loader = document.getElementById('topLoadingBar');
-    if (loader) {
-      loader.classList.remove('loading');
-      loader.classList.add('finished');
-    }
 
     // Auto-dismiss success and error alerts after 5 seconds, with manual click-to-dismiss
     const alerts = document.querySelectorAll('.flash-messages .alert');
@@ -189,9 +182,9 @@
           <span class="nav-icon"><i class="bi bi-map"></i></span> Peta Progres
         </a>
         <% } %>
-        <% if (typeof settings !== 'undefined' && settings.page_aiagent === '1') { %>
+        <% if (typeof settings === 'undefined' || !settings || settings.page_aiagent !== '0') { %>
         <a href="/agent" class="nav-item <%= activePage === 'agent' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-robot"></i></span> Asisten AI Chat
+          <span class="nav-icon"><i class="bi bi-robot text-purple"></i></span> Pananyo Taka <span class="nav-tag-badge" style="background: linear-gradient(135deg, #4285F4, #9b72cb); color: white; font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 4px; margin-left: 4px; letter-spacing: 0.5px;">AI</span>
         </a>
         <% } %>
       </div>
@@ -247,7 +240,7 @@
         <% } %>
         <% if (settings.page_deteksianomali === '1') { %>
         <a href="/deteksi-anomali" class="nav-item <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-shield-exclamation"></i></span> Deteksi Awal Anomali
+          <span class="nav-icon"><i class="bi bi-shield-exclamation"></i></span> Anomali
         </a>
         <% } %>
       </div>
@@ -294,12 +287,12 @@
       <div class="nav-section-content">
         <% if (settings.page_kecamatan === '1') { %>
         <a href="/kecamatan" class="nav-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-geo-alt"></i></span> Per Kecamatan
+          <span class="nav-icon"><i class="bi bi-geo-alt"></i></span> Kecamatan
         </a>
         <% } %>
         <% if (settings.page_subsls === '1') { %>
         <a href="/subsls" class="nav-item <%= activePage === 'subsls' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-box-seam"></i></span> Per SubSLS
+          <span class="nav-icon"><i class="bi bi-box-seam"></i></span> Subsls
         </a>
         <% } %>
       </div>
@@ -330,11 +323,8 @@
         <span>Data &amp; Utilitas</span>
       </div>
       <div class="nav-section-content">
-        <a href="/subsls/export" class="nav-item">
-          <span class="nav-icon"><i class="bi bi-download"></i></span> Export CSV (Sub-SLS)
-        </a>
-        <a href="/pcl/export-excel" class="nav-item">
-          <span class="nav-icon"><i class="bi bi-file-earmark-excel"></i></span> Export Excel Petugas
+        <a href="#" onclick="window.showExportDialog(event)" class="nav-item">
+          <span class="nav-icon"><i class="bi bi-download"></i></span> Export Data
         </a>
       </div>
     </div>
@@ -415,7 +405,7 @@
   </a>
   <a href="/agent" class="bottom-nav-item <%= activePage === 'agent' ? 'active' : '' %>">
     <i class="bi bi-robot"></i>
-    <span>Chat AI</span>
+    <span>Pananyo Taka</span>
   </a>
   <button id="bottomNavMenuBtn" class="bottom-nav-item" aria-label="Buka Menu Lainnya">
     <i class="bi bi-grid"></i>
@@ -429,6 +419,9 @@
   <header class="topbar">
     <!-- LEFT: Logo + Title -->
     <div class="topbar-left">
+      <button class="btn btn-secondary topbar-action-btn" id="sidebarToggle" title="Sembunyikan / Tampilkan Sidebar (Toggle)" aria-label="Toggle Sidebar" style="margin-right: 8px;">
+        <i class="bi bi-layout-sidebar-inset"></i>
+      </button>
       <img src="/logo-horizontal.png" alt="Logo SE2026" class="logo-light topbar-logo" loading="eager">
       <img src="/logo-horizontal-dark.png" alt="Logo SE2026" class="logo-dark topbar-logo" fetchpriority="high" loading="eager">
       <div class="topbar-title-container">
@@ -547,15 +540,6 @@
 
     <div id="pjax-container">
       <%- body %>
-      <!-- Footer Disclaimer -->
-      <% if (typeof activePage !== 'undefined' && activePage !== 'overview' && activePage !== 'agent' && activePage !== 'login' && activePage !== 'chatbot-settings') { %>
-      <footer class="page-footer-disclaimer" style="margin-top: 30px; padding: 16px 0; border-top: 1px solid var(--border); text-align: center; width: 100%; flex-shrink: 0;">
-        <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 0 16px;">
-          <i class="bi bi-info-circle-fill" style="color: var(--accent-blue); margin-right: 4px;"></i>
-          <strong>Disclaimer:</strong> Data berasal dari metode scraping website sehingga data yang terekam hanya yang tersimpan di server FASIH, sehingga mungkin ada perbedaan dengan data aktual di lapangan (aplikasi FASIH masing-masing petugas).
-        </p>
-      </footer>
-      <% } %>
     </div>
   </main>
 </div>
@@ -654,12 +638,12 @@
     const PAGE_MAP = {
       '/':                  { label: 'Overview',          icon: 'bi-house-door-fill' },
       '/map':               { label: 'Peta Progres',      icon: 'bi-map-fill' },
-      '/agent':             { label: 'Asisten AI',        icon: 'bi-robot' },
-      '/kecamatan':         { label: 'Per Kecamatan',     icon: 'bi-geo-alt-fill' },
+      '/agent':             { label: 'Pananyo Taka',      icon: 'bi-sparkles' },
+      '/kecamatan':         { label: 'Kecamatan',         icon: 'bi-geo-alt-fill' },
       '/korlap':            { label: 'Korlap',            icon: 'bi-person-lines-fill' },
       '/pml':               { label: 'PML',               icon: 'bi-person-badge-fill' },
       '/pcl':               { label: 'PCL',               icon: 'bi-person-gear' },
-      '/subsls':            { label: 'Detail SLS',        icon: 'bi-grid-3x3-gap-fill' },
+      '/subsls':            { label: 'Subsls',            icon: 'bi-grid-3x3-gap-fill' },
       '/kipp':              { label: 'KIPP IKN',          icon: 'bi-building-check' },
       '/leaderboard':       { label: 'Leaderboard',       icon: 'bi-trophy-fill' },
       '/performa':          { label: 'Top Performers',    icon: 'bi-graph-up-arrow' },
@@ -667,7 +651,7 @@
       '/harian':            { label: 'Tren Harian',       icon: 'bi-bar-chart-line-fill' },
       '/early-warning':     { label: 'Early Warning',     icon: 'bi-exclamation-triangle-fill' },
       '/earlywarning':      { label: 'Early Warning',     icon: 'bi-exclamation-triangle-fill' },
-      '/deteksianomali':    { label: 'Deteksi Anomali',   icon: 'bi-bug-fill' },
+      '/deteksi-anomali':   { label: 'Anomali',           icon: 'bi-shield-exclamation' },
       '/pbi':               { label: 'Power BI',          icon: 'bi-bar-chart-fill' },
       '/master':            { label: 'Data Master',       icon: 'bi-table' },
       '/admin':             { label: 'Menu Admin',        icon: 'bi-grid-fill' },
@@ -1474,15 +1458,14 @@
       }
 
       // 3. Theme Toggle Button Click
-      const themeToggleBtn = e.target.closest('#themeToggle');
+      const themeToggleBtn = e.target.closest('#themeToggle, #themeToggleAgent, .theme-toggle-btn');
       if (themeToggleBtn) {
         e.preventDefault();
         document.body.classList.toggle('light-mode');
         const isLight = document.body.classList.contains('light-mode');
         localStorage.setItem('theme', isLight ? 'light' : 'dark');
         
-        const themeIcon = document.getElementById('themeIcon');
-        if (themeIcon) {
+        document.querySelectorAll('#themeIcon, .theme-icon').forEach(themeIcon => {
           if (isLight) {
             themeIcon.classList.remove('bi-moon-fill');
             themeIcon.classList.add('bi-sun-fill');
@@ -1490,7 +1473,7 @@
             themeIcon.classList.remove('bi-sun-fill');
             themeIcon.classList.add('bi-moon-fill');
           }
-        }
+        });
         
         // Dispatch event for charts to adapt
         window.dispatchEvent(new Event('themechange'));
@@ -1585,15 +1568,38 @@
           btn.classList.add('btn-secondary');
         }
         
+        // Restore pagination controls if hidden
+        card.querySelectorAll('.pagination, .pagination-controls, .table-pagination-bar').forEach(p => {
+          p.style.display = '';
+        });
+
         window.lastExpandedTableId = null;
       } else {
-        // ---- EXPANDING ----
+        // ---- EXPANDING (INFINITE SCROLL & ALL DATA DISPLAY) ----
         card.classList.add('card-expanded');
         document.body.classList.add('has-expanded-card');
         if (btn) {
           btn.innerHTML = '<i class="bi bi-fullscreen-exit"></i> <span class="btn-text-desktop">Collapse</span>';
           btn.classList.remove('btn-secondary');
           btn.classList.add('btn-danger');
+        }
+
+        // Hide pagination controls and display ALL table rows for infinite scroll
+        card.querySelectorAll('.pagination, .pagination-controls, .table-pagination-bar').forEach(p => {
+          p.style.display = 'none';
+        });
+
+        card.querySelectorAll('tbody tr').forEach(tr => {
+          tr.style.display = '';
+        });
+
+        // Special handling for deteksi-anomali server-paginated page
+        if (window.location.pathname.includes('/deteksi-anomali') && window.loadAnomalyPartial) {
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('limit') !== 'all') {
+            urlParams.set('limit', 'all');
+            window.loadAnomalyPartial('/deteksi-anomali?' + urlParams.toString());
+          }
         }
 
         const table = card.querySelector('table');
@@ -1757,6 +1763,70 @@
       }
     };
 
+    window.showExportDialog = function(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      
+      Swal.fire({
+        title: '<i class="bi bi-file-earmark-arrow-down-fill" style="color: var(--accent-blue); font-size: 20px;"></i> <span>Export Data &amp; Utilitas</span>',
+        html: `
+          <div style="text-align: left; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 16px;">
+            Pilih dataset yang ingin Anda ekspor dari database sistem Sensus Ekonomi 2026:
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
+            <label class="export-option-card">
+              <input type="radio" name="exportOption" value="/subsls/export" checked>
+              <div class="export-icon-badge blue">
+                <i class="bi bi-filetype-csv"></i>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                  <span style="font-weight: 700; color: var(--text-primary); font-size: 13px;">Data Sub-SLS (CSV)</span>
+                  <span class="badge badge-blue btn-xs" style="font-size: 9px; padding: 2px 6px;">CSV</span>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Rincian lengkap progres &amp; status muatan per satuan lingkungan setempat</div>
+              </div>
+            </label>
+
+            <label class="export-option-card">
+              <input type="radio" name="exportOption" value="/pcl/export-excel">
+              <div class="export-icon-badge green">
+                <i class="bi bi-file-earmark-excel-fill"></i>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                  <span style="font-weight: 700; color: var(--text-primary); font-size: 13px;">Kinerja Petugas (Excel)</span>
+                  <span class="badge badge-green btn-xs" style="font-size: 9px; padding: 2px 6px;">XLSX</span>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Rekapitulasi realisasi, target, &amp; indikator performa PCL, PML &amp; Korlap</div>
+              </div>
+            </label>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '<i class="bi bi-download"></i> Unduh Berkas',
+        cancelButtonText: 'Batal',
+        focusConfirm: false,
+        customClass: {
+          popup: 'swal2-dark-popup'
+        },
+        preConfirm: () => {
+          const selected = document.querySelector('input[name="exportOption"]:checked');
+          if (!selected) {
+            Swal.showValidationMessage('Silakan pilih salah satu format dataset.');
+            return false;
+          }
+          return selected.value;
+        }
+      }).then((result) => {
+        if (result.isConfirmed && result.value) {
+          window.location.href = result.value;
+        }
+      });
+    };
+
     window.initTableExport = (container = document) => {
       const tables = container.querySelectorAll('table');
       tables.forEach(table => {
@@ -1787,36 +1857,52 @@
           }
         }
 
-        const btnGroup = document.createElement('div');
-        btnGroup.className = 'btn-group table-export-buttons';
-        btnGroup.style.display = 'inline-flex';
-        btnGroup.style.gap = '4px';
-        btnGroup.style.alignItems = 'center';
+        // Consolidated single Export Dropdown Button to remove redundancy
+        const exportDropdown = document.createElement('div');
+        exportDropdown.className = 'topbar-dropdown-wrapper table-export-dropdown';
+        exportDropdown.style.position = 'relative';
+        exportDropdown.style.display = 'inline-block';
 
-        const btnXlsx = document.createElement('button');
-        btnXlsx.className = 'btn btn-secondary btn-xs';
-        btnXlsx.type = 'button';
-        btnXlsx.style.padding = '3px 8px';
-        btnXlsx.style.fontSize = '11px';
-        btnXlsx.innerHTML = '<i class="bi bi-file-earmark-excel"></i><span class="btn-text-desktop"> XLSX</span>';
-        btnXlsx.onclick = (e) => {
+        exportDropdown.innerHTML = `
+          <button class="btn btn-secondary btn-xs dropdown-toggle" type="button" title="Export Data Tabel" style="padding: 4px 10px; font-size: 11px; font-weight: 600;">
+            <i class="bi bi-download"></i><span class="btn-text-desktop"> Export</span> <i class="bi bi-chevron-down" style="font-size: 9px; margin-left: 2px;"></i>
+          </button>
+          <div class="topbar-dropdown-menu export-menu-dropdown" style="display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 1000; min-width: 150px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.25); padding: 4px;">
+            <button type="button" class="export-opt-xlsx" style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 10px; font-size: 11px; font-weight: 500; border: none; background: transparent; color: var(--text-primary); cursor: pointer; border-radius: 6px; text-align: left;">
+              <i class="bi bi-file-earmark-excel text-green" style="font-size: 13px;"></i> Excel (.xlsx)
+            </button>
+            <button type="button" class="export-opt-pdf" style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 10px; font-size: 11px; font-weight: 500; border: none; background: transparent; color: var(--text-primary); cursor: pointer; border-radius: 6px; text-align: left;">
+              <i class="bi bi-file-pdf text-red" style="font-size: 13px;"></i> PDF (.pdf)
+            </button>
+          </div>
+        `;
+
+        const toggleBtn = exportDropdown.querySelector('.dropdown-toggle');
+        const menu = exportDropdown.querySelector('.export-menu-dropdown');
+
+        toggleBtn.addEventListener('click', (e) => {
           e.preventDefault();
+          e.stopPropagation();
+          const isVisible = menu.style.display === 'block';
+          document.querySelectorAll('.export-menu-dropdown').forEach(m => m.style.display = 'none');
+          menu.style.display = isVisible ? 'none' : 'block';
+        });
+
+        exportDropdown.querySelector('.export-opt-xlsx').addEventListener('click', (e) => {
+          e.preventDefault();
+          menu.style.display = 'none';
           window.exportTableToXLSX(table.id, title);
-        };
+        });
 
-        const btnPdf = document.createElement('button');
-        btnPdf.className = 'btn btn-secondary btn-xs';
-        btnPdf.type = 'button';
-        btnPdf.style.padding = '3px 8px';
-        btnPdf.style.fontSize = '11px';
-        btnPdf.innerHTML = '<i class="bi bi-file-pdf"></i><span class="btn-text-desktop"> PDF</span>';
-        btnPdf.onclick = (e) => {
+        exportDropdown.querySelector('.export-opt-pdf').addEventListener('click', (e) => {
           e.preventDefault();
+          menu.style.display = 'none';
           window.exportTableToPDF(table.id, title);
-        };
+        });
 
-        btnGroup.appendChild(btnXlsx);
-        btnGroup.appendChild(btnPdf);
+        document.addEventListener('click', () => {
+          menu.style.display = 'none';
+        });
 
         if (card) {
           const header = card.querySelector('.card-header');
@@ -1838,14 +1924,14 @@
               }
               header.appendChild(actionsWrap);
             }
-            actionsWrap.insertBefore(btnGroup, actionsWrap.firstChild);
+            actionsWrap.insertBefore(exportDropdown, actionsWrap.firstChild);
           } else {
             const target = tableWrap || table;
             const wrap = document.createElement('div');
             wrap.style.display = 'flex';
             wrap.style.justifyContent = 'flex-end';
             wrap.style.marginBottom = '8px';
-            wrap.appendChild(btnGroup);
+            wrap.appendChild(exportDropdown);
             target.parentNode.insertBefore(wrap, target);
           }
         } else {
@@ -2429,11 +2515,18 @@
         void loader.offsetWidth;
         loader.classList.add('loading');
       }
-      const overlay = document.getElementById('pjax-loading-overlay');
-      if (overlay) overlay.classList.add('active');
 
+      // ⏳ Skeleton Threshold Timer (250ms Threshold)
+      // Halaman yang merespon secara instan (< 250ms) tidak akan memicu skeleton loader
+      let skeletonTimer = null;
       if (oldContent) {
-        oldContent.innerHTML = getSkeletonHTML(url);
+        skeletonTimer = setTimeout(() => {
+          if (oldContent && document.getElementById('pjax-container') === oldContent) {
+            oldContent.innerHTML = getSkeletonHTML(url);
+            const overlay = document.getElementById('pjax-loading-overlay');
+            if (overlay) overlay.classList.add('active');
+          }
+        }, 250);
       }
 
       try {
@@ -2467,8 +2560,11 @@
             window._pjaxCleanups = [];
           }
 
-          // Swap content immediately with no delays, fades, or class changes
+          // Swap content immediately and trigger smooth layout entrance animation
           oldContent.innerHTML = newContent.innerHTML;
+          oldContent.classList.remove('pjax-animate-enter');
+          void oldContent.offsetWidth;
+          oldContent.classList.add('pjax-animate-enter');
         } else {
           window.location.href = url;
           return;
@@ -2665,8 +2761,12 @@
         console.error('AJAX page navigation error:', err);
         window.location.href = url;
       } finally {
-        if (overlay) {
-          overlay.classList.remove('active');
+        if (skeletonTimer) {
+          clearTimeout(skeletonTimer);
+        }
+        const overlayEl = document.getElementById('pjax-loading-overlay');
+        if (overlayEl) {
+          overlayEl.classList.remove('active');
         }
         // Hapus status loading secara global setelah navigasi selesai
         document.querySelectorAll('.btn-loading').forEach(btn => {
@@ -2707,7 +2807,11 @@
 
       e.preventDefault();
       
-      // Berikan visual feedback instan (denyut nadi) pada item menu yang diklik
+      // ⚡ INSTANT FEEDBACK (0ms): Langsung ubah warna menu yang diklik menjadi active tanpa menunggu load halaman!
+      if (typeof window.setInstantMenuActive === 'function') {
+        window.setInstantMenuActive(href);
+      }
+      
       const sidebarItem = a.closest('.sidebar .nav-item, .bottom-nav .bottom-nav-item');
       if (sidebarItem) {
         sidebarItem.classList.add('nav-item-loading');
@@ -2715,6 +2819,42 @@
       
       loadPage(href);
     });
+
+    window.setInstantMenuActive = function(targetUrl) {
+      if (!targetUrl) return;
+      try {
+        const targetPath = new URL(targetUrl, window.location.origin).pathname;
+        if (targetPath === '/agent') {
+          document.body.classList.add('page-agent');
+        } else {
+          document.body.classList.remove('page-agent');
+        }
+
+        document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+          const itemHref = item.getAttribute('href');
+          if (itemHref) {
+            const itemPath = new URL(itemHref, window.location.origin).pathname;
+            if (itemPath === targetPath || (targetPath === '/' && itemPath === '/')) {
+              item.classList.add('active');
+            } else {
+              item.classList.remove('active');
+            }
+          }
+        });
+
+        document.querySelectorAll('.bottom-nav .bottom-nav-item').forEach(item => {
+          const itemHref = item.getAttribute('href');
+          if (itemHref) {
+            const itemPath = new URL(itemHref, window.location.origin).pathname;
+            if (itemPath === targetPath || (targetPath === '/' && itemPath === '/')) {
+              item.classList.add('active');
+            } else {
+              item.classList.remove('active');
+            }
+          }
+        });
+      } catch (_) {}
+    };
 
     // Handle browser back/forward buttons
     window.addEventListener('popstate', (e) => {
@@ -3460,14 +3600,8 @@
       }
 
       function initNotificationBell() {
-        const bellBtn = document.getElementById('notificationBellBtn');
-        const bellDropdown = document.getElementById('notificationBellDropdown');
-        const bellBadge = document.getElementById('notificationBellBadge');
-        const bellIcon = document.getElementById('notificationBellIcon');
-        const bellList = document.getElementById('notificationBellList');
-        const clearBadgeBtn = document.getElementById('clearNotificationBadge');
-
-        if (!bellBtn || !bellDropdown) return;
+        const bellBtns = document.querySelectorAll('#notificationBellBtn, #notificationBellBtnAgent, .notification-bell-btn');
+        if (!bellBtns.length) return;
 
         function updateBellStateInternal() {
           const storedMuatan = localStorage.getItem('last_seen_muatan_date');
@@ -3476,16 +3610,15 @@
           let isMuatanNew = latestMuatanDate && storedMuatan !== latestMuatanDate;
           let isFasihNew = latestFasihDate && storedFasih !== latestFasihDate;
 
+          const bellBadges = document.querySelectorAll('#notificationBellBadge, #notificationBellBadgeAgent, .notification-bell-badge');
+          const bellIcons = document.querySelectorAll('#notificationBellIcon, #notificationBellIconAgent, .notification-bell-icon');
+          const clearBadgeBtns = document.querySelectorAll('#clearNotificationBadge, #clearNotificationBadgeAgent, .clear-notification-badge');
+          const bellLists = document.querySelectorAll('#notificationBellList, #notificationBellListAgent, .notification-bell-list');
+
           // Show/hide red badge and style bell
-          if (isMuatanNew || isFasihNew) {
-            if (bellBadge) bellBadge.style.display = 'block';
-            if (bellIcon) bellIcon.style.color = '#f59e0b'; // Gold color for active notifications
-            if (clearBadgeBtn) clearBadgeBtn.style.display = 'inline';
-          } else {
-            if (bellBadge) bellBadge.style.display = 'none';
-            if (bellIcon) bellIcon.style.color = 'var(--text-muted)';
-            if (clearBadgeBtn) clearBadgeBtn.style.display = 'none';
-          }
+          bellBadges.forEach(badge => badge.style.display = (isMuatanNew || isFasihNew) ? 'block' : 'none');
+          bellIcons.forEach(icon => icon.style.color = (isMuatanNew || isFasihNew) ? '#f59e0b' : 'var(--text-muted)');
+          clearBadgeBtns.forEach(btn => btn.style.display = (isMuatanNew || isFasihNew) ? 'inline' : 'none');
 
           // Build list items
           let html = '';
@@ -3516,7 +3649,7 @@
           if (!latestMuatanDate && !latestFasihDate) {
             html = '<div style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 12px 0;">Belum ada riwayat update.</div>';
           }
-          if (bellList) bellList.innerHTML = html;
+          bellLists.forEach(list => list.innerHTML = html);
         }
 
         function markAllAsRead() {
@@ -3536,28 +3669,30 @@
         // Initialize state
         updateBellStateInternal();
 
-        bellBtn.onclick = (e) => {
-          e.stopPropagation();
-          const isOpen = bellDropdown.classList.contains('is-open');
-          
-          // Close target dropdown if open
-          const targetDrop = document.getElementById('targetSelectorDropdown');
-          if (targetDrop) targetDrop.classList.remove('is-open');
+        bellBtns.forEach(btn => {
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            const wrapper = btn.closest('.topbar-dropdown-wrapper');
+            const dropdown = wrapper ? wrapper.querySelector('.topbar-dropdown') : null;
+            if (!dropdown) return;
+            const isOpen = dropdown.classList.contains('is-open');
+            
+            // Close all topbar dropdowns first
+            document.querySelectorAll('.topbar-dropdown').forEach(d => d.classList.remove('is-open'));
 
-          if (isOpen) {
-            bellDropdown.classList.remove('is-open');
-          } else {
-            updateBellStateInternal();
-            bellDropdown.classList.add('is-open');
-          }
-        };
+            if (!isOpen) {
+              updateBellStateInternal();
+              dropdown.classList.add('is-open');
+            }
+          };
+        });
 
-        if (clearBadgeBtn) {
-          clearBadgeBtn.onclick = (e) => {
+        document.querySelectorAll('#clearNotificationBadge, #clearNotificationBadgeAgent, .clear-notification-badge').forEach(btn => {
+          btn.onclick = (e) => {
             e.stopPropagation();
             markAllAsRead();
           };
-        }
+        });
       }
 
       window.initNotificationBell = initNotificationBell;
@@ -3565,17 +3700,12 @@
 
       // Document click listener to close all topbar dropdowns — registered once globally
       document.addEventListener('click', (e) => {
-        const bellDropdown = document.getElementById('notificationBellDropdown');
-        const bellBtn = document.getElementById('notificationBellBtn');
-        const targetDrop = document.getElementById('targetSelectorDropdown');
-        const targetBtn = document.getElementById('targetSelectorBtn');
-        
-        if (bellDropdown && !bellDropdown.contains(e.target) && (!bellBtn || !bellBtn.contains(e.target))) {
-          bellDropdown.classList.remove('is-open');
-        }
-        if (targetDrop && !targetDrop.contains(e.target) && (!targetBtn || !targetBtn.contains(e.target))) {
-          targetDrop.classList.remove('is-open');
-        }
+        document.querySelectorAll('.topbar-dropdown').forEach(dropdown => {
+          const wrapper = dropdown.closest('.topbar-dropdown-wrapper');
+          if (wrapper && !wrapper.contains(e.target)) {
+            dropdown.classList.remove('is-open');
+          }
+        });
       });
     });
   })();

@@ -64,15 +64,8 @@
       }
     </script>
 
-    <!-- HEADER GRID: DISCLAIMER & WEATHER -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); gap: 12px; margin-top: 12px; margin-bottom: 4px; align-items: start;">
-      <!-- DISCLAIMER DATA SCRAPING -->
-      <!-- <div style="background: rgba(59, 130, 246, 0.07); border-left: 4px solid var(--accent-blue); padding: 12px 16px; border-radius: 4px 8px 8px 4px; display: flex; align-items: flex-start; gap: 10px; border-top: 1px solid rgba(59, 130, 246, 0.1); border-right: 1px solid rgba(59, 130, 246, 0.1); border-bottom: 1px solid rgba(59, 130, 246, 0.1);">
-        <i class="bi bi-info-circle-fill" style="color: var(--accent-blue); font-size: 16px; margin-top: 1px; flex-shrink: 0;"></i>
-        <div style="font-size: 12px; line-height: 1.5; color: var(--text-primary);">
-          <strong>Info Pengambilan Data:</strong> Data berasal dari metode scraping website sehingga data yang terekam hanya yang tersimpan di server FASIH. Mungkin terdapat perbedaan sementara dengan data aktual di lapangan (aplikasi FASIH masing-masing petugas).
-        </div>
-      </div> -->
+    <!-- HEADER GRID: WEATHER WIDGET -->
+    <div style="display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; margin-bottom: 4px; align-items: start;">
  
       <!-- WEATHER & TIME WIDGET -->
       <div class="card weather-overview-card" style="margin: 0; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(6, 182, 212, 0.02) 100%); border: 1px solid var(--border); padding: 12px 16px; display: flex; flex-direction: column; gap: 8px;">
@@ -556,6 +549,82 @@
 
           </div>
         </div>
+
+        <!-- RATA-RATA ASSIGNMENT & REALISASI PER PETUGAS (PCL) -->
+        <div style="border-top: 1px dashed var(--border); padding-top: 16px; margin-top: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+              <i class="bi bi-people-fill text-blue"></i> Rata-rata Assignment & Realisasi Didata per Petugas (PCL)
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">
+              Total: <span style="color: var(--accent-blue); font-weight: 800;"><%= summary.total_pcl || 0 %> PCL</span> 
+              (<span style="color: var(--accent-green); font-weight: 700;"><%= summary.active_pcl || 0 %> Aktif</span>)
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 10px;">
+            
+            <!-- Rata-rata Target FASIH per Petugas -->
+            <div style="background: rgba(124, 58, 237, 0.04); border: 1px solid rgba(124, 58, 237, 0.15); border-radius: var(--radius-md); padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+                <i class="bi bi-journal-bookmark-fill" style="color: var(--accent-purple);"></i> RATA TARGET FASIH
+              </div>
+              <div style="margin-top: 6px;">
+                <div style="font-size: 15px; font-weight: 800; color: var(--accent-purple);">
+                  <%= (summary.avg_target_fasih_per_pcl || 0).toLocaleString('id-ID') %>
+                  <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">dok/PCL</span>
+                </div>
+                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">Beban target FASIH</div>
+              </div>
+            </div>
+
+            <!-- Rata-rata Realisasi Didata per Petugas -->
+            <div style="background: rgba(6, 182, 212, 0.04); border: 1px solid rgba(6, 182, 212, 0.15); border-radius: var(--radius-md); padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+                <i class="bi bi-check2-square" style="color: var(--accent-cyan);"></i> RATA DIDATA (FASIH)
+              </div>
+              <div style="margin-top: 6px;">
+                <div style="font-size: 15px; font-weight: 800; color: var(--accent-cyan);">
+                  <%= (summary.avg_didata_per_pcl || 0).toLocaleString('id-ID') %>
+                  <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">dok/PCL</span>
+                </div>
+                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">Submit + Approve + Reject</div>
+              </div>
+            </div>
+
+            <!-- Rata-rata Sub-SLS per Petugas -->
+            <div style="background: rgba(59, 130, 246, 0.04); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: var(--radius-md); padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+                <i class="bi bi-grid-3x3-gap-fill" style="color: var(--accent-blue);"></i> BEBAN SUB-SLS
+              </div>
+              <div style="margin-top: 6px;">
+                <div style="font-size: 15px; font-weight: 800; color: var(--accent-blue);">
+                  <%= summary.avg_subsls_per_pcl || 0 %>
+                  <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">Sub-SLS/PCL</span>
+                </div>
+                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">
+                  Selesai: <strong><%= summary.avg_selesai_subsls_per_pcl || 0 %></strong> Sub-SLS
+                </div>
+              </div>
+            </div>
+
+            <!-- Rata-rata Realisasi Muatan per Petugas -->
+            <div style="background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: var(--radius-md); padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+                <i class="bi bi-bar-chart-fill" style="color: var(--accent-green);"></i> RATA REALISASI MUATAN
+              </div>
+              <div style="margin-top: 6px;">
+                <div style="font-size: 15px; font-weight: 800; color: var(--accent-green);">
+                  <%= (summary.avg_muatan_per_pcl || 0).toLocaleString('id-ID') %>
+                  <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">muatan/PCL</span>
+                </div>
+                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">Usaha/Keluarga terdata</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
       <% } %>
 
@@ -719,43 +788,43 @@
     </div>
     <% } %>
 
-    <!-- HEATMAP AKTIVITAS HARIAN -->
-    <% if (settings.overview_heatmap === '1') { %>
-    <div class="card mt-4" style="margin-bottom: 20px;">
-      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 16px 20px;">
-        <div class="card-title" style="font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;"><i class="bi bi-grid-3x3-gap-fill text-cyan" style="font-size: 18px;"></i> Heatmap Aktivitas Harian</div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <select id="heatmapMetricSelect" class="form-select form-select-sm" style="font-size: 12px; padding: 6px 12px; width: auto; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer; font-weight: 500;">
-            <option value="fasih">Progres FASIH (Submit + Approve + Reject)</option>
-            <option value="survey">Survei Terdata (Usaha + Keluarga)</option>
-            <option value="sls">SLS Selesai</option>
-          </select>
+    <!-- TREN CHARTS & HEATMAP GRID -->
+    <% if (settings.overview_heatmap === '1' || settings.overview_tren_muatan === '1' || settings.overview_tren_fasih === '1') { %>
+    <div class="trend-charts-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); gap: 20px; margin-top: 24px;">
+      
+      <!-- HEATMAP AKTIVITAS HARIAN -->
+      <% if (settings.overview_heatmap === '1') { %>
+      <div class="card" style="margin: 0;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 16px 20px;">
+          <div class="card-title" style="font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;"><i class="bi bi-grid-3x3-gap-fill text-cyan" style="font-size: 18px;"></i> Heatmap Aktivitas Harian</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <select id="heatmapMetricSelect" class="form-select form-select-sm" style="font-size: 12px; padding: 6px 12px; width: auto; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer; font-weight: 500;">
+              <option value="fasih">Progres FASIH (Submit + Approve + Reject)</option>
+              <option value="survey">Survei Terdata (Usaha + Keluarga)</option>
+              <option value="sls">SLS Selesai</option>
+            </select>
+          </div>
         </div>
-      </div>
-      <div class="card-body" style="padding: 20px 24px; overflow-x: auto;">
-        <div class="heatmap-container" style="min-width: 900px; display: flex; flex-direction: column; gap: 12px;">
-          <div id="heatmapGrid" style="display: flex; gap: 4px; position: relative;"></div>
-          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); margin-top: 12px; padding: 0 4px;">
-            <div id="heatmapDateRange" style="font-weight: 600; color: var(--text-secondary);">...</div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <span style="font-weight: 500;">Kurang</span>
-              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: var(--bg-progress-wrap); border: 1px solid var(--border-light);"></div>
-              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.25);"></div>
-              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.5);"></div>
-              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.75);"></div>
-              <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgb(6, 182, 212); box-shadow: 0 0 6px rgba(6, 182, 212, 0.4);"></div>
-              <span style="font-weight: 500;">Lebih</span>
+        <div class="card-body" style="padding: 20px 24px; overflow-x: auto;">
+          <div class="heatmap-container" style="min-width: max-content; display: flex; flex-direction: column; gap: 12px;">
+            <div id="heatmapGrid" style="display: flex; gap: 4px; position: relative;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); margin-top: 12px; padding: 0 4px;">
+              <div id="heatmapDateRange" style="font-weight: 600; color: var(--text-secondary);">...</div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-weight: 500;">Kurang</span>
+                <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: var(--bg-progress-wrap); border: 1px solid var(--border-light);"></div>
+                <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.25);"></div>
+                <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.5);"></div>
+                <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgba(6, 182, 212, 0.75);"></div>
+                <div class="heatmap-square" style="width: 15px; height: 15px; border-radius: 3px; background: rgb(6, 182, 212); box-shadow: 0 0 6px rgba(6, 182, 212, 0.4);"></div>
+                <span style="font-weight: 500;">Lebih</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <% } %>
+      <% } %>
 
-    <!-- TREN CHARTS GRID -->
-    <% if (settings.overview_tren_muatan === '1' || settings.overview_tren_fasih === '1') { %>
-    <div class="trend-charts-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); gap: 20px; margin-top: 24px;">
-      
       <!-- TREN HARIAN MUATAN -->
       <% if (settings.overview_tren_muatan === '1') { %>
       <div class="card muatan-col" style="margin: 0;">
@@ -779,13 +848,42 @@
         </div>
       </div>
 
-      <!-- PENAMBAHAN HARIAN FASIH (BATANG) -->
+      <!-- TREN PENAMBAHAN INTRA-DAY SESI UPLOAD (LINE CHART) -->
       <div class="card" style="margin: 0;">
-        <div class="card-header">
-          <div class="card-title"><i class="bi bi-bar-chart-fill text-purple"></i> Penambahan Harian FASIH</div>
+        <div class="card-header flex-between" style="flex-wrap: wrap; gap: 8px;">
+          <div class="card-title">
+            <i class="bi bi-graph-up-arrow" style="color: var(--accent-cyan);"></i> Tren Penambahan Intra-Day Sesi Upload
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <select id="candlestickDateSelect" class="form-select" style="font-size: 11px; padding: 4px 8px; border-radius: 6px; background: var(--bg-subtle); color: var(--text-primary); border: 1px solid var(--border);">
+              <!-- Options populated dynamically -->
+            </select>
+            <span id="candlestickSessionBadge" class="badge badge-blue" style="font-size: 9px;">0 Upload</span>
+          </div>
         </div>
-        <div style="height: 300px; position: relative;">
-          <canvas id="fasihDailyIncrementChartCanvas"></canvas>
+
+        <!-- Summary Cards Line Chart -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 110px), 1fr)); gap: 8px; margin-top: 10px; margin-bottom: 12px;">
+          <div style="background: var(--bg-subtle); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Sesi Pertama</div>
+            <div id="overviewOhlcOpen" style="font-size: 13px; font-weight: 700; color: #3b82f6;">-</div>
+          </div>
+          <div style="background: var(--bg-subtle); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Penambahan Puncak</div>
+            <div id="overviewOhlcHigh" style="font-size: 13px; font-weight: 700; color: #10b981;">-</div>
+          </div>
+          <div style="background: var(--bg-subtle); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Sesi Terakhir</div>
+            <div id="overviewOhlcLow" style="font-size: 13px; font-weight: 700; color: #f59e0b;">-</div>
+          </div>
+          <div style="background: var(--bg-subtle); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Total Akumulasi</div>
+            <div id="overviewOhlcClose" style="font-size: 13px; font-weight: 700; color: #06b6d4;">-</div>
+          </div>
+        </div>
+
+        <div style="height: 280px; position: relative;">
+          <canvas id="overviewCandlestickChartCanvas"></canvas>
         </div>
       </div>
       <% } %>
@@ -1123,15 +1221,13 @@
       };
     });
 
-    const latestDateStr = trenData[trenData.length - 1].tanggal;
-    const endDate = new Date(latestDateStr);
-    
-    const endDay = endDate.getDay();
-    const gridEndDate = new Date(endDate);
-    gridEndDate.setDate(gridEndDate.getDate() + (6 - endDay));
+    const gridStartDate = new Date('2026-06-01T00:00:00');
+    const startDay = gridStartDate.getDay();
+    gridStartDate.setDate(gridStartDate.getDate() - startDay);
 
-    const gridStartDate = new Date(gridEndDate);
-    gridStartDate.setDate(gridStartDate.getDate() - (24 * 7 - 1));
+    const gridEndDate = new Date('2026-09-30T00:00:00');
+    const endDay = gridEndDate.getDay();
+    gridEndDate.setDate(gridEndDate.getDate() + (6 - endDay));
 
     const dates = [];
     let curr = new Date(gridStartDate);
@@ -1213,12 +1309,9 @@
       q3 = nonZero[Math.floor(nonZero.length * 0.75)];
     }
 
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    const startFmt = new Date(dates[0]).toLocaleDateString('id-ID', options);
-    const endFmt = new Date(dates[dates.length - 1]).toLocaleDateString('id-ID', options);
     const dateRangeEl = document.getElementById('heatmapDateRange');
     if (dateRangeEl) {
-      dateRangeEl.textContent = `${startFmt} - ${endFmt}`;
+      dateRangeEl.textContent = `1 Juni 2026 - 30 September 2026`;
     }
 
     const weekdayCol = document.createElement('div');
@@ -1239,7 +1332,7 @@
     `;
     container.appendChild(weekdayCol);
 
-    const weekCount = 24;
+    const weekCount = Math.floor(dates.length / 7);
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
     
     const columnsContainer = document.createElement('div');
@@ -1256,8 +1349,8 @@
       weekCol.style.gap = '4px';
       weekCol.style.position = 'relative';
 
-      const sunDate = new Date(dates[w * 7]);
-      const monthStr = monthNames[sunDate.getMonth()];
+      const midOfWeekDate = new Date(dates[w * 7 + 3]);
+      const monthStr = monthNames[midOfWeekDate.getMonth()];
       
       if (monthStr !== currentMonthStr) {
         const monthHeader = document.createElement('div');
@@ -1392,6 +1485,52 @@
       }
 
       createDailyFasihStatusChart('fasihDailyIncrementChartCanvas', dailyIncrementLabels, dailyIncrements, 'Penambahan Harian FASIH Per Status (Daily Increment)', rawTrenData);
+
+      // Inisialisasi grafik Candlestick Intra-day di Overview
+      if (rawTrenData && rawTrenData.length > 0) {
+        const selectEl = document.getElementById('candlestickDateSelect');
+        if (selectEl) {
+          const reversedDates = [...rawTrenData].reverse();
+          selectEl.innerHTML = reversedDates.map(d => `<option value="${d.tanggal}">${d.tanggal}</option>`).join('');
+          
+          function loadOverviewCandlestick(tanggal) {
+            fetch(`/api/detail/intraday-candlestick?tanggal=${encodeURIComponent(tanggal)}`)
+              .then(res => res.json())
+              .then(res => {
+                if (!res.success || !res.data) return;
+                const data = res.data;
+                
+                const sessionBadge = document.getElementById('candlestickSessionBadge');
+                if (sessionBadge) sessionBadge.textContent = `${data.session_count} Upload`;
+                
+                const openEl = document.getElementById('overviewOhlcOpen');
+                const highEl = document.getElementById('overviewOhlcHigh');
+                const lowEl = document.getElementById('overviewOhlcLow');
+                const closeEl = document.getElementById('overviewOhlcClose');
+                
+                const firstSessionDelta = data.sessions && data.sessions.length > 0 ? (data.sessions[0].delta || 0) : 0;
+                const peakDelta = data.sessions && data.sessions.length > 0 ? Math.max(...data.sessions.map(s => s.delta || 0)) : 0;
+                const lastSessionDelta = data.sessions && data.sessions.length > 0 ? (data.sessions[data.sessions.length - 1].delta || 0) : 0;
+
+                if (openEl) openEl.textContent = `+${firstSessionDelta.toLocaleString('id-ID')}`;
+                if (highEl) highEl.textContent = `+${peakDelta.toLocaleString('id-ID')}`;
+                if (lowEl) lowEl.textContent = `+${lastSessionDelta.toLocaleString('id-ID')}`;
+                if (closeEl) closeEl.textContent = (data.ohlc.close || 0).toLocaleString('id-ID');
+
+                if (typeof createIntradayCandlestickChart === 'function') {
+                  createIntradayCandlestickChart('overviewCandlestickChartCanvas', data);
+                }
+              })
+              .catch(err => console.error(err));
+          }
+
+          selectEl.addEventListener('change', () => {
+            loadOverviewCandlestick(selectEl.value);
+          });
+
+          loadOverviewCandlestick(selectEl.value);
+        }
+      }
       <% } %>
 
       // Initialize kecamatan comparison bar chart

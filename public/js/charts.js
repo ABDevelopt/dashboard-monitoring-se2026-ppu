@@ -892,10 +892,21 @@ function makeTablePaginated(tableId, inputId, pageSize = 50) {
       currentPage = totalPages;
     }
 
+    const isExpanded = card && card.classList.contains('card-expanded');
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = Math.min(startIndex + pageSize, totalRows);
 
-    // 2. Hide/Show rows based on page bounds
+    // 2. Hide/Show rows based on page bounds or Expanded Infinite Scroll Mode
+    if (isExpanded) {
+      filteredRows.forEach(row => {
+        row.style.display = '';
+      });
+      if (controls) controls.style.display = 'none';
+      return;
+    }
+
+    if (controls) controls.style.display = 'flex';
+
     filteredRows.forEach((row, idx) => {
       if (idx >= startIndex && idx < endIndex) {
         row.style.display = '';
@@ -969,4 +980,118 @@ function makeTablePaginated(tableId, inputId, pageSize = 50) {
 
   // Initial update
   update();
+}
+
+// ===== INTRADAY LINE CHART (TREN PENAMBAHAN INTRA-DAY SESI UPLOAD) =====
+function createIntradayLineChart(canvasId, intradayData) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx || !intradayData || !intradayData.sessions || !intradayData.sessions.length) return null;
+
+  const theme = getThemeColors();
+  const labels = intradayData.sessions.map(s => `${s.time} WIB (#${s.upload_id})`);
+  const dataDelta = intradayData.sessions.map(s => s.delta);
+  const dataTotal = intradayData.sessions.map(s => s.selesai_total);
+
+  if (typeof Chart !== 'undefined') {
+    const existing = Chart.getChart(canvasId);
+    if (existing) existing.destroy();
+  }
+
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Penambahan Dokumen (Delta Sesi)',
+          data: dataDelta,
+          borderColor: '#06b6d4',
+          backgroundColor: 'rgba(6, 182, 212, 0.12)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#06b6d4',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          yAxisID: 'yDelta'
+        },
+        {
+          label: 'Total Akumulasi Terdata',
+          data: dataTotal,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.05)',
+          fill: false,
+          borderDash: [4, 4],
+          tension: 0.35,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#10b981',
+          yAxisID: 'yTotal'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: theme.text, font: { size: 11, family: 'Inter' } } },
+        title: {
+          display: true,
+          text: `Tren Penambahan Intra-Day (${intradayData.session_count} Sesi Upload) - Tanggal ${intradayData.tanggal}`,
+          color: theme.title,
+          font: { size: 13, weight: '700' }
+        },
+        tooltip: {
+          backgroundColor: theme.bgCard,
+          borderColor: theme.border,
+          borderWidth: 1,
+          titleColor: theme.title,
+          bodyColor: theme.text,
+          callbacks: {
+            label: (ctxItem) => {
+              const s = intradayData.sessions[ctxItem.dataIndex];
+              if (!s) return null;
+              if (ctxItem.datasetIndex === 0) {
+                return ` ➕ Penambahan Sesi: +${s.delta.toLocaleString('id-ID')} dokumen`;
+              } else {
+                return ` 📊 Total Akumulasi: ${s.selesai_total.toLocaleString('id-ID')} dokumen`;
+              }
+            },
+            footer: (tooltipItems) => {
+              const idx = tooltipItems[0].dataIndex;
+              const s = intradayData.sessions[idx];
+              return `Submit: ${s.submitted_total.toLocaleString('id-ID')} | Approve: ${s.approved_total.toLocaleString('id-ID')} | Reject: ${s.rejected_total.toLocaleString('id-ID')} | Draft: ${s.draft_total.toLocaleString('id-ID')}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: theme.text, font: { size: 10 } }, grid: { color: theme.grid } },
+        yDelta: {
+          type: 'linear',
+          position: 'left',
+          ticks: { color: theme.text, font: { size: 10 } },
+          grid: { color: theme.grid },
+          title: { display: true, text: 'Penambahan (Delta)', color: theme.text, font: { size: 9 } }
+        },
+        yTotal: {
+          type: 'linear',
+          position: 'right',
+          ticks: { color: theme.text, font: { size: 10 } },
+          grid: { display: false },
+          title: { display: true, text: 'Total Akumulasi', color: theme.text, font: { size: 9 } }
+        }
+      }
+    }
+  });
+
+  window.activeCharts = window.activeCharts || [];
+  window.activeCharts.push(chart);
+  return chart;
+}
+
+function createIntradayCandlestickChart(canvasId, intradayData) {
+  return createIntradayLineChart(canvasId, intradayData);
 }

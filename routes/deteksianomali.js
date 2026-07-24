@@ -3,13 +3,36 @@ const router = express.Router();
 const { getDb } = require('../database');
 const { getAnomalySheetsData } = require('../services/googleSheetsAnomalyService');
 
+let masterFiltersCache = {
+  kecList: null,
+  korlapList: null,
+  timestamp: 0
+};
+
+function getMasterFilterLists() {
+  const now = Date.now();
+  if (masterFiltersCache.kecList && masterFiltersCache.korlapList && (now - masterFiltersCache.timestamp < 30 * 60 * 1000)) {
+    return masterFiltersCache;
+  }
+  const db = getDb();
+  const kecList = db.prepare('SELECT DISTINCT kecamatan FROM subsls_master ORDER BY kecamatan').all();
+  const korlapList = db.prepare('SELECT DISTINCT korlap FROM subsls_master ORDER BY korlap').all();
+  masterFiltersCache = { kecList, korlapList, timestamp: now };
+  return masterFiltersCache;
+}
+
 router.get('/', async (req, res) => {
+  res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
+
   const filterKec = req.query.kec || '';
   const filterKorlap = req.query.korlap || '';
   const filterStatus = req.query.status || '';
   const searchQuery = (req.query.q || '').toLowerCase().trim();
   const activeTab = req.query.tab || 'usaha';
   const forceRefresh = req.query.refresh === 'true';
+
+  const limitParam = req.query.limit || '';
+  const limit = limitParam === 'all' ? 999999 : Math.max(10, Math.min(200, parseInt(limitParam) || 50));
 
   let sheetsData = { 
     summary: { total_anomali: 0, total_usaha: 0, total_keluarga: 0, total_sudah: 0, total_belum: 0, pct_sudah: 0 }, 
@@ -26,9 +49,8 @@ router.get('/', async (req, res) => {
     console.error('Error loading anomaly Google Sheets data:', err.message);
   }
 
-  // Get filter lists from master DB
-  const kecList = getDb().prepare('SELECT DISTINCT kecamatan FROM subsls_master ORDER BY kecamatan').all();
-  const korlapList = getDb().prepare('SELECT DISTINCT korlap FROM subsls_master ORDER BY korlap').all();
+  // Get filter lists with 30-minute memory caching
+  const { kecList, korlapList } = getMasterFilterLists();
 
   // Filter helper
   const filterItems = (list, isKeluarga = false) => {
@@ -59,6 +81,21 @@ router.get('/', async (req, res) => {
     return true;
   });
 
+  // Calculate pagination slices for maximum rendering performance & light DOM payload
+  const startIndex = (page - 1) * limit;
+
+  const totalRecordsUsaha = filteredUsaha.length;
+  const totalPagesUsaha = Math.max(1, Math.ceil(totalRecordsUsaha / limit));
+  const paginatedUsaha = filteredUsaha.slice(startIndex, startIndex + limit);
+
+  const totalRecordsKeluarga = filteredKeluarga.length;
+  const totalPagesKeluarga = Math.max(1, Math.ceil(totalRecordsKeluarga / limit));
+  const paginatedKeluarga = filteredKeluarga.slice(startIndex, startIndex + limit);
+
+  const totalRecordsPcl = filteredPcl.length;
+  const totalPagesPcl = Math.max(1, Math.ceil(totalRecordsPcl / limit));
+  const paginatedPcl = filteredPcl.slice(startIndex, startIndex + limit);
+
   res.render('deteksianomali', {
     title: 'Deteksi & Audit Anomali Data (Google Sheets)',
     activePage: 'deteksi-anomali',
@@ -66,6 +103,17 @@ router.get('/', async (req, res) => {
     filteredUsaha,
     filteredKeluarga,
     filteredPcl,
+    paginatedUsaha,
+    paginatedKeluarga,
+    paginatedPcl,
+    currentPage: page,
+    pageSize: limit,
+    totalPagesUsaha,
+    totalPagesKeluarga,
+    totalPagesPcl,
+    totalRecordsUsaha,
+    totalRecordsKeluarga,
+    totalRecordsPcl,
     filterKec,
     filterKorlap,
     filterStatus,
