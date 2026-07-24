@@ -3764,7 +3764,7 @@ body.page-agent .main-wrapper {
 
 body.page-agent .page-content {
   padding: 0 !important;
-  padding-top: 0 !important;
+  margin: 0 !important;
   margin-top: 0 !important;
   height: 100vh !important;
   max-height: 100vh !important;

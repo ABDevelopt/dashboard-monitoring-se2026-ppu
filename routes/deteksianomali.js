@@ -14,16 +14,22 @@ function getMasterFilterLists() {
   if (masterFiltersCache.kecList && masterFiltersCache.korlapList && (now - masterFiltersCache.timestamp < 30 * 60 * 1000)) {
     return masterFiltersCache;
   }
-  const db = getDb();
-  const kecList = db.prepare('SELECT DISTINCT kecamatan FROM subsls_master ORDER BY kecamatan').all();
-  const korlapList = db.prepare('SELECT DISTINCT korlap FROM subsls_master ORDER BY korlap').all();
-  masterFiltersCache = { kecList, korlapList, timestamp: now };
+  try {
+    const db = getDb();
+    const kecList = db.prepare('SELECT DISTINCT kecamatan FROM subsls_master WHERE kecamatan IS NOT NULL ORDER BY kecamatan').all();
+    const korlapList = db.prepare('SELECT DISTINCT korlap FROM subsls_master WHERE korlap IS NOT NULL ORDER BY korlap').all();
+    masterFiltersCache = { kecList, korlapList, timestamp: now };
+  } catch (err) {
+    console.error('Error fetching master filter lists for deteksi anomali:', err.message);
+    masterFiltersCache = { kecList: [], korlapList: [], timestamp: now };
+  }
   return masterFiltersCache;
 }
 
 router.get('/', async (req, res) => {
   res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
 
+  const page = Math.max(1, parseInt(req.query.page) || 1);
   const filterKec = req.query.kec || '';
   const filterKorlap = req.query.korlap || '';
   const filterStatus = req.query.status || '';
