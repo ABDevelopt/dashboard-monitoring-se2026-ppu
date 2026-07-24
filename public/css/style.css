@@ -1713,6 +1713,11 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   align-items: center !important;
 }
 
+/* Hide duplicate collapse button in card header when table is expanded */
+.card.card-expanded .card-header .btn-expand-table {
+  display: none !important;
+}
+
 /* Expanded Filter Row containing search-wrap and filterForm side-by-side */
 .card.card-expanded .expanded-filter-row {
   display: none !important;
@@ -1919,7 +1924,7 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
 
 .card.card-expanded thead tr:nth-child(2) th {
   position: sticky !important;
-  top: 29px !important;
+  top: var(--sticky-row1-h, 29px) !important;
   left: auto !important;
   z-index: 14 !important;
   background: var(--bg-secondary) !important;
@@ -1980,9 +1985,14 @@ body.has-expanded-card .topbar {
   left: 0 !important;
   z-index: 2010 !important;
 }
-body.has-expanded-card .fade-in {
+body.has-expanded-card #pjax-container,
+body.has-expanded-card .pjax-animate-enter,
+body.has-expanded-card .fade-in,
+body.has-expanded-card .main-wrapper,
+body.has-expanded-card .page-content {
   transform: none !important;
   animation: none !important;
+  will-change: auto !important;
 }
 
 /* ====== DESKTOP LAYOUT (DEFAULT STATE) ====== */
