@@ -365,6 +365,14 @@ function init() {
     logger.error('❌ Gagal menginisialisasi WhatsApp Service pada startup:', err);
   }
 
+  // Inisialisasi Firebase Sync saat startup (jika key tersedia)
+  try {
+    const { triggerAsyncSync } = require('./services/firebaseSyncService');
+    triggerAsyncSync(true); // Full clone all SQLite tables
+  } catch (err) {
+    logger.error('❌ Gagal menyinkronkan data ke Firebase pada startup:', err.message);
+  }
+
   app.listen(PORT, () => {
     logger.info(`🚀 Dashboard SE2026 PPU berjalan di http://localhost:${PORT}`);
     logger.info(`📅 ${new Date().toLocaleString('id-ID')}`);
