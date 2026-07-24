@@ -21,6 +21,13 @@
         <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           
           <div>
+            <label for="filterSearch" class="ui-label">Pencarian (Kata Kunci)</label>
+            <div style="position: relative;">
+              <input type="search" id="filterSearch" name="q" value="<%= filterQ %>" placeholder="Cari SLS, Kode, PCL, PML..." class="w-full">
+            </div>
+          </div>
+
+          <div>
             <label for="filterKec" class="ui-label">Kecamatan</label>
             <select id="filterKec" name="kec"  class="w-full">
               <option value="">-- Semua Kecamatan --</option>
@@ -93,20 +100,26 @@
 
       <!-- MAIN DATA TABLE -->
       <div class="card" id="subslsTableContainer" style="margin-bottom: 0;">
-        <div class="card-header">
-          <div class="card-title">
-            <span><i class="bi bi-box-seam"></i> Daftar Rincian SubSLS (Blok Sensus)</span>
-          </div>
-          <div>
-            <span style="font-size:12px; margin-right:12px; color:var(--text-secondary);">
+        <div class="card-header flex-between">
+          <div class="card-title"><i class="bi bi-box-seam"></i> Daftar Rincian SubSLS (Blok Sensus)</div>
+          <div class="flex-start" style="gap: 6px;">
+            <span style="font-size:11px; color:var(--text-muted); font-weight: 600;">
               Menampilkan <%= data.length %> dari <%= total.toLocaleString('id-ID') %> SubSLS
+              <% if (filterQ) { %>
+                <span class="badge badge-purple" style="font-size: 10px; margin-left: 4px;">Pencarian: "<%= filterQ %>"</span>
+              <% } %>
             </span>
-            <a href="/subsls/export" class="btn btn-success btn-sm"><i class="bi bi-download"></i> Export ke CSV</a>
+            <a href="/subsls/export?<%= new URLSearchParams({ kec: filterKec, desa: filterDesa, korlap: filterKorlap, pml: filterPml, pcl: filterPcl, status: filterStatus, kode: filterKode, q: filterQ }).toString() %>" class="btn btn-xs" style="background: #22c55e; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Data SubSLS (CSV)"><i class="bi bi-file-earmark-excel"></i> Export CSV</a>
           </div>
         </div>
 
-        <div class="search-wrap mb-4" style="max-width: 300px;">
-          <input type="search" id="localSearch" placeholder="Cari di halaman ini..." aria-label="Cari SLS di halaman ini">
+        <div class="search-wrap mb-4" style="max-width: 350px; position: relative;">
+          <input type="search" id="tableSearch" placeholder="Cari dari seluruh data SubSLS..." value="<%= filterQ %>" aria-label="Cari SLS dari seluruh data" style="width: 100%; padding-right: 30px;">
+          <% if (filterQ) { %>
+            <button type="button" id="clearSearchBtn" title="Hapus Pencarian" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0; font-size: 14px;">
+              <i class="bi bi-x-circle-fill"></i>
+            </button>
+          <% } %>
         </div>
 
         <% if (data && data.length > 0) { %>
@@ -143,7 +156,7 @@
                     <td class="td-code hide-md"><%= row.kode %></td>
                     <td class="td-primary" style="font-weight: 600;">
                       <div style="display: inline-flex; align-items: center; gap: 6px; width: 100%;">
-                        <a href="/subsls?kode=<%= row.kode %>&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" style="color: inherit; text-decoration: none; display: inline-block;">
+                        <a href="/subsls?kode=<%= row.kode %>&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>&q=<%= encodeURIComponent(filterQ) %>" style="color: inherit; text-decoration: none; display: inline-block;">
                           <%= row.nama_sls %>
                         </a>
                         <button class="pin-btn" data-type="sls" data-name="<%= row.nama_sls %> (<%= row.desa %>)" data-href="/subsls?kode=<%= row.kode %>" title="Sematkan SLS ke Favorit" onclick="window.togglePin('sls', '<%= row.nama_sls %> (<%= row.desa %>)', '/subsls?kode=<%= row.kode %>')" style="font-size: 11px; padding: 2px;">
@@ -205,6 +218,45 @@
             </table>
           </div>
 
+          <!-- BOTTOM BAR (ROW INFO & LIMIT SELECTOR & PAGINATION) -->
+          <% if (typeof total !== 'undefined' && total > 0) { %>
+            <div class="table-pagination-bar flex-between" style="padding: 10px 16px; border-top: 1px solid var(--border); background: var(--bg-secondary); border-radius: 0 0 var(--radius-sm) var(--radius-sm); font-size: 12px; flex-wrap: wrap; gap: 8px; align-items: center;">
+              <div style="color: var(--text-muted);">
+                <% if (limit === 'all' || limit >= total) { %>
+                  Menampilkan <strong>Semua <%= total.toLocaleString('id-ID') %></strong> SubSLS
+                <% } else { %>
+                  Menampilkan <strong><%= Math.min((page - 1) * limit + 1, total).toLocaleString('id-ID') %> - <%= Math.min(page * limit, total).toLocaleString('id-ID') %></strong> dari <strong><%= total.toLocaleString('id-ID') %></strong> SubSLS
+                <% } %>
+                <% if (filterQ) { %>
+                  <span style="margin-left: 4px; color: var(--accent-purple); font-weight: 500;">(pencarian: "<%= filterQ %>")</span>
+                <% } %>
+              </div>
+
+              <% if (totalPages > 1 && limit !== 'all') { %>
+                <div class="flex-start" style="gap: 6px; align-items: center;">
+                  <% if (page > 1) { %>
+                    <a href="<%= getPageUrl(page - 1) %>" class="btn btn-secondary btn-xs" title="Halaman Sebelumnya"><i class="bi bi-chevron-left"></i> Prev</a>
+                  <% } %>
+                  <span style="font-weight: 600; padding: 2px 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; font-size: 11px;">
+                    Hal <%= page %> / <%= totalPages %>
+                  </span>
+                  <% if (page < totalPages) { %>
+                    <a href="<%= getPageUrl(page + 1) %>" class="btn btn-secondary btn-xs" title="Halaman Berikutnya">Next <i class="bi bi-chevron-right"></i></a>
+                  <% } %>
+                </div>
+              <% } %>
+
+              <div class="flex-start" style="gap: 6px; align-items: center; font-size: 11px; color: var(--text-muted);">
+                <span><i class="bi bi-list-task"></i> Tampilkan:</span>
+                <select onchange="window.location.href=this.value" aria-label="Pilih jumlah baris yang ditampilkan" style="padding: 3px 8px; font-size: 11px; border-radius: 6px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); cursor: pointer; font-weight: 600;">
+                  <option value="<%= getPageUrl(1, '100') %>" <%= limit === 100 ? 'selected' : '' %>>100 Baris</option>
+                  <option value="<%= getPageUrl(1, '200') %>" <%= limit === 200 ? 'selected' : '' %>>200 Baris</option>
+                  <option value="<%= getPageUrl(1, '500') %>" <%= limit === 500 ? 'selected' : '' %>>500 Baris</option>
+                  <option value="<%= getPageUrl(1, 'all') %>" <%= limit === 'all' || limit >= total ? 'selected' : '' %>>Semua Baris (<%= total.toLocaleString('id-ID') %>)</option>
+                </select>
+              </div>
+            </div>
+          <% } %>
         <% } else { %>
           <div class="no-data">
             <i class="bi bi-slash-circle-fill text-red" style="font-size: 18px; margin-right: 6px;"></i> Tidak ditemukan data SubSLS yang sesuai dengan kriteria filter Anda.
@@ -483,26 +535,72 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.initExpandButtons) {
       window.initExpandButtons(container);
     }
-
-    // 1. Re-initialize sorting, searching, and progress bars
+    // 1. Re-initialize sorting, progress bars, and chart
     makeTableSortable('subslsTable');
-    if (typeof makeTablePaginated === 'function') {
-      makeTablePaginated('subslsTable', 'localSearch', 50);
-    } else {
-      makeTableSearchable('localSearch', 'subslsTable');
-    }
     if (window.initProgressBars) window.initProgressBars(container);
     initSubslsHistoryChart();
 
-    // 2. Filter form change listeners
+    // 2. Filter form & search input listeners
     const filterForm = document.getElementById('filterForm');
+    const tableSearch = document.getElementById('tableSearch');
+    const filterSearch = document.getElementById('filterSearch');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+    let searchTimeout = null;
+    function triggerSearch(val) {
+      if (filterSearch && filterSearch.value !== val) filterSearch.value = val;
+      if (tableSearch && tableSearch.value !== val) tableSearch.value = val;
+      if (filterForm) {
+        const formData = new FormData(filterForm);
+        formData.set('q', val);
+        formData.set('page', '1');
+        const queryString = new URLSearchParams(formData).toString();
+        fetchAndReplace(queryString, false);
+      }
+    }
+
+    if (tableSearch) {
+      tableSearch.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          triggerSearch(e.target.value);
+        }, 250);
+      });
+      tableSearch.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          clearTimeout(searchTimeout);
+          triggerSearch(tableSearch.value);
+        }
+      });
+    }
+
+    if (filterSearch) {
+      filterSearch.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          triggerSearch(e.target.value);
+        }, 250);
+      });
+    }
+
+    if (clearSearchBtn) {
+      clearSearchBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        clearTimeout(searchTimeout);
+        triggerSearch('');
+      });
+    }
+
     if (filterForm) {
       const selects = filterForm.querySelectorAll('select');
       selects.forEach(sel => {
         sel.addEventListener('change', () => {
           const isKecChange = sel.name === 'kec';
-          const queryString = new URLSearchParams(new FormData(filterForm)).toString();
-          fetchAndReplace(queryString, isKecChange); // if kec changes, refresh whole container to update desa options
+          const formData = new FormData(filterForm);
+          if (tableSearch) formData.set('q', tableSearch.value);
+          const queryString = new URLSearchParams(formData).toString();
+          fetchAndReplace(queryString, isKecChange);
         });
       });
       
@@ -510,7 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (resetBtn) {
         resetBtn.addEventListener('click', (e) => {
           e.preventDefault();
-          fetchAndReplace('', true); // reset, refresh whole container
+          fetchAndReplace('', true);
         });
       }
     }
@@ -707,37 +805,111 @@ document.addEventListener('DOMContentLoaded', () => {
     bindCloseDetail();
   }
 
+  let currentFetchController = null;
+
   function fetchAndReplace(queryString, refreshAll) {
     if (window.detailHtmlCache) {
       for (let key in window.detailHtmlCache) delete window.detailHtmlCache[key];
     }
+
+    if (currentFetchController) {
+      currentFetchController.abort();
+    }
+    currentFetchController = new AbortController();
+
     const url = '/subsls' + (queryString ? (queryString.startsWith('?') ? queryString : '?' + queryString) : '');
     
-    // Choose target container (ajax-container for full page reload, subslsTableContainer for partial table update)
-    const targetId = refreshAll ? 'ajax-container' : 'subslsTableContainer';
-    const targetElement = document.getElementById(targetId);
-    if (!targetElement) return;
+    // Save active element focus and selection state
+    const activeEl = document.activeElement;
+    const activeId = (activeEl && (activeEl.id === 'tableSearch' || activeEl.id === 'filterSearch')) ? activeEl.id : null;
+    const activeValue = activeEl ? activeEl.value : '';
+    const selStart = (activeEl && activeEl.selectionStart !== undefined) ? activeEl.selectionStart : null;
+    const selEnd = (activeEl && activeEl.selectionEnd !== undefined) ? activeEl.selectionEnd : null;
 
-    targetElement.style.opacity = '0.5';
-    targetElement.style.pointerEvents = 'none';
+    // Fading indicator only on table body, never on search inputs
+    const tbody = document.querySelector('#subslsTable tbody');
+    if (tbody) tbody.style.opacity = '0.4';
     
-    fetch(url)
+    fetch(url, { signal: currentFetchController.signal })
       .then(res => res.text())
       .then(html => {
         const doc = new DOMParser().parseFromString(html, 'text/html');
-        const newElement = doc.getElementById(targetId);
-        if (newElement) {
-          targetElement.innerHTML = newElement.innerHTML;
-          history.pushState(null, '', url);
-          attachListeners();
+        
+        if (refreshAll) {
+          const targetElement = document.getElementById('ajax-container');
+          const newElement = doc.getElementById('ajax-container');
+          if (targetElement && newElement) {
+            targetElement.innerHTML = newElement.innerHTML;
+            history.pushState(null, '', url);
+            attachListeners();
+          }
+        } else {
+          // Partial table update (keeps search input elements alive in DOM)
+          const currentContainer = document.getElementById('subslsTableContainer');
+          const newContainer = doc.getElementById('subslsTableContainer');
+          
+          if (currentContainer && newContainer) {
+            // Update Card Header (Summary & Export link)
+            const currentHeader = currentContainer.querySelector('.card-header');
+            const newHeader = newContainer.querySelector('.card-header');
+            if (currentHeader && newHeader) {
+              currentHeader.innerHTML = newHeader.innerHTML;
+            }
+
+            // Update Table Content / No-data state
+            const currentWrap = currentContainer.querySelector('.table-wrap');
+            const newWrap = newContainer.querySelector('.table-wrap');
+            const currentNoData = currentContainer.querySelector('.no-data');
+            const newNoData = newContainer.querySelector('.no-data');
+
+            if (currentWrap && newWrap) {
+              currentWrap.innerHTML = newWrap.innerHTML;
+            } else if (currentWrap && newNoData) {
+              currentWrap.outerHTML = newNoData.outerHTML;
+            } else if (currentNoData && newWrap) {
+              currentNoData.outerHTML = newWrap.outerHTML;
+            } else if (currentNoData && newNoData) {
+              currentNoData.innerHTML = newNoData.innerHTML;
+            }
+
+            // Update Pagination Bar
+            const currentPag = currentContainer.querySelector('.table-pagination-bar');
+            const newPag = newContainer.querySelector('.table-pagination-bar');
+            if (currentPag && newPag) {
+              currentPag.innerHTML = newPag.innerHTML;
+            } else if (!currentPag && newPag) {
+              currentContainer.appendChild(newPag);
+            } else if (currentPag && !newPag) {
+              currentPag.remove();
+            }
+
+            history.pushState(null, '', url);
+            attachListeners();
+          }
+        }
+
+        // Restore focus & cursor selection position if active element lost focus
+        if (activeId) {
+          const restoredEl = document.getElementById(activeId);
+          if (restoredEl) {
+            if (document.activeElement !== restoredEl) {
+              restoredEl.focus();
+            }
+            if (activeValue.length > restoredEl.value.length) {
+              restoredEl.value = activeValue;
+            }
+            if (selStart !== null && selEnd !== null) {
+              try { restoredEl.setSelectionRange(selStart, selEnd); } catch (e) {}
+            }
+          }
         }
       })
-      .catch(err => console.error(err))
+      .catch(err => {
+        if (err.name !== 'AbortError') console.error(err);
+      })
       .finally(() => {
-        if (targetElement) {
-          targetElement.style.opacity = '1';
-          targetElement.style.pointerEvents = 'auto';
-        }
+        const updatedTbody = document.querySelector('#subslsTable tbody');
+        if (updatedTbody) updatedTbody.style.opacity = '1';
       });
   }
 

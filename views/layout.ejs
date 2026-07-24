@@ -1593,8 +1593,16 @@
           tr.style.display = '';
         });
 
-        // Special handling for deteksi-anomali server-paginated page
-        if (window.location.pathname.includes('/deteksi-anomali') && window.loadAnomalyPartial) {
+        // Special handling for server-paginated pages (subsls & deteksi-anomali) to load ALL data when expanded
+        if (window.location.pathname.includes('/subsls')) {
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('limit') !== 'all') {
+            urlParams.set('limit', 'all');
+            if (typeof loadPage === 'function') {
+              loadPage('/subsls?' + urlParams.toString());
+            }
+          }
+        } else if (window.location.pathname.includes('/deteksi-anomali') && window.loadAnomalyPartial) {
           const urlParams = new URLSearchParams(window.location.search);
           if (urlParams.get('limit') !== 'all') {
             urlParams.set('limit', 'all');
@@ -1606,6 +1614,9 @@
         if (table) {
           window.lastExpandedTableId = table.id;
         }
+
+        // Fix sticky header offset after expanding
+        requestAnimationFrame(() => fixStickyHeaderOffset(card));
       }
       window.dispatchEvent(new Event('resize'));
 
@@ -1613,9 +1624,63 @@
       if (!isExpanded && card.classList.contains('card-expanded')) {
         setTimeout(() => {
           if (window.attachSpreadsheetEditor) window.attachSpreadsheetEditor(card);
+          // Re-fix sticky offset after spreadsheet editor attaches (may alter header height)
+          requestAnimationFrame(() => fixStickyHeaderOffset(card));
         }, 80);
       }
     };
+
+    /**
+     * Dynamically calculates the height of the first header row in expanded
+     * tables and sets the --sticky-row1-h CSS custom property so the second
+     * header row sticks at the correct offset. This prevents misalignment
+     * caused by lazy-loaded fonts (Bootstrap Icons), dynamically-injected
+     * filter buttons, or variable padding.
+     */
+    function fixStickyHeaderOffset(container) {
+      const card = container?.closest?.('.card-expanded') || container;
+      if (!card || !card.classList.contains('card-expanded')) return;
+
+      const table = card.querySelector('table');
+      if (!table) return;
+
+      // Find the desktop thead (with 2 rows), skip mobile-only theads
+      const theads = table.querySelectorAll('thead');
+      let targetThead = null;
+      for (const th of theads) {
+        if (th.querySelectorAll('tr').length >= 2 && !th.classList.contains('show-sm-table-header')) {
+          targetThead = th;
+          break;
+        }
+      }
+      if (!targetThead) return;
+
+      const firstRow = targetThead.querySelector('tr:first-child');
+      if (!firstRow) return;
+
+      const rowHeight = firstRow.getBoundingClientRect().height;
+      if (rowHeight > 0) {
+        const tableWrap = table.closest('.table-wrap') || table.parentElement;
+        if (tableWrap) {
+          tableWrap.style.setProperty('--sticky-row1-h', rowHeight + 'px');
+        }
+      }
+    }
+    window.fixStickyHeaderOffset = fixStickyHeaderOffset;
+
+    // Re-fix sticky offset when fonts finish loading (Bootstrap Icons are lazy-loaded)
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        const expandedCard = document.querySelector('.card.card-expanded');
+        if (expandedCard) fixStickyHeaderOffset(expandedCard);
+      });
+    }
+
+    // Re-fix sticky offset on window resize
+    window.addEventListener('resize', () => {
+      const expandedCard = document.querySelector('.card.card-expanded');
+      if (expandedCard) fixStickyHeaderOffset(expandedCard);
+    });
 
     window.isElementHidden = (el) => {
       let current = el;
@@ -2565,6 +2630,9 @@
           oldContent.classList.remove('pjax-animate-enter');
           void oldContent.offsetWidth;
           oldContent.classList.add('pjax-animate-enter');
+          setTimeout(() => {
+            oldContent.classList.remove('pjax-animate-enter');
+          }, 400);
         } else {
           window.location.href = url;
           return;
@@ -2731,6 +2799,15 @@
         if (typeof window.initExpandButtons === 'function') {
           window.initExpandButtons(document.getElementById('pjax-container'));
         }
+
+        // Fix sticky header offset after expand/filter re-initialization
+        // Delayed to allow auto-restore expand (50ms setTimeout) + spreadsheet editor attach (80ms)
+        setTimeout(() => {
+          const expandedCard = document.querySelector('.card.card-expanded');
+          if (expandedCard && typeof window.fixStickyHeaderOffset === 'function') {
+            window.fixStickyHeaderOffset(expandedCard);
+          }
+        }, 200);
 
         // Update breadcrumb navigation for the new page
         if (typeof updateBreadcrumbs === 'function') {
