@@ -1,4 +1,5 @@
 const { getDb, getSettings, getLatestUpload, getOverviewSummary, getKecamatanStats, getPclStats, getPmlStats, getKorlapStats, getTrenHarian, getTopPerformers, getBottomPerformers, getAnomalyStats, getEarlyWarning } = require('../database');
+const { getFirestore, isFirebaseActive } = require('./firebaseService');
 const { dbSchemaDescription } = require('./dbSchema');
 const { QUERY_HINTS } = require('./queryHints');
 const { Worker } = require('worker_threads');
@@ -449,14 +450,52 @@ function injectLimit(sql, limit = QUERY_DEFAULT_LIMIT) {
   return `${sql.trimEnd().replace(/;+$/, '')} LIMIT ${limit}`;
 }
 
-function executeQueryAsync(sql) {
-  return new Promise((resolve, reject) => {
-    let cleanSql;
-    try {
-      cleanSql = injectLimit(validateSql(sql));
-    } catch (err) {
-      return reject(err);
+async function executeQueryFromFirestore(sql) {
+  if (!isFirebaseActive()) return null;
+  const db = getFirestore();
+  if (!db) return null;
+
+  try {
+    const lower = sql.toLowerCase();
+    let colName = null;
+    if (lower.includes('subsls_master')) colName = 'subsls_master';
+    else if (lower.includes('pcl') || lower.includes('pcl_summary')) colName = 'pcl_summary';
+    else if (lower.includes('pml') || lower.includes('pml_summary')) colName = 'pml_summary';
+    else if (lower.includes('kecamatan') || lower.includes('kecamatan_summary')) colName = 'kecamatan_summary';
+    else if (lower.includes('overview') || lower.includes('summary')) colName = 'overview_summary';
+    else if (lower.includes('early') || lower.includes('warning')) colName = 'early_warning';
+    else if (lower.includes('anomali') || lower.includes('deteksi_anomali')) colName = 'deteksi_anomali';
+
+    if (colName) {
+      const snap = await db.collection(colName).limit(50).get();
+      if (!snap.empty) {
+        const docs = snap.docs.map(d => d.data());
+        log.info(`[AGENT] Executed query against Cloud Firestore collection '${colName}' (${docs.length} documents)`);
+        return docs;
+      }
     }
+  } catch (e) {
+    log.warn('[AGENT:FIREBASE] Firestore SQL query fallback to SQLite:', e.message);
+  }
+  return null;
+}
+
+async function executeQueryAsync(sql) {
+  let cleanSql;
+  try {
+    cleanSql = injectLimit(validateSql(sql));
+  } catch (err) {
+    throw err;
+  }
+
+  // 1. Try reading from Cloud Firestore collection first
+  const fsRows = await executeQueryFromFirestore(cleanSql);
+  if (fsRows && fsRows.length > 0) {
+    return fsRows;
+  }
+
+  // 2. Fallback to local SQLite if Firestore is unavailable or collection empty
+  return new Promise((resolve, reject) => {
 
     // killTimer: jika query melebihi batas waktu, reject segera.
     // Node.js akan tetap menyelesaikan query di background, tapi
@@ -502,16 +541,103 @@ function executeQuerySync(sql) {
 }
 
 // ─────────────────────────────────────────────
-//  fetchPageData
+//  fetchPageData (Firestore First -> SQLite Fallback)
 // ─────────────────────────────────────────────
-function fetchPageData(route, queryParams = {}) {
-  const upload = getLatestUpload();
-  if (!upload) return { error: 'Belum ada data upload dalam sistem.' };
+async function fetchPageDataFromFirestore(page, queryParams = {}) {
+  if (!isFirebaseActive()) return null;
+  const db = getFirestore();
+  if (!db) return null;
 
+  try {
+    switch (page) {
+      case '/overview': {
+        const overviewDoc = await db.collection('overview_summary').doc('current').get();
+        const kecSnap = await db.collection('kecamatan_summary').get();
+        const kecStats = kecSnap.docs.map(doc => doc.data());
+        if (overviewDoc.exists) {
+          return {
+            route: '/overview',
+            dataSource: 'Cloud Firestore',
+            summary: overviewDoc.data(),
+            kecamatanStats: kecStats
+          };
+        }
+        break;
+      }
+      case '/earlywarning':
+      case '/early-warning': {
+        const ewDoc = await db.collection('early_warning').doc('current').get();
+        if (ewDoc.exists) {
+          return {
+            route: '/early-warning',
+            dataSource: 'Cloud Firestore',
+            earlyWarning: ewDoc.data()
+          };
+        }
+        break;
+      }
+      case '/deteksi-anomali':
+      case '/deteksianomali': {
+        const anomalyDoc = await db.collection('deteksi_anomali').doc('current').get();
+        if (anomalyDoc.exists) {
+          return {
+            route: '/deteksi-anomali',
+            dataSource: 'Cloud Firestore',
+            anomalies: anomalyDoc.data()
+          };
+        }
+        break;
+      }
+      case '/pcl': {
+        const pclSnap = await db.collection('pcl_summary').get();
+        if (!pclSnap.empty) {
+          let pclStats = pclSnap.docs.map(doc => doc.data());
+          if (queryParams.pcl || queryParams.name) {
+            const filterName = (queryParams.pcl || queryParams.name).toLowerCase();
+            pclStats = pclStats.filter(p => (p.nama_pcl || p.pcl || '').toLowerCase().includes(filterName));
+          }
+          return {
+            route: '/pcl',
+            dataSource: 'Cloud Firestore',
+            pclStats
+          };
+        }
+        break;
+      }
+      case '/kecamatan': {
+        const kecSnap = await db.collection('kecamatan_summary').get();
+        if (!kecSnap.empty) {
+          return {
+            route: '/kecamatan',
+            dataSource: 'Cloud Firestore',
+            kecamatanStats: kecSnap.docs.map(doc => doc.data())
+          };
+        }
+        break;
+      }
+    }
+  } catch (err) {
+    log.warn('[AGENT:FIREBASE] Firestore read fallback to SQLite:', err.message);
+  }
+  return null;
+}
+
+async function fetchPageData(route, queryParams = {}) {
   const normalizedRoute = String(route || '').trim().replace(/\/+$|\?.*$/, '').toLowerCase();
   const page = normalizedRoute === '' || normalizedRoute === '/' ? '/overview' : normalizedRoute;
 
   log.debug('fetchPageData:', page, queryParams);
+
+  // 1. Check Cloud Firestore first
+  const fsResult = await fetchPageDataFromFirestore(page, queryParams);
+  if (fsResult) {
+    log.info(`[AGENT] Data successfully fetched from Cloud Firestore for route: ${page}`);
+    return fsResult;
+  }
+
+  // 2. Fallback to local SQLite if Firestore is disabled or missing documents
+  const upload = getLatestUpload();
+  if (!upload) return { error: 'Belum ada data upload dalam sistem.' };
 
   const db = getDb();
   let rawResult;
@@ -1099,7 +1225,7 @@ async function runToolCall(functionCall) {
   if (name === PAGE_DATA_TOOL_DECLARATION.name) {
     try {
       const routeVal = args.route || args.path || args.endpoint || '';
-      const result = fetchPageData(routeVal, args.queryParams || {});
+      const result = await fetchPageData(routeVal, args.queryParams || {});
       log.debug('fetchPageData selesai:', routeVal);
 
       // FIX #6 — Batasi ukuran payload sebelum dikirim ke model.
