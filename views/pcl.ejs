@@ -104,6 +104,7 @@
                   <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">FASIH %</th>
                   <th rowspan="2" class="text-right bg-cyan-soft muatan-col" style="min-width: 140px;">Muatan %</th>
                   <th rowspan="2" class="hide-md">PML</th>
+                  <th rowspan="2" class="hide-md">Korlap</th>
                   <th rowspan="2" class="hide-md">Kecamatan</th>
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
                   <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
@@ -189,6 +190,12 @@
                     <td class="hide-md">
                       <%= p.pml %>
                       <% if (kippPmls.includes(p.pml.toUpperCase())) { %>
+                        <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 2px;">KIPP</span>
+                      <% } %>
+                    </td>
+                    <td class="hide-md">
+                      <%= p.korlap %>
+                      <% if (p.korlap && kippKorlaps.includes(p.korlap.toUpperCase())) { %>
                         <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 2px;">KIPP</span>
                       <% } %>
                     </td>
