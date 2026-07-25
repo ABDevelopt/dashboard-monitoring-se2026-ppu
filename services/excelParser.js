@@ -330,6 +330,12 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
 
 function findStatusColumnIndexes(headers) {
   const findIndex = (possibleNames) => {
+    // Try exact match first
+    for (const name of possibleNames) {
+      const idx = headers.findIndex(h => h === name);
+      if (idx !== -1) return idx;
+    }
+    // Try partial match
     for (const name of possibleNames) {
       const idx = headers.findIndex(h => h.includes(name));
       if (idx !== -1) return idx;
