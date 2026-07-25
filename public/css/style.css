@@ -210,10 +210,14 @@ a:hover {
 }
 
 .sidebar-footer {
-  padding: 16px;
+  padding: 14px 16px;
   border-top: 1px solid var(--border);
   font-size: 11px;
   color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 /* ====== MAIN CONTENT ====== */
@@ -2991,9 +2995,8 @@ body.light-mode .skeleton-block {
     color: var(--text-primary) !important;
   }
 
-  /* Hide vertical logo and footer to save valuable sheet space */
-  .sidebar-logo,
-  .sidebar-footer {
+  /* Hide vertical logo to save valuable sheet space */
+  .sidebar-logo {
     display: none !important;
   }
 

@@ -371,21 +371,24 @@
       </div>
     </div>
 
-    <div class="nav-section">Sesi Pengguna</div>
-    <% if (typeof user !== 'undefined' && user) { %>
-    <a href="/logout" class="nav-item">
-      <span class="nav-icon"><i class="bi bi-box-arrow-right"></i></span> Logout (<%= user.username %>)
-    </a>
-    <% } else { %>
-    <a href="/login" class="nav-item">
-      <span class="nav-icon"><i class="bi bi-box-arrow-in-right"></i></span> Login
-    </a>
-    <% } %>
   </nav>
 
-  <div class="sidebar-footer">
-    SE2026 · PPU · v<%= packageVersion %><br>
-    <span style="color: var(--text-muted)">© BPS Penajam Paser Utara</span>
+  <div class="sidebar-footer" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+    <div style="line-height: 1.4;">
+      SE2026 · PPU · v<%= packageVersion %><br>
+      <span style="color: var(--text-muted)">© BPS Penajam Paser Utara</span>
+    </div>
+    <div>
+      <% if (typeof user !== 'undefined' && user) { %>
+        <a href="/logout" class="btn btn-secondary btn-xs" title="Logout (<%= user.username %>)" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); text-decoration: none; color: var(--accent-red); font-weight: 600;">
+          <i class="bi bi-box-arrow-right"></i> Logout
+        </a>
+      <% } else { %>
+        <a href="/login" class="btn btn-secondary btn-xs" title="Login Ke Sistem" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); text-decoration: none; color: var(--accent-blue); font-weight: 600;">
+          <i class="bi bi-box-arrow-in-right"></i> Login
+        </a>
+      <% } %>
+    </div>
   </div>
 </aside>
 
