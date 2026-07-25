@@ -304,7 +304,7 @@
               </div>
             </div>
             <div style="text-align: right; flex-shrink: 0;">
-              <% let totalPengerjaan = (summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0); %>
+              <% var totalPengerjaan = (summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0); %>
               <% let fasihPct = summary.fasih_pct_str; %>
               <div style="font-size: 18px; font-weight: 800; color: var(--accent-purple);"><%= fasihPct %>%</div>
               <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-top: 2px;"><%= totalPengerjaan.toLocaleString('id-ID') %> <span style="font-weight: 500; font-size: 10px; color: var(--text-muted);">/ <%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></span></div>
@@ -339,25 +339,34 @@
 
 
         <%
-          const startSensusDate = new Date('2026-06-15');
-          const uploadDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
+          var startSensusDate = new Date('2026-06-15');
+          var uploadDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
           
           // Calculate diffDays (days since June 15)
-          const diffTime = uploadDate - startSensusDate;
-          const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+          var diffTime = uploadDate - startSensusDate;
+          var diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
           
           // Calculate daysRemaining (days until August 31)
-          const deadline = new Date('2026-08-31');
-          const daysRemaining = Math.max(0, Math.ceil((deadline - uploadDate) / (1000 * 60 * 60 * 24)));
+          var deadline = new Date('2026-08-31');
+          var daysRemaining = Math.max(0, Math.ceil((deadline - uploadDate) / (1000 * 60 * 60 * 24)));
 
-          const remainingFasih = Math.max(0, (summary.target_fasih_total || 0) - totalPengerjaan);
-          const currentSpeed = diffDays > 0 ? (totalPengerjaan / diffDays) : 0;
-          const currentSpeedText = currentSpeed.toFixed(2);
-          const estDaysToFinish = currentSpeed > 0 ? (remainingFasih / currentSpeed) : null;
-          const isOfftrack = (currentSpeed === 0 && remainingFasih > 0) || (estDaysToFinish !== null && estDaysToFinish > daysRemaining);
-          const reqSpeed = daysRemaining > 0 ? (remainingFasih / daysRemaining) : remainingFasih;
-          const projectedFinalVal = totalPengerjaan + (currentSpeed * daysRemaining);
-          const projectedPctVal = (summary.target_fasih_total || 0) > 0 ? (projectedFinalVal / (summary.target_fasih_total || 0)) * 100 : 100;
+          var remainingFasih = Math.max(0, (summary.target_fasih_total || 0) - totalPengerjaan);
+          var currentSpeed = diffDays > 0 ? (totalPengerjaan / diffDays) : 0;
+          var currentSpeedText = currentSpeed.toFixed(2);
+          var estDaysToFinish = currentSpeed > 0 ? (remainingFasih / currentSpeed) : null;
+          var isOfftrack = (currentSpeed === 0 && remainingFasih > 0) || (estDaysToFinish !== null && estDaysToFinish > daysRemaining);
+          var reqSpeed = daysRemaining > 0 ? (remainingFasih / daysRemaining) : remainingFasih;
+          var projectedFinalVal = totalPengerjaan + (currentSpeed * daysRemaining);
+          var projectedPctVal = (summary.target_fasih_total || 0) > 0 ? (projectedFinalVal / (summary.target_fasih_total || 0)) * 100 : 100;
+
+          var totalPcl = summary.total_pcl || 1;
+          var activePcl = summary.active_pcl || 1;
+          var speedPerPcl = totalPcl > 0 ? (currentSpeed / totalPcl) : 0;
+          var speedPerPclText = speedPerPcl.toFixed(2);
+          var reqSpeedPerPcl = totalPcl > 0 ? (reqSpeed / totalPcl) : 0;
+          var reqSpeedPerPclText = reqSpeedPerPcl.toFixed(2);
+          var targetSpeedPerPcl = 13;
+          var targetSpeedTotal = 13 * totalPcl;
 
           // Hitung perkiraan selesai 40% dan 100%
           const target_40 = (summary.target_fasih_total || 0) * 0.4;
@@ -384,85 +393,112 @@
           }
         %>
         
-        <!-- Analisis Kecepatan & Estimasi Pendataan -->
-        <div style="margin-top: 18px; padding: 14px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; text-align: left;">
-          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-purple); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-            <i class="bi bi-speedometer2" style="font-size: 14px;"></i> Analisis Kecepatan & Sisa Waktu Kabupaten
-          </div>
+        <!-- SPEEDOMETER & ANALISIS KECEPATAN PENDATAAN -->
+        <div style="margin-top: 20px; padding: 18px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 14px; text-align: left;">
           
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-bottom: 12px;">
-            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
-              <div style="font-size: 9px; color: var(--text-muted); font-weight: 500;">Kecepatan</div>
-              <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-top: 2px;"><%= currentSpeedText %> <span style="font-size: 8px; font-weight: 500; color: var(--text-muted);">dok/hari</span></div>
-            </div>
-            <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-              <div style="font-size: 9px; color: var(--text-muted); font-weight: 500; margin-bottom: 2px;">Status</div>
+          <!-- Widget Title & Target Badge -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(124, 58, 237, 0.12); color: var(--accent-purple); display: flex; align-items: center; justify-content: center; font-size: 16px;">
+                <i class="bi bi-speedometer2"></i>
+              </div>
               <div>
+                <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em;">
+                  Speedometer Kecepatan Pendataan
+                </h4>
+                <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">
+                  Monitoring Kecepatan Realisasi Dokumen FASIH vs Target Standar <strong>13 Dokumen / Hari / Petugas</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Grid: Speedometer Gauge (Left) & Speed KPI & Analysis (Right) -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; align-items: center; margin-top: 12px;">
+            
+            <!-- Gauge Canvas Box -->
+            <div style="position: relative; width: 100%; height: 210px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.015); border: 1px solid var(--border); border-radius: 12px; padding: 10px;">
+              <canvas id="speedometerChartCanvas" style="max-height: 195px; width: 100%;"></canvas>
+            </div>
+
+            <!-- KPI Cards & Timeline Targets -->
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              
+              <!-- Status Milestone Cards (40% & 100% & Status) -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px;">
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; text-align: center;">
+                  <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Status Lapangan</div>
+                  <div style="margin-top: 4px;">
+                    <% if (remainingFasih === 0) { %>
+                      <span class="badge badge-green" style="font-size: 11px; padding: 3px 8px;">Selesai 100%</span>
+                    <% } else if (isOfftrack) { %>
+                      <span class="badge badge-red" style="font-size: 11px; padding: 3px 8px;"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
+                    <% } else { %>
+                      <span class="badge badge-green" style="font-size: 11px; padding: 3px 8px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
+                    <% } %>
+                  </div>
+                </div>
+
+                <div style="background: rgba(124, 58, 237, 0.03); border: 1px solid rgba(124, 58, 237, 0.12); border-radius: 8px; padding: 8px 10px; text-align: center;">
+                  <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Est. Selesai 40%</div>
+                  <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-top: 4px; white-space: nowrap;">
+                    <i class="bi bi-calendar-check" style="color: var(--accent-purple); margin-right: 2px;"></i><%= estDate40Text %>
+                  </div>
+                </div>
+
+                <div style="background: rgba(34, 197, 94, 0.03); border: 1px solid rgba(34, 197, 94, 0.12); border-radius: 8px; padding: 8px 10px; text-align: center;">
+                  <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Est. Selesai 100%</div>
+                  <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-top: 4px; white-space: nowrap;">
+                    <i class="bi bi-calendar-check-fill" style="color: var(--accent-green); margin-right: 2px;"></i><%= estDate100Text %>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Narrative Speed Analysis Text -->
+              <div style="font-size: 12px; line-height: 1.6; color: var(--text-secondary); padding: 10px 12px; background: rgba(255, 255, 255, 0.015); border: 1px solid var(--border); border-radius: 10px;">
                 <% if (remainingFasih === 0) { %>
-                  <span class="badge badge-green" style="font-size: 8px; padding: 1px 4px;">Selesai</span>
-                <% } else if (isOfftrack) { %>
-                  <span class="badge badge-red" style="font-size: 8px; padding: 1px 4px;"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
+                  Pendataan secara global telah menyelesaikan seluruh target pengisian dokumen FASIH sebanyak <strong><%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></strong> dokumen. Kinerja luar biasa!
                 <% } else { %>
-                  <span class="badge badge-green" style="font-size: 8px; padding: 1px 4px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
+                  Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak 15 Juni). Sisa hari menuju deadline (31 Agustus): <strong><%= daysRemaining %> hari</strong>.<br>
+                  Sisa beban kerja: <strong><%= remainingFasih.toLocaleString('id-ID') %> dokumen</strong>. 
+                  Dengan kecepatan saat ini (<strong><%= speedPerPclText %> dok/PCL/hari</strong> atau <strong><%= currentSpeedText %> dok/hari total</strong>), 
+                  <% if (currentSpeed === 0) { %>
+                    pendataan belum merealisasikan dokumen FASIH sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.
+                  <% } else { %>
+                    pendataan secara global diprediksi akan menyelesaikan sisa dokumen dalam waktu sekitar <strong><%= Math.ceil(estDaysToFinish) %> hari</strong>.
+                  <% } %>
+                  
+                  <% if (isOfftrack) { %>
+                    <div style="margin-top: 8px; padding: 8px 10px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--accent-red); border-radius: 6px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
+                      <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red); font-size: 14px; margin-top: 1px;"></i>
+                      <div><strong>Off-Track:</strong> Kecepatan saat ini (<%= speedPerPclText %> dok/PCL/hari) di bawah target 13 dok/hari/petugas. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeedPerPclText %> dok/PCL/hari</strong> (atau <strong><%= reqSpeed.toFixed(2) %> dok/hari total</strong>) agar selesai sesuai target pada 31 Agustus 2026.</div>
+                    </div>
+                  <% } else { %>
+                    <div style="margin-top: 8px; padding: 8px 10px; background: rgba(34, 197, 94, 0.08); border-left: 3px solid var(--accent-green); border-radius: 6px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
+                      <i class="bi bi-check-circle-fill" style="color: var(--accent-green); font-size: 14px; margin-top: 1px;"></i>
+                      <div><strong>On-Track:</strong> Kecepatan kerja saat ini sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum 31 Agustus 2026).</div>
+                    </div>
+                  <% } %>
                 <% } %>
               </div>
-            </div>
-            <div style="background: rgba(124, 58, 237, 0.03); border: 1px solid rgba(124, 58, 237, 0.12); border-radius: 8px; padding: 6px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
-              <div style="font-size: 9px; color: var(--text-muted); font-weight: 500;">Selesai 40%</div>
-              <div style="font-size: 11px; font-weight: 700; color: var(--text-primary); margin-top: 2px; white-space: nowrap;">
-                <i class="bi bi-calendar-check" style="color: var(--accent-purple); font-size: 10px; margin-right: 2px;"></i><%= estDate40Text %>
-              </div>
-            </div>
-            <div style="background: rgba(34, 197, 94, 0.03); border: 1px solid rgba(34, 197, 94, 0.12); border-radius: 8px; padding: 6px 8px; text-align: center; display: flex; flex-direction: column; justify-content: center;">
-              <div style="font-size: 9px; color: var(--text-muted); font-weight: 500;">Selesai 100%</div>
-              <div style="font-size: 11px; font-weight: 700; color: var(--text-primary); margin-top: 2px; white-space: nowrap;">
-                <i class="bi bi-calendar-check-fill" style="color: var(--accent-green); font-size: 10px; margin-right: 2px;"></i><%= estDate100Text %>
-              </div>
-            </div>
-          </div>
-          
-          <div style="font-size: 11px; line-height: 1.5; color: var(--text-secondary);">
-            <% if (remainingFasih === 0) { %>
-              Pendataan secara global telah menyelesaikan seluruh target pengisian dokumen FASIH sebanyak <strong><%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></strong> dokumen. Kinerja luar biasa!
-            <% } else { %>
-              Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak 15 Juni). Sisa hari menuju deadline (31 Agustus): <strong><%= daysRemaining %> hari</strong>.<br>
-              Sisa beban kerja: <strong><%= remainingFasih.toLocaleString('id-ID') %> dokumen</strong>. 
-              Dengan kecepatan saat ini (<strong><%= currentSpeedText %> dok/hari</strong>), 
-              <% if (currentSpeed === 0) { %>
-                pendataan belum merealisasikan dokumen FASIH sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.
-              <% } else { %>
-                pendataan secara global diprediksi akan menyelesaikan sisa dokumen dalam waktu sekitar <strong><%= Math.ceil(estDaysToFinish) %> hari</strong>.
-              <% } %>
-              
-              <% if (isOfftrack) { %>
-                <div style="margin-top: 8px; padding: 8px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--accent-red); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
-                  <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red); font-size: 13px; margin-top: 1px;"></i>
-                  <div><strong>Off-Track:</strong> Pendataan secara global diprediksi terlambat/tidak selesai tepat waktu. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeed.toFixed(2) %> dok/hari</strong> agar selesai sesuai target pada 31 Agustus 2026.</div>
-                </div>
-              <% } else { %>
-                <div style="margin-top: 8px; padding: 8px; background: rgba(34, 197, 94, 0.08); border-left: 3px solid var(--accent-green); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
-                  <i class="bi bi-check-circle-fill" style="color: var(--accent-green); font-size: 13px; margin-top: 1px;"></i>
-                  <div><strong>On-Track:</strong> Kecepatan secara global sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum 31 Agustus 2026).</div>
-                </div>
-              <% } %>
-            <% } %>
-          </div>
-        </div>
 
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); margin-bottom: 20px;">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); margin-bottom: 8px;">
             <div>
-              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Capaian</div>
-              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);"><%= totalPengerjaan.toLocaleString('id-ID') %></div>
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Capaian</div>
+              <div style="font-size: 15px; font-weight: 800; color: var(--text-primary); margin-top: 2px;"><%= totalPengerjaan.toLocaleString('id-ID') %></div>
             </div>
             <div>
-              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Target</div>
-              <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);">
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Target</div>
+              <div style="font-size: 15px; font-weight: 800; color: var(--text-primary); margin-top: 2px;">
                 <%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %>
               </div>
             </div>
             <div>
-              <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Sisa</div>
-              <div style="font-size: 14px; font-weight: 700; color: var(--accent-yellow);"><%= Math.max(0, summary.target_fasih_total - totalPengerjaan).toLocaleString('id-ID') %></div>
+              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Sisa</div>
+              <div style="font-size: 15px; font-weight: 800; color: var(--accent-yellow); margin-top: 2px;"><%= Math.max(0, summary.target_fasih_total - totalPengerjaan).toLocaleString('id-ID') %></div>
             </div>
           </div>
         </div>
@@ -550,80 +586,6 @@
           </div>
         </div>
 
-        <!-- RATA-RATA ASSIGNMENT & REALISASI PER PETUGAS (PCL) -->
-        <div style="border-top: 1px dashed var(--border); padding-top: 16px; margin-top: 16px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-            <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
-              <i class="bi bi-people-fill text-blue"></i> Rata-rata Assignment & Realisasi Didata per Petugas (PCL)
-            </div>
-            <div style="font-size: 10px; color: var(--text-muted); font-weight: 600;">
-              Total: <span style="color: var(--accent-blue); font-weight: 800;"><%= summary.total_pcl || 0 %> PCL</span> 
-              (<span style="color: var(--accent-green); font-weight: 700;"><%= summary.active_pcl || 0 %> Aktif</span>)
-            </div>
-          </div>
-          
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 10px;">
-            
-            <!-- Rata-rata Target FASIH per Petugas -->
-            <div style="background: rgba(124, 58, 237, 0.04); border: 1px solid rgba(124, 58, 237, 0.15); border-radius: var(--radius-md); padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between;">
-              <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
-                <i class="bi bi-journal-bookmark-fill" style="color: var(--accent-purple);"></i> RATA TARGET FASIH
-              </div>
-              <div style="margin-top: 6px;">
-                <div style="font-size: 15px; font-weight: 800; color: var(--accent-purple);">
-                  <%= (summary.avg_target_fasih_per_pcl || 0).toLocaleString('id-ID') %>
-                  <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">dok/PCL</span>
-                </div>
-                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">Beban target FASIH</div>
-              </div>
-            </div>
-
-            <!-- Rata-rata Realisasi Didata per Petugas -->
-            <div style="background: rgba(6, 182, 212, 0.04); border: 1px solid rgba(6, 182, 212, 0.15); border-radius: var(--radius-md); padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between;">
-              <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
-                <i class="bi bi-check2-square" style="color: var(--accent-cyan);"></i> RATA DIDATA (FASIH)
-              </div>
-              <div style="margin-top: 6px;">
-                <div style="font-size: 15px; font-weight: 800; color: var(--accent-cyan);">
-                  <%= (summary.avg_didata_per_pcl || 0).toLocaleString('id-ID') %>
-                  <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">dok/PCL</span>
-                </div>
-                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">Submit + Approve + Reject</div>
-              </div>
-            </div>
-
-            <!-- Rata-rata Sub-SLS per Petugas -->
-            <div style="background: rgba(59, 130, 246, 0.04); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: var(--radius-md); padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between;">
-              <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
-                <i class="bi bi-grid-3x3-gap-fill" style="color: var(--accent-blue);"></i> BEBAN SUB-SLS
-              </div>
-              <div style="margin-top: 6px;">
-                <div style="font-size: 15px; font-weight: 800; color: var(--accent-blue);">
-                  <%= summary.avg_subsls_per_pcl || 0 %>
-                  <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">Sub-SLS/PCL</span>
-                </div>
-                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">
-                  Selesai: <strong><%= summary.avg_selesai_subsls_per_pcl || 0 %></strong> Sub-SLS
-                </div>
-              </div>
-            </div>
-
-            <!-- Rata-rata Realisasi Muatan per Petugas -->
-            <div style="background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: var(--radius-md); padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between;">
-              <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
-                <i class="bi bi-bar-chart-fill" style="color: var(--accent-green);"></i> RATA REALISASI MUATAN
-              </div>
-              <div style="margin-top: 6px;">
-                <div style="font-size: 15px; font-weight: 800; color: var(--accent-green);">
-                  <%= (summary.avg_muatan_per_pcl || 0).toLocaleString('id-ID') %>
-                  <span style="font-size: 9px; font-weight: 500; color: var(--text-muted);">muatan/PCL</span>
-                </div>
-                <div style="font-size: 9px; color: var(--text-secondary); margin-top: 2px;">Usaha/Keluarga terdata</div>
-              </div>
-            </div>
-
-          </div>
-        </div>
 
       </div>
       <% } %>
@@ -1448,6 +1410,11 @@
       }
       <% } %>
       
+      // Initialize Speedometer Gauge Chart
+      <% if (settings.overview_fasih === '1') { %>
+      createSpeedometerChart('speedometerChartCanvas', <%= speedPerPcl %>, 13, <%= currentSpeed %>, <%= targetSpeedTotal %>);
+      <% } %>
+
       // Initialize tren line chart
       <% if (settings.overview_tren_muatan === '1') { %>
       createTrenChart('trenChartCanvas', rawTrenData);

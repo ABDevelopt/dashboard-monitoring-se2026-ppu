@@ -1095,3 +1095,253 @@ function createIntradayLineChart(canvasId, intradayData) {
 function createIntradayCandlestickChart(canvasId, intradayData) {
   return createIntradayLineChart(canvasId, intradayData);
 }
+
+// ===== SPEEDOMETER GAUGE CHART (PREMIUM DESIGN) =====
+function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl = 13, currentSpeedTotal = null, targetSpeedTotal = null) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+
+  const existingChart = Chart.getChart(ctx);
+  if (existingChart) {
+    existingChart.destroy();
+  }
+
+  const val = Math.max(0, parseFloat(currentSpeedPerPcl) || 0);
+  const targetVal = parseFloat(targetSpeedPerPcl) || 13;
+  const maxVal = Math.max(20, Math.ceil(targetVal * 1.5), Math.ceil(val * 1.25));
+
+  const z1End = Math.min(8, maxVal * 0.4);
+  const z2End = Math.min(13, maxVal * 0.65);
+
+  const z1Val = z1End;
+  const z2Val = Math.max(0, z2End - z1End);
+  const z3Val = Math.max(0, maxVal - z2End);
+
+  const theme = getThemeColors();
+
+  // Create smooth gradients for gauge arcs
+  const c2d = ctx.getContext('2d');
+  
+  const gradRed = c2d.createLinearGradient(0, 0, 160, 0);
+  gradRed.addColorStop(0, '#dc2626');
+  gradRed.addColorStop(1, '#ef4444');
+
+  const gradYellow = c2d.createLinearGradient(0, 0, 260, 0);
+  gradYellow.addColorStop(0, '#f59e0b');
+  gradYellow.addColorStop(1, '#fbbf24');
+
+  const gradGreen = c2d.createLinearGradient(0, 0, 360, 0);
+  gradGreen.addColorStop(0, '#10b981');
+  gradGreen.addColorStop(1, '#34d399');
+
+  const speedometerPlugin = {
+    id: `speedometerNeedlePlugin_${canvasId}`,
+    afterDatasetDraw(chart) {
+      const { ctx: chartCtx } = chart;
+      const meta = chart.getDatasetMeta(0);
+      if (!meta || !meta.data || !meta.data[0]) return;
+      const arc0 = meta.data[0];
+      const cx = arc0.x;
+      const cy = arc0.y;
+      const outerRadius = Math.max(0, parseFloat(arc0.outerRadius) || 0);
+      const innerRadius = Math.max(0, parseFloat(arc0.innerRadius) || 0);
+
+      if (!Number.isFinite(cx) || !Number.isFinite(cy) || outerRadius <= 0 || innerRadius <= 0) return;
+
+      const curTheme = getThemeColors();
+
+      chartCtx.save();
+
+      // 0. Instrument Track Ring lines
+      const trackOuterRadius = Math.max(0, outerRadius + 2);
+      const trackInnerRadius = Math.max(0, innerRadius - 2);
+
+      if (trackOuterRadius > 0) {
+        chartCtx.beginPath();
+        chartCtx.arc(cx, cy, trackOuterRadius, Math.PI, 2 * Math.PI);
+        chartCtx.lineWidth = 1.5;
+        chartCtx.strokeStyle = curTheme.isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)';
+        chartCtx.stroke();
+      }
+
+      if (trackInnerRadius > 0) {
+        chartCtx.beginPath();
+        chartCtx.arc(cx, cy, trackInnerRadius, Math.PI, 2 * Math.PI);
+        chartCtx.lineWidth = 1.5;
+        chartCtx.strokeStyle = curTheme.isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.06)';
+        chartCtx.stroke();
+      }
+
+      // 1. Target Line & Pin at targetVal (13) with glow effect
+      const targetPct = Math.min(targetVal / maxVal, 1.0);
+      const targetAngle = Math.PI + targetPct * Math.PI;
+
+      const targetInnerRadius = Math.max(0, innerRadius - 4);
+      const tInnerX = cx + targetInnerRadius * Math.cos(targetAngle);
+      const tInnerY = cy + targetInnerRadius * Math.sin(targetAngle);
+      const tOuterX = cx + (outerRadius + 10) * Math.cos(targetAngle);
+      const tOuterY = cy + (outerRadius + 10) * Math.sin(targetAngle);
+
+      chartCtx.save();
+      chartCtx.shadowColor = 'rgba(139, 92, 246, 0.6)';
+      chartCtx.shadowBlur = 8;
+
+      chartCtx.beginPath();
+      chartCtx.moveTo(tInnerX, tInnerY);
+      chartCtx.lineTo(tOuterX, tOuterY);
+      chartCtx.lineWidth = 3.5;
+      chartCtx.strokeStyle = '#8b5cf6';
+      chartCtx.stroke();
+
+      // Target pin dot
+      chartCtx.fillStyle = '#8b5cf6';
+      chartCtx.beginPath();
+      chartCtx.arc(tOuterX, tOuterY, 4.5, 0, 2 * Math.PI);
+      chartCtx.fill();
+      chartCtx.restore();
+
+      // Target label badge flag
+      const tagX = cx + (outerRadius + 26) * Math.cos(targetAngle);
+      const tagY = cy + (outerRadius + 24) * Math.sin(targetAngle);
+      
+      chartCtx.save();
+      chartCtx.textAlign = 'center';
+      chartCtx.textBaseline = 'middle';
+      chartCtx.font = 'bold 11px Inter, sans-serif';
+      chartCtx.fillStyle = '#8b5cf6';
+      chartCtx.fillText(`Target: ${targetVal}`, tagX, tagY);
+      chartCtx.restore();
+
+      // 2. Needle Pointer with drop shadow
+      const valPct = Math.min(Math.max(val, 0) / maxVal, 1.0);
+      const needleAngle = Math.PI + valPct * Math.PI;
+      const needleLen = innerRadius * 0.8;
+
+      const nx = cx + needleLen * Math.cos(needleAngle);
+      const ny = cy + needleLen * Math.sin(needleAngle);
+
+      chartCtx.save();
+      chartCtx.shadowColor = curTheme.isLight ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.6)';
+      chartCtx.shadowBlur = 6;
+      chartCtx.shadowOffsetY = 2;
+
+      // Needle stroke
+      chartCtx.beginPath();
+      chartCtx.moveTo(cx, cy);
+      chartCtx.lineTo(nx, ny);
+      chartCtx.lineWidth = 4;
+      chartCtx.strokeStyle = curTheme.isLight ? '#0f172a' : '#f8fafc';
+      chartCtx.lineCap = 'round';
+      chartCtx.stroke();
+
+      // Pivot outer circle
+      chartCtx.beginPath();
+      chartCtx.arc(cx, cy, 8, 0, 2 * Math.PI);
+      chartCtx.fillStyle = curTheme.isLight ? '#0f172a' : '#ffffff';
+      chartCtx.fill();
+      chartCtx.lineWidth = 2.5;
+      chartCtx.strokeStyle = '#8b5cf6';
+      chartCtx.stroke();
+
+      // Pivot inner dot
+      chartCtx.beginPath();
+      chartCtx.arc(cx, cy, 3, 0, 2 * Math.PI);
+      chartCtx.fillStyle = '#8b5cf6';
+      chartCtx.fill();
+      chartCtx.restore();
+
+      // 3. Scale Ticks (0, 8, maxVal)
+      const ticks = [
+        { v: 0, label: '0' },
+        { v: 8, label: '8' },
+        { v: maxVal, label: `${maxVal}` }
+      ];
+      ticks.forEach(tk => {
+        const pct = tk.v / maxVal;
+        const ang = Math.PI + pct * Math.PI;
+        const tx = cx + (outerRadius + 14) * Math.cos(ang);
+        const ty = cy + (outerRadius + 14) * Math.sin(ang);
+        chartCtx.fillStyle = curTheme.text;
+        chartCtx.font = '600 10px Inter, sans-serif';
+        chartCtx.textAlign = 'center';
+        chartCtx.textBaseline = 'middle';
+        chartCtx.fillText(tk.label, tx, ty);
+      });
+
+      // 4. Center Digital Speed Display
+      chartCtx.save();
+      chartCtx.textAlign = 'center';
+      chartCtx.textBaseline = 'top';
+
+      // Value text
+      chartCtx.fillStyle = curTheme.title;
+      chartCtx.font = '800 22px Inter, sans-serif';
+      chartCtx.fillText(val.toFixed(2), cx, cy + 10);
+
+      // Unit label
+      chartCtx.fillStyle = curTheme.text;
+      chartCtx.font = '600 12px Inter, sans-serif';
+      chartCtx.fillText('dok / PCL / hari', cx, cy + 36);
+
+      chartCtx.restore();
+    }
+  };
+
+  const chart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Lambat (< 8 dok/hari)', 'Perlu Akselerasi (8-13 dok/hari)', 'Optimal (≥ 13 dok/hari)'],
+      datasets: [{
+        data: [z1Val, z2Val, z3Val],
+        backgroundColor: [
+          gradRed,
+          gradYellow,
+          gradGreen
+        ],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      rotation: -90,
+      circumference: 180,
+      cutout: '72%',
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: {
+          top: 25,
+          bottom: 65,
+          left: 25,
+          right: 25
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: theme.bgCard,
+          borderColor: theme.border,
+          borderWidth: 1,
+          titleColor: theme.title,
+          bodyColor: theme.text,
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              return ` ${label}`;
+            }
+          }
+        }
+      },
+      animation: {
+        animateRotate: true,
+        duration: 1000
+      }
+    },
+    plugins: [speedometerPlugin]
+  });
+
+  window.activeCharts = window.activeCharts || [];
+  window.activeCharts.push(chart);
+  return chart;
+}
+
