@@ -335,6 +335,7 @@ adminRouter.use('/upload', requireAdmin, require('./routes/upload'));
 adminRouter.use('/master', requireAdmin, require('./routes/master'));
 adminRouter.use('/settings', requireAdmin, require('./routes/settings'));
 adminRouter.use('/users', requireAdmin, require('./routes/users'));
+adminRouter.use('/petugas-email', requireAdmin, require('./routes/petugas_email'));
 adminRouter.use('/whatsapp', requireAdmin, require('./routes/whatsapp'));
 adminRouter.use('/spreadsheet', requireAdmin, require('./routes/admin_spreadsheet'));
 adminRouter.use('/stats', requireAdmin, require('./routes/admin_stats'));

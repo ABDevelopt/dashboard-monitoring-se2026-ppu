@@ -1952,6 +1952,77 @@ function getPetugasEmailBySobatId(sobatId) {
   return getDb().prepare('SELECT * FROM petugas_email WHERE sobat_id = ?').get(String(sobatId).trim());
 }
 
+function getPetugasEmailById(id) {
+  return getDb().prepare('SELECT * FROM petugas_email WHERE id = ?').get(id);
+}
+
+function insertPetugasEmail({ sobat_id, nama_lengkap, email, jenis_kelamin }) {
+  const stmt = getDb().prepare(`
+    INSERT INTO petugas_email (sobat_id, nama_lengkap, email, jenis_kelamin)
+    VALUES (?, ?, ?, ?)
+  `);
+  const res = stmt.run(sobat_id || '', nama_lengkap.trim(), email.trim().toLowerCase(), jenis_kelamin || '');
+  try { resyncPetugasEmailsToMaster(); } catch (_) {}
+  return res.lastInsertRowid;
+}
+
+function updatePetugasEmail(id, { sobat_id, nama_lengkap, email, jenis_kelamin }) {
+  const stmt = getDb().prepare(`
+    UPDATE petugas_email 
+    SET sobat_id = ?, nama_lengkap = ?, email = ?, jenis_kelamin = ?
+    WHERE id = ?
+  `);
+  const res = stmt.run(sobat_id || '', nama_lengkap.trim(), email.trim().toLowerCase(), jenis_kelamin || '', id);
+  try { resyncPetugasEmailsToMaster(); } catch (_) {}
+  return res.changes;
+}
+
+function deletePetugasEmail(id) {
+  const stmt = getDb().prepare('DELETE FROM petugas_email WHERE id = ?');
+  const res = stmt.run(id);
+  try { resyncPetugasEmailsToMaster(); } catch (_) {}
+  return res.changes;
+}
+
+function resyncPetugasEmailsToMaster() {
+  const db = getDb();
+  const emails = db.prepare('SELECT nama_lengkap, email, sobat_id FROM petugas_email').all();
+  const cleanStr = (s) => (s ? s.toString().toLowerCase().replace(/[^a-z0-9]/g, '') : '');
+  const emailMapExact = {};
+  const emailMapClean = {};
+
+  emails.forEach(r => {
+    if (r.nama_lengkap) {
+      const ex = r.nama_lengkap.trim().toLowerCase();
+      const cl = cleanStr(r.nama_lengkap);
+      emailMapExact[ex] = r;
+      emailMapClean[cl] = r;
+    }
+  });
+
+  const roles = [
+    { roleCol: 'pcl', emailCol: 'pcl_email', sobatCol: 'pcl_sobat_id' },
+    { roleCol: 'pml', emailCol: 'pml_email', sobatCol: 'pml_sobat_id' },
+    { roleCol: 'korlap', emailCol: 'korlap_email', sobatCol: 'korlap_sobat_id' }
+  ];
+
+  roles.forEach(({ roleCol, emailCol, sobatCol }) => {
+    const uniqueOfficers = db.prepare(`SELECT DISTINCT ${roleCol} FROM subsls_master WHERE ${roleCol} IS NOT NULL AND ${roleCol} != ''`).all();
+    uniqueOfficers.forEach(o => {
+      const name = o[roleCol] ? o[roleCol].trim() : '';
+      if (!name) return;
+      const ex = name.toLowerCase();
+      const cl = cleanStr(name);
+
+      const target = emailMapExact[ex] || emailMapClean[cl];
+      if (target) {
+        db.prepare(`UPDATE subsls_master SET ${emailCol} = ?, ${sobatCol} = ? WHERE LOWER(TRIM(${roleCol})) = LOWER(TRIM(?))`)
+          .run(target.email, target.sobat_id, name);
+      }
+    });
+  });
+}
+
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -1963,5 +2034,6 @@ module.exports = {
   getAllUsers, createUser, updateUser, deleteUser,
   saveRememberToken, getUserByRememberToken, deleteRememberToken, getIntradayUploadsByDate,
   logVisit, getVisitorStats,
-  getPetugasEmails, searchPetugasEmails, getPetugasEmailByNama, getPetugasEmailBySobatId
+  getPetugasEmails, searchPetugasEmails, getPetugasEmailByNama, getPetugasEmailBySobatId,
+  getPetugasEmailById, insertPetugasEmail, updatePetugasEmail, deletePetugasEmail, resyncPetugasEmailsToMaster
 };
