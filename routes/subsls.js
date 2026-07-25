@@ -20,6 +20,10 @@ router.get('/', (req, res) => {
   const settings = res.locals.settings;
   const targetFormula = getTargetFormula(settings.target_fasih_mode);
 
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limitQuery = req.query.limit || '';
+  const isAll = limitQuery === 'all';
+
   if (uploadId) {
     let cond = [];
     let params = [uploadId];
@@ -29,8 +33,11 @@ router.get('/', (req, res) => {
     if (filterKorlap) { cond.push('m.korlap = ?'); params.push(filterKorlap); }
     if (filterPml) { cond.push('m.pml = ?'); params.push(filterPml); }
     if (filterPcl) { cond.push('m.pcl = ?'); params.push(filterPcl); }
-    if (filterKode) { cond.push('m.kode = ?'); params.push(filterKode); }
-    if (filterQ) { cond.push('(m.nama_sls LIKE ? OR m.kode LIKE ?)'); params.push(`%${filterQ}%`, `%${filterQ}%`); }
+    if (filterQ) {
+      cond.push('(m.nama_sls LIKE ? OR m.kode LIKE ? OR m.kecamatan LIKE ? OR m.desa LIKE ? OR m.korlap LIKE ? OR m.pml LIKE ? OR m.pcl LIKE ?)');
+      const qParam = `%${filterQ}%`;
+      params.push(qParam, qParam, qParam, qParam, qParam, qParam, qParam);
+    }
     
     if (filterStatus === 'belum_mulai') {
       cond.push('(p.kode IS NULL OR (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
@@ -51,12 +58,20 @@ router.get('/', (req, res) => {
       WHERE 1=1 ${where}
     `).get(...params).n;
 
-    const settings = res.locals.settings;
-    const targetFormula = getTargetFormula(settings.target_fasih_mode);
+    const limit = isAll ? (total || 1341) : Math.min(2000, Math.max(1, parseInt(limitQuery, 10) || 100));
+    const offset = (page - 1) * limit;
+
     const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
     const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
     const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
     const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+
+    let limitClause = '';
+    let queryParams = [...params];
+    if (!isAll) {
+      limitClause = ' LIMIT ? OFFSET ?';
+      queryParams.push(limit, offset);
+    }
 
     data = attachProgressPercentages(getDb().prepare(`
       SELECT 
@@ -102,7 +117,8 @@ router.get('/', (req, res) => {
       LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
       WHERE 1=1 ${where}
       ORDER BY m.kecamatan, m.desa, m.kode
-    `).all(...params));
+      ${limitClause}
+    `).all(...queryParams));
   }
 
   let selectedSubsls = null;
@@ -198,30 +214,65 @@ router.get('/', (req, res) => {
     `).all(filterKode);
   }
 
-  // Filter lists
-  const kecList = getDb().prepare('SELECT DISTINCT kecamatan FROM subsls_master ORDER BY kecamatan').all();
+  // Filter lists: Single pass metadata query for fast execution
+  const filterLists = getDb().prepare('SELECT DISTINCT kecamatan, korlap, pml, pcl FROM subsls_master').all();
+  const kecSet = new Set();
+  const korlapSet = new Set();
+  const pmlSet = new Set();
+  const pclSet = new Set();
+
+  filterLists.forEach(r => {
+    if (r.kecamatan) kecSet.add(r.kecamatan);
+    if (r.korlap) korlapSet.add(r.korlap);
+    if (r.pml) pmlSet.add(r.pml);
+    if (r.pcl) pclSet.add(r.pcl);
+  });
+
+  const kecList = Array.from(kecSet).sort().map(k => ({ kecamatan: k }));
+  const korlapList = Array.from(korlapSet).sort().map(k => ({ korlap: k }));
+  const pmlList = Array.from(pmlSet).sort().map(p => ({ pml: p }));
+  const pclList = Array.from(pclSet).sort().map(p => ({ pcl: p }));
+
   const desaList = filterKec
     ? getDb().prepare('SELECT DISTINCT desa FROM subsls_master WHERE kecamatan = ? ORDER BY desa').all(filterKec)
     : [];
-  const korlapList = getDb().prepare('SELECT DISTINCT korlap FROM subsls_master ORDER BY korlap').all();
-  const pmlList = getDb().prepare('SELECT DISTINCT pml FROM subsls_master ORDER BY pml').all();
-  const pclList = getDb().prepare('SELECT DISTINCT pcl FROM subsls_master ORDER BY pcl').all();
+
+  const defaultLimit = 100;
+  const effectiveLimit = isAll ? total : (parseInt(limitQuery, 10) || defaultLimit);
+  const totalPages = Math.max(1, Math.ceil(total / (effectiveLimit || 1)));
+
+  const getPageUrl = (p, l) => {
+    const pMap = new URLSearchParams();
+    if (filterKec) pMap.set('kec', filterKec);
+    if (filterDesa) pMap.set('desa', filterDesa);
+    if (filterKorlap) pMap.set('korlap', filterKorlap);
+    if (filterPml) pMap.set('pml', filterPml);
+    if (filterPcl) pMap.set('pcl', filterPcl);
+    if (filterStatus) pMap.set('status', filterStatus);
+    if (filterKode) pMap.set('kode', filterKode);
+    if (filterQ) pMap.set('q', filterQ);
+    const targetLimit = l !== undefined ? l : (limitQuery || '100');
+    if (targetLimit) pMap.set('limit', targetLimit);
+    pMap.set('page', p);
+    return `/subsls?${pMap.toString()}`;
+  };
 
   res.render('subsls', {
     title: 'Per SubSLS',
     activePage: 'subsls',
     data,
     total,
-    page: 1,
-    totalPages: 1,
-    limit: total || 50,
+    page,
+    totalPages,
+    limit: isAll ? 'all' : effectiveLimit,
     filterKec, filterDesa, filterKorlap, filterPml, filterPcl, filterStatus, filterKode, filterQ,
     kecList, desaList, korlapList, pmlList, pclList,
     settings,
     selectedSubsls,
     diffDays,
     daysRemaining,
-    subslsHistory
+    subslsHistory,
+    getPageUrl
   });
 });
 
@@ -230,12 +281,48 @@ router.get('/export', (req, res) => {
   const uploadId = res.locals.uploadId;
   if (!uploadId) return res.status(400).send('Belum ada data yang diupload.');
 
+  const filterKec = req.query.kec || '';
+  const filterDesa = req.query.desa || '';
+  const filterKorlap = req.query.korlap || '';
+  const filterPml = req.query.pml || '';
+  const filterPcl = req.query.pcl || '';
+  const filterStatus = req.query.status || '';
+  const filterKode = req.query.kode || '';
+  const filterQ = req.query.q || '';
+
   const settings = res.locals.settings;
   const targetFormula = getTargetFormula(settings.target_fasih_mode);
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
   const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
   const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+
+  let cond = [];
+  let params = [uploadId];
+
+  if (filterKec) { cond.push('m.kecamatan = ?'); params.push(filterKec); }
+  if (filterDesa) { cond.push('m.desa = ?'); params.push(filterDesa); }
+  if (filterKorlap) { cond.push('m.korlap = ?'); params.push(filterKorlap); }
+  if (filterPml) { cond.push('m.pml = ?'); params.push(filterPml); }
+  if (filterPcl) { cond.push('m.pcl = ?'); params.push(filterPcl); }
+  if (filterKode) { cond.push('m.kode = ?'); params.push(filterKode); }
+  if (filterQ) {
+    cond.push('(m.nama_sls LIKE ? OR m.kode LIKE ? OR m.kecamatan LIKE ? OR m.desa LIKE ? OR m.korlap LIKE ? OR m.pml LIKE ? OR m.pcl LIKE ?)');
+    const qParam = `%${filterQ}%`;
+    params.push(qParam, qParam, qParam, qParam, qParam, qParam, qParam);
+  }
+
+  if (filterStatus === 'belum_mulai') {
+    cond.push('(p.kode IS NULL OR (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
+  } else if (filterStatus === 'sedang_didata') {
+    cond.push('(p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) > 0 OR COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0) AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) < m.muatan)');
+  } else if (filterStatus === 'memenuhi_target') {
+    cond.push('(p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) = m.muatan AND NOT (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
+  } else if (filterStatus === 'melebihi_target') {
+    cond.push('(p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) > m.muatan)');
+  }
+
+  const where = cond.length ? 'AND ' + cond.join(' AND ') : '';
 
   const data = attachProgressPercentages(getDb().prepare(`
     SELECT 
@@ -281,8 +368,9 @@ router.get('/export', (req, res) => {
       COALESCE(p.lainnya, 0) AS lainnya
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    WHERE 1=1 ${where}
     ORDER BY m.kecamatan, m.desa, m.kode
-  `).all(uploadId));
+  `).all(...params));
 
   const headers = Object.keys(data[0] || {});
   const csv = [

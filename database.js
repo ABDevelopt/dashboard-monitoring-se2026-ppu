@@ -1409,6 +1409,12 @@ function getSettings() {
 function rebuildAllSummaryCaches() {
   const uploads = getDb().prepare('SELECT id FROM uploads').all();
   uploads.forEach(u => rebuildSummaryCache(u.id));
+  try {
+    const { triggerAsyncSync } = require('./services/firebaseSyncService');
+    triggerAsyncSync();
+  } catch (e) {
+    logger.error('Failed to trigger Firebase sync:', e.message);
+  }
 }
 
 function updateSettings(settingsObj) {

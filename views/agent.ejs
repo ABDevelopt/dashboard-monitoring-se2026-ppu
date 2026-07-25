@@ -1198,6 +1198,22 @@
       modelSelect.disabled = false;
     }
     updateAgentStatus();
+    syncSelectedAIToStorage();
+  }
+
+  function syncSelectedAIToStorage() {
+    const providerSelect = document.getElementById('agentProvider');
+    const modelSelect = document.getElementById('agentModel');
+    if (providerSelect && modelSelect) {
+      const provider = providerSelect.value;
+      const model = modelSelect.value;
+      if (provider && model) {
+        localStorage.setItem('se2026_selected_ai', JSON.stringify({ provider, model }));
+        if (typeof window.updateAiWidgetModelDisplay === 'function') {
+          window.updateAiWidgetModelDisplay();
+        }
+      }
+    }
   }
 
   function escapeHtml(text) {
@@ -1863,6 +1879,7 @@
       modelSelect.addEventListener('change', () => {
         const provider = providerSelect ? providerSelect.value : 'gemini';
         selectedModels[provider] = modelSelect.value;
+        syncSelectedAIToStorage();
       });
     }
     const chatInput = document.getElementById('chatInput');
