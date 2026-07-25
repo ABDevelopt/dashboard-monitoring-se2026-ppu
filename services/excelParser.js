@@ -351,13 +351,13 @@ function findStatusColumnIndexes(headers) {
   };
 
   const kodeIdx = findIndex(['level_6_full_code', 'smallcode', 'kode subsls', 'idsubsls', 'kode', 'code']);
-  const draftIdx = findIndex(['draft']);
-  const approvedIdx = findIndex(['approved', 'approved by pengawas']);
+  const draftIdxs = findMultipleIndexes(['draft', 'revoked']);
+  const approvedIdxs = findMultipleIndexes(['approved', 'completed']);
   // Collect ALL 'rejected' / 'reject' columns (e.g. "REJECTED BY Pengawas", "REJECTED BY Admin Kabupaten", "Reject")
   const rejectedIdxs = findMultipleIndexes(['rejected', 'reject']);
 
   // Look for submitted / submit columns
-  const submittedIdxs = findMultipleIndexes(['submitted_by_pcl', 'submitted by pencacah', 'submitted respondent', 'submitted', 'submit']);
+  const submittedIdxs = findMultipleIndexes(['submitted_by_pcl', 'submitted by pencacah', 'submitted respondent', 'submitted', 'submit', 'edited']);
 
   const totalIdx = findIndex(['total', 'target']);
   const desaIdx = findIndex(['desa', 'nama_desa', 'kelurahan']);
@@ -365,9 +365,9 @@ function findStatusColumnIndexes(headers) {
 
   const missingCols = [];
   if (kodeIdx === -1 && (desaIdx === -1 || slsIdx === -1)) missingCols.push('level_6_full_code / kode subsls');
-  if (draftIdx === -1) missingCols.push('draft');
+  if (draftIdxs.length === 0) missingCols.push('draft');
   if (submittedIdxs.length === 0) missingCols.push('submitted / submit');
-  if (approvedIdx === -1) missingCols.push('approved');
+  if (approvedIdxs.length === 0) missingCols.push('approved');
   if (rejectedIdxs.length === 0) missingCols.push('rejected / reject');
 
   if (missingCols.length > 0) {
@@ -376,9 +376,9 @@ function findStatusColumnIndexes(headers) {
 
   return {
     kode: kodeIdx,
-    draft: draftIdx,
+    draftIdxs: draftIdxs,
     submittedIdxs: submittedIdxs,
-    approved: approvedIdx,
+    approvedIdxs: approvedIdxs,
     rejectedIdxs: rejectedIdxs,
     total: totalIdx,
     desa: desaIdx,
@@ -399,12 +399,14 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
   const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
   const colIdx = findStatusColumnIndexes(headers);
 
-  // Pre-fetch masterMap for fallback matching if needed
+  // Pre-fetch master data
+  const masterRows = db.prepare('SELECT kode, desa, nama_sls FROM subsls_master ORDER BY kode ASC').all();
+  const useIndexFallback = (rows.length - 1 === masterRows.length);
+
   let masterMap = null;
   const getMasterMap = () => {
     if (!masterMap) {
       masterMap = {};
-      const masterRows = db.prepare('SELECT kode, desa, nama_sls FROM subsls_master').all();
       for (const m of masterRows) {
         const key = (m.desa + '|' + m.nama_sls).toLowerCase().trim();
         masterMap[key] = m.kode;
@@ -413,7 +415,7 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
     return masterMap;
   };
 
-  const resolveKode = (row) => {
+  const resolveKode = (row, index) => {
     let rawKode = colIdx.kode !== -1 ? String(row[colIdx.kode] || '').trim() : '';
     if (rawKode.endsWith('.0')) rawKode = rawKode.slice(0, -2);
 
@@ -430,6 +432,11 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
         if (map[key]) return map[key];
       }
     }
+
+    if (useIndexFallback && index >= 1 && index <= masterRows.length) {
+      return masterRows[index - 1].kode;
+    }
+
     return rawKode;
   };
 
@@ -446,13 +453,12 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
   const updateTx = db.transaction((list) => {
     for (let i = 1; i < list.length; i++) {
       const row = list[i];
-      const kode = resolveKode(row);
+      const kode = resolveKode(row, i);
       if (!kode || kode.length < 10) continue;
 
-      const draft = colIdx.draft !== -1 ? toInt(row[colIdx.draft]) : 0;
+      const draft = colIdx.draftIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
       const submitted = colIdx.submittedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
-      const approved = colIdx.approved !== -1 ? toInt(row[colIdx.approved]) : 0;
-      // Sum ALL rejected columns (Pengawas + Admin Kabupaten, dll.)
+      const approved = colIdx.approvedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
       const rejected = colIdx.rejectedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
       const targetUpload = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 0;
 
@@ -477,12 +483,14 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
   const colIdx = findStatusColumnIndexes(headers);
 
-  // Pre-fetch masterMap for fallback matching if needed
+  // Pre-fetch master data
+  const masterRows = db.prepare('SELECT kode, desa, nama_sls FROM subsls_master ORDER BY kode ASC').all();
+  const useIndexFallback = (rows.length - 1 === masterRows.length);
+
   let masterMap = null;
   const getMasterMap = () => {
     if (!masterMap) {
       masterMap = {};
-      const masterRows = db.prepare('SELECT kode, desa, nama_sls FROM subsls_master').all();
       for (const m of masterRows) {
         const key = (m.desa + '|' + m.nama_sls).toLowerCase().trim();
         masterMap[key] = m.kode;
@@ -491,7 +499,7 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
     return masterMap;
   };
 
-  const resolveKode = (row) => {
+  const resolveKode = (row, index) => {
     let rawKode = colIdx.kode !== -1 ? String(row[colIdx.kode] || '').trim() : '';
     if (rawKode.endsWith('.0')) rawKode = rawKode.slice(0, -2);
 
@@ -508,6 +516,11 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
         if (map[key]) return map[key];
       }
     }
+
+    if (useIndexFallback && index >= 1 && index <= masterRows.length) {
+      return masterRows[index - 1].kode;
+    }
+
     return rawKode;
   };
 
@@ -559,12 +572,12 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   const updateTx = db.transaction((list) => {
     for (let i = 1; i < list.length; i++) {
       const row = list[i];
-      const kode = resolveKode(row);
+      const kode = resolveKode(row, i);
       if (!kode || kode.length < 10) continue;
 
-      const draft = colIdx.draft !== -1 ? toInt(row[colIdx.draft]) : 0;
+      const draft = colIdx.draftIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
       const submitted = colIdx.submittedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
-      const approved = colIdx.approved !== -1 ? toInt(row[colIdx.approved]) : 0;
+      const approved = colIdx.approvedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
       const rejected = colIdx.rejectedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
       const targetUpload = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 0;
 
