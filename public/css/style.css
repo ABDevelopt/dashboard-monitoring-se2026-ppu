@@ -313,6 +313,12 @@ tbody tr:active {
   overflow-x: hidden;
   min-width: 0;
   position: relative;
+  /* Responsive centering: cap content width on large screens */
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* ====== FLASH MESSAGES ====== */
@@ -992,6 +998,18 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
 .kec-pct { font-size: 26px; font-weight: 800; color: var(--accent-cyan); }
 .kec-detail { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
 
+/* Mobile inline detail: span full grid width when injected inside .kec-grid */
+.kec-detail-inline-mobile {
+  grid-column: 1 / -1;        /* span all columns */
+  margin-top: 0;
+  animation: kec-detail-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes kec-detail-slide-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ====== MOBILE SIDEBAR TOGGLE & BACKDROP ====== */
 .btn-toggle-sidebar {
   display: inline-flex;
@@ -1506,9 +1524,9 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   .table-wrap table tbody tr td:nth-child(2) {
     position: sticky !important;
     left: 40px !important;
-    width: 100px !important;
-    min-width: 100px !important;
-    max-width: 100px !important;
+    width: 115px !important;
+    min-width: 115px !important;
+    max-width: 125px !important;
     box-sizing: border-box;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -2040,13 +2058,28 @@ body.has-expanded-card .page-content {
     transition: max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1), padding 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
+  body.page-map .page-content,
+  body.page-agent .page-content,
   body.sidebar-collapsed.page-map .page-content,
   body.sidebar-collapsed.page-agent .page-content {
     max-width: 100% !important;
+    width: 100% !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
-    padding-left: 14px !important;
-    padding-right: 14px !important;
+  }
+
+  /* Extra-large screens: widen padding for breathing room */
+  @media (min-width: 1600px) {
+    .page-content {
+      padding-left: 48px;
+      padding-right: 48px;
+    }
+  }
+  @media (min-width: 1920px) {
+    .page-content {
+      padding-left: 80px;
+      padding-right: 80px;
+    }
   }
 }
 
@@ -3786,6 +3819,8 @@ body.page-agent .page-content {
   height: 100vh !important;
   max-height: 100vh !important;
   overflow: hidden !important;
+  max-width: 100% !important;
+  width: 100% !important;
 }
 
 body.page-agent .sidebar {
@@ -3953,3 +3988,23 @@ body.light-mode .swal2-container.swal2-backdrop-show {
   color: var(--accent-blue);
 }
 
+/* ====== OVERVIEW TOP GRID: WEATHER + AI INSIGHT ====== */
+.overview-top-grid {
+  display: grid;
+  grid-template-columns: 1fr;   /* mobile: single column, stacked */
+  gap: 12px;
+}
+
+/* Wide screens (≥ 1100px): side-by-side, weather 2fr / AI insight 3fr */
+@media (min-width: 1100px) {
+  .overview-top-grid {
+    grid-template-columns: minmax(280px, 2fr) 3fr;
+  }
+}
+
+/* Ultra-wide (≥ 1600px): even proportion */
+@media (min-width: 1600px) {
+  .overview-top-grid {
+    grid-template-columns: minmax(300px, 1fr) 2fr;
+  }
+}

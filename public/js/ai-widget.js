@@ -167,13 +167,13 @@
     // 1. Floating Action Button (FAB)
     const fab = document.createElement('button');
     fab.id = 'ai-widget-fab';
-    fab.setAttribute('title', 'Buka Asisten AI SE2026 (Alt+A)');
-    fab.setAttribute('aria-label', 'Buka Asisten AI');
+    fab.setAttribute('title', 'Tanyakan Pananyo Taka AI (Alt+A)');
+    fab.setAttribute('aria-label', 'Tanyakan Pananyo Taka AI');
     fab.innerHTML = `
       <i class="bi bi-chevron-left fab-icon-dock"></i>
       <i class="bi bi-robot fab-icon-chat"></i>
       <i class="bi bi-x-lg fab-icon-close"></i>
-      <span class="fab-badge" title="AI Siap"></span>
+      <span class="fab-badge" title="Pananyo Taka Aktif"></span>
     `;
 
     // 2. Chat Drawer Container
@@ -187,12 +187,14 @@
             <i class="bi bi-robot"></i>
           </div>
           <div>
-            <div class="ai-widget-title">Asisten AI SE2026</div>
-            <div class="ai-widget-status" id="ai-widget-status-text">Gemini 2.5 Flash</div>
+            <div class="ai-widget-title" style="display: flex; align-items: center; gap: 6px;">
+              Pananyo Taka <span class="gemini-gradient-text" style="font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 4px; background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan);">AI</span>
+            </div>
+            <div class="ai-widget-status" id="ai-widget-status-text">Pananyo Taka Active</div>
           </div>
         </div>
         <div class="ai-widget-actions">
-          <button id="ai-widget-expand" class="ai-widget-btn-icon" title="Buka Halaman Layar Penuh (/agent)">
+          <button id="ai-widget-expand" class="ai-widget-btn-icon" title="Buka Layar Penuh Pananyo Taka (/agent)">
             <i class="bi bi-box-arrow-up-right"></i>
           </button>
           <button id="ai-widget-clear" class="ai-widget-btn-icon" title="Bersihkan Percakapan">
@@ -207,7 +209,7 @@
       <!-- Page Context Bar -->
       <div id="ai-widget-context" class="ai-widget-context-bar">
         <i class="bi bi-geo-alt-fill"></i>
-        <span>Konteks: <strong id="ai-widget-context-name">${getPageContextName()}</strong></span>
+        <span>Konteks Halaman: <strong id="ai-widget-context-name">${getPageContextName()}</strong></span>
       </div>
 
       <!-- Messages Body -->
@@ -215,20 +217,13 @@
         <!-- Default Welcome Message -->
         <div class="ai-msg ai-msg-assistant">
           <div class="ai-msg-bubble">
-            Halo! 👋 Saya <strong>Asisten AI Monitoring SE2026 PPU</strong>.<br>
-            Ada yang bisa saya bantu terkait progres pendataan, status milestone, petugas berisiko, atau deteksi anomali?
+            Halo! 👋 Saya <strong>Pananyo Taka</strong>, Asisten Pintar Sensus Ekonomi 2026 Penajam Paser Utara.<br>
+            Ada yang bisa saya bantu terkait progres pendataan, status milestone, evaluasi petugas, atau deteksi anomali data?
           </div>
           <span class="ai-msg-time">Sekarang</span>
         </div>
       </div>
 
-      <!-- Quick Chips -->
-      <div class="ai-widget-chips">
-        <button class="ai-chip" data-query="Petugas mana saja yang 0 progres?"><i class="bi bi-exclamation-triangle"></i> PCL 0 Progres</button>
-        <button class="ai-chip" data-query="Bagaimana pencapaian Milestone 2 saat ini?"><i class="bi bi-flag"></i> Milestone 2</button>
-        <button class="ai-chip" data-query="Kecamatan mana yang paling lambat?"><i class="bi bi-bar-chart"></i> Kecamatan Tertinggal</button>
-        <button class="ai-chip" data-query="Berapa banyak anomali data yang terdeteksi?"><i class="bi bi-shield-alert"></i> Deteksi Anomali</button>
-      </div>
 
       <!-- Footer Input -->
       <div class="ai-widget-footer">
@@ -644,15 +639,6 @@
       });
     }
 
-    // Quick Chips Handler
-    document.querySelectorAll('.ai-chip').forEach(chip => {
-      chip.addEventListener('click', function () {
-        const query = this.getAttribute('data-query');
-        if (query) {
-          handleSendMessage(query);
-        }
-      });
-    });
 
     // Keyboard Shortcut (Alt + A)
     document.addEventListener('keydown', function (e) {

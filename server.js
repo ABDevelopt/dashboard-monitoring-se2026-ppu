@@ -124,6 +124,31 @@ app.use((req, res, next) => {
   next();
 });
 
+// Middleware to log website visits
+app.use((req, res, next) => {
+  if (req.method === 'GET') {
+    const urlPath = req.path;
+    // Skip static assets and APIs
+    const isStatic = urlPath.includes('.') || urlPath.startsWith('/uploads/');
+    const isExcluded = urlPath.startsWith('/whatsapp-status') || urlPath.startsWith('/api/');
+
+    if (!isStatic && !isExcluded) {
+      const username = req.session && req.session.user ? req.session.user.username : null;
+      const role = req.session && req.session.user ? req.session.user.role : 'guest';
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+
+      try {
+        const { logVisit } = require('./database');
+        logVisit({ username, role, ip, userAgent, path: urlPath });
+      } catch (err) {
+        console.error('Failed to log visit in middleware:', err);
+      }
+    }
+  }
+  next();
+});
+
 const APP_VERSION = Date.now(); // Startup timestamp for cache busting (updated to force reload)
 
 // Global locals
@@ -312,6 +337,7 @@ adminRouter.use('/settings', requireAdmin, require('./routes/settings'));
 adminRouter.use('/users', requireAdmin, require('./routes/users'));
 adminRouter.use('/whatsapp', requireAdmin, require('./routes/whatsapp'));
 adminRouter.use('/spreadsheet', requireAdmin, require('./routes/admin_spreadsheet'));
+adminRouter.use('/stats', requireAdmin, require('./routes/admin_stats'));
 
 // 404
 app.use((req, res) => {

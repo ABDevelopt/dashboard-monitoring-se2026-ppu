@@ -712,9 +712,9 @@ window.addEventListener('themechange', () => {
     }
 
     // Update dataset styles based on type
-    if (chart.config.type === 'doughnut') {
+    if (chart.config.type === 'doughnut' && (!chart.canvas || !chart.canvas.id.includes('speedometer'))) {
       const remainingColor = theme.isLight ? 'rgba(45, 39, 36, 0.04)' : 'rgba(255, 255, 255, 0.05)';
-      if (chart.data.datasets[0] && chart.data.datasets[0].backgroundColor) {
+      if (chart.data.datasets[0] && Array.isArray(chart.data.datasets[0].backgroundColor) && chart.data.datasets[0].backgroundColor.length === 2) {
         chart.data.datasets[0].backgroundColor[1] = remainingColor;
       }
     } else if (chart.config.type === 'bar') {
@@ -1299,13 +1299,19 @@ function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl 
           gradGreen
         ],
         borderWidth: 0,
+        borderRadius: [
+          { outerStart: 10, innerStart: 10, outerEnd: 0, innerEnd: 0 },
+          0,
+          { outerStart: 0, innerStart: 0, outerEnd: 10, innerEnd: 10 }
+        ],
+        spacing: 0,
         hoverOffset: 4
       }]
     },
     options: {
       rotation: -90,
       circumference: 180,
-      cutout: '72%',
+      cutout: '74%',
       responsive: true,
       maintainAspectRatio: false,
       layout: {

@@ -1,0 +1,373 @@
+<%- contentFor('body') %>
+
+<div class="fade-in">
+  <style>
+    @media (max-width: 992px) {
+      .stats-layout-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+    
+    .stats-metric-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .stats-metric-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      border-color: var(--accent-purple) !important;
+    }
+  </style>
+
+  <!-- HERO TITLE -->
+  <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb),0.12) 0%, rgba(var(--accent-rgb),0.03) 100%); border: 1px solid rgba(var(--accent-rgb),0.2); border-radius: 16px; padding: 32px 28px; margin-bottom: 24px; position: relative; overflow: hidden;">
+    <div style="position: absolute; right: -20px; top: -20px; font-size: 120px; opacity: 0.04; line-height: 1; pointer-events: none;">
+      <i class="bi bi-activity"></i>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <div style="width: 56px; height: 56px; border-radius: 14px; background: rgba(var(--accent-rgb),0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <i class="bi bi-activity" style="font-size: 26px; color: var(--accent-purple);"></i>
+      </div>
+      <div>
+        <h1 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px 0;">Statistik Pengunjung</h1>
+        <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Pantau frekuensi akses halaman, tren kunjungan harian, distribusi peranan pengguna, serta aktivitas sistem terupdate.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERVIEW METRICS CARD -->
+  <div class="stats-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 24px;">
+    <!-- CARD 1: Total Page Views -->
+    <div class="stats-metric-card" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 16px;">
+      <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(59, 130, 246, 0.15); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #3b82f6; flex-shrink: 0;">
+        <i class="bi bi-eye-fill"></i>
+      </div>
+      <div>
+        <div style="font-size: 13px; color: var(--text-secondary);">Total Page Views</div>
+        <div style="font-size: 24px; font-weight: 800; color: var(--text-primary); margin-top: 4px;"><%= stats.totalViews %></div>
+      </div>
+    </div>
+
+    <!-- CARD 2: Unique Visitors -->
+    <div class="stats-metric-card" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 16px;">
+      <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #10b981; flex-shrink: 0;">
+        <i class="bi bi-fingerprint"></i>
+      </div>
+      <div>
+        <div style="font-size: 13px; color: var(--text-secondary);">Pengunjung Unik (IP)</div>
+        <div style="font-size: 24px; font-weight: 800; color: var(--text-primary); margin-top: 4px;"><%= stats.uniqueVisitors %></div>
+      </div>
+    </div>
+
+    <!-- CARD 3: Active Registered Users -->
+    <div class="stats-metric-card" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 16px;">
+      <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(139, 92, 246, 0.15); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #8b5cf6; flex-shrink: 0;">
+        <i class="bi bi-person-badge-fill"></i>
+      </div>
+      <div>
+        <div style="font-size: 13px; color: var(--text-secondary);">Pengguna Terdaftar Aktif</div>
+        <div style="font-size: 24px; font-weight: 800; color: var(--text-primary); margin-top: 4px;"><%= stats.uniqueUsers %></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS & ROLE GRID -->
+  <div class="stats-layout-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px; align-items: start;">
+    <!-- CHART CARD -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--shadow);">
+      <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+        <i class="bi bi-graph-up" style="color: var(--accent-blue);"></i> Tren Kunjungan Harian (14 Hari Terakhir)
+      </h2>
+      <div style="position: relative; height: 320px; width: 100%;">
+        <canvas id="dailyTrafficChart"></canvas>
+      </div>
+    </div>
+
+    <!-- ROLE CARD -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--shadow);">
+      <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+        <i class="bi bi-pie-chart-fill" style="color: var(--accent-purple);"></i> Distribusi Peran Pengguna
+      </h2>
+      <div style="display: flex; flex-direction: column; gap: 18px; margin-top: 8px;">
+        <% if (stats.viewsByRole.length === 0) { %>
+          <div style="color: var(--text-secondary); text-align: center; padding: 20px; font-size: 13px;">Tidak ada data peran.</div>
+        <% } else { %>
+          <% 
+            const totalRoleViews = stats.viewsByRole.reduce((acc, curr) => acc + curr.count, 0);
+          %>
+          <% stats.viewsByRole.forEach(r => { %>
+            <% 
+              const pct = totalRoleViews > 0 ? ((r.count / totalRoleViews) * 100).toFixed(1) : 0;
+              let barColor = 'var(--accent-blue)';
+              if (r.role === 'admin') barColor = '#ef4444';
+              else if (r.role === 'korlap') barColor = '#f59e0b';
+              else if (r.role === 'pml') barColor = '#10b981';
+              else if (r.role === 'pcl') barColor = '#06b6d4';
+              else if (r.role === 'guest') barColor = '#6b7280';
+            %>
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                <span style="font-weight: 600; text-transform: uppercase;"><%= r.role %></span>
+                <span style="color: var(--text-secondary);"><%= r.count %> kunjungan (<%= pct %>%)</span>
+              </div>
+              <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
+                <div style="width: <%= pct %>%; height: 100%; background: <%= barColor %>; border-radius: 4px;"></div>
+              </div>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYSIS GRID -->
+  <div class="stats-layout-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+    <!-- TOP PATHS CARD -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--shadow);">
+      <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+        <i class="bi bi-file-earmark-bar-graph-fill" style="color: var(--accent-cyan);"></i> 10 Halaman Terpopuler
+      </h2>
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border); text-align: left;">
+              <th style="padding: 8px; color: var(--text-secondary);">No</th>
+              <th style="padding: 8px; color: var(--text-secondary);">Path / Halaman</th>
+              <th style="padding: 8px; color: var(--text-secondary); text-align: right;">Kunjungan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (stats.topPaths.length === 0) { %>
+              <tr>
+                <td colspan="3" style="padding: 16px; text-align: center; color: var(--text-secondary);">Tidak ada data kunjungan.</td>
+              </tr>
+            <% } else { %>
+              <% stats.topPaths.forEach((p, idx) => { %>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                  <td style="padding: 8px; font-weight: 600; width: 40px;"><%= idx + 1 %></td>
+                  <td style="padding: 8px; font-family: monospace; word-break: break-all; color: var(--text-primary);"><%= p.path %></td>
+                  <td style="padding: 8px; text-align: right; font-weight: 700; color: #3b82f6;"><%= p.count %></td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TOP USERS CARD -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--shadow);">
+      <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+        <i class="bi bi-people-fill" style="color: var(--accent-purple);"></i> 10 Pengguna Paling Aktif
+      </h2>
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border); text-align: left;">
+              <th style="padding: 8px; color: var(--text-secondary);">No</th>
+              <th style="padding: 8px; color: var(--text-secondary);">Username</th>
+              <th style="padding: 8px; color: var(--text-secondary);">Role</th>
+              <th style="padding: 8px; color: var(--text-secondary); text-align: right;">Kunjungan</th>
+              <th style="padding: 8px; color: var(--text-secondary); text-align: right;">Aktif Terakhir</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (stats.topUsers.length === 0) { %>
+              <tr>
+                <td colspan="5" style="padding: 16px; text-align: center; color: var(--text-secondary);">Belum ada aktivitas user yang dicatat.</td>
+              </tr>
+            <% } else { %>
+              <% stats.topUsers.forEach((u, idx) => { %>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                  <td style="padding: 8px; font-weight: 600; width: 40px;"><%= idx + 1 %></td>
+                  <td style="padding: 8px; font-weight: bold; color: var(--text-primary);"><%= u.username %></td>
+                  <td style="padding: 8px;">
+                    <% 
+                      let uBadgeBg = 'rgba(107, 114, 128, 0.15)';
+                      let uBadgeColor = '#9ca3af';
+                      if (u.role === 'admin') { uBadgeBg = 'rgba(239, 68, 68, 0.15)'; uBadgeColor = '#ef4444'; }
+                      else if (u.role === 'korlap') { uBadgeBg = 'rgba(245, 158, 11, 0.15)'; uBadgeColor = '#f59e0b'; }
+                      else if (u.role === 'pml') { uBadgeBg = 'rgba(16, 185, 129, 0.15)'; uBadgeColor = '#10b981'; }
+                      else if (u.role === 'pcl') { uBadgeBg = 'rgba(6, 182, 212, 0.15)'; uBadgeColor = '#06b6d4'; }
+                    %>
+                    <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: <%= uBadgeBg %>; color: <%= uBadgeColor %>; font-weight: 600; text-transform: uppercase;">
+                      <%= u.role %>
+                    </span>
+                  </td>
+                  <td style="padding: 8px; text-align: right; font-weight: 700; color: #8b5cf6;"><%= u.count %></td>
+                  <td style="padding: 8px; text-align: right; color: var(--text-secondary);"><%= formatWitaShort(u.last_active) %></td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- LATEST VISITS TABLE -->
+  <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px;">
+    <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+      <i class="bi bi-clock-history" style="color: var(--accent-cyan);"></i> Log Aktivitas Kunjungan Terbaru (20 Terakhir)
+    </h2>
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border); text-align: left;">
+            <th style="padding: 10px; color: var(--text-secondary);">Waktu WITA</th>
+            <th style="padding: 10px; color: var(--text-secondary);">User</th>
+            <th style="padding: 10px; color: var(--text-secondary);">Role</th>
+            <th style="padding: 10px; color: var(--text-secondary);">IP Address</th>
+            <th style="padding: 10px; color: var(--text-secondary);">Halaman yang Dikunjungi</th>
+            <th style="padding: 10px; color: var(--text-secondary);">User Agent / Browser</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (stats.latestVisits.length === 0) { %>
+            <tr>
+              <td colspan="6" style="padding: 20px; text-align: center; color: var(--text-secondary);">Belum ada log kunjungan.</td>
+            </tr>
+          <% } else { %>
+            <% stats.latestVisits.forEach(v => { %>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle;">
+                <td style="padding: 10px; color: var(--text-primary); white-space: nowrap;"><%= formatWita(v.created_at) %></td>
+                <td style="padding: 10px; font-weight: 600; color: var(--text-primary);"><%= v.username || 'guest' %></td>
+                <td style="padding: 10px;">
+                  <% 
+                    let badgeBg = 'rgba(107, 114, 128, 0.15)';
+                    let badgeColor = '#9ca3af';
+                    if (v.role === 'admin') { badgeBg = 'rgba(239, 68, 68, 0.15)'; badgeColor = '#ef4444'; }
+                    else if (v.role === 'korlap') { badgeBg = 'rgba(245, 158, 11, 0.15)'; badgeColor = '#f59e0b'; }
+                    else if (v.role === 'pml') { badgeBg = 'rgba(16, 185, 129, 0.15)'; badgeColor = '#10b981'; }
+                    else if (v.role === 'pcl') { badgeBg = 'rgba(6, 182, 212, 0.15)'; badgeColor = '#06b6d4'; }
+                  %>
+                  <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: <%= badgeBg %>; color: <%= badgeColor %>; font-weight: 600; text-transform: uppercase;">
+                    <%= v.role || 'guest' %>
+                  </span>
+                </td>
+                <td style="padding: 10px; font-family: monospace; color: var(--text-secondary);"><%= v.ip || '-' %></td>
+                <td style="padding: 10px; font-family: monospace; color: var(--accent-blue); word-break: break-all;"><%= v.path %></td>
+                <td style="padding: 10px; color: var(--text-secondary); font-size: 12px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<%= v.user_agent %>">
+                  <%= v.user_agent || '-' %>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Wait for Chart.js to load
+    const initChart = () => {
+      if (typeof Chart === 'undefined') {
+        setTimeout(initChart, 200);
+        return;
+      }
+      
+      const ctx = document.getElementById('dailyTrafficChart').getContext('2d');
+      
+      // Parse data from EJS
+      const rawDailyVisits = <%- JSON.stringify(stats.dailyVisits) %>;
+      
+      const labels = rawDailyVisits.map(d => {
+        const parts = d.date.split('-');
+        if (parts.length === 3) {
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+          const day = parseInt(parts[2], 10);
+          const monthIdx = parseInt(parts[1], 10) - 1;
+          return `${day} ${months[monthIdx]}`;
+        }
+        return d.date;
+      });
+      
+      const viewsData = rawDailyVisits.map(d => d.views);
+      const uniqueIpsData = rawDailyVisits.map(d => d.unique_ips);
+      
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Page Views',
+              data: viewsData,
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.05)',
+              borderWidth: 3,
+              fill: true,
+              tension: 0.35,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            },
+            {
+              label: 'Pengunjung Unik (IP)',
+              data: uniqueIpsData,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.05)',
+              borderWidth: 3,
+              fill: true,
+              tension: 0.35,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                color: 'var(--text-secondary, #94a3b8)',
+                font: {
+                  family: 'Inter, sans-serif',
+                  size: 12
+                }
+              }
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              padding: 12,
+              cornerRadius: 8
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                color: 'var(--text-secondary, #94a3b8)',
+                font: {
+                  family: 'Inter, sans-serif',
+                  size: 11
+                }
+              }
+            },
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: 'rgba(255, 255, 255, 0.05)'
+              },
+              ticks: {
+                color: 'var(--text-secondary, #94a3b8)',
+                font: {
+                  family: 'Inter, sans-serif',
+                  size: 11
+                },
+                stepSize: 1
+              }
+            }
+          }
+        }
+      });
+    };
+    
+    initChart();
+  });
+</script>

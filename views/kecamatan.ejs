@@ -71,37 +71,34 @@
         </div>
 
         <% if (desaStats && desaStats.length > 0) { %>
-          <div class="table-wrap">
-            <table id="desaTable">
+          <div class="table-wrap" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table id="desaTable" style="width: 100%; min-width: 100%; border-collapse: collapse;">
               <thead class="hide-sm">
                 <tr>
-                  <th rowspan="2" class="text-center" style="font-weight: 600; width: 40px;">No</th>
-                  <th rowspan="2">Nama Desa/Kelurahan</th>
-                  <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">FASIH %</th>
-                  <th rowspan="2" class="text-right bg-cyan-soft muatan-col" style="min-width: 140px;">Muatan %</th>
-                  <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
-                  <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
-                  <th colspan="2" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
+                  <th rowspan="2" class="text-center" style="font-weight: 600; width: 40px; white-space: nowrap;">No</th>
+                  <th rowspan="2" style="min-width: 120px; white-space: nowrap;">Nama Desa/Kelurahan</th>
+                  <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 130px; white-space: nowrap;">FASIH %</th>
+                  <th rowspan="2" class="text-center bg-cyan-soft muatan-col" style="min-width: 95px; white-space: nowrap;">Muatan %</th>
+                  <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border); white-space: nowrap;">Assignment FASIH</th>
+                  <th colspan="2" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border); white-space: nowrap;">Progres Muatan</th>
                 </tr>
                 <tr>
-                  <th class="text-right bg-yellow-soft">Draft</th>
-                  <th class="text-right bg-blue-soft">Submitted</th>
-                  <th class="text-right bg-red-soft">Rejected</th>
-                  <th class="text-right bg-green-soft">Approved</th>
-                  <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : 'Tgt Statis' %></th>
+                  <th class="text-right bg-yellow-soft" style="min-width: 70px; white-space: nowrap;">Draft</th>
+                  <th class="text-right bg-blue-soft" style="min-width: 75px; white-space: nowrap;">Submitted</th>
+                  <th class="text-right bg-red-soft" style="min-width: 75px; white-space: nowrap;">Rejected</th>
+                  <th class="text-right bg-green-soft" style="min-width: 75px; white-space: nowrap;">Approved</th>
+                  <th class="text-right bg-purple-soft" style="min-width: 85px; white-space: nowrap;"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : 'Tgt Statis' %></th>
                   
-                  <th class="text-right bg-cyan-soft muatan-col">Realisasi</th>
-                  <th class="text-right bg-cyan-soft muatan-col">Target</th>
+                  <th class="text-right bg-cyan-soft muatan-col" style="min-width: 75px; white-space: nowrap;">Realisasi</th>
+                  <th class="text-right bg-cyan-soft muatan-col" style="min-width: 75px; white-space: nowrap;">Target</th>
                 </tr>
               </thead>
               <thead class="show-sm-table-header">
                 <tr>
-                  <th class="text-center" style="width: 40px;">No</th>
-                  <th>Desa/Kelurahan</th>
-                  <!-- <th class="text-right">Total SLS</th> -->
-                  <!-- <th class="text-right">Selesai</th> -->
-                  <th class="text-right bg-purple-soft" data-column-idx="2">FASIH %</th>
-                  <th class="text-right bg-cyan-soft muatan-col" data-column-idx="3">Muatan %</th>
+                  <th class="text-center" style="width: 40px; white-space: nowrap;">No</th>
+                  <th style="min-width: 110px; white-space: nowrap;">Desa/Kelurahan</th>
+                  <th class="text-right bg-purple-soft" data-column-idx="2" style="min-width: 130px; white-space: nowrap;">FASIH %</th>
+                  <th class="text-center bg-cyan-soft muatan-col" data-column-idx="3" style="min-width: 90px; white-space: nowrap;">Muatan %</th>
                 </tr>
               </thead>
               <tbody>
@@ -109,17 +106,17 @@
                   <% let fasihPct = d.fasih_pct_str; %>
                   <% let muatanPct = d.muatan_pct_str; %>
                   <tr>
-                    <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
-                    <td class="td-primary"><a href="/subsls?kec=<%= encodeURIComponent(filterKec) %>&desa=<%= encodeURIComponent(d.desa) %>" style="color: inherit; text-decoration: none;"><i class="bi bi-pin-map"></i> <%= d.desa %></a></td>
+                    <td class="text-center" style="font-weight: 600; background: var(--bg-subtle); white-space: nowrap;"><%= index + 1 %></td>
+                    <td class="td-primary" style="white-space: nowrap;"><a href="/subsls?kec=<%= encodeURIComponent(filterKec) %>&desa=<%= encodeURIComponent(d.desa) %>" style="color: inherit; text-decoration: none;"><i class="bi bi-pin-map"></i> <%= d.desa %></a></td>
                     
-                    <td class="bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>" style="min-width: 160px; padding: 6px 10px; vertical-align: middle;">
+                    <td class="bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>" style="min-width: 130px; padding: 6px 10px; vertical-align: middle;">
                        <%
                         const fReal = (d.submitted_total || 0) + (d.approved_total || 0) + (d.rejected_total || 0);
                         const fTgt = d.target_fasih_total || 0;
                         const fW = Math.min(parseFloat(fasihPct), 100);
                         const fColor = fW >= 100 ? 'var(--accent-green)' : (fW < 40 ? 'var(--accent-red)' : 'var(--accent-purple)');
                       %>
-                      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px;">
+                      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px; white-space: nowrap;">
                         <span style="font-weight:700; color:<%= fColor %>"><%= fasihPct %>%</span>
                         <span><%= fReal.toLocaleString('id-ID') %> / <%= fTgt.toLocaleString('id-ID') %></span>
                       </div>
@@ -127,7 +124,7 @@
                         <div class="progress-bar <%= fW >= 100 ? 'green' : (fW < 40 ? 'red' : 'purple') %>" data-width="<%= fW %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
-                    <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>" style="min-width: 160px; padding: 6px 10px; vertical-align: middle;">
+                    <td class="text-center bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>" style="min-width: 90px; padding: 6px 10px; vertical-align: middle; white-space: nowrap;">
                       <% if (parseFloat(muatanPct) >= 100) { %>
                         <span class="badge badge-green">100%</span>
                       <% } else if (parseFloat(muatanPct) < 40) { %>
@@ -137,16 +134,14 @@
                       <% } %>
                     </td>
 
-                    <!-- <td class="text-right" data-sort="<%= d.total_subsls %>"><%= d.total_subsls %></td> -->
-                    <!-- <td class="text-right fw-bold" data-sort="<%= d.selesai %>"><%= d.selesai %></td> -->
-                    <td class="text-right bg-yellow-soft hide-sm status-draft-text" data-sort="<%= d.draft_total %>"><%= (d.draft_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-blue-soft hide-sm status-submit-text" data-sort="<%= d.submitted_total %>"><%= (d.submitted_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-red-soft hide-sm status-reject-text" data-sort="<%= d.rejected_total %>" style="font-weight: 600;"><%= (d.rejected_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-green-soft hide-sm status-approve-text" data-sort="<%= d.approved_total %>" style="font-weight: 600;"><%= (d.approved_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= d.target_fasih_total %>"><%= (d.target_fasih_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-yellow-soft hide-sm status-draft-text" data-sort="<%= d.draft_total %>" style="white-space: nowrap;"><%= (d.draft_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-blue-soft hide-sm status-submit-text" data-sort="<%= d.submitted_total %>" style="white-space: nowrap;"><%= (d.submitted_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-red-soft hide-sm status-reject-text" data-sort="<%= d.rejected_total %>" style="font-weight: 600; white-space: nowrap;"><%= (d.rejected_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-green-soft hide-sm status-approve-text" data-sort="<%= d.approved_total %>" style="font-weight: 600; white-space: nowrap;"><%= (d.approved_total || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= d.target_fasih_total %>" style="white-space: nowrap;"><%= (d.target_fasih_total || 0).toLocaleString('id-ID') %></td>
                     
-                    <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= d.muatan_selesai !== undefined ? d.muatan_selesai : (d.usaha_total + d.keluarga_total) %>"><%= (d.muatan_selesai !== undefined ? d.muatan_selesai : (d.usaha_total + d.keluarga_total)).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= d.total_muatan %>"><%= d.total_muatan.toLocaleString('id-ID') %></td>
+                    <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= d.muatan_selesai !== undefined ? d.muatan_selesai : (d.usaha_total + d.keluarga_total) %>" style="white-space: nowrap;"><%= (d.muatan_selesai !== undefined ? d.muatan_selesai : (d.usaha_total + d.keluarga_total)).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= d.total_muatan %>" style="white-space: nowrap;"><%= d.total_muatan.toLocaleString('id-ID') %></td>
                   </tr>
                 <% }) %>
               </tbody>
@@ -167,7 +162,6 @@
 
   <% } %>
 </div>
-
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     makeTableSortable('desaTable');
@@ -180,6 +174,48 @@
     const cardsGrid = document.querySelector('.kec-grid');
 
     if (cardsGrid && detailContainer) {
+
+      // --- MOBILE INLINE DETAIL INJECTION ---
+      // On mobile (< 768px): move detail container inside .kec-grid right after the active card
+      // On desktop: keep detail container in its original position (after .kec-grid)
+
+      // Create a sentinel placeholder to track original DOM position
+      const detailPlaceholder = document.createElement('div');
+      detailPlaceholder.id = 'kecDetailPlaceholder';
+      detailPlaceholder.style.display = 'none';
+      detailContainer.parentNode.insertBefore(detailPlaceholder, detailContainer);
+
+      function isMobile() {
+        return window.innerWidth < 768;
+      }
+
+      function placeDetailAfterCard(activeCard) {
+        if (!isMobile() || !activeCard) {
+          restoreDetailOriginalPosition();
+          return;
+        }
+        // Move into grid right after active card (grid-column: 1/-1 via CSS spans all cols)
+        activeCard.parentNode.insertBefore(detailContainer, activeCard.nextSibling);
+        detailContainer.classList.add('kec-detail-inline-mobile');
+      }
+
+      function restoreDetailOriginalPosition() {
+        if (detailContainer.parentNode !== detailPlaceholder.parentNode) {
+          detailPlaceholder.parentNode.insertBefore(detailContainer, detailPlaceholder.nextSibling);
+        }
+        detailContainer.classList.remove('kec-detail-inline-mobile');
+      }
+
+      // Reposition on screen resize (e.g. orientation change)
+      window.addEventListener('resize', () => {
+        const activeCard = cardsGrid.querySelector('a.kec-card.active');
+        if (activeCard && detailContainer.querySelector('.card')) {
+          placeDetailAfterCard(activeCard);
+        } else {
+          restoreDetailOriginalPosition();
+        }
+      });
+
       // Intercept card clicks
       cardsGrid.addEventListener('click', (e) => {
         const link = e.target.closest('a.kec-card');
@@ -222,6 +258,16 @@
 
               // Re-bind close handler
               bindCloseDetail();
+
+              // Place detail below active card on mobile
+              placeDetailAfterCard(link);
+
+              // Scroll to detail smoothly on mobile
+              if (isMobile()) {
+                setTimeout(() => {
+                  detailContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+              }
             }
           })
           .catch(err => {
@@ -229,51 +275,53 @@
             detailContainer.style.opacity = '1';
           });
       });
-    }
 
-    // AJAX Tutup Detail handler
-    function bindCloseDetail() {
-      const closeBtn = detailContainer.querySelector('a[href*="/kecamatan"]');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          const url = closeBtn.getAttribute('href') || '/kecamatan';
+      // AJAX Tutup Detail handler
+      function bindCloseDetail() {
+        const closeBtn = detailContainer.querySelector('a[href*="/kecamatan"]');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const url = closeBtn.getAttribute('href') || '/kecamatan';
 
-          // Reset active cards
-          if (cardsGrid) {
+            // Reset active cards
             cardsGrid.querySelectorAll('a.kec-card').forEach(c => {
               c.classList.remove('active');
             });
-          }
 
-          detailContainer.style.opacity = '0.5';
-          fetch(url)
-            .then(res => res.text())
-            .then(html => {
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(html, 'text/html');
-              const newDetail = doc.getElementById('kecDetailContainer');
-              if (newDetail) {
-                detailContainer.innerHTML = newDetail.innerHTML;
+            // Restore position before fetching
+            restoreDetailOriginalPosition();
+
+            detailContainer.style.opacity = '0.5';
+            fetch(url)
+              .then(res => res.text())
+              .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newDetail = doc.getElementById('kecDetailContainer');
+                if (newDetail) {
+                  detailContainer.innerHTML = newDetail.innerHTML;
+                  detailContainer.style.opacity = '1';
+                  detailContainer.classList.remove('smooth-detail-animate');
+                  void detailContainer.offsetWidth;
+                  detailContainer.classList.add('smooth-detail-animate');
+                  window.history.pushState(null, '', url);
+
+                  // Animate progress bars after closing detail (back to list state)
+                  if (window.initProgressBars) window.initProgressBars(detailContainer);
+                  bindCloseDetail();
+                }
+              })
+              .catch(err => {
+                console.error(err);
                 detailContainer.style.opacity = '1';
-                detailContainer.classList.remove('smooth-detail-animate');
-                void detailContainer.offsetWidth;
-                detailContainer.classList.add('smooth-detail-animate');
-                window.history.pushState(null, '', url);
-
-                // Animate progress bars after closing detail (back to list state)
-                if (window.initProgressBars) window.initProgressBars(detailContainer);
-                bindCloseDetail();
-              }
-            })
-            .catch(err => {
-              console.error(err);
-              detailContainer.style.opacity = '1';
-            });
-        });
+              });
+          });
+        }
       }
-    }
 
-    bindCloseDetail();
+      bindCloseDetail();
+
+    } // end if (cardsGrid && detailContainer)
   });
 </script>

@@ -3357,6 +3357,86 @@
       viewBtn.addEventListener('click', closeModal);
     }
 
+    // ====== TOAST NOTIFICATION FOR DATA UPDATES ======
+    function createToastNotification(updates) {
+      if (!updates || updates.length === 0) return;
+
+      // Ensure toast container exists
+      let container = document.getElementById('toastNotifContainer');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastNotifContainer';
+        container.style.cssText = [
+          'position:fixed', 'bottom:24px', 'right:24px', 'z-index:9999',
+          'display:flex', 'flex-direction:column', 'gap:10px',
+          'pointer-events:none', 'max-width:360px', 'width:calc(100% - 48px)'
+        ].join(';');
+        document.body.appendChild(container);
+      }
+
+      updates.forEach((u, i) => {
+        const iconMap = { muatan: 'bi-bar-chart-fill', fasih: 'bi-phone-fill' };
+        const colorMap = { muatan: 'var(--accent-cyan)', fasih: 'var(--accent-purple)' };
+        const icon  = iconMap[u.type]  || 'bi-bell-fill';
+        const color = colorMap[u.type] || 'var(--accent-blue)';
+
+        const toast = document.createElement('div');
+        toast.style.cssText = [
+          'background:var(--bg-card)', 'border:1px solid var(--border)',
+          'border-left:4px solid ' + color,
+          'border-radius:10px', 'padding:12px 14px',
+          'display:flex', 'align-items:flex-start', 'gap:10px',
+          'box-shadow:0 8px 24px rgba(0,0,0,0.3)',
+          'pointer-events:auto', 'opacity:0',
+          'transform:translateY(16px)',
+          'transition:opacity 0.35s ease, transform 0.35s ease'
+        ].join(';');
+
+        toast.innerHTML = `
+          <div style="flex-shrink:0;width:32px;height:32px;border-radius:8px;
+            background:${color}22;display:flex;align-items:center;justify-content:center;
+            color:${color};font-size:15px;">
+            <i class="bi ${icon}"></i>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">
+              ${u.title || 'Data Diperbarui'}
+            </div>
+            <div style="font-size:11px;color:var(--text-secondary);line-height:1.5;">
+              ${u.desc || ''}
+            </div>
+          </div>
+          <button class="toast-close-btn" style="background:none;border:none;color:var(--text-muted);
+            cursor:pointer;padding:0 2px;font-size:14px;flex-shrink:0;line-height:1;margin-top:1px;"
+            title="Tutup">
+            <i class="bi bi-x-lg"></i>
+          </button>`;
+
+        container.appendChild(toast);
+
+        // Animate in (staggered)
+        setTimeout(() => {
+          toast.style.opacity = '1';
+          toast.style.transform = 'translateY(0)';
+        }, 80 + i * 120);
+
+        // Auto-dismiss after 6 seconds
+        const autoDismiss = setTimeout(() => removeToast(toast), 6000 + i * 120);
+
+        // Manual close
+        toast.querySelector('.toast-close-btn').addEventListener('click', () => {
+          clearTimeout(autoDismiss);
+          removeToast(toast);
+        });
+
+        function removeToast(el) {
+          el.style.opacity = '0';
+          el.style.transform = 'translateY(8px)';
+          setTimeout(() => el.remove(), 350);
+        }
+      });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       checkEarlyWarningSummary();
       const storedMuatan = localStorage.getItem('last_seen_muatan_date');

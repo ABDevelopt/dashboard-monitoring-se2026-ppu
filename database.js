@@ -376,6 +376,26 @@ function runMigrations() {
           db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_message_template', '')").run();
         } catch (_) {}
       }
+    },
+    {
+      version: '20260725000000_add_visitor_logs',
+      up: (db) => {
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS visitor_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            role TEXT,
+            ip TEXT,
+            user_agent TEXT,
+            path TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        try {
+          db.exec(`CREATE INDEX IF NOT EXISTS idx_visitor_logs_created_at ON visitor_logs(created_at);`);
+          db.exec(`CREATE INDEX IF NOT EXISTS idx_visitor_logs_path ON visitor_logs(path);`);
+        } catch (_) {}
+      }
     }
   ];
 
@@ -1739,6 +1759,98 @@ function getIntradayUploadsByDate(tanggal) {
   };
 }
 
+function logVisit({ username, role, ip, userAgent, path }) {
+  try {
+    const db = getDb();
+    db.prepare('INSERT INTO visitor_logs (username, role, ip, user_agent, path) VALUES (?, ?, ?, ?, ?)')
+      .run(username || null, role || null, ip || null, userAgent || null, path);
+  } catch (err) {
+    logger.error('Failed to log visit:', err);
+  }
+}
+
+function getVisitorStats() {
+  try {
+    const db = getDb();
+    
+    // Total page views
+    const totalViews = db.prepare('SELECT COUNT(*) as count FROM visitor_logs').get().count;
+    
+    // Unique visitors (based on IP)
+    const uniqueVisitors = db.prepare('SELECT COUNT(DISTINCT ip) as count FROM visitor_logs').get().count;
+    
+    // Unique logged in users count
+    const uniqueUsers = db.prepare('SELECT COUNT(DISTINCT username) as count FROM visitor_logs WHERE username IS NOT NULL').get().count;
+
+    // Page views per path (top paths)
+    const topPaths = db.prepare(`
+      SELECT path, COUNT(*) as count 
+      FROM visitor_logs 
+      GROUP BY path 
+      ORDER BY count DESC 
+      LIMIT 10
+    `).all();
+
+    // Page views per user role
+    const viewsByRole = db.prepare(`
+      SELECT COALESCE(role, 'guest') as role, COUNT(*) as count 
+      FROM visitor_logs 
+      GROUP BY role 
+      ORDER BY count DESC
+    `).all();
+
+    // Top active users (logged in)
+    const topUsers = db.prepare(`
+      SELECT username, role, COUNT(*) as count, MAX(created_at) as last_active
+      FROM visitor_logs 
+      WHERE username IS NOT NULL
+      GROUP BY username, role 
+      ORDER BY count DESC 
+      LIMIT 10
+    `).all();
+
+    // Daily visits for the last 14 days
+    const dailyVisits = db.prepare(`
+      SELECT DATE(created_at, '+8 hours') as date, COUNT(*) as views, COUNT(DISTINCT ip) as unique_ips
+      FROM visitor_logs 
+      WHERE created_at >= DATETIME('now', '-14 days')
+      GROUP BY DATE(created_at, '+8 hours')
+      ORDER BY date ASC
+    `).all();
+
+    // Latest visits (last 20)
+    const latestVisits = db.prepare(`
+      SELECT username, role, ip, user_agent, path, created_at
+      FROM visitor_logs
+      ORDER BY id DESC
+      LIMIT 20
+    `).all();
+
+    return {
+      totalViews,
+      uniqueVisitors,
+      uniqueUsers,
+      topPaths,
+      viewsByRole,
+      topUsers,
+      dailyVisits,
+      latestVisits
+    };
+  } catch (err) {
+    logger.error('Failed to get visitor stats:', err);
+    return {
+      totalViews: 0,
+      uniqueVisitors: 0,
+      uniqueUsers: 0,
+      topPaths: [],
+      viewsByRole: [],
+      topUsers: [],
+      dailyVisits: [],
+      latestVisits: []
+    };
+  }
+}
+
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -1748,5 +1860,6 @@ module.exports = {
   getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages, getTargetFormula,
   getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula,
   getAllUsers, createUser, updateUser, deleteUser,
-  saveRememberToken, getUserByRememberToken, deleteRememberToken, getIntradayUploadsByDate
+  saveRememberToken, getUserByRememberToken, deleteRememberToken, getIntradayUploadsByDate,
+  logVisit, getVisitorStats
 };
