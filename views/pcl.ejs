@@ -127,6 +127,13 @@
                       <% if (kippPcls.includes(p.pcl.toUpperCase())) { %>
                         <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 4px;">KIPP</span>
                       <% } %>
+                      <% if (p.email) { %>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                          <a href="mailto:<%= p.email %>" style="color: var(--text-muted); text-decoration: none;" title="Kirim Email: <%= p.email %>">
+                            <i class="bi bi-envelope" style="font-size: 10px;"></i> <%= p.email %>
+                          </a>
+                        </div>
+                      <% } %>
                     </td>
                     <td class="bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>" style="min-width: 160px; padding: 6px 10px;">
                       <%

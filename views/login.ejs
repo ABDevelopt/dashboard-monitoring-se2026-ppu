@@ -12,54 +12,57 @@
     width: 100vw !important;
   }
 
-  /* page-content on login must fill exactly the viewport minus the topbar */
+  /* page-content fills exactly the viewport minus the topbar */
   body.page-login .page-content {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     overflow: hidden !important;
-    padding: 12px !important;
-    /* height = viewport minus topbar */
+    padding: 16px !important;
     height: calc(100dvh - var(--header-height)) !important;
     box-sizing: border-box !important;
   }
 
-  /* Fade-in wrapper — flex container, no overflow */
+  /* Fade-in wrapper */
   .login-page-wrapper {
     width: 100%;
     max-width: 720px;
     overflow: hidden;
   }
 
-  /* Card container */
+  /* Card container — Premium Glassmorphic Design */
   .login-container-card {
     display: flex;
     flex-direction: row;
-    border-radius: 14px;
+    border-radius: 20px;
     overflow: hidden;
     padding: 0 !important;
     border: 1px solid var(--border);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
-    /* Never exceed the visible area */
-    max-height: calc(100dvh - var(--header-height) - 24px);
+    background: var(--bg-card);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    max-height: calc(100dvh - var(--header-height) - 32px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
 
-  /* LEFT: Logo column */
+  /* LEFT: Logo & Branding column */
   .login-logo-col {
-    flex: 0 0 220px;
-    background: var(--bg-secondary);
+    flex: 0 0 240px;
+    background: linear-gradient(180deg, rgba(249, 115, 22, 0.08) 0%, rgba(194, 65, 12, 0.04) 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 28px 24px;
+    padding: 32px 24px;
     border-right: 1px solid var(--border);
-    gap: 10px;
+    gap: 12px;
+    position: relative;
   }
 
   .login-logo-col img {
-    width: clamp(100px, 12vw, 140px);
+    width: clamp(100px, 11vw, 135px);
     object-fit: contain;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
   }
 
   .login-logo-label {
@@ -70,51 +73,151 @@
     line-height: 1.4;
   }
 
-  /* RIGHT: Form column — scrollable internally only if absolutely needed */
+  /* RIGHT: Form column */
   .login-form-col {
     flex: 1;
-    padding: 28px 28px;
+    padding: 32px 32px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    overflow-y: auto; /* internal scroll only, outer body never scrolls */
+    overflow-y: auto;
     min-width: 0;
   }
 
-  /* Form element spacing compression on small heights */
-  .login-form-col h2 { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; text-align: center; }
-  .login-form-col .login-subtitle { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; text-align: center; }
-  .login-field { margin-bottom: 12px; text-align: left; }
-  .login-field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
-  .login-field input {
+  .login-form-col h2 {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    text-align: center;
+    letter-spacing: -0.01em;
+  }
+
+  .login-form-col .login-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 18px;
+    text-align: center;
+  }
+
+  /* Icon-embedded Input Fields */
+  .login-field {
+    margin-bottom: 14px;
+    text-align: left;
+  }
+
+  .login-field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .login-input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .login-input-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--text-muted);
+    font-size: 14px;
+    pointer-events: none;
+    transition: color 0.2s ease;
+  }
+
+  .login-input-group input {
     width: 100%;
-    padding: 10px 12px;
+    padding: 10px 38px 10px 36px;
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+    border-radius: 10px;
     font-size: 13px;
     background: var(--bg-body);
     color: var(--text-primary);
     box-sizing: border-box;
-    transition: border-color 0.2s;
+    transition: all 0.2s ease;
   }
-  .login-field input:focus { outline: none; border-color: var(--accent-blue); }
+
+  .login-input-group input:focus {
+    outline: none;
+    border-color: var(--accent-blue, #f97316);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+    background: var(--bg-card);
+  }
+
+  .login-input-group input:focus ~ .login-input-icon {
+    color: var(--accent-blue, #f97316);
+  }
+
+  .login-toggle-pwd {
+    position: absolute;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+  }
+
+  .login-toggle-pwd:hover {
+    color: var(--text-primary);
+  }
 
   .login-remember {
-    margin-bottom: 16px;
+    margin-bottom: 18px;
     display: flex;
     align-items: center;
     gap: 8px;
   }
-  .login-remember input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent-blue); cursor: pointer; flex-shrink: 0; }
-  .login-remember label { font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; }
 
+  .login-remember input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--accent-blue, #f97316);
+    cursor: pointer;
+    flex-shrink: 0;
+    border-radius: 4px;
+  }
+
+  .login-remember label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  /* Submit & Action Buttons */
   .login-submit-btn {
     width: 100%;
     justify-content: center;
-    padding: 10px;
+    padding: 11px;
     font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 10px;
+    font-weight: 700;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent-blue, #f97316) 0%, var(--accent-orange, #c2410c) 100%);
+    border: none;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .login-submit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(249, 115, 22, 0.45);
   }
 
   .login-alt-btn {
@@ -122,53 +225,75 @@
     justify-content: center;
     padding: 9px;
     font-size: 12px;
+    font-weight: 600;
+    border-radius: 10px;
   }
 
   .login-back-link {
-    display: block;
-    text-align: center;
-    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 14px;
     font-size: 12px;
     color: var(--text-muted);
     text-decoration: none;
-    transition: color 0.2s;
+    font-weight: 500;
+    transition: color 0.2s ease;
   }
-  .login-back-link:hover { color: var(--text-primary); }
+
+  .login-back-link:hover {
+    color: var(--text-primary);
+  }
 
   /* Avatar for saved account */
   .login-avatar {
-    width: 68px; height: 68px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
-    background: linear-gradient(45deg, #f97316, #ec4899, #8b5cf6);
-    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--accent-blue, #f97316) 0%, var(--accent-orange, #c2410c) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin: 0 auto 12px auto;
-    box-shadow: 0 4px 14px rgba(249,115,22,0.25);
+    box-shadow: 0 6px 18px rgba(249, 115, 22, 0.35);
     border: 3px solid var(--border);
   }
-  .login-avatar span { font-size: 24px; font-weight: 700; color: white; text-transform: uppercase; }
+
+  .login-avatar span {
+    font-size: 22px;
+    font-weight: 800;
+    color: #ffffff;
+    text-transform: uppercase;
+  }
 
   .login-danger-link {
-    display: block;
-    text-align: center;
-    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 10px;
     font-size: 11px;
     color: var(--accent-red);
     text-decoration: none;
     font-weight: 500;
     transition: opacity 0.2s;
   }
-  .login-danger-link:hover { opacity: 0.8; }
 
-  /* ── Mobile: stack logo on top of form ── */
+  .login-danger-link:hover {
+    opacity: 0.8;
+  }
+
+  /* Responsive Adjustments for Mobile Viewports */
   @media (max-width: 620px) {
     .login-container-card {
       flex-direction: column !important;
-      max-height: calc(100dvh - var(--header-height) - 24px);
+      max-height: calc(100dvh - var(--header-height) - 20px);
     }
 
     .login-logo-col {
       flex: none !important;
-      padding: 16px !important;
+      padding: 14px 16px !important;
       border-right: none !important;
       border-bottom: 1px solid var(--border) !important;
       flex-direction: row !important;
@@ -176,25 +301,25 @@
       justify-content: center !important;
     }
 
-    .login-logo-col img { width: 52px !important; }
-    .login-logo-label { font-size: 11px; }
+    .login-logo-col img { width: 44px !important; }
+    .login-logo-badge { display: none !important; }
+    .login-logo-label { font-size: 11px; text-align: left; }
 
-    .login-form-col { padding: 16px !important; }
-    .login-form-col h2 { font-size: 16px; }
-    .login-form-col .login-subtitle { margin-bottom: 12px; }
-    .login-field { margin-bottom: 8px; }
-    .login-field input { padding: 8px 10px; font-size: 12px; }
-    .login-remember { margin-bottom: 12px; }
+    .login-form-col { padding: 18px 20px !important; }
+    .login-form-col h2 { font-size: 17px; }
+    .login-form-col .login-subtitle { margin-bottom: 14px; }
+    .login-field { margin-bottom: 10px; }
+    .login-input-group input { padding: 8px 34px 8px 34px; font-size: 12.5px; }
+    .login-remember { margin-bottom: 14px; }
     .login-submit-btn { padding: 9px; }
   }
 
-  /* ── Very small screens (e.g. 360px) ── */
   @media (max-width: 400px) {
     body.page-login .page-content { padding: 8px !important; }
     .login-logo-col { padding: 10px !important; }
-    .login-form-col { padding: 12px !important; }
-    .login-avatar { width: 56px; height: 56px; }
-    .login-avatar span { font-size: 20px; }
+    .login-form-col { padding: 14px 14px !important; }
+    .login-avatar { width: 52px; height: 52px; }
+    .login-avatar span { font-size: 18px; }
   }
 </style>
 
@@ -219,7 +344,7 @@
             <span><%= savedAccount.username.substring(0, 2) %></span>
           </div>
           <h2><%= savedAccount.username %></h2>
-          <p class="login-subtitle"><i class="bi bi-shield-check"></i> <%= savedAccount.role %></p>
+          <p class="login-subtitle"><i class="bi bi-shield-check" style="color: var(--accent-green);"></i> Sesi <%= savedAccount.role %></p>
 
           <form action="/login/token" method="POST">
             <button type="submit" class="btn btn-primary login-submit-btn">
@@ -228,27 +353,36 @@
           </form>
 
           <button onclick="switchToNormalForm()" class="btn btn-secondary login-alt-btn" style="margin-top:8px;">
-            <i class="bi bi-people"></i> Gunakan Akun Lain
+            <i class="bi bi-person-gear"></i> Gunakan Akun Lain
           </button>
 
           <a href="/login/clear-saved" class="login-danger-link">
-            <i class="bi bi-trash3"></i> Hapus Info Login dari Browser Ini
+            <i class="bi bi-trash3"></i> Hapus Sesi Tersimpan
           </a>
         </div>
 
         <!-- PANEL B: Normal Login (hidden by default) -->
         <div id="normal-login-panel" style="display:none;" class="fade-in">
           <h2>Login Pengguna</h2>
-          <p class="login-subtitle">Masukkan username dan password Anda.</p>
+          <p class="login-subtitle">Masukkan kredensial akun Anda.</p>
 
           <form action="/login" method="POST">
             <div class="login-field">
               <label for="username2">Username</label>
-              <input type="text" id="username2" name="username" required placeholder="Masukkan username">
+              <div class="login-input-group">
+                <i class="bi bi-person login-input-icon"></i>
+                <input type="text" id="username2" name="username" required placeholder="Masukkan username">
+              </div>
             </div>
             <div class="login-field">
               <label for="password2">Password</label>
-              <input type="password" id="password2" name="password" required placeholder="••••••••">
+              <div class="login-input-group">
+                <i class="bi bi-key login-input-icon"></i>
+                <input type="password" id="password2" name="password" required placeholder="••••••••">
+                <button type="button" class="login-toggle-pwd" onclick="togglePasswordVisibility('password2', this)" title="Tampilkan Password">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
             </div>
             <div class="login-remember">
               <input type="checkbox" id="remember2" name="remember">
@@ -274,11 +408,20 @@
           <form action="/login" method="POST">
             <div class="login-field">
               <label for="username">Username</label>
-              <input type="text" id="username" name="username" required placeholder="Masukkan username">
+              <div class="login-input-group">
+                <i class="bi bi-person login-input-icon"></i>
+                <input type="text" id="username" name="username" required placeholder="Masukkan username" autofocus>
+              </div>
             </div>
             <div class="login-field">
               <label for="password">Password</label>
-              <input type="password" id="password" name="password" required placeholder="••••••••">
+              <div class="login-input-group">
+                <i class="bi bi-key login-input-icon"></i>
+                <input type="password" id="password" name="password" required placeholder="••••••••">
+                <button type="button" class="login-toggle-pwd" onclick="togglePasswordVisibility('password', this)" title="Tampilkan Password">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
             </div>
             <div class="login-remember">
               <input type="checkbox" id="remember" name="remember">
@@ -293,7 +436,7 @@
       <% } %>
 
       <a href="/" class="login-back-link">
-        <i class="bi bi-arrow-left"></i> Kembali ke Halaman Publik
+        <i class="bi bi-arrow-left"></i> Halaman Utama Dashboard
       </a>
     </div>
 
@@ -301,8 +444,20 @@
 </div>
 
 <script>
-  // Apply page-login class to html element too (for overflow lock)
+  // Apply page-login class to html element (for zero-scroll viewport lock)
   document.documentElement.classList.add('page-login');
+
+  function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'bi bi-eye-slash';
+    } else {
+      input.type = 'password';
+      icon.className = 'bi bi-eye';
+    }
+  }
 
   function switchToNormalForm() {
     document.getElementById('saved-account-panel').style.display = 'none';

@@ -396,6 +396,76 @@ function runMigrations() {
           db.exec(`CREATE INDEX IF NOT EXISTS idx_visitor_logs_path ON visitor_logs(path);`);
         } catch (_) {}
       }
+    },
+    {
+      version: '20260725000001_add_petugas_email',
+      up: (db) => {
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS petugas_email (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sobat_id TEXT,
+            nama_lengkap TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            jenis_kelamin TEXT,
+            kode_prov INTEGER DEFAULT 64,
+            kode_kab INTEGER DEFAULT 9,
+            nama_kab TEXT DEFAULT 'PENAJAM PASER UTARA',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        try {
+          db.exec(`CREATE INDEX IF NOT EXISTS idx_petugas_email_nama ON petugas_email(nama_lengkap);`);
+          db.exec(`CREATE INDEX IF NOT EXISTS idx_petugas_email_email ON petugas_email(email);`);
+          db.exec(`CREATE INDEX IF NOT EXISTS idx_petugas_email_sobat ON petugas_email(sobat_id);`);
+        } catch (_) {}
+      }
+    },
+    {
+      version: '20260725000002_integrate_petugas_email',
+      up: (db) => {
+        const cols = ['pcl_email', 'pcl_sobat_id', 'pml_email', 'pml_sobat_id', 'korlap_email', 'korlap_sobat_id'];
+        cols.forEach(col => {
+          try {
+            db.prepare(`ALTER TABLE subsls_master ADD COLUMN ${col} TEXT`).run();
+          } catch (_) {}
+        });
+
+        const emails = db.prepare('SELECT nama_lengkap, email, sobat_id FROM petugas_email').all();
+        const cleanStr = (s) => (s ? s.toString().toLowerCase().replace(/[^a-z0-9]/g, '') : '');
+        const emailMapExact = {};
+        const emailMapClean = {};
+
+        emails.forEach(r => {
+          if (r.nama_lengkap) {
+            const ex = r.nama_lengkap.trim().toLowerCase();
+            const cl = cleanStr(r.nama_lengkap);
+            emailMapExact[ex] = r;
+            emailMapClean[cl] = r;
+          }
+        });
+
+        const roles = [
+          { roleCol: 'pcl', emailCol: 'pcl_email', sobatCol: 'pcl_sobat_id' },
+          { roleCol: 'pml', emailCol: 'pml_email', sobatCol: 'pml_sobat_id' },
+          { roleCol: 'korlap', emailCol: 'korlap_email', sobatCol: 'korlap_sobat_id' }
+        ];
+
+        roles.forEach(({ roleCol, emailCol, sobatCol }) => {
+          const uniqueOfficers = db.prepare(`SELECT DISTINCT ${roleCol} FROM subsls_master WHERE ${roleCol} IS NOT NULL AND ${roleCol} != ''`).all();
+          uniqueOfficers.forEach(o => {
+            const name = o[roleCol] ? o[roleCol].trim() : '';
+            if (!name) return;
+            const ex = name.toLowerCase();
+            const cl = cleanStr(name);
+
+            const target = emailMapExact[ex] || emailMapClean[cl];
+            if (target) {
+              db.prepare(`UPDATE subsls_master SET ${emailCol} = ?, ${sobatCol} = ? WHERE LOWER(TRIM(${roleCol})) = LOWER(TRIM(?))`)
+                .run(target.email, target.sobat_id, name);
+            }
+          });
+        });
+      }
     }
   ];
 
@@ -635,6 +705,8 @@ function getKorlapStats(uploadId, settings = getSettings()) {
   return attachProgressPercentages(getDb().prepare(`
     SELECT 
       m.korlap,
+      MAX(m.korlap_email) AS email,
+      MAX(m.korlap_sobat_id) AS sobat_id,
       COUNT(DISTINCT m.pcl) AS jumlah_pcl,
       COUNT(DISTINCT m.pml) AS jumlah_pml,
       COUNT(m.kode) AS total_subsls,
@@ -671,6 +743,8 @@ function getPmlStats(uploadId, settings = getSettings()) {
     SELECT 
       m.pml,
       m.korlap,
+      MAX(m.pml_email) AS email,
+      MAX(m.pml_sobat_id) AS sobat_id,
       COUNT(DISTINCT m.pcl) AS jumlah_pcl,
       COUNT(m.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
@@ -708,6 +782,8 @@ function getPclStats(uploadId, settings = getSettings()) {
       m.pml,
       m.korlap,
       m.kecamatan,
+      MAX(m.pcl_email) AS email,
+      MAX(m.pcl_sobat_id) AS sobat_id,
       COUNT(m.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
@@ -1851,6 +1927,31 @@ function getVisitorStats() {
   }
 }
 
+// ===== PETUGAS EMAIL DATABASE HELPERS =====
+function getPetugasEmails() {
+  return getDb().prepare('SELECT * FROM petugas_email ORDER BY nama_lengkap ASC').all();
+}
+
+function searchPetugasEmails(query) {
+  if (!query) return getPetugasEmails();
+  const q = `%${query.trim()}%`;
+  return getDb().prepare(`
+    SELECT * FROM petugas_email 
+    WHERE nama_lengkap LIKE ? OR email LIKE ? OR sobat_id LIKE ?
+    ORDER BY nama_lengkap ASC
+  `).all(q, q, q);
+}
+
+function getPetugasEmailByNama(nama) {
+  if (!nama) return null;
+  return getDb().prepare('SELECT * FROM petugas_email WHERE LOWER(nama_lengkap) = LOWER(?)').get(nama.trim());
+}
+
+function getPetugasEmailBySobatId(sobatId) {
+  if (!sobatId) return null;
+  return getDb().prepare('SELECT * FROM petugas_email WHERE sobat_id = ?').get(String(sobatId).trim());
+}
+
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -1861,5 +1962,6 @@ module.exports = {
   getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula,
   getAllUsers, createUser, updateUser, deleteUser,
   saveRememberToken, getUserByRememberToken, deleteRememberToken, getIntradayUploadsByDate,
-  logVisit, getVisitorStats
+  logVisit, getVisitorStats,
+  getPetugasEmails, searchPetugasEmails, getPetugasEmailByNama, getPetugasEmailBySobatId
 };
