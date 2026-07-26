@@ -1687,12 +1687,12 @@ function attachProgressPercentages(data) {
   const submitted = data.submitted_total !== undefined ? data.submitted_total : (data.submitted_by_pcl !== undefined ? data.submitted_by_pcl : (data.submitted || 0));
   const approved = data.approved_total !== undefined ? data.approved_total : (data.approved || 0);
   const rejected = data.rejected_total !== undefined ? data.rejected_total : (data.rejected || 0);
-  const extraFasih = (data.keluarga_total || data.ditemukan || 0);
   const targetFasih = data.target_fasih_total !== undefined ? data.target_fasih_total : (data.target_fasih || 0);
   const targetUpload = data.target_upload_total !== undefined ? data.target_upload_total : (data.target_upload || 0);
   const targetStatic = data.target_static_total !== undefined ? data.target_static_total : (data.target_static || 0);
 
-  const completedFasih = draft + submitted + approved + rejected + extraFasih;
+  // Exact Formula: Progres Fasih = (submitted + approved + rejected) / total assignment
+  const completedFasih = submitted + approved + rejected;
   data.fasih_real_total = completedFasih;
 
   const activeTarget = targetUpload > 0 ? targetUpload : (targetFasih > 0 ? targetFasih : targetStatic);
