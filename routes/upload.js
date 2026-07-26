@@ -162,6 +162,8 @@ router.post('/', upload.fields([
 
   // Sort dates chronologically ascending
   const sortedDates = Object.keys(groups).sort();
+  const successMessages = [];
+  const errors = [];
 
   function isRekapWilayah(filePath, originalname) {
     if (originalname && originalname.toLowerCase().includes('rekap_petugas_wilayah')) {
