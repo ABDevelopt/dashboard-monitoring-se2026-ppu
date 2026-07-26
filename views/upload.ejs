@@ -59,6 +59,16 @@
             <input type="file" id="statusFile" name="statusFile" accept=".xlsx, .xls, .csv" style="display: none;">
           </div>
         </div>
+
+        <div>
+          <label for="kippFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-geo-alt-fill text-green"></i> 4. Rekap Petugas Wilayah KIPP (Opsional)</label>
+          <div class="upload-zone" id="uploadZoneKipp" style="height: 140px; padding: 10px; border-color: rgba(16, 185, 129, 0.4);">
+            <div class="upload-zone-icon" style="font-size: 24px; margin-bottom: 4px; color: var(--accent-green);"><i class="bi bi-cloud-arrow-up"></i></div>
+            <div class="upload-zone-title" style="font-size: 12px; font-weight: 600; color: var(--accent-green);">Rekap Petugas Wilayah</div>
+            <div class="upload-zone-sub" style="font-size: 10px;">Khusus Perlakuan Petugas SLS KIPP IKN (.csv)</div>
+            <input type="file" id="kippFile" name="kippFile" accept=".csv" style="display: none;">
+          </div>
+        </div>
       </div>
 
       <div style="display: flex; justify-content: flex-end;">
@@ -373,6 +383,7 @@
     initUploadZone('uploadZoneKeluarga', 'keluargaFile');
     initUploadZone('uploadZoneUsaha', 'usahaFile');
     initUploadZone('uploadZoneStatus', 'statusFile');
+    initUploadZone('uploadZoneKipp', 'kippFile');
     initUploadZone('uploadZoneHonor', 'honorFile');
     makeTableSortable('uploadsTable');
     makeTableSearchable('uploadsSearch', 'uploadsTable');
@@ -380,6 +391,7 @@
     const keluargaInput = document.getElementById('keluargaFile');
     const usahaInput = document.getElementById('usahaFile');
     const statusInput = document.getElementById('statusFile');
+    const kippInput = document.getElementById('kippFile');
     const tanggalInput = document.getElementById('tanggal');
 
     function handleFileSelect(file) {
@@ -399,14 +411,20 @@
     statusInput.addEventListener('change', () => {
       if (statusInput.files[0]) handleFileSelect(statusInput.files[0]);
     });
+    if (kippInput) {
+      kippInput.addEventListener('change', () => {
+        if (kippInput.files[0]) handleFileSelect(kippInput.files[0]);
+      });
+    }
 
     document.getElementById('uploadForm').addEventListener('submit', (e) => {
       const keluarga = document.getElementById('keluargaFile');
       const usaha = document.getElementById('usahaFile');
       const status = document.getElementById('statusFile');
-      if (!keluarga.files[0] && !usaha.files[0] && !status.files[0]) {
+      const kipp = document.getElementById('kippFile');
+      if (!keluarga.files[0] && !usaha.files[0] && !status.files[0] && (!kipp || !kipp.files[0])) {
         e.preventDefault();
-        alert('Silakan pilih setidaknya satu file Excel (File Keluarga, Usaha, atau Status FASIH) untuk diupload.');
+        alert('Silakan pilih setidaknya satu file Excel/CSV untuk diupload.');
       }
     });
   });

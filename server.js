@@ -373,6 +373,16 @@ function init() {
     const { rebuildAllSummaryCaches } = require('./database');
     setTimeout(() => {
       try {
+        const { applyKippPetugasWilayahProgress } = require('./services/excelParser');
+        const latestUpload = getLatestUpload();
+        if (latestUpload && latestUpload.id) {
+          applyKippPetugasWilayahProgress(latestUpload.id);
+        }
+      } catch (e) {
+        logger.error('❌ Failed to apply KIPP special progress on startup:', e.message);
+      }
+
+      try {
         logger.info('🔄 Rebuilding summary caches...');
         rebuildAllSummaryCaches();
         logger.info('✅ Summary caches successfully rebuilt');
