@@ -1683,22 +1683,26 @@ function attachProgressPercentages(data) {
   }
 
   // Single object
+  const draft = data.draft_total !== undefined ? data.draft_total : (data.draft || 0);
   const submitted = data.submitted_total !== undefined ? data.submitted_total : (data.submitted_by_pcl !== undefined ? data.submitted_by_pcl : (data.submitted || 0));
   const approved = data.approved_total !== undefined ? data.approved_total : (data.approved || 0);
   const rejected = data.rejected_total !== undefined ? data.rejected_total : (data.rejected || 0);
+  const extraFasih = (data.keluarga_total || data.ditemukan || 0);
   const targetFasih = data.target_fasih_total !== undefined ? data.target_fasih_total : (data.target_fasih || 0);
+  const targetUpload = data.target_upload_total !== undefined ? data.target_upload_total : (data.target_upload || 0);
+  const targetStatic = data.target_static_total !== undefined ? data.target_static_total : (data.target_static || 0);
 
-  const completedFasih = submitted + approved + rejected;
-  data.fasih_pct = targetFasih > 0 ? parseFloat(((completedFasih / targetFasih) * 100).toFixed(2)) : 0.0;
-  data.fasih_pct_str = targetFasih > 0 ? ((completedFasih / targetFasih) * 100).toFixed(2) : '0.00';
+  const completedFasih = draft + submitted + approved + rejected + extraFasih;
+  data.fasih_real_total = completedFasih;
+
+  const activeTarget = targetUpload > 0 ? targetUpload : (targetFasih > 0 ? targetFasih : targetStatic);
+
+  data.fasih_pct = activeTarget > 0 ? parseFloat(((completedFasih / activeTarget) * 100).toFixed(2)) : 0.0;
+  data.fasih_pct_str = activeTarget > 0 ? ((completedFasih / activeTarget) * 100).toFixed(2) : '0.00';
 
   const verifiedFasih = approved + rejected;
-  data.fasih_verified_pct = targetFasih > 0 ? parseFloat(((verifiedFasih / targetFasih) * 100).toFixed(2)) : 0.0;
-  data.fasih_verified_pct_str = targetFasih > 0 ? ((verifiedFasih / targetFasih) * 100).toFixed(2) : '0.00';
-
-  // Compute dual targets
-  const targetStatic = data.target_static_total !== undefined ? data.target_static_total : (data.target_static || 0);
-  const targetUpload = data.target_upload_total !== undefined ? data.target_upload_total : (data.target_upload || 0);
+  data.fasih_verified_pct = activeTarget > 0 ? parseFloat(((verifiedFasih / activeTarget) * 100).toFixed(2)) : 0.0;
+  data.fasih_verified_pct_str = activeTarget > 0 ? ((verifiedFasih / activeTarget) * 100).toFixed(2) : '0.00';
 
   data.fasih_static_pct = targetStatic > 0 ? parseFloat(((completedFasih / targetStatic) * 100).toFixed(2)) : 0.0;
   data.fasih_static_pct_str = targetStatic > 0 ? ((completedFasih / targetStatic) * 100).toFixed(2) : '0.00';
