@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const multer = require('multer');
 const {
   getPetugasEmails,
   searchPetugasEmails,
@@ -11,6 +12,14 @@ const {
   deletePetugasEmail,
   resyncPetugasEmailsToMaster
 } = require('../database');
+const { parseRekapPetugasWilayah } = require('../services/excelParser');
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, path.join(__dirname, '../uploads')),
+    filename: (req, file, cb) => cb(null, `${Date.now()}_${file.originalname}`)
+  })
+});
 
 // GET /admin/petugas-email - Halaman utama kelola email petugas
 router.get('/', (req, res) => {
@@ -133,6 +142,22 @@ router.get('/export', (req, res) => {
     req.flash('error', 'File CSV belum tersedia.');
     return res.redirect('/admin/petugas-email');
   }
+});
+// POST /admin/petugas-email/upload-rekap - Import file rekap_petugas_wilayah_*.csv
+router.post('/upload-rekap', upload.single('rekap_file'), (req, res) => {
+  if (!req.file) {
+    req.flash('error', 'Silakan pilih file rekap petugas wilayah (.csv / .xlsx).');
+    return res.redirect('/admin/petugas-email');
+  }
+
+  try {
+    const result = parseRekapPetugasWilayah(req.file.path);
+    req.flash('success', `Berhasil mengimpor Rekap Petugas Wilayah! ${result.totalRows.toLocaleString('id-ID')} baris diproses, ${result.updatedSubsls.toLocaleString('id-ID')} SubSLS diperbarui, ${result.newEmailsCount} email baru ditambahkan.`);
+  } catch (err) {
+    req.flash('error', `Gagal memproses file rekap: ${err.message}`);
+  }
+
+  res.redirect('/admin/petugas-email');
 });
 
 module.exports = router;

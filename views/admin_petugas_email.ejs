@@ -10,6 +10,9 @@
     </p>
   </div>
   <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+    <button onclick="openUploadRekapModal()" class="btn btn-secondary" style="padding: 8px 14px; font-size: 13px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 6px;" title="Upload File rekap_petugas_wilayah_*.csv">
+      <i class="bi bi-file-earmark-arrow-up-fill" style="color: var(--accent-blue);"></i> Upload Rekap Wilayah
+    </button>
     <button onclick="openCreateModal()" class="btn btn-primary" style="padding: 8px 14px; font-size: 13px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 6px;">
       <i class="bi bi-person-plus-fill"></i> Tambah Petugas
     </button>
@@ -231,7 +234,42 @@
   </div>
 </div>
 
+<!-- MODAL UPLOAD REKAP PETUGAS WILAYAH -->
+<div id="modalUploadRekap" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; width: 100%; max-width: 480px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+      <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: var(--text-primary);">
+        <i class="bi bi-file-earmark-arrow-up-fill" style="color: var(--accent-blue); margin-right: 6px;"></i> Upload Rekap Petugas Wilayah
+      </h3>
+      <button onclick="closeUploadRekapModal()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">&times;</button>
+    </div>
+    
+    <form action="/admin/petugas-email/upload-rekap" method="POST" enctype="multipart/form-data">
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+        Upload file <code>rekap_petugas_wilayah_*.csv</code> atau <code>.xlsx</code> untuk secara otomatis mengaitkan alamat email petugas dengan kode wilayah SubSLS pada master data.
+      </p>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Pilih File (.csv / .xlsx) *</label>
+        <input type="file" name="rekap_file" accept=".csv, .xlsx, .xls" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-primary); font-size: 13px;">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" onclick="closeUploadRekapModal()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px; border-radius: 8px;">Batal</button>
+        <button type="submit" class="btn btn-primary" style="padding: 8px 18px; font-size: 13px; font-weight: 600; border-radius: 8px;">Upload &amp; Proses</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
+  function openUploadRekapModal() {
+    document.getElementById('modalUploadRekap').style.display = 'flex';
+  }
+  function closeUploadRekapModal() {
+    document.getElementById('modalUploadRekap').style.display = 'none';
+  }
+
   function openCreateModal() {
     document.getElementById('modalCreate').style.display = 'flex';
   }

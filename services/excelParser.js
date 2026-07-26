@@ -475,7 +475,6 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
   });
 
   updateTx(rows);
-  try { applyKippPetugasWilayahProgress(uploadId); } catch (_) {}
 }
 
 function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename, tanggal) {
@@ -628,9 +627,6 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   });
 
   updateTx(rows);
-
-  // Apply special KIPP IKN progress from rekap_petugas_wilayah CSV if available
-  try { applyKippPetugasWilayahProgress(uploadId); } catch (_) {}
 
   // Update total_subsls_terisi count
   db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(processedCount, uploadId);
@@ -1033,121 +1029,12 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
   if (statusFilePath) {
     parseAndSaveStatusExcel(statusFilePath, uploadId);
   }
-
-  // Apply special KIPP IKN progress
-  try { applyKippPetugasWilayahProgress(uploadId); } catch (_) {}
-
+  
   // Rebuild summary cache
   const { rebuildSummaryCache } = require('../database');
   rebuildSummaryCache(uploadId);
-
+  
   return { uploadId, totalRows: dataRows.length, uniqueSubsls: dataRows.length };
-}
-
-function findLatestKippCsvFile() {
-  const dirs = [
-    'C:\\Users\\ajian\\vercel-agent-browser\\output',
-    path.join(__dirname, '../uploads'),
-    path.join(__dirname, '../')
-  ];
-
-  let latestFile = null;
-  let latestMtime = 0;
-
-  for (const dir of dirs) {
-    if (fs.existsSync(dir)) {
-      try {
-        const files = fs.readdirSync(dir);
-        for (const f of files) {
-          if (f.toLowerCase().startsWith('rekap_petugas_wilayah_') && f.toLowerCase().endsWith('.csv')) {
-            const fullPath = path.join(dir, f);
-            const stat = fs.statSync(fullPath);
-            if (stat.mtimeMs > latestMtime) {
-              latestMtime = stat.mtimeMs;
-              latestFile = fullPath;
-            }
-          }
-        }
-      } catch (_) {}
-    }
-  }
-  return latestFile;
-}
-
-function applyKippPetugasWilayahProgress(uploadId, kippCsvPath = null) {
-  const targetPath = kippCsvPath || findLatestKippCsvFile();
-  if (!targetPath || !fs.existsSync(targetPath)) return 0;
-  const db = getDb();
-
-  let content;
-  try {
-    content = fs.readFileSync(targetPath, 'utf-8');
-  } catch (err) {
-    console.error('Failed to read KIPP CSV file:', err.message);
-    return 0;
-  }
-
-  const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
-  if (lines.length < 2) return 0;
-
-  const headers = lines[0].split(';').map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
-  const kodeIdx = headers.findIndex(h => h.includes('kode wilayah') || h.includes('kode'));
-  const emailIdx = headers.findIndex(h => h.includes('email'));
-  const targetIdx = headers.findIndex(h => h.includes('total assignment') || h.includes('target'));
-  const openIdx = headers.findIndex(h => h === 'open');
-  const apprIdx = headers.findIndex(h => h.includes('approved'));
-  const draftIdx = headers.findIndex(h => h === 'draft');
-  const rejIdx = headers.findIndex(h => h.includes('rejected'));
-  const revokedIdx = headers.findIndex(h => h.includes('revoked'));
-
-  if (kodeIdx === -1) return 0;
-
-  const csvMap = {};
-  for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(';').map(c => c.replace(/^"|"$/g, '').trim());
-    const kode = cols[kodeIdx] ? cols[kodeIdx].trim() : '';
-    if (!kode || kode.length < 10) continue;
-
-    const email = emailIdx !== -1 ? cols[emailIdx].trim().toLowerCase() : '';
-    const draftVal = (draftIdx !== -1 ? toInt(cols[draftIdx]) : 0) + (revokedIdx !== -1 ? toInt(cols[revokedIdx]) : 0);
-    const openVal = openIdx !== -1 ? toInt(cols[openIdx]) : 0;
-    const apprVal = apprIdx !== -1 ? toInt(cols[apprIdx]) : 0;
-    const rejVal = rejIdx !== -1 ? toInt(cols[rejIdx]) : 0;
-    const tgtVal = targetIdx !== -1 ? toInt(cols[targetIdx]) : 0;
-
-    const keyExact = `${kode}|${email}`;
-    csvMap[keyExact] = { kode, email, draft: draftVal, submitted: openVal, approved: apprVal, rejected: rejVal, targetUpload: tgtVal };
-    if (!csvMap[kode]) {
-      csvMap[kode] = { kode, email, draft: draftVal, submitted: openVal, approved: apprVal, rejected: rejVal, targetUpload: tgtVal };
-    }
-  }
-
-  const kippSubsls = db.prepare("SELECT kode, pcl, pcl_email FROM subsls_master WHERE UPPER(nama_sls) LIKE '%KIPP%'").all();
-
-  const insertStmt = db.prepare('INSERT OR IGNORE INTO progres (upload_id, kode) VALUES (?, ?)');
-  const updateStmt = db.prepare('UPDATE progres SET draft = ?, submitted_by_pcl = ?, approved = ?, rejected = ? WHERE upload_id = ? AND kode = ?');
-
-  let updated = 0;
-  db.transaction(() => {
-    for (const s of kippSubsls) {
-      const email = (s.pcl_email || '').trim().toLowerCase();
-      const keyExact = `${s.kode}|${email}`;
-      const data = csvMap[keyExact] || csvMap[s.kode];
-      if (data) {
-        insertStmt.run(uploadId, s.kode);
-        updateStmt.run(data.draft, data.submitted, data.approved, data.rejected, uploadId, s.kode);
-        updated++;
-      }
-    }
-  })();
-
-  console.log(`✅ Applied KIPP IKN special progress for ${updated} SubSLS (Upload ID: ${uploadId}) from ${path.basename(targetPath)}`);
-  try {
-    const { rebuildAllSummaryCaches } = require('../database');
-    rebuildAllSummaryCaches();
-  } catch (_) {}
-
-  return updated;
 }
 
 function createEmptyProgresRecord() {
@@ -1166,6 +1053,118 @@ function createEmptyProgresRecord() {
   };
 }
 
+// Parser khusus untuk file Rekap Petugas Wilayah (kode wilayah & email petugas)
+function parseRekapPetugasWilayah(filePath) {
+  const db = getDb();
+  let rows = [];
+
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.xlsx' || ext === '.xls') {
+    const wb = XLSX.readFile(filePath);
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rawJson = XLSX.utils.sheet_to_json(ws);
+    rows = rawJson.map(r => {
+      let kw = '', em = '';
+      for (const k of Object.keys(r)) {
+        const kl = k.toLowerCase();
+        if (kl.includes('kode') || kl.includes('wilayah') || kl.includes('subsls')) kw = String(r[k]).trim();
+        if (kl.includes('email')) em = String(r[k]).trim().toLowerCase();
+      }
+      return { kode: kw, email: em };
+    });
+  } else {
+    // CSV parsing
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const firstLine = content.split(/\r?\n/)[0] || '';
+    let sep = ';';
+    if (firstLine.includes(';')) sep = ';';
+    else if (firstLine.includes(',')) sep = ',';
+    else if (firstLine.includes('\t')) sep = '\t';
+
+    const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (lines.length <= 1) throw new Error('File rekap petugas wilayah kosong.');
+
+    const header = lines[0].split(sep).map(h => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
+    const kodeIdx = header.findIndex(h => h.includes('kode') || h.includes('subsls') || h.includes('wilayah'));
+    const emailIdx = header.findIndex(h => h.includes('email'));
+
+    if (kodeIdx === -1 || emailIdx === -1) {
+      throw new Error('Header file harus berisi kolom "kode wilayah" dan "email petugas".');
+    }
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(sep).map(c => c.replace(/^["']|["']$/g, '').trim());
+      if (cols.length <= Math.max(kodeIdx, emailIdx)) continue;
+      rows.push({ kode: cols[kodeIdx], email: cols[emailIdx].toLowerCase() });
+    }
+  }
+
+  // Pre-load existing emails
+  const existingEmails = db.prepare('SELECT email, nama_lengkap, sobat_id FROM petugas_email').all();
+  const emailMap = {};
+  existingEmails.forEach(r => {
+    if (r.email) emailMap[r.email.trim().toLowerCase()] = r;
+  });
+
+  const updateSubslsStmt = db.prepare(`
+    UPDATE subsls_master 
+    SET pcl_email = ?, pcl_sobat_id = ?, pcl = ?
+    WHERE kode = ? OR kode_2025 = ?
+  `);
+
+  const insertEmailStmt = db.prepare(`
+    INSERT INTO petugas_email (sobat_id, nama_lengkap, email, jenis_kelamin)
+    VALUES (?, ?, ?, ?)
+  `);
+
+  let totalRows = 0;
+  let updatedSubsls = 0;
+  let newEmailsCount = 0;
+  const uniqueEmailsSeen = new Set();
+
+  db.transaction(() => {
+    for (const item of rows) {
+      const rawKode = item.kode;
+      const rawEmail = item.email;
+
+      if (!rawKode || !rawEmail) continue;
+
+      const kodeClean = rawKode.padStart(16, '0');
+      uniqueEmailsSeen.add(rawEmail);
+
+      let namaLengkap = '';
+      let sobatId = '';
+
+      if (emailMap[rawEmail]) {
+        namaLengkap = emailMap[rawEmail].nama_lengkap;
+        sobatId = emailMap[rawEmail].sobat_id || '';
+      } else {
+        const username = rawEmail.split('@')[0];
+        namaLengkap = username.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        sobatId = '';
+        try {
+          insertEmailStmt.run(sobatId, namaLengkap, rawEmail, '');
+          emailMap[rawEmail] = { email: rawEmail, nama_lengkap: namaLengkap, sobat_id: sobatId };
+          newEmailsCount++;
+        } catch (_) {}
+      }
+
+      const res = updateSubslsStmt.run(rawEmail, sobatId, namaLengkap, kodeClean, rawKode);
+      if (res.changes > 0) {
+        updatedSubsls += res.changes;
+      }
+      totalRows++;
+    }
+  })();
+
+  return {
+    totalRows,
+    updatedSubsls,
+    uniqueEmails: uniqueEmailsSeen.size,
+    newEmailsCount
+  };
+}
+
 module.exports = {
   parseAndSaveExcel,
   loadMasterFromJson,
@@ -1173,7 +1172,6 @@ module.exports = {
   parseAndSaveStatusExcel,
   parseAndSaveStatusExcelOnly,
   parseAndSaveSeparateExports,
-  findLatestKippCsvFile,
-  applyKippPetugasWilayahProgress
+  parseRekapPetugasWilayah
 };
 

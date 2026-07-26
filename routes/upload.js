@@ -110,17 +110,15 @@ router.post('/', upload.fields([
   { name: 'excelFile', maxCount: 100 },
   { name: 'keluargaFile', maxCount: 100 },
   { name: 'usahaFile', maxCount: 100 },
-  { name: 'statusFile', maxCount: 100 },
-  { name: 'kippFile', maxCount: 100 }
+  { name: 'statusFile', maxCount: 100 }
 ]), (req, res) => {
   const excelFiles = req.files && req.files['excelFile'] ? req.files['excelFile'] : [];
   const keluargaFiles = req.files && req.files['keluargaFile'] ? req.files['keluargaFile'] : [];
   const usahaFiles = req.files && req.files['usahaFile'] ? req.files['usahaFile'] : [];
   const statusFiles = req.files && req.files['statusFile'] ? req.files['statusFile'] : [];
-  const kippFiles = req.files && req.files['kippFile'] ? req.files['kippFile'] : [];
 
-  if (excelFiles.length === 0 && keluargaFiles.length === 0 && usahaFiles.length === 0 && statusFiles.length === 0 && kippFiles.length === 0) {
-    req.flash('error', 'Silakan pilih setidaknya satu file Excel/CSV untuk diupload.');
+  if (excelFiles.length === 0 && keluargaFiles.length === 0 && usahaFiles.length === 0 && statusFiles.length === 0) {
+    req.flash('error', 'Silakan pilih setidaknya satu file Excel untuk diupload.');
     return res.redirect('/admin/upload');
   }
 
