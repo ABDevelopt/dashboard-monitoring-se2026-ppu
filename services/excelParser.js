@@ -1097,6 +1097,7 @@ function parseRekapPetugasWilayah(filePath) {
     const rejectedIdx = header.findIndex(h => h.includes('rejected'));
     const revokedIdx = header.findIndex(h => h.includes('revoked'));
     const openIdx = header.findIndex(h => h.includes('open'));
+    const submittedIdx = header.findIndex(h => h.includes('submitted') || h.includes('submit') || h.includes('pencacah'));
     const totalIdx = header.findIndex(h => h.includes('total') || h.includes('assignment'));
 
     for (let i = 1; i < lines.length; i++) {
@@ -1107,7 +1108,7 @@ function parseRekapPetugasWilayah(filePath) {
       const openVal = openIdx !== -1 ? parseInt(cols[openIdx] || 0, 10) : 0;
       const approvedVal = approvedIdx !== -1 ? parseInt(cols[approvedIdx] || 0, 10) : 0;
       const rejectedVal = (rejectedIdx !== -1 ? parseInt(cols[rejectedIdx] || 0, 10) : 0) + (revokedIdx !== -1 ? parseInt(cols[revokedIdx] || 0, 10) : 0);
-      const submittedVal = approvedVal + rejectedVal;
+      const submittedVal = submittedIdx !== -1 ? parseInt(cols[submittedIdx] || 0, 10) : -1;
       const targetVal = totalIdx !== -1 ? parseInt(cols[totalIdx] || 0, 10) : 0;
 
       rows.push({
@@ -1144,11 +1145,35 @@ function parseRekapPetugasWilayah(filePath) {
   const latestUpload = db.prepare('SELECT id FROM uploads ORDER BY id DESC LIMIT 1').get();
   const uploadId = latestUpload ? latestUpload.id : 1;
 
+  // Find previous upload_id that has progres records
+  const prevUploadRow = db.prepare(`
+    SELECT u.id 
+    FROM uploads u
+    JOIN progres p ON u.id = p.upload_id
+    WHERE u.id < ? 
+    GROUP BY u.id
+    ORDER BY u.id DESC LIMIT 1
+  `).get(uploadId);
+  const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
+
+  const getPrevMuatan = db.prepare(`
+    SELECT 
+      usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
+      tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
+      rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya, submitted_by_pcl
+    FROM progres
+    WHERE upload_id = ? AND kode = ?
+    LIMIT 1
+  `);
+
   const insertProgresStmt = db.prepare(`
     INSERT INTO progres (
       upload_id, kode, pcl_email, pcl_name, pcl_sobat_id,
-      draft, open, submitted_by_pcl, approved, rejected, target_upload
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      draft, open, submitted_by_pcl, approved, rejected, target_upload,
+      usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
+      tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
+      rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(upload_id, kode, COALESCE(pcl_email, '')) DO UPDATE SET
       draft = excluded.draft,
       open = excluded.open,
@@ -1158,7 +1183,23 @@ function parseRekapPetugasWilayah(filePath) {
       target_upload = excluded.target_upload,
       pcl_email = excluded.pcl_email,
       pcl_name = excluded.pcl_name,
-      pcl_sobat_id = excluded.pcl_sobat_id
+      pcl_sobat_id = excluded.pcl_sobat_id,
+      usaha_tidak_ditemukan = excluded.usaha_tidak_ditemukan,
+      usaha_ditemukan = excluded.usaha_ditemukan,
+      usaha_baru = excluded.usaha_baru,
+      usaha_tutup = excluded.usaha_tutup,
+      usaha_ganda = excluded.usaha_ganda,
+      tidak_ditemukan = excluded.tidak_ditemukan,
+      ditemukan = excluded.ditemukan,
+      keluarga_baru = excluded.keluarga_baru,
+      meninggal = excluded.meninggal,
+      tidak_eligible = excluded.tidak_eligible,
+      tidak_dapat_ditemui = excluded.tidak_dapat_ditemui,
+      rumah_tunggal = excluded.rumah_tunggal,
+      rumah_deret = excluded.rumah_deret,
+      rumah_susun = excluded.rumah_susun,
+      apartemen = excluded.apartemen,
+      lainnya = excluded.lainnya
   `);
 
   let totalRows = 0;
@@ -1213,6 +1254,36 @@ function parseRekapPetugasWilayah(filePath) {
       const maxTgt = officerMaxTargets[rawEmail] || item.target_upload || 0;
       const targetPerSubsls = subslsCnt > 0 ? (maxTgt / subslsCnt) : 0;
 
+      let usaha_tidak_ditemukan = 0, usaha_ditemukan = 0, usaha_baru = 0, usaha_tutup = 0, usaha_ganda = 0;
+      let tidak_ditemukan = 0, ditemukan = 0, keluarga_baru = 0, meninggal = 0, tidak_eligible = 0, tidak_dapat_ditemui = 0;
+      let rumah_tunggal = 0, rumah_deret = 0, rumah_susun = 0, apartemen = 0, lainnya = 0;
+      let submitted_by_pcl = item.submitted !== -1 ? item.submitted : 0;
+
+      if (prevUploadId) {
+        const prev = getPrevMuatan.get(prevUploadId, kodeClean);
+        if (prev) {
+          usaha_tidak_ditemukan = prev.usaha_tidak_ditemukan || 0;
+          usaha_ditemukan = prev.usaha_ditemukan || 0;
+          usaha_baru = prev.usaha_baru || 0;
+          usaha_tutup = prev.usaha_tutup || 0;
+          usaha_ganda = prev.usaha_ganda || 0;
+          tidak_ditemukan = prev.tidak_ditemukan || 0;
+          ditemukan = prev.ditemukan || 0;
+          keluarga_baru = prev.keluarga_baru || 0;
+          meninggal = prev.meninggal || 0;
+          tidak_eligible = prev.tidak_eligible || 0;
+          tidak_dapat_ditemui = prev.tidak_dapat_ditemui || 0;
+          rumah_tunggal = prev.rumah_tunggal || 0;
+          rumah_deret = prev.rumah_deret || 0;
+          rumah_susun = prev.rumah_susun || 0;
+          apartemen = prev.apartemen || 0;
+          lainnya = prev.lainnya || 0;
+          if (item.submitted === -1) {
+            submitted_by_pcl = prev.submitted_by_pcl || 0;
+          }
+        }
+      }
+
       // Save individual officer progress row
       try {
         insertProgresStmt.run(
@@ -1223,10 +1294,13 @@ function parseRekapPetugasWilayah(filePath) {
           sobatId,
           item.draft || 0,
           item.open || 0,
-          0, // submitted_by_pcl = 0 to avoid double counting approved & rejected
+          submitted_by_pcl,
           item.approved || 0,
           item.rejected || 0,
-          targetPerSubsls
+          targetPerSubsls,
+          usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
+          tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
+          rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya
         );
       } catch (_) {}
 
