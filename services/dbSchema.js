@@ -26,10 +26,13 @@ You have read-only access to a SQLite database with the following schema:
    - muatan: INTEGER (The prelist target workload for usaha/businesses in this SLS)
    - target_fasih: INTEGER (Target count of family documents to be completed in FASIH app)
 
-3. Table: progres (Stores progress data per upload and SubSLS)
+3. Table: progres (Stores progress per SubSLS per officer per upload. CRITICAL RULE: A single SubSLS code can be worked on by multiple PCL officers simultaneously. Progress is saved per (upload_id, kode, pcl_email))
    - id: INTEGER PRIMARY KEY AUTOINCREMENT
    - upload_id: INTEGER REFERENCES uploads(id) ON DELETE CASCADE
    - kode: TEXT (SubSLS code references subsls_master.kode)
+   - pcl_email: TEXT (Email of the officer who worked on this SubSLS entry)
+   - pcl_name: TEXT (Full name of the officer)
+   - pcl_sobat_id: TEXT (Sobat ID of the officer)
    - usaha_ditemukan: INTEGER (Businesses found during census)
    - usaha_baru: INTEGER (New businesses found)
    - usaha_tidak_ditemukan: INTEGER (Businesses not found)
