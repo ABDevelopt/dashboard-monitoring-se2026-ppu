@@ -1104,6 +1104,7 @@ function parseRekapPetugasWilayah(filePath) {
       if (cols.length <= Math.max(kodeIdx, emailIdx)) continue;
       
       const draftVal = draftIdx !== -1 ? parseInt(cols[draftIdx] || 0, 10) : 0;
+      const openVal = openIdx !== -1 ? parseInt(cols[openIdx] || 0, 10) : 0;
       const approvedVal = approvedIdx !== -1 ? parseInt(cols[approvedIdx] || 0, 10) : 0;
       const rejectedVal = (rejectedIdx !== -1 ? parseInt(cols[rejectedIdx] || 0, 10) : 0) + (revokedIdx !== -1 ? parseInt(cols[revokedIdx] || 0, 10) : 0);
       const submittedVal = approvedVal + rejectedVal;
@@ -1113,6 +1114,7 @@ function parseRekapPetugasWilayah(filePath) {
         kode: cols[kodeIdx],
         email: cols[emailIdx].toLowerCase(),
         draft: draftVal,
+        open: openVal,
         approved: approvedVal,
         rejected: rejectedVal,
         submitted: submittedVal,
@@ -1145,10 +1147,11 @@ function parseRekapPetugasWilayah(filePath) {
   const insertProgresStmt = db.prepare(`
     INSERT INTO progres (
       upload_id, kode, pcl_email, pcl_name, pcl_sobat_id,
-      draft, submitted_by_pcl, approved, rejected, target_upload
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      draft, open, submitted_by_pcl, approved, rejected, target_upload
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(upload_id, kode, COALESCE(pcl_email, '')) DO UPDATE SET
       draft = excluded.draft,
+      open = excluded.open,
       submitted_by_pcl = excluded.submitted_by_pcl,
       approved = excluded.approved,
       rejected = excluded.rejected,
@@ -1204,12 +1207,14 @@ function parseRekapPetugasWilayah(filePath) {
           namaLengkap,
           sobatId,
           item.draft || 0,
+          item.open || 0,
           item.submitted || 0,
           item.approved || 0,
           item.rejected || 0,
           item.target_upload || 0
         );
       } catch (_) {}
+
 
       totalRows++;
     }

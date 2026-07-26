@@ -476,6 +476,13 @@ function runMigrations() {
         try { db.exec('CREATE INDEX IF NOT EXISTS idx_progres_pcl_email ON progres(pcl_email)'); } catch (_) {}
         try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_progres_upload_kode_email ON progres(upload_id, kode, COALESCE(pcl_email, ''))"); } catch (_) {}
       }
+    },
+    {
+      version: '20260726000003_add_open_to_progres',
+      up: (db) => {
+        try { db.prepare('ALTER TABLE progres ADD COLUMN open INTEGER DEFAULT 0').run(); } catch (_) {}
+        try { db.prepare('ALTER TABLE summary_cache ADD COLUMN open_total INTEGER DEFAULT 0').run(); } catch (_) {}
+      }
     }
   ];
 
@@ -801,6 +808,7 @@ function getPclStats(uploadId, settings = getSettings()) {
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(COALESCE(p.open, 0)) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
@@ -1572,7 +1580,7 @@ function rebuildSummaryCache(uploadId) {
     INSERT OR REPLACE INTO summary_cache (
       upload_id, kecamatan, desa, korlap, pml, pcl,
       total_sls, selesai, total_muatan, muatan_selesai,
-      usaha_total, keluarga_total, draft_total, submitted_total, approved_total, rejected_total, target_fasih_total,
+      usaha_total, keluarga_total, draft_total, open_total, submitted_total, approved_total, rejected_total, target_fasih_total,
       target_static_total, target_upload_total, target_honor_total,
       usaha_ditemukan, usaha_baru, ditemukan, keluarga_baru,
       usaha_tidak_ditemukan, tidak_ditemukan, usaha_tutup, meninggal, usaha_ganda,
@@ -1592,6 +1600,7 @@ function rebuildSummaryCache(uploadId) {
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(COALESCE(p.open, 0)) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
