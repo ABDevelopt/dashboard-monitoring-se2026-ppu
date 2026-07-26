@@ -71,8 +71,8 @@ router.get('/', (req, res) => {
 
       detailSubsls = attachProgressPercentages(getDb().prepare(`
         SELECT 
-          m.kode, m.kecamatan, m.desa, m.nama_sls,
-          m.korlap, m.pml, m.pcl, m.muatan,
+          p.kode, m.kecamatan, m.desa, m.nama_sls,
+          m.korlap, m.pml, COALESCE(p.pcl_name, m.pcl) AS pcl, m.muatan,
           m.target_fasih AS target_fasih_awal,
           COALESCE(p.draft, 0) AS draft,
           COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
@@ -95,11 +95,11 @@ router.get('/', (req, res) => {
           END AS sudah_diisi,
           ${usahaTotalFormula} AS usaha_total,
           ${keluargaTotalFormula} AS keluarga_total
-        FROM subsls_master m
-        LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-        WHERE m.pcl = ?
-        ORDER BY m.kecamatan, m.desa, m.kode
-      `).all(uploadId, filterPcl));
+        FROM progres p
+        LEFT JOIN subsls_master m ON p.kode = m.kode
+        WHERE p.upload_id = ? AND (p.pcl_name = ? OR p.pcl_email = ?)
+        ORDER BY m.kecamatan, m.desa, p.kode
+      `).all(uploadId, filterPcl, filterPcl));
     }
   }
 

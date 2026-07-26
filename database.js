@@ -1632,7 +1632,7 @@ function rebuildSummaryCache(uploadId) {
 function getKippOfficers() {
   try {
     const db = getDb();
-    const pcls = db.prepare("SELECT DISTINCT pcl FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pcl IS NOT NULL").all().map(r => r.pcl.toUpperCase());
+    const pcls = db.prepare("SELECT DISTINCT pcl_name FROM progres WHERE kode IN (SELECT kode FROM subsls_master WHERE nama_sls = 'KIPP IKN') AND pcl_name IS NOT NULL AND pcl_name != ''").all().map(r => r.pcl_name.toUpperCase());
     const pmls = db.prepare("SELECT DISTINCT pml FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pml IS NOT NULL").all().map(r => r.pml.toUpperCase());
     const korlaps = db.prepare("SELECT DISTINCT korlap FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND korlap IS NOT NULL").all().map(r => r.korlap.toUpperCase());
     return { pcls, pmls, korlaps };

@@ -32,7 +32,10 @@ router.get('/', (req, res) => {
     if (filterDesa) { cond.push('m.desa = ?'); params.push(filterDesa); }
     if (filterKorlap) { cond.push('m.korlap = ?'); params.push(filterKorlap); }
     if (filterPml) { cond.push('m.pml = ?'); params.push(filterPml); }
-    if (filterPcl) { cond.push('m.pcl = ?'); params.push(filterPcl); }
+    if (filterPcl) {
+      cond.push('(m.pcl = ? OR p.pcl_name = ? OR p.pcl_email = ?)');
+      params.push(filterPcl, filterPcl, filterPcl);
+    }
     if (filterQ) {
       cond.push('(m.nama_sls LIKE ? OR m.kode LIKE ? OR m.kecamatan LIKE ? OR m.desa LIKE ? OR m.korlap LIKE ? OR m.pml LIKE ? OR m.pcl LIKE ?)');
       const qParam = `%${filterQ}%`;
@@ -304,7 +307,10 @@ router.get('/export', (req, res) => {
   if (filterDesa) { cond.push('m.desa = ?'); params.push(filterDesa); }
   if (filterKorlap) { cond.push('m.korlap = ?'); params.push(filterKorlap); }
   if (filterPml) { cond.push('m.pml = ?'); params.push(filterPml); }
-  if (filterPcl) { cond.push('m.pcl = ?'); params.push(filterPcl); }
+  if (filterPcl) {
+    cond.push('(m.pcl = ? OR p.pcl_name = ? OR p.pcl_email = ?)');
+    params.push(filterPcl, filterPcl, filterPcl);
+  }
   if (filterKode) { cond.push('m.kode = ?'); params.push(filterKode); }
   if (filterQ) {
     cond.push('(m.nama_sls LIKE ? OR m.kode LIKE ? OR m.kecamatan LIKE ? OR m.desa LIKE ? OR m.korlap LIKE ? OR m.pml LIKE ? OR m.pcl LIKE ?)');
