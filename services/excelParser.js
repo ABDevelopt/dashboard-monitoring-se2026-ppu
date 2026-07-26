@@ -1166,6 +1166,17 @@ function parseRekapPetugasWilayah(filePath) {
   let newEmailsCount = 0;
   const uniqueEmailsSeen = new Set();
 
+  // Pre-calculate per-officer max target and subsls count
+  const officerSubslsCounts = {};
+  const officerMaxTargets = {};
+  for (const item of rows) {
+    if (!item.email) continue;
+    officerSubslsCounts[item.email] = (officerSubslsCounts[item.email] || 0) + 1;
+    if (item.target_upload > (officerMaxTargets[item.email] || 0)) {
+      officerMaxTargets[item.email] = item.target_upload;
+    }
+  }
+
   db.transaction(() => {
     for (const item of rows) {
       const rawKode = item.kode;
@@ -1198,6 +1209,10 @@ function parseRekapPetugasWilayah(filePath) {
         updatedSubsls += res.changes;
       }
 
+      const subslsCnt = officerSubslsCounts[rawEmail] || 1;
+      const maxTgt = officerMaxTargets[rawEmail] || item.target_upload || 0;
+      const targetPerSubsls = subslsCnt > 0 ? (maxTgt / subslsCnt) : 0;
+
       // Save individual officer progress row
       try {
         insertProgresStmt.run(
@@ -1208,13 +1223,12 @@ function parseRekapPetugasWilayah(filePath) {
           sobatId,
           item.draft || 0,
           item.open || 0,
-          item.submitted || 0,
+          0, // submitted_by_pcl = 0 to avoid double counting approved & rejected
           item.approved || 0,
           item.rejected || 0,
-          item.target_upload || 0
+          targetPerSubsls
         );
       } catch (_) {}
-
 
       totalRows++;
     }
