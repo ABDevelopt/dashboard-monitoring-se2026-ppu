@@ -724,9 +724,9 @@ function getKorlapStats(uploadId, settings = getSettings()) {
       m.korlap,
       MAX(m.korlap_email) AS email,
       MAX(m.korlap_sobat_id) AS sobat_id,
-      COUNT(DISTINCT m.pcl) AS jumlah_pcl,
+      COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
       COUNT(DISTINCT m.pml) AS jumlah_pml,
-      COUNT(m.kode) AS total_subsls,
+      COUNT(DISTINCT p.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
@@ -740,8 +740,9 @@ function getKorlapStats(uploadId, settings = getSettings()) {
       SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
       SUM(COALESCE(p.target_upload, 0)) AS target_upload_total,
       SUM(COALESCE(m.target_honor, 0)) AS target_honor_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    FROM progres p
+    LEFT JOIN subsls_master m ON p.kode = m.kode
+    WHERE p.upload_id = ? AND m.korlap IS NOT NULL
     GROUP BY m.korlap
     ORDER BY selesai ASC
   `).all(uploadId));
@@ -762,8 +763,8 @@ function getPmlStats(uploadId, settings = getSettings()) {
       m.korlap,
       MAX(m.pml_email) AS email,
       MAX(m.pml_sobat_id) AS sobat_id,
-      COUNT(DISTINCT m.pcl) AS jumlah_pcl,
-      COUNT(m.kode) AS total_subsls,
+      COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
+      COUNT(DISTINCT p.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
@@ -777,8 +778,9 @@ function getPmlStats(uploadId, settings = getSettings()) {
       SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
       SUM(COALESCE(p.target_upload, 0)) AS target_upload_total,
       SUM(COALESCE(m.target_honor, 0)) AS target_honor_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    FROM progres p
+    LEFT JOIN subsls_master m ON p.kode = m.kode
+    WHERE p.upload_id = ? AND m.pml IS NOT NULL
     GROUP BY m.pml, m.korlap
     ORDER BY selesai ASC
   `).all(uploadId));

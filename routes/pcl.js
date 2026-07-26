@@ -213,8 +213,8 @@ router.get('/export-excel', (req, res) => {
   const pmls = getDb().prepare(`
     SELECT 
       m.pml, m.korlap,
-      COUNT(DISTINCT m.pcl) AS jumlah_pcl,
-      COUNT(m.kode) AS total_subsls,
+      COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
+      COUNT(DISTINCT p.kode) AS total_subsls,
       SUM(CASE WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 1 ELSE 0 END) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
@@ -225,8 +225,9 @@ router.get('/export-excel', (req, res) => {
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
       SUM(${targetFormula}) AS target_fasih_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    FROM progres p
+    LEFT JOIN subsls_master m ON p.kode = m.kode
+    WHERE p.upload_id = ? AND m.pml IS NOT NULL
     GROUP BY m.pml, m.korlap
     ORDER BY m.korlap, m.pml
   `).all(uploadId);
@@ -236,8 +237,8 @@ router.get('/export-excel', (req, res) => {
     SELECT 
       m.korlap,
       COUNT(DISTINCT m.pml) AS jumlah_pml,
-      COUNT(DISTINCT m.pcl) AS jumlah_pcl,
-      COUNT(m.kode) AS total_subsls,
+      COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
+      COUNT(DISTINCT p.kode) AS total_subsls,
       SUM(CASE WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 1 ELSE 0 END) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
@@ -248,8 +249,9 @@ router.get('/export-excel', (req, res) => {
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
       SUM(${targetFormula}) AS target_fasih_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    FROM progres p
+    LEFT JOIN subsls_master m ON p.kode = m.kode
+    WHERE p.upload_id = ? AND m.korlap IS NOT NULL
     GROUP BY m.korlap
     ORDER BY m.korlap
   `).all(uploadId);

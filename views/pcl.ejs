@@ -610,10 +610,10 @@
                       <div><%= s.desa %></div>
                       <div style="display: flex; gap: 6px; align-items: center;">
                         <span class="muatan-col" style="color: var(--accent-cyan);">
-                          Muatan: <strong><%= s.usaha_total %></strong>/<%= s.muatan %>
+                          Muatan: <strong><%= s.usaha_total %></strong>/<%= Math.round(s.muatan) %>
                         </span>
                         <span style="color: var(--accent-purple);">
-                          FASIH: <strong><%= (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0) %></strong>/<%= s.target_fasih %> 
+                          FASIH: <strong><%= (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0) %></strong>/<%= Math.round(s.target_fasih) %> 
                           <span style="font-size: 9px; color: var(--text-muted);">(D<%= s.draft %> S<%= s.submitted_by_pcl %> A<%= s.approved %> R<%= s.rejected %>)</span>
                         </span>
                       </div>
