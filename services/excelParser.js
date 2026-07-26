@@ -1092,10 +1092,32 @@ function parseRekapPetugasWilayah(filePath) {
       throw new Error('Header file harus berisi kolom "kode wilayah" dan "email petugas".');
     }
 
+    const draftIdx = header.findIndex(h => h.includes('draft'));
+    const approvedIdx = header.findIndex(h => h.includes('approved'));
+    const rejectedIdx = header.findIndex(h => h.includes('rejected'));
+    const revokedIdx = header.findIndex(h => h.includes('revoked'));
+    const openIdx = header.findIndex(h => h.includes('open'));
+    const totalIdx = header.findIndex(h => h.includes('total') || h.includes('assignment'));
+
     for (let i = 1; i < lines.length; i++) {
       const cols = lines[i].split(sep).map(c => c.replace(/^["']|["']$/g, '').trim());
       if (cols.length <= Math.max(kodeIdx, emailIdx)) continue;
-      rows.push({ kode: cols[kodeIdx], email: cols[emailIdx].toLowerCase() });
+      
+      const draftVal = draftIdx !== -1 ? parseInt(cols[draftIdx] || 0, 10) : 0;
+      const approvedVal = approvedIdx !== -1 ? parseInt(cols[approvedIdx] || 0, 10) : 0;
+      const rejectedVal = (rejectedIdx !== -1 ? parseInt(cols[rejectedIdx] || 0, 10) : 0) + (revokedIdx !== -1 ? parseInt(cols[revokedIdx] || 0, 10) : 0);
+      const submittedVal = approvedVal + rejectedVal;
+      const targetVal = totalIdx !== -1 ? parseInt(cols[totalIdx] || 0, 10) : 0;
+
+      rows.push({
+        kode: cols[kodeIdx],
+        email: cols[emailIdx].toLowerCase(),
+        draft: draftVal,
+        approved: approvedVal,
+        rejected: rejectedVal,
+        submitted: submittedVal,
+        target_upload: targetVal
+      });
     }
   }
 
@@ -1115,6 +1137,25 @@ function parseRekapPetugasWilayah(filePath) {
   const insertEmailStmt = db.prepare(`
     INSERT INTO petugas_email (sobat_id, nama_lengkap, email, jenis_kelamin)
     VALUES (?, ?, ?, ?)
+  `);
+
+  const latestUpload = db.prepare('SELECT id FROM uploads ORDER BY id DESC LIMIT 1').get();
+  const uploadId = latestUpload ? latestUpload.id : 1;
+
+  const insertProgresStmt = db.prepare(`
+    INSERT INTO progres (
+      upload_id, kode, pcl_email, pcl_name, pcl_sobat_id,
+      draft, submitted_by_pcl, approved, rejected, target_upload
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(upload_id, kode, COALESCE(pcl_email, '')) DO UPDATE SET
+      draft = excluded.draft,
+      submitted_by_pcl = excluded.submitted_by_pcl,
+      approved = excluded.approved,
+      rejected = excluded.rejected,
+      target_upload = excluded.target_upload,
+      pcl_email = excluded.pcl_email,
+      pcl_name = excluded.pcl_name,
+      pcl_sobat_id = excluded.pcl_sobat_id
   `);
 
   let totalRows = 0;
@@ -1153,9 +1194,32 @@ function parseRekapPetugasWilayah(filePath) {
       if (res.changes > 0) {
         updatedSubsls += res.changes;
       }
+
+      // Save individual officer progress row
+      try {
+        insertProgresStmt.run(
+          uploadId,
+          kodeClean,
+          rawEmail,
+          namaLengkap,
+          sobatId,
+          item.draft || 0,
+          item.submitted || 0,
+          item.approved || 0,
+          item.rejected || 0,
+          item.target_upload || 0
+        );
+      } catch (_) {}
+
       totalRows++;
     }
   })();
+
+  // Rebuild summary cache
+  try {
+    const { rebuildSummaryCache } = require('../database');
+    rebuildSummaryCache(uploadId);
+  } catch (_) {}
 
   return {
     totalRows,

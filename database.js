@@ -466,6 +466,16 @@ function runMigrations() {
           });
         });
       }
+    },
+    {
+      version: '20260726000001_support_officer_level_progres',
+      up: (db) => {
+        ['pcl_email', 'pcl_name', 'pcl_sobat_id'].forEach(col => {
+          try { db.prepare(`ALTER TABLE progres ADD COLUMN ${col} TEXT`).run(); } catch (_) {}
+        });
+        try { db.exec('CREATE INDEX IF NOT EXISTS idx_progres_pcl_email ON progres(pcl_email)'); } catch (_) {}
+        try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_progres_upload_kode_email ON progres(upload_id, kode, COALESCE(pcl_email, ''))"); } catch (_) {}
+      }
     }
   ];
 
@@ -778,13 +788,13 @@ function getPclStats(uploadId, settings = getSettings()) {
 
   return attachProgressPercentages(getDb().prepare(`
     SELECT 
-      m.pcl,
-      m.pml,
-      m.korlap,
-      m.kecamatan,
-      MAX(m.pcl_email) AS email,
-      MAX(m.pcl_sobat_id) AS sobat_id,
-      COUNT(m.kode) AS total_subsls,
+      COALESCE(p.pcl_name, m.pcl) AS pcl,
+      COALESCE(p.pcl_email, m.pcl_email) AS email,
+      COALESCE(p.pcl_sobat_id, m.pcl_sobat_id) AS sobat_id,
+      MAX(m.pml) AS pml,
+      MAX(m.korlap) AS korlap,
+      MAX(m.kecamatan) AS kecamatan,
+      COUNT(DISTINCT p.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
@@ -803,10 +813,11 @@ function getPclStats(uploadId, settings = getSettings()) {
       SUM(COALESCE(p.usaha_tidak_ditemukan, 0)) AS usaha_tidak_ditemukan_total,
       SUM(COALESCE(p.usaha_tutup, 0)) AS usaha_tutup_total,
       SUM(COALESCE(p.usaha_ganda, 0)) AS usaha_ganda_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
-    ORDER BY selesai ASC
+    FROM progres p
+    LEFT JOIN subsls_master m ON p.kode = m.kode
+    WHERE p.upload_id = ?
+    GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), COALESCE(p.pcl_name, m.pcl)
+    ORDER BY approved_total DESC
   `).all(uploadId));
 }
 
@@ -1569,12 +1580,12 @@ function rebuildSummaryCache(uploadId) {
     )
     SELECT 
       ? as upload_id,
-      m.kecamatan,
-      m.desa,
+      MAX(m.kecamatan) AS kecamatan,
+      MAX(m.desa) AS desa,
       MAX(m.korlap) AS korlap,
       MAX(m.pml) AS pml,
-      m.pcl,
-      COUNT(m.kode) AS total_sls,
+      COALESCE(p.pcl_name, m.pcl) AS pcl,
+      COUNT(DISTINCT p.kode) AS total_sls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
@@ -1602,9 +1613,10 @@ function rebuildSummaryCache(uploadId) {
       SUM(COALESCE(p.rumah_susun, 0)) AS rumah_susun,
       SUM(COALESCE(p.apartemen, 0)) AS apartemen,
       SUM(COALESCE(p.lainnya, 0)) AS lainnya
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.pcl, m.kecamatan, m.desa
+    FROM progres p
+    LEFT JOIN subsls_master m ON p.kode = m.kode
+    WHERE p.upload_id = ?
+    GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), m.kecamatan, m.desa
   `).run(uploadId, uploadId);
 }
 
