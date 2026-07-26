@@ -1169,8 +1169,7 @@ function parseRekapPetugasWilayah(filePath) {
       const approvedVal = approvedIdx !== -1 ? parseInt(cols[approvedIdx] || 0, 10) : 0;
       const rejectedVal = (rejectedIdx !== -1 ? parseInt(cols[rejectedIdx] || 0, 10) : 0) + (revokedIdx !== -1 ? parseInt(cols[revokedIdx] || 0, 10) : 0);
       const targetVal = totalIdx !== -1 ? parseInt(cols[totalIdx] || 0, 10) : 0;
-      const computedSubmitted = targetVal > 0 ? Math.max(0, targetVal - (openVal + draftVal + approvedVal + rejectedVal)) : 0;
-      const submittedVal = submittedIdx !== -1 ? parseInt(cols[submittedIdx] || 0, 10) : computedSubmitted;
+      const submittedVal = submittedIdx !== -1 ? parseInt(cols[submittedIdx] || 0, 10) : 0;
 
       rows.push({
         kode: cols[kodeIdx],
