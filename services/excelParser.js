@@ -1125,7 +1125,7 @@ function applyKippPetugasWilayahProgress(uploadId, kippCsvPath = null) {
   const kippSubsls = db.prepare("SELECT kode, pcl, pcl_email FROM subsls_master WHERE UPPER(nama_sls) LIKE '%KIPP%'").all();
 
   const insertStmt = db.prepare('INSERT OR IGNORE INTO progres (upload_id, kode) VALUES (?, ?)');
-  const updateStmt = db.prepare('UPDATE progres SET draft = ?, submitted_by_pcl = ?, approved = ?, rejected = ?, target_upload = ? WHERE upload_id = ? AND kode = ?');
+  const updateStmt = db.prepare('UPDATE progres SET draft = ?, submitted_by_pcl = ?, approved = ?, rejected = ? WHERE upload_id = ? AND kode = ?');
 
   let updated = 0;
   db.transaction(() => {
@@ -1135,7 +1135,7 @@ function applyKippPetugasWilayahProgress(uploadId, kippCsvPath = null) {
       const data = csvMap[keyExact] || csvMap[s.kode];
       if (data) {
         insertStmt.run(uploadId, s.kode);
-        updateStmt.run(data.draft, data.submitted, data.approved, data.rejected, data.targetUpload, uploadId, s.kode);
+        updateStmt.run(data.draft, data.submitted, data.approved, data.rejected, uploadId, s.kode);
         updated++;
       }
     }
