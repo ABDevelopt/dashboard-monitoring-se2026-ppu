@@ -1482,7 +1482,7 @@ function rebuildSummaryCache(uploadId) {
   const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
   db.prepare(`
-    INSERT INTO summary_cache (
+    INSERT OR REPLACE INTO summary_cache (
       upload_id, kecamatan, desa, korlap, pml, pcl,
       total_sls, selesai, total_muatan, muatan_selesai,
       usaha_total, keluarga_total, draft_total, submitted_total, approved_total, rejected_total, target_fasih_total,
@@ -1495,8 +1495,8 @@ function rebuildSummaryCache(uploadId) {
       ? as upload_id,
       m.kecamatan,
       m.desa,
-      m.korlap,
-      m.pml,
+      MAX(m.korlap) AS korlap,
+      MAX(m.pml) AS pml,
       m.pcl,
       COUNT(m.kode) AS total_sls,
       SUM(${singleSelesaiFormula}) AS selesai,
@@ -1528,7 +1528,7 @@ function rebuildSummaryCache(uploadId) {
       SUM(COALESCE(p.lainnya, 0)) AS lainnya
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan, m.desa
+    GROUP BY m.pcl, m.kecamatan, m.desa
   `).run(uploadId, uploadId);
 }
 
