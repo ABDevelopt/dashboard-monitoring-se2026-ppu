@@ -451,6 +451,7 @@
   function saveLocalStorageHistory() {
     try {
       localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(chatHistory));
+      window.dispatchEvent(new CustomEvent('ai_chat_history_updated', { detail: { source: 'widget' } }));
     } catch (e) {
       console.warn('[AI-WIDGET] Unable to save chat history to localStorage', e);
     }
@@ -459,16 +460,34 @@
   function restoreLocalStorageHistory() {
     try {
       const saved = localStorage.getItem(HISTORY_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          chatHistory = parsed;
-          const body = document.getElementById('ai-widget-body');
-          if (body) body.innerHTML = ''; // clear default greeting
-          chatHistory.forEach(msg => {
-            appendMessage(msg.role === 'user' ? 'user' : 'assistant', msg.content);
-          });
-        }
+      const body = document.getElementById('ai-widget-body');
+      if (!body) return;
+
+      const DEFAULT_GREETING_HTML = `
+        <div class="ai-msg ai-msg-assistant">
+          <div class="ai-msg-bubble">
+            Halo! 👋 Saya <strong>Pananyo Taka</strong>, Asisten Pintar Sensus Ekonomi 2026 Penajam Paser Utara.<br>
+            Ada yang bisa saya bantu terkait progres pendataan, status milestone, evaluasi petugas, atau deteksi anomali data?
+          </div>
+          <span class="ai-msg-time">Sekarang</span>
+        </div>`;
+
+      if (!saved) {
+        chatHistory = [];
+        body.innerHTML = DEFAULT_GREETING_HTML;
+        return;
+      }
+
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        chatHistory = parsed;
+        body.innerHTML = '';
+        chatHistory.forEach(msg => {
+          appendMessage(msg.role === 'user' ? 'user' : 'assistant', msg.content);
+        });
+      } else {
+        chatHistory = [];
+        body.innerHTML = DEFAULT_GREETING_HTML;
       }
     } catch (e) {
       console.warn('[AI-WIDGET] Unable to restore chat history', e);
@@ -617,6 +636,7 @@
               </div>
             `;
           }
+          window.dispatchEvent(new CustomEvent('ai_chat_history_updated', { detail: { source: 'widget' } }));
         }
       });
     }
@@ -649,14 +669,20 @@
     });
 
     // Realtime sync across tabs or when changed in /agent page
-    window.addEventListener('storage', function (e) {
-      if (e.key === HISTORY_STORAGE_KEY) {
+    function handleWidgetHistorySync(e) {
+      if (e.type === 'storage' && e.key === HISTORY_STORAGE_KEY) {
+        restoreLocalStorageHistory();
+      } else if (e.type === 'ai_chat_history_updated') {
+        if (e.detail && e.detail.source === 'widget') return;
         restoreLocalStorageHistory();
       }
-      if (e.key === SELECTED_AI_KEY) {
+      if (e.type === 'storage' && e.key === SELECTED_AI_KEY) {
         updateAiWidgetModelDisplay();
       }
-    });
+    }
+
+    window.addEventListener('storage', handleWidgetHistorySync);
+    window.addEventListener('ai_chat_history_updated', handleWidgetHistorySync);
 
     // Listen to history navigation & PJAX events — maintain open state and update context label!
     window.addEventListener('popstate', updateVisibilityForCurrentPage);
