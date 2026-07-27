@@ -2893,17 +2893,7 @@
         });
 
         // Bottom nav items
-        document.querySelectorAll('.bottom-nav .bottom-nav-item').forEach(item => {
-          const itemHref = item.getAttribute('href');
-          if (itemHref) {
-            const itemPath = new URL(itemHref, window.location.origin).pathname;
-            if (itemPath === targetPath || (targetPath === '/' && itemPath === '/')) {
-              item.classList.add('active');
-            } else {
-              item.classList.remove('active');
-            }
-          }
-        });
+        updateBottomNavActiveState(targetPath);
 
         // Update browser URL
         if (pushState) {
@@ -3089,6 +3079,37 @@
       loadPage(href);
     });
 
+    function updateBottomNavActiveState(targetPath) {
+      if (!targetPath) return;
+      const homeBtn = document.querySelector('.bottom-nav-item[href="/"]');
+      const wilayahBtn = document.getElementById('bottomNavWilayahBtn');
+      const petugasBtn = document.getElementById('bottomNavPetugasBtn');
+      const agentBtn = document.querySelector('.bottom-nav-item[href="/agent"]');
+
+      const wilayahPaths = ['/kecamatan', '/subsls', '/map', '/kipp', '/pbi'];
+      const petugasPaths = ['/pcl', '/pml', '/korlap', '/performa', '/leaderboard', '/performa-terendah'];
+
+      if (homeBtn) {
+        if (targetPath === '/' || targetPath === '') homeBtn.classList.add('active');
+        else homeBtn.classList.remove('active');
+      }
+
+      if (agentBtn) {
+        if (targetPath === '/agent') agentBtn.classList.add('active');
+        else agentBtn.classList.remove('active');
+      }
+
+      if (wilayahBtn) {
+        if (wilayahPaths.includes(targetPath)) wilayahBtn.classList.add('active');
+        else wilayahBtn.classList.remove('active');
+      }
+
+      if (petugasBtn) {
+        if (petugasPaths.includes(targetPath)) petugasBtn.classList.add('active');
+        else petugasBtn.classList.remove('active');
+      }
+    }
+
     window.setInstantMenuActive = function(targetUrl) {
       if (!targetUrl) return;
       try {
@@ -3111,17 +3132,7 @@
           }
         });
 
-        document.querySelectorAll('.bottom-nav .bottom-nav-item').forEach(item => {
-          const itemHref = item.getAttribute('href');
-          if (itemHref) {
-            const itemPath = new URL(itemHref, window.location.origin).pathname;
-            if (itemPath === targetPath || (targetPath === '/' && itemPath === '/')) {
-              item.classList.add('active');
-            } else {
-              item.classList.remove('active');
-            }
-          }
-        });
+        updateBottomNavActiveState(targetPath);
       } catch (_) {}
     };
 
