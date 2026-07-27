@@ -2362,18 +2362,22 @@
       const originalHtml = btn ? btn.innerHTML : '';
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 10px; height: 10px; border-width: 1.5px; margin-right: 4px;"></span>...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 11px; height: 11px; border-width: 1.5px; margin-right: 4px;"></span> Membagikan...';
       }
 
-      Swal.fire({
-        title: 'Menyiapkan Gambar...',
-        text: 'Sedang merender data tugas SLS untuk dibagikan.',
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
+      const resetBtn = (status, btnClass) => {
+        if (btn) {
+          btn.innerHTML = status;
+          btn.classList.remove('btn-secondary');
+          btn.classList.add(btnClass);
+          setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove(btnClass);
+            btn.classList.add('btn-secondary');
+            btn.disabled = false;
+          }, 2500);
         }
-      });
+      };
 
       try {
         await loadScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
@@ -2407,24 +2411,11 @@
 
         canvas.toBlob(async (blob) => {
           if (!blob) {
-            throw new Error('Gagal membuat blob gambar.');
+            resetBtn('<i class="bi bi-exclamation-triangle"></i> Gagal', 'btn-danger');
+            return;
           }
 
           const file = new File([blob], `${elementId}.jpg`, { type: 'image/jpeg' });
-
-          const resetBtn = (status, btnClass) => {
-            if (btn) {
-              btn.innerHTML = status;
-              btn.classList.remove('btn-secondary');
-              btn.classList.add(btnClass);
-              setTimeout(() => {
-                btn.innerHTML = originalHtml;
-                btn.classList.remove(btnClass);
-                btn.classList.add('btn-secondary');
-                btn.disabled = false;
-              }, 2000);
-            }
-          };
 
           try {
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -2433,57 +2424,33 @@
                 title: 'Kinerja Petugas SE2026 PPU',
                 text: 'Berikut laporan progres kinerja petugas SE2026 PPU.'
               });
-              Swal.close();
-              resetBtn('<i class="bi bi-share"></i> Bagikan!', 'btn-success');
+              resetBtn('<i class="bi bi-share"></i> Dibagikan!', 'btn-success');
             } else {
               const link = document.createElement('a');
               link.download = `${elementId}.jpg`;
               link.href = canvas.toDataURL('image/jpeg', 0.85);
               link.click();
-              Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: 'Gambar rincian tugas berhasil diunduh.',
-                timer: 1500,
-                showConfirmButton: false
-              });
-              resetBtn('<i class="bi bi-download"></i> Unduh!', 'btn-warning');
+              resetBtn('<i class="bi bi-download"></i> Diunduh!', 'btn-warning');
             }
           } catch (err) {
-            console.error('Share failed, downloading instead:', err);
-            const link = document.createElement('a');
-            link.download = `${elementId}.jpg`;
-            link.href = canvas.toDataURL('image/jpeg', 0.85);
-            link.click();
-            Swal.fire({
-              icon: 'success',
-              title: 'Berhasil!',
-              text: 'Gambar rincian tugas berhasil diunduh.',
-              timer: 1500,
-              showConfirmButton: false
-            });
-            resetBtn('<i class="bi bi-download"></i> Unduh!', 'btn-warning');
+            console.error('Share failed or canceled:', err);
+            if (err.name === 'AbortError') {
+              if (btn) {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+              }
+            } else {
+              const link = document.createElement('a');
+              link.download = `${elementId}.jpg`;
+              link.href = canvas.toDataURL('image/jpeg', 0.85);
+              link.click();
+              resetBtn('<i class="bi bi-download"></i> Diunduh!', 'btn-warning');
+            }
           }
         }, 'image/jpeg', 0.85);
       } catch (error) {
         console.error('Error sharing element as image:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal!',
-          text: 'Terjadi kesalahan saat menyiapkan gambar.',
-          confirmButtonText: 'Tutup'
-        });
-        if (btn) {
-          btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Gagal';
-          btn.classList.remove('btn-secondary');
-          btn.classList.add('btn-danger');
-          setTimeout(() => {
-            btn.innerHTML = originalHtml;
-            btn.classList.remove('btn-danger');
-            btn.classList.add('btn-secondary');
-            btn.disabled = false;
-          }, 2000);
-        }
+        resetBtn('<i class="bi bi-exclamation-triangle"></i> Gagal', 'btn-danger');
       }
     };
 
@@ -2495,18 +2462,22 @@
       const originalHtml = btn ? btn.innerHTML : '';
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 10px; height: 10px; border-width: 1.5px; margin-right: 4px;"></span>...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 11px; height: 11px; border-width: 1.5px; margin-right: 4px;"></span> Menyalin...';
       }
 
-      Swal.fire({
-        title: 'Menyiapkan Gambar...',
-        text: 'Sedang merender data tugas SLS untuk disalin.',
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
+      const resetBtn = (status, btnClass) => {
+        if (btn) {
+          btn.innerHTML = status;
+          btn.classList.remove('btn-secondary');
+          btn.classList.add(btnClass);
+          setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove(btnClass);
+            btn.classList.add('btn-secondary');
+            btn.disabled = false;
+          }, 2500);
         }
-      });
+      };
 
       try {
         await loadScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
@@ -2540,33 +2511,13 @@
 
         canvas.toBlob(async (blob) => {
           if (!blob) {
-            throw new Error('Gagal membuat blob gambar.');
+            resetBtn('<i class="bi bi-exclamation-triangle"></i> Gagal', 'btn-danger');
+            return;
           }
-
-          const resetBtn = (status, btnClass) => {
-            if (btn) {
-              btn.innerHTML = status;
-              btn.classList.remove('btn-secondary');
-              btn.classList.add(btnClass);
-              setTimeout(() => {
-                btn.innerHTML = originalHtml;
-                btn.classList.remove(btnClass);
-                btn.classList.add('btn-secondary');
-                btn.disabled = false;
-              }, 2000);
-            }
-          };
 
           try {
             const item = new ClipboardItem({ 'image/png': blob });
             await navigator.clipboard.write([item]);
-            Swal.fire({
-              icon: 'success',
-              title: 'Tersalin!',
-              text: 'Gambar rincian tugas disalin ke clipboard.',
-              timer: 1500,
-              showConfirmButton: false
-            });
             resetBtn('<i class="bi bi-check-lg"></i> Disalin!', 'btn-success');
           } catch (err) {
             console.error('Clipboard copy failed, downloading instead:', err);
@@ -2574,35 +2525,12 @@
             link.download = `${elementId}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
-            Swal.fire({
-              icon: 'success',
-              title: 'Berhasil!',
-              text: 'Gambar rincian tugas berhasil diunduh.',
-              timer: 1500,
-              showConfirmButton: false
-            });
-            resetBtn('<i class="bi bi-download"></i> Unduh!', 'btn-warning');
+            resetBtn('<i class="bi bi-download"></i> Diunduh!', 'btn-warning');
           }
         }, 'image/png');
       } catch (error) {
         console.error('Error copying element as image:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal!',
-          text: 'Terjadi kesalahan saat menyalin gambar.',
-          confirmButtonText: 'Tutup'
-        });
-        if (btn) {
-          btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Gagal';
-          btn.classList.remove('btn-secondary');
-          btn.classList.add('btn-danger');
-          setTimeout(() => {
-            btn.innerHTML = originalHtml;
-            btn.classList.remove('btn-danger');
-            btn.classList.add('btn-secondary');
-            btn.disabled = false;
-          }, 2000);
-        }
+        resetBtn('<i class="bi bi-exclamation-triangle"></i> Gagal', 'btn-danger');
       }
     };
 
