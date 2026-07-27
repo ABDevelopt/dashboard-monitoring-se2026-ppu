@@ -95,11 +95,11 @@ router.get('/', (req, res) => {
           END AS sudah_diisi,
           ${usahaTotalFormula} AS usaha_total,
           ${keluargaTotalFormula} AS keluarga_total
-        FROM progres p
-        LEFT JOIN subsls_master m ON p.kode = m.kode
-        WHERE p.upload_id = ? AND (p.pcl_name = ? OR p.pcl_email = ?)
-        ORDER BY m.kecamatan, m.desa, p.kode
-      `).all(uploadId, filterPcl, filterPcl));
+        FROM subsls_master m
+        LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+        WHERE m.pcl = ? OR p.pcl_name = ? OR p.pcl_email = ?
+        ORDER BY m.kecamatan, m.desa, m.kode
+      `).all(uploadId, filterPcl, filterPcl, filterPcl));
     }
   }
 
