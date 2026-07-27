@@ -3108,6 +3108,19 @@
         if (petugasPaths.includes(targetPath)) petugasBtn.classList.add('active');
         else petugasBtn.classList.remove('active');
       }
+
+      // Sync active state for popover sheet items
+      document.querySelectorAll('.bottom-sheet-item').forEach(item => {
+        const itemHref = item.getAttribute('href');
+        if (itemHref) {
+          const itemPath = new URL(itemHref, window.location.origin).pathname;
+          if (itemPath === targetPath || (targetPath === '/' && itemPath === '/')) {
+            item.classList.add('active');
+          } else {
+            item.classList.remove('active');
+          }
+        }
+      });
     }
 
     window.setInstantMenuActive = function(targetUrl) {
