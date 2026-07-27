@@ -3726,19 +3726,26 @@ body.light-mode .skeleton-block {
 
 /* =====================================================================
    MOBILE TOPBAR — ≤ 640px
-   Strategy: icon-only buttons, fixed dropdowns anchored to viewport top,
+   Strategy: icon-only buttons, touch-friendly 38px size, fixed dropdowns,
    no hamburger clutter, no horizontal overflow.
    ===================================================================== */
+@media (max-width: 768px) {
+  /* Hide redundant sidebar toggle on mobile topbar (menu is accessible via bottom navigation bar) */
+  #sidebarToggle {
+    display: none !important;
+  }
+}
+
 @media (max-width: 640px) {
 
-  /* Topbar becomes a tight strip */
+  /* Topbar layout spacing */
   .topbar {
-    padding: 0 8px;
-    gap: 4px;
+    padding: 0 10px;
+    gap: 8px;
     left: 0 !important;
   }
 
-  /* Left: hide horizontal logo, show only page title */
+  /* Left: hide horizontal logo on small screens, show clear page title */
   .topbar-logo {
     display: none !important;
   }
@@ -3748,7 +3755,10 @@ body.light-mode .skeleton-block {
     padding-left: 0 !important;
   }
 
-  .topbar-title { font-size: 13px !important; }
+  .topbar-title {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
   .topbar-subtitle { display: none !important; }
 
   /* Right: icon-only — hide all text labels */
@@ -3758,22 +3768,37 @@ body.light-mode .skeleton-block {
     display: none !important;
   }
 
-  /* Compact square icon buttons */
-  .topbar-action-btn {
-    padding: 0 !important;
-    width: 34px !important;
-    height: 34px !important;
-    justify-content: center !important;
-    gap: 0 !important;
-    border-radius: 8px !important;
+  /* Spacing for action buttons */
+  .topbar-actions {
+    gap: 6px !important;
   }
 
-  /* Admin upload: icon + "Upload" text hidden → icon only */
+  /* Touch-friendly 38px icon buttons */
+  .topbar-action-btn {
+    padding: 0 !important;
+    width: 38px !important;
+    height: 38px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 0 !important;
+    border-radius: 10px !important;
+  }
+
+  .topbar-action-btn i {
+    font-size: 16px !important;
+  }
+
+  /* Admin upload: icon-only button */
   .topbar-admin-btn {
     padding: 0 !important;
-    width: 34px !important;
-    height: 34px !important;
+    width: 38px !important;
+    height: 38px !important;
     justify-content: center !important;
+    align-items: center !important;
+    border-radius: 10px !important;
+  }
+  .topbar-admin-btn i {
+    font-size: 16px !important;
   }
   .topbar-admin-btn .topbar-action-label { display: none !important; }
 
