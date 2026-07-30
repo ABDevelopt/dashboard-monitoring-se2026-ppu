@@ -78,7 +78,7 @@
                   <th rowspan="2" class="hide-md">Korlap</th>
                   <th rowspan="2" class="hide-md">Kecamatan</th>
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
-                  <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                  <th colspan="6" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
                    <th colspan="2" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
                   <th colspan="6" class="text-center bg-green-soft muatan-col" style="border-bottom: 1px solid var(--border);">Temuan Keberadaan Usaha</th>
                   <th colspan="2" class="text-center bg-blue-soft hide-sm" style="border-bottom: 1px solid var(--border);">Proyeksi (Deadline: 31 Agt)</th>
@@ -86,6 +86,7 @@
                 <tr>
                   <!-- <th class="text-right">Total</th> -->
                   <!-- <th class="text-right">Selesai</th> -->
+                  <th class="text-right bg-cyan-soft">Open</th>
                   <th class="text-right bg-yellow-soft">Draft</th>
                   <th class="text-right bg-blue-soft">Submitted</th>
                   <th class="text-right bg-red-soft">Rejected</th>
@@ -126,6 +127,13 @@
                       </a>
                       <% if (kippPcls.includes(p.pcl.toUpperCase())) { %>
                         <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 4px;">KIPP</span>
+                      <% } %>
+                      <% if (p.email) { %>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                          <a href="mailto:<%= p.email %>" style="color: var(--text-muted); text-decoration: none;" title="Kirim Email: <%= p.email %>">
+                            <i class="bi bi-envelope" style="font-size: 10px;"></i> <%= p.email %>
+                          </a>
+                        </div>
                       <% } %>
                     </td>
                     <td class="bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>" style="min-width: 160px; padding: 6px 10px;">
@@ -173,6 +181,7 @@
                     <td class="hide-md"><%= p.kecamatan %></td>
                     <!-- <td class="text-right hide-sm" data-sort="<%= p.total_subsls %>"><%= p.total_subsls %></td> -->
                     <!-- <td class="text-right fw-bold" data-sort="<%= p.selesai %>" style="<%= p.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= p.selesai %></td> -->
+                     <td class="text-right bg-cyan-soft hide-sm status-open-text" data-sort="<%= p.open_total %>"><%= (p.open_total || 0).toLocaleString('id-ID') %></td>
                      <td class="text-right bg-yellow-soft hide-sm status-draft-text" data-sort="<%= p.draft_total %>"><%= (p.draft_total || 0).toLocaleString('id-ID') %></td>
                      <td class="text-right bg-blue-soft hide-sm status-submit-text" data-sort="<%= p.submitted_total %>"><%= (p.submitted_total || 0).toLocaleString('id-ID') %></td>
                      <td class="text-right bg-red-soft hide-sm status-reject-text" data-sort="<%= p.rejected_total %>" style="font-weight: 600;"><%= (p.rejected_total || 0).toLocaleString('id-ID') %></td>
@@ -601,10 +610,10 @@
                       <div><%= s.desa %></div>
                       <div style="display: flex; gap: 6px; align-items: center;">
                         <span class="muatan-col" style="color: var(--accent-cyan);">
-                          Muatan: <strong><%= s.usaha_total %></strong>/<%= s.muatan %>
+                          Muatan: <strong><%= s.usaha_total %></strong>/<%= Math.round(s.muatan) %>
                         </span>
                         <span style="color: var(--accent-purple);">
-                          FASIH: <strong><%= (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0) %></strong>/<%= s.target_fasih %> 
+                          FASIH: <strong><%= (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0) %></strong>/<%= Math.round(s.target_fasih) %> 
                           <span style="font-size: 9px; color: var(--text-muted);">(D<%= s.draft %> S<%= s.submitted_by_pcl %> A<%= s.approved %> R<%= s.rejected %>)</span>
                         </span>
                       </div>
@@ -736,7 +745,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (table) {
             table.querySelectorAll('tbody tr').forEach(r => {
               r.classList.remove('active');
-              r.removeAttribute('style');
+              r.style.background = '';
+              r.style.fontWeight = '';
             });
           }
 
@@ -820,7 +830,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update active row visual indicator
         table.querySelectorAll('tbody tr').forEach(r => {
           r.classList.remove('active');
-          r.removeAttribute('style');
+          r.style.background = '';
+          r.style.fontWeight = '';
         });
         row.classList.add('active');
         row.style.background = 'var(--bg-card-hover)';

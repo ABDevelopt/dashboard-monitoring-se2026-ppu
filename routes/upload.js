@@ -110,15 +110,17 @@ router.post('/', upload.fields([
   { name: 'excelFile', maxCount: 100 },
   { name: 'keluargaFile', maxCount: 100 },
   { name: 'usahaFile', maxCount: 100 },
-  { name: 'statusFile', maxCount: 100 }
+  { name: 'statusFile', maxCount: 100 },
+  { name: 'rekapPetugasFile', maxCount: 100 }
 ]), (req, res) => {
   const excelFiles = req.files && req.files['excelFile'] ? req.files['excelFile'] : [];
   const keluargaFiles = req.files && req.files['keluargaFile'] ? req.files['keluargaFile'] : [];
   const usahaFiles = req.files && req.files['usahaFile'] ? req.files['usahaFile'] : [];
   const statusFiles = req.files && req.files['statusFile'] ? req.files['statusFile'] : [];
+  const rekapPetugasFiles = req.files && req.files['rekapPetugasFile'] ? req.files['rekapPetugasFile'] : [];
 
-  if (excelFiles.length === 0 && keluargaFiles.length === 0 && usahaFiles.length === 0 && statusFiles.length === 0) {
-    req.flash('error', 'Silakan pilih setidaknya satu file Excel untuk diupload.');
+  if (excelFiles.length === 0 && keluargaFiles.length === 0 && usahaFiles.length === 0 && statusFiles.length === 0 && rekapPetugasFiles.length === 0) {
+    req.flash('error', 'Silakan pilih setidaknya satu file untuk diupload.');
     return res.redirect('/admin/upload');
   }
 
@@ -160,9 +162,32 @@ router.post('/', upload.fields([
 
   // Sort dates chronologically ascending
   const sortedDates = Object.keys(groups).sort();
-
   const successMessages = [];
   const errors = [];
+
+  function isRekapWilayah(filePath, originalname) {
+    if (originalname && originalname.toLowerCase().includes('rekap_petugas_wilayah')) {
+      return true;
+    }
+    try {
+      if (!filePath || !fs.existsSync(filePath)) return false;
+      const sample = fs.readFileSync(filePath, 'utf-8').slice(0, 1500).toLowerCase();
+      return sample.includes('kode wilayah') && sample.includes('email petugas');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Handle rekapPetugasFiles separately if uploaded
+  for (const f of rekapPetugasFiles) {
+    try {
+      const { parseRekapPetugasWilayah } = require('../services/excelParser');
+      const resWil = parseRekapPetugasWilayah(f.path);
+      successMessages.push(`Rekap Petugas Wilayah (${f.originalname}): Berhasil diproses! (${resWil.totalRows.toLocaleString('id-ID')} baris, ${resWil.updatedSubsls.toLocaleString('id-ID')} SubSLS diperbarui)`);
+    } catch (err) {
+      errors.push(`Gagal memproses file Rekap Petugas Wilayah (${f.originalname}): ${err.message}`);
+    }
+  }
 
   for (const date of sortedDates) {
     const g = groups[date];
@@ -174,6 +199,15 @@ router.post('/', upload.fields([
     try {
       let result;
       let msg = `Tanggal ${date}: `;
+
+      // Auto-detect if statusFile or excelFile is actually a Rekap Petugas Wilayah file
+      const targetCheckFile = statusFile || excelFile;
+      if (targetCheckFile && isRekapWilayah(targetCheckFile.path, targetCheckFile.originalname)) {
+        const { parseRekapPetugasWilayah } = require('../services/excelParser');
+        const resWil = parseRekapPetugasWilayah(targetCheckFile.path);
+        successMessages.push(`Rekap Petugas Wilayah (${targetCheckFile.originalname}): Berhasil diproses! (${resWil.totalRows.toLocaleString('id-ID')} baris, ${resWil.updatedSubsls.toLocaleString('id-ID')} SubSLS diperbarui)`);
+        continue;
+      }
 
       if (keluargaFile || usahaFile) {
         result = parseAndSaveSeparateExports(

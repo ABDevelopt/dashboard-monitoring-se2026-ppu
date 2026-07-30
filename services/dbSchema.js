@@ -26,10 +26,13 @@ You have read-only access to a SQLite database with the following schema:
    - muatan: INTEGER (The prelist target workload for usaha/businesses in this SLS)
    - target_fasih: INTEGER (Target count of family documents to be completed in FASIH app)
 
-3. Table: progres (Stores progress data per upload and SubSLS)
+3. Table: progres (Stores progress per SubSLS per officer per upload. CRITICAL RULE: A single SubSLS code can be worked on by multiple PCL officers simultaneously. Progress is saved per (upload_id, kode, pcl_email))
    - id: INTEGER PRIMARY KEY AUTOINCREMENT
    - upload_id: INTEGER REFERENCES uploads(id) ON DELETE CASCADE
    - kode: TEXT (SubSLS code references subsls_master.kode)
+   - pcl_email: TEXT (Email of the officer who worked on this SubSLS entry)
+   - pcl_name: TEXT (Full name of the officer)
+   - pcl_sobat_id: TEXT (Sobat ID of the officer)
    - usaha_ditemukan: INTEGER (Businesses found during census)
    - usaha_baru: INTEGER (New businesses found)
    - usaha_tidak_ditemukan: INTEGER (Businesses not found)
@@ -51,7 +54,14 @@ You have read-only access to a SQLite database with the following schema:
    - approved: INTEGER (FASIH document approved by PML - count of completed documents)
    - rejected: INTEGER (FASIH document rejected by PML - count of documents returned to PCL)
 
-4. Table: summary_cache (Stores pre-computed summarized progress data grouped by upload, kecamatan, desa, korlap, pml, pcl)
+4. Table: petugas_email (Stores email and account details of officers/mitra)
+   - id: INTEGER PRIMARY KEY AUTOINCREMENT
+   - sobat_id: TEXT (Unique Sobat ID of the officer)
+   - nama_lengkap: TEXT (Officer full name)
+   - email: TEXT (Officer email address)
+   - jenis_kelamin: TEXT (Gender: 'Lk' / 'Pr')
+
+5. Table: summary_cache (Stores pre-computed summarized progress data grouped by upload, kecamatan, desa, korlap, pml, pcl)
    - upload_id: INTEGER REFERENCES uploads(id) ON DELETE CASCADE
    - kecamatan: TEXT (Kecamatan name)
    - desa: TEXT (Desa name)

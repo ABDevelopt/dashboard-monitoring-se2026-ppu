@@ -1,0 +1,300 @@
+<%- contentFor('body') %>
+
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+  <div>
+    <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+      <i class="bi bi-envelope-at-fill" style="color: var(--accent-blue);"></i> Pengaturan Data Email Petugas
+    </h1>
+    <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted);">
+      Kelola daftar akun email, Sobat ID, dan identitas petugas pencacah (PCL/PML/Korlap) SE2026.
+    </p>
+  </div>
+  <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+    <button onclick="openUploadRekapModal()" class="btn btn-secondary" style="padding: 8px 14px; font-size: 13px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 6px;" title="Upload File rekap_petugas_wilayah_*.csv">
+      <i class="bi bi-file-earmark-arrow-up-fill" style="color: var(--accent-blue);"></i> Upload Rekap Wilayah
+    </button>
+    <button onclick="openCreateModal()" class="btn btn-primary" style="padding: 8px 14px; font-size: 13px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 6px;">
+      <i class="bi bi-person-plus-fill"></i> Tambah Petugas
+    </button>
+    <form action="/admin/petugas-email/resync" method="POST" style="margin: 0;">
+      <button type="submit" class="btn btn-secondary" style="padding: 8px 14px; font-size: 13px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 6px;" title="Cocokkan Ulang Email ke Master SubSLS">
+        <i class="bi bi-arrow-repeat"></i> Sync Master
+      </button>
+    </form>
+    <a href="/admin/petugas-email/export" class="btn btn-secondary" style="padding: 8px 14px; font-size: 13px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 6px;">
+      <i class="bi bi-download"></i> Unduh CSV
+    </a>
+  </div>
+</div>
+
+<!-- STATS SUMMARY CARDS -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  <div class="card" style="padding: 18px 20px; border-radius: 14px; display: flex; align-items: center; gap: 14px; background: var(--bg-card); border: 1px solid var(--border);">
+    <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(249, 115, 22, 0.12); color: var(--accent-blue); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+      <i class="bi bi-people-fill"></i>
+    </div>
+    <div>
+      <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Total Terdaftar</div>
+      <div style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin-top: 2px;"><%= totalCount.toLocaleString('id-ID') %> <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">Akun</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 18px 20px; border-radius: 14px; display: flex; align-items: center; gap: 14px; background: var(--bg-card); border: 1px solid var(--border);">
+    <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+      <i class="bi bi-funnel-fill"></i>
+    </div>
+    <div>
+      <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Hasil Filter / Cari</div>
+      <div style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin-top: 2px;"><%= petugasList.length.toLocaleString('id-ID') %> <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">Data</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SEARCH BAR & DATA TABLE -->
+<div class="card" style="padding: 20px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--border);">
+  
+  <form action="/admin/petugas-email" method="GET" style="margin-bottom: 18px; display: flex; gap: 10px; flex-wrap: wrap;">
+    <div style="position: relative; flex: 1; min-width: 260px;">
+      <i class="bi bi-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 14px;"></i>
+      <input type="text" name="q" value="<%= query %>" placeholder="Cari nama lengkap, email, atau Sobat ID..." style="width: 100%; padding: 9px 14px 9px 38px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-primary); font-size: 13px; outline: none;">
+    </div>
+    <button type="submit" class="btn btn-secondary" style="padding: 9px 16px; font-size: 13px; font-weight: 600; border-radius: 10px;">
+      Cari
+    </button>
+    <% if (query) { %>
+      <a href="/admin/petugas-email" class="btn btn-secondary" style="padding: 9px 14px; font-size: 13px; border-radius: 10px; color: var(--accent-red);">
+        Reset Filter
+      </a>
+    <% } %>
+  </form>
+
+  <div style="overflow-x: auto;">
+    <table class="table" style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px;">
+      <thead>
+        <tr style="background: var(--bg-secondary); text-align: left;">
+          <th style="padding: 12px 14px; border-bottom: 1px solid var(--border); border-top-left-radius: 10px; width: 50px;" class="text-center">#</th>
+          <th style="padding: 12px 14px; border-bottom: 1px solid var(--border);">Sobat ID</th>
+          <th style="padding: 12px 14px; border-bottom: 1px solid var(--border);">Nama Lengkap</th>
+          <th style="padding: 12px 14px; border-bottom: 1px solid var(--border);">Alamat Email</th>
+          <th style="padding: 12px 14px; border-bottom: 1px solid var(--border);" class="text-center">JK</th>
+          <th style="padding: 12px 14px; border-bottom: 1px solid var(--border); border-top-right-radius: 10px;" class="text-center">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (petugasList.length === 0) { %>
+          <tr>
+            <td colspan="6" class="text-center" style="padding: 30px; color: var(--text-muted);">
+              <i class="bi bi-inbox" style="font-size: 28px; display: block; margin-bottom: 8px;"></i>
+              Tidak ada data petugas yang cocok.
+            </td>
+          </tr>
+        <% } else { %>
+          <% petugasList.forEach((p, idx) => { %>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td class="text-center" style="padding: 10px 14px; color: var(--text-muted); font-size: 12px;"><%= idx + 1 %></td>
+              <td style="padding: 10px 14px; font-weight: 600; color: var(--text-primary); font-family: monospace;">
+                <%= p.sobat_id || '-' %>
+              </td>
+              <td style="padding: 10px 14px; font-weight: 600; color: var(--text-primary);">
+                <i class="bi bi-person-circle" style="color: var(--accent-blue); margin-right: 6px;"></i><%= p.nama_lengkap %>
+              </td>
+              <td style="padding: 10px 14px;">
+                <a href="mailto:<%= p.email %>" style="color: var(--accent-blue); text-decoration: none;" title="Kirim Email">
+                  <i class="bi bi-envelope" style="margin-right: 4px;"></i><%= p.email %>
+                </a>
+              </td>
+              <td class="text-center" style="padding: 10px 14px;">
+                <% if (p.jenis_kelamin === 'Lk') { %>
+                  <span class="badge" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.25); font-size: 11px;">Lk</span>
+                <% } else if (p.jenis_kelamin === 'Pr') { %>
+                  <span class="badge" style="background: rgba(236, 72, 153, 0.12); color: #ec4899; border: 1px solid rgba(236, 72, 153, 0.25); font-size: 11px;">Pr</span>
+                <% } else { %>
+                  <span style="color: var(--text-muted);">-</span>
+                <% } %>
+              </td>
+              <td class="text-center" style="padding: 10px 14px;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                  <button onclick="openEditModal(<%= JSON.stringify(p) %>)" class="btn btn-secondary btn-xs" style="padding: 4px 8px; font-size: 11px; border-radius: 6px;" title="Edit Data">
+                    <i class="bi bi-pencil"></i> Edit
+                  </button>
+                  <button onclick="openDeleteModal(<%= p.id %>, '<%= p.nama_lengkap.replace(/'/g, "\\'") %>')" class="btn btn-secondary btn-xs" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; color: var(--accent-red);" title="Hapus Data">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL TAMBAH PETUGAS -->
+<div id="modalCreate" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; width: 100%; max-width: 480px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+      <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: var(--text-primary);">
+        <i class="bi bi-person-plus-fill" style="color: var(--accent-blue); margin-right: 6px;"></i> Tambah Email Petugas Baru
+      </h3>
+      <button onclick="closeCreateModal()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">&times;</button>
+    </div>
+    
+    <form action="/admin/petugas-email/create" method="POST">
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase;">Nama Lengkap *</label>
+        <input type="text" name="nama_lengkap" required placeholder="Contoh: Aco Fitriadi" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-primary); font-size: 13px;">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase;">Alamat Email *</label>
+        <input type="email" name="email" required placeholder="contoh@gmail.com" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-primary); font-size: 13px;">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase;">Sobat ID (Opsional)</label>
+        <input type="text" name="sobat_id" placeholder="6409xxxxxxxx" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-primary); font-size: 13px;">
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase;">Jenis Kelamin</label>
+        <select name="jenis_kelamin" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-primary); font-size: 13px;">
+          <option value="Pr">Perempuan (Pr)</option>
+          <option value="Lk">Laki-laki (Lk)</option>
+        </select>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" onclick="closeCreateModal()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px; border-radius: 8px;">Batal</button>
+        <button type="submit" class="btn btn-primary" style="padding: 8px 18px; font-size: 13px; font-weight: 600; border-radius: 8px;">Simpan Data</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL EDIT PETUGAS -->
+<div id="modalEdit" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; width: 100%; max-width: 480px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+      <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: var(--text-primary);">
+        <i class="bi bi-pencil-square" style="color: var(--accent-blue); margin-right: 6px;"></i> Edit Data Email Petugas
+      </h3>
+      <button onclick="closeEditModal()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">&times;</button>
+    </div>
+    
+    <form id="editForm" method="POST">
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase;">Nama Lengkap *</label>
+        <input type="text" id="editNama" name="nama_lengkap" required style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-primary); font-size: 13px;">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase;">Alamat Email *</label>
+        <input type="email" id="editEmail" name="email" required style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-primary); font-size: 13px;">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase;">Sobat ID (Opsional)</label>
+        <input type="text" id="editSobatId" name="sobat_id" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-primary); font-size: 13px;">
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase;">Jenis Kelamin</label>
+        <select id="editJk" name="jenis_kelamin" style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-primary); font-size: 13px;">
+          <option value="Pr">Perempuan (Pr)</option>
+          <option value="Lk">Laki-laki (Lk)</option>
+        </select>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" onclick="closeEditModal()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px; border-radius: 8px;">Batal</button>
+        <button type="submit" class="btn btn-primary" style="padding: 8px 18px; font-size: 13px; font-weight: 600; border-radius: 8px;">Update Data</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL HAPUS PETUGAS -->
+<div id="modalDelete" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; width: 100%; max-width: 420px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); text-align: center;">
+    <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(248, 113, 113, 0.12); color: var(--accent-red); display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 14px auto;">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+    </div>
+    <h3 style="margin: 0 0 6px 0; font-size: 17px; font-weight: 700; color: var(--text-primary);">Konfirmasi Hapus Data</h3>
+    <p style="margin: 0 0 20px 0; font-size: 13px; color: var(--text-muted);">
+      Apakah Anda yakin ingin menghapus data email petugas <strong id="deleteNama" style="color: var(--text-primary);"></strong>?
+    </p>
+
+    <form id="deleteForm" method="POST">
+      <div style="display: flex; justify-content: center; gap: 10px;">
+        <button type="button" onclick="closeDeleteModal()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px; border-radius: 8px;">Batal</button>
+        <button type="submit" class="btn btn-primary" style="padding: 8px 18px; font-size: 13px; font-weight: 600; border-radius: 8px; background: var(--accent-red); border-color: var(--accent-red);">Ya, Hapus Data</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL UPLOAD REKAP PETUGAS WILAYAH -->
+<div id="modalUploadRekap" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; width: 100%; max-width: 480px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+      <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: var(--text-primary);">
+        <i class="bi bi-file-earmark-arrow-up-fill" style="color: var(--accent-blue); margin-right: 6px;"></i> Upload Rekap Petugas Wilayah
+      </h3>
+      <button onclick="closeUploadRekapModal()" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;">&times;</button>
+    </div>
+    
+    <form action="/admin/petugas-email/upload-rekap" method="POST" enctype="multipart/form-data">
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+        Upload file <code>rekap_petugas_wilayah_*.csv</code> atau <code>.xlsx</code> untuk secara otomatis mengaitkan alamat email petugas dengan kode wilayah SubSLS pada master data.
+      </p>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">Pilih File (.csv / .xlsx) *</label>
+        <input type="file" name="rekap_file" accept=".csv, .xlsx, .xls" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-body); color: var(--text-primary); font-size: 13px;">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" onclick="closeUploadRekapModal()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px; border-radius: 8px;">Batal</button>
+        <button type="submit" class="btn btn-primary" style="padding: 8px 18px; font-size: 13px; font-weight: 600; border-radius: 8px;">Upload &amp; Proses</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openUploadRekapModal() {
+    document.getElementById('modalUploadRekap').style.display = 'flex';
+  }
+  function closeUploadRekapModal() {
+    document.getElementById('modalUploadRekap').style.display = 'none';
+  }
+
+  function openCreateModal() {
+    document.getElementById('modalCreate').style.display = 'flex';
+  }
+  function closeCreateModal() {
+    document.getElementById('modalCreate').style.display = 'none';
+  }
+
+  function openEditModal(p) {
+    document.getElementById('editForm').action = `/admin/petugas-email/edit/${p.id}`;
+    document.getElementById('editNama').value = p.nama_lengkap || '';
+    document.getElementById('editEmail').value = p.email || '';
+    document.getElementById('editSobatId').value = p.sobat_id || '';
+    document.getElementById('editJk').value = p.jenis_kelamin || 'Pr';
+    document.getElementById('modalEdit').style.display = 'flex';
+  }
+  function closeEditModal() {
+    document.getElementById('modalEdit').style.display = 'none';
+  }
+
+  function openDeleteModal(id, nama) {
+    document.getElementById('deleteForm').action = `/admin/petugas-email/delete/${id}`;
+    document.getElementById('deleteNama').textContent = nama;
+    document.getElementById('modalDelete').style.display = 'flex';
+  }
+  function closeDeleteModal() {
+    document.getElementById('modalDelete').style.display = 'none';
+  }
+</script>

@@ -22,8 +22,8 @@ router.get('/', (req, res) => {
       detailData = attachProgressPercentages(getDb().prepare(`
         SELECT 
           m.pml, m.korlap,
-          COUNT(DISTINCT m.pcl) AS jumlah_pcl,
-          COUNT(m.kode) AS total_subsls,
+          COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
+          COUNT(DISTINCT p.kode) AS total_subsls,
           SUM(CASE WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 1 ELSE 0 END) AS selesai,
           SUM(${targetMuatanFormula}) AS total_muatan,
           SUM(${realFormula}) AS muatan_selesai,
@@ -36,9 +36,9 @@ router.get('/', (req, res) => {
           SUM(${targetFormula}) AS target_fasih_total,
           SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
           SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
-        FROM subsls_master m
-        LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-        WHERE m.korlap = ?
+        FROM progres p
+        LEFT JOIN subsls_master m ON p.kode = m.kode
+        WHERE p.upload_id = ? AND m.korlap = ?
         GROUP BY m.pml
         ORDER BY selesai ASC
       `).all(uploadId, filterKorlap));

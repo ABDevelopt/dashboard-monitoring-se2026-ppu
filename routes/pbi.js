@@ -118,7 +118,10 @@ router.get('/', (req, res) => {
     if (filterDesa) { cond.push('m.desa = ?'); params.push(filterDesa); }
     if (filterKorlap) { cond.push('m.korlap = ?'); params.push(filterKorlap); }
     if (filterPml) { cond.push('m.pml = ?'); params.push(filterPml); }
-    if (filterPcl) { cond.push('m.pcl = ?'); params.push(filterPcl); }
+    if (filterPcl) {
+      cond.push('(m.pcl = ? OR p.pcl_name = ? OR p.pcl_email = ?)');
+      params.push(filterPcl, filterPcl, filterPcl);
+    }
     if (filterStatus === 'selesai') cond.push(`p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula})`);
     if (filterStatus === 'belum') cond.push(`(p.kode IS NULL OR (${targetFormula}) = 0 OR (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) < (${targetFormula}))`);
 

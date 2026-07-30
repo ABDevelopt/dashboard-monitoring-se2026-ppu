@@ -359,7 +359,8 @@
         // Update active row visual indicator
         table.querySelectorAll('tbody tr').forEach(r => {
           r.classList.remove('active');
-          r.removeAttribute('style');
+          r.style.background = '';
+          r.style.fontWeight = '';
         });
         row.classList.add('active');
         row.style.background = 'var(--bg-card-hover)';
@@ -419,7 +420,8 @@
           if (table) {
             table.querySelectorAll('tbody tr').forEach(r => {
               r.classList.remove('active');
-              r.removeAttribute('style');
+              r.style.background = '';
+              r.style.fontWeight = '';
             });
           }
 

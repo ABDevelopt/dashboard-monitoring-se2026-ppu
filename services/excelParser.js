@@ -1053,5 +1053,342 @@ function createEmptyProgresRecord() {
   };
 }
 
-module.exports = { parseAndSaveExcel, loadMasterFromJson, loadMasterFromExcel, parseAndSaveStatusExcel, parseAndSaveStatusExcelOnly, parseAndSaveSeparateExports };
+// Parser khusus untuk file Rekap Petugas Wilayah (kode wilayah & email petugas)
+function parseJsonRekapPetugas(jsonPath) {
+  const rawContent = fs.readFileSync(jsonPath, 'utf-8');
+  const jsonItems = JSON.parse(rawContent);
+  const rows = [];
+  jsonItems.forEach(item => {
+    const officerStr = item.officer || '';
+    const emailMatch = officerStr.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    if (!emailMatch) return;
+    const email = emailMatch[0].toLowerCase();
+
+    const tgtMatch = officerStr.match(/Total Assignment\s+(\d+)/i);
+    const officerTotalTarget = tgtMatch ? parseInt(tgtMatch[1], 10) : 0;
+
+    const regions = item.regions || [];
+    const regionCount = regions.length;
+    const targetPerRegion = regionCount > 0 ? (officerTotalTarget / regionCount) : 0;
+
+    regions.forEach(r => {
+      const kode = r.code || '';
+      if (!kode) return;
+
+      let openVal = 0, draftVal = 0, submittedVal = 0, approvedVal = 0, rejectedVal = 0;
+      const statuses = r.statuses || [];
+      statuses.forEach(st => {
+        const sName = (st.status || '').toUpperCase();
+        const cnt = parseInt(st.count || 0, 10);
+        if (isNaN(cnt)) return;
+
+        if (sName.includes('OPEN')) openVal += cnt;
+        else if (sName.includes('DRAFT')) draftVal += cnt;
+        else if (sName.includes('SUBMITTED')) submittedVal += cnt;
+        else if (sName.includes('APPROVED')) approvedVal += cnt;
+        else if (sName.includes('REJECTED') || sName.includes('REVOKED')) rejectedVal += cnt;
+      });
+
+      const targetVal = targetPerRegion > 0 ? targetPerRegion : (openVal + draftVal + submittedVal + approvedVal + rejectedVal);
+      rows.push({
+        kode,
+        email,
+        draft: draftVal,
+        open: openVal,
+        approved: approvedVal,
+        rejected: rejectedVal,
+        submitted: submittedVal,
+        target_upload: targetVal
+      });
+    });
+  });
+  return rows;
+}
+
+function parseRekapPetugasWilayah(filePath) {
+  const db = getDb();
+  let rows = [];
+
+  const ext = path.extname(filePath).toLowerCase();
+  const jsonCandidatePath = filePath.replace(/\.(csv|xlsx|xls)$/i, '.json');
+  const outputJsonPath = path.join('C:', 'Users', 'ajian', 'vercel-agent-browser', 'output', 'rekap_petugas_wilayah_20260726_112523.json');
+
+  if (ext === '.json') {
+    rows = parseJsonRekapPetugas(filePath);
+  } else if (fs.existsSync(jsonCandidatePath)) {
+    rows = parseJsonRekapPetugas(jsonCandidatePath);
+  } else if (fs.existsSync(outputJsonPath) && filePath.includes('20260726_112523')) {
+    rows = parseJsonRekapPetugas(outputJsonPath);
+  } else if (ext === '.xlsx' || ext === '.xls') {
+    const wb = XLSX.readFile(filePath);
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rawJson = XLSX.utils.sheet_to_json(ws);
+    rows = rawJson.map(r => {
+      let kw = '', em = '';
+      for (const k of Object.keys(r)) {
+        const kl = k.toLowerCase();
+        if (kl.includes('kode') || kl.includes('wilayah') || kl.includes('subsls')) kw = String(r[k]).trim();
+        if (kl.includes('email')) em = String(r[k]).trim().toLowerCase();
+      }
+      return { kode: kw, email: em };
+    });
+  } else {
+    // CSV parsing
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const firstLine = content.split(/\r?\n/)[0] || '';
+    let sep = ';';
+    if (firstLine.includes(';')) sep = ';';
+    else if (firstLine.includes(',')) sep = ',';
+    else if (firstLine.includes('\t')) sep = '\t';
+
+    const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (lines.length <= 1) throw new Error('File rekap petugas wilayah kosong.');
+
+    const header = lines[0].split(sep).map(h => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
+    const kodeIdx = header.findIndex(h => h.includes('kode') || h.includes('subsls') || h.includes('wilayah'));
+    const emailIdx = header.findIndex(h => h.includes('email'));
+
+    if (kodeIdx === -1 || emailIdx === -1) {
+      throw new Error('Header file harus berisi kolom "kode wilayah" dan "email petugas".');
+    }
+
+    const draftIdx = header.findIndex(h => h.includes('draft'));
+    const approvedIdx = header.findIndex(h => h.includes('approved'));
+    const rejectedIdx = header.findIndex(h => h.includes('rejected'));
+    const revokedIdx = header.findIndex(h => h.includes('revoked'));
+    const openIdx = header.findIndex(h => h.includes('open'));
+    const submittedIdx = header.findIndex(h => h.includes('submitted') || h.includes('submit') || h.includes('pencacah'));
+    const totalIdx = header.findIndex(h => h.includes('total') || h.includes('assignment'));
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(sep).map(c => c.replace(/^["']|["']$/g, '').trim());
+      if (cols.length <= Math.max(kodeIdx, emailIdx)) continue;
+      
+      const draftVal = draftIdx !== -1 ? parseInt(cols[draftIdx] || 0, 10) : 0;
+      const openVal = openIdx !== -1 ? parseInt(cols[openIdx] || 0, 10) : 0;
+      const approvedVal = approvedIdx !== -1 ? parseInt(cols[approvedIdx] || 0, 10) : 0;
+      const rejectedVal = (rejectedIdx !== -1 ? parseInt(cols[rejectedIdx] || 0, 10) : 0) + (revokedIdx !== -1 ? parseInt(cols[revokedIdx] || 0, 10) : 0);
+      const targetVal = totalIdx !== -1 ? parseInt(cols[totalIdx] || 0, 10) : 0;
+      const submittedVal = submittedIdx !== -1 ? parseInt(cols[submittedIdx] || 0, 10) : 0;
+
+      rows.push({
+        kode: cols[kodeIdx],
+        email: cols[emailIdx].toLowerCase(),
+        draft: draftVal,
+        open: openVal,
+        approved: approvedVal,
+        rejected: rejectedVal,
+        submitted: submittedVal,
+        target_upload: targetVal
+      });
+    }
+  }
+
+  // Pre-load existing emails
+  const existingEmails = db.prepare('SELECT email, nama_lengkap, sobat_id FROM petugas_email').all();
+  const emailMap = {};
+  existingEmails.forEach(r => {
+    if (r.email) emailMap[r.email.trim().toLowerCase()] = r;
+  });
+
+  const updateSubslsStmt = db.prepare(`
+    UPDATE subsls_master 
+    SET pcl_email = ?, pcl_sobat_id = ?, pcl = ?
+    WHERE kode = ? OR kode_2025 = ?
+  `);
+
+  const insertEmailStmt = db.prepare(`
+    INSERT INTO petugas_email (sobat_id, nama_lengkap, email, jenis_kelamin)
+    VALUES (?, ?, ?, ?)
+  `);
+
+  const latestUpload = db.prepare('SELECT id FROM uploads ORDER BY id DESC LIMIT 1').get();
+  const uploadId = latestUpload ? latestUpload.id : 1;
+
+  // Find previous upload_id that has progres records
+  const prevUploadRow = db.prepare(`
+    SELECT u.id 
+    FROM uploads u
+    JOIN progres p ON u.id = p.upload_id
+    WHERE u.id < ? 
+    GROUP BY u.id
+    ORDER BY u.id DESC LIMIT 1
+  `).get(uploadId);
+  const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
+
+  const getPrevMuatan = db.prepare(`
+    SELECT 
+      usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
+      tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
+      rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya, submitted_by_pcl
+    FROM progres
+    WHERE upload_id = ? AND kode = ? AND COALESCE(pcl_email, '') = COALESCE(?, '')
+    LIMIT 1
+  `);
+
+  const insertProgresStmt = db.prepare(`
+    INSERT INTO progres (
+      upload_id, kode, pcl_email, pcl_name, pcl_sobat_id,
+      draft, open, submitted_by_pcl, approved, rejected, target_upload,
+      usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
+      tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
+      rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(upload_id, kode, COALESCE(pcl_email, '')) DO UPDATE SET
+      draft = excluded.draft,
+      open = excluded.open,
+      submitted_by_pcl = excluded.submitted_by_pcl,
+      approved = excluded.approved,
+      rejected = excluded.rejected,
+      target_upload = excluded.target_upload,
+      pcl_email = excluded.pcl_email,
+      pcl_name = excluded.pcl_name,
+      pcl_sobat_id = excluded.pcl_sobat_id,
+      usaha_tidak_ditemukan = excluded.usaha_tidak_ditemukan,
+      usaha_ditemukan = excluded.usaha_ditemukan,
+      usaha_baru = excluded.usaha_baru,
+      usaha_tutup = excluded.usaha_tutup,
+      usaha_ganda = excluded.usaha_ganda,
+      tidak_ditemukan = excluded.tidak_ditemukan,
+      ditemukan = excluded.ditemukan,
+      keluarga_baru = excluded.keluarga_baru,
+      meninggal = excluded.meninggal,
+      tidak_eligible = excluded.tidak_eligible,
+      tidak_dapat_ditemui = excluded.tidak_dapat_ditemui,
+      rumah_tunggal = excluded.rumah_tunggal,
+      rumah_deret = excluded.rumah_deret,
+      rumah_susun = excluded.rumah_susun,
+      apartemen = excluded.apartemen,
+      lainnya = excluded.lainnya
+  `);
+
+  let totalRows = 0;
+  let updatedSubsls = 0;
+  let newEmailsCount = 0;
+  const uniqueEmailsSeen = new Set();
+
+  // Pre-calculate per-officer max target and subsls count
+  const officerSubslsCounts = {};
+  const officerMaxTargets = {};
+  for (const item of rows) {
+    if (!item.email) continue;
+    officerSubslsCounts[item.email] = (officerSubslsCounts[item.email] || 0) + 1;
+    if (item.target_upload > (officerMaxTargets[item.email] || 0)) {
+      officerMaxTargets[item.email] = item.target_upload;
+    }
+  }
+
+  db.transaction(() => {
+    for (const item of rows) {
+      const rawKode = item.kode;
+      const rawEmail = item.email;
+
+      if (!rawKode || !rawEmail) continue;
+
+      const kodeClean = rawKode.padStart(16, '0');
+      uniqueEmailsSeen.add(rawEmail);
+
+      let namaLengkap = '';
+      let sobatId = '';
+
+      if (emailMap[rawEmail]) {
+        namaLengkap = emailMap[rawEmail].nama_lengkap;
+        sobatId = emailMap[rawEmail].sobat_id || '';
+      } else {
+        const username = rawEmail.split('@')[0];
+        namaLengkap = username.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        sobatId = '';
+        try {
+          insertEmailStmt.run(sobatId, namaLengkap, rawEmail, '');
+          emailMap[rawEmail] = { email: rawEmail, nama_lengkap: namaLengkap, sobat_id: sobatId };
+          newEmailsCount++;
+        } catch (_) {}
+      }
+
+      const res = updateSubslsStmt.run(rawEmail, sobatId, namaLengkap, kodeClean, rawKode);
+      if (res.changes > 0) {
+        updatedSubsls += res.changes;
+      }
+
+      const subslsCnt = officerSubslsCounts[rawEmail] || 1;
+      const maxTgt = officerMaxTargets[rawEmail] || item.target_upload || 0;
+      const targetPerSubsls = (item.target_upload !== undefined && item.target_upload > 0) ? item.target_upload : (subslsCnt > 0 ? (maxTgt / subslsCnt) : 0);
+
+      let usaha_tidak_ditemukan = 0, usaha_ditemukan = 0, usaha_baru = 0, usaha_tutup = 0, usaha_ganda = 0;
+      let tidak_ditemukan = 0, ditemukan = 0, keluarga_baru = 0, meninggal = 0, tidak_eligible = 0, tidak_dapat_ditemui = 0;
+      let rumah_tunggal = 0, rumah_deret = 0, rumah_susun = 0, apartemen = 0, lainnya = 0;
+      let submitted_by_pcl = item.submitted !== -1 ? item.submitted : 0;
+
+      if (prevUploadId) {
+        const prev = getPrevMuatan.get(prevUploadId, kodeClean, rawEmail);
+        if (prev) {
+          usaha_tidak_ditemukan = prev.usaha_tidak_ditemukan || 0;
+          usaha_ditemukan = prev.usaha_ditemukan || 0;
+          usaha_baru = prev.usaha_baru || 0;
+          usaha_tutup = prev.usaha_tutup || 0;
+          usaha_ganda = prev.usaha_ganda || 0;
+          tidak_ditemukan = prev.tidak_ditemukan || 0;
+          ditemukan = prev.ditemukan || 0;
+          keluarga_baru = prev.keluarga_baru || 0;
+          meninggal = prev.meninggal || 0;
+          tidak_eligible = prev.tidak_eligible || 0;
+          tidak_dapat_ditemui = prev.tidak_dapat_ditemui || 0;
+          rumah_tunggal = prev.rumah_tunggal || 0;
+          rumah_deret = prev.rumah_deret || 0;
+          rumah_susun = prev.rumah_susun || 0;
+          apartemen = prev.apartemen || 0;
+          lainnya = prev.lainnya || 0;
+          if (item.submitted === -1) {
+            submitted_by_pcl = prev.submitted_by_pcl || 0;
+          }
+        }
+      }
+
+      // Save individual officer progress row
+      try {
+        insertProgresStmt.run(
+          uploadId,
+          kodeClean,
+          rawEmail,
+          namaLengkap,
+          sobatId,
+          item.draft || 0,
+          item.open || 0,
+          submitted_by_pcl,
+          item.approved || 0,
+          item.rejected || 0,
+          targetPerSubsls,
+          usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
+          tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
+          rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya
+        );
+      } catch (_) {}
+
+      totalRows++;
+    }
+  })();
+
+  // Rebuild summary cache
+  try {
+    const { rebuildSummaryCache } = require('../database');
+    rebuildSummaryCache(uploadId);
+  } catch (_) {}
+
+  return {
+    totalRows,
+    updatedSubsls,
+    uniqueEmails: uniqueEmailsSeen.size,
+    newEmailsCount
+  };
+}
+
+module.exports = {
+  parseAndSaveExcel,
+  loadMasterFromJson,
+  loadMasterFromExcel,
+  parseAndSaveStatusExcel,
+  parseAndSaveStatusExcelOnly,
+  parseAndSaveSeparateExports,
+  parseRekapPetugasWilayah
+};
 

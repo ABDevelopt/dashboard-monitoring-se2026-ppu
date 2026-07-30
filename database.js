@@ -396,6 +396,93 @@ function runMigrations() {
           db.exec(`CREATE INDEX IF NOT EXISTS idx_visitor_logs_path ON visitor_logs(path);`);
         } catch (_) {}
       }
+    },
+    {
+      version: '20260725000001_add_petugas_email',
+      up: (db) => {
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS petugas_email (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sobat_id TEXT,
+            nama_lengkap TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            jenis_kelamin TEXT,
+            kode_prov INTEGER DEFAULT 64,
+            kode_kab INTEGER DEFAULT 9,
+            nama_kab TEXT DEFAULT 'PENAJAM PASER UTARA',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+        try {
+          db.exec(`CREATE INDEX IF NOT EXISTS idx_petugas_email_nama ON petugas_email(nama_lengkap);`);
+          db.exec(`CREATE INDEX IF NOT EXISTS idx_petugas_email_email ON petugas_email(email);`);
+          db.exec(`CREATE INDEX IF NOT EXISTS idx_petugas_email_sobat ON petugas_email(sobat_id);`);
+        } catch (_) {}
+      }
+    },
+    {
+      version: '20260725000002_integrate_petugas_email',
+      up: (db) => {
+        const cols = ['pcl_email', 'pcl_sobat_id', 'pml_email', 'pml_sobat_id', 'korlap_email', 'korlap_sobat_id'];
+        cols.forEach(col => {
+          try {
+            db.prepare(`ALTER TABLE subsls_master ADD COLUMN ${col} TEXT`).run();
+          } catch (_) {}
+        });
+
+        const emails = db.prepare('SELECT nama_lengkap, email, sobat_id FROM petugas_email').all();
+        const cleanStr = (s) => (s ? s.toString().toLowerCase().replace(/[^a-z0-9]/g, '') : '');
+        const emailMapExact = {};
+        const emailMapClean = {};
+
+        emails.forEach(r => {
+          if (r.nama_lengkap) {
+            const ex = r.nama_lengkap.trim().toLowerCase();
+            const cl = cleanStr(r.nama_lengkap);
+            emailMapExact[ex] = r;
+            emailMapClean[cl] = r;
+          }
+        });
+
+        const roles = [
+          { roleCol: 'pcl', emailCol: 'pcl_email', sobatCol: 'pcl_sobat_id' },
+          { roleCol: 'pml', emailCol: 'pml_email', sobatCol: 'pml_sobat_id' },
+          { roleCol: 'korlap', emailCol: 'korlap_email', sobatCol: 'korlap_sobat_id' }
+        ];
+
+        roles.forEach(({ roleCol, emailCol, sobatCol }) => {
+          const uniqueOfficers = db.prepare(`SELECT DISTINCT ${roleCol} FROM subsls_master WHERE ${roleCol} IS NOT NULL AND ${roleCol} != ''`).all();
+          uniqueOfficers.forEach(o => {
+            const name = o[roleCol] ? o[roleCol].trim() : '';
+            if (!name) return;
+            const ex = name.toLowerCase();
+            const cl = cleanStr(name);
+
+            const target = emailMapExact[ex] || emailMapClean[cl];
+            if (target) {
+              db.prepare(`UPDATE subsls_master SET ${emailCol} = ?, ${sobatCol} = ? WHERE LOWER(TRIM(${roleCol})) = LOWER(TRIM(?))`)
+                .run(target.email, target.sobat_id, name);
+            }
+          });
+        });
+      }
+    },
+    {
+      version: '20260726000001_support_officer_level_progres',
+      up: (db) => {
+        ['pcl_email', 'pcl_name', 'pcl_sobat_id'].forEach(col => {
+          try { db.prepare(`ALTER TABLE progres ADD COLUMN ${col} TEXT`).run(); } catch (_) {}
+        });
+        try { db.exec('CREATE INDEX IF NOT EXISTS idx_progres_pcl_email ON progres(pcl_email)'); } catch (_) {}
+        try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_progres_upload_kode_email ON progres(upload_id, kode, COALESCE(pcl_email, ''))"); } catch (_) {}
+      }
+    },
+    {
+      version: '20260726000003_add_open_to_progres',
+      up: (db) => {
+        try { db.prepare('ALTER TABLE progres ADD COLUMN open INTEGER DEFAULT 0').run(); } catch (_) {}
+        try { db.prepare('ALTER TABLE summary_cache ADD COLUMN open_total INTEGER DEFAULT 0').run(); } catch (_) {}
+      }
     }
   ];
 
@@ -635,9 +722,11 @@ function getKorlapStats(uploadId, settings = getSettings()) {
   return attachProgressPercentages(getDb().prepare(`
     SELECT 
       m.korlap,
-      COUNT(DISTINCT m.pcl) AS jumlah_pcl,
+      MAX(m.korlap_email) AS email,
+      MAX(m.korlap_sobat_id) AS sobat_id,
+      COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
       COUNT(DISTINCT m.pml) AS jumlah_pml,
-      COUNT(m.kode) AS total_subsls,
+      COUNT(DISTINCT p.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
@@ -651,8 +740,9 @@ function getKorlapStats(uploadId, settings = getSettings()) {
       SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
       SUM(COALESCE(p.target_upload, 0)) AS target_upload_total,
       SUM(COALESCE(m.target_honor, 0)) AS target_honor_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    FROM progres p
+    LEFT JOIN subsls_master m ON p.kode = m.kode
+    WHERE p.upload_id = ? AND m.korlap IS NOT NULL
     GROUP BY m.korlap
     ORDER BY selesai ASC
   `).all(uploadId));
@@ -671,8 +761,10 @@ function getPmlStats(uploadId, settings = getSettings()) {
     SELECT 
       m.pml,
       m.korlap,
-      COUNT(DISTINCT m.pcl) AS jumlah_pcl,
-      COUNT(m.kode) AS total_subsls,
+      MAX(m.pml_email) AS email,
+      MAX(m.pml_sobat_id) AS sobat_id,
+      COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
+      COUNT(DISTINCT p.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
@@ -686,8 +778,9 @@ function getPmlStats(uploadId, settings = getSettings()) {
       SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
       SUM(COALESCE(p.target_upload, 0)) AS target_upload_total,
       SUM(COALESCE(m.target_honor, 0)) AS target_honor_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+    FROM progres p
+    LEFT JOIN subsls_master m ON p.kode = m.kode
+    WHERE p.upload_id = ? AND m.pml IS NOT NULL
     GROUP BY m.pml, m.korlap
     ORDER BY selesai ASC
   `).all(uploadId));
@@ -704,17 +797,20 @@ function getPclStats(uploadId, settings = getSettings()) {
 
   return attachProgressPercentages(getDb().prepare(`
     SELECT 
-      m.pcl,
-      m.pml,
-      m.korlap,
-      m.kecamatan,
-      COUNT(m.kode) AS total_subsls,
+      COALESCE(p.pcl_name, m.pcl) AS pcl,
+      COALESCE(p.pcl_email, m.pcl_email) AS email,
+      COALESCE(p.pcl_sobat_id, m.pcl_sobat_id) AS sobat_id,
+      MAX(m.pml) AS pml,
+      MAX(m.korlap) AS korlap,
+      MAX(m.kecamatan) AS kecamatan,
+      COUNT(DISTINCT p.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(COALESCE(p.open, 0)) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
@@ -727,10 +823,11 @@ function getPclStats(uploadId, settings = getSettings()) {
       SUM(COALESCE(p.usaha_tidak_ditemukan, 0)) AS usaha_tidak_ditemukan_total,
       SUM(COALESCE(p.usaha_tutup, 0)) AS usaha_tutup_total,
       SUM(COALESCE(p.usaha_ganda, 0)) AS usaha_ganda_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
-    ORDER BY selesai ASC
+    FROM progres p
+    LEFT JOIN subsls_master m ON p.kode = m.kode
+    WHERE p.upload_id = ?
+    GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), COALESCE(p.pcl_name, m.pcl)
+    ORDER BY approved_total DESC
   `).all(uploadId));
 }
 
@@ -1485,7 +1582,7 @@ function rebuildSummaryCache(uploadId) {
     INSERT OR REPLACE INTO summary_cache (
       upload_id, kecamatan, desa, korlap, pml, pcl,
       total_sls, selesai, total_muatan, muatan_selesai,
-      usaha_total, keluarga_total, draft_total, submitted_total, approved_total, rejected_total, target_fasih_total,
+      usaha_total, keluarga_total, draft_total, open_total, submitted_total, approved_total, rejected_total, target_fasih_total,
       target_static_total, target_upload_total, target_honor_total,
       usaha_ditemukan, usaha_baru, ditemukan, keluarga_baru,
       usaha_tidak_ditemukan, tidak_ditemukan, usaha_tutup, meninggal, usaha_ganda,
@@ -1493,18 +1590,19 @@ function rebuildSummaryCache(uploadId) {
     )
     SELECT 
       ? as upload_id,
-      m.kecamatan,
-      m.desa,
+      MAX(m.kecamatan) AS kecamatan,
+      MAX(m.desa) AS desa,
       MAX(m.korlap) AS korlap,
       MAX(m.pml) AS pml,
-      m.pcl,
-      COUNT(m.kode) AS total_sls,
+      COALESCE(p.pcl_name, m.pcl) AS pcl,
+      COUNT(DISTINCT p.kode) AS total_sls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(COALESCE(p.open, 0)) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
@@ -1526,16 +1624,17 @@ function rebuildSummaryCache(uploadId) {
       SUM(COALESCE(p.rumah_susun, 0)) AS rumah_susun,
       SUM(COALESCE(p.apartemen, 0)) AS apartemen,
       SUM(COALESCE(p.lainnya, 0)) AS lainnya
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    GROUP BY m.pcl, m.kecamatan, m.desa
+    FROM progres p
+    LEFT JOIN subsls_master m ON p.kode = m.kode
+    WHERE p.upload_id = ?
+    GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), m.kecamatan, m.desa
   `).run(uploadId, uploadId);
 }
 
 function getKippOfficers() {
   try {
     const db = getDb();
-    const pcls = db.prepare("SELECT DISTINCT pcl FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pcl IS NOT NULL").all().map(r => r.pcl.toUpperCase());
+    const pcls = db.prepare("SELECT DISTINCT pcl_name FROM progres WHERE kode IN (SELECT kode FROM subsls_master WHERE nama_sls = 'KIPP IKN') AND pcl_name IS NOT NULL AND pcl_name != ''").all().map(r => r.pcl_name.toUpperCase());
     const pmls = db.prepare("SELECT DISTINCT pml FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pml IS NOT NULL").all().map(r => r.pml.toUpperCase());
     const korlaps = db.prepare("SELECT DISTINCT korlap FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND korlap IS NOT NULL").all().map(r => r.korlap.toUpperCase());
     return { pcls, pmls, korlaps };
@@ -1586,22 +1685,26 @@ function attachProgressPercentages(data) {
   }
 
   // Single object
+  const draft = data.draft_total !== undefined ? data.draft_total : (data.draft || 0);
   const submitted = data.submitted_total !== undefined ? data.submitted_total : (data.submitted_by_pcl !== undefined ? data.submitted_by_pcl : (data.submitted || 0));
   const approved = data.approved_total !== undefined ? data.approved_total : (data.approved || 0);
   const rejected = data.rejected_total !== undefined ? data.rejected_total : (data.rejected || 0);
   const targetFasih = data.target_fasih_total !== undefined ? data.target_fasih_total : (data.target_fasih || 0);
+  const targetUpload = data.target_upload_total !== undefined ? data.target_upload_total : (data.target_upload || 0);
+  const targetStatic = data.target_static_total !== undefined ? data.target_static_total : (data.target_static || 0);
 
+  // Exact Formula: Progres Fasih = (submitted + approved + rejected) / total assignment
   const completedFasih = submitted + approved + rejected;
-  data.fasih_pct = targetFasih > 0 ? parseFloat(((completedFasih / targetFasih) * 100).toFixed(2)) : 0.0;
-  data.fasih_pct_str = targetFasih > 0 ? ((completedFasih / targetFasih) * 100).toFixed(2) : '0.00';
+  data.fasih_real_total = completedFasih;
+
+  const activeTarget = targetUpload > 0 ? targetUpload : (targetFasih > 0 ? targetFasih : targetStatic);
+
+  data.fasih_pct = activeTarget > 0 ? parseFloat(((completedFasih / activeTarget) * 100).toFixed(2)) : 0.0;
+  data.fasih_pct_str = activeTarget > 0 ? ((completedFasih / activeTarget) * 100).toFixed(2) : '0.00';
 
   const verifiedFasih = approved + rejected;
-  data.fasih_verified_pct = targetFasih > 0 ? parseFloat(((verifiedFasih / targetFasih) * 100).toFixed(2)) : 0.0;
-  data.fasih_verified_pct_str = targetFasih > 0 ? ((verifiedFasih / targetFasih) * 100).toFixed(2) : '0.00';
-
-  // Compute dual targets
-  const targetStatic = data.target_static_total !== undefined ? data.target_static_total : (data.target_static || 0);
-  const targetUpload = data.target_upload_total !== undefined ? data.target_upload_total : (data.target_upload || 0);
+  data.fasih_verified_pct = activeTarget > 0 ? parseFloat(((verifiedFasih / activeTarget) * 100).toFixed(2)) : 0.0;
+  data.fasih_verified_pct_str = activeTarget > 0 ? ((verifiedFasih / activeTarget) * 100).toFixed(2) : '0.00';
 
   data.fasih_static_pct = targetStatic > 0 ? parseFloat(((completedFasih / targetStatic) * 100).toFixed(2)) : 0.0;
   data.fasih_static_pct_str = targetStatic > 0 ? ((completedFasih / targetStatic) * 100).toFixed(2) : '0.00';
@@ -1851,6 +1954,102 @@ function getVisitorStats() {
   }
 }
 
+// ===== PETUGAS EMAIL DATABASE HELPERS =====
+function getPetugasEmails() {
+  return getDb().prepare('SELECT * FROM petugas_email ORDER BY nama_lengkap ASC').all();
+}
+
+function searchPetugasEmails(query) {
+  if (!query) return getPetugasEmails();
+  const q = `%${query.trim()}%`;
+  return getDb().prepare(`
+    SELECT * FROM petugas_email 
+    WHERE nama_lengkap LIKE ? OR email LIKE ? OR sobat_id LIKE ?
+    ORDER BY nama_lengkap ASC
+  `).all(q, q, q);
+}
+
+function getPetugasEmailByNama(nama) {
+  if (!nama) return null;
+  return getDb().prepare('SELECT * FROM petugas_email WHERE LOWER(nama_lengkap) = LOWER(?)').get(nama.trim());
+}
+
+function getPetugasEmailBySobatId(sobatId) {
+  if (!sobatId) return null;
+  return getDb().prepare('SELECT * FROM petugas_email WHERE sobat_id = ?').get(String(sobatId).trim());
+}
+
+function getPetugasEmailById(id) {
+  return getDb().prepare('SELECT * FROM petugas_email WHERE id = ?').get(id);
+}
+
+function insertPetugasEmail({ sobat_id, nama_lengkap, email, jenis_kelamin }) {
+  const stmt = getDb().prepare(`
+    INSERT INTO petugas_email (sobat_id, nama_lengkap, email, jenis_kelamin)
+    VALUES (?, ?, ?, ?)
+  `);
+  const res = stmt.run(sobat_id || '', nama_lengkap.trim(), email.trim().toLowerCase(), jenis_kelamin || '');
+  try { resyncPetugasEmailsToMaster(); } catch (_) {}
+  return res.lastInsertRowid;
+}
+
+function updatePetugasEmail(id, { sobat_id, nama_lengkap, email, jenis_kelamin }) {
+  const stmt = getDb().prepare(`
+    UPDATE petugas_email 
+    SET sobat_id = ?, nama_lengkap = ?, email = ?, jenis_kelamin = ?
+    WHERE id = ?
+  `);
+  const res = stmt.run(sobat_id || '', nama_lengkap.trim(), email.trim().toLowerCase(), jenis_kelamin || '', id);
+  try { resyncPetugasEmailsToMaster(); } catch (_) {}
+  return res.changes;
+}
+
+function deletePetugasEmail(id) {
+  const stmt = getDb().prepare('DELETE FROM petugas_email WHERE id = ?');
+  const res = stmt.run(id);
+  try { resyncPetugasEmailsToMaster(); } catch (_) {}
+  return res.changes;
+}
+
+function resyncPetugasEmailsToMaster() {
+  const db = getDb();
+  const emails = db.prepare('SELECT nama_lengkap, email, sobat_id FROM petugas_email').all();
+  const cleanStr = (s) => (s ? s.toString().toLowerCase().replace(/[^a-z0-9]/g, '') : '');
+  const emailMapExact = {};
+  const emailMapClean = {};
+
+  emails.forEach(r => {
+    if (r.nama_lengkap) {
+      const ex = r.nama_lengkap.trim().toLowerCase();
+      const cl = cleanStr(r.nama_lengkap);
+      emailMapExact[ex] = r;
+      emailMapClean[cl] = r;
+    }
+  });
+
+  const roles = [
+    { roleCol: 'pcl', emailCol: 'pcl_email', sobatCol: 'pcl_sobat_id' },
+    { roleCol: 'pml', emailCol: 'pml_email', sobatCol: 'pml_sobat_id' },
+    { roleCol: 'korlap', emailCol: 'korlap_email', sobatCol: 'korlap_sobat_id' }
+  ];
+
+  roles.forEach(({ roleCol, emailCol, sobatCol }) => {
+    const uniqueOfficers = db.prepare(`SELECT DISTINCT ${roleCol} FROM subsls_master WHERE ${roleCol} IS NOT NULL AND ${roleCol} != ''`).all();
+    uniqueOfficers.forEach(o => {
+      const name = o[roleCol] ? o[roleCol].trim() : '';
+      if (!name) return;
+      const ex = name.toLowerCase();
+      const cl = cleanStr(name);
+
+      const target = emailMapExact[ex] || emailMapClean[cl];
+      if (target) {
+        db.prepare(`UPDATE subsls_master SET ${emailCol} = ?, ${sobatCol} = ? WHERE LOWER(TRIM(${roleCol})) = LOWER(TRIM(?))`)
+          .run(target.email, target.sobat_id, name);
+      }
+    });
+  });
+}
+
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -1861,5 +2060,7 @@ module.exports = {
   getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula,
   getAllUsers, createUser, updateUser, deleteUser,
   saveRememberToken, getUserByRememberToken, deleteRememberToken, getIntradayUploadsByDate,
-  logVisit, getVisitorStats
+  logVisit, getVisitorStats,
+  getPetugasEmails, searchPetugasEmails, getPetugasEmailByNama, getPetugasEmailBySobatId,
+  getPetugasEmailById, insertPetugasEmail, updatePetugasEmail, deletePetugasEmail, resyncPetugasEmailsToMaster
 };

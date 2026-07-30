@@ -126,8 +126,8 @@ router.get('/detail/korlap', (req, res) => {
   const data = getDb().prepare(`
     SELECT 
       m.pml, m.korlap,
-      COUNT(DISTINCT m.pcl) AS jumlah_pcl,
-      COUNT(m.kode) AS total_subsls,
+      COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
+      COUNT(DISTINCT p.kode) AS total_subsls,
       SUM(CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
@@ -140,9 +140,9 @@ router.get('/detail/korlap', (req, res) => {
       SUM(${singleTargetFormula}) AS target_fasih_total,
       SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
       SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    WHERE m.korlap = ?
+    FROM progres p
+    LEFT JOIN subsls_master m ON p.kode = m.kode
+    WHERE p.upload_id = ? AND m.korlap = ?
     GROUP BY m.pml
     ORDER BY selesai ASC
   `).all(uploadId, name);
@@ -165,8 +165,8 @@ router.get('/detail/pml', (req, res) => {
 
   const data = getDb().prepare(`
     SELECT 
-      m.pcl, m.pml, m.korlap, m.kecamatan,
-      COUNT(m.kode) AS total_subsls,
+      COALESCE(p.pcl_name, m.pcl) AS pcl, m.pml, m.korlap, m.kecamatan,
+      COUNT(DISTINCT p.kode) AS total_subsls,
       SUM(CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
@@ -179,10 +179,10 @@ router.get('/detail/pml', (req, res) => {
       SUM(${singleTargetFormula}) AS target_fasih_total,
       SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
       SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    WHERE m.pml = ?
-    GROUP BY m.pcl, m.kecamatan
+    FROM progres p
+    LEFT JOIN subsls_master m ON p.kode = m.kode
+    WHERE p.upload_id = ? AND m.pml = ?
+    GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), m.kecamatan
     ORDER BY selesai ASC
   `).all(uploadId, name);
 
@@ -204,8 +204,8 @@ router.get('/detail/pcl', (req, res) => {
 
   const data = getDb().prepare(`
     SELECT 
-      m.kode, m.kecamatan, m.desa, m.nama_sls,
-      m.korlap, m.pml, m.pcl, m.muatan,
+      p.kode, m.kecamatan, m.desa, m.nama_sls,
+      m.korlap, m.pml, COALESCE(p.pcl_name, m.pcl) AS pcl, m.muatan,
       m.target_fasih AS target_fasih_awal,
       COALESCE(p.draft, 0) AS draft,
       COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
@@ -219,9 +219,9 @@ router.get('/detail/pcl', (req, res) => {
       (${keluargaTotalFormula}) AS keluarga_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    WHERE m.pcl = ?
+    WHERE m.pcl = ? OR p.pcl_name = ? OR p.pcl_email = ?
     ORDER BY m.kecamatan, m.desa, m.kode
-  `).all(uploadId, name);
+  `).all(uploadId, name, name, name);
 
   res.json(attachProgressPercentages(data));
 });

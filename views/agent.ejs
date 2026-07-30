@@ -1402,6 +1402,7 @@
   function saveChatHistory() {
     try {
       localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(chatHistory));
+      window.dispatchEvent(new CustomEvent('ai_chat_history_updated', { detail: { source: 'agent' } }));
     } catch (e) {
       console.error('Failed to save chat history:', e);
     }
@@ -1409,6 +1410,15 @@
 
   function loadChatHistory() {
     try {
+      chatHistory.length = 0;
+      const container = document.getElementById('chatMessages');
+      if (container) {
+        const messages = container.querySelectorAll('.message');
+        for (let i = 1; i < messages.length; i++) {
+          messages[i].remove();
+        }
+      }
+
       const saved = localStorage.getItem(HISTORY_STORAGE_KEY);
       if (!saved) return;
       
@@ -1435,11 +1445,28 @@
       
       // Remove all chat messages except the first greeting message
       const container = document.getElementById('chatMessages');
-      const messages = container.querySelectorAll('.message');
-      for (let i = 1; i < messages.length; i++) {
-        messages[i].remove();
+      if (container) {
+        const messages = container.querySelectorAll('.message');
+        for (let i = 1; i < messages.length; i++) {
+          messages[i].remove();
+        }
       }
+      window.dispatchEvent(new CustomEvent('ai_chat_history_updated', { detail: { source: 'agent' } }));
     }
+  }
+
+  function handleExternalHistorySync(e) {
+    if (e.type === 'storage' && e.key !== HISTORY_STORAGE_KEY) return;
+    if (e.detail && e.detail.source === 'agent') return;
+    loadChatHistory();
+  }
+
+  window.addEventListener('storage', handleExternalHistorySync);
+  window.addEventListener('ai_chat_history_updated', handleExternalHistorySync);
+
+  if (Array.isArray(window._pjaxCleanups)) {
+    window._pjaxCleanups.push({ type: 'storage', listener: handleExternalHistorySync });
+    window._pjaxCleanups.push({ type: 'ai_chat_history_updated', listener: handleExternalHistorySync });
   }
 
   const sampleAnswers = {
@@ -1837,6 +1864,16 @@
     }
   }
 
+  function triggerChatSubmit() {
+    const chatForm = document.getElementById('chatForm');
+    if (!chatForm) return;
+    if (typeof chatForm.requestSubmit === 'function') {
+      chatForm.requestSubmit();
+    } else {
+      chatForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }
+  }
+
   // FIX #3 — sendQuickPrompt: cek _isProcessing sebelum dispatch
   // dispatchEvent melewati attribute `disabled` pada elemen, jadi butuh guard manual ini.
   function sendQuickPrompt(promptText) {
@@ -1844,8 +1881,11 @@
     const input = document.getElementById('chatInput');
     if (!input || input.disabled) return;
     input.value = promptText;
-    document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+    triggerChatSubmit();
   }
+
+  // Load chat history immediately (handles PJAX page transitions where DOMContentLoaded won't fire)
+  loadChatHistory();
 
   document.addEventListener('DOMContentLoaded', () => {
     const providerSelect = document.getElementById('agentProvider');
@@ -1873,7 +1913,7 @@
       chatInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
-          document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+          triggerChatSubmit();
         }
       });
       chatInput.addEventListener('input', () => {

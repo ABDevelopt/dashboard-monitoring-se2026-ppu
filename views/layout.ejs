@@ -349,6 +349,9 @@
         <a href="/admin/users" class="nav-item <%= activePage === 'users' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-people-fill"></i></span> Kelola Pengguna
         </a>
+        <a href="/admin/petugas-email" class="nav-item <%= activePage === 'petugas-email' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-envelope-at-fill"></i></span> Data Email Petugas
+        </a>
         <a href="/admin/settings" class="nav-item <%= activePage === 'settings' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-sliders"></i></span> Pengaturan Tampilan
         </a>
@@ -398,14 +401,14 @@
     <i class="bi bi-house-door"></i>
     <span>Home</span>
   </a>
-  <a href="/kecamatan" class="bottom-nav-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
+  <button id="bottomNavWilayahBtn" class="bottom-nav-item <%= ['kecamatan', 'subsls', 'map', 'kipp', 'pbi'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Wilayah">
     <i class="bi bi-geo-alt"></i>
-    <span>Wilayah</span>
-  </a>
-  <a href="/pcl" class="bottom-nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
-    <i class="bi bi-person-gear"></i>
-    <span>Petugas</span>
-  </a>
+    <span>Wilayah <i class="bi bi-chevron-up nav-sub-indicator"></i></span>
+  </button>
+  <button id="bottomNavPetugasBtn" class="bottom-nav-item <%= ['pcl', 'pml', 'korlap', 'performa', 'leaderboard', 'performa-terendah'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Petugas">
+    <i class="bi bi-people"></i>
+    <span>Petugas <i class="bi bi-chevron-up nav-sub-indicator"></i></span>
+  </button>
   <a href="/agent" class="bottom-nav-item <%= activePage === 'agent' ? 'active' : '' %>">
     <i class="bi bi-robot"></i>
     <span>Pananyo Taka</span>
@@ -415,6 +418,137 @@
     <span>Menu</span>
   </button>
 </nav>
+
+<!-- MOBILE BOTTOM NAV POPOVER / BOTTOM SHEETS -->
+<div id="bottomNavOverlay" class="bottom-nav-overlay" aria-hidden="true"></div>
+
+<!-- Sheet 1: Wilayah Hub -->
+<div id="bottomNavSheetWilayah" class="bottom-nav-sheet" aria-hidden="true" role="dialog">
+  <div class="bottom-nav-sheet-header">
+    <div class="bottom-nav-sheet-handle"></div>
+    <div class="bottom-nav-sheet-title"><i class="bi bi-geo-alt-fill" style="color:var(--accent-blue);"></i> Navigasi Wilayah</div>
+    <button class="bottom-nav-sheet-close" aria-label="Tutup"><i class="bi bi-x"></i></button>
+  </div>
+  <div class="bottom-nav-sheet-content">
+    <% if (typeof settings === 'undefined' || settings.page_kecamatan !== '0') { %>
+    <a href="/kecamatan" class="bottom-sheet-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8;"><i class="bi bi-geo-alt"></i></div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Kecamatan</div>
+        <div class="bottom-sheet-desc">Statistik & realisasi per 4 kecamatan PPU</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+    <% if (typeof settings === 'undefined' || settings.page_subsls !== '0') { %>
+    <a href="/subsls" class="bottom-sheet-item <%= activePage === 'subsls' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(168, 85, 247, 0.12); color: #c084fc;"><i class="bi bi-box-seam"></i></div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Sub SLS</div>
+        <div class="bottom-sheet-desc">Detail muatan per satuan lingkungan setempat</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+    <% if (typeof settings === 'undefined' || settings.page_map !== '0') { %>
+    <a href="/map" class="bottom-sheet-item <%= activePage === 'map' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(34, 197, 94, 0.12); color: #4ade80;"><i class="bi bi-map"></i></div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Peta Progres</div>
+        <div class="bottom-sheet-desc">Peta spasial & GIS progres pendataan</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+    <a href="/kipp" class="bottom-sheet-item <%= activePage === 'kipp' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(245, 158, 11, 0.12); color: #fbbf24;"><i class="bi bi-building"></i></div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Pendataan KIPP</div>
+        <div class="bottom-sheet-desc">Monitoring wilayah IKN / KIPP</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <a href="/pbi" class="bottom-sheet-item <%= activePage === 'pbi' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(236, 72, 153, 0.12); color: #f472b6;"><i class="bi bi-heart-pulse"></i></div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Pendataan PBI</div>
+        <div class="bottom-sheet-desc">Pencacahan usaha sektor PBI</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+  </div>
+</div>
+
+<!-- Sheet 2: Petugas Hub -->
+<div id="bottomNavSheetPetugas" class="bottom-nav-sheet" aria-hidden="true" role="dialog">
+  <div class="bottom-nav-sheet-header">
+    <div class="bottom-nav-sheet-handle"></div>
+    <div class="bottom-nav-sheet-title"><i class="bi bi-people-fill" style="color:var(--accent-purple);"></i> Navigasi Petugas</div>
+    <button class="bottom-nav-sheet-close" aria-label="Tutup"><i class="bi bi-x"></i></button>
+  </div>
+  <div class="bottom-nav-sheet-content">
+    <% if (typeof settings === 'undefined' || settings.page_pcl !== '0') { %>
+    <a href="/pcl" class="bottom-sheet-item <%= activePage === 'pcl' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8;"><i class="bi bi-person-gear"></i></div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">PCL (Pencacah Lapangan)</div>
+        <div class="bottom-sheet-desc">Daftar & status progres seluruh PCL</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+    <% if (typeof settings === 'undefined' || settings.page_pml !== '0') { %>
+    <a href="/pml" class="bottom-sheet-item <%= activePage === 'pml' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(168, 85, 247, 0.12); color: #c084fc;"><i class="bi bi-person-badge"></i></div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">PML (Pemeriksa Lapangan)</div>
+        <div class="bottom-sheet-desc">Rekapitulasi beban & pengawasan PML</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+    <% if (typeof settings === 'undefined' || settings.page_korlap !== '0') { %>
+    <a href="/korlap" class="bottom-sheet-item <%= activePage === 'korlap' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(34, 197, 94, 0.12); color: #4ade80;"><i class="bi bi-person-workspace"></i></div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Korlap (Koor. Lapangan)</div>
+        <div class="bottom-sheet-desc">Progres & performa per Koordinator Lapangan</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+    <% if (typeof settings === 'undefined' || settings.page_performa !== '0') { %>
+    <a href="/performa" class="bottom-sheet-item <%= activePage === 'performa' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(245, 158, 11, 0.12); color: #fbbf24;"><i class="bi bi-speedometer2"></i></div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Analisis Performa</div>
+        <div class="bottom-sheet-desc">Metrik kecepatan & produktivitas harian</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+    <% if (typeof settings === 'undefined' || settings.page_leaderboard !== '0') { %>
+    <a href="/leaderboard" class="bottom-sheet-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(234, 179, 8, 0.12); color: #facc15;"><i class="bi bi-trophy"></i></div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Performa Terbaik</div>
+        <div class="bottom-sheet-desc">Peringkat top petugas dengan progres tertinggi</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+    <% if (typeof settings === 'undefined' || settings.page_performatrendah !== '0') { %>
+    <a href="/performa-terendah" class="bottom-sheet-item <%= activePage === 'performa-terendah' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(239, 68, 68, 0.12); color: #f87171;"><i class="bi bi-graph-down"></i></div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Performa Terendah</div>
+        <div class="bottom-sheet-desc">Petugas yang membutuhkan perhatian/evaluasi</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+  </div>
+</div>
 
 <!-- MAIN WRAPPER -->
 <div class="main-wrapper">
@@ -1414,15 +1548,142 @@
       }
     }
 
+    // Mobile Bottom Nav Sheet Helper Functions
+    function openNavSheet(sheetId) {
+      if (window.innerWidth > 768) return; // Do not open bottom sheets on desktop view
+      closeNavSheets();
+      const sheet = document.getElementById(sheetId);
+      const overlay = document.getElementById('bottomNavOverlay');
+      if (sheet && overlay) {
+        overlay.classList.add('active');
+        sheet.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+    }
+
+    function closeNavSheets() {
+      const overlay = document.getElementById('bottomNavOverlay');
+      document.querySelectorAll('.bottom-nav-sheet').forEach(sheet => {
+        sheet.classList.remove('active');
+        sheet.style.transform = '';
+        sheet.style.transition = '';
+      });
+      if (overlay) {
+        overlay.classList.remove('active');
+        overlay.style.opacity = '';
+      }
+      document.body.style.overflow = '';
+    }
+
+    // Swipe-to-Close Drag Handler for Mobile Bottom Nav Sheets
+    (function setupSheetDragToClose() {
+      let activeSheet = null;
+      let startY = 0;
+      let currentY = 0;
+      let isDragging = false;
+
+      document.addEventListener('touchstart', (e) => {
+        const sheet = e.target.closest('.bottom-nav-sheet.active');
+        if (!sheet) return;
+
+        const content = sheet.querySelector('.bottom-nav-sheet-content');
+        const header = e.target.closest('.bottom-nav-sheet-header, .bottom-nav-sheet-handle');
+
+        if (header || (content && content.scrollTop <= 0)) {
+          activeSheet = sheet;
+          startY = e.touches[0].clientY;
+          currentY = startY;
+          isDragging = false;
+        }
+      }, { passive: true });
+
+      document.addEventListener('touchmove', (e) => {
+        if (!activeSheet) return;
+        currentY = e.touches[0].clientY;
+        const diffY = currentY - startY;
+
+        if (diffY > 0) {
+          const content = activeSheet.querySelector('.bottom-nav-sheet-content');
+          const isHeader = e.target.closest('.bottom-nav-sheet-header, .bottom-nav-sheet-handle');
+          if (isHeader || (content && content.scrollTop <= 0)) {
+            isDragging = true;
+            activeSheet.style.transition = 'none';
+            activeSheet.style.transform = `translateY(${diffY}px)`;
+            const overlay = document.getElementById('bottomNavOverlay');
+            if (overlay) {
+              const opacity = Math.max(0, 1 - (diffY / 250));
+              overlay.style.opacity = opacity.toString();
+            }
+          }
+        }
+      }, { passive: true });
+
+      const handleTouchEnd = () => {
+        if (!activeSheet) return;
+        const diffY = currentY - startY;
+        const sheetToReset = activeSheet;
+        const overlay = document.getElementById('bottomNavOverlay');
+
+        sheetToReset.style.transition = 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+        
+        if (isDragging && diffY > 80) {
+          closeNavSheets();
+        } else {
+          sheetToReset.style.transform = '';
+          if (overlay) overlay.style.opacity = '';
+        }
+
+        setTimeout(() => {
+          if (sheetToReset) {
+            sheetToReset.style.transition = '';
+            sheetToReset.style.transform = '';
+          }
+          if (overlay) overlay.style.opacity = '';
+        }, 250);
+
+        activeSheet = null;
+        isDragging = false;
+      };
+
+      document.addEventListener('touchend', handleTouchEnd, { passive: true });
+      document.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+    })();
+
+    window.addEventListener('pjax:start', closeNavSheets);
+    window.addEventListener('popstate', closeNavSheets);
+
     // Event delegation on document for sidebar toggling and theme toggling
     // This ensures buttons remain clickable even after PJAX page swaps them
     document.addEventListener('click', (e) => {
+      // 0. Mobile Bottom Nav Popover Sheets
+      const wilayahBtn = e.target.closest('#bottomNavWilayahBtn');
+      const petugasBtn = e.target.closest('#bottomNavPetugasBtn');
+      const bottomNavOverlay = e.target.closest('#bottomNavOverlay');
+      const sheetCloseBtn = e.target.closest('.bottom-nav-sheet-close');
+      const sheetItem = e.target.closest('.bottom-sheet-item');
+
+      if (wilayahBtn) {
+        e.preventDefault();
+        openNavSheet('bottomNavSheetWilayah');
+        return;
+      }
+      if (petugasBtn) {
+        e.preventDefault();
+        openNavSheet('bottomNavSheetPetugas');
+        return;
+      }
+      if (bottomNavOverlay || sheetCloseBtn || sheetItem) {
+        closeNavSheets();
+        if (sheetCloseBtn || bottomNavOverlay) e.preventDefault();
+      }
+
       // 1. Sidebar Toggle / Menu Button Click
       const toggleBtn = e.target.closest('#sidebarToggle');
       const bottomNavMenuBtn = e.target.closest('#bottomNavMenuBtn');
       
       if (toggleBtn || bottomNavMenuBtn) {
         e.preventDefault();
+        closeNavSheets();
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebarOverlay');
         const mainToggleBtn = document.getElementById('sidebarToggle');
@@ -2101,18 +2362,22 @@
       const originalHtml = btn ? btn.innerHTML : '';
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 10px; height: 10px; border-width: 1.5px; margin-right: 4px;"></span>...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 11px; height: 11px; border-width: 1.5px; margin-right: 4px;"></span> Membagikan...';
       }
 
-      Swal.fire({
-        title: 'Menyiapkan Gambar...',
-        text: 'Sedang merender data tugas SLS untuk dibagikan.',
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
+      const resetBtn = (status, btnClass) => {
+        if (btn) {
+          btn.innerHTML = status;
+          btn.classList.remove('btn-secondary');
+          btn.classList.add(btnClass);
+          setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove(btnClass);
+            btn.classList.add('btn-secondary');
+            btn.disabled = false;
+          }, 2500);
         }
-      });
+      };
 
       try {
         await loadScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
@@ -2146,24 +2411,11 @@
 
         canvas.toBlob(async (blob) => {
           if (!blob) {
-            throw new Error('Gagal membuat blob gambar.');
+            resetBtn('<i class="bi bi-exclamation-triangle"></i> Gagal', 'btn-danger');
+            return;
           }
 
           const file = new File([blob], `${elementId}.jpg`, { type: 'image/jpeg' });
-
-          const resetBtn = (status, btnClass) => {
-            if (btn) {
-              btn.innerHTML = status;
-              btn.classList.remove('btn-secondary');
-              btn.classList.add(btnClass);
-              setTimeout(() => {
-                btn.innerHTML = originalHtml;
-                btn.classList.remove(btnClass);
-                btn.classList.add('btn-secondary');
-                btn.disabled = false;
-              }, 2000);
-            }
-          };
 
           try {
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -2172,57 +2424,33 @@
                 title: 'Kinerja Petugas SE2026 PPU',
                 text: 'Berikut laporan progres kinerja petugas SE2026 PPU.'
               });
-              Swal.close();
-              resetBtn('<i class="bi bi-share"></i> Bagikan!', 'btn-success');
+              resetBtn('<i class="bi bi-share"></i> Dibagikan!', 'btn-success');
             } else {
               const link = document.createElement('a');
               link.download = `${elementId}.jpg`;
               link.href = canvas.toDataURL('image/jpeg', 0.85);
               link.click();
-              Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: 'Gambar rincian tugas berhasil diunduh.',
-                timer: 1500,
-                showConfirmButton: false
-              });
-              resetBtn('<i class="bi bi-download"></i> Unduh!', 'btn-warning');
+              resetBtn('<i class="bi bi-download"></i> Diunduh!', 'btn-warning');
             }
           } catch (err) {
-            console.error('Share failed, downloading instead:', err);
-            const link = document.createElement('a');
-            link.download = `${elementId}.jpg`;
-            link.href = canvas.toDataURL('image/jpeg', 0.85);
-            link.click();
-            Swal.fire({
-              icon: 'success',
-              title: 'Berhasil!',
-              text: 'Gambar rincian tugas berhasil diunduh.',
-              timer: 1500,
-              showConfirmButton: false
-            });
-            resetBtn('<i class="bi bi-download"></i> Unduh!', 'btn-warning');
+            console.error('Share failed or canceled:', err);
+            if (err.name === 'AbortError') {
+              if (btn) {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+              }
+            } else {
+              const link = document.createElement('a');
+              link.download = `${elementId}.jpg`;
+              link.href = canvas.toDataURL('image/jpeg', 0.85);
+              link.click();
+              resetBtn('<i class="bi bi-download"></i> Diunduh!', 'btn-warning');
+            }
           }
         }, 'image/jpeg', 0.85);
       } catch (error) {
         console.error('Error sharing element as image:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal!',
-          text: 'Terjadi kesalahan saat menyiapkan gambar.',
-          confirmButtonText: 'Tutup'
-        });
-        if (btn) {
-          btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Gagal';
-          btn.classList.remove('btn-secondary');
-          btn.classList.add('btn-danger');
-          setTimeout(() => {
-            btn.innerHTML = originalHtml;
-            btn.classList.remove('btn-danger');
-            btn.classList.add('btn-secondary');
-            btn.disabled = false;
-          }, 2000);
-        }
+        resetBtn('<i class="bi bi-exclamation-triangle"></i> Gagal', 'btn-danger');
       }
     };
 
@@ -2234,18 +2462,22 @@
       const originalHtml = btn ? btn.innerHTML : '';
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 10px; height: 10px; border-width: 1.5px; margin-right: 4px;"></span>...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 11px; height: 11px; border-width: 1.5px; margin-right: 4px;"></span> Menyalin...';
       }
 
-      Swal.fire({
-        title: 'Menyiapkan Gambar...',
-        text: 'Sedang merender data tugas SLS untuk disalin.',
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
+      const resetBtn = (status, btnClass) => {
+        if (btn) {
+          btn.innerHTML = status;
+          btn.classList.remove('btn-secondary');
+          btn.classList.add(btnClass);
+          setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove(btnClass);
+            btn.classList.add('btn-secondary');
+            btn.disabled = false;
+          }, 2500);
         }
-      });
+      };
 
       try {
         await loadScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
@@ -2279,33 +2511,13 @@
 
         canvas.toBlob(async (blob) => {
           if (!blob) {
-            throw new Error('Gagal membuat blob gambar.');
+            resetBtn('<i class="bi bi-exclamation-triangle"></i> Gagal', 'btn-danger');
+            return;
           }
-
-          const resetBtn = (status, btnClass) => {
-            if (btn) {
-              btn.innerHTML = status;
-              btn.classList.remove('btn-secondary');
-              btn.classList.add(btnClass);
-              setTimeout(() => {
-                btn.innerHTML = originalHtml;
-                btn.classList.remove(btnClass);
-                btn.classList.add('btn-secondary');
-                btn.disabled = false;
-              }, 2000);
-            }
-          };
 
           try {
             const item = new ClipboardItem({ 'image/png': blob });
             await navigator.clipboard.write([item]);
-            Swal.fire({
-              icon: 'success',
-              title: 'Tersalin!',
-              text: 'Gambar rincian tugas disalin ke clipboard.',
-              timer: 1500,
-              showConfirmButton: false
-            });
             resetBtn('<i class="bi bi-check-lg"></i> Disalin!', 'btn-success');
           } catch (err) {
             console.error('Clipboard copy failed, downloading instead:', err);
@@ -2313,35 +2525,12 @@
             link.download = `${elementId}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
-            Swal.fire({
-              icon: 'success',
-              title: 'Berhasil!',
-              text: 'Gambar rincian tugas berhasil diunduh.',
-              timer: 1500,
-              showConfirmButton: false
-            });
-            resetBtn('<i class="bi bi-download"></i> Unduh!', 'btn-warning');
+            resetBtn('<i class="bi bi-download"></i> Diunduh!', 'btn-warning');
           }
         }, 'image/png');
       } catch (error) {
         console.error('Error copying element as image:', error);
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal!',
-          text: 'Terjadi kesalahan saat menyalin gambar.',
-          confirmButtonText: 'Tutup'
-        });
-        if (btn) {
-          btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Gagal';
-          btn.classList.remove('btn-secondary');
-          btn.classList.add('btn-danger');
-          setTimeout(() => {
-            btn.innerHTML = originalHtml;
-            btn.classList.remove('btn-danger');
-            btn.classList.add('btn-secondary');
-            btn.disabled = false;
-          }, 2000);
-        }
+        resetBtn('<i class="bi bi-exclamation-triangle"></i> Gagal', 'btn-danger');
       }
     };
 
@@ -2704,17 +2893,7 @@
         });
 
         // Bottom nav items
-        document.querySelectorAll('.bottom-nav .bottom-nav-item').forEach(item => {
-          const itemHref = item.getAttribute('href');
-          if (itemHref) {
-            const itemPath = new URL(itemHref, window.location.origin).pathname;
-            if (itemPath === targetPath || (targetPath === '/' && itemPath === '/')) {
-              item.classList.add('active');
-            } else {
-              item.classList.remove('active');
-            }
-          }
-        });
+        updateBottomNavActiveState(targetPath);
 
         // Update browser URL
         if (pushState) {
@@ -2900,6 +3079,50 @@
       loadPage(href);
     });
 
+    function updateBottomNavActiveState(targetPath) {
+      if (!targetPath) return;
+      const homeBtn = document.querySelector('.bottom-nav-item[href="/"]');
+      const wilayahBtn = document.getElementById('bottomNavWilayahBtn');
+      const petugasBtn = document.getElementById('bottomNavPetugasBtn');
+      const agentBtn = document.querySelector('.bottom-nav-item[href="/agent"]');
+
+      const wilayahPaths = ['/kecamatan', '/subsls', '/map', '/kipp', '/pbi'];
+      const petugasPaths = ['/pcl', '/pml', '/korlap', '/performa', '/leaderboard', '/performa-terendah'];
+
+      if (homeBtn) {
+        if (targetPath === '/' || targetPath === '') homeBtn.classList.add('active');
+        else homeBtn.classList.remove('active');
+      }
+
+      if (agentBtn) {
+        if (targetPath === '/agent') agentBtn.classList.add('active');
+        else agentBtn.classList.remove('active');
+      }
+
+      if (wilayahBtn) {
+        if (wilayahPaths.includes(targetPath)) wilayahBtn.classList.add('active');
+        else wilayahBtn.classList.remove('active');
+      }
+
+      if (petugasBtn) {
+        if (petugasPaths.includes(targetPath)) petugasBtn.classList.add('active');
+        else petugasBtn.classList.remove('active');
+      }
+
+      // Sync active state for popover sheet items
+      document.querySelectorAll('.bottom-sheet-item').forEach(item => {
+        const itemHref = item.getAttribute('href');
+        if (itemHref) {
+          const itemPath = new URL(itemHref, window.location.origin).pathname;
+          if (itemPath === targetPath || (targetPath === '/' && itemPath === '/')) {
+            item.classList.add('active');
+          } else {
+            item.classList.remove('active');
+          }
+        }
+      });
+    }
+
     window.setInstantMenuActive = function(targetUrl) {
       if (!targetUrl) return;
       try {
@@ -2922,17 +3145,7 @@
           }
         });
 
-        document.querySelectorAll('.bottom-nav .bottom-nav-item').forEach(item => {
-          const itemHref = item.getAttribute('href');
-          if (itemHref) {
-            const itemPath = new URL(itemHref, window.location.origin).pathname;
-            if (itemPath === targetPath || (targetPath === '/' && itemPath === '/')) {
-              item.classList.add('active');
-            } else {
-              item.classList.remove('active');
-            }
-          }
-        });
+        updateBottomNavActiveState(targetPath);
       } catch (_) {}
     };
 
