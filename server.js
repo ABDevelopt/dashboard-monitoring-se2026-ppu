@@ -400,8 +400,24 @@ function init() {
     logger.error('❌ Gagal menyinkronkan data ke Firebase pada startup:', err.message);
   }
 
-  app.listen(PORT, () => {
-    logger.info(`🚀 Dashboard SE2026 PPU berjalan di http://localhost:${PORT}`);
+  const os = require('os');
+  const getLocalIp = () => {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name]) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          return iface.address;
+        }
+      }
+    }
+    return 'localhost';
+  };
+
+  const localIp = getLocalIp();
+  app.listen(PORT, '0.0.0.0', () => {
+    logger.info(`🚀 Dashboard SE2026 PPU berjalan di:`);
+    logger.info(`   - Local:   http://localhost:${PORT}`);
+    logger.info(`   - Network: http://${localIp}:${PORT} (Akses via HP di Wi-Fi yang sama)`);
     logger.info(`📅 ${new Date().toLocaleString('id-ID')}`);
   });
 }
