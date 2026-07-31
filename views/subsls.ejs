@@ -1,3 +1,11 @@
+<%
+  let activeSubslsStatusCols = 1;
+  if (settings.show_status_open === '1' || settings.show_status_open === undefined) activeSubslsStatusCols++;
+  if (settings.show_status_draft === '1' || settings.show_status_draft === undefined) activeSubslsStatusCols++;
+  if (settings.show_status_submitted === '1' || settings.show_status_submitted === undefined) activeSubslsStatusCols++;
+  if (settings.show_status_approved === '1' || settings.show_status_approved === undefined) activeSubslsStatusCols++;
+  if (settings.show_status_rejected === '1' || settings.show_status_rejected === undefined) activeSubslsStatusCols++;
+%>
 <div class="fade-in">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <% if (!uploadId) { %>
@@ -134,14 +142,25 @@
                   <th rowspan="2">Wilayah</th>
                   <th rowspan="2">Petugas (PCL/PML/Korlap)</th>
                   <th rowspan="2" class="text-center">Status</th>
-                  <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                  <th colspan="<%= activeSubslsStatusCols %>" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
                   <th colspan="3" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
                 </tr>
                 <tr>
-                  <th class="text-right bg-yellow-soft">Draft</th>
-                  <th class="text-right bg-blue-soft">Submitted</th>
-                  <th class="text-right bg-green-soft">Approved</th>
-                  <th class="text-right bg-red-soft">Rejected</th>
+                  <% if (settings.show_status_open === '1' || settings.show_status_open === undefined) { %>
+                    <th class="text-right bg-orange-soft">Open</th>
+                  <% } %>
+                  <% if (settings.show_status_draft === '1' || settings.show_status_draft === undefined) { %>
+                    <th class="text-right bg-yellow-soft">Draft</th>
+                  <% } %>
+                  <% if (settings.show_status_submitted === '1' || settings.show_status_submitted === undefined) { %>
+                    <th class="text-right bg-blue-soft">Submitted</th>
+                  <% } %>
+                  <% if (settings.show_status_approved === '1' || settings.show_status_approved === undefined) { %>
+                    <th class="text-right bg-green-soft">Approved</th>
+                  <% } %>
+                  <% if (settings.show_status_rejected === '1' || settings.show_status_rejected === undefined) { %>
+                    <th class="text-right bg-red-soft">Rejected</th>
+                  <% } %>
                   <th class="text-right bg-purple-soft">Target</th>
                   
                   <th class="text-right bg-cyan-soft muatan-col">Realisasi</th>
@@ -203,10 +222,21 @@
                       <% } %>
                     </td>
                     
-                    <td class="text-right bg-yellow-soft status-draft-text" data-sort="<%= row.draft %>"><%= (row.draft || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-blue-soft status-submit-text" data-sort="<%= row.submitted_by_pcl %>"><%= (row.submitted_by_pcl || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-green-soft status-approve-text fw-bold" data-sort="<%= row.approved %>"><%= (row.approved || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-red-soft status-reject-text" data-sort="<%= row.rejected %>" style="font-weight: 600;"><%= (row.rejected || 0).toLocaleString('id-ID') %></td>
+                    <% if (settings.show_status_open === '1' || settings.show_status_open === undefined) { %>
+                      <td class="text-right bg-orange-soft status-open-text" data-sort="<%= row.open %>"><%= (row.open || 0).toLocaleString('id-ID') %></td>
+                    <% } %>
+                    <% if (settings.show_status_draft === '1' || settings.show_status_draft === undefined) { %>
+                      <td class="text-right bg-yellow-soft status-draft-text" data-sort="<%= row.draft %>"><%= (row.draft || 0).toLocaleString('id-ID') %></td>
+                    <% } %>
+                    <% if (settings.show_status_submitted === '1' || settings.show_status_submitted === undefined) { %>
+                      <td class="text-right bg-blue-soft status-submit-text" data-sort="<%= row.submitted_by_pcl %>"><%= (row.submitted_by_pcl || 0).toLocaleString('id-ID') %></td>
+                    <% } %>
+                    <% if (settings.show_status_approved === '1' || settings.show_status_approved === undefined) { %>
+                      <td class="text-right bg-green-soft status-approve-text fw-bold" data-sort="<%= row.approved %>"><%= (row.approved || 0).toLocaleString('id-ID') %></td>
+                    <% } %>
+                    <% if (settings.show_status_rejected === '1' || settings.show_status_rejected === undefined) { %>
+                      <td class="text-right bg-red-soft status-reject-text" data-sort="<%= row.rejected %>" style="font-weight: 600;"><%= (row.rejected || 0).toLocaleString('id-ID') %></td>
+                    <% } %>
                     <td class="text-right bg-purple-soft" data-sort="<%= row.target_fasih %>"><%= Math.round(row.target_fasih || 0).toLocaleString('id-ID') %></td>
                     
                     <td class="text-right fw-bold bg-cyan-soft muatan-col" data-sort="<%= row.muatan_selesai %>"><%= (row.muatan_selesai || 0).toLocaleString('id-ID') %></td>
@@ -350,23 +380,37 @@
                 <div style="height: 6px; background: rgba(167,139,250,0.1); border-radius: 99px; overflow: hidden; margin-bottom: 12px;">
                   <div class="progress-bar purple" data-width="<%= Math.min(parseFloat(fasihPct), 100) %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; text-align: center; font-size: 10px;">
-                  <div style="background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.15); padding: 4px; border-radius: 6px;">
-                    <div style="color: var(--accent-yellow); font-size: 8px; font-weight: bold; text-transform: uppercase;">Draft</div>
-                    <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.draft %></div>
-                  </div>
-                  <div style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.15); padding: 4px; border-radius: 6px;">
-                    <div style="color: var(--accent-blue); font-size: 8px; font-weight: bold; text-transform: uppercase;">Submit</div>
-                    <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.submitted_by_pcl %></div>
-                  </div>
-                  <div style="background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.15); padding: 4px; border-radius: 6px;">
-                    <div style="color: var(--accent-green); font-size: 8px; font-weight: bold; text-transform: uppercase;">Appr</div>
-                    <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.approved %></div>
-                  </div>
-                  <div style="background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.15); padding: 4px; border-radius: 6px;">
-                    <div style="color: var(--accent-red); font-size: 8px; font-weight: bold; text-transform: uppercase;">Rejc</div>
-                    <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.rejected %></div>
-                  </div>
+                <div style="display: grid; grid-template-columns: repeat(<%= activeSubslsStatusCols - 1 %>, 1fr); gap: 4px; text-align: center; font-size: 10px;">
+                  <% if (settings.show_status_open === '1' || settings.show_status_open === undefined) { %>
+                    <div style="background: rgba(249,115,22,0.06); border: 1px solid rgba(249,115,22,0.15); padding: 4px; border-radius: 6px;">
+                      <div style="color: #f97316; font-size: 8px; font-weight: bold; text-transform: uppercase;">Open</div>
+                      <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.open || 0 %></div>
+                    </div>
+                  <% } %>
+                  <% if (settings.show_status_draft === '1' || settings.show_status_draft === undefined) { %>
+                    <div style="background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.15); padding: 4px; border-radius: 6px;">
+                      <div style="color: var(--accent-yellow); font-size: 8px; font-weight: bold; text-transform: uppercase;">Draft</div>
+                      <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.draft %></div>
+                    </div>
+                  <% } %>
+                  <% if (settings.show_status_submitted === '1' || settings.show_status_submitted === undefined) { %>
+                    <div style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.15); padding: 4px; border-radius: 6px;">
+                      <div style="color: var(--accent-blue); font-size: 8px; font-weight: bold; text-transform: uppercase;">Submit</div>
+                      <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.submitted_by_pcl %></div>
+                    </div>
+                  <% } %>
+                  <% if (settings.show_status_approved === '1' || settings.show_status_approved === undefined) { %>
+                    <div style="background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.15); padding: 4px; border-radius: 6px;">
+                      <div style="color: var(--accent-green); font-size: 8px; font-weight: bold; text-transform: uppercase;">Appr</div>
+                      <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.approved %></div>
+                    </div>
+                  <% } %>
+                  <% if (settings.show_status_rejected === '1' || settings.show_status_rejected === undefined) { %>
+                    <div style="background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.15); padding: 4px; border-radius: 6px;">
+                      <div style="color: var(--accent-red); font-size: 8px; font-weight: bold; text-transform: uppercase;">Rejc</div>
+                      <div style="font-size: 12px; font-weight: 700; color: var(--text-primary);"><%= selectedSubsls.rejected %></div>
+                    </div>
+                  <% } %>
                 </div>
               </div>
 
@@ -471,7 +515,7 @@
                 <% if (remainingFasih === 0) { %>
                   Seluruh target pengisian dokumen FASIH sebanyak <strong><%= fasihTgt %></strong> dokumen pada SubSLS ini telah diselesaikan. Kinerja luar biasa!
                 <% } else { %>
-                  Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak 15 Juni). Sisa hari menuju deadline (31 Agustus): <strong><%= daysRemaining %> hari</strong>.<br>
+                  Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak <%= formatIndonesianDate(settings.speedometer_start_date || '2026-06-15') %>). Sisa hari menuju deadline (<%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>): <strong><%= daysRemaining %> hari</strong>.<br>
                   Sisa beban kerja: <strong><%= remainingFasih %> dokumen</strong>. 
                   Dengan kecepatan saat ini (<strong><%= currentSpeedText %> dok/hari</strong>), 
                   <% if (currentSpeed === 0) { %>
@@ -483,12 +527,12 @@
                   <% if (isOfftrack) { %>
                     <div style="margin-top: 8px; padding: 8px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--accent-red); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
                       <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red); font-size: 13px; margin-top: 1px;"></i>
-                      <div><strong>Off-Track:</strong> Progres diprediksi terlambat/tidak selesai tepat waktu. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeed.toFixed(2) %> dok/hari</strong> agar selesai sesuai target pada 31 Agustus 2026.</div>
+                      <div><strong>Off-Track:</strong> Progres diprediksi terlambat/tidak selesai tepat waktu. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeed.toFixed(2) %> dok/hari</strong> agar selesai sesuai target pada <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>.</div>
                     </div>
                   <% } else { %>
                     <div style="margin-top: 8px; padding: 8px; background: rgba(34, 197, 94, 0.08); border-left: 3px solid var(--accent-green); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
                       <i class="bi bi-check-circle-fill" style="color: var(--accent-green); font-size: 13px; margin-top: 1px;"></i>
-                      <div><strong>On-Track:</strong> Kecepatan progres sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum 31 Agustus 2026).</div>
+                      <div><strong>On-Track:</strong> Kecepatan progres sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>).</div>
                     </div>
                   <% } %>
                 <% } %>

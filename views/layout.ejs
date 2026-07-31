@@ -721,14 +721,14 @@
 <script>
   // Injected EJS variables for global client-side calculations
   const latestUploadTanggal = "<%= latestUpload ? latestUpload.tanggal : '' %>";
-  const startSensusDate = new Date('2026-06-15');
+  const startSensusDate = new Date('<%= settings.speedometer_start_date || '2026-06-15' %>');
   let diffDays = 1;
   let daysRemaining = 0;
   if (latestUploadTanggal) {
     const d2 = new Date(latestUploadTanggal);
     const diffTime = d2 - startSensusDate;
     diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
-    const deadline = new Date('2026-08-31');
+    const deadline = new Date('<%= settings.speedometer_target_date || '2026-08-31' %>');
     daysRemaining = Math.max(0, Math.ceil((deadline - d2) / (1000 * 60 * 60 * 24)));
   }
 
@@ -3839,7 +3839,7 @@
           let html = '';
           if (latestMuatanDate) {
             html += `
-              <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px;">
+              <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; min-width: 0;">
                 <span style="font-weight: 700; font-size: 10px; color: var(--accent-cyan); display: flex; align-items: center; gap: 6px;">
                   <i class="bi bi-box-seam"></i> UPDATE MUATAN
                   ${isMuatanNew ? '<span style="background: #ef4444; color: white; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: 800;">BARU</span>' : ''}
@@ -3851,7 +3851,7 @@
           }
           if (latestFasihDate) {
             html += `
-              <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px;">
+              <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; min-width: 0;">
                 <span style="font-weight: 700; font-size: 10px; color: var(--accent-purple); display: flex; align-items: center; gap: 6px;">
                   <i class="bi bi-phone"></i> UPDATE FASIH
                   ${isFasihNew ? '<span style="background: #ef4444; color: white; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: 800;">BARU</span>' : ''}

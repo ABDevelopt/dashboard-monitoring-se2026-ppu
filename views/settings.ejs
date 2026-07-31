@@ -530,6 +530,137 @@
           </div>
         </div>
 
+        <!-- GROUP 2D: PARAMETER TARGET & SPEEDOMETER -->
+        <div class="settings-group">
+          <div class="settings-group-title">
+            <i class="bi bi-clock-history"></i> Parameter Target &amp; Speedometer
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 8px;">
+            
+            <div class="settings-field">
+              <label style="font-weight: 600; margin-bottom: 6px; display: block;">Metode Perhitungan Target Normal Harian</label>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label class="radio-card">
+                  <input type="radio" name="speedometer_calc_mode" value="total_target" <%= settings.speedometer_calc_mode === 'total_target' || !settings.speedometer_calc_mode ? 'checked' : '' %> style="margin-top: 4px; margin-right: 10px;">
+                  <div style="min-width: 0;">
+                    <strong style="display: block; font-size: 13px; color: var(--text-primary);">Model 1: Berbasis Total Target FASIH (Rekomendasi)</strong>
+                    <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.35;">Target normal dihitung dari Total Target FASIH Kabupaten dibagi Total Alokasi Hari Pendataan (misal 68.618 / 77 hari = 891 dok/hari se-kabupaten).</span>
+                  </div>
+                </label>
+
+                <label class="radio-card">
+                  <input type="radio" name="speedometer_calc_mode" value="pcl_speed" <%= settings.speedometer_calc_mode === 'pcl_speed' ? 'checked' : '' %> style="margin-top: 4px; margin-right: 10px;">
+                  <div style="min-width: 0;">
+                    <strong style="display: block; font-size: 13px; color: var(--text-primary);">Model 2: Berbasis Target Flat Petugas (13 dok/PCL/hari)</strong>
+                    <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.35;">Target normal dihitung dari perkalian standar flat per petugas (13 dok/hari x 165 PCL = 2.145 dok/hari se-kabupaten).</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-field">
+              <label for="speedometer_start_date" style="font-weight: 600;">Tanggal Mulai Pendataan (Start Date)</label>
+              <input type="date" id="speedometer_start_date" name="speedometer_start_date" value="<%= settings.speedometer_start_date || '2026-06-15' %>" required>
+              <div class="settings-hint">Tanggal dimulainya pendataan lapangan (Default: 15 Juni 2026).</div>
+            </div>
+
+            <div class="settings-field">
+              <label for="speedometer_target_date" style="font-weight: 600;">Tanggal Target Selesai (Deadline)</label>
+              <input type="date" id="speedometer_target_date" name="speedometer_target_date" value="<%= settings.speedometer_target_date || '2026-08-31' %>" required>
+              <div class="settings-hint">Tanggal deadline target penyelesaian 100% pendataan (Default: 31 Agustus 2026).</div>
+            </div>
+
+            <div class="settings-field">
+              <label for="speedometer_target_speed_per_pcl" style="font-weight: 600;">Target Kecepatan Harian PCL (Khusus Model 2)</label>
+              <input type="number" id="speedometer_target_speed_per_pcl" name="speedometer_target_speed_per_pcl" min="1" max="100" value="<%= settings.speedometer_target_speed_per_pcl || '13' %>" required>
+              <div class="settings-hint">Target standar pengisian dokumen per petugas per hari jika menggunakan Model 2 (Default: 13).</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GROUP 2E: VISIBILITAS STATUS ASSIGNMENT FASIH -->
+        <div class="settings-group">
+          <div class="settings-group-title">
+            <i class="bi bi-eye"></i> Visibilitas Status Assignment FASIH
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px; margin-bottom: 10px;">Pilih status mana saja yang ingin ditampilkan di kartu ringkasan dan tabel data (Overview, PCL, SubSLS):</p>
+          
+          <!-- Status OPEN -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #f97316;"><i class="bi bi-circle"></i></span>
+              <div style="min-width: 0;">
+                <label for="show_status_open" class="switch-label-text">Status OPEN (Belum Diisi)</label>
+                <div class="switch-desc">Tampilkan status dokumen yang belum mulai diisi</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="show_status_open" name="show_status_open" value="1" <%= settings.show_status_open === '1' || settings.show_status_open === undefined ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Status DRAFT -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: var(--accent-yellow);"><i class="bi bi-pencil-square"></i></span>
+              <div style="min-width: 0;">
+                <label for="show_status_draft" class="switch-label-text">Status DRAFT (Sedang Diisi)</label>
+                <div class="switch-desc">Tampilkan status dokumen yang masih dalam draf</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="show_status_draft" name="show_status_draft" value="1" <%= settings.show_status_draft === '1' || settings.show_status_draft === undefined ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Status SUBMITTED -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: var(--accent-blue);"><i class="bi bi-send-check"></i></span>
+              <div style="min-width: 0;">
+                <label for="show_status_submitted" class="switch-label-text">Status SUBMITTED (Oleh PCL)</label>
+                <div class="switch-desc">Tampilkan status dokumen yang sudah disubmit oleh PCL</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="show_status_submitted" name="show_status_submitted" value="1" <%= settings.show_status_submitted === '1' || settings.show_status_submitted === undefined ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Status APPROVED -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: var(--accent-green);"><i class="bi bi-check-circle"></i></span>
+              <div style="min-width: 0;">
+                <label for="show_status_approved" class="switch-label-text">Status APPROVED (Disetujui PML/Korlap)</label>
+                <div class="switch-desc">Tampilkan status dokumen yang sudah disetujui</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="show_status_approved" name="show_status_approved" value="1" <%= settings.show_status_approved === '1' || settings.show_status_approved === undefined ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Status REJECTED -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: var(--accent-red);"><i class="bi bi-x-circle"></i></span>
+              <div style="min-width: 0;">
+                <label for="show_status_rejected" class="switch-label-text">Status REJECTED (Ditolak)</label>
+                <div class="switch-desc">Tampilkan status dokumen yang ditolak / dikembalikan</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="show_status_rejected" name="show_status_rejected" value="1" <%= settings.show_status_rejected === '1' || settings.show_status_rejected === undefined ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
         <!-- GROUP 3: KONTEN OVERVIEW -->
         <div class="settings-group">
           <div class="settings-group-title">

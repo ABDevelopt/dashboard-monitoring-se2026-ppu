@@ -75,6 +75,7 @@ router.get('/map-stats', (req, res) => {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
       SUM(${singleTargetFormula}) AS target_fasih_total,
       SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
       SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
@@ -100,6 +101,7 @@ router.get('/map-stats', (req, res) => {
       COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
       COALESCE(p.approved, 0) AS approved,
       COALESCE(p.rejected, 0) AS rejected,
+      CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END AS open,
       (${singleTargetFormula}) AS target_fasih,
       COALESCE(m.target_fasih, 0) AS target_static,
       COALESCE(p.target_upload, 0) AS target_upload
@@ -137,6 +139,7 @@ router.get('/detail/korlap', (req, res) => {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
       SUM(${singleTargetFormula}) AS target_fasih_total,
       SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
       SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
@@ -176,6 +179,7 @@ router.get('/detail/pml', (req, res) => {
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
       SUM(${singleTargetFormula}) AS target_fasih_total,
       SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
       SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
@@ -211,6 +215,7 @@ router.get('/detail/pcl', (req, res) => {
       COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
       COALESCE(p.approved, 0) AS approved,
       COALESCE(p.rejected, 0) AS rejected,
+      CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END AS open,
       (${singleTargetFormula}) AS target_fasih,
       COALESCE(m.target_fasih, 0) AS target_static,
       COALESCE(p.target_upload, 0) AS target_upload,

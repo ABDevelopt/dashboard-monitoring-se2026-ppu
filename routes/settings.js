@@ -23,7 +23,12 @@ const generalSettingKeys = [
   'overview_heatmap',
   'overview_kecamatan',
   'overview_bangunan',
-  'show_progres_muatan'
+  'show_progres_muatan',
+  'show_status_open',
+  'show_status_draft',
+  'show_status_submitted',
+  'show_status_approved',
+  'show_status_rejected'
 ];
 
 const chatbotSettingKeys = [
@@ -73,6 +78,22 @@ router.post('/', (req, res) => {
 
   if (req.body.google_sheets_apps_script_url !== undefined) {
     updatedSettings.google_sheets_apps_script_url = req.body.google_sheets_apps_script_url.trim();
+  }
+
+  if (req.body.speedometer_start_date !== undefined) {
+    updatedSettings.speedometer_start_date = req.body.speedometer_start_date.trim();
+  }
+
+  if (req.body.speedometer_target_date !== undefined) {
+    updatedSettings.speedometer_target_date = req.body.speedometer_target_date.trim();
+  }
+
+  if (req.body.speedometer_target_speed_per_pcl !== undefined) {
+    updatedSettings.speedometer_target_speed_per_pcl = req.body.speedometer_target_speed_per_pcl.trim();
+  }
+
+  if (['total_target', 'pcl_speed'].includes(req.body.speedometer_calc_mode)) {
+    updatedSettings.speedometer_calc_mode = req.body.speedometer_calc_mode;
   }
 
   try {
