@@ -89,6 +89,8 @@ function initialize() {
     }
 
     const staticPaths = [
+      '/home/bpsppuco/chrome-portable/chrome-linux64/chrome',
+      '/home/bpsppu/chrome-portable/chrome-linux64/chrome',
       '/usr/bin/google-chrome-stable',
       '/usr/bin/google-chrome',
       '/usr/bin/chromium-browser',
