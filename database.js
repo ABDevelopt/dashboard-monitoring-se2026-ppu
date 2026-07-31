@@ -1000,30 +1000,7 @@ function getEarlyWarning(uploadId, filters = {}) {
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
 
-  const zeroPcl = getDb().prepare(`
-    SELECT 
-      m.pcl, 
-      MAX(m.pml) AS pml, 
-      MAX(m.korlap) AS korlap, 
-      MAX(m.kecamatan) AS kecamatan,
-      COUNT(m.kode) AS total_subsls,
-      SUM(${singleSelesaiFormula}) AS selesai,
-      SUM(${targetMuatanFormula}) AS total_muatan,
-      SUM(${realFormula}) AS muatan_selesai,
-      SUM(COALESCE(p.draft, 0)) AS draft_total,
-      SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
-      SUM(COALESCE(p.approved, 0)) AS approved_total,
-      SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(${singleTargetFormula}) AS target_fasih_total,
-      SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
-      SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    WHERE 1=1 ${where}
-    GROUP BY m.pcl COLLATE NOCASE
-    HAVING SUM(${singleTargetFormula}) > 0 AND SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) = 0
-    ORDER BY total_subsls DESC
-  `).all(...paramsZeroPcl);
+  const zeroPcl = [];
 
   const slowPcl = getDb().prepare(`
     SELECT 
@@ -1501,18 +1478,18 @@ function initSettings() {
 🟡 Draft (Sedang Diisi): *{draft_total}* dokumen
 📋 Total Assignment FASIH: *{target_fasih}* dokumen
 
-*KINERJA REALISASI 24 JAM TERAKHIR*
-📨 Realisasi Masuk: *{diff_24h_total}* dokumen
-👤 Produktivitas Petugas Aktif: *{avg_diff_24h_active}* dokumen/petugas/hari
-📈 Deviasi vs Target Normal (24h): *{deviasi_24h}* dokumen
+*KINERJA REALISASI SEJAK UPLOAD SEBELUMNYA ({waktu_upload_sebelumnya})*
+📨 Realisasi Masuk: *{diff_total}* dokumen
+👤 Produktifitas petugas keseluruhan: *{avg_diff_all}* dokumen/petugas/hari
+📈 Deviasi vs Target Normal (Update): *{deviasi_update}* dokumen
 📉 Defisit Laju Kumulatif: *{deviasi_kumulatif}* dokumen/hari
 
-*SEBARAN PRODUKTIVITAS PETUGAS (24 JAM)*
-🔴 0 dokumen: *{dist_24h_0}* orang
-🟠 1–4 dokumen: *{dist_24h_1_4}* orang
-🟡 5–7 dokumen: *{dist_24h_5_7}* orang
-🔵 8–12 dokumen: *{dist_24h_8_12}* orang
-🟢 ≥13 dokumen: *{dist_24h_13_plus}* orang
+*SEBARAN PRODUKTIVITAS PETUGAS (SEJAK UPLOAD SEBELUMNYA)*
+🔴 0 dokumen: *{dist_0}* orang
+🟠 1–4 dokumen: *{dist_1_4}* orang
+🟡 5–7 dokumen: *{dist_5_7}* orang
+🔵 8–12 dokumen: *{dist_8_12}* orang
+🟢 ≥13 dokumen: *{dist_13_plus}* orang
 
 _Notifikasi otomatis [monitoring.bpsppu.com]_`,
     'speedometer_start_date': '2026-06-15',
@@ -1535,9 +1512,9 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`,
   const openrouterModelsStr = 'openrouter/free, openrouter/owl-alpha, meta-llama/llama-3.3-70b-instruct:free, nvidia/nemotron-3-ultra-550b-a55b:free';
   getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run(openrouterModelsStr, 'openrouter_models_list');
 
-  // Force update empty whatsapp_message_template to default layout
+  // Force update empty or old whatsapp_message_template to new layout
   const currentTemplate = getDb().prepare("SELECT value FROM settings WHERE key = 'whatsapp_message_template'").get();
-  if (currentTemplate && currentTemplate.value === '') {
+  if (currentTemplate && (currentTemplate.value === '' || currentTemplate.value.includes('Produktivitas Petugas Aktif') || currentTemplate.value.includes('24 JAM') || currentTemplate.value.includes('avg_diff_24h_all'))) {
     getDb().prepare("UPDATE settings SET value = ? WHERE key = 'whatsapp_message_template'").run(defaults['whatsapp_message_template']);
   }
 

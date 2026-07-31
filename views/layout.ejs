@@ -3446,10 +3446,10 @@
         .then(data => {
           if (!data.success) return;
           
-          const totalWarnings = data.zero_pcl_count + data.slow_pcl_count + data.zero_pml_count + data.stagnan_pcl_count + data.low_projected_pcl_count;
+          const totalWarnings = data.slow_pcl_count + data.zero_pml_count + data.stagnan_pcl_count + data.low_projected_pcl_count;
           if (totalWarnings === 0) return;
 
-          const currentSig = `zeroPcl:${data.zero_pcl_count}_slow:${data.slow_pcl_count}_zeroPml:${data.zero_pml_count}_stagnan:${data.stagnan_pcl_count}_lowProj:${data.low_projected_pcl_count}`;
+          const currentSig = `slow:${data.slow_pcl_count}_zeroPml:${data.zero_pml_count}_stagnan:${data.stagnan_pcl_count}_lowProj:${data.low_projected_pcl_count}`;
           const lastSeenSig = localStorage.getItem('last_seen_ew_summary_signature');
           
           if (lastSeenSig === currentSig) {
@@ -3482,12 +3482,6 @@
 
             <!-- Grid of metrics -->
             <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
-              ${data.zero_pcl_count > 0 ? `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(239, 68, 68, 0.05); border-left: 3px solid var(--accent-red); border-radius: 4px;">
-                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-person-x"></i> PCL Tanpa Progres</span>
-                  <span class="badge badge-red" style="font-weight: 700;">${data.zero_pcl_count} Petugas</span>
-                </div>
-              ` : ''}
 
               ${data.zero_pml_count > 0 ? `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(239, 68, 68, 0.05); border-left: 3px solid var(--accent-red); border-radius: 4px;">

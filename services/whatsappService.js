@@ -405,6 +405,19 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     const timeFormatted = `${dayName}, ${dateStr} ${monthName} ${yearStr} ${hours}.${minutes} WITA`;
     const timeOnlyFormatted = `${hours}.${minutes} WITA`;
 
+    let prevUploadTimeStr = 'Awal Pendataan';
+    if (prevUpload) {
+      const prevDate = new Date(prevUpload.created_at.replace(' ', 'T') + 'Z');
+      const witaPrev = new Date(prevDate.getTime() + witaOffset);
+      const prevDayName = dayNames[witaPrev.getUTCDay()];
+      const prevDateStr = witaPrev.getUTCDate();
+      const prevMonthName = monthNames[witaPrev.getUTCMonth()];
+      const prevYearStr = witaPrev.getUTCFullYear();
+      const prevHours = String(witaPrev.getUTCHours()).padStart(2, '0');
+      const prevMinutes = String(witaPrev.getUTCMinutes()).padStart(2, '0');
+      prevUploadTimeStr = `${prevDayName}, ${prevDateStr} ${prevMonthName} ${prevYearStr} ${prevHours}.${prevMinutes} WITA`;
+    }
+
     // Kalkulasi persentase dan format realisasi
     const realisasiFasih = (stats.submitted_total || 0) + (stats.approved_total || 0) + (stats.rejected_total || 0);
     const targetFasih = stats.target_fasih_total || 0;
@@ -579,6 +592,7 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       message = settings.whatsapp_message_template
         .replace(/\{tanggal_sekarang\}/g, timeFormatted)
         .replace(/\{jam_sekarang\}/g, timeOnlyFormatted)
+        .replace(/\{waktu_upload_sebelumnya\}/g, prevUploadTimeStr)
         .replace(/\{label_fasih\}/g, labelFasih)
         .replace(/\{filename\}/g, upload.filename)
         .replace(/\{tanggal_data\}/g, upload.tanggal)
@@ -638,17 +652,17 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
                 `🟠 Open (Belum Diisi): *${(stats.open_total || 0).toLocaleString('id-ID')}* dokumen\n` +
                 `🟡 Draft (Sedang Diisi): *${(stats.draft_total || 0).toLocaleString('id-ID')}* dokumen\n` +
                 `📋 Total Assignment FASIH: *${targetFasih.toLocaleString('id-ID')}* dokumen\n\n` +
-                `*KINERJA REALISASI 24 JAM TERAKHIR*\n` +
-                `📨 Realisasi Masuk: *${diff24Total.toLocaleString('id-ID')}* dokumen\n` +
-                `👤 Produktivitas Petugas Aktif: *${Math.round(avgDiff24Active)}* dokumen/petugas/hari\n` +
-                `📈 Deviasi vs Target Normal (24h): *${deviasi24hFormatted}* dokumen\n` +
+                `*KINERJA REALISASI SEJAK UPLOAD SEBELUMNYA (${prevUploadTimeStr})*\n` +
+                `📨 Realisasi Masuk: *${diffTotal.toLocaleString('id-ID')}* dokumen\n` +
+                `👤 Produktifitas petugas keseluruhan: *${avgDiffAll.toFixed(2)}* dokumen/petugas/hari\n` +
+                `📈 Deviasi vs Target Normal (Update): *${deviasiUpdateFormatted}* dokumen\n` +
                 `📉 Defisit Laju Kumulatif: *${deviasiKumulatifFormatted}* dokumen/hari\n\n` +
-                `*SEBARAN PRODUKTIVITAS PETUGAS (24 JAM)*\n` +
-                `🔴 0 dokumen: *${dist24h.bucket_0}* orang\n` +
-                `🟠 1–4 dokumen: *${dist24h.bucket_1_4}* orang\n` +
-                `🟡 5–7 dokumen: *${dist24h.bucket_5_7}* orang\n` +
-                `🔵 8–12 dokumen: *${dist24h.bucket_8_12}* orang\n` +
-                `🟢 ≥13 dokumen: *${dist24h.bucket_13_plus}* orang\n\n` +
+                `*SEBARAN PRODUKTIVITAS PETUGAS (SEJAK UPLOAD SEBELUMNYA)*\n` +
+                `🔴 0 dokumen: *${distLast.bucket_0}* orang\n` +
+                `🟠 1–4 dokumen: *${distLast.bucket_1_4}* orang\n` +
+                `🟡 5–7 dokumen: *${distLast.bucket_5_7}* orang\n` +
+                `🔵 8–12 dokumen: *${distLast.bucket_8_12}* orang\n` +
+                `🟢 ≥13 dokumen: *${distLast.bucket_13_plus}* orang\n\n` +
                 `_Notifikasi otomatis [monitoring.bpsppu.com]_`;
     }
 

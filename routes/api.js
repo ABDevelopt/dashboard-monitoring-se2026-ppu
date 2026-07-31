@@ -586,10 +586,10 @@ function generateSimulatedInsights(payload) {
 
   let ewText = '';
   if (payload.show_early_warning && payload.early_warning) {
-    if (payload.early_warning.zero_progress_pcl > 0) {
-      ewText = `terdeteksi **${payload.early_warning.zero_progress_pcl} PCL tanpa progres** dan **${payload.early_warning.slow_progress_pcl} PCL berkinerja lambat** yang memerlukan evaluasi lapangan`;
+    if (payload.early_warning.slow_progress_pcl > 0) {
+      ewText = `terdeteksi **${payload.early_warning.slow_progress_pcl} PCL berkinerja lambat** yang memerlukan evaluasi lapangan`;
     } else {
-      ewText = `kinerja petugas pencacah relatif stabil tanpa adanya indikasi petugas yang sepenuhnya stagnan`;
+      ewText = `kinerja petugas pencacah relatif stabil tanpa adanya indikasi petugas berkinerja lambat`;
     }
   }
 
@@ -716,7 +716,6 @@ router.get('/ai-insights', async (req, res) => {
 
     if (showEarlyWarning && payload.early_warning) {
       promptSections.push(`- Early Warning Petugas:`);
-      promptSections.push(`  - Petugas tanpa progres (Zero Progress): ${payload.early_warning.zero_progress_pcl} PCL`);
       promptSections.push(`  - Petugas berkinerja lambat (Slow Progress): ${payload.early_warning.slow_progress_pcl} PCL`);
       promptSections.push(`  - Petugas dengan progres stagnan: ${payload.early_warning.stagnant_pcl} PCL`);
       promptSections.push(`  - Proyeksi target rendah: ${payload.early_warning.low_projected_pcl} PCL`);
