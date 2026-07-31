@@ -1316,7 +1316,7 @@ function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl 
       maintainAspectRatio: false,
       layout: {
         padding: {
-          top: 25,
+          top: 45,
           bottom: 65,
           left: 25,
           right: 25

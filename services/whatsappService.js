@@ -89,6 +89,8 @@ function initialize() {
     }
 
     const staticPaths = [
+      '/home/bpsppuco/chrome-portable/chrome-linux64/chrome',
+      '/home/bpsppu/chrome-portable/chrome-linux64/chrome',
       '/usr/bin/google-chrome-stable',
       '/usr/bin/google-chrome',
       '/usr/bin/chromium-browser',
@@ -263,19 +265,28 @@ function getStatus() {
  * Mengambil daftar grup WhatsApp yang diikuti
  */
 async function getGroups() {
-  if (clientStatus !== 'CONNECTED' || !client) {
+  if (clientStatus !== 'CONNECTED' || !client || !client.pupPage || client.pupPage.isClosed()) {
     return [];
   }
   try {
-    const chats = await client.getChats();
+    // Beri batas waktu (timeout 6 detik) agar getChats tidak menggantung jika WhatsApp Web sedang sinkronisasi
+    const getChatsPromise = client.getChats();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Sinkronisasi chat WhatsApp Web masih berlangsung')), 6000)
+    );
+
+    const chats = await Promise.race([getChatsPromise, timeoutPromise]);
+    if (!Array.isArray(chats)) return [];
+
     return chats
-      .filter(chat => chat.isGroup)
+      .filter(chat => chat && chat.isGroup)
       .map(group => ({
-        id: group.id._serialized,
-        name: group.name
+        id: group.id ? group.id._serialized : '',
+        name: group.name || 'Grup Tanpa Nama'
       }));
   } catch (err) {
-    logger.error('Failed to get WhatsApp groups:', err);
+    const errMsg = err && (err.message || String(err));
+    logger.warn(`WhatsApp getGroups: ${errMsg}`);
     return [];
   }
 }
@@ -349,6 +360,29 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       return;
     }
 
+    // Ambil detail data upload sebelumnya
+    const prevUpload = db.prepare('SELECT * FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(uploadId);
+    let prevStats = null;
+    if (prevUpload) {
+      prevStats = getOverviewSummary(prevUpload.id, settings);
+    }
+
+    // Ambil detail data upload 24 jam yang lalu
+    const upload24h = db.prepare(`
+      SELECT * FROM uploads 
+      WHERE created_at <= datetime(?, '-1 day') 
+      ORDER BY created_at DESC LIMIT 1
+    `).get(upload.created_at);
+    let stats24h = null;
+    let baseUpload24h = upload24h;
+    if (!baseUpload24h) {
+      // Fallback: gunakan upload pertama
+      baseUpload24h = db.prepare('SELECT * FROM uploads ORDER BY id ASC LIMIT 1').get();
+    }
+    if (baseUpload24h && baseUpload24h.id !== uploadId) {
+      stats24h = getOverviewSummary(baseUpload24h.id, settings);
+    }
+
     // Ambil statistik summary
     const stats = getOverviewSummary(uploadId, settings);
     if (!stats) {
@@ -373,6 +407,19 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     const timeFormatted = `${dayName}, ${dateStr} ${monthName} ${yearStr} ${hours}.${minutes} WITA`;
     const timeOnlyFormatted = `${hours}.${minutes} WITA`;
 
+    let prevUploadTimeStr = 'Awal Pendataan';
+    if (prevUpload) {
+      const prevDate = new Date(prevUpload.created_at.replace(' ', 'T') + 'Z');
+      const witaPrev = new Date(prevDate.getTime() + witaOffset);
+      const prevDayName = dayNames[witaPrev.getUTCDay()];
+      const prevDateStr = witaPrev.getUTCDate();
+      const prevMonthName = monthNames[witaPrev.getUTCMonth()];
+      const prevYearStr = witaPrev.getUTCFullYear();
+      const prevHours = String(witaPrev.getUTCHours()).padStart(2, '0');
+      const prevMinutes = String(witaPrev.getUTCMinutes()).padStart(2, '0');
+      prevUploadTimeStr = `${prevDayName}, ${prevDateStr} ${prevMonthName} ${prevYearStr} ${prevHours}.${prevMinutes} WITA`;
+    }
+
     // Kalkulasi persentase dan format realisasi
     const realisasiFasih = (stats.submitted_total || 0) + (stats.approved_total || 0) + (stats.rejected_total || 0);
     const targetFasih = stats.target_fasih_total || 0;
@@ -381,6 +428,160 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     const realisasiMuatan = stats.muatan_selesai || 0;
     const targetMuatan = stats.total_muatan || 0;
     const persenMuatan = stats.muatan_pct_str || '0.00';
+
+    // Penambahan dari update sebelumnya
+    const diffSubmitted = stats.submitted_total - (prevStats ? prevStats.submitted_total : 0);
+    const diffApproved = stats.approved_total - (prevStats ? prevStats.approved_total : 0);
+    const diffRejected = stats.rejected_total - (prevStats ? prevStats.rejected_total : 0);
+    const diffTotal = realisasiFasih - (prevStats ? ((prevStats.submitted_total || 0) + (prevStats.approved_total || 0) + (prevStats.rejected_total || 0)) : 0);
+
+    // Penambahan dalam 24 jam terakhir (atau sejak data pertama)
+    const diff24Submitted = stats.submitted_total - (stats24h ? stats24h.submitted_total : 0);
+    const diff24Approved = stats.approved_total - (stats24h ? stats24h.approved_total : 0);
+    const diff24Rejected = stats.rejected_total - (stats24h ? stats24h.rejected_total : 0);
+    const diff24Total = realisasiFasih - (stats24h ? ((stats24h.submitted_total || 0) + (stats24h.approved_total || 0) + (stats24h.rejected_total || 0)) : 0);
+
+    // Hitung petugas aktif yang bertambah progresnya sejak update terakhir
+    let activeDiffPclCount = 0;
+    if (prevUpload) {
+      const activeDiffResult = db.prepare(`
+        SELECT COUNT(*) AS cnt FROM (
+          SELECT 
+            m.pcl,
+            (SUM(COALESCE(p_curr.submitted_by_pcl, 0) + COALESCE(p_curr.approved, 0) + COALESCE(p_curr.rejected, 0)) -
+             SUM(COALESCE(p_prev.submitted_by_pcl, 0) + COALESCE(p_prev.approved, 0) + COALESCE(p_prev.rejected, 0))) AS diff
+          FROM subsls_master m
+          JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
+          LEFT JOIN progres p_prev ON m.kode = p_prev.kode AND p_prev.upload_id = ?
+          WHERE m.pcl IS NOT NULL AND m.pcl != ''
+          GROUP BY m.pcl
+          HAVING diff > 0
+        )
+      `).get(uploadId, prevUpload.id);
+      activeDiffPclCount = activeDiffResult ? activeDiffResult.cnt : 0;
+    } else {
+      activeDiffPclCount = stats.active_pcl || 0;
+    }
+
+    // Hitung petugas aktif yang bertambah progresnya dalam 24 jam terakhir (atau sejak data pertama)
+    let activeDiffPcl24hCount = 0;
+    const base24hId = baseUpload24h ? baseUpload24h.id : null;
+    if (base24hId && base24hId !== uploadId) {
+      const activeDiff24hResult = db.prepare(`
+        SELECT COUNT(*) AS cnt FROM (
+          SELECT 
+            m.pcl,
+            (SUM(COALESCE(p_curr.submitted_by_pcl, 0) + COALESCE(p_curr.approved, 0) + COALESCE(p_curr.rejected, 0)) -
+             SUM(COALESCE(p_24h.submitted_by_pcl, 0) + COALESCE(p_24h.approved, 0) + COALESCE(p_24h.rejected, 0))) AS diff
+          FROM subsls_master m
+          JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
+          LEFT JOIN progres p_24h ON m.kode = p_24h.kode AND p_24h.upload_id = ?
+          WHERE m.pcl IS NOT NULL AND m.pcl != ''
+          GROUP BY m.pcl
+          HAVING diff > 0
+        )
+      `).get(uploadId, base24hId);
+      activeDiffPcl24hCount = activeDiff24hResult ? activeDiff24hResult.cnt : 0;
+    } else {
+      activeDiffPcl24hCount = stats.active_pcl || 0;
+    }
+
+    const totalPcl = stats.total_pcl || 1;
+    const startDateStr = settings.speedometer_start_date || '2026-06-15';
+    const targetDateStr = settings.speedometer_target_date || '2026-08-31';
+    const uploadDate = new Date(upload.tanggal);
+    const startDate = new Date(startDateStr);
+    const deadline = new Date(targetDateStr);
+    const totalDays = Math.max(1, Math.ceil((deadline - startDate) / (1000 * 60 * 60 * 24)));
+
+    let targetSpeedTotal = 0;
+    if (settings.speedometer_calc_mode === 'pcl_speed') {
+      const targetSpeedPerPcl = parseFloat(settings.speedometer_target_speed_per_pcl) || 13;
+      targetSpeedTotal = targetSpeedPerPcl * totalPcl;
+    } else {
+      // Mode Default: 'total_target' (Berbasis Total Target FASIH)
+      targetSpeedTotal = totalDays > 0 ? (targetFasih / totalDays) : 0;
+    }
+
+    // Hitung deviasi harian (24 jam & update terakhir)
+    const deviasi24h = diff24Total - targetSpeedTotal;
+    const deviasi24hSign = deviasi24h >= 0 ? '+' : '';
+    const deviasi24hFormatted = deviasi24h < 0 
+      ? `–${Math.round(Math.abs(deviasi24h)).toLocaleString('id-ID')}` 
+      : `${deviasi24hSign}${Math.round(deviasi24h).toLocaleString('id-ID')}`;
+
+    const deviasiUpdate = diffTotal - targetSpeedTotal;
+    const deviasiUpdateSign = deviasiUpdate >= 0 ? '+' : '';
+    const deviasiUpdateFormatted = deviasiUpdate < 0 
+      ? `–${Math.round(Math.abs(deviasiUpdate)).toLocaleString('id-ID')}` 
+      : `${deviasiUpdateSign}${Math.round(deviasiUpdate).toLocaleString('id-ID')}`;
+
+    // Hitung deviasi kumulatif (Sejak awal pendataan, 100% persis seperti di Halaman Overview)
+    const diffTime = uploadDate - startDate;
+    const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+    const currentSpeedKumulatif = diffDays > 0 ? (realisasiFasih / diffDays) : 0;
+
+    const daysRemaining = Math.max(0, Math.ceil((deadline - uploadDate) / (1000 * 60 * 60 * 24)));
+    const remainingFasih = Math.max(0, targetFasih - realisasiFasih);
+    const reqSpeed = daysRemaining > 0 ? (remainingFasih / daysRemaining) : 0;
+
+    const stdDeficit = Math.max(0, targetSpeedTotal - currentSpeedKumulatif);
+    const reqDeficit = Math.max(0, reqSpeed - currentSpeedKumulatif);
+    const maxDeficitKumulatif = Math.max(stdDeficit, reqDeficit);
+    const deviasiKumulatifFormatted = maxDeficitKumulatif > 0 ? `–${Math.ceil(maxDeficitKumulatif).toLocaleString('id-ID')}` : 'Terpenuhi';
+
+    // Rata-rata penambahan progres petugas
+    const avgDiffAll = totalPcl > 0 ? parseFloat((diffTotal / totalPcl).toFixed(2)) : 0;
+    const avgDiffActive = activeDiffPclCount > 0 ? parseFloat((diffTotal / activeDiffPclCount).toFixed(2)) : 0;
+
+    const avgDiff24All = totalPcl > 0 ? parseFloat((diff24Total / totalPcl).toFixed(2)) : 0;
+    const avgDiff24Active = activeDiffPcl24hCount > 0 ? parseFloat((diff24Total / activeDiffPcl24hCount).toFixed(2)) : 0;
+
+    // Hitung sebaran performa petugas
+    function getPclPerformanceDistribution(currId, prevId = null) {
+      if (prevId) {
+        return db.prepare(`
+          SELECT 
+            COALESCE(SUM(CASE WHEN diff = 0 THEN 1 ELSE 0 END), 0) AS bucket_0,
+            COALESCE(SUM(CASE WHEN diff BETWEEN 1 AND 4 THEN 1 ELSE 0 END), 0) AS bucket_1_4,
+            COALESCE(SUM(CASE WHEN diff BETWEEN 5 AND 7 THEN 1 ELSE 0 END), 0) AS bucket_5_7,
+            COALESCE(SUM(CASE WHEN diff BETWEEN 8 AND 12 THEN 1 ELSE 0 END), 0) AS bucket_8_12,
+            COALESCE(SUM(CASE WHEN diff >= 13 THEN 1 ELSE 0 END), 0) AS bucket_13_plus
+          FROM (
+            SELECT 
+              m.pcl,
+              (SUM(COALESCE(p_curr.submitted_by_pcl, 0) + COALESCE(p_curr.approved, 0) + COALESCE(p_curr.rejected, 0)) -
+               SUM(COALESCE(p_prev.submitted_by_pcl, 0) + COALESCE(p_prev.approved, 0) + COALESCE(p_prev.rejected, 0))) AS diff
+            FROM subsls_master m
+            JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
+            LEFT JOIN progres p_prev ON m.kode = p_prev.kode AND p_prev.upload_id = ?
+            WHERE m.pcl IS NOT NULL AND m.pcl != ''
+            GROUP BY m.pcl
+          )
+        `).get(currId, prevId);
+      } else {
+        return db.prepare(`
+          SELECT 
+            COALESCE(SUM(CASE WHEN diff = 0 THEN 1 ELSE 0 END), 0) AS bucket_0,
+            COALESCE(SUM(CASE WHEN diff BETWEEN 1 AND 4 THEN 1 ELSE 0 END), 0) AS bucket_1_4,
+            COALESCE(SUM(CASE WHEN diff BETWEEN 5 AND 7 THEN 1 ELSE 0 END), 0) AS bucket_5_7,
+            COALESCE(SUM(CASE WHEN diff BETWEEN 8 AND 12 THEN 1 ELSE 0 END), 0) AS bucket_8_12,
+            COALESCE(SUM(CASE WHEN diff >= 13 THEN 1 ELSE 0 END), 0) AS bucket_13_plus
+          FROM (
+            SELECT 
+              m.pcl,
+              SUM(COALESCE(p_curr.submitted_by_pcl, 0) + COALESCE(p_curr.approved, 0) + COALESCE(p_curr.rejected, 0)) AS diff
+            FROM subsls_master m
+            JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
+            WHERE m.pcl IS NOT NULL AND m.pcl != ''
+            GROUP BY m.pcl
+          )
+        `).get(currId);
+      }
+    }
+
+    const distLast = getPclPerformanceDistribution(uploadId, prevUpload ? prevUpload.id : null);
+    const dist24h = getPclPerformanceDistribution(uploadId, baseUpload24h && baseUpload24h.id !== uploadId ? baseUpload24h.id : null);
 
     // Tentukan label berdasarkan pengaturan website
     let labelFasih = 'FASIH';
@@ -398,6 +599,7 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       message = settings.whatsapp_message_template
         .replace(/\{tanggal_sekarang\}/g, timeFormatted)
         .replace(/\{jam_sekarang\}/g, timeOnlyFormatted)
+        .replace(/\{waktu_upload_sebelumnya\}/g, prevUploadTimeStr)
         .replace(/\{label_fasih\}/g, labelFasih)
         .replace(/\{filename\}/g, upload.filename)
         .replace(/\{tanggal_data\}/g, upload.tanggal)
@@ -407,36 +609,68 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
         .replace(/\{persen_fasih\}/g, persenFasih)
         .replace(/\{realisasi_muatan\}/g, realisasiMuatan)
         .replace(/\{target_muatan\}/g, targetMuatan)
-        .replace(/\{persen_muatan\}/g, persenMuatan);
+        .replace(/\{persen_muatan\}/g, persenMuatan)
+        .replace(/\{open_total\}/g, stats.open_total || 0)
+        .replace(/\{draft_total\}/g, stats.draft_total || 0)
+        .replace(/\{submitted_total\}/g, stats.submitted_total || 0)
+        .replace(/\{approved_total\}/g, stats.approved_total || 0)
+        .replace(/\{rejected_total\}/g, stats.rejected_total || 0)
+        // placeholder baru
+        .replace(/\{diff_submitted\}/g, diffSubmitted)
+        .replace(/\{diff_approved\}/g, diffApproved)
+        .replace(/\{diff_rejected\}/g, diffRejected)
+        .replace(/\{diff_total\}/g, diffTotal)
+        .replace(/\{diff_24h_submitted\}/g, diff24Submitted)
+        .replace(/\{diff_24h_approved\}/g, diff24Approved)
+        .replace(/\{diff_24h_rejected\}/g, diff24Rejected)
+        .replace(/\{diff_24h_total\}/g, diff24Total)
+        .replace(/\{avg_diff_all\}/g, avgDiffAll)
+        .replace(/\{avg_diff_active\}/g, avgDiffActive)
+        .replace(/\{avg_diff_24h_all\}/g, avgDiff24All)
+        .replace(/\{avg_diff_24h_active\}/g, avgDiff24Active)
+        .replace(/\{active_diff_pcl_count\}/g, activeDiffPclCount)
+        .replace(/\{active_diff_pcl_24h_count\}/g, activeDiffPcl24hCount)
+        .replace(/\{deviasi_24h\}/g, deviasi24hFormatted)
+        .replace(/\{deviasi_update\}/g, deviasiUpdateFormatted)
+        .replace(/\{deviasi_kumulatif\}/g, deviasiKumulatifFormatted)
+        // distribution placeholders
+        .replace(/\{dist_0\}/g, distLast.bucket_0)
+        .replace(/\{dist_1_4\}/g, distLast.bucket_1_4)
+        .replace(/\{dist_5_7\}/g, distLast.bucket_5_7)
+        .replace(/\{dist_8_12\}/g, distLast.bucket_8_12)
+        .replace(/\{dist_13_plus\}/g, distLast.bucket_13_plus)
+        .replace(/\{dist_24h_0\}/g, dist24h.bucket_0)
+        .replace(/\{dist_24h_1_4\}/g, dist24h.bucket_1_4)
+        .replace(/\{dist_24h_5_7\}/g, dist24h.bucket_5_7)
+        .replace(/\{dist_24h_8_12\}/g, dist24h.bucket_8_12)
+        .replace(/\{dist_24h_13_plus\}/g, dist24h.bucket_13_plus);
     } else {
-      // Bar progres visual sederhana
-      const makeBar = (pctStr) => {
-        const pct = parseFloat(pctStr);
-        if (isNaN(pct)) return '░░░░░░░░░░';
-        const filled = Math.round(pct / 10);
-        return '▓'.repeat(Math.min(10, filled)) + '░'.repeat(Math.max(0, 10 - filled));
-      };
+      const formattedDateWweb = `${witaTime.getUTCDate()} ${monthNames[witaTime.getUTCMonth()]} ${witaTime.getUTCFullYear()}`;
+      const formattedTimeWweb = `${hours}.${minutes} WITA`;
 
-      const barFasih  = makeBar(persenFasih);
-      const barMuatan = makeBar(persenMuatan);
-
-      // Pesan bawaan sistem baru (Desain Premium & Rapi)
-      message = `*📢 NOTIFIKASI MONITORING SE2026 PPU*\n` +
-                `═══════════════════════════\n` +
-                `📅 *Waktu:* ${timeFormatted}\n\n` +
-                `*🗂️ Informasi Berkas Terproses:*\n` +
-                `• Berkas: \`${upload.filename}\`\n` +
-                `• Tanggal Data: *${upload.tanggal}*\n` +
-                `• Jumlah SubSLS Baru: *${upload.total_subsls_terisi}*\n\n` +
-                `*📈 Ringkasan Progres Kabupaten:*\n\n` +
-                `👥 *Realisasi Keluarga (${labelFasih})*\n` +
-                `[${barFasih}] *${persenFasih}%*\n` +
-                `↳ Terdata: *${realisasiFasih.toLocaleString('id-ID')}* dari *${targetFasih.toLocaleString('id-ID')}* KK\n\n` +
-                `💼 *Realisasi Muatan Usaha*\n` +
-                `[${barMuatan}] *${persenMuatan}%*\n` +
-                `↳ Selesai: *${realisasiMuatan.toLocaleString('id-ID')}* dari *${targetMuatan.toLocaleString('id-ID')}* SLS\n` +
-                `═══════════════════════════\n` +
-                `🔗 _Silakan akses Dashboard Monitoring SE2026 untuk melihat peta analisis wilayah secara detail._`;
+      // Pesan bawaan sistem baru sesuai contoh pengguna
+      message = `*UPDATE HARIAN SE2026 PPU*\n` +
+                `🗓️ ${formattedDateWweb} | ⏰ ${formattedTimeWweb}\n\n` +
+                `*AKUMULASI PROGRES PENDATAAN*\n` +
+                `✅ Selesai (Subm/Appr/Rej): *${realisasiFasih.toLocaleString('id-ID')}* dokumen (*${persenFasih}%*)\n` +
+                `   ├ 🟢 Approved: *${(stats.approved_total || 0).toLocaleString('id-ID')}* dokumen\n` +
+                `   ├ 📨 Submitted PCL: *${(stats.submitted_total || 0).toLocaleString('id-ID')}* dokumen\n` +
+                `   └ 🔴 Rejected: *${(stats.rejected_total || 0).toLocaleString('id-ID')}* dokumen\n` +
+                `🟠 Open (Belum Diisi): *${(stats.open_total || 0).toLocaleString('id-ID')}* dokumen\n` +
+                `🟡 Draft (Sedang Diisi): *${(stats.draft_total || 0).toLocaleString('id-ID')}* dokumen\n` +
+                `📋 Total Assignment FASIH: *${targetFasih.toLocaleString('id-ID')}* dokumen\n\n` +
+                `*KINERJA REALISASI SEJAK UPLOAD SEBELUMNYA (${prevUploadTimeStr})*\n` +
+                `📨 Realisasi Masuk: *${diffTotal.toLocaleString('id-ID')}* dokumen\n` +
+                `👤 Produktifitas petugas keseluruhan: *${avgDiffAll.toFixed(2)}* dokumen/petugas/hari\n` +
+                `📈 Deviasi vs Target Normal (Update): *${deviasiUpdateFormatted}* dokumen\n` +
+                `📉 Defisit Laju Kumulatif: *${deviasiKumulatifFormatted}* dokumen/hari\n\n` +
+                `*SEBARAN PRODUKTIVITAS PETUGAS (SEJAK UPLOAD SEBELUMNYA)*\n` +
+                `🔴 0 dokumen: *${distLast.bucket_0}* orang\n` +
+                `🟠 1–4 dokumen: *${distLast.bucket_1_4}* orang\n` +
+                `🟡 5–7 dokumen: *${distLast.bucket_5_7}* orang\n` +
+                `🔵 8–12 dokumen: *${distLast.bucket_8_12}* orang\n` +
+                `🟢 ≥13 dokumen: *${distLast.bucket_13_plus}* orang\n\n` +
+                `_Notifikasi otomatis [monitoring.bpsppu.com]_`;
     }
 
     logger.info(`Sending data update notification to group ${groupId}...`);

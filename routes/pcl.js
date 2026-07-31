@@ -51,6 +51,7 @@ router.get('/', (req, res) => {
         SUM(COALESCE(p.approved, 0)) AS approved_total,
         SUM(COALESCE(p.rejected, 0)) AS rejected_total,
         SUM(${targetFormula}) AS target_fasih_total,
+        SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${targetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
         SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
         SUM(COALESCE(p.target_upload, 0)) AS target_upload_total,
         CASE WHEN SUM(${targetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${targetFormula}), 2) ELSE 0.0 END AS pct
@@ -103,8 +104,9 @@ router.get('/', (req, res) => {
     }
   }
 
-  // Hitung hari berjalan dari tanggal mulai pendataan (15 Juni 2026) & sisa hari menuju deadline
-  const START_DATE = new Date('2026-06-15');
+  // Hitung hari berjalan dari tanggal mulai pendataan & sisa hari menuju deadline
+  const settings = res.locals.settings || {};
+  const START_DATE = new Date(settings.speedometer_start_date || '2026-06-15');
   let diffDays = 1;
   let daysRemaining = 0;
   if (uploadId) {
@@ -115,7 +117,7 @@ router.get('/', (req, res) => {
       const diffTime = d2 - START_DATE;
       diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
 
-      const deadline = new Date('2026-08-31');
+      const deadline = new Date(settings.speedometer_target_date || '2026-08-31');
       daysRemaining = Math.max(0, Math.ceil((deadline - d2) / (1000 * 60 * 60 * 24)));
     }
   }

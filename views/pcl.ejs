@@ -6,6 +6,13 @@
     activeTargetPct = 40;
     targetMonthName = '15 Juli';
   }
+  
+  let activeStatusCols = 1;
+  if (settings.show_status_open === '1' || settings.show_status_open === undefined) activeStatusCols++;
+  if (settings.show_status_draft === '1' || settings.show_status_draft === undefined) activeStatusCols++;
+  if (settings.show_status_submitted === '1' || settings.show_status_submitted === undefined) activeStatusCols++;
+  if (settings.show_status_rejected === '1' || settings.show_status_rejected === undefined) activeStatusCols++;
+  if (settings.show_status_approved === '1' || settings.show_status_approved === undefined) activeStatusCols++;
 %>
 <div class="fade-in">
   <% if (!uploadId) { %>
@@ -77,19 +84,27 @@
                   <th rowspan="2" class="hide-md">Korlap</th>
                   <th rowspan="2" class="hide-md">Kecamatan</th>
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
-                  <th colspan="6" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                  <th colspan="<%= activeStatusCols %>" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
                    <th colspan="2" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
                   <th colspan="6" class="text-center bg-green-soft muatan-col" style="border-bottom: 1px solid var(--border);">Temuan Keberadaan Usaha</th>
                   <th colspan="2" class="text-center bg-blue-soft hide-sm" style="border-bottom: 1px solid var(--border);">Proyeksi (Deadline: 31 Agt)</th>
                 </tr>
                 <tr>
-                  <!-- <th class="text-right">Total</th> -->
-                  <!-- <th class="text-right">Selesai</th> -->
-                  <th class="text-right bg-cyan-soft">Open</th>
-                  <th class="text-right bg-yellow-soft">Draft</th>
-                  <th class="text-right bg-blue-soft">Submitted</th>
-                  <th class="text-right bg-red-soft">Rejected</th>
-                  <th class="text-right bg-green-soft">Approved</th>
+                  <% if (settings.show_status_open === '1' || settings.show_status_open === undefined) { %>
+                    <th class="text-right bg-cyan-soft">Open</th>
+                  <% } %>
+                  <% if (settings.show_status_draft === '1' || settings.show_status_draft === undefined) { %>
+                    <th class="text-right bg-yellow-soft">Draft</th>
+                  <% } %>
+                  <% if (settings.show_status_submitted === '1' || settings.show_status_submitted === undefined) { %>
+                    <th class="text-right bg-blue-soft">Submitted</th>
+                  <% } %>
+                  <% if (settings.show_status_rejected === '1' || settings.show_status_rejected === undefined) { %>
+                    <th class="text-right bg-red-soft">Rejected</th>
+                  <% } %>
+                  <% if (settings.show_status_approved === '1' || settings.show_status_approved === undefined) { %>
+                    <th class="text-right bg-green-soft">Approved</th>
+                  <% } %>
                   <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : 'Tgt Statis' %></th>
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Realisasi</th>
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Target</th>
@@ -180,12 +195,22 @@
                     <td class="hide-md"><%= p.kecamatan %></td>
                     <!-- <td class="text-right hide-sm" data-sort="<%= p.total_subsls %>"><%= p.total_subsls %></td> -->
                     <!-- <td class="text-right fw-bold" data-sort="<%= p.selesai %>" style="<%= p.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= p.selesai %></td> -->
-                     <td class="text-right bg-cyan-soft hide-sm status-open-text" data-sort="<%= p.open_total %>"><%= (p.open_total || 0).toLocaleString('id-ID') %></td>
-                     <td class="text-right bg-yellow-soft hide-sm status-draft-text" data-sort="<%= p.draft_total %>"><%= (p.draft_total || 0).toLocaleString('id-ID') %></td>
-                     <td class="text-right bg-blue-soft hide-sm status-submit-text" data-sort="<%= p.submitted_total %>"><%= (p.submitted_total || 0).toLocaleString('id-ID') %></td>
-                     <td class="text-right bg-red-soft hide-sm status-reject-text" data-sort="<%= p.rejected_total %>" style="font-weight: 600;"><%= (p.rejected_total || 0).toLocaleString('id-ID') %></td>
-                     <td class="text-right bg-green-soft hide-sm status-approve-text" data-sort="<%= p.approved_total %>" style="font-weight: 600;"><%= (p.approved_total || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.target_fasih_total %>"><%= (p.target_fasih_total || 0).toLocaleString('id-ID') %></td>
+                     <% if (settings.show_status_open === '1' || settings.show_status_open === undefined) { %>
+                       <td class="text-right bg-cyan-soft hide-sm status-open-text" data-sort="<%= p.open_total %>"><%= (p.open_total || 0).toLocaleString('id-ID') %></td>
+                     <% } %>
+                     <% if (settings.show_status_draft === '1' || settings.show_status_draft === undefined) { %>
+                       <td class="text-right bg-yellow-soft hide-sm status-draft-text" data-sort="<%= p.draft_total %>"><%= (p.draft_total || 0).toLocaleString('id-ID') %></td>
+                     <% } %>
+                     <% if (settings.show_status_submitted === '1' || settings.show_status_submitted === undefined) { %>
+                       <td class="text-right bg-blue-soft hide-sm status-submit-text" data-sort="<%= p.submitted_total %>"><%= (p.submitted_total || 0).toLocaleString('id-ID') %></td>
+                     <% } %>
+                     <% if (settings.show_status_rejected === '1' || settings.show_status_rejected === undefined) { %>
+                       <td class="text-right bg-red-soft hide-sm status-reject-text" data-sort="<%= p.rejected_total %>" style="font-weight: 600;"><%= (p.rejected_total || 0).toLocaleString('id-ID') %></td>
+                     <% } %>
+                     <% if (settings.show_status_approved === '1' || settings.show_status_approved === undefined) { %>
+                       <td class="text-right bg-green-soft hide-sm status-approve-text" data-sort="<%= p.approved_total %>" style="font-weight: 600;"><%= (p.approved_total || 0).toLocaleString('id-ID') %></td>
+                     <% } %>
+                     <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.target_fasih_total %>"><%= (p.target_fasih_total || 0).toLocaleString('id-ID') %></td>
                      <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.muatan_selesai %>"><%= (p.muatan_selesai || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
@@ -374,6 +399,7 @@
                   let totalFasih = selectedPclStats ? selectedPclStats.target_fasih_total : 0;
                   let fasihPct = selectedPclStats ? selectedPclStats.fasih_pct_str : '0.00';
 
+                  let openFasih = selectedPclStats ? (selectedPclStats.open_total || 0) : 0;
                   let draftFasih = selectedPclStats ? (selectedPclStats.draft_total || 0) : 0;
                   let submittedFasih = selectedPclStats ? (selectedPclStats.submitted_total || 0) : 0;
                   let rejectedFasih = selectedPclStats ? (selectedPclStats.rejected_total || 0) : 0;
@@ -426,23 +452,37 @@
                 </div>
 
                 <!-- Mini Grid Status FASIH -->
-                <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 14px; text-align: center;">
-                  <div class="fasih-grid-item fasih-item-draft">
-                    <div class="fasih-grid-item-label">Draft</div>
-                    <div class="fasih-grid-item-value"><%= draftFasih %></div>
-                  </div>
-                  <div class="fasih-grid-item fasih-item-submit">
-                    <div class="fasih-grid-item-label">Submit</div>
-                    <div class="fasih-grid-item-value"><%= submittedFasih %></div>
-                  </div>
-                  <div class="fasih-grid-item fasih-item-approve">
-                    <div class="fasih-grid-item-label">Approve</div>
-                    <div class="fasih-grid-item-value"><%= approvedFasih %></div>
-                  </div>
-                  <div class="fasih-grid-item fasih-item-reject">
-                    <div class="fasih-grid-item-label">Reject</div>
-                    <div class="fasih-grid-item-value"><%= rejectedFasih %></div>
-                  </div>
+                <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(<%= activeStatusCols - 1 %>, 1fr); gap: 6px; margin-top: 14px; text-align: center;">
+                  <% if (settings.show_status_open === '1' || settings.show_status_open === undefined) { %>
+                    <div class="fasih-grid-item status-open-bg">
+                      <div class="fasih-grid-item-label status-open-text">Open</div>
+                      <div class="fasih-grid-item-value status-open-text"><%= openFasih %></div>
+                    </div>
+                  <% } %>
+                  <% if (settings.show_status_draft === '1' || settings.show_status_draft === undefined) { %>
+                    <div class="fasih-grid-item fasih-item-draft">
+                      <div class="fasih-grid-item-label">Draft</div>
+                      <div class="fasih-grid-item-value"><%= draftFasih %></div>
+                    </div>
+                  <% } %>
+                  <% if (settings.show_status_submitted === '1' || settings.show_status_submitted === undefined) { %>
+                    <div class="fasih-grid-item fasih-item-submit">
+                      <div class="fasih-grid-item-label">Submit</div>
+                      <div class="fasih-grid-item-value"><%= submittedFasih %></div>
+                    </div>
+                  <% } %>
+                  <% if (settings.show_status_approved === '1' || settings.show_status_approved === undefined) { %>
+                    <div class="fasih-grid-item fasih-item-approve">
+                      <div class="fasih-grid-item-label">Approve</div>
+                      <div class="fasih-grid-item-value"><%= approvedFasih %></div>
+                    </div>
+                  <% } %>
+                  <% if (settings.show_status_rejected === '1' || settings.show_status_rejected === undefined) { %>
+                    <div class="fasih-grid-item fasih-item-reject">
+                      <div class="fasih-grid-item-label">Reject</div>
+                      <div class="fasih-grid-item-value"><%= rejectedFasih %></div>
+                    </div>
+                  <% } %>
                 </div>
 
                 <!-- Daily Progress Chart -->
@@ -494,7 +534,7 @@
                     <% if (remainingFasih === 0) { %>
                       Petugas <strong><%= filterPcl %></strong> telah menyelesaikan seluruh target pengisian dokumen FASIH sebanyak <strong><%= totalFasih %></strong> dokumen. Kinerja luar biasa!
                     <% } else { %>
-                      Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak 15 Juni). Sisa hari menuju deadline (31 Agustus): <strong><%= daysRemaining %> hari</strong>.<br>
+                      Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak <%= formatIndonesianDate(settings.speedometer_start_date || '2026-06-15') %>). Sisa hari menuju deadline (<%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>): <strong><%= daysRemaining %> hari</strong>.<br>
                       Sisa beban kerja: <strong><%= remainingFasih %> dokumen</strong>. 
                       Dengan kecepatan saat ini (<strong><%= currentSpeedText %> dok/hari</strong>), 
                       <% if (currentSpeed === 0) { %>
@@ -506,12 +546,12 @@
                       <% if (isOfftrack) { %>
                         <div style="margin-top: 8px; padding: 8px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--accent-red); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
                           <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red); font-size: 13px; margin-top: 1px;"></i>
-                          <div><strong>Off-Track:</strong> Petugas diprediksi terlambat/tidak selesai tepat waktu. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeed.toFixed(2) %> dok/hari</strong> agar selesai sesuai target pada 31 Agustus 2026.</div>
+                          <div><strong>Off-Track:</strong> Petugas diprediksi terlambat/tidak selesai tepat waktu. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeed.toFixed(2) %> dok/hari</strong> agar selesai sesuai target pada <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>.</div>
                         </div>
                       <% } else { %>
                         <div style="margin-top: 8px; padding: 8px; background: rgba(34, 197, 94, 0.08); border-left: 3px solid var(--accent-green); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
                           <i class="bi bi-check-circle-fill" style="color: var(--accent-green); font-size: 13px; margin-top: 1px;"></i>
-                          <div><strong>On-Track:</strong> Kecepatan petugas sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum 31 Agustus 2026).</div>
+                          <div><strong>On-Track:</strong> Kecepatan petugas sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>).</div>
                         </div>
                       <% } %>
                     <% } %>

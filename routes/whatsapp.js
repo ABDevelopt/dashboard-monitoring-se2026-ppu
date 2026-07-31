@@ -105,8 +105,8 @@ router.post('/logout', async (req, res) => {
   res.redirect('/admin/whatsapp');
 });
 
-// POST /admin/whatsapp/reset - Reset Koneksi WhatsApp (Force Reconnect)
-router.post('/reset', async (req, res) => {
+// POST /admin/whatsapp/reconnect - Reset Koneksi WhatsApp (Force Reconnect)
+router.post('/reconnect', async (req, res) => {
   try {
     await whatsappService.forceReset();
     req.flash('success', 'Koneksi WhatsApp berhasil di-reset. Mencoba menghubungkan ulang...');

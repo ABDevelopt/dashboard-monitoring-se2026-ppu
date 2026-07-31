@@ -811,7 +811,20 @@ select:focus, input:focus {
   font-weight: 700;
   font-size: 12px;
 }
-/* Unified background/border and text colors matching the overview page */
+.status-open-bg {
+  background: rgba(249, 115, 22, 0.04) !important;
+  border: 1px solid rgba(249, 115, 22, 0.15) !important;
+}
+.status-open-text {
+  color: #f97316 !important;
+}
+body.light-mode .status-open-text {
+  color: #ea580c !important;
+}
+.bg-orange-soft {
+  background-color: rgba(249, 115, 22, 0.06);
+}
+
 .status-draft-bg {
   background: rgba(245, 158, 11, 0.04) !important;
   border: 1px solid rgba(245, 158, 11, 0.15) !important;
@@ -3953,6 +3966,12 @@ body.light-mode .skeleton-block {
 
 .topbar-dropdown--right { right: 0; }
 
+#notificationBellDropdown,
+#notificationBellDropdownAgent {
+  width: 320px;
+  max-width: calc(100vw - 32px);
+}
+
 /* visible state */
 .topbar-dropdown.is-open { display: flex; }
 
@@ -4327,9 +4346,60 @@ body.light-mode .swal2-container.swal2-backdrop-show {
   }
 }
 
-/* Ultra-wide (≥ 1600px): even proportion */
 @media (min-width: 1600px) {
   .overview-top-grid {
     grid-template-columns: minmax(300px, 1fr) 2fr;
   }
+}
+
+/* Tooltip Premium Global Styles (Light/Dark Mode Adaptive) */
+.help-tooltip-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+.help-tooltip-container .help-tooltip-box {
+  visibility: hidden;
+  width: 280px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  text-align: left;
+  border-radius: 12px;
+  padding: 14px;
+  position: absolute;
+  z-index: 999;
+  right: 0;
+  top: 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  font-size: 11px;
+  line-height: 1.5;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: translateY(10px);
+  pointer-events: none;
+}
+body.light-mode .help-tooltip-container .help-tooltip-box {
+  background-color: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  color: #334155 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important;
+}
+body.light-mode .help-tooltip-box strong {
+  color: #0f172a !important;
+}
+.help-tooltip-container:hover .help-tooltip-box {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.help-tooltip-icon {
+  color: var(--text-muted);
+  font-size: 14px;
+  transition: color 0.2s, transform 0.2s;
+}
+.help-tooltip-container:hover .help-tooltip-icon {
+  color: var(--accent-purple);
+  transform: scale(1.15);
 }

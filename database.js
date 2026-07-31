@@ -663,6 +663,7 @@ function getProgresWithMaster(uploadId) {
       COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
       COALESCE(p.approved, 0) AS approved,
       COALESCE(p.rejected, 0) AS rejected,
+      CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END AS open,
       (${singleTargetFormula}) AS target_fasih,
       (${singleSelesaiFormula}) AS sudah_diisi,
       (${targetMuatanFormula}) AS muatan,
@@ -896,7 +897,8 @@ function getOverviewSummary(uploadId, settings = getSettings()) {
       SUM(COALESCE(p.draft, 0)) AS draft_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
-      SUM(COALESCE(p.rejected, 0)) AS rejected_total
+      SUM(COALESCE(p.rejected, 0)) AS rejected_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
   `).get(uploadId);
@@ -954,19 +956,19 @@ function getOverviewSummary(uploadId, settings = getSettings()) {
 
 // Early warning: PCL dengan 0 progres
 function getEarlyWarning(uploadId, filters = {}) {
+  const settings = getSettings();
   // Hitung jumlah hari sensus berjalan (dari tanggal upload pertama ke upload saat ini)
   const currentUpload = getDb().prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
-  const firstUpload = getDb().prepare('SELECT MIN(tanggal) as min_tanggal FROM uploads').get();
   
   let diffDays = 1;
-  if (currentUpload && firstUpload && firstUpload.min_tanggal) {
-    const d1 = new Date(firstUpload.min_tanggal);
+  const startSensusDateStr = settings.speedometer_start_date || '2026-06-15';
+  if (currentUpload && startSensusDateStr) {
+    const d1 = new Date(startSensusDateStr);
     const d2 = new Date(currentUpload.tanggal);
     const diffTime = d2 - d1;
     diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
   }
 
-  const settings = getSettings();
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
@@ -998,30 +1000,7 @@ function getEarlyWarning(uploadId, filters = {}) {
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
 
-  const zeroPcl = getDb().prepare(`
-    SELECT 
-      m.pcl, 
-      MAX(m.pml) AS pml, 
-      MAX(m.korlap) AS korlap, 
-      MAX(m.kecamatan) AS kecamatan,
-      COUNT(m.kode) AS total_subsls,
-      SUM(${singleSelesaiFormula}) AS selesai,
-      SUM(${targetMuatanFormula}) AS total_muatan,
-      SUM(${realFormula}) AS muatan_selesai,
-      SUM(COALESCE(p.draft, 0)) AS draft_total,
-      SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
-      SUM(COALESCE(p.approved, 0)) AS approved_total,
-      SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-      SUM(${singleTargetFormula}) AS target_fasih_total,
-      SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
-      SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
-    FROM subsls_master m
-    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    WHERE 1=1 ${where}
-    GROUP BY m.pcl COLLATE NOCASE
-    HAVING SUM(${singleTargetFormula}) > 0 AND SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) = 0
-    ORDER BY total_subsls DESC
-  `).all(...paramsZeroPcl);
+  const zeroPcl = [];
 
   const slowPcl = getDb().prepare(`
     SELECT 
@@ -1155,7 +1134,7 @@ function getEarlyWarning(uploadId, filters = {}) {
   if (currentUpload) {
     const currentDate = new Date(currentUpload.tanggal);
     const deadlineJuly15 = new Date('2026-07-15');
-    const deadlineAug31 = new Date('2026-08-31');
+    const deadlineAug31 = new Date(settings.speedometer_target_date || '2026-08-31');
 
     const daysToJuly15 = Math.max(0, Math.ceil((deadlineJuly15 - currentDate) / (1000 * 60 * 60 * 24)));
     const daysToAug31 = Math.max(0, Math.ceil((deadlineAug31 - currentDate) / (1000 * 60 * 60 * 24)));
@@ -1487,7 +1466,41 @@ function initSettings() {
     'whatsapp_enabled': '0',
     'whatsapp_group_id': '',
     'whatsapp_group_name': '',
-    'whatsapp_message_template': ''
+    'whatsapp_message_template': `*UPDATE HARIAN SE2026 PPU*
+🗓️ {tanggal_sekarang} | ⏰ {jam_sekarang}
+
+*AKUMULASI PROGRES PENDATAAN*
+✅ Selesai (Subm/Appr/Rej): *{realisasi_fasih}* dokumen (*{persen_fasih}%*)
+   ├ 🟢 Approved: *{approved_total}* dokumen
+   ├ 📨 Submitted PCL: *{submitted_total}* dokumen
+   └ 🔴 Rejected: *{rejected_total}* dokumen
+🟠 Open (Belum Diisi): *{open_total}* dokumen
+🟡 Draft (Sedang Diisi): *{draft_total}* dokumen
+📋 Total Assignment FASIH: *{target_fasih}* dokumen
+
+*KINERJA REALISASI SEJAK UPLOAD SEBELUMNYA ({waktu_upload_sebelumnya})*
+📨 Realisasi Masuk: *{diff_total}* dokumen
+👤 Produktifitas petugas keseluruhan: *{avg_diff_all}* dokumen/petugas/hari
+📈 Deviasi vs Target Normal (Update): *{deviasi_update}* dokumen
+📉 Defisit Laju Kumulatif: *{deviasi_kumulatif}* dokumen/hari
+
+*SEBARAN PRODUKTIVITAS PETUGAS (SEJAK UPLOAD SEBELUMNYA)*
+🔴 0 dokumen: *{dist_0}* orang
+🟠 1–4 dokumen: *{dist_1_4}* orang
+🟡 5–7 dokumen: *{dist_5_7}* orang
+🔵 8–12 dokumen: *{dist_8_12}* orang
+🟢 ≥13 dokumen: *{dist_13_plus}* orang
+
+_Notifikasi otomatis [monitoring.bpsppu.com]_`,
+    'speedometer_start_date': '2026-06-15',
+    'speedometer_target_date': '2026-08-31',
+    'speedometer_target_speed_per_pcl': '13',
+    'speedometer_calc_mode': 'total_target',
+    'show_status_open': '1',
+    'show_status_draft': '1',
+    'show_status_submitted': '1',
+    'show_status_approved': '1',
+    'show_status_rejected': '1'
   };
 
   const insert = getDb().prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
@@ -1498,6 +1511,12 @@ function initSettings() {
   // Force update openrouter_models_list to new set of models
   const openrouterModelsStr = 'openrouter/free, openrouter/owl-alpha, meta-llama/llama-3.3-70b-instruct:free, nvidia/nemotron-3-ultra-550b-a55b:free';
   getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run(openrouterModelsStr, 'openrouter_models_list');
+
+  // Force update empty or old whatsapp_message_template to new layout
+  const currentTemplate = getDb().prepare("SELECT value FROM settings WHERE key = 'whatsapp_message_template'").get();
+  if (currentTemplate && (currentTemplate.value === '' || currentTemplate.value.includes('Produktivitas Petugas Aktif') || currentTemplate.value.includes('24 JAM') || currentTemplate.value.includes('avg_diff_24h_all'))) {
+    getDb().prepare("UPDATE settings SET value = ? WHERE key = 'whatsapp_message_template'").run(defaults['whatsapp_message_template']);
+  }
 
   // If the current active model is not in the new list, reset it to openrouter/free
   const currentModelRow = getDb().prepare('SELECT value FROM settings WHERE key = ?').get('openrouter_model');
@@ -1579,7 +1598,7 @@ function rebuildSummaryCache(uploadId) {
   const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
   db.prepare(`
-    INSERT OR REPLACE INTO summary_cache (
+    INSERT INTO summary_cache (
       upload_id, kecamatan, desa, korlap, pml, pcl,
       total_sls, selesai, total_muatan, muatan_selesai,
       usaha_total, keluarga_total, draft_total, open_total, submitted_total, approved_total, rejected_total, target_fasih_total,
@@ -1602,7 +1621,7 @@ function rebuildSummaryCache(uploadId) {
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
-      SUM(COALESCE(p.open, 0)) AS open_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,

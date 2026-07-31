@@ -60,15 +60,7 @@
           </div>
         </div>
 
-        <div>
-          <label for="rekapPetugasFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-envelope-at-fill" style="color: var(--accent-blue);"></i> 4. Rekap Petugas Wilayah (Opsional)</label>
-          <div class="upload-zone" id="uploadZoneRekapPetugas" style="height: 140px; padding: 10px; border-color: rgba(59, 130, 246, 0.4);">
-            <div class="upload-zone-icon" style="font-size: 24px; margin-bottom: 4px; color: var(--accent-blue);"><i class="bi bi-cloud-arrow-up"></i></div>
-            <div class="upload-zone-title" style="font-size: 12px; font-weight: 600; color: var(--accent-blue);">Rekap Petugas Wilayah (CSV)</div>
-            <div class="upload-zone-sub" style="font-size: 10px;">atau seret ke sini (rekap_petugas_wilayah_*.csv)</div>
-            <input type="file" id="rekapPetugasFile" name="rekapPetugasFile" accept=".csv, .xlsx, .xls" style="display: none;">
-          </div>
-        </div>
+
       </div>
 
       <div style="display: flex; justify-content: flex-end;">
@@ -384,14 +376,12 @@
     initUploadZone('uploadZoneUsaha', 'usahaFile');
     initUploadZone('uploadZoneStatus', 'statusFile');
     initUploadZone('uploadZoneHonor', 'honorFile');
-    initUploadZone('uploadZoneRekapPetugas', 'rekapPetugasFile');
     makeTableSortable('uploadsTable');
     makeTableSearchable('uploadsSearch', 'uploadsTable');
 
     const keluargaInput = document.getElementById('keluargaFile');
     const usahaInput = document.getElementById('usahaFile');
     const statusInput = document.getElementById('statusFile');
-    const rekapInput = document.getElementById('rekapPetugasFile');
     const tanggalInput = document.getElementById('tanggal');
 
     function handleFileSelect(file) {
@@ -405,14 +395,12 @@
     if (keluargaInput) keluargaInput.addEventListener('change', () => { if (keluargaInput.files[0]) handleFileSelect(keluargaInput.files[0]); });
     if (usahaInput) usahaInput.addEventListener('change', () => { if (usahaInput.files[0]) handleFileSelect(usahaInput.files[0]); });
     if (statusInput) statusInput.addEventListener('change', () => { if (statusInput.files[0]) handleFileSelect(statusInput.files[0]); });
-    if (rekapInput) rekapInput.addEventListener('change', () => { if (rekapInput.files[0]) handleFileSelect(rekapInput.files[0]); });
 
     document.getElementById('uploadForm').addEventListener('submit', (e) => {
       const keluarga = document.getElementById('keluargaFile');
       const usaha = document.getElementById('usahaFile');
       const status = document.getElementById('statusFile');
-      const rekap = document.getElementById('rekapPetugasFile');
-      if ((!keluarga || !keluarga.files[0]) && (!usaha || !usaha.files[0]) && (!status || !status.files[0]) && (!rekap || !rekap.files[0])) {
+      if ((!keluarga || !keluarga.files[0]) && (!usaha || !usaha.files[0]) && (!status || !status.files[0])) {
         e.preventDefault();
         alert('Silakan pilih setidaknya satu file untuk diupload.');
       }

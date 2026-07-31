@@ -53,6 +53,63 @@
       </form>
     </div>
 
+    <%
+      let dailyTotals = [];
+      if (typeof harianStats !== 'undefined' && harianStats && harianStats.length > 0 && typeof recentUploads !== 'undefined' && recentUploads.length > 0) {
+        recentUploads.forEach((u, i) => {
+          let totalInc = 0;
+          let totalReal = 0;
+          harianStats.forEach(row => {
+            totalInc += (row['inc_' + i] || 0);
+            totalReal += (row['real_' + i] || 0);
+          });
+          dailyTotals.push({
+            tanggal: u.tanggal,
+            totalInc,
+            totalReal,
+            weather: u.weather
+          });
+        });
+      }
+    %>
+
+    <!-- HIGHLIGHT TOTAL PENAMBAHAN HARIAN -->
+    <% if (dailyTotals.length > 0) { %>
+    <div class="card mt-4" style="background: linear-gradient(135deg, var(--bg-card) 0%, rgba(34, 197, 94, 0.02) 100%); border: 1px solid var(--border); border-radius: 16px; padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+        <div style="width: 28px; height: 28px; border-radius: 8px; background: rgba(34, 197, 94, 0.12); color: var(--accent-green); display: flex; align-items: center; justify-content: center; font-size: 14px;">
+          <i class="bi bi-graph-up-arrow"></i>
+        </div>
+        <div>
+          <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em;">Highlight Penambahan Dokumen Per Hari</h4>
+          <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Total penambahan dokumen FASIH secara real-time pada 5 sesi upload terakhir</p>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;">
+        <% dailyTotals.forEach(day => { %>
+          <div style="background: rgba(255, 255, 255, 0.015); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; transition: var(--transition);" class="hover-scale-card">
+            <div style="font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; display: flex; align-items: center; justify-content: space-between;">
+              <span><%= formatIndonesianDateShort(day.tanggal) %></span>
+              <% if (day.weather) { %>
+                <span style="font-size: 9px; color: var(--text-muted); font-weight: 500; display: inline-flex; align-items: center; gap: 3px;">
+                  <i class="bi bi-thermometer-half"></i> <%= Math.round(day.weather.temp) %>°C
+                </span>
+              <% } %>
+            </div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--accent-green); margin: 4px 0 2px 0; display: flex; align-items: baseline; gap: 2px;">
+              +<%= day.totalInc.toLocaleString('id-ID') %>
+              <span style="font-size: 9px; font-weight: 600; color: var(--text-muted);">dok</span>
+            </div>
+            <div style="font-size: 10px; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 6px; margin-top: 2px; display: flex; justify-content: space-between;">
+              <span>Kumulatif:</span>
+              <strong style="color: var(--text-primary);"><%= day.totalReal.toLocaleString('id-ID') %></strong>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+    <% } %>
+
     <!-- TABEL PROGRES HARIAN PETUGAS (5 HARI TERAKHIR) -->
     <div class="card mt-4">
       <div class="card-header">
@@ -151,6 +208,17 @@
                 </tr>
               <% }) %>
             </tbody>
+            <tfoot>
+              <tr style="background: rgba(34, 197, 94, 0.05); border-top: 2px solid rgba(34, 197, 94, 0.2); font-weight: 700;">
+                <td colspan="6" class="text-center" style="color: var(--text-primary); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">TOTAL PENAMBAHAN HARIAN (KUMULATIF)</td>
+                <% dailyTotals.forEach(day => { %>
+                  <td class="text-right" style="color: var(--accent-green); font-size: 11px; font-weight: 800; background: rgba(34, 197, 94, 0.05);">
+                    +<%= day.totalInc.toLocaleString('id-ID') %>
+                    <div style="font-size: 9px; font-weight: 500; color: var(--text-secondary); opacity: 0.85;">(<%= day.totalReal.toLocaleString('id-ID') %>)</div>
+                  </td>
+                <% }) %>
+              </tr>
+            </tfoot>
           </table>
         </div>
       <% } else { %>

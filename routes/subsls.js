@@ -181,8 +181,8 @@ router.get('/', (req, res) => {
     }
   }
 
-  // Hitung hari berjalan dari tanggal mulai pendataan (15 Juni 2026) & sisa hari menuju deadline
-  const START_DATE = new Date('2026-06-15');
+  // Hitung hari berjalan dari tanggal mulai pendataan & sisa hari menuju deadline
+  const START_DATE = new Date((settings && settings.speedometer_start_date) || '2026-06-15');
   let diffDays = 1;
   let daysRemaining = 0;
   if (uploadId) {
@@ -193,7 +193,7 @@ router.get('/', (req, res) => {
       const diffTime = d2 - START_DATE;
       diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
 
-      const deadline = new Date('2026-08-31');
+      const deadline = new Date((settings && settings.speedometer_target_date) || '2026-08-31');
       daysRemaining = Math.max(0, Math.ceil((deadline - d2) / (1000 * 60 * 60 * 24)));
     }
   }
