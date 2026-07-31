@@ -2664,6 +2664,12 @@ body.light-mode .logo-dark {
     height: calc(100vh - var(--header-height) - 56px - env(safe-area-inset-bottom, 0px)) !important;
     max-height: calc(100vh - var(--header-height) - 56px - env(safe-area-inset-bottom, 0px)) !important;
     bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    left: 0 !important;
+    right: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
   }
   .card.card-expanded .card-header {
     padding-right: 0 !important;
@@ -2671,6 +2677,9 @@ body.light-mode .logo-dark {
     padding-top: 6px !important;
     flex-wrap: wrap !important;
     gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
   .card.card-expanded .card-header .card-title {
     max-width: 100% !important;
@@ -2680,13 +2689,19 @@ body.light-mode .logo-dark {
   }
   .card.card-expanded .card-header .card-actions {
     width: 100% !important;
+    max-width: 100% !important;
     justify-content: flex-end !important;
     margin-left: 0 !important;
     margin-top: 4px !important;
     gap: 6px !important;
+    flex-wrap: wrap !important;
+    box-sizing: border-box !important;
   }
   .card.card-expanded .table-wrap {
     margin: 0 -10px -10px -10px !important;
+    width: calc(100% + 20px) !important;
+    max-width: calc(100% + 20px) !important;
+    box-sizing: border-box !important;
   }
   .card.card-expanded thead tr:first-child th:nth-child(2) {
     z-index: 20 !important;
