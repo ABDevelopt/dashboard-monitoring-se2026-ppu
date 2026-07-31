@@ -487,9 +487,10 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     const totalPcl = stats.total_pcl || 1;
     const startDateStr = settings.speedometer_start_date || '2026-06-15';
     const targetDateStr = settings.speedometer_target_date || '2026-08-31';
-    const startDate = new Date(startDateStr + 'T00:00:00');
-    const targetDate = new Date(targetDateStr + 'T23:59:59');
-    const totalDays = Math.max(1, Math.ceil(Math.max(0, targetDate - startDate) / (1000 * 60 * 60 * 24)));
+    const uploadDate = new Date(upload.tanggal);
+    const startDate = new Date(startDateStr);
+    const deadline = new Date(targetDateStr);
+    const totalDays = Math.max(1, Math.ceil((deadline - startDate) / (1000 * 60 * 60 * 24)));
 
     let targetSpeedTotal = 0;
     if (settings.speedometer_calc_mode === 'pcl_speed') {
@@ -503,18 +504,22 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     // Hitung deviasi harian (24 jam & update terakhir)
     const deviasi24h = diff24Total - targetSpeedTotal;
     const deviasi24hSign = deviasi24h >= 0 ? '+' : '';
-    const deviasi24hFormatted = deviasi24h < 0 ? `–${Math.abs(deviasi24h).toLocaleString('id-ID')}` : `${deviasi24hSign}${deviasi24h.toLocaleString('id-ID')}`;
+    const deviasi24hFormatted = deviasi24h < 0 
+      ? `–${Math.round(Math.abs(deviasi24h)).toLocaleString('id-ID')}` 
+      : `${deviasi24hSign}${Math.round(deviasi24h).toLocaleString('id-ID')}`;
 
     const deviasiUpdate = diffTotal - targetSpeedTotal;
     const deviasiUpdateSign = deviasiUpdate >= 0 ? '+' : '';
-    const deviasiUpdateFormatted = deviasiUpdate < 0 ? `–${Math.abs(deviasiUpdate).toLocaleString('id-ID')}` : `${deviasiUpdateSign}${deviasiUpdate.toLocaleString('id-ID')}`;
+    const deviasiUpdateFormatted = deviasiUpdate < 0 
+      ? `–${Math.round(Math.abs(deviasiUpdate)).toLocaleString('id-ID')}` 
+      : `${deviasiUpdateSign}${Math.round(deviasiUpdate).toLocaleString('id-ID')}`;
 
     // Hitung deviasi kumulatif (Sejak awal pendataan, 100% persis seperti di Halaman Overview)
-    const diffTime = Math.max(0, now - startDate);
-    const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    const diffTime = uploadDate - startDate;
+    const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
     const currentSpeedKumulatif = diffDays > 0 ? (realisasiFasih / diffDays) : 0;
 
-    const daysRemaining = Math.max(1, Math.ceil(Math.max(0, targetDate - now) / (1000 * 60 * 60 * 24)));
+    const daysRemaining = Math.max(0, Math.ceil((deadline - uploadDate) / (1000 * 60 * 60 * 24)));
     const remainingFasih = Math.max(0, targetFasih - realisasiFasih);
     const reqSpeed = daysRemaining > 0 ? (remainingFasih / daysRemaining) : 0;
 
