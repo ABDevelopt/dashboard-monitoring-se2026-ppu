@@ -8,6 +8,7 @@ router.get('/', (req, res) => {
   let kecStats = [];
   let tren = [];
   let distLast = null;
+  let pclDeltas = [];
 
   if (uploadId) {
     summary = getOverviewSummary(uploadId, res.locals.settings);
@@ -19,7 +20,6 @@ router.get('/', (req, res) => {
     const db = getDb();
     const prevUpload = db.prepare('SELECT id FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(uploadId);
     
-    let pclDeltas = [];
     if (prevUpload) {
       distLast = db.prepare(`
         SELECT 
