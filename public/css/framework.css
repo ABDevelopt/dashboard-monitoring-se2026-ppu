@@ -423,6 +423,12 @@
 .border-danger-subtle {
   border: 1px solid rgba(239, 68, 68, 0.12);
 }
+.bg-info-subtle {
+  background: rgba(59, 130, 246, 0.03);
+}
+.border-info-subtle {
+  border: 1px solid rgba(59, 130, 246, 0.12);
+}
 
 /* ==========================================================================
    9. TOAST NOTIFICATION COMPONENT

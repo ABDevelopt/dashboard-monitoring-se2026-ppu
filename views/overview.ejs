@@ -697,7 +697,7 @@
                   Speedometer Pendataan
                 </h4>
                 <p class="m-0 mt-0-5 fs-sm text-muted">
-                  Monitoring Kecepatan Realisasi Dokumen FASIH vs Target Standar <strong><%= targetNormalPerPclText %> Dokumen / Hari / Petugas</strong>
+                  Realisasi vs Target Standar <strong><%= targetNormalPerPclText %> dok/PCL/hari</strong> (Laju Aman Tepat Waktu: <strong><%= reqSpeedPerPclText %> dok/PCL/hari</strong>)
                 </p>
               </div>
             </div>
@@ -737,6 +737,12 @@
                   </div>
                 </div>
 
+                <div class="bg-info-subtle border-info-subtle rounded-sm py-2 px-2-5 text-center">
+                  <div class="fs-caption text-muted fw-medium">Kecepatan Ideal</div>
+                  <div class="fs-caption fw-bold text-primary mt-1 d-flex items-center justify-center gap-1 flex-wrap">
+                    <i class="bi bi-lightning-charge-fill text-blue"></i><span><%= reqSpeedPerPclText %> dok/PCL/hari</span>
+                  </div>
+                </div>
 
                 <div class="bg-success-subtle border-success-subtle rounded-sm py-2 px-2-5 text-center">
                   <div class="fs-caption text-muted fw-medium">Est. Selesai 100%</div>
