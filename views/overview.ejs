@@ -1824,7 +1824,7 @@
       }
       <% } %>
       
-      createSpeedometerChart('speedometerChartCanvas', <%= speedPerPcl %>, <%= targetNormalPerPcl %>, <%= currentSpeed %>, <%= targetSpeedTotal %>);
+      createSpeedometerChart('speedometerChartCanvas', <%= speedPerPcl %>, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>, <%= currentSpeed %>, <%= targetSpeedTotal %>);
 
       // Hitung penambahan harian total FASIH (Submitted + Approved + Rejected)
       const countyIncrementLabels = [];
