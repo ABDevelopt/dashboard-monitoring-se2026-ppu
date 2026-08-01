@@ -1053,19 +1053,19 @@ function getEarlyWarning(uploadId, filters = {}) {
     ORDER BY total_subsls DESC
   `).all(...paramsZeroPml);
 
-  // Stagnan 2 hari: PCL yang tidak ada penambahan selesai (submit+approve+reject) antara upload 2 hari lalu dan upload sekarang
-  // Cari upload yang tanggalnya >= 2 hari sebelum upload saat ini
+  // Stagnan 1 hari: PCL yang tidak ada penambahan selesai (submit+approve+reject) antara upload 1 hari lalu dan upload sekarang
+  // Cari upload yang tanggalnya >= 1 hari sebelum upload saat ini
   let stagnanPcl = [];
   if (currentUpload) {
     const currentDate = new Date(currentUpload.tanggal);
-    const twoDaysAgo = new Date(currentDate);
-    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-    const twoDaysAgoStr = twoDaysAgo.toISOString().slice(0, 10);
+    const oneDayAgo = new Date(currentDate);
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    const oneDayAgoStr = oneDayAgo.toISOString().slice(0, 10);
 
-    // Cari upload terbaru yang tanggalnya <= 2 hari sebelum upload saat ini
+    // Cari upload terbaru yang tanggalnya <= 1 hari sebelum upload saat ini
     const prevUpload = getDb().prepare(
       `SELECT id, tanggal FROM uploads WHERE tanggal <= ? AND id != ? ORDER BY tanggal DESC LIMIT 1`
-    ).get(twoDaysAgoStr, uploadId);
+    ).get(oneDayAgoStr, uploadId);
 
     if (prevUpload) {
       // Bandingkan summary_cache antara upload sekarang dan upload lama
