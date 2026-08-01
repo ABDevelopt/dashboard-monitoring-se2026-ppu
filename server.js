@@ -393,6 +393,14 @@ app.use((err, req, res, next) => {
 
 // Init DB & load master data
 function init() {
+  // Minify static CSS & JS assets on startup
+  try {
+    const { minifyAll } = require('./scripts/minify');
+    minifyAll();
+  } catch (err) {
+    logger.error('❌ Failed to run assets minification on startup:', err);
+  }
+
   try {
     const db = getDb(); // initialize schema
     const rowCount = db.prepare('SELECT COUNT(*) as count FROM subsls_master').get().count;

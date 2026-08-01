@@ -17,6 +17,7 @@
     "@whiskeysockets/baileys": "^6.7.9",
     "better-sqlite3": "^12.11.1",
     "better-sqlite3-session-store": "^0.1.0",
+    "clean-css": "^5.3.3",
     "connect-flash": "^0.1.1",
     "dotenv": "^17.4.2",
     "ejs": "^6.0.1",
@@ -30,6 +31,7 @@
     "pino": "^8.19.0",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
+    "uglify-js": "^3.19.3",
     "whatsapp-web.js": "^1.34.7",
     "winston": "^3.19.0",
     "xlsx": "^0.18.5"
