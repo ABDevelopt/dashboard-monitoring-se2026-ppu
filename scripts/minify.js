@@ -19,6 +19,7 @@ function minifyAll() {
     'js/spreadsheet-editor.js',
     'js/search-helper.js',
     'js/table-filter.js',
+    'js/ai-widget.js',
     'js/app.js'
   ];
 
