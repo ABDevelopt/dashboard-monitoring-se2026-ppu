@@ -3,7 +3,7 @@
   --bg-secondary: #15151b;
   --bg-card: #1b1b24;
   --bg-card-hover: #23232f;
-  --bg-sidebar: #111116;
+  --bg-sidebar: var(--bg-primary);
   --accent-blue: #f97316; /* brighter orange for dark mode contrast */
   --accent-cyan: #fbbf24; /* brighter amber for dark mode contrast */
   --accent-rgb: 249, 115, 22;
@@ -48,7 +48,7 @@ body.light-mode {
   --bg-secondary: #fdfcfb;
   --bg-card: #fdfcfb;
   --bg-card-hover: #ebe4d8;
-  --bg-sidebar: #eae2d5;
+  --bg-sidebar: var(--bg-primary);
   --accent-blue: #c2410c; /* original brand dark orange for light mode contrast */
   --accent-cyan: #d97706; /* original brand dark amber for light mode contrast */
   --accent-rgb: 194, 65, 12;
