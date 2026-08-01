@@ -673,7 +673,7 @@ function getProgresWithMaster(uploadId) {
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     ORDER BY m.kecamatan, m.desa, m.kode
-  `).all(uploadId));
+  `).all(uploadId), settings);
 }
 
 // Agregate per kecamatan
@@ -708,7 +708,7 @@ function getKecamatanStats(uploadId, settings = getSettings()) {
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     GROUP BY m.kecamatan
     ORDER BY m.kecamatan
-  `).all(uploadId));
+  `).all(uploadId), settings);
 }
 
 // Agregate per korlap
@@ -746,7 +746,7 @@ function getKorlapStats(uploadId, settings = getSettings()) {
     WHERE p.upload_id = ? AND m.korlap IS NOT NULL
     GROUP BY m.korlap
     ORDER BY selesai ASC
-  `).all(uploadId));
+  `).all(uploadId), settings);
 }
 
 // Agregate per PML
@@ -784,7 +784,7 @@ function getPmlStats(uploadId, settings = getSettings()) {
     WHERE p.upload_id = ? AND m.pml IS NOT NULL
     GROUP BY m.pml, m.korlap
     ORDER BY selesai ASC
-  `).all(uploadId));
+  `).all(uploadId), settings);
 }
 
 // Agregate per PCL
@@ -829,7 +829,7 @@ function getPclStats(uploadId, settings = getSettings()) {
     WHERE p.upload_id = ?
     GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), COALESCE(p.pcl_name, m.pcl)
     ORDER BY approved_total DESC
-  `).all(uploadId));
+  `).all(uploadId), settings);
 }
 
 // Tren harian
@@ -951,7 +951,7 @@ function getOverviewSummary(uploadId, settings = getSettings()) {
     avg_selesai_subsls_per_pcl,
     avg_muatan_per_pcl,
     ...stats 
-  });
+  }, settings);
 }
 
 // Early warning: PCL dengan 0 progres
@@ -1286,8 +1286,8 @@ function getTopPerformers(uploadId, filters = {}, settings = getSettings()) {
   `).all(...params, limit);
 
   return { 
-    topPcl: attachProgressPercentages(topPcl), 
-    topPml: attachProgressPercentages(topPml) 
+    topPcl: attachProgressPercentages(topPcl, settings), 
+    topPml: attachProgressPercentages(topPml, settings) 
   };
 }
 
@@ -1375,8 +1375,8 @@ function getBottomPerformers(uploadId, filters = {}, settings = getSettings()) {
   `).all(...params, limit);
 
   return { 
-    bottomPcl: attachProgressPercentages(bottomPcl), 
-    bottomPml: attachProgressPercentages(bottomPml) 
+    bottomPcl: attachProgressPercentages(bottomPcl, settings), 
+    bottomPml: attachProgressPercentages(bottomPml, settings) 
   };
 }
 
@@ -1697,10 +1697,13 @@ function getWeatherHistory(limit = 7) {
   }
 }
 
-function attachProgressPercentages(data) {
+function attachProgressPercentages(data, settings) {
   if (!data) return data;
+  if (!settings) {
+    settings = getSettings();
+  }
   if (Array.isArray(data)) {
-    return data.map(attachProgressPercentages);
+    return data.map(item => attachProgressPercentages(item, settings));
   }
 
   // Single object
@@ -1716,7 +1719,14 @@ function attachProgressPercentages(data) {
   const completedFasih = submitted + approved + rejected;
   data.fasih_real_total = completedFasih;
 
-  const activeTarget = targetUpload > 0 ? targetUpload : (targetFasih > 0 ? targetFasih : targetStatic);
+  let activeTarget = targetFasih;
+  if (settings && settings.target_fasih_mode === 'fasih-sm') {
+    activeTarget = targetUpload > 0 ? targetUpload : targetFasih;
+  } else if (settings && settings.target_fasih_mode === 'static') {
+    activeTarget = targetStatic > 0 ? targetStatic : targetFasih;
+  } else {
+    activeTarget = targetUpload > 0 ? targetUpload : (targetFasih > 0 ? targetFasih : targetStatic);
+  }
 
   data.fasih_pct = activeTarget > 0 ? parseFloat(((completedFasih / activeTarget) * 100).toFixed(2)) : 0.0;
   data.fasih_pct_str = activeTarget > 0 ? ((completedFasih / activeTarget) * 100).toFixed(2) : '0.00';

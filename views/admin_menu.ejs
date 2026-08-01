@@ -23,6 +23,17 @@
     overflow: hidden;
   }
   
+  /* Theme mapping to variables, avoiding inline style attributes */
+  .admin-menu-card.theme-blue { --card-gradient: linear-gradient(135deg, #3b82f6, #06b6d4); --card-hover-border: #06b6d4; }
+  .admin-menu-card.theme-orange { --card-gradient: linear-gradient(135deg, #f59e0b, #ea580c); --card-hover-border: #ea580c; }
+  .admin-menu-card.theme-green { --card-gradient: linear-gradient(135deg, #10b981, #0d9488); --card-hover-border: #10b981; }
+  .admin-menu-card.theme-orange-dark { --card-gradient: linear-gradient(135deg, #f97316, #ea580c); --card-hover-border: #f97316; }
+  .admin-menu-card.theme-pink { --card-gradient: linear-gradient(135deg, #ec4899, #8b5cf6); --card-hover-border: #8b5cf6; }
+  .admin-menu-card.theme-indigo { --card-gradient: linear-gradient(135deg, #6366f1, #a855f7); --card-hover-border: #a855f7; }
+  .admin-menu-card.theme-wa { --card-gradient: linear-gradient(135deg, #25d366, #0d9488); --card-hover-border: #25d366; }
+  .admin-menu-card.theme-yellow { --card-gradient: linear-gradient(135deg, #f59e0b, #06b6d4); --card-hover-border: #f59e0b; }
+  .admin-menu-card.theme-sky { --card-gradient: linear-gradient(135deg, #0284c7, #6366f1); --card-hover-border: #6366f1; }
+
   .admin-menu-card::before {
     content: '';
     position: absolute;
@@ -91,17 +102,17 @@
 </style>
 
   <!-- HERO TITLE -->
-  <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb),0.12) 0%, rgba(var(--accent-rgb),0.03) 100%); border: 1px solid rgba(var(--accent-rgb),0.2); border-radius: 16px; padding: 32px 28px; margin-bottom: 24px; position: relative; overflow: hidden;">
-    <div style="position: absolute; right: -20px; top: -20px; font-size: 120px; opacity: 0.04; line-height: 1; pointer-events: none;">
+  <div class="bg-gradient-admin-header rounded-lg py-8 px-6 mb-6 relative overflow-hidden">
+    <div class="absolute opacity-04 pointer-events-none" style="right: -20px; top: -20px; font-size: 120px; line-height: 1;">
       <i class="bi bi-shield-lock"></i>
     </div>
-    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-      <div style="width: 56px; height: 56px; border-radius: 14px; background: rgba(var(--accent-rgb),0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-        <i class="bi bi-shield-lock" style="font-size: 26px; color: var(--accent-purple);"></i>
+    <div class="d-flex items-center gap-4 flex-wrap">
+      <div class="w-14 h-14 bg-accent-subtle d-flex items-center justify-center flex-shrink-0" style="border-radius: 14px;">
+        <i class="bi bi-shield-lock text-purple" style="font-size: 26px;"></i>
       </div>
       <div>
-        <h1 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px 0;">Menu Administrasi &amp; Sistem</h1>
-        <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Pusat kendali konfigurasi, tata kelola data, manajemen pengguna, dan integrasi monitoring SE2026 PPU</p>
+        <h1 class="fs-xl fw-extrabold text-primary m-0 mb-1">Menu Administrasi &amp; Sistem</h1>
+        <p class="fs-sm text-secondary m-0">Pusat kendali konfigurasi, tata kelola data, manajemen pengguna, dan integrasi monitoring SE2026 PPU</p>
       </div>
     </div>
   </div>
@@ -109,7 +120,7 @@
 <div class="admin-menu-grid">
 
   <!-- CARD 1: UPLOAD DATA -->
-  <a href="/admin/upload" class="admin-menu-card" style="--card-gradient: linear-gradient(135deg, #3b82f6, #06b6d4); --card-hover-border: #06b6d4;">
+  <a href="/admin/upload" class="admin-menu-card theme-blue">
     <div class="admin-card-icon-box">
       <i class="bi bi-upload"></i>
     </div>
@@ -123,7 +134,7 @@
   </a>
 
   <!-- CARD 2: KELOLA MASTER DATA -->
-  <a href="/admin/master" class="admin-menu-card" style="--card-gradient: linear-gradient(135deg, #f59e0b, #ea580c); --card-hover-border: #ea580c;">
+  <a href="/admin/master" class="admin-menu-card theme-orange">
     <div class="admin-card-icon-box">
       <i class="bi bi-database-fill-gear"></i>
     </div>
@@ -137,7 +148,7 @@
   </a>
 
   <!-- CARD 3: KELOLA PENGGUNA -->
-  <a href="/admin/users" class="admin-menu-card" style="--card-gradient: linear-gradient(135deg, #10b981, #0d9488); --card-hover-border: #10b981;">
+  <a href="/admin/users" class="admin-menu-card theme-green">
     <div class="admin-card-icon-box">
       <i class="bi bi-people-fill"></i>
     </div>
@@ -151,7 +162,7 @@
   </a>
 
   <!-- CARD 3B: DATA EMAIL PETUGAS -->
-  <a href="/admin/petugas-email" class="admin-menu-card" style="--card-gradient: linear-gradient(135deg, #f97316, #ea580c); --card-hover-border: #f97316;">
+  <a href="/admin/petugas-email" class="admin-menu-card theme-orange-dark">
     <div class="admin-card-icon-box">
       <i class="bi bi-envelope-at-fill"></i>
     </div>
@@ -165,7 +176,7 @@
   </a>
 
   <!-- CARD 4: PENGATURAN TAMPILAN -->
-  <a href="/admin/settings" class="admin-menu-card" style="--card-gradient: linear-gradient(135deg, #ec4899, #8b5cf6); --card-hover-border: #8b5cf6;">
+  <a href="/admin/settings" class="admin-menu-card theme-pink">
     <div class="admin-card-icon-box">
       <i class="bi bi-sliders"></i>
     </div>
@@ -179,7 +190,7 @@
   </a>
 
   <!-- CARD 5: PENGATURAN CHATBOT AI -->
-  <a href="/admin/settings/chatbot" class="admin-menu-card" style="--card-gradient: linear-gradient(135deg, #6366f1, #a855f7); --card-hover-border: #a855f7;">
+  <a href="/admin/settings/chatbot" class="admin-menu-card theme-indigo">
     <div class="admin-card-icon-box">
       <i class="bi bi-chat-left-dots-fill"></i>
     </div>
@@ -193,7 +204,7 @@
   </a>
 
   <!-- CARD 6: INTEGRASI WHATSAPP -->
-  <a href="/admin/whatsapp" class="admin-menu-card" style="--card-gradient: linear-gradient(135deg, #25d366, #0d9488); --card-hover-border: #25d366;">
+  <a href="/admin/whatsapp" class="admin-menu-card theme-wa">
     <div class="admin-card-icon-box">
       <i class="bi bi-whatsapp"></i>
     </div>
@@ -207,7 +218,7 @@
   </a>
 
   <!-- CARD 7: SINKRONISASI SPREADSHEET -->
-  <a href="/admin/spreadsheet" class="admin-menu-card" style="--card-gradient: linear-gradient(135deg, #f59e0b, #06b6d4); --card-hover-border: #f59e0b;">
+  <a href="/admin/spreadsheet" class="admin-menu-card theme-yellow">
     <div class="admin-card-icon-box">
       <i class="bi bi-file-earmark-spreadsheet-fill"></i>
     </div>
@@ -221,7 +232,7 @@
   </a>
 
   <!-- CARD 8: STATISTIK PENGUNJUNG -->
-  <a href="/admin/stats" class="admin-menu-card" style="--card-gradient: linear-gradient(135deg, #0284c7, #6366f1); --card-hover-border: #6366f1;">
+  <a href="/admin/stats" class="admin-menu-card theme-sky">
     <div class="admin-card-icon-box">
       <i class="bi bi-activity"></i>
     </div>
