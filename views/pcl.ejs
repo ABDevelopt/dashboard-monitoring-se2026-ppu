@@ -15,6 +15,7 @@
   if (settings.show_status_approved === '1' || settings.show_status_approved === undefined) activeStatusCols++;
 %>
 <div class="fade-in">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <% if (!uploadId) { %>
     <div class="card empty-state">
       <div class="empty-state-icon"><i class="bi bi-person-vcard"></i></div>
