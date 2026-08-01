@@ -1,8 +1,228 @@
-  function updateTime() {
-    const optionsDate = { timeZone: 'Asia/Makassar', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('id-ID', optionsDate);
-    const timeStr = now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' WITA';
+// Swal Polyfill using native glassmorphic modal
+window.Swal = {
+  // Toast notifications
+  toast: function(title, type = 'success') {
+    let container = document.querySelector('.custom-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'custom-toast-container';
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = `custom-toast custom-toast-${type}`;
+    let iconClass = 'bi-check-circle-fill';
+    if (type === 'error') iconClass = 'bi-exclamation-triangle-fill';
+    if (type === 'info') iconClass = 'bi-info-circle-fill';
+    
+    toast.innerHTML = `
+      <i class="bi ${iconClass} custom-toast-icon"></i>
+      <span style="font-weight:600; font-size:12px; line-height:1.4;">${title}</span>
+    `;
+    container.appendChild(toast);
+    
+    // trigger entry animation
+    requestAnimationFrame(() => {
+      toast.classList.add('active');
+    });
+    
+    // remove after 3s
+    setTimeout(() => {
+      toast.classList.remove('active');
+      setTimeout(() => {
+        toast.remove();
+      }, 300);
+    }, 3000);
+  },
+
+  // Main dialog
+  fire: function(options) {
+    if (typeof options === 'string') {
+      options = { title: options };
+    }
+    // If it's a simple toast request
+    if (options.toast) {
+      const title = options.title || '';
+      const type = options.icon || 'success';
+      this.toast(title, type);
+      return Promise.resolve({ isConfirmed: true });
+    }
+
+    // Otherwise, it's a full modal
+    return new Promise((resolve) => {
+      // Remove any existing modals
+      const existing = document.getElementById('custom-swal-modal');
+      if (existing) existing.remove();
+
+      const backdrop = document.createElement('div');
+      backdrop.id = 'custom-swal-modal';
+      backdrop.className = 'custom-dialog-backdrop';
+
+      let headerHtml = '';
+      if (options.title) {
+        headerHtml = `<div class="custom-dialog-header">${options.title}</div>`;
+      }
+
+      let bodyHtml = '';
+      if (options.html) {
+        bodyHtml = `<div class="custom-dialog-body">${options.html}</div>`;
+      } else if (options.text) {
+        bodyHtml = `<div class="custom-dialog-body" style="font-size:13px; line-height:1.5; color:var(--text-secondary);">${options.text}</div>`;
+      }
+
+      // Check if showLoading was called
+      let isLoader = false;
+      if (options.didOpen && options.showConfirmButton === false) {
+        // This is a loading popup
+        isLoader = true;
+        bodyHtml += `<div class="custom-dialog-spinner"></div>`;
+      }
+
+      let footerHtml = '';
+      if (!isLoader && (options.showConfirmButton !== false || options.showCancelButton)) {
+        footerHtml = `<div class="custom-dialog-footer">`;
+        if (options.showCancelButton) {
+          const cancelText = options.cancelButtonText || 'Batal';
+          footerHtml += `<button type="button" class="custom-dialog-btn custom-dialog-btn-cancel">${cancelText}</button>`;
+        }
+        if (options.showConfirmButton !== false) {
+          const confirmText = options.confirmButtonText || 'OK';
+          footerHtml += `<button type="button" class="custom-dialog-btn custom-dialog-btn-confirm">${confirmText}</button>`;
+        }
+        footerHtml += `</div>`;
+      }
+
+      backdrop.innerHTML = `
+        <div class="custom-dialog-card">
+          ${headerHtml}
+          ${bodyHtml}
+          ${footerHtml}
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+
+      // Trigger animation
+      requestAnimationFrame(() => {
+        backdrop.classList.add('active');
+      });
+
+      // Bind button events
+      const confirmBtn = backdrop.querySelector('.custom-dialog-btn-confirm');
+      const cancelBtn = backdrop.querySelector('.custom-dialog-btn-cancel');
+
+      const closeModal = (confirmed, val = null) => {
+        backdrop.classList.remove('active');
+        setTimeout(() => {
+          backdrop.remove();
+          resolve({ isConfirmed: confirmed, value: val });
+        }, 250);
+      };
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+          // If preConfirm option is provided
+          if (options.preConfirm) {
+            const val = options.preConfirm();
+            if (val === false) return; // validation failed
+            closeModal(true, val);
+          } else {
+            closeModal(true, true);
+          }
+        });
+      }
+
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+          closeModal(false);
+        });
+      }
+
+      // If didOpen is provided (like for starting loading or custom init)
+      if (options.didOpen) {
+        options.didOpen(backdrop);
+      }
+    });
+  },
+
+  showLoading: function() {
+    // If modal already open, we can just insert spinner
+    const card = document.querySelector('#custom-swal-modal .custom-dialog-card');
+    if (card) {
+      let spinner = card.querySelector('.custom-dialog-spinner');
+      if (!spinner) {
+        spinner = document.createElement('div');
+        spinner.className = 'custom-dialog-spinner';
+        card.appendChild(spinner);
+      }
+      const footer = card.querySelector('.custom-dialog-footer');
+      if (footer) footer.style.display = 'none';
+    } else {
+      this.fire({
+        title: 'Mohon Tunggu...',
+        html: 'Sedang memproses data, harap tunggu.',
+        showConfirmButton: false
+      });
+    }
+  },
+
+  close: function() {
+    const backdrop = document.getElementById('custom-swal-modal');
+    if (backdrop) {
+      backdrop.classList.remove('active');
+      setTimeout(() => {
+        backdrop.remove();
+      }, 250);
+    }
+  },
+
+  showValidationMessage: function(msg) {
+    const card = document.querySelector('#custom-swal-modal .custom-dialog-card');
+    if (card) {
+      let errMsg = card.querySelector('.custom-dialog-validation-error');
+      if (!errMsg) {
+        errMsg = document.createElement('div');
+        errMsg.className = 'custom-dialog-validation-error';
+        errMsg.style.color = 'var(--accent-red)';
+        errMsg.style.fontSize = '11px';
+        errMsg.style.marginTop = '8px';
+        errMsg.style.fontWeight = '600';
+        const body = card.querySelector('.custom-dialog-body');
+        if (body) body.appendChild(errMsg);
+      }
+      errMsg.textContent = msg;
+    }
+  }
+};
+
+// Make sure global helpers use this system
+window.showAlert = function(options) {
+  return window.Swal.fire(options);
+};
+
+window.showToast = function(title, type = 'success') {
+  window.Swal.toast(title, type);
+};
+
+window.showLoading = function(title, text) {
+  window.Swal.fire({
+    title: title || 'Memuat...',
+    text: text || 'Harap tunggu.',
+    showConfirmButton: false,
+    didOpen: () => {
+      window.Swal.showLoading();
+    }
+  });
+};
+
+window.closeLoading = function() {
+  window.Swal.close();
+};
+
+function updateTime() {
+  const optionsDate = { timeZone: 'Asia/Makassar', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('id-ID', optionsDate);
+  const timeStr = now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' WITA';
     
     // Topbar elements
     const liveTimeEl = document.getElementById('liveTime');
@@ -440,6 +660,7 @@
     });
     return window._scriptPromises[url];
   }
+  window.loadScript = loadScript;
 
   // ===== BOOKMARKS / FAVORIT SAYA =====
   window.getPinnedItems = function() {
@@ -1355,63 +1576,7 @@
         e.preventDefault();
         e.stopPropagation();
       }
-      
-      Swal.fire({
-        title: '<i class="bi bi-file-earmark-arrow-down-fill" style="color: var(--accent-blue); font-size: 20px;"></i> <span>Export Data &amp; Utilitas</span>',
-        html: `
-          <div style="text-align: left; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 16px;">
-            Pilih dataset yang ingin Anda ekspor dari database sistem Sensus Ekonomi 2026:
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
-            <label class="export-option-card">
-              <input type="radio" name="exportOption" value="/subsls/export" checked>
-              <div class="export-icon-badge blue">
-                <i class="bi bi-filetype-csv"></i>
-              </div>
-              <div style="flex: 1; min-width: 0;">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-                  <span style="font-weight: 700; color: var(--text-primary); font-size: 13px;">Data Sub-SLS (CSV)</span>
-                  <span class="badge badge-blue btn-xs" style="font-size: 9px; padding: 2px 6px;">CSV</span>
-                </div>
-                <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Rincian lengkap progres &amp; status muatan per satuan lingkungan setempat</div>
-              </div>
-            </label>
-
-            <label class="export-option-card">
-              <input type="radio" name="exportOption" value="/pcl/export-excel">
-              <div class="export-icon-badge green">
-                <i class="bi bi-file-earmark-excel-fill"></i>
-              </div>
-              <div style="flex: 1; min-width: 0;">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-                  <span style="font-weight: 700; color: var(--text-primary); font-size: 13px;">Kinerja Petugas (Excel)</span>
-                  <span class="badge badge-green btn-xs" style="font-size: 9px; padding: 2px 6px;">XLSX</span>
-                </div>
-                <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Rekapitulasi realisasi, target, &amp; indikator performa PCL, PML &amp; Korlap</div>
-              </div>
-            </label>
-          </div>
-        `,
-        showCancelButton: true,
-        confirmButtonText: '<i class="bi bi-download"></i> Unduh Berkas',
-        cancelButtonText: 'Batal',
-        focusConfirm: false,
-        customClass: {
-          popup: 'swal2-dark-popup'
-        },
-        preConfirm: () => {
-          const selected = document.querySelector('input[name="exportOption"]:checked');
-          if (!selected) {
-            Swal.showValidationMessage('Silakan pilih salah satu format dataset.');
-            return false;
-          }
-          return selected.value;
-        }
-      }).then((result) => {
-        if (result.isConfirmed && result.value) {
-          window.location.href = result.value;
-        }
-      });
+      window.location.href = '/export';
     };
 
     window.initTableExport = (container = document) => {

@@ -47,7 +47,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   </noscript>
 
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
   <script src="/js/charts.min.js?v=<%= appVersion %>" defer></script>
   <script src="/js/table-filter.min.js?v=<%= appVersion %>" defer></script>
@@ -325,7 +324,7 @@
         <span>Data &amp; Utilitas</span>
       </div>
       <div class="nav-section-content">
-        <a href="#" onclick="window.showExportDialog(event)" class="nav-item">
+        <a href="/export" class="nav-item <%= activePage === 'export' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-download"></i></span> Export Data
         </a>
       </div>

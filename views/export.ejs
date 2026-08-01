@@ -1,0 +1,766 @@
+<div class="fade-in">
+  <!-- BREADCRUMBS & TITLE -->
+  <div class="flex-between mb-5">
+    <div>
+      <h1 class="ui-value" style="font-size: 24px; font-weight: 800; background: linear-gradient(135deg, var(--text-primary), var(--text-muted)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        <i class="bi bi-download" style="color: var(--accent-blue);"></i> Ekspor Data Terpadu
+      </h1>
+      <p class="text-sm text-muted mb-0">Halaman terpadu untuk menyaring, meninjau, dan mengekspor progres pendataan SE2026 PPU.</p>
+    </div>
+  </div>
+
+  <!-- MAIN GRID CONFIGURATION -->
+  <div style="display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px;">
+    
+    <!-- CARD 1: EXPORT PARAMETERS -->
+    <div class="card p-3">
+      <div class="card-header" style="padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid var(--border);">
+        <div class="card-title" style="font-size: 14px; font-weight: 700; color: var(--text-primary);">
+          <i class="bi bi-sliders" style="color: var(--accent-blue); margin-right: 6px;"></i> Parameter &amp; Konfigurasi Ekspor
+        </div>
+      </div>
+      
+      <form id="exportConfigForm">
+        <!-- FIRST ROW: Dataset & Formats -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
+          <div>
+            <label for="exportDataset" class="ui-label-upper">Dataset</label>
+            <select id="exportDataset" class="w-full" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
+              <option value="subsls" selected>Sub-SLS (Tabel Progres Wilayah)</option>
+              <option value="petugas">Rekapitulasi Kinerja Petugas</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="exportDate" class="ui-label-upper">Tanggal Data / Upload</label>
+            <input type="date" id="exportDate" class="w-full" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-family: inherit; font-size: 13px;" value="<%= latestUpload ? latestUpload.tanggal : new Date().toISOString().slice(0, 10) %>" max="<%= latestUpload ? latestUpload.tanggal : new Date().toISOString().slice(0, 10) %>">
+          </div>
+
+          <div>
+            <label for="exportScope" class="ui-label-upper">Skope / Cakupan Kolom</label>
+            <select id="exportScope" class="w-full" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
+              <option value="all" selected>Muatan + FASIH (Semua Kolom)</option>
+              <option value="assignment">Assignment FASIH (Tugas Petugas)</option>
+              <option value="fasih">Hanya FASIH (Tanpa Muatan/Usaha/Keluarga)</option>
+              <option value="muatan">Hanya Muatan (Tanpa Status Pengerjaan FASIH)</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="exportFormat" class="ui-label-upper">Format Berkas</label>
+            <select id="exportFormat" class="w-full" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
+              <option value="xlsx" selected>Excel Spreadsheet (.xlsx)</option>
+              <option value="csv">Comma-Separated Values (.csv)</option>
+              <option value="pdf">Portable Document Format (.pdf)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- SECOND ROW: Data Filtering -->
+        <div style="border-top: 1px dashed var(--border); padding-top: 16px; margin-top: 16px;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">
+            <i class="bi bi-funnel-fill" style="color: var(--accent-purple); margin-right: 4px;"></i> Filter Filter Opsional
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 12px;">
+            <div>
+              <label for="filterKec" class="ui-label">Kecamatan</label>
+              <select id="filterKec" class="w-full" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
+                <option value="">-- Semua Kecamatan --</option>
+                <% kecList.forEach(k => { %>
+                  <option value="<%= k %>"><%= k %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div>
+              <label for="filterDesa" class="ui-label">Desa / Kelurahan</label>
+              <select id="filterDesa" class="w-full" disabled style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); opacity: 0.6;">
+                <option value="">-- Semua Desa --</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="filterKorlap" class="ui-label">Koordinator Lapangan</label>
+              <select id="filterKorlap" class="w-full" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
+                <option value="">-- Semua Korlap --</option>
+                <% korlapList.forEach(k => { %>
+                  <option value="<%= k %>"><%= k %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div>
+              <label for="filterPml" class="ui-label">PML (Pengawas)</label>
+              <select id="filterPml" class="w-full" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
+                <option value="">-- Semua PML --</option>
+                <% pmlList.forEach(p => { %>
+                  <option value="<%= p %>"><%= p %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div>
+              <label for="filterPcl" class="ui-label">PCL (Pencacah)</label>
+              <select id="filterPcl" class="w-full" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
+                <option value="">-- Semua PCL --</option>
+                <% pclList.forEach(p => { %>
+                  <option value="<%= p %>"><%= p %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div>
+              <label for="filterStatus" class="ui-label">Status Progres SLS</label>
+              <select id="filterStatus" class="w-full" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
+                <option value="">-- Semua Status --</option>
+                <option value="belum_mulai">Belum Mulai</option>
+                <option value="sedang_didata">Sedang Didata</option>
+                <option value="memenuhi_target">Memenuhi Target</option>
+                <option value="melebihi_target">Melebihi Target</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACTIONS BUTTONS -->
+        <div class="flex-between mt-3" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 20px;">
+          <button type="button" id="btnResetFilters" class="btn btn-secondary" style="font-size: 13px; font-weight: 600;">
+            <i class="bi bi-arrow-repeat"></i> Reset Parameter
+          </button>
+          
+          <div style="display: flex; gap: 10px;">
+            <button type="button" id="btnLoadPreview" class="btn btn-secondary" style="font-size: 13px; font-weight: 600; border-color: var(--accent-purple); color: var(--accent-purple);">
+              <i class="bi bi-eye"></i> Tampilkan Preview
+            </button>
+            <button type="submit" class="btn" style="background: linear-gradient(135deg, var(--accent-blue), #2563eb); color: #fff; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3); font-size: 13px; font-weight: 600;">
+              <i class="bi bi-download"></i> Unduh File Ekspor
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- KAMUS METADATA VARIABEL (COLLAPSIBLE ACCORDION) -->
+  <div class="card mb-5">
+    <button type="button" id="btnToggleKamus" style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: rgba(var(--accent-rgb), 0.02); border: none; cursor: pointer; color: var(--text-primary); font-size: 13px; font-weight: 700; outline: none; border-radius: 12px;">
+      <span><i class="bi bi-book" style="color: var(--accent-cyan); margin-right: 8px;"></i> Kamus &amp; Metadata Variabel Kolom</span>
+      <i class="bi bi-chevron-down" id="kamusChevron" style="transition: transform 0.2s;"></i>
+    </button>
+    <div id="kamusContainer" style="display: none; padding: 20px; border-top: 1px solid var(--border); overflow-x: auto;">
+      <p class="text-xs text-muted mb-3" style="line-height:1.5;">Kamus metadata ini memberikan penjelasan arti dari masing-masing kolom data yang diekspor. Pada berkas ekspor format Excel (XLSX), tabel kamus data ini akan disisipkan secara otomatis sebagai sheet terpisah bertajuk <strong>"Metadata Variabel"</strong>.</p>
+      
+      <table class="table-dashboard" style="width: 100%; border-collapse: collapse; min-width: 500px;">
+        <thead>
+          <tr>
+            <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border);">Nama Variabel</th>
+            <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border); width: 120px;">Tipe Data</th>
+            <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border);">Definisi / Penjelasan</th>
+            <th style="text-align: left; padding: 10px; border-bottom: 1px solid var(--border); width: 120px;">Sumber</th>
+          </tr>
+        </thead>
+        <tbody id="metadataTableBody">
+          <!-- Populated by JS based on selected scope -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- INTERACTIVE PREVIEW PANEL -->
+  <div class="card p-3" id="previewCard" style="display: none;">
+    <div class="card-header flex-between mb-3" style="padding-bottom: 10px; border-bottom: 1px solid var(--border);">
+      <div class="card-title" style="font-size: 14px; font-weight: 700; color: var(--text-primary);">
+        <i class="bi bi-table" style="color: var(--accent-green); margin-right: 6px;"></i> Pratinjau Tabel Data (Menampilkan 10 Baris Pertama)
+      </div>
+      <span class="badge" id="previewRowBadge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 11px; padding: 4px 10px; border-radius: 20px;">0 baris ditemukan</span>
+    </div>
+
+    <!-- Table wrap with overflow support -->
+    <div class="table-wrap" style="overflow-x: auto; margin-bottom: 12px; border-radius: var(--radius); border: 1px solid var(--border);">
+      <table class="table-dashboard" style="width: 100%; min-width: 1000px; border-collapse: collapse;" id="tablePreview">
+        <thead id="previewThead">
+          <!-- Injected dynamically by JS -->
+        </thead>
+        <tbody id="previewTbody">
+          <!-- Injected dynamically by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex-between text-xs text-muted" style="margin-top: 10px;">
+      <span>Tampilan di atas adalah pratinjau struktur kolom dan sampel data. Hasil ekspor berkas akan mencakup seluruh baris data.</span>
+      <span id="previewPageText">Halaman 1 / 1</span>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT-SIDE SCRIPTS FOR DYNAMIC PREVIEW & DOWNLOADS -->
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    // ----------------------------------------------------
+    // METADATA DEFINITIONS
+    // ----------------------------------------------------
+    const METADATA_DICTIONARY = {
+      // Identitas
+      'Kode SLS': { type: 'String (16-char)', desc: 'Kode unik identitas Satuan Lingkungan Setempat (SLS) gabungan Provinsi, Kab/Kota, Kec, Desa, dan Kode SLS.', src: 'Master SLS' },
+      'Kecamatan': { type: 'String', desc: 'Nama Kecamatan di wilayah Penajam Paser Utara.', src: 'Master SLS' },
+      'Desa/Kelurahan': { type: 'String', desc: 'Nama Desa atau Kelurahan di wilayah Penajam Paser Utara.', src: 'Master SLS' },
+      'Nama SLS': { type: 'String', desc: 'Nama Satuan Lingkungan Setempat (SLS) resmi.', src: 'Master SLS' },
+      'Koordinator Lapangan': { type: 'String', desc: 'Nama Koordinator Lapangan (Korlap) penanggung jawab wilayah.', src: 'Master SLS' },
+      'PML (Pengawas)': { type: 'String', desc: 'Nama PML (Pemeriksa/Pengawas Lapangan) penanggung jawab SLS.', src: 'Master SLS' },
+      'PCL (Pencacah)': { type: 'String', desc: 'Nama PCL (Pencacah Lapangan) petugas pencacah SLS.', src: 'Master SLS' },
+      
+      // Petugas dataset specific
+      'Nama PCL': { type: 'String', desc: 'Nama Pencacah Lapangan (PCL) yang bertugas.', src: 'Master SLS' },
+      'Korlap (Koordinator)': { type: 'String', desc: 'Nama Koordinator Lapangan (Korlap) pengawas petugas.', src: 'Master SLS' },
+      'Total Sub-SLS': { type: 'Integer', desc: 'Jumlah satuan lingkungan setempat (SLS) yang menjadi beban kerja petugas.', src: 'Master SLS' },
+
+      // Fasih
+      'Target Fasih Awal': { type: 'Integer', desc: 'Target muatan SLS pada aplikasi FASIH di awal kegiatan sensus.', src: 'Master SLS' },
+      'Target FASIH': { type: 'Integer', desc: 'Jumlah dokumen aktif/target pengerjaan pada aplikasi FASIH saat ini (mengikuti setelan target).', src: 'Sistem/Upload' },
+      'FASIH Draft': { type: 'Integer', desc: 'Jumlah dokumen di aplikasi FASIH yang baru tersimpan sebagai Draft oleh petugas.', src: 'Aplikasi FASIH' },
+      'FASIH Submitted': { type: 'Integer', desc: 'Jumlah dokumen di aplikasi FASIH yang sudah disubmit oleh PCL ke pengawas.', src: 'Aplikasi FASIH' },
+      'FASIH Approved': { type: 'Integer', desc: 'Jumlah dokumen di aplikasi FASIH yang disetujui (Approved) oleh PML.', src: 'Aplikasi FASIH' },
+      'FASIH Rejected': { type: 'Integer', desc: 'Jumlah dokumen di aplikasi FASIH yang ditolak (Rejected) oleh PML untuk diperbaiki.', src: 'Aplikasi FASIH' },
+      'Capaian FASIH (%)': { type: 'Decimal (%)', desc: 'Persentase progres pengerjaan FASIH (Submitted + Approved + Rejected) dibagi dengan Target FASIH.', src: 'Formulasi Sistem' },
+      'Target Static': { type: 'Integer', desc: 'Target statis pengerjaan dokumen FASIH sesuai data master awal.', src: 'Master SLS' },
+      'Target Upload': { type: 'Integer', desc: 'Target pengerjaan dokumen FASIH berdasarkan data upload excel progres.', src: 'Upload File' },
+
+      // Muatan
+      'Target Muatan': { type: 'Integer', desc: 'Target muatan usaha/keluarga yang harus didata (menyesuaikan setelan target).', src: 'Sistem/Upload' },
+      'Realisasi Muatan': { type: 'Integer', desc: 'Jumlah muatan usaha/keluarga yang statusnya berhasil diselesaikan di lapangan.', src: 'Upload File' },
+      'Capaian Muatan (%)': { type: 'Decimal (%)', desc: 'Persentase realisasi muatan di lapangan dibagi dengan Target Muatan.', src: 'Formulasi Sistem' },
+      'Total Usaha': { type: 'Integer', desc: 'Total jumlah usaha yang terdata di lapangan (Usaha Ditemukan + Usaha Baru).', src: 'Upload File' },
+      'Usaha Ditemukan': { type: 'Integer', desc: 'Jumlah usaha pre-listed yang berhasil ditemukan dan didata.', src: 'Upload File' },
+      'Usaha Baru': { type: 'Integer', desc: 'Jumlah usaha baru di luar pre-list yang ditemukan oleh petugas.', src: 'Upload File' },
+      'Usaha Tidak Ditemukan': { type: 'Integer', desc: 'Jumlah usaha pre-listed yang dinyatakan tidak ditemukan.', src: 'Upload File' },
+      'Usaha Tutup': { type: 'Integer', desc: 'Jumlah usaha pre-listed yang didapati sudah tutup atau tidak aktif.', src: 'Upload File' },
+      'Usaha Ganda': { type: 'Integer', desc: 'Jumlah usaha pre-listed yang teridentifikasi ganda di lapangan.', src: 'Upload File' },
+      'Total Keluarga': { type: 'Integer', desc: 'Total jumlah keluarga yang terdata di lapangan (Keluarga Ditemukan + Keluarga Baru).', src: 'Upload File' },
+      'Keluarga Ditemukan': { type: 'Integer', desc: 'Jumlah keluarga pre-listed yang berhasil ditemukan dan didata.', src: 'Upload File' },
+      'Keluarga Baru': { type: 'Integer', desc: 'Jumlah keluarga baru yang ditemukan oleh petugas.', src: 'Upload File' },
+      'Keluarga Tidak Ditemukan': { type: 'Integer', desc: 'Jumlah keluarga pre-listed yang tidak ditemukan.', src: 'Upload File' },
+      'Keluarga Meninggal': { type: 'Integer', desc: 'Jumlah keluarga pre-listed yang seluruh anggotanya dinyatakan sudah meninggal.', src: 'Upload File' },
+      'Keluarga Tidak Eligible': { type: 'Integer', desc: 'Jumlah keluarga pre-listed yang tidak memenuhi kriteria pendataan.', src: 'Upload File' },
+      'Keluarga Tidak Dapat Ditemui': { type: 'Integer', desc: 'Jumlah keluarga pre-listed yang tidak dapat ditemui setelah kunjungan berulang.', src: 'Upload File' },
+      'Status Progres': { type: 'String', desc: 'Kategori status penyelesaian SLS (Belum Mulai, Sedang Didata, Memenuhi Target, Melebihi Target).', src: 'Formulasi Sistem' }
+    };
+
+    // ----------------------------------------------------
+    // ELEMENTS
+    // ----------------------------------------------------
+    const exportDataset = document.getElementById('exportDataset');
+    const exportScope = document.getElementById('exportScope');
+    const exportDate = document.getElementById('exportDate');
+    const exportFormat = document.getElementById('exportFormat');
+    const filterKec = document.getElementById('filterKec');
+    const filterDesa = document.getElementById('filterDesa');
+    const filterKorlap = document.getElementById('filterKorlap');
+    const filterPml = document.getElementById('filterPml');
+    const filterPcl = document.getElementById('filterPcl');
+    const filterStatus = document.getElementById('filterStatus');
+    
+    const btnResetFilters = document.getElementById('btnResetFilters');
+    const btnLoadPreview = document.getElementById('btnLoadPreview');
+    const exportConfigForm = document.getElementById('exportConfigForm');
+    
+    const btnToggleKamus = document.getElementById('btnToggleKamus');
+    const kamusContainer = document.getElementById('kamusContainer');
+    const kamusChevron = document.getElementById('kamusChevron');
+    const metadataTableBody = document.getElementById('metadataTableBody');
+    
+    const previewCard = document.getElementById('previewCard');
+    const previewRowBadge = document.getElementById('previewRowBadge');
+    const previewThead = document.getElementById('previewThead');
+    const previewTbody = document.getElementById('previewTbody');
+    const previewPageText = document.getElementById('previewPageText');
+
+    let currentData = null; // store loaded data for export
+
+    // ----------------------------------------------------
+    // DYNAMIC FILTER SYNC (KECAMATAN -> DESA)
+    // ----------------------------------------------------
+    filterKec.addEventListener('change', async () => {
+      const kecVal = filterKec.value;
+      if (!kecVal) {
+        filterDesa.innerHTML = '<option value="">-- Semua Desa --</option>';
+        filterDesa.disabled = true;
+        filterDesa.style.opacity = '0.6';
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/export/desa-list?kec=${encodeURIComponent(kecVal)}`);
+        const desaList = await res.json();
+        
+        let options = '<option value="">-- Semua Desa --</option>';
+        desaList.forEach(d => {
+          options += `<option value="${d}">${d}</option>`;
+        });
+        filterDesa.innerHTML = options;
+        filterDesa.disabled = false;
+        filterDesa.style.opacity = '1';
+      } catch (err) {
+        console.error('Failed to load desa list:', err);
+      }
+    });
+
+    // ----------------------------------------------------
+    // DATASET & SCOPE ADAPTABILITY
+    // ----------------------------------------------------
+    const updateScopeOptions = () => {
+      const dataset = exportDataset.value;
+      if (dataset === 'petugas') {
+        exportScope.innerHTML = `
+          <option value="all" selected>Metrik Lengkap (FASIH + Muatan)</option>
+          <option value="fasih">Hanya FASIH (Kinerja Dokumen)</option>
+          <option value="muatan">Hanya Muatan (Kinerja SLS Lapangan)</option>
+        `;
+        // Hide status progres SLS filter since it is only relevant for SLS
+        filterStatus.parentElement.style.display = 'none';
+      } else {
+        exportScope.innerHTML = `
+          <option value="all" selected>Muatan + FASIH (Semua Kolom)</option>
+          <option value="assignment">Assignment FASIH (Tugas Petugas)</option>
+          <option value="fasih">Hanya FASIH (Tanpa Muatan/Usaha/Keluarga)</option>
+          <option value="muatan">Hanya Muatan (Tanpa Status Pengerjaan FASIH)</option>
+        `;
+        filterStatus.parentElement.style.display = 'block';
+      }
+      renderMetadataKamus();
+    };
+
+    exportDataset.addEventListener('change', updateScopeOptions);
+
+    // ----------------------------------------------------
+    // COLLAPSIBLE METADATA KAMUS
+    // ----------------------------------------------------
+    btnToggleKamus.addEventListener('click', () => {
+      const isHidden = kamusContainer.style.display === 'none';
+      if (isHidden) {
+        kamusContainer.style.display = 'block';
+        kamusChevron.style.transform = 'rotate(180deg)';
+      } else {
+        kamusContainer.style.display = 'none';
+        kamusChevron.style.transform = 'rotate(0deg)';
+      }
+    });
+
+    // Render metadata dictionary rows based on active dataset & scope
+    const renderMetadataKamus = () => {
+      const dataset = exportDataset.value;
+      const scope = exportScope.value;
+      
+      let columns = [];
+      if (dataset === 'subsls') {
+        columns = [
+          'Kode SLS', 'Kecamatan', 'Desa/Kelurahan', 'Nama SLS', 'Koordinator Lapangan', 'PML (Pengawas)', 'PCL (Pencacah)'
+        ];
+        if (scope === 'all' || scope === 'assignment' || scope === 'fasih') {
+          if (scope === 'all' || scope === 'fasih') columns.push('Target Fasih Awal');
+          columns.push('Target FASIH', 'FASIH Draft', 'FASIH Submitted', 'FASIH Approved', 'FASIH Rejected', 'Capaian FASIH (%)');
+          if (scope === 'all' || scope === 'fasih') columns.push('Target Static', 'Target Upload');
+        }
+        if (scope === 'all' || scope === 'muatan') {
+          columns.push(
+            'Target Muatan', 'Realisasi Muatan', 'Capaian Muatan (%)', 'Total Usaha', 'Usaha Ditemukan', 'Usaha Baru',
+            'Usaha Tidak Ditemukan', 'Usaha Tutup', 'Usaha Ganda', 'Total Keluarga', 'Keluarga Ditemukan', 'Keluarga Baru',
+            'Keluarga Tidak Ditemukan', 'Keluarga Meninggal', 'Keluarga Tidak Eligible', 'Keluarga Tidak Dapat Ditemui'
+          );
+        }
+        if (scope === 'all') columns.push('Status Progres');
+      } else {
+        // Petugas
+        columns = ['Nama PCL', 'PML (Pengawas)', 'Korlap (Koordinator)', 'Kecamatan', 'Total Sub-SLS'];
+        if (scope === 'all' || scope === 'fasih') {
+          columns.push('Target FASIH', 'FASIH Draft', 'FASIH Submitted', 'FASIH Approved', 'FASIH Rejected', 'Capaian FASIH (%)');
+        }
+        if (scope === 'all' || scope === 'muatan') {
+          columns.push('Target Muatan', 'Realisasi Muatan', 'Capaian Muatan (%)');
+        }
+      }
+
+      let html = '';
+      columns.forEach(col => {
+        const meta = METADATA_DICTIONARY[col] || { type: 'N/A', desc: '-', src: '-' };
+        html += `
+          <tr>
+            <td style="padding: 10px; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--text-primary); font-size:12px;">${col}</td>
+            <td style="padding: 10px; border-bottom: 1px solid var(--border); color: var(--accent-blue); font-size:11px;"><code>${meta.type}</code></td>
+            <td style="padding: 10px; border-bottom: 1px solid var(--border); color: var(--text-secondary); font-size:12px; line-height:1.4;">${meta.desc}</td>
+            <td style="padding: 10px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size:11px;">${meta.src}</td>
+          </tr>
+        `;
+      });
+      metadataTableBody.innerHTML = html;
+    };
+
+    updateScopeOptions(); // trigger initial run
+
+    // ----------------------------------------------------
+    // PREVIEW AJAX LOADING
+    // ----------------------------------------------------
+    const loadPreviewData = async (shouldAlert = false) => {
+      const dateVal = exportDate.value;
+      if (!dateVal) {
+        if (shouldAlert) window.showAlert({ title: 'Gagal', text: 'Silakan pilih Tanggal Data / Upload terlebih dahulu.', icon: 'error' });
+        return;
+      }
+
+      if (window.Swal) window.Swal.showLoading();
+
+      const params = new URLSearchParams({
+        date: dateVal,
+        dataset: exportDataset.value,
+        kec: filterKec.value,
+        desa: filterDesa.value,
+        korlap: filterKorlap.value,
+        pml: filterPml.value,
+        pcl: filterPcl.value,
+        status: filterStatus.value,
+        scope: exportScope.value
+      });
+
+      try {
+        // Load only 10 rows for preview speed
+        const previewParams = new URLSearchParams(params);
+        previewParams.set('limit', '10');
+
+        const previewRes = await fetch(`/export/data?${previewParams.toString()}`);
+        const previewResult = await previewRes.json();
+        
+        if (window.Swal) window.Swal.close();
+
+        if (!previewResult.success || !previewResult.rows) {
+          throw new Error(previewResult.error || 'Terjadi kesalahan sistem.');
+        }
+
+        const rows = previewResult.rows;
+        const total = previewResult.total;
+
+        // Render preview table
+        if (rows.length === 0) {
+          previewCard.style.display = 'none';
+          window.showAlert({ title: 'Data Kosong', text: 'Tidak ditemukan data yang sesuai dengan parameter filter.', icon: 'info' });
+          currentData = null;
+          return;
+        }
+
+        currentData = params; // store query parameters for later full downloads
+
+        previewCard.style.display = 'block';
+        previewRowBadge.textContent = `${total.toLocaleString('id-ID')} baris ditemukan`;
+
+        // Render Headers
+        const headers = Object.keys(rows[0]);
+        let theadHtml = '<tr>';
+        headers.forEach(h => {
+          theadHtml += `<th style="padding: 10px; border-bottom: 2px solid var(--border); font-size:11.5px; text-align: left; font-weight:700; white-space:nowrap; background:var(--bg-secondary); color:var(--text-primary);">${h}</th>`;
+        });
+        theadHtml += '</tr>';
+        previewThead.innerHTML = theadHtml;
+
+        // Render Rows
+        let tbodyHtml = '';
+        rows.forEach(row => {
+          tbodyHtml += '<tr>';
+          headers.forEach(h => {
+            let val = row[h];
+            let cellStyle = 'padding: 10px; border-bottom: 1px solid var(--border); font-size:12px; white-space:nowrap;';
+            
+            // Apply alignment and styles for numeric columns
+            if (typeof val === 'number') {
+              cellStyle += ' text-align: right;';
+              // Check if percent
+              if (h.includes('%')) {
+                val = val.toFixed(2) + '%';
+              } else {
+                val = val.toLocaleString('id-ID');
+              }
+            } else if (val === null || val === undefined) {
+              val = '-';
+              cellStyle += ' color: var(--text-muted); text-align: center;';
+            }
+
+            // Highlighting status
+            if (h === 'Status Progres') {
+              let badgeColor = 'rgba(156, 163, 175, 0.15); color: #9ca3af;'; // Belum Mulai
+              if (val === 'Sedang Didata') badgeColor = 'rgba(59, 130, 246, 0.15); color: var(--accent-blue);';
+              if (val === 'Memenuhi Target') badgeColor = 'rgba(16, 185, 129, 0.15); color: var(--accent-green);';
+              if (val === 'Melebihi Target') badgeColor = 'rgba(168, 85, 247, 0.15); color: var(--accent-purple);';
+              val = `<span class="badge" style="${badgeColor} font-size:10px; padding: 2px 8px; border-radius:12px;">${val}</span>`;
+            }
+
+            tbodyHtml += `<td style="${cellStyle}">${val}</td>`;
+          });
+          tbodyHtml += '</tr>';
+        });
+        previewTbody.innerHTML = tbodyHtml;
+        previewPageText.textContent = `Pratinjau menampilkan 1-10 dari total ${total.toLocaleString('id-ID')} baris.`;
+        
+        // Scroll into preview card
+        previewCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (err) {
+        if (window.Swal) window.Swal.close();
+        window.showAlert({ title: 'Gagal Memuat Preview', text: err.message, icon: 'error' });
+      }
+    };
+
+    btnLoadPreview.addEventListener('click', () => loadPreviewData(true));
+
+    // Reset filters
+    btnResetFilters.addEventListener('click', () => {
+      exportConfigForm.reset();
+      filterDesa.innerHTML = '<option value="">-- Semua Desa --</option>';
+      filterDesa.disabled = true;
+      filterDesa.style.opacity = '0.6';
+      updateScopeOptions();
+      previewCard.style.display = 'none';
+      currentData = null;
+      window.showToast('Parameter ekspor berhasil direset.', 'info');
+    });
+
+    // ----------------------------------------------------
+    // FULL EXPORT GENERATION & DOWNLOAD
+    // ----------------------------------------------------
+    exportConfigForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const dateVal = exportDate.value;
+      if (!dateVal) {
+        window.showAlert({ title: 'Gagal', text: 'Silakan pilih Tanggal Data / Upload terlebih dahulu.', icon: 'error' });
+        return;
+      }
+
+      // Check format
+      const format = exportFormat.value;
+      const dataset = exportDataset.value;
+      const scope = exportScope.value;
+
+      if (window.Swal) window.Swal.showLoading();
+
+      const params = new URLSearchParams({
+        date: dateVal,
+        dataset,
+        kec: filterKec.value,
+        desa: filterDesa.value,
+        korlap: filterKorlap.value,
+        pml: filterPml.value,
+        pcl: filterPcl.value,
+        status: filterStatus.value,
+        scope
+      });
+
+      try {
+        // Fetch ALL rows for download
+        const res = await fetch(`/export/data?${params.toString()}`);
+        const result = await res.json();
+        
+        if (window.Swal) window.Swal.close();
+
+        if (!result.success || !result.rows || result.rows.length === 0) {
+          window.showAlert({ title: 'Gagal', text: 'Tidak ada data untuk diekspor.', icon: 'warning' });
+          return;
+        }
+
+        const dataRows = result.rows;
+        const filename = `${dataset}_export_${new Date().toISOString().slice(0, 10)}`;
+
+        if (format === 'csv') {
+          exportToCSV(dataRows, filename);
+        } else if (format === 'xlsx') {
+          await exportToXLSX(dataRows, dataset, scope, filename);
+        } else if (format === 'pdf') {
+          await exportToPDF(dataRows, dataset, scope, filename);
+        }
+      } catch (err) {
+        if (window.Swal) window.Swal.close();
+        window.showAlert({ title: 'Ekspor Gagal', text: err.message, icon: 'error' });
+      }
+    });
+
+    // 1. CSV EXPORTER (Client-side)
+    const exportToCSV = (rows, filename) => {
+      const headers = Object.keys(rows[0]);
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => 
+          headers.map(h => {
+            let cell = row[h];
+            if (cell === null || cell === undefined) cell = '';
+            // Wrap strings in double quotes and escape existing quotes
+            return `"${String(cell).replace(/"/g, '""')}"`;
+          }).join(',')
+        )
+      ].join('\n');
+
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', `${filename}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.showToast('Berkas CSV berhasil diunduh.', 'success');
+    };
+
+    // 2. EXCEL EXPORTER (Client-side with SheetJS & Metadata Sheet)
+    const exportToXLSX = async (rows, dataset, scope, filename) => {
+      if (window.Swal) {
+        window.Swal.fire({
+          title: 'Menyiapkan Excel...',
+          text: 'Sedang menulis data ke berkas XLSX.',
+          showConfirmButton: false,
+          didOpen: () => { window.Swal.showLoading(); }
+        });
+      }
+      
+      try {
+        await window.loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+        
+        const wb = XLSX.utils.book_new();
+        
+        // Tab 1: Data Utama
+        const wsData = XLSX.utils.json_to_sheet(rows);
+        XLSX.utils.book_append_sheet(wb, wsData, 'Data Progres');
+
+        // Tab 2: Metadata Variabel (Selalu disisipkan)
+        const headers = Object.keys(rows[0]);
+        const metadataRows = headers.map(h => {
+          const m = METADATA_DICTIONARY[h] || { type: 'N/A', desc: '-', src: '-' };
+          return {
+            'Nama Variabel': h,
+            'Tipe Data': m.type,
+            'Definisi / Penjelasan': m.desc,
+            'Sumber Data': m.src
+          };
+        });
+
+        const wsMeta = XLSX.utils.json_to_sheet(metadataRows);
+        XLSX.utils.book_append_sheet(wb, wsMeta, 'Metadata Variabel');
+
+        XLSX.writeFile(wb, `${filename}.xlsx`);
+        if (window.Swal) window.Swal.close();
+        window.showToast('Berkas Excel (.xlsx) berhasil diunduh.', 'success');
+      } catch (err) {
+        if (window.Swal) window.Swal.close();
+        window.showAlert({ title: 'Gagal Export Excel', text: err.message, icon: 'error' });
+      }
+    };
+
+    // 3. PDF EXPORTER (Client-side with jsPDF and Metadata Section)
+    const exportToPDF = async (rows, dataset, scope, filename) => {
+      if (window.Swal) {
+        window.Swal.fire({
+          title: 'Menyiapkan PDF...',
+          text: 'Sedang me-render dokumen PDF.',
+          showConfirmButton: false,
+          didOpen: () => { window.Swal.showLoading(); }
+        });
+      }
+      
+      try {
+        await window.loadScript('/js/jspdf.umd.min.js?v=<%= appVersion %>');
+        await window.loadScript('/js/jspdf.plugin.autotable.min.js?v=<%= appVersion %>');
+        
+        const { jsPDF } = window.jspdf;
+        const headers = Object.keys(rows[0]);
+        
+        // Determine orientation based on column count
+        const orientation = headers.length > 7 ? 'l' : 'p';
+        const doc = new jsPDF(orientation, 'pt', 'a4');
+        
+        const docWidth = doc.internal.pageSize.getWidth();
+        
+        // Draw Header
+        doc.setFont('Helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(33, 43, 54);
+        doc.text('LAPORAN MONITORING PROGRES SE2026 PPU', docWidth / 2, 40, { align: 'center' });
+        
+        doc.setFont('Helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(99, 115, 129);
+        doc.text(`Unduh Tanggal: ${new Date().toLocaleString('id-ID')} | Dataset: ${dataset.toUpperCase()} (${scope.toUpperCase()})`, docWidth / 2, 55, { align: 'center' });
+        
+        // Prepare table data
+        const bodyData = rows.map(row => 
+          headers.map(h => {
+            let val = row[h];
+            if (val === null || val === undefined) return '-';
+            if (typeof val === 'number') {
+              if (h.includes('%')) return val.toFixed(2) + '%';
+              return val.toLocaleString('id-ID');
+            }
+            return String(val);
+          })
+        );
+
+        doc.autoTable({
+          head: [headers],
+          body: bodyData,
+          startY: 75,
+          theme: 'striped',
+          styles: {
+            fontSize: 7,
+            cellPadding: 3,
+            valign: 'middle'
+          },
+          headStyles: {
+            fillColor: [37, 99, 235],
+            textColor: 255,
+            fontStyle: 'bold',
+            halign: 'left'
+          },
+          margin: { top: 75, bottom: 40, left: 20, right: 20 },
+          didDrawPage: (data) => {
+            // Footers page number
+            const str = 'Halaman ' + doc.internal.getNumberOfPages();
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(str, docWidth - 50, doc.internal.pageSize.getHeight() - 20);
+          }
+        });
+
+        // Add Metadata Variabel page at the end of the PDF
+        doc.addPage();
+        
+        doc.setFont('Helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(33, 43, 54);
+        doc.text('KAMUS & METADATA VARIABEL EKSPOR', 20, 40);
+
+        const metaHeaders = ['Variabel', 'Tipe Data', 'Penjelasan / Definisi', 'Sumber'];
+        const metaBody = headers.map(h => {
+          const m = METADATA_DICTIONARY[h] || { type: 'N/A', desc: '-', src: '-' };
+          return [h, m.type, m.desc, m.src];
+        });
+
+        doc.autoTable({
+          head: [metaHeaders],
+          body: metaBody,
+          startY: 55,
+          theme: 'grid',
+          styles: {
+            fontSize: 8,
+            cellPadding: 4
+          },
+          headStyles: {
+            fillColor: [100, 116, 139],
+            textColor: 255,
+            fontStyle: 'bold'
+          },
+          margin: { top: 55, bottom: 40, left: 20, right: 20 }
+        });
+
+        doc.save(`${filename}.pdf`);
+        if (window.Swal) window.Swal.close();
+        window.showToast('Berkas PDF berhasil diunduh.', 'success');
+      } catch (err) {
+        if (window.Swal) window.Swal.close();
+        window.showAlert({ title: 'Gagal Export PDF', text: err.message, icon: 'error' });
+      }
+    };
+  });
+</script>
