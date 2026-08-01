@@ -602,28 +602,26 @@ function createDailyBarChart(canvasId, labels, data, title = '', color = '#7c3ae
   return chart;
 }
 
-// ===== DAILY INCREMENT LINE CHART =====
-function createDailyIncrementLineChart(canvasId, labels, data, targetNormalVal, targetAktualVal, rawTrenData = []) {
+// ===== DAILY INCREMENT BAR CHART =====
+function createDailyIncrementBarChart(canvasId, labels, data, targetNormalVal, targetAktualVal, rawTrenData = []) {
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
   const theme = getThemeColors();
   const chart = new Chart(ctx, {
-    type: 'line',
+    type: 'bar',
     data: {
       labels,
       datasets: [
         {
           label: 'Penambahan Riil',
           data: data,
+          backgroundColor: 'rgba(16, 185, 129, 0.8)',
           borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.08)',
-          fill: true,
-          tension: 0.3,
-          borderWidth: 2,
-          pointRadius: 3,
-          pointHoverRadius: 5
+          borderWidth: 1,
+          borderRadius: 4
         },
         {
+          type: 'line',
           label: 'Target Normal',
           data: Array(labels.length).fill(targetNormalVal),
           borderColor: '#60a5fa',
@@ -634,6 +632,7 @@ function createDailyIncrementLineChart(canvasId, labels, data, targetNormalVal, 
           tension: 0
         },
         {
+          type: 'line',
           label: 'Target Aktual',
           data: Array(labels.length).fill(targetAktualVal),
           borderColor: '#8b5cf6',
