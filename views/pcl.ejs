@@ -751,8 +751,11 @@ document.addEventListener('DOMContentLoaded', () => {
         detailContainer.innerHTML = newDetail.innerHTML;
         detailContainer.style.opacity = '1';
         detailContainer.classList.remove('smooth-detail-animate');
-        void detailContainer.offsetWidth;
-        detailContainer.classList.add('smooth-detail-animate');
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            detailContainer.classList.add('smooth-detail-animate');
+          });
+        });
 
         // Toggle grid selection classes
         const grid = document.querySelector('.drilldown-grid');
@@ -782,13 +785,14 @@ document.addEventListener('DOMContentLoaded', () => {
           e.preventDefault();
           const url = closeBtn.getAttribute('href');
 
-          // Reset active rows
+          // Reset active rows (optimized)
           if (table) {
-            table.querySelectorAll('tbody tr').forEach(r => {
-              r.classList.remove('active');
-              r.style.background = '';
-              r.style.fontWeight = '';
-            });
+            const activeRow = table.querySelector('tbody tr.active');
+            if (activeRow) {
+              activeRow.classList.remove('active');
+              activeRow.style.background = '';
+              activeRow.style.fontWeight = '';
+            }
           }
 
           if (window.detailHtmlCache && window.detailHtmlCache[url]) {
@@ -868,12 +872,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = link.getAttribute('href');
         const row = link.closest('tr');
 
-        // Update active row visual indicator
-        table.querySelectorAll('tbody tr').forEach(r => {
-          r.classList.remove('active');
-          r.style.background = '';
-          r.style.fontWeight = '';
-        });
+        // Update active row visual indicator (optimized)
+        const activeRow = table.querySelector('tbody tr.active');
+        if (activeRow) {
+          activeRow.classList.remove('active');
+          activeRow.style.background = '';
+          activeRow.style.fontWeight = '';
+        }
         row.classList.add('active');
         row.style.background = 'var(--bg-card-hover)';
         row.style.fontWeight = '500';

@@ -2243,8 +2243,11 @@ function updateTime() {
           // Swap content immediately and trigger smooth layout entrance animation
           oldContent.innerHTML = newContent.innerHTML;
           oldContent.classList.remove('pjax-animate-enter');
-          void oldContent.offsetWidth;
-          oldContent.classList.add('pjax-animate-enter');
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              oldContent.classList.add('pjax-animate-enter');
+            });
+          });
           setTimeout(() => {
             oldContent.classList.remove('pjax-animate-enter');
           }, 400);
