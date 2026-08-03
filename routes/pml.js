@@ -235,9 +235,11 @@ router.get('/', (req, res) => {
         SUM(c.submitted_total + c.approved_total + c.rejected_total) AS selesai_total,
         SUM(c.target_fasih_total) AS target_fasih_total
       FROM summary_cache c
-      JOIN uploads u ON c.upload_id = u.id
+      JOIN (
+        SELECT MAX(id) AS id, tanggal FROM uploads GROUP BY tanggal
+      ) u ON c.upload_id = u.id
       WHERE UPPER(c.pml) = ?
-      GROUP BY u.tanggal, u.id
+      GROUP BY u.tanggal
       ORDER BY u.tanggal ASC
     `).all(filterPml.toUpperCase());
   }
