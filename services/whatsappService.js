@@ -503,20 +503,22 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       targetSpeedTotal = totalDays > 0 ? (targetFasih / totalDays) : 0;
     }
 
-    // Hitung deviasi harian (24 jam & update terakhir)
-    const deviasi24h = diff24Total - targetSpeedTotal;
+    const targetTetap = 13 * totalPcl;
+
+    // Hitung deviasi harian (24 jam & update terakhir) terhadap Target Tetap
+    const deviasi24h = diff24Total - targetTetap;
     const deviasi24hSign = deviasi24h >= 0 ? '+' : '';
     const deviasi24hFormatted = deviasi24h < 0 
       ? `–${Math.round(Math.abs(deviasi24h)).toLocaleString('id-ID')}` 
       : `${deviasi24hSign}${Math.round(deviasi24h).toLocaleString('id-ID')}`;
 
-    const deviasiUpdate = diffTotal - targetSpeedTotal;
+    const deviasiUpdate = diffTotal - targetTetap;
     const deviasiUpdateSign = deviasiUpdate >= 0 ? '+' : '';
     const deviasiUpdateFormatted = deviasiUpdate < 0 
       ? `–${Math.round(Math.abs(deviasiUpdate)).toLocaleString('id-ID')}` 
       : `${deviasiUpdateSign}${Math.round(deviasiUpdate).toLocaleString('id-ID')}`;
 
-    // Hitung deviasi kumulatif (Sejak awal pendataan, 100% persis seperti di Halaman Overview)
+    // Hitung deviasi kumulatif (Sejak awal pendataan, terhadap Target Tetap & Kebutuhan Laju Aman)
     const diffTime = uploadDate - startDate;
     const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
     const currentSpeedKumulatif = diffDays > 0 ? (realisasiFasih / diffDays) : 0;
@@ -525,7 +527,7 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     const remainingFasih = Math.max(0, targetFasih - realisasiFasih);
     const reqSpeed = daysRemaining > 0 ? (remainingFasih / daysRemaining) : 0;
 
-    const stdDeficit = Math.max(0, targetSpeedTotal - currentSpeedKumulatif);
+    const stdDeficit = Math.max(0, targetTetap - currentSpeedKumulatif);
     const reqDeficit = Math.max(0, reqSpeed - currentSpeedKumulatif);
     const maxDeficitKumulatif = Math.max(stdDeficit, reqDeficit);
     const deviasiKumulatifFormatted = maxDeficitKumulatif > 0 ? `–${Math.ceil(maxDeficitKumulatif).toLocaleString('id-ID')}` : 'Terpenuhi';
@@ -649,7 +651,7 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       const formattedTimeWweb = `${hours}.${minutes} WITA`;
 
       // Pesan bawaan sistem baru sesuai contoh pengguna
-      message = `*UPDATE HARIAN SE2026 PPU*\n` +
+      message = `*📢 UPDATE HARIAN SE2026 PPU*\n` +
                 `🗓️ ${formattedDateWweb} | ⏰ ${formattedTimeWweb}\n\n` +
                 `*AKUMULASI PROGRES PENDATAAN*\n` +
                 `✅ Selesai (Subm/Appr/Rej): *${realisasiFasih.toLocaleString('id-ID')}* dokumen (*${persenFasih}%*)\n` +
@@ -660,9 +662,10 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
                 `🟡 Draft (Sedang Diisi): *${(stats.draft_total || 0).toLocaleString('id-ID')}* dokumen\n` +
                 `📋 Total Assignment FASIH: *${targetFasih.toLocaleString('id-ID')}* dokumen\n\n` +
                 `*KINERJA REALISASI SEJAK UPLOAD SEBELUMNYA (${prevUploadTimeStr})*\n` +
+                `DEADLINE: 17 AGUSTUS 2026\n` +
                 `📨 Realisasi Masuk: *${diffTotal.toLocaleString('id-ID')}* dokumen\n` +
                 `👤 Produktifitas petugas keseluruhan: *${avgDiffAll.toFixed(2)}* dokumen/petugas/hari\n` +
-                `📈 Deviasi vs Target Normal (Update): *${deviasiUpdateFormatted}* dokumen\n` +
+                `📈 Deviasi vs Target Tetap (Update): *${deviasiUpdateFormatted}* dokumen\n` +
                 `📉 Defisit Laju Kumulatif: *${deviasiKumulatifFormatted}* dokumen/hari\n\n` +
                 `*SEBARAN PRODUKTIVITAS PETUGAS (SEJAK UPLOAD SEBELUMNYA)*\n` +
                 `🔴 0 dokumen: *${distLast.bucket_0}* orang\n` +

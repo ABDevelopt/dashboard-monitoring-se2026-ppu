@@ -786,6 +786,126 @@ ATURAN STRICT & FORMAT JAWABAN (WAJIB DIIKUTI TANPA PENGECUALIAN):
   }
 });
 
+// GET /api/pcl-distribution - Dapatkan data sebaran performa PCL untuk tanggal/upload tertentu
+router.get('/pcl-distribution', (req, res) => {
+  try {
+    const db = getDb();
+    
+    // Get all available dates with their max upload ID
+    const availableDates = db.prepare(`
+      SELECT MAX(id) AS id, tanggal 
+      FROM uploads 
+      GROUP BY tanggal 
+      ORDER BY tanggal DESC
+    `).all();
+
+    if (availableDates.length === 0) {
+      return res.json({ success: false, error: 'Tidak ada data upload.' });
+    }
+
+    let uploadId = req.query.uploadId ? parseInt(req.query.uploadId, 10) : null;
+    let selectedDate = req.query.date || null;
+
+    let selectedUpload = null;
+    if (uploadId) {
+      selectedUpload = db.prepare('SELECT id, tanggal, created_at FROM uploads WHERE id = ?').get(uploadId);
+    } else if (selectedDate) {
+      // Find the max upload ID for this date
+      selectedUpload = db.prepare('SELECT id, tanggal, created_at FROM uploads WHERE tanggal = ? ORDER BY id DESC LIMIT 1').get(selectedDate);
+    }
+
+    // Fallback to the latest overall upload if none specified or found
+    if (!selectedUpload) {
+      selectedUpload = db.prepare('SELECT id, tanggal, created_at FROM uploads ORDER BY id DESC LIMIT 1').get();
+    }
+
+    if (!selectedUpload) {
+      return res.json({ success: false, error: 'Upload tidak ditemukan.' });
+    }
+
+    const targetUploadId = selectedUpload.id;
+    const prevUpload = db.prepare('SELECT id FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(targetUploadId);
+
+    let distLast = null;
+    let pclDeltas = [];
+
+    if (prevUpload) {
+      distLast = db.prepare(`
+        SELECT 
+          COALESCE(SUM(CASE WHEN diff <= 0 THEN 1 ELSE 0 END), 0) AS bucket_0,
+          COALESCE(SUM(CASE WHEN diff BETWEEN 1 AND 4 THEN 1 ELSE 0 END), 0) AS bucket_1_4,
+          COALESCE(SUM(CASE WHEN diff BETWEEN 5 AND 7 THEN 1 ELSE 0 END), 0) AS bucket_5_7,
+          COALESCE(SUM(CASE WHEN diff BETWEEN 8 AND 12 THEN 1 ELSE 0 END), 0) AS bucket_8_12,
+          COALESCE(SUM(CASE WHEN diff >= 13 THEN 1 ELSE 0 END), 0) AS bucket_13_plus
+        FROM (
+          SELECT 
+            m.pcl,
+            (SUM(COALESCE(p_curr.submitted_by_pcl, 0) + COALESCE(p_curr.approved, 0) + COALESCE(p_curr.rejected, 0)) -
+             SUM(COALESCE(p_prev.submitted_by_pcl, 0) + COALESCE(p_prev.approved, 0) + COALESCE(p_prev.rejected, 0))) AS diff
+          FROM subsls_master m
+          LEFT JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
+          LEFT JOIN progres p_prev ON m.kode = p_prev.kode AND p_prev.upload_id = ?
+          WHERE m.pcl IS NOT NULL AND m.pcl != ''
+          GROUP BY m.pcl
+        )
+      `).get(targetUploadId, prevUpload.id);
+
+      pclDeltas = db.prepare(`
+        SELECT 
+          m.pcl,
+          (SUM(COALESCE(p_curr.submitted_by_pcl, 0) + COALESCE(p_curr.approved, 0) + COALESCE(p_curr.rejected, 0)) -
+           SUM(COALESCE(p_prev.submitted_by_pcl, 0) + COALESCE(p_prev.approved, 0) + COALESCE(p_prev.rejected, 0))) AS diff
+        FROM subsls_master m
+        LEFT JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
+        LEFT JOIN progres p_prev ON m.kode = p_prev.kode AND p_prev.upload_id = ?
+        WHERE m.pcl IS NOT NULL AND m.pcl != ''
+        GROUP BY m.pcl
+        ORDER BY m.pcl ASC
+      `).all(targetUploadId, prevUpload.id);
+    } else {
+      distLast = db.prepare(`
+        SELECT 
+          COALESCE(SUM(CASE WHEN diff <= 0 THEN 1 ELSE 0 END), 0) AS bucket_0,
+          COALESCE(SUM(CASE WHEN diff BETWEEN 1 AND 4 THEN 1 ELSE 0 END), 0) AS bucket_1_4,
+          COALESCE(SUM(CASE WHEN diff BETWEEN 5 AND 7 THEN 1 ELSE 0 END), 0) AS bucket_5_7,
+          COALESCE(SUM(CASE WHEN diff BETWEEN 8 AND 12 THEN 1 ELSE 0 END), 0) AS bucket_8_12,
+          COALESCE(SUM(CASE WHEN diff >= 13 THEN 1 ELSE 0 END), 0) AS bucket_13_plus
+        FROM (
+          SELECT 
+            m.pcl,
+            SUM(COALESCE(p_curr.submitted_by_pcl, 0) + COALESCE(p_curr.approved, 0) + COALESCE(p_curr.rejected, 0)) AS diff
+          FROM subsls_master m
+          LEFT JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
+          WHERE m.pcl IS NOT NULL AND m.pcl != ''
+          GROUP BY m.pcl
+        )
+      `).get(targetUploadId);
+
+      pclDeltas = db.prepare(`
+        SELECT 
+          m.pcl,
+          SUM(COALESCE(p_curr.submitted_by_pcl, 0) + COALESCE(p_curr.approved, 0) + COALESCE(p_curr.rejected, 0)) AS diff
+        FROM subsls_master m
+        LEFT JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
+        WHERE m.pcl IS NOT NULL AND m.pcl != ''
+        GROUP BY m.pcl
+        ORDER BY m.pcl ASC
+      `).all(targetUploadId);
+    }
+
+    res.json({
+      success: true,
+      selectedUpload,
+      dist: distLast,
+      pclDeltas,
+      availableDates
+    });
+  } catch (error) {
+    console.error('Error fetching PCL distribution:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
 
 

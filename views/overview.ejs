@@ -200,6 +200,19 @@
         box-shadow: 0 0 16px rgba(6, 182, 212, 0.4) !important;
       }
       
+      /* Date navigation styling for PCL distribution */
+      .btn-icon:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+      }
+      .btn-icon:disabled {
+        opacity: 0.3;
+        cursor: not-allowed !important;
+        background: transparent !important;
+      }
+      #distDateSelector:hover {
+        border-color: var(--accent-green) !important;
+      }
+      
       .ai-btn-group {
         display: flex;
         align-items: center;
@@ -817,29 +830,37 @@
                 <strong style="color: var(--text-primary); display: block; margin-bottom: 4px;">Panduan Analisis Target Harian Kabupaten:</strong>
                 Blok ini menyajikan analisis laju pengumpulan dokumen FASIH dalam skala agregat (total se-kabupaten per hari). 
                 <br><br>
-                <strong>Realisasi Laju</strong> adalah kecepatan nyata pengisian dokumen per hari secara kumulatif. 
+                <strong>Realisasi Laju:</strong> Kecepatan nyata pengisian dokumen per hari secara kumulatif kabupaten.
                 <br><br>
-                <strong>Defisit Laju</strong> adalah angka kekurangan dokumen per hari yang wajib dikejar agar pendataan dapat selesai sesuai target waktu (deadline). Kekurangan laju ini dihitung terhadap dua pembanding: target standar harian kabupaten (laju ideal) dan kebutuhan laju tepat waktu (laju minimal agar selesai pas sebelum deadline).
+                <strong>Target Normal:</strong> Rata-rata laju harian berdasarkan opsi yang aktif di menu Pengaturan (misal: total target dibagi total hari alokasi pendataan).
+                <br><br>
+                <strong>Target Aktual (Laju Aman):</strong> Kecepatan minimal harian yang diperlukan untuk menyelesaikan sisa beban kerja tepat waktu sebelum deadline (menyesuaikan sisa beban dan hari tersisa).
+                <br><br>
+                <strong>Target Tetap:</strong> Standar rancangan kegiatan awal flat yaitu 13 dokumen per petugas (PCL) per hari secara kumulatif kabupaten (13 × <%= totalPcl %> PCL).
+                <br><br>
+                <strong>Defisit Laju:</strong> Angka kekurangan dokumen per hari terhadap target minimal agar pendataan tetap on-track.
               </div>
             </div>
           </div>
             
             <% 
+              const targetTetap = 13 * totalPcl;
               const stdDeficit = Math.max(0, targetSpeedTotal - currentSpeed);
               const reqDeficit = Math.max(0, reqSpeed - currentSpeed);
               const isOfftrackHarian = stdDeficit > 0 || reqDeficit > 0;
               
               // Nilai-nilai laju harian
               const realisasiCount = currentSpeed;
-              const targetNormal = targetSpeedTotal; // 13 * totalPcl (Standar Rancangan)
+              const targetNormal = targetSpeedTotal; // Berdasarkan kalkulasi mode terpilih
               const targetAktual = reqSpeed;          // Target Aktual / Laju Aman Deadline
 
-              // Skala maksimum grafik agar semua titik (realisasi & line-marks) muat dalam 100% track
-              const maxScaleVal = Math.max(targetNormal, targetAktual, realisasiCount, 1) * 1.15;
+              // Skala maksimum grafik agar semua titik (realisasi, target normal, target aktual, target tetap) muat dalam 100% track
+              const maxScaleVal = Math.max(targetNormal, targetAktual, targetTetap, realisasiCount, 1) * 1.15;
 
               const realisasiBarPct = Math.min(100, (realisasiCount / maxScaleVal) * 100);
               const targetNormalPct = Math.min(100, (targetNormal / maxScaleVal) * 100);
               const targetAktualPct = Math.min(100, (targetAktual / maxScaleVal) * 100);
+              const targetTetapPct = Math.min(100, (targetTetap / maxScaleVal) * 100);
             %>
 
             <div class="target-harian-flex-wrap">
@@ -855,8 +876,8 @@
                   </span>
                 </div>
 
-                <!-- Progress Bar Container dengan Line-Marks (Target Normal & Target Aktual) -->
-                <div class="progress-timeline-container" style="position: relative; height: 28px; margin-top: 24px; margin-bottom: 24px; width: 100%;">
+                <!-- Progress Bar Container dengan Line-Marks (Target Normal, Target Aktual, Target Tetap) -->
+                <div class="progress-timeline-container" style="position: relative; height: 28px; margin-top: 32px; margin-bottom: 32px; width: 100%;">
                   
                   <!-- Track & Progress Bar (Gaya FASIH Assignment) -->
                   <div style="background: var(--bg-progress-wrap); height: 28px; border-radius: 14px; overflow: hidden; position: relative; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15); width: 100%;">
@@ -870,9 +891,14 @@
 
                   </div>
 
-                  <!-- Marker Target Normal (Standar Rancangan 13 * totalPcl) -->
+                  <!-- Marker Target Normal -->
                   <div class="target-marker" style="position: absolute; left: <%= targetNormalPct.toFixed(1) %>%; top: -3px; height: 34px; border-left: 2px dashed #60a5fa; z-index: 5; pointer-events: none;">
                     <span class="target-marker-text" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: #60a5fa; white-space: nowrap;">Target Normal: <%= Math.round(targetNormal).toLocaleString('id-ID') %> dok/hari</span>
+                  </div>
+
+                  <!-- Marker Target Tetap (13 * Petugas) -->
+                  <div class="target-marker" style="position: absolute; left: <%= targetTetapPct.toFixed(1) %>%; top: -13px; height: 44px; border-left: 2px dashed #f59e0b; z-index: 7; pointer-events: none;">
+                    <span class="target-marker-text" style="position: absolute; top: -26px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: #f59e0b; white-space: nowrap;">Target Tetap: <%= Math.round(targetTetap).toLocaleString('id-ID') %> dok/hari</span>
                   </div>
 
                   <!-- Marker Target Aktual (Laju Aman Deadline) -->
@@ -882,8 +908,8 @@
 
                 </div>
 
-                <!-- Detail Legend (3 Kolom: Realisasi, Target Normal Rancangan, Target Aktual Laju Aman) -->
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 2px;">
+                <!-- Detail Legend (4 Kolom: Realisasi, Target Normal, Target Aktual, Target Tetap) -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 2px;">
                   <!-- Realisasi Laju -->
                   <div style="display: flex; flex-direction: column; gap: 2px;">
                     <span style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Realisasi Laju</span>
@@ -905,6 +931,14 @@
                     <span style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Target Aktual</span>
                     <span style="font-size: 13px; font-weight: 800; color: var(--accent-purple);">
                       <%= reqSpeed.toLocaleString('id-ID', {maximumFractionDigits: 1}) %>
+                      <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
+                    </span>
+                  </div>
+                  <!-- Target Tetap -->
+                  <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <span style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Target Tetap</span>
+                    <span style="font-size: 13px; font-weight: 800; color: #f59e0b;">
+                      <%= Math.round(targetTetap).toLocaleString('id-ID') %>
                       <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
                     </span>
                   </div>
@@ -965,17 +999,36 @@
       <!-- SEBARAN PERFORMA PENAMBAHAN DOKUMEN PETUGAS (TABEL) -->
       <% if (settings.overview_fasih === '1' && typeof distLast !== 'undefined' && distLast) { %>
       <div class="card" style="margin: 0; position: relative; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px;">
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-          <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(34, 197, 94, 0.12); color: var(--accent-green); display: flex; align-items: center; justify-content: center; font-size: 16px;">
-            <i class="bi bi-table"></i>
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(34, 197, 94, 0.12); color: var(--accent-green); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">
+              <i class="bi bi-table"></i>
+            </div>
+            <div>
+              <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em;">
+                Sebaran Penambahan Dokumen Petugas (<span id="distDateLabel">Update Ini</span>)
+              </h4>
+              <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">
+                Distribusi penambahan realisasi dokumen FASIH per petugas (PCL) pada tanggal <span id="distDateSub"><%= latestUpload ? formatIndonesianDate(latestUpload.tanggal) : 'sesi upload terbaru' %></span>
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em;">
-              Sebaran Penambahan Dokumen Petugas (Update Ini)
-            </h4>
-            <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">
-              Distribusi penambahan realisasi dokumen FASIH per petugas (PCL) pada sesi upload terbaru
-            </p>
+
+          <!-- Date Navigator Controls -->
+          <div style="display: flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 8px; padding: 4px 6px;">
+            <button id="btnDistPrev" onclick="navigateDistDate(-1)" class="btn-icon" style="background: transparent; border: none; color: var(--text-primary); cursor: pointer; padding: 6px 10px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: var(--transition);" title="Sebelumnya" disabled>
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            
+            <select id="distDateSelector" onchange="onDistDateSelectChange(this.value)" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 12px; font-weight: 600; padding: 4px 28px 4px 8px; outline: none; cursor: pointer; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url(&quot;data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>&quot;); background-repeat: no-repeat; background-position-x: 100%; background-position-y: 50%;">
+              <% if (latestUpload) { %>
+                <option value="<%= latestUpload.tanggal %>"><%= formatIndonesianDate(latestUpload.tanggal) %></option>
+              <% } %>
+            </select>
+            
+            <button id="btnDistNext" onclick="navigateDistDate(1)" class="btn-icon" style="background: transparent; border: none; color: var(--text-primary); cursor: pointer; padding: 6px 10px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: var(--transition);" title="Berikutnya" disabled>
+              <i class="bi bi-chevron-right"></i>
+            </button>
           </div>
         </div>
 
@@ -990,7 +1043,7 @@
           ];
         %>
 
-        <div style="overflow-x: auto;">
+        <div id="distTableContainer" style="overflow-x: auto; transition: opacity 0.2s ease;">
           <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
             <thead>
               <tr style="border-bottom: 2px solid var(--border); color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em;">
@@ -1000,7 +1053,7 @@
                 <th style="padding: 10px 12px; font-weight: 700;">Rasio Distribusi</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="distTableBody">
               <% rows.forEach(row => { 
                 const pct = ((row.count / totalDistPcl) * 100).toFixed(1);
               %>
@@ -1026,7 +1079,7 @@
             <tfoot>
               <tr style="background: rgba(255, 255, 255, 0.01); font-weight: 700;">
                 <td style="padding: 12px; font-weight: 700; color: var(--text-primary);">Total Petugas (PCL)</td>
-                <td style="padding: 12px; text-align: center; font-weight: 800; color: var(--text-primary); font-size: 13px;">
+                <td id="distTotalCount" style="padding: 12px; text-align: center; font-weight: 800; color: var(--text-primary); font-size: 13px;">
                   <%= totalDistPcl.toLocaleString('id-ID') %>
                 </td>
                 <td style="padding: 12px; text-align: center; font-weight: 700; color: var(--text-primary);">100%</td>
@@ -1965,8 +2018,197 @@
       <% } %>
 
       // Modal Sebaran Petugas Detail Controller
-      const allPclDeltas = <%- typeof pclDeltas !== 'undefined' ? pclDeltas : '[]' %>;
+      let allPclDeltas = <%- typeof pclDeltas !== 'undefined' ? pclDeltas : '[]' %>;
       let activePclBucket = [];
+
+      // State for Sebaran Petugas Lintas Hari
+      let distAvailableDates = []; // List of { id, tanggal }
+      let distCurrentDateIdx = 0;
+
+      // Client-side date formatter helper
+      function formatIndonesianDateStr(dateStr) {
+        if (!dateStr) return '';
+        const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+          const day = parseInt(parts[2], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          const year = parseInt(parts[0], 10);
+          return `${day} ${months[month]} ${year}`;
+        }
+        return dateStr;
+      }
+
+      function renderDistDateDropdown() {
+        const selector = document.getElementById('distDateSelector');
+        if (!selector) return;
+        
+        selector.innerHTML = '';
+        
+        // Show options from newest to oldest
+        const displayDates = [...distAvailableDates].reverse();
+        
+        displayDates.forEach(d => {
+          const option = document.createElement('option');
+          option.value = d.tanggal;
+          option.textContent = formatIndonesianDateStr(d.tanggal);
+          selector.appendChild(option);
+        });
+
+        // Set the value to current date
+        const currentObj = distAvailableDates[distCurrentDateIdx];
+        if (currentObj) {
+          selector.value = currentObj.tanggal;
+        }
+      }
+
+      function updateNavigationButtons() {
+        const btnPrev = document.getElementById('btnDistPrev');
+        const btnNext = document.getElementById('btnDistNext');
+        
+        if (btnPrev) {
+          btnPrev.disabled = (distCurrentDateIdx <= 0);
+        }
+        if (btnNext) {
+          btnNext.disabled = (distCurrentDateIdx >= distAvailableDates.length - 1);
+        }
+      }
+
+      async function fetchDistData(dateStr) {
+        const container = document.getElementById('distTableContainer');
+        if (container) container.style.opacity = '0.5';
+        
+        try {
+          const basePath = window.location.pathname.split('/admin/')[0] || '';
+          const cleanBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+          const res = await fetch(`${cleanBasePath}/api/pcl-distribution?date=${dateStr}`);
+          const data = await res.json();
+          if (data.success) {
+            const formattedDate = formatIndonesianDateStr(data.selectedUpload.tanggal);
+            const distDateLabel = document.getElementById('distDateLabel');
+            const distDateSub = document.getElementById('distDateSub');
+            
+            const isLatest = (distCurrentDateIdx === distAvailableDates.length - 1);
+            if (distDateLabel) {
+              distDateLabel.textContent = isLatest ? 'Update Ini' : 'Arsip Harian';
+            }
+            if (distDateSub) {
+              distDateSub.textContent = formattedDate;
+            }
+
+            allPclDeltas = data.pclDeltas || [];
+            
+            // Re-render table body
+            const bucket_0 = data.dist.bucket_0 || 0;
+            const bucket_1_4 = data.dist.bucket_1_4 || 0;
+            const bucket_5_7 = data.dist.bucket_5_7 || 0;
+            const bucket_8_12 = data.dist.bucket_8_12 || 0;
+            const bucket_13_plus = data.dist.bucket_13_plus || 0;
+
+            const total = bucket_0 + bucket_1_4 + bucket_5_7 + bucket_8_12 + bucket_13_plus || 1;
+            
+            const rowsConfig = [
+              { id: 'bucket_0', label: '0 Dokumen (Stagnan)', count: bucket_0, color: 'var(--accent-red)' },
+              { id: 'bucket_1_4', label: '1 - 4 Dokumen (Rendah)', count: bucket_1_4, color: '#f59e0b' },
+              { id: 'bucket_5_7', label: '5 - 7 Dokumen (Sedang)', count: bucket_5_7, color: 'var(--accent-cyan)' },
+              { id: 'bucket_8_12', label: '8 - 12 Dokumen (Tinggi)', count: bucket_8_12, color: 'var(--accent-purple)' },
+              { id: 'bucket_13_plus', label: '>= 13 Dokumen (Target)', count: bucket_13_plus, color: 'var(--accent-green)' }
+            ];
+
+            const tbody = document.getElementById('distTableBody');
+            if (tbody) {
+              tbody.innerHTML = '';
+              rowsConfig.forEach(row => {
+                const pct = ((row.count / total) * 100).toFixed(1);
+                const tr = document.createElement('tr');
+                tr.className = 'hover-row';
+                tr.style.borderBottom = '1px solid var(--border)';
+                tr.style.transition = 'var(--transition)';
+                tr.style.cursor = 'pointer';
+                tr.title = 'Klik untuk lihat daftar petugas kelompok ini';
+                tr.onclick = () => showPclDistributionModal(row.id, row.label, row.color);
+                
+                tr.innerHTML = `
+                  <td style="padding: 12px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${row.color};"></span>
+                    ${row.label}
+                  </td>
+                  <td style="padding: 12px; text-align: center; font-weight: 700; color: var(--text-primary); font-size: 13px;">
+                    ${row.count.toLocaleString('id-ID')}
+                  </td>
+                  <td style="padding: 12px; text-align: center; font-weight: 700; color: ${row.color};">
+                    ${pct}%
+                  </td>
+                  <td style="padding: 12px;">
+                    <div style="background: rgba(255, 255, 255, 0.03); height: 8px; border-radius: 4px; overflow: hidden; width: 100%; border: 1px solid var(--border);">
+                      <div style="background: ${row.color}; width: ${pct}%; height: 100%; border-radius: 4px;"></div>
+                    </div>
+                  </td>
+                `;
+                tbody.appendChild(tr);
+              });
+            }
+
+            const tfootTotalCount = document.getElementById('distTotalCount');
+            if (tfootTotalCount) {
+              tfootTotalCount.textContent = total.toLocaleString('id-ID');
+            }
+
+            updateNavigationButtons();
+          }
+        } catch (err) {
+          console.error('Error fetching PCL distribution data:', err);
+        } finally {
+          if (container) container.style.opacity = '1';
+        }
+      }
+
+      window.navigateDistDate = function(direction) {
+        const newIdx = distCurrentDateIdx + direction;
+        if (newIdx >= 0 && newIdx < distAvailableDates.length) {
+          distCurrentDateIdx = newIdx;
+          const selectedDateObj = distAvailableDates[distCurrentDateIdx];
+          const selector = document.getElementById('distDateSelector');
+          if (selector) selector.value = selectedDateObj.tanggal;
+          fetchDistData(selectedDateObj.tanggal);
+        }
+      }
+
+      window.onDistDateSelectChange = function(dateVal) {
+        const idx = distAvailableDates.findIndex(d => d.tanggal === dateVal);
+        if (idx !== -1) {
+          distCurrentDateIdx = idx;
+          fetchDistData(dateVal);
+        }
+      }
+
+      async function initDistDateSelector() {
+        try {
+          const basePath = window.location.pathname.split('/admin/')[0] || '';
+          const cleanBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+          const res = await fetch(`${cleanBasePath}/api/pcl-distribution`);
+          const data = await res.json();
+          if (data.success) {
+            distAvailableDates = data.availableDates || [];
+            // Sort chronologically ASC: oldest first, newest last
+            distAvailableDates.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+            
+            const currentUploadDate = data.selectedUpload.tanggal;
+            distCurrentDateIdx = distAvailableDates.findIndex(d => d.tanggal === currentUploadDate);
+            if (distCurrentDateIdx === -1) {
+              distCurrentDateIdx = distAvailableDates.length - 1;
+            }
+
+            renderDistDateDropdown();
+            updateNavigationButtons();
+          }
+        } catch (err) {
+          console.error('Error initializing date selector:', err);
+        }
+      }
+
+      // Trigger initialization
+      initDistDateSelector();
 
       window.showPclDistributionModal = function(bucketId, label, color) {
         const modal = document.getElementById('pclDistModal');
