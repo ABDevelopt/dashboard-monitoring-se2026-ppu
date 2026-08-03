@@ -602,6 +602,90 @@ function createDailyBarChart(canvasId, labels, data, title = '', color = '#7c3ae
   return chart;
 }
 
+// ===== DAILY INCREMENT BAR CHART =====
+function createDailyIncrementBarChart(canvasId, labels, data, targetNormalVal, targetAktualVal, rawTrenData = []) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+  const theme = getThemeColors();
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Penambahan Riil',
+          data: data,
+          backgroundColor: 'rgba(16, 185, 129, 0.8)',
+          borderColor: '#10b981',
+          borderWidth: 1,
+          borderRadius: 4
+        },
+        {
+          type: 'line',
+          label: 'Target Normal',
+          data: Array(labels.length).fill(targetNormalVal),
+          borderColor: '#60a5fa',
+          borderWidth: 1.5,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false,
+          tension: 0
+        },
+        {
+          type: 'line',
+          label: 'Target Aktual',
+          data: Array(labels.length).fill(targetAktualVal),
+          borderColor: '#8b5cf6',
+          borderWidth: 1.5,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false,
+          tension: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: theme.text, font: { size: 10, family: 'Inter' } }
+        },
+        tooltip: {
+          backgroundColor: theme.bgCard,
+          borderColor: theme.border,
+          borderWidth: 1,
+          titleColor: theme.title,
+          bodyColor: theme.text,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${Math.round(ctx.parsed.y).toLocaleString('id-ID')} dok/hari`,
+            footer: (tooltipItems) => {
+              if (!rawTrenData || !rawTrenData.length) return '';
+              const index = tooltipItems[0].dataIndex;
+              return getWeatherTooltipFooter(rawTrenData, index);
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: theme.text, font: { size: 10 } },
+          grid: { color: theme.grid }
+        },
+        y: {
+          ticks: { color: theme.text, font: { size: 10 } },
+          grid: { color: theme.grid }
+        }
+      }
+    }
+  });
+  window.activeCharts = window.activeCharts || [];
+  window.activeCharts.push(chart);
+  return chart;
+}
+
 // ===== DAILY INCREMENT STATUS BAR CHART =====
 function createDailyFasihStatusChart(canvasId, labels, datasetsData, title = '', rawTrenData = []) {
   const ctx = document.getElementById(canvasId);
@@ -1110,8 +1194,8 @@ function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl 
   const targetVal = parseFloat(targetSpeedPerPcl) || 13;
   const maxVal = Math.max(20, Math.ceil(targetVal * 1.5), Math.ceil(val * 1.25));
 
-  const z1End = Math.min(8, maxVal * 0.4);
-  const z2End = Math.min(13, maxVal * 0.65);
+  const z1End = targetVal * 0.6;
+  const z2End = targetVal;
 
   const z1Val = z1End;
   const z2Val = Math.max(0, z2End - z1End);
@@ -1250,10 +1334,10 @@ function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl 
       chartCtx.fill();
       chartCtx.restore();
 
-      // 3. Scale Ticks (0, 8, maxVal)
+      // 3. Scale Ticks (0, z1End, maxVal)
       const ticks = [
         { v: 0, label: '0' },
-        { v: 8, label: '8' },
+        { v: Math.round(z1End), label: `${Math.round(z1End)}` },
         { v: maxVal, label: `${maxVal}` }
       ];
       ticks.forEach(tk => {
@@ -1290,7 +1374,11 @@ function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl 
   const chart = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['Lambat (< 8 dok/hari)', 'Perlu Akselerasi (8-13 dok/hari)', 'Optimal (≥ 13 dok/hari)'],
+      labels: [
+        `Lambat (< ${Math.round(z1End)} dok/hari)`,
+        `Perlu Akselerasi (${Math.round(z1End)}-${Math.round(z2End)} dok/hari)`,
+        `Optimal (≥ ${Math.round(z2End)} dok/hari)`
+      ],
       datasets: [{
         data: [z1Val, z2Val, z3Val],
         backgroundColor: [

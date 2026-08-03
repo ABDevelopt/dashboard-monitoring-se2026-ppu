@@ -8,6 +8,7 @@ router.get('/', (req, res) => {
   let kecStats = [];
   let tren = [];
   let distLast = null;
+  let pclDeltas = [];
 
   if (uploadId) {
     summary = getOverviewSummary(uploadId, res.locals.settings);
@@ -22,7 +23,7 @@ router.get('/', (req, res) => {
     if (prevUpload) {
       distLast = db.prepare(`
         SELECT 
-          COALESCE(SUM(CASE WHEN diff = 0 THEN 1 ELSE 0 END), 0) AS bucket_0,
+          COALESCE(SUM(CASE WHEN diff <= 0 THEN 1 ELSE 0 END), 0) AS bucket_0,
           COALESCE(SUM(CASE WHEN diff BETWEEN 1 AND 4 THEN 1 ELSE 0 END), 0) AS bucket_1_4,
           COALESCE(SUM(CASE WHEN diff BETWEEN 5 AND 7 THEN 1 ELSE 0 END), 0) AS bucket_5_7,
           COALESCE(SUM(CASE WHEN diff BETWEEN 8 AND 12 THEN 1 ELSE 0 END), 0) AS bucket_8_12,
@@ -33,16 +34,29 @@ router.get('/', (req, res) => {
             (SUM(COALESCE(p_curr.submitted_by_pcl, 0) + COALESCE(p_curr.approved, 0) + COALESCE(p_curr.rejected, 0)) -
              SUM(COALESCE(p_prev.submitted_by_pcl, 0) + COALESCE(p_prev.approved, 0) + COALESCE(p_prev.rejected, 0))) AS diff
           FROM subsls_master m
-          JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
+          LEFT JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
           LEFT JOIN progres p_prev ON m.kode = p_prev.kode AND p_prev.upload_id = ?
           WHERE m.pcl IS NOT NULL AND m.pcl != ''
           GROUP BY m.pcl
         )
       `).get(uploadId, prevUpload.id);
+
+      pclDeltas = db.prepare(`
+        SELECT 
+          m.pcl,
+          (SUM(COALESCE(p_curr.submitted_by_pcl, 0) + COALESCE(p_curr.approved, 0) + COALESCE(p_curr.rejected, 0)) -
+           SUM(COALESCE(p_prev.submitted_by_pcl, 0) + COALESCE(p_prev.approved, 0) + COALESCE(p_prev.rejected, 0))) AS diff
+        FROM subsls_master m
+        LEFT JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
+        LEFT JOIN progres p_prev ON m.kode = p_prev.kode AND p_prev.upload_id = ?
+        WHERE m.pcl IS NOT NULL AND m.pcl != ''
+        GROUP BY m.pcl
+        ORDER BY m.pcl ASC
+      `).all(uploadId, prevUpload.id);
     } else {
       distLast = db.prepare(`
         SELECT 
-          COALESCE(SUM(CASE WHEN diff = 0 THEN 1 ELSE 0 END), 0) AS bucket_0,
+          COALESCE(SUM(CASE WHEN diff <= 0 THEN 1 ELSE 0 END), 0) AS bucket_0,
           COALESCE(SUM(CASE WHEN diff BETWEEN 1 AND 4 THEN 1 ELSE 0 END), 0) AS bucket_1_4,
           COALESCE(SUM(CASE WHEN diff BETWEEN 5 AND 7 THEN 1 ELSE 0 END), 0) AS bucket_5_7,
           COALESCE(SUM(CASE WHEN diff BETWEEN 8 AND 12 THEN 1 ELSE 0 END), 0) AS bucket_8_12,
@@ -52,11 +66,22 @@ router.get('/', (req, res) => {
             m.pcl,
             SUM(COALESCE(p_curr.submitted_by_pcl, 0) + COALESCE(p_curr.approved, 0) + COALESCE(p_curr.rejected, 0)) AS diff
           FROM subsls_master m
-          JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
+          LEFT JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
           WHERE m.pcl IS NOT NULL AND m.pcl != ''
           GROUP BY m.pcl
         )
       `).get(uploadId);
+
+      pclDeltas = db.prepare(`
+        SELECT 
+          m.pcl,
+          SUM(COALESCE(p_curr.submitted_by_pcl, 0) + COALESCE(p_curr.approved, 0) + COALESCE(p_curr.rejected, 0)) AS diff
+        FROM subsls_master m
+        LEFT JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
+        WHERE m.pcl IS NOT NULL AND m.pcl != ''
+        GROUP BY m.pcl
+        ORDER BY m.pcl ASC
+      `).all(uploadId);
     }
   }
 
@@ -66,7 +91,8 @@ router.get('/', (req, res) => {
     summary,
     kecStats,
     tren: JSON.stringify(tren),
-    distLast
+    distLast,
+    pclDeltas: JSON.stringify(pclDeltas)
   });
 });
 

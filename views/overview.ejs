@@ -8,6 +8,7 @@
   }
 %>
 <div class="fade-in">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <% if (!summary) { %>
     <!-- EMPTY STATE -->
     <div class="card empty-state text-center" style="padding: 80px 20px;">
@@ -500,80 +501,80 @@
         const date100 = new Date(uploadDate.getTime() + estDaysToFinish * 24 * 60 * 60 * 1000);
         estDate100Text = date100.toLocaleDateString('id-ID', optionsDate);
       }
-    %>
-    <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 16px;">
+    %>    <div class="d-flex flex-col gap-4 mt-4">
       
       <!-- Progres Realisasi & Rincian Status Assignment FASIH -->
       <% if (settings.overview_fasih === '1') { %>
-      <div class="card" style="margin: 0; position: relative; overflow: hidden; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(139, 92, 246, 0.02) 100%); border: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+      <div class="card bg-card-premium p-5 m-0 relative overflow-hidden d-flex flex-col justify-between">
         <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px;">
-            <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
-              <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(139, 92, 246, 0.1); display: flex; align-items: center; justify-content: center; color: var(--accent-purple); font-size: 18px; flex-shrink: 0;">
+          <div class="d-flex justify-between items-center mb-4 gap-3">
+            <div class="d-flex items-center gap-2-5 min-w-0">
+              <div class="w-9 h-9 rounded-full d-flex items-center justify-center text-purple flex-shrink-0" style="background: rgba(139, 92, 246, 0.1); font-size: 18px;">
                 <i class="bi bi-phone"></i>
               </div>
-              <div style="min-width: 0;">
-                <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <div class="min-w-0">
+                <h3 class="m-0 fs-md fw-bold text-primary d-flex items-center gap-1-5 flex-wrap">
                   Assignment FASIH
-                  <span style="font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); display: inline-block;">
+                  <span class="fs-xxs fw-semibold py-0-5 px-1-5 rounded-xs text-purple d-inline-block" style="background: rgba(139, 92, 246, 0.15);">
                     <%= settings.target_fasih_mode === 'fasih-sm' ? 'Target FASIH-SM' : 'Target Statis' %>
                   </span>
                 </h3>
-                <p style="margin: 2px 0 0 0; font-size: 10px; color: var(--text-muted); line-height: 1.2;">Realisasi Approved vs Target FASIH (Fokus Utama Monitoring)</p>
+                <p class="m-0 mt-0-5 fs-xs text-muted" style="line-height: 1.2;">Realisasi Approved vs Target FASIH (Fokus Utama Monitoring)</p>
               </div>
             </div>
-            <div style="text-align: right; flex-shrink: 0;">
-              <div style="font-size: 18px; font-weight: 800; color: var(--accent-purple);"><%= fasihPct %>%</div>
-              <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-top: 2px;"><%= totalPengerjaan.toLocaleString('id-ID') %> <span style="font-weight: 500; font-size: 10px; color: var(--text-muted);">/ <%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></span></div>
-              <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Capaian Utama FASIH</div>
+            <div class="text-right flex-shrink-0">
+              <div class="fs-title-md fw-extrabold text-purple"><%= fasihPct %>%</div>
+              <div class="fs-sm fw-bold text-primary mt-0-5"><%= totalPengerjaan.toLocaleString('id-ID') %> <span class="fw-medium fs-xs text-muted">/ <%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></span></div>
+              <div class="fs-xs text-muted mt-0-5">Capaian Utama FASIH</div>
             </div>
           </div>
 
-        <div class="progress-timeline-container" style="position: relative; height: 28px; margin-top: 22px; margin-bottom: 14px;">
+        <div class="progress-timeline-container relative" style="height: 28px; margin-top: 22px; margin-bottom: 14px;">
           <!-- Track & Progress Bar -->
-          <div style="background: var(--bg-progress-wrap); height: 28px; border-radius: 14px; overflow: hidden; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">
-            <div class="progress-bar" data-width="<%= fasihPct %>" style="background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%); height: 20px; width: 0%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; min-width: 24px; box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);">
+          <div class="bg-progress-timeline">
+            <div class="progress-bar progress-bar-premium" data-width="<%= fasihPct %>" style="width: 0%;">
               <% if (parseFloat(fasihPct) >= 15) { %>
-                <span style="font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"><%= fasihPct %>%</span>
+                <span class="fs-caption fw-extrabold" style="color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"><%= fasihPct %>%</span>
               <% } %>
             </div>
             <% if (parseFloat(fasihPct) < 15) { %>
-              <span style="margin-left: 12px; font-size: 11px; font-weight: 800; color: var(--text-primary); white-space: nowrap;"><%= fasihPct %>%</span>
+              <span class="ml-3 fs-caption fw-extrabold text-primary whitespace-nowrap"><%= fasihPct %>%</span>
             <% } %>
           </div>
 
           <!-- Marker 25% (30 Juni) -->
-          <div class="target-marker" style="position: absolute; left: 25%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 25 ? 'var(--accent-purple)' : 'var(--border)' %>; z-index: 2; pointer-events: none;">
-            <span class="target-marker-text" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 25 ? 'var(--accent-purple)' : 'var(--text-muted)' %>; white-space: nowrap;">Target 30 Jun: 25%</span>
+          <div class="target-marker absolute pointer-events-none" style="left: 25%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 25 ? 'var(--accent-purple)' : 'var(--border)' %>; z-index: 2;">
+            <span class="target-marker-text absolute whitespace-nowrap" style="top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 25 ? 'var(--accent-purple)' : 'var(--text-muted)' %>;">Target 30 Jun: 25%</span>
           </div>
 
           <!-- Marker 40% (15 Juli) -->
-          <div class="target-marker" style="position: absolute; left: 40%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 40 ? 'var(--accent-purple)' : 'var(--border)' %>; z-index: 2; pointer-events: none;">
-            <span class="target-marker-text" style="position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 40 ? 'var(--accent-purple)' : 'var(--text-muted)' %>; white-space: nowrap;">Target 15 Jul: 40%</span>
+          <div class="target-marker absolute pointer-events-none" style="left: 40%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 40 ? 'var(--accent-purple)' : 'var(--border)' %>; z-index: 2;">
+            <span class="target-marker-text absolute whitespace-nowrap" style="bottom: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 40 ? 'var(--accent-purple)' : 'var(--text-muted)' %>;">Target 15 Jul: 40%</span>
           </div>
         </div>
 
           <!-- Ringkasan Capaian / Target / Sisa -->
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); margin-bottom: 8px;">
+          <div class="d-grid grid-cols-3 gap-3 mt-4 pt-4 border-t-default mb-2">
             <div>
-              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Capaian</div>
-              <div style="font-size: 15px; font-weight: 800; color: var(--text-primary); margin-top: 2px;"><%= totalPengerjaan.toLocaleString('id-ID') %></div>
+              <div class="fs-caption text-muted text-uppercase fw-semibold">Capaian</div>
+              <div class="fs-lg fw-extrabold text-primary mt-0-5"><%= totalPengerjaan.toLocaleString('id-ID') %></div>
             </div>
             <div>
-              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Target</div>
-              <div style="font-size: 15px; font-weight: 800; color: var(--text-primary); margin-top: 2px;">
+              <div class="fs-caption text-muted text-uppercase fw-semibold">Target</div>
+              <div class="fs-lg fw-extrabold text-primary mt-0-5">
                 <%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %>
               </div>
             </div>
             <div>
-              <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Sisa</div>
-              <div style="font-size: 15px; font-weight: 800; color: var(--accent-yellow); margin-top: 2px;"><%= Math.max(0, summary.target_fasih_total - totalPengerjaan).toLocaleString('id-ID') %></div>
+              <div class="fs-caption text-muted text-uppercase fw-semibold">Sisa</div>
+              <div class="fs-lg fw-extrabold mt-0-5" style="color: var(--accent-yellow);"><%= Math.max(0, summary.target_fasih_total - totalPengerjaan).toLocaleString('id-ID') %></div>
             </div>
+          </div>
           </div>
 
         <!-- Rincian Status Dokumen FASIH -->
-        <div style="border-top: 1px dashed var(--border); padding-top: 16px;">
-          <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;"><i class="bi bi-info-circle-fill text-purple"></i> Rincian Status Dokumen FASIH</div>
+        <div class="pt-4" style="border-top: 1px dashed var(--border);">
+          <div class="fs-caption fw-bold text-secondary text-uppercase mb-3" style="letter-spacing: 0.5px;"><i class="bi bi-info-circle-fill text-purple"></i> Rincian Status Dokumen FASIH</div>
           
           <%
             let openPct = summary.target_fasih_total ? ((summary.open_total || 0) / summary.target_fasih_total * 100).toFixed(1) : '0.0';
@@ -582,124 +583,122 @@
             let approvedPct = summary.target_fasih_total ? ((summary.approved_total || 0) / summary.target_fasih_total * 100).toFixed(1) : '0.0';
             let rejectedPct = summary.target_fasih_total ? ((summary.rejected_total || 0) / summary.target_fasih_total * 100).toFixed(1) : '0.0';
           %>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
+          <div class="d-grid grid-fit-130 gap-2-5">
             
             <!-- OPEN / BELUM DIISI -->
             <% if (settings.show_status_open === '1' || settings.show_status_open === undefined) { %>
-            <div class="status-open-bg" style="border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+            <div class="status-open-bg rounded-sm py-2-5 px-3 d-flex flex-col gap-2">
+              <div class="d-flex items-center justify-between gap-2 w-full">
                 <div>
-                  <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">OPEN</div>
-                  <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Belum Diisi</div>
+                  <div class="fs-xxs text-muted fw-bold text-uppercase">OPEN</div>
+                  <div class="fs-xs text-secondary" style="line-height: 1.2;">Belum Diisi</div>
                 </div>
-                <div class="status-open-text" style="font-size: 14px; font-weight: 800; text-align: right;">
+                <div class="status-open-text fs-md fw-extrabold text-right">
                   <%= (summary.open_total || 0).toLocaleString('id-ID') %>
-                  <span style="display: block; font-size: 9px; font-weight: 600; color: var(--text-muted); margin-top: 1px;"><%= openPct %>%</span>
+                  <span class="d-block fs-xxs fw-semibold text-muted mt-0-5"><%= openPct %>%</span>
                 </div>
               </div>
-              <div style="background: rgba(249, 115, 22, 0.12); height: 6px; border-radius: 3px; overflow: hidden; width: 100%;">
-                <div class="progress-bar" data-width="<%= openPct %>" style="background: #f97316; height: 100%; width: 0%; border-radius: 3px; transition: width 1s ease;"></div>
+              <div class="overflow-hidden w-full rounded-full h-1-5" style="background: rgba(249, 115, 22, 0.12);">
+                <div class="progress-bar rounded-full h-full" data-width="<%= openPct %>" style="background: #f97316; width: 0%; transition: width 1s ease;"></div>
               </div>
             </div>
             <% } %>
 
             <!-- DRAFT -->
             <% if (settings.show_status_draft === '1' || settings.show_status_draft === undefined) { %>
-            <div class="status-draft-bg" style="border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+            <div class="status-draft-bg rounded-sm py-2-5 px-3 d-flex flex-col gap-2">
+              <div class="d-flex items-center justify-between gap-2 w-full">
                 <div>
-                  <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">DRAFT</div>
-                  <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Sedang Diisi</div>
+                  <div class="fs-xxs text-muted fw-bold text-uppercase">DRAFT</div>
+                  <div class="fs-xs text-secondary" style="line-height: 1.2;">Sedang Diisi</div>
                 </div>
-                <div class="status-draft-text" style="font-size: 14px; font-weight: 800; text-align: right;">
+                <div class="status-draft-text fs-md fw-extrabold text-right">
                   <%= (summary.draft_total || 0).toLocaleString('id-ID') %>
-                  <span style="display: block; font-size: 9px; font-weight: 600; color: var(--text-muted); margin-top: 1px;"><%= draftPct %>%</span>
+                  <span class="d-block fs-xxs fw-semibold text-muted mt-0-5"><%= draftPct %>%</span>
                 </div>
               </div>
-              <div style="background: rgba(245, 158, 11, 0.08); height: 6px; border-radius: 3px; overflow: hidden; width: 100%;">
-                <div class="progress-bar" data-width="<%= draftPct %>" style="background: var(--accent-yellow); height: 100%; width: 0%; border-radius: 3px; transition: width 1s ease;"></div>
+              <div class="overflow-hidden w-full rounded-full h-1-5" style="background: rgba(245, 158, 11, 0.08);">
+                <div class="progress-bar rounded-full h-full" data-width="<%= draftPct %>" style="background: var(--accent-yellow); width: 0%; transition: width 1s ease;"></div>
               </div>
             </div>
             <% } %>
 
             <!-- SUBMITTED BY PCL -->
             <% if (settings.show_status_submitted === '1' || settings.show_status_submitted === undefined) { %>
-            <div class="status-submit-bg" style="border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+            <div class="status-submit-bg rounded-sm py-2-5 px-3 d-flex flex-col gap-2">
+              <div class="d-flex items-center justify-between gap-2 w-full">
                 <div>
-                  <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">SUBMITTED</div>
-                  <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Oleh PCL</div>
+                  <div class="fs-xxs text-muted fw-bold text-uppercase">SUBMITTED</div>
+                  <div class="fs-xs text-secondary" style="line-height: 1.2;">Oleh PCL</div>
                 </div>
-                <div class="status-submit-text" style="font-size: 14px; font-weight: 800; text-align: right;">
+                <div class="status-submit-text fs-md fw-extrabold text-right">
                   <%= (summary.submitted_total || 0).toLocaleString('id-ID') %>
-                  <span style="display: block; font-size: 9px; font-weight: 600; color: var(--text-muted); margin-top: 1px;"><%= submittedPct %>%</span>
+                  <span class="d-block fs-xxs fw-semibold text-muted mt-0-5"><%= submittedPct %>%</span>
                 </div>
               </div>
-              <div style="background: rgba(59, 130, 246, 0.12); height: 6px; border-radius: 3px; overflow: hidden; width: 100%;">
-                <div class="progress-bar" data-width="<%= submittedPct %>" style="background: #3b82f6; height: 100%; width: 0%; border-radius: 3px; transition: width 1s ease;"></div>
+              <div class="overflow-hidden w-full rounded-full h-1-5" style="background: rgba(59, 130, 246, 0.12);">
+                <div class="progress-bar rounded-full h-full" data-width="<%= submittedPct %>" style="background: #3b82f6; width: 0%; transition: width 1s ease;"></div>
               </div>
             </div>
             <% } %>
 
             <!-- APPROVED -->
             <% if (settings.show_status_approved === '1' || settings.show_status_approved === undefined) { %>
-            <div class="status-approve-bg" style="border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+            <div class="status-approve-bg rounded-sm py-2-5 px-3 d-flex flex-col gap-2">
+              <div class="d-flex items-center justify-between gap-2 w-full">
                 <div>
-                  <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">APPROVED</div>
-                  <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Diterima PML</div>
+                  <div class="fs-xxs text-muted fw-bold text-uppercase">APPROVED</div>
+                  <div class="fs-xs text-secondary" style="line-height: 1.2;">Diterima PML</div>
                 </div>
-                <div class="status-approve-text" style="font-size: 14px; font-weight: 800; text-align: right;">
+                <div class="status-approve-text fs-md fw-extrabold text-right">
                   <%= (summary.approved_total || 0).toLocaleString('id-ID') %>
-                  <span style="display: block; font-size: 9px; font-weight: 600; color: var(--text-muted); margin-top: 1px;"><%= approvedPct %>%</span>
+                  <span class="d-block fs-xxs fw-semibold text-muted mt-0-5"><%= approvedPct %>%</span>
                 </div>
               </div>
-              <div style="background: rgba(16, 185, 129, 0.08); height: 6px; border-radius: 3px; overflow: hidden; width: 100%;">
-                <div class="progress-bar" data-width="<%= approvedPct %>" style="background: var(--accent-green); height: 100%; width: 0%; border-radius: 3px; transition: width 1s ease;"></div>
+              <div class="overflow-hidden w-full rounded-full h-1-5" style="background: rgba(16, 185, 129, 0.08);">
+                <div class="progress-bar rounded-full h-full" data-width="<%= approvedPct %>" style="background: var(--accent-green); width: 0%; transition: width 1s ease;"></div>
               </div>
             </div>
             <% } %>
 
             <!-- REJECTED -->
             <% if (settings.show_status_rejected === '1' || settings.show_status_rejected === undefined) { %>
-            <div class="status-reject-bg" style="border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+            <div class="status-reject-bg rounded-sm py-2-5 px-3 d-flex flex-col gap-2">
+              <div class="d-flex items-center justify-between gap-2 w-full">
                 <div>
-                  <div style="font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">REJECTED</div>
-                  <div style="font-size: 10px; color: var(--text-secondary); line-height: 1.2;">Ditolak PML</div>
+                  <div class="fs-xxs text-muted fw-bold text-uppercase">REJECTED</div>
+                  <div class="fs-xs text-secondary" style="line-height: 1.2;">Ditolak PML</div>
                 </div>
-                <div class="status-reject-text" style="font-size: 14px; font-weight: 800; text-align: right;">
+                <div class="status-reject-text fs-md fw-extrabold text-right">
                   <%= (summary.rejected_total || 0).toLocaleString('id-ID') %>
-                  <span style="display: block; font-size: 9px; font-weight: 600; color: var(--text-muted); margin-top: 1px;"><%= rejectedPct %>%</span>
+                  <span class="d-block fs-xxs fw-semibold text-muted mt-0-5"><%= rejectedPct %>%</span>
                 </div>
               </div>
-              <div style="background: rgba(239, 68, 68, 0.08); height: 6px; border-radius: 3px; overflow: hidden; width: 100%;">
-                <div class="progress-bar" data-width="<%= rejectedPct %>" style="background: var(--accent-red); height: 100%; width: 0%; border-radius: 3px; transition: width 1s ease;"></div>
+              <div class="overflow-hidden w-full rounded-full h-1-5" style="background: rgba(239, 68, 68, 0.08);">
+                <div class="progress-bar rounded-full h-full" data-width="<%= rejectedPct %>" style="background: var(--accent-red); width: 0%; transition: width 1s ease;"></div>
               </div>
             </div>
             <% } %>
 
           </div>
         </div>
-        </div>
       </div>
       <% } %>
-
       <!-- SPEEDOMETER & ANALISIS KECEPATAN PENDATAAN -->
       <% if (settings.overview_fasih === '1') { %>
-      <div class="card" style="margin: 0; position: relative; overflow: visible; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(124, 58, 237, 0.02) 100%); border: 1px solid var(--border); border-radius: 16px; padding: 24px;">
+      <div class="card bg-card-premium p-6 m-0 relative overflow-visible">
         <!-- Widget Title & Target Badge -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(124, 58, 237, 0.12); color: var(--accent-purple); display: flex; align-items: center; justify-content: center; font-size: 16px;">
+          <div class="d-flex justify-between items-center mb-4 flex-wrap gap-2-5">
+            <div class="d-flex items-center gap-2">
+              <div class="w-8 h-8 d-flex items-center justify-center text-purple" style="border-radius: 10px; background: rgba(124, 58, 237, 0.12); font-size: 16px;">
                 <i class="bi bi-speedometer2"></i>
               </div>
               <div>
-                <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em;">
+                <h4 class="m-0 fs-lg fw-bold text-primary text-uppercase" style="letter-spacing: 0.05em;">
                   Speedometer Pendataan
                 </h4>
-                <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">
-                  Monitoring Kecepatan Realisasi Dokumen FASIH vs Target Standar <strong><%= targetNormalPerPclText %> Dokumen / Hari / Petugas</strong>
+                <p class="m-0 mt-0-5 fs-sm text-muted">
+                  Realisasi vs Target Standar <strong><%= targetNormalPerPclText %> dok/PCL/hari</strong> (Laju Aman Tepat Waktu: <strong><%= reqSpeedPerPclText %> dok/PCL/hari</strong>)
                 </p>
               </div>
             </div>
@@ -707,62 +706,68 @@
             <div class="help-tooltip-container">
               <i class="bi bi-question-circle help-tooltip-icon"></i>
               <div class="help-tooltip-box">
-                <strong style="color: var(--text-primary); display: block; margin-bottom: 4px;">Panduan Speedometer Pendataan:</strong>
+                <strong class="text-primary d-block mb-1">Panduan Speedometer Pendataan:</strong>
                 Speedometer mengukur kecepatan rata-rata harian pengumpulan berkas per petugas (PCL). Laju kerja saat ini dibandingkan dengan target standar (<strong><%= targetNormalPerPclText %> dok/hari/petugas</strong>). Status <strong>On-Track</strong> menunjukkan kecepatan saat ini cukup untuk menyelesaikan pendataan sebelum tanggal target (<%= formatIndonesianDateShort(settings.speedometer_target_date || '2026-08-31') %>). Jika <strong>Off-Track</strong>, diperlukan percepatan laju kerja minimal ke angka laju aman yang tertera di panel analisis.
               </div>
             </div>
           </div>
 
           <!-- Main Grid: Speedometer Gauge (Left) & Speed KPI & Analysis (Right) -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; align-items: stretch; margin-top: 12px;">
+          <div class="d-grid grid-fit-300 gap-5 items-stretch mt-3">
             
             <!-- Gauge Canvas Box -->
-            <div style="position: relative; width: 100%; height: 100%; min-height: 235px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.015); border: 1px solid var(--border); border-radius: 16px; padding: 20px 10px;">
-              <canvas id="speedometerChartCanvas" style="max-height: 215px; width: 100%;"></canvas>
+            <div class="relative w-full h-full d-flex flex-col items-center justify-center bg-white-subtle border-default rounded-lg py-5 px-2-5" style="min-height: 235px;">
+              <canvas id="speedometerChartCanvas" class="w-full" style="max-height: 215px;"></canvas>
             </div>
 
             <!-- KPI Cards & Timeline Targets -->
-            <div style="display: flex; flex-direction: column; gap: 12px; height: 100%; justify-content: space-between;">
+            <div class="d-flex flex-col gap-3 h-full justify-between">
               
               <!-- Status Milestone Cards (40% & 100% & Status & Deadline) -->
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px;">
-                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; text-align: center;">
-                  <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Status Lapangan</div>
-                  <div style="margin-top: 4px;">
+              <div class="d-grid grid-fit-110 gap-2">
+                <div class="bg-white-subtle border-default rounded-sm py-2 px-2-5 text-center">
+                  <div class="fs-caption text-muted fw-medium">Status Lapangan</div>
+                  <div class="mt-1">
                     <% if (remainingFasih === 0) { %>
-                      <span class="badge badge-green" style="font-size: 11px; padding: 3px 8px;">Selesai 100%</span>
+                      <span class="badge badge-green fs-caption py-1 px-2">Selesai 100%</span>
                     <% } else if (isOfftrack) { %>
-                      <span class="badge badge-red" style="font-size: 11px; padding: 3px 8px;"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
+                      <span class="badge badge-red fs-caption py-1 px-2"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
                     <% } else { %>
-                      <span class="badge badge-green" style="font-size: 11px; padding: 3px 8px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
+                      <span class="badge badge-green fs-caption py-1 px-2"><i class="bi bi-check-circle-fill"></i> On-Track</span>
                     <% } %>
                   </div>
                 </div>
 
-
-                <div style="background: rgba(34, 197, 94, 0.03); border: 1px solid rgba(34, 197, 94, 0.12); border-radius: 8px; padding: 8px 10px; text-align: center;">
-                  <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Est. Selesai 100%</div>
-                  <div style="font-size: 11px; font-weight: 700; color: var(--text-primary); margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap;">
-                    <i class="bi bi-calendar-check-fill" style="color: var(--accent-green);"></i><span><%= estDate100Text %></span>
+                <div class="bg-info-subtle border-info-subtle rounded-sm py-2 px-2-5 text-center">
+                  <div class="fs-caption text-muted fw-medium">Kecepatan Ideal</div>
+                  <div class="fs-caption fw-bold text-primary mt-1 d-flex items-center justify-center gap-1 flex-wrap">
+                    <i class="bi bi-lightning-charge-fill text-blue"></i><span><%= reqSpeedPerPclText %> dok/PCL/hari</span>
                   </div>
                 </div>
 
-                <div style="background: rgba(239, 68, 68, 0.03); border: 1px solid rgba(239, 68, 68, 0.12); border-radius: 8px; padding: 8px 10px; text-align: center;">
-                  <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Deadline Target</div>
-                  <div style="font-size: 11px; font-weight: 700; color: var(--text-primary); margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap;">
-                    <i class="bi bi-calendar-x-fill" style="color: var(--accent-red);"></i><span><%= formatIndonesianDateShort(settings.speedometer_target_date || '2026-08-31') %></span>
+                <div class="bg-success-subtle border-success-subtle rounded-sm py-2 px-2-5 text-center">
+                  <div class="fs-caption text-muted fw-medium">Est. Selesai 100%</div>
+                  <div class="fs-caption fw-bold text-primary mt-1 d-flex items-center justify-center gap-1 flex-wrap">
+                    <i class="bi bi-calendar-check-fill text-green"></i><span><%= estDate100Text %></span>
+                  </div>
+                </div>
+
+                <div class="bg-danger-subtle border-danger-subtle rounded-sm py-2 px-2-5 text-center">
+                  <div class="fs-caption text-muted fw-medium">Deadline Target</div>
+                  <div class="fs-caption fw-bold text-primary mt-1 d-flex items-center justify-center gap-1 flex-wrap">
+                    <i class="bi bi-calendar-x-fill text-red"></i><span><%= formatIndonesianDateShort(settings.speedometer_target_date || '2026-08-31') %></span>
                   </div>
                 </div>
               </div>
 
               <!-- Narrative Speed Analysis Text -->
-              <div style="font-size: 12px; line-height: 1.6; color: var(--text-secondary); padding: 10px 12px; background: rgba(255, 255, 255, 0.015); border: 1px solid var(--border); border-radius: 10px;">
+              <div class="fs-sm lh-relaxed text-secondary border-default rounded-sm py-2-5 px-3 bg-white-subtle">
                 <% if (remainingFasih === 0) { %>
                   Pendataan secara global telah menyelesaikan seluruh target pengisian dokumen FASIH sebanyak <strong><%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></strong> dokumen. Kinerja luar biasa!
                 <% } else { %>
                   Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak <%= formatIndonesianDate(settings.speedometer_start_date || '2026-06-15') %>). Sisa hari menuju deadline (<%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>): <strong><%= daysRemaining %> hari</strong>.<br>
                   Sisa beban kerja: <strong><%= remainingFasih.toLocaleString('id-ID') %> dokumen</strong>. 
-                  Dengan kecepatan saat ini (<strong><%= speedPerPclText %> dok/PCL/hari</strong> atau <strong><%= currentSpeedText %> dok/hari total</strong>), 
+                  Dengan kecepatan saat ini (<strong><%= speedPerPclText %> dok/PCL/hari</strong> or <strong><%= currentSpeedText %> dok/hari total</strong>), 
                   <% if (currentSpeed === 0) { %>
                     pendataan belum merealisasikan dokumen FASIH sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.
                   <% } else { %>
@@ -770,12 +775,13 @@
                   <% } %>
                   
                   <% if (isOfftrack) { %>
-                    <div style="margin-top: 8px; padding: 8px 10px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--accent-red); border-radius: 6px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
-                      <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red); font-size: 14px; margin-top: 1px;"></i>
+                    <div class="alert-danger-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
+                      <i class="bi bi-exclamation-triangle-fill text-red fs-md mt-0-5"></i>
                       <div><strong>Off-Track:</strong> Kecepatan saat ini (<%= speedPerPclText %> dok/PCL/hari) di bawah target normal <%= targetNormalPerPclText %> dok/hari/petugas. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeedPerPclText %> dok/PCL/hari</strong> (atau <strong><%= reqSpeed.toFixed(2) %> dok/hari total</strong>) agar selesai sesuai target pada <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>.</div>
-                    </div>                  <% } else { %>
-                    <div style="margin-top: 8px; padding: 8px 10px; background: rgba(34, 197, 94, 0.08); border-left: 3px solid var(--accent-green); border-radius: 6px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
-                      <i class="bi bi-check-circle-fill" style="color: var(--accent-green); font-size: 14px; margin-top: 1px;"></i>
+                    </div>
+                  <% } else { %>
+                    <div class="alert-success-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
+                      <i class="bi bi-check-circle-fill text-green fs-md mt-0-5"></i>
                       <div><strong>On-Track:</strong> Kecepatan kerja saat ini sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>).</div>
                     </div>
                   <% } %>
@@ -784,9 +790,6 @@
 
             </div>
           </div>
-
-
-
       </div>
       <% } %>
 
@@ -943,6 +946,18 @@
 
             </div>
 
+            <!-- BAR CHART: Tren Penambahan Harian -->
+            <div class="county-increment-chart-panel" style="margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--border); width: 100%;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 6px;">
+                  <span style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+                    <i class="bi bi-bar-chart-fill" style="color: var(--accent-purple);"></i> Grafik Tren Penambahan Dokumen Harian FASIH
+                  </span>
+                  <span style="font-size: 10px; color: var(--text-muted);">Sesi Upload Terakhir</span>
+                </div>
+                <div style="height: 180px; position: relative; width: 100%;">
+                  <canvas id="dailyCountyIncrementChartCanvas"></canvas>
+                </div>
+            </div>
 
       </div>
       <% } %>
@@ -967,11 +982,11 @@
         <% 
           const totalDistPcl = (distLast.bucket_0 || 0) + (distLast.bucket_1_4 || 0) + (distLast.bucket_5_7 || 0) + (distLast.bucket_8_12 || 0) + (distLast.bucket_13_plus || 0) || 1;
           const rows = [
-            { label: '0 Dokumen (Stagnan)', count: distLast.bucket_0 || 0, color: 'var(--accent-red)' },
-            { label: '1 - 4 Dokumen (Rendah)', count: distLast.bucket_1_4 || 0, color: '#f59e0b' },
-            { label: '5 - 7 Dokumen (Sedang)', count: distLast.bucket_5_7 || 0, color: 'var(--accent-cyan)' },
-            { label: '8 - 12 Dokumen (Tinggi)', count: distLast.bucket_8_12 || 0, color: 'var(--accent-purple)' },
-            { label: '>= 13 Dokumen (Target)', count: distLast.bucket_13_plus || 0, color: 'var(--accent-green)' }
+            { id: 'bucket_0', label: '0 Dokumen (Stagnan)', count: distLast.bucket_0 || 0, color: 'var(--accent-red)' },
+            { id: 'bucket_1_4', label: '1 - 4 Dokumen (Rendah)', count: distLast.bucket_1_4 || 0, color: '#f59e0b' },
+            { id: 'bucket_5_7', label: '5 - 7 Dokumen (Sedang)', count: distLast.bucket_5_7 || 0, color: 'var(--accent-cyan)' },
+            { id: 'bucket_8_12', label: '8 - 12 Dokumen (Tinggi)', count: distLast.bucket_8_12 || 0, color: 'var(--accent-purple)' },
+            { id: 'bucket_13_plus', label: '>= 13 Dokumen (Target)', count: distLast.bucket_13_plus || 0, color: 'var(--accent-green)' }
           ];
         %>
 
@@ -989,7 +1004,7 @@
               <% rows.forEach(row => { 
                 const pct = ((row.count / totalDistPcl) * 100).toFixed(1);
               %>
-                <tr style="border-bottom: 1px solid var(--border); transition: var(--transition);" class="hover-row">
+                <tr onclick="showPclDistributionModal('<%= row.id %>', '<%= row.label %>', '<%= row.color %>')" style="border-bottom: 1px solid var(--border); transition: var(--transition); cursor: pointer;" class="hover-row" title="Klik untuk lihat daftar petugas kelompok ini">
                   <td style="padding: 12px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
                     <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: <%= row.color %>;"></span>
                     <%= row.label %>
@@ -1019,6 +1034,46 @@
               </tr>
             </tfoot>
           </table>
+        </div>
+      </div>
+
+      <!-- Modal Detail Sebaran Petugas -->
+      <div id="pclDistModal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 480px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.4);">
+          
+          <!-- Modal Header -->
+          <div style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.01);">
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+              <span id="modalCategoryColor" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;"></span>
+              <h4 id="modalCategoryTitle" style="margin: 0; font-size: 13px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></h4>
+            </div>
+            <button onclick="closePclDistributionModal()" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 4px; display: flex; align-items: center; justify-content: center; transition: var(--transition);"><i class="bi bi-x-lg"></i></button>
+          </div>
+
+          <!-- Search & Info Bar -->
+          <div style="padding: 12px 20px; border-bottom: 1px solid var(--border); background: rgba(255, 255, 255, 0.02); display: flex; gap: 10px; align-items: center;">
+            <div style="position: relative; flex: 1;">
+              <i class="bi bi-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px;"></i>
+              <input type="text" id="modalSearchInput" placeholder="Cari nama petugas..." oninput="filterPclList()" style="width: 100%; padding: 6px 10px 6px 28px; font-size: 12px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); outline: none; transition: var(--transition);">
+            </div>
+            <span id="modalPclCount" style="font-size: 11px; font-weight: 700; color: var(--text-primary); background: rgba(255, 255, 255, 0.04); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); white-space: nowrap;"></span>
+          </div>
+
+          <!-- Modal Body (List Table) -->
+          <div style="flex: 1; overflow-y: auto; padding: 0;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border); background: rgba(255, 255, 255, 0.01); color: var(--text-muted); font-weight: 700; font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase;">
+                  <th style="padding: 10px 20px;">Nama Petugas (PCL)</th>
+                  <th style="padding: 10px 20px; text-align: right;">Penambahan</th>
+                </tr>
+              </thead>
+              <tbody id="modalPclTableBody">
+                <!-- Row will be injected by JS -->
+              </tbody>
+            </table>
+          </div>
+
         </div>
       </div>
       <% } %>
@@ -1193,7 +1248,7 @@
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 16px 20px;">
           <div class="card-title" style="font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;"><i class="bi bi-grid-3x3-gap-fill text-cyan" style="font-size: 18px;"></i> Heatmap Aktivitas Harian</div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <select id="heatmapMetricSelect" class="form-select form-select-sm" style="font-size: 12px; padding: 6px 12px; width: auto; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer; font-weight: 500;">
+            <select id="heatmapMetricSelect" aria-label="Pilih Metrik Heatmap" class="form-select form-select-sm" style="font-size: 12px; padding: 6px 12px; width: auto; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); cursor: pointer; font-weight: 500;">
               <option value="fasih">Progres FASIH (Submit + Approve + Reject)</option>
               <option value="survey">Survei Terdata (Usaha + Keluarga)</option>
               <option value="sls">SLS Selesai</option>
@@ -1792,6 +1847,16 @@
     <% if (summary) { %>
       const rawTrenData = <%- tren %>;
 
+      // Filter rawTrenData to only keep the latest upload session for each unique date
+      const dailyTrenData = [];
+      const dateMap = new Map();
+      rawTrenData.forEach(item => {
+        dateMap.set(item.tanggal, item);
+      });
+      dateMap.forEach((value) => {
+        dailyTrenData.push(value);
+      });
+
       // Automatically render AI Smart Insights on page load
       loadAiInsights(false);
 
@@ -1807,6 +1872,31 @@
       <% } %>
       
       createSpeedometerChart('speedometerChartCanvas', <%= speedPerPcl %>, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>, <%= currentSpeed %>, <%= targetSpeedTotal %>);
+
+      // Hitung penambahan harian total FASIH (Submitted + Approved + Rejected)
+      const countyIncrementLabels = [];
+      const countyIncrements = [];
+      for (let i = 0; i < dailyTrenData.length; i++) {
+        const current = dailyTrenData[i];
+        countyIncrementLabels.push(current.tanggal);
+        const currentTotal = (current.submitted_total || 0) + (current.approved_total || 0) + (current.rejected_total || 0);
+        if (i === 0) {
+          countyIncrements.push(currentTotal);
+        } else {
+          const prev = dailyTrenData[i - 1];
+          const prevTotal = (prev.submitted_total || 0) + (prev.approved_total || 0) + (prev.rejected_total || 0);
+          countyIncrements.push(Math.max(0, currentTotal - prevTotal));
+        }
+      }
+
+      createDailyIncrementBarChart(
+        'dailyCountyIncrementChartCanvas',
+        countyIncrementLabels,
+        countyIncrements,
+        <%= targetSpeedTotal %>,
+        <%= reqSpeed %>,
+        dailyTrenData
+      );
 
       // Initialize tren line chart
       <% if (settings.overview_tren_muatan === '1') { %>
@@ -1826,8 +1916,8 @@
         rejected: []
       };
 
-      for (let i = 0; i < rawTrenData.length; i++) {
-        const current = rawTrenData[i];
+      for (let i = 0; i < dailyTrenData.length; i++) {
+        const current = dailyTrenData[i];
         dailyIncrementLabels.push(current.tanggal);
         
         if (i === 0) {
@@ -1836,7 +1926,7 @@
           dailyIncrements.approved.push(current.approved_total || 0);
           dailyIncrements.rejected.push(current.rejected_total || 0);
         } else {
-          const prev = rawTrenData[i - 1];
+          const prev = dailyTrenData[i - 1];
           dailyIncrements.draft.push(Math.max(0, (current.draft_total || 0) - (prev.draft_total || 0)));
           dailyIncrements.submitted.push(Math.max(0, (current.submitted_total || 0) - (prev.submitted_total || 0)));
           dailyIncrements.approved.push(Math.max(0, (current.approved_total || 0) - (prev.approved_total || 0)));
@@ -1844,7 +1934,7 @@
         }
       }
 
-      createDailyFasihStatusChart('fasihDailyIncrementChartCanvas', dailyIncrementLabels, dailyIncrements, 'Penambahan Harian FASIH Per Status (Daily Increment)', rawTrenData);
+      createDailyFasihStatusChart('fasihDailyIncrementChartCanvas', dailyIncrementLabels, dailyIncrements, 'Penambahan Harian FASIH Per Status (Daily Increment)', dailyTrenData);
 
 
       <% } %>
@@ -1873,6 +1963,100 @@
       makeTableSortable('kecOverviewTableMobile');
       makeTableSearchable('kecOverviewSearch', 'kecOverviewTableMobile');
       <% } %>
+
+      // Modal Sebaran Petugas Detail Controller
+      const allPclDeltas = <%- typeof pclDeltas !== 'undefined' ? pclDeltas : '[]' %>;
+      let activePclBucket = [];
+
+      window.showPclDistributionModal = function(bucketId, label, color) {
+        const modal = document.getElementById('pclDistModal');
+        if (!modal) return;
+
+        // Filter the PCLs into the active bucket
+        activePclBucket = allPclDeltas.filter(item => {
+          const diff = item.diff || 0;
+          if (bucketId === 'bucket_0') return diff <= 0;
+          if (bucketId === 'bucket_1_4') return diff >= 1 && diff <= 4;
+          if (bucketId === 'bucket_5_7') return diff >= 5 && diff <= 7;
+          if (bucketId === 'bucket_8_12') return diff >= 8 && diff <= 12;
+          if (bucketId === 'bucket_13_plus') return diff >= 13;
+          return false;
+        });
+
+        // Set titles and styles
+        document.getElementById('modalCategoryTitle').textContent = `Daftar Petugas: ${label}`;
+        document.getElementById('modalCategoryColor').style.background = color;
+        document.getElementById('modalSearchInput').value = '';
+
+        // Display modal
+        modal.style.display = 'flex';
+        
+        // Render PCL list
+        window.renderPclList(activePclBucket);
+      }
+
+      window.closePclDistributionModal = function() {
+        const modal = document.getElementById('pclDistModal');
+        if (modal) modal.style.display = 'none';
+      }
+
+      // Close modal when clicking outside the content box
+      window.addEventListener('click', (e) => {
+        const modal = document.getElementById('pclDistModal');
+        if (e.target === modal) {
+          window.closePclDistributionModal();
+        }
+      });
+
+      window.renderPclList = function(list) {
+        const tbody = document.getElementById('modalPclTableBody');
+        const countSpan = document.getElementById('modalPclCount');
+        if (!tbody || !countSpan) return;
+
+        tbody.innerHTML = '';
+        countSpan.textContent = `${list.length} Orang`;
+
+        if (list.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="2" style="padding: 24px; text-align: center; color: var(--text-muted); font-style: italic;">
+                Tidak ada petugas di kelompok ini
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        list.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.style.borderBottom = '1px solid var(--border)';
+          tr.style.transition = 'var(--transition)';
+          tr.className = 'hover-row';
+
+          const diffVal = item.diff || 0;
+          let diffStr = `+${diffVal.toLocaleString('id-ID')}`;
+          let color = 'var(--accent-green)';
+          if (diffVal === 0) {
+            diffStr = 'Stagnan (0)';
+            color = 'var(--text-muted)';
+          } else if (diffVal < 0) {
+            diffStr = `${diffVal.toLocaleString('id-ID')}`;
+            color = 'var(--accent-red)';
+          }
+
+          tr.innerHTML = `
+            <td style="padding: 10px 20px; font-weight: 600; color: var(--text-primary); text-align: left;">${item.pcl}</td>
+            <td style="padding: 10px 20px; text-align: right; font-weight: 700; color: ${color};">${diffStr}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      window.filterPclList = function() {
+        const query = document.getElementById('modalSearchInput').value.toLowerCase().trim();
+        const filtered = activePclBucket.filter(item => item.pcl.toLowerCase().includes(query));
+        window.renderPclList(filtered);
+      }
     <% } %>
   });
 </script>

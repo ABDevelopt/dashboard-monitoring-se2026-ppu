@@ -271,6 +271,7 @@ const routeSettingsMap = {
   '/pbi': 'page_subsls',
   '/kipp': 'page_subsls',
   '/subsls/export': 'page_export',
+  '/export': 'page_export',
   '/korlap': 'page_korlap',
   '/pml': 'page_pml',
   '/pcl': 'page_pcl',
@@ -315,6 +316,7 @@ app.use('/korlap', require('./routes/korlap'));
 app.use('/pml', require('./routes/pml'));
 app.use('/pcl', require('./routes/pcl'));
 app.use('/subsls', require('./routes/subsls'));
+app.use('/export', require('./routes/export'));
 app.use('/pbi', require('./routes/pbi'));
 app.use('/kipp', require('./routes/kipp'));
 app.get('/earlywarning', (req, res) => res.redirect('/early-warning'));
@@ -393,6 +395,14 @@ app.use((err, req, res, next) => {
 
 // Init DB & load master data
 function init() {
+  // Minify static CSS & JS assets on startup
+  try {
+    const { minifyAll } = require('./scripts/minify');
+    minifyAll();
+  } catch (err) {
+    logger.error('❌ Failed to run assets minification on startup:', err);
+  }
+
   try {
     const db = getDb(); // initialize schema
     const rowCount = db.prepare('SELECT COUNT(*) as count FROM subsls_master').get().count;

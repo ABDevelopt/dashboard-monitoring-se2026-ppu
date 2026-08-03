@@ -34,7 +34,31 @@ router.get('/', (req, res) => {
   if (uploadId && recentUploads.length > 0) {
     let selectParts = [];
     let joinParts = [];
+    let queryParams = [];
     const settings = res.locals.settings;
+
+    // Check if there is a previous upload before the first of the 5 recent uploads
+    const prevUploadOfFirst = getDb().prepare(`
+      SELECT MAX(id) AS id, tanggal 
+      FROM uploads 
+      WHERE tanggal < ? 
+      ORDER BY tanggal DESC 
+      LIMIT 1
+    `).get(recentUploads[0].tanggal);
+
+    if (prevUploadOfFirst) {
+      selectParts.push(`
+        SUM(CASE WHEN p_prev_first.upload_id IS NOT NULL 
+          THEN (COALESCE(p_prev_first.submitted_by_pcl, 0) + COALESCE(p_prev_first.approved, 0) + COALESCE(p_prev_first.rejected, 0)) 
+          ELSE 0 END) AS realisasi_baseline
+      `);
+      joinParts.push(`
+        LEFT JOIN progres p_prev_first ON m.kode = p_prev_first.kode AND p_prev_first.upload_id = ?
+      `);
+      queryParams.push(prevUploadOfFirst.id);
+    } else {
+      selectParts.push(`0 AS realisasi_baseline`);
+    }
 
     recentUploads.forEach((u, i) => {
       const targetFormula = getTargetFormula(settings.target_fasih_mode, `p${i}`);
@@ -62,11 +86,10 @@ router.get('/', (req, res) => {
       joinParts.push(`
         LEFT JOIN progres p${i} ON m.kode = p${i}.kode AND p${i}.upload_id = ?
       `);
+      queryParams.push(u.id);
     });
 
     let where = "WHERE m.pcl IS NOT NULL AND m.pcl != ''";
-    const queryParams = [];
-    recentUploads.forEach(u => queryParams.push(u.id));
 
     if (filterKec) { where += ' AND m.kecamatan = ?'; queryParams.push(filterKec); }
     if (filterKorlap) { where += ' AND m.korlap = ?'; queryParams.push(filterKorlap); }
@@ -98,16 +121,12 @@ router.get('/', (req, res) => {
         row.desa = row.desa.split(',').join(', ');
       }
       // Calculate daily increment & total documents per day
-      let lastValidReal = 0;
+      let lastValidReal = row.realisasi_baseline || 0;
       recentUploads.forEach((u, i) => {
         const real = row['realisasi_' + i] || 0;
         let inc = 0;
         if (real > 0) {
-          if (lastValidReal > 0) {
-            inc = Math.max(0, real - lastValidReal);
-          } else {
-            inc = real;
-          }
+          inc = Math.max(0, real - lastValidReal);
           lastValidReal = real;
         }
         row['inc_' + i] = inc;

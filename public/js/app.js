@@ -1,743 +1,369 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= typeof title !== 'undefined' ? title + ' — ' : '' %>Dashboard SE2026 PPU</title>
-  <meta name="description" content="Dashboard Monitoring Sensus Ekonomi 2026 Kabupaten Penajam Paser Utara">
-  <link rel="icon" type="image/png" href="/logo-mark.png">
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#f97316">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="SE2026 PPU">
-  <link rel="apple-touch-icon" href="/logo-mark.png">
-  <% if (typeof activePage === 'undefined') { activePage = ''; } %>
-  <% if (typeof appVersion === 'undefined') { appVersion = ''; } %>
-  <% if (typeof settings === 'undefined') { settings = {}; } %>
-  <% if (typeof latestUpload === 'undefined') { latestUpload = null; } %>
-  <% if (typeof isAdmin === 'undefined') { isAdmin = false; } %>
-  <% if (typeof success === 'undefined') { success = []; } %>
-  <% if (typeof error === 'undefined') { error = []; } %>
-  <% if (activePage === 'admin') { %>
-    <link rel="preload" href="/logo-vertical-dark.png" as="image" fetchpriority="high">
-  <% } else { %>
-    <link rel="preload" href="/logo-horizontal-dark.png" as="image" fetchpriority="high">
-  <% } %>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link rel="preload" href="/css/style.min.css?v=<%= appVersion %>" as="style">
-  <link rel="preload" href="/css/framework.min.css?v=<%= appVersion %>" as="style">
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/fonts/bootstrap-icons.woff2?dd67030699838ea613ee6dbda90effa6" as="font" type="font/woff2" crossorigin>
-
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
-  <noscript>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=optional" rel="stylesheet">
-  </noscript>
-
-  <link rel="stylesheet" href="/css/style.min.css?v=<%= appVersion %>">
-  <link rel="stylesheet" href="/css/framework.min.css?v=<%= appVersion %>">
-  <script src="/js/search-helper.min.js?v=<%= appVersion %>"></script>
-  <link rel="stylesheet" href="/css/spreadsheet.min.css?v=<%= appVersion %>">
-  <link rel="stylesheet" href="/css/ai-widget.min.css?v=<%= appVersion %>">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" media="print" onload="this.media='all'">
-  <noscript>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  </noscript>
-
-  <script src="/js/charts.min.js?v=<%= appVersion %>" defer></script>
-  <script src="/js/table-filter.min.js?v=<%= appVersion %>" defer></script>
-  <style>
-    <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') { %>
-      .muatan-col { display: none !important; }
-    <% } %>
-    @media (max-width: 992px) {
-      .topbar-weather-widget { display: none !important; }
+// Swal Polyfill using native glassmorphic modal
+window.Swal = {
+  // Toast notifications
+  toast: function(title, type = 'success') {
+    let container = document.querySelector('.custom-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'custom-toast-container';
+      document.body.appendChild(container);
     }
-  </style>
-</head>
-<body class="<%= (typeof activePage !== 'undefined' && activePage === 'login') ? 'page-login' : '' %> <%= (typeof activePage !== 'undefined' && activePage === 'agent') ? 'page-agent' : '' %>">
-<script>
-  // Apply saved theme immediately to prevent flashing
-  if (localStorage.getItem('theme') === 'light') {
-    document.body.classList.add('light-mode');
-  }
-  // Apply saved sidebar state immediately to prevent layout shift (CLS)
-  if (window.innerWidth > 768 && localStorage.getItem('sidebar-collapsed') === 'true') {
-    document.body.classList.add('sidebar-collapsed');
-  }
+    const toast = document.createElement('div');
+    toast.className = `custom-toast custom-toast-${type}`;
+    let iconClass = 'bi-check-circle-fill';
+    if (type === 'error') iconClass = 'bi-exclamation-triangle-fill';
+    if (type === 'info') iconClass = 'bi-info-circle-fill';
+    
+    toast.innerHTML = `
+      <i class="bi ${iconClass} custom-toast-icon"></i>
+      <span style="font-weight:600; font-size:12px; line-height:1.4;">${title}</span>
+    `;
+    container.appendChild(toast);
+    
+    // trigger entry animation
+    requestAnimationFrame(() => {
+      toast.classList.add('active');
+    });
+    
+    // remove after 3s
+    setTimeout(() => {
+      toast.classList.remove('active');
+      setTimeout(() => {
+        toast.remove();
+      }, 300);
+    }, 3000);
+  },
 
-  // Registry of page-specific event listeners that need to be cleaned up on PJAX load
-  window._pjaxCleanups = [];
-
-  // Proxy addEventListener to track popstate listeners
-  const originalAddEventListener = window.addEventListener;
-  window.addEventListener = function(type, listener, options) {
-    if (type === 'popstate') {
-      window._pjaxCleanups.push({ type, listener, options });
+  // Main dialog
+  fire: function(options) {
+    if (typeof options === 'string') {
+      options = { title: options };
     }
-    return originalAddEventListener.call(this, type, listener, options);
-  };
-</script>
+    // If it's a simple toast request
+    if (options.toast) {
+      const title = options.title || '';
+      const type = options.icon || 'success';
+      this.toast(title, type);
+      return Promise.resolve({ isConfirmed: true });
+    }
 
-<script>
-  // Fast feedback: DOM loaded setup
-  document.addEventListener('DOMContentLoaded', () => {
+    // Otherwise, it's a full modal
+    return new Promise((resolve) => {
+      // Remove any existing modals
+      const existing = document.getElementById('custom-swal-modal');
+      if (existing) existing.remove();
 
-    // Auto-dismiss success and error alerts after 5 seconds, with manual click-to-dismiss
-    const alerts = document.querySelectorAll('.flash-messages .alert');
-    alerts.forEach(alert => {
-      alert.style.transition = 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.4s ease, margin 0.4s ease, padding 0.4s ease';
-      alert.style.opacity = '1';
-      alert.style.transform = 'translateY(0)';
-      alert.style.maxHeight = alert.scrollHeight + 'px';
-      alert.style.cursor = 'pointer';
+      const backdrop = document.createElement('div');
+      backdrop.id = 'custom-swal-modal';
+      backdrop.className = 'custom-dialog-backdrop';
 
-      // Dismiss helper function
-      const dismissAlert = () => {
-        alert.style.opacity = '0';
-        alert.style.transform = 'translateY(-10px)';
+      let headerHtml = '';
+      if (options.title) {
+        headerHtml = `<div class="custom-dialog-header">${options.title}</div>`;
+      }
+
+      let bodyHtml = '';
+      if (options.html) {
+        bodyHtml = `<div class="custom-dialog-body">${options.html}</div>`;
+      } else if (options.text) {
+        bodyHtml = `<div class="custom-dialog-body" style="font-size:13px; line-height:1.5; color:var(--text-secondary);">${options.text}</div>`;
+      }
+
+      // Check if showLoading was called
+      let isLoader = false;
+      if (options.didOpen && options.showConfirmButton === false) {
+        // This is a loading popup
+        isLoader = true;
+        bodyHtml += `<div class="custom-dialog-spinner"></div>`;
+      }
+
+      let footerHtml = '';
+      if (!isLoader && (options.showConfirmButton !== false || options.showCancelButton)) {
+        footerHtml = `<div class="custom-dialog-footer">`;
+        if (options.showCancelButton) {
+          const cancelText = options.cancelButtonText || 'Batal';
+          footerHtml += `<button type="button" class="custom-dialog-btn custom-dialog-btn-cancel">${cancelText}</button>`;
+        }
+        if (options.showConfirmButton !== false) {
+          const confirmText = options.confirmButtonText || 'OK';
+          footerHtml += `<button type="button" class="custom-dialog-btn custom-dialog-btn-confirm">${confirmText}</button>`;
+        }
+        footerHtml += `</div>`;
+      }
+
+      backdrop.innerHTML = `
+        <div class="custom-dialog-card">
+          ${headerHtml}
+          ${bodyHtml}
+          ${footerHtml}
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+
+      // Trigger animation
+      requestAnimationFrame(() => {
+        backdrop.classList.add('active');
+      });
+
+      // Bind button events
+      const confirmBtn = backdrop.querySelector('.custom-dialog-btn-confirm');
+      const cancelBtn = backdrop.querySelector('.custom-dialog-btn-cancel');
+
+      const closeModal = (confirmed, val = null) => {
+        backdrop.classList.remove('active');
         setTimeout(() => {
-          alert.style.maxHeight = '0';
-          alert.style.marginTop = '0';
-          alert.style.marginBottom = '0';
-          alert.style.paddingTop = '0';
-          alert.style.paddingBottom = '0';
-          alert.style.borderWidth = '0';
-          setTimeout(() => {
-            alert.remove();
-          }, 400);
-        }, 300);
+          backdrop.remove();
+          resolve({ isConfirmed: confirmed, value: val });
+        }, 250);
       };
 
-      // Click to dismiss
-      alert.addEventListener('click', dismissAlert);
-
-      // Auto dismiss after 5 seconds (5000ms)
-      setTimeout(dismissAlert, 5000);
-    });
-  });
-</script>
-
-<!-- PULL TO REFRESH SPINNER -->
-<div id="pull-to-refresh" class="pull-to-refresh-container">
-  <div class="ptr-spinner-box">
-    <i class="bi bi-arrow-clockwise ptr-icon"></i>
-    <div class="ptr-spinner"></div>
-  </div>
-</div>
-
-<!-- SIDEBAR OVERLAY -->
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-<!-- SIDEBAR -->
-<aside class="sidebar" id="sidebar" aria-label="Sidebar Menu">
-  <button class="btn-close-sidebar" id="sidebarClose" aria-label="Tutup Sidebar"><i class="bi bi-x-lg"></i></button>
-  <div class="sidebar-logo" style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 16px; border-bottom: 1px solid var(--border);">
-    <img src="/logo-vertical.png" alt="Logo SE2026" class="logo-light" width="140" height="90" loading="eager" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
-    <img src="/logo-vertical-dark.png" alt="Logo SE2026" class="logo-dark" width="140" height="90" fetchpriority="high" loading="eager" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
-    <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 4px;">Penajam Paser Utara</p>
-  </div>
-
-  <div class="sidebar-upload-info" style="margin: 4px 16px 12px; padding: 10px; background: rgba(var(--accent-rgb), 0.03); border: 1px solid var(--border); border-radius: 8px; font-size: 10px; display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && (latestUploadsDetailed.muatan || latestUploadsDetailed.fasih)) ? 'flex' : 'none' %>; flex-direction: column; gap: 6px;">
-    <div id="sidebarMuatanInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'flex' : 'none' %>; flex-direction: column; gap: 2px;">
-      <span style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; display: flex; align-items: center; gap: 4px;">
-        <i class="bi bi-box-seam" style="color: var(--accent-cyan);"></i> Update Muatan
-      </span>
-      <span id="sidebarMuatanDate" style="color: var(--text-primary); font-weight: 500; padding-left: 14px;">
-        <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.created_at) ? formatWita(latestUploadsDetailed.muatan.created_at) : '' %>
-      </span>
-    </div>
-    <div id="sidebarFasihInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.fasih) ? 'flex' : 'none' %>; flex-direction: column; gap: 2px; <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px;' : '' %>">
-      <span style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; display: flex; align-items: center; gap: 4px;">
-        <i class="bi bi-phone" style="color: var(--accent-purple);"></i> Update FASIH
-      </span>
-      <span id="sidebarFasihDate" style="color: var(--text-primary); font-weight: 500; padding-left: 14px;">
-        <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.created_at) ? formatWita(latestUploadsDetailed.fasih.created_at) : '' %>
-      </span>
-    </div>
-  </div>
-
-  <div class="sidebar-search" style="padding: 8px 16px; border-bottom: 1px solid var(--border);">
-    <div style="position: relative;">
-      <input type="text" id="sidebarMenuSearch" placeholder="Cari menu..." style="width: 100%; padding: 6px 10px 6px 28px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-subtle); color: var(--text-primary); transition: all 0.2s;">
-      <i class="bi bi-search" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-muted);"></i>
-    </div>
-  </div>
-
-  <nav class="sidebar-nav">
-    <!-- Section 1: Utama -->
-    <div class="nav-section-wrapper" data-section="utama">
-      <div class="nav-section-header">
-        <span>Utama</span>
-      </div>
-      <div class="nav-section-content">
-        <a href="/" class="nav-item <%= activePage === 'overview' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-house-door"></i></span> Overview
-        </a>
-        <% if (typeof settings !== 'undefined' && settings.page_map === '1') { %>
-        <a href="/map" class="nav-item <%= activePage === 'map' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-map"></i></span> Peta Progres
-        </a>
-        <% } %>
-        <% if (typeof settings === 'undefined' || !settings || settings.page_aiagent !== '0') { %>
-        <a href="/agent" class="nav-item <%= activePage === 'agent' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-robot text-purple"></i></span> Pananyo Taka <span class="nav-tag-badge" style="background: linear-gradient(135deg, #4285F4, #9b72cb); color: white; font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 4px; margin-left: 4px; letter-spacing: 0.5px;">AI</span>
-        </a>
-        <% } %>
-      </div>
-    </div>
-
-    <!-- Section: Favorit / Pinned (Local Storage client-side) -->
-    <div class="nav-section-wrapper" data-section="favorit" id="sidebarPinnedSection" style="display: none;">
-      <div class="nav-section-header">
-        <span>Favorit Saya</span>
-      </div>
-      <div class="nav-section-content" id="sidebarPinnedList">
-        <!-- Populated dynamically from localStorage by JS -->
-      </div>
-    </div>
-
-    <!-- Section 5: Drilldown Petugas -->
-    <% if (typeof settings !== 'undefined' && (settings.page_korlap === '1' || settings.page_pml === '1' || settings.page_pcl === '1')) { %>
-    <div class="nav-section-wrapper" data-section="petugas">
-      <div class="nav-section-header">
-        <span>Drilldown Petugas</span>
-      </div>
-      <div class="nav-section-content">
-        <% if (settings.page_korlap === '1') { %>
-        <a href="/korlap" class="nav-item <%= activePage === 'korlap' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-person-workspace"></i></span> Korlap
-        </a>
-        <% } %>
-        <% if (settings.page_pml === '1') { %>
-        <a href="/pml" class="nav-item <%= activePage === 'pml' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-clipboard2-data"></i></span> PML
-        </a>
-        <% } %>
-        <% if (settings.page_pcl === '1') { %>
-        <a href="/pcl" class="nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-person-gear"></i></span> PCL
-        </a>
-        <% } %>
-      </div>
-    </div>
-    <% } %>
-
-    <!-- Section 2: Evaluasi & Kualitas -->
-    <% if (typeof settings !== 'undefined' && (settings.page_earlywarning === '1' || settings.page_deteksianomali === '1')) { %>
-    <div class="nav-section-wrapper" data-section="evaluasi">
-      <div class="nav-section-header">
-        <span>Evaluasi &amp; Kualitas</span>
-      </div>
-      <div class="nav-section-content">
-        <% if (settings.page_earlywarning === '1') { %>
-        <a href="/early-warning" class="nav-item <%= activePage === 'earlywarning' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-exclamation-octagon"></i></span> Early Warning
-        </a>
-        <% } %>
-        <% if (settings.page_deteksianomali === '1') { %>
-        <a href="/deteksi-anomali" class="nav-item <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-shield-exclamation"></i></span> Anomali
-        </a>
-        <% } %>
-      </div>
-    </div>
-    <% } %>
-
-    <!-- Section 3: Analisis Kinerja -->
-    <% if (typeof settings !== 'undefined' && (settings.page_performa === '1' || settings.page_leaderboard === '1' || settings.page_performatrendah === '1')) { %>
-    <div class="nav-section-wrapper" data-section="analisis">
-      <div class="nav-section-header">
-        <span>Analisis Kinerja</span>
-      </div>
-      <div class="nav-section-content">
-        <% if (settings.page_performa === '1') { %>
-        <a href="/performa" class="nav-item <%= activePage === 'performa' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-speedometer2"></i></span> Performa Petugas
-        </a>
-        <% } %>
-        <% if (settings.page_performa === '1') { %>
-        <a href="/harian" class="nav-item <%= activePage === 'harian' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-calendar3"></i></span> Progres Harian
-        </a>
-        <% } %>
-        <% if (settings.page_leaderboard === '1') { %>
-        <a href="/leaderboard" class="nav-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-trophy"></i></span> Performa Terbaik
-        </a>
-        <% } %>
-        <% if (settings.page_performatrendah === '1') { %>
-        <a href="/performa-terendah" class="nav-item <%= activePage === 'performa-terendah' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-graph-down"></i></span> Performa Terendah
-        </a>
-        <% } %>
-      </div>
-    </div>
-    <% } %>
-
-    <!-- Section 4: Drilldown Wilayah -->
-    <% if (typeof settings !== 'undefined' && (settings.page_kecamatan === '1' || settings.page_subsls === '1')) { %>
-    <div class="nav-section-wrapper" data-section="wilayah">
-      <div class="nav-section-header">
-        <span>Drilldown Wilayah</span>
-      </div>
-      <div class="nav-section-content">
-        <% if (settings.page_kecamatan === '1') { %>
-        <a href="/kecamatan" class="nav-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-geo-alt"></i></span> Kecamatan
-        </a>
-        <% } %>
-        <% if (settings.page_subsls === '1') { %>
-        <a href="/subsls" class="nav-item <%= activePage === 'subsls' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-box-seam"></i></span> Subsls
-        </a>
-        <% } %>
-      </div>
-    </div>
-    <% } %>
-
-    <!-- Section: Pendataan Khusus -->
-    <div class="nav-section-wrapper" data-section="khusus">
-      <div class="nav-section-header">
-        <span>Pendataan Khusus</span>
-      </div>
-      <div class="nav-section-content">
-        <a href="/kipp" class="nav-item <%= activePage === 'kipp' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-building"></i></span> Pendataan Wilayah KIPP
-        </a>
-        <a href="/pbi" class="nav-item <%= activePage === 'pbi' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-heart-pulse"></i></span> Pendataan PBI
-        </a>
-      </div>
-    </div>
-
-
-
-    <!-- Section 6: Data & Utilitas -->
-    <% if (typeof settings !== 'undefined' && settings.page_export === '1') { %>
-    <div class="nav-section-wrapper" data-section="data">
-      <div class="nav-section-header">
-        <span>Data &amp; Utilitas</span>
-      </div>
-      <div class="nav-section-content">
-        <a href="/export" class="nav-item <%= activePage === 'export' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-download"></i></span> Export Data
-        </a>
-      </div>
-    </div>
-    <% } %>
-
-    <!-- Section Admin: Administrasi & Sistem -->
-    <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-    <div class="nav-section-wrapper" data-section="admin">
-      <div class="nav-section-header">
-        <span>Administrasi &amp; Sistem</span>
-      </div>
-      <div class="nav-section-content">
-        <a href="/admin" class="nav-item <%= activePage === 'admin-menu' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-grid-fill"></i></span> Menu Utama Admin
-        </a>
-        <a href="/admin/upload" class="nav-item <%= activePage === 'upload' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-upload"></i></span> Upload Data
-        </a>
-        <a href="/admin/master" class="nav-item <%= activePage === 'master' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-database-fill-gear"></i></span> Kelola Master Data
-        </a>
-        <a href="/admin/users" class="nav-item <%= activePage === 'users' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-people-fill"></i></span> Kelola Pengguna
-        </a>
-        <a href="/admin/petugas-email" class="nav-item <%= activePage === 'petugas-email' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-envelope-at-fill"></i></span> Data Email Petugas
-        </a>
-        <a href="/admin/settings" class="nav-item <%= activePage === 'settings' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-sliders"></i></span> Pengaturan Tampilan
-        </a>
-        <a href="/admin/settings/chatbot" class="nav-item <%= activePage === 'chatbot-settings' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-chat-left-dots-fill"></i></span> Pengaturan Chatbot AI
-        </a>
-        <a href="/admin/whatsapp" class="nav-item <%= activePage === 'whatsapp' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-whatsapp"></i></span> Integrasi WhatsApp
-        </a>
-      </div>
-    </div>
-    <% } %>
-
-    <!-- Help / Bantuan -->
-    <div class="nav-section-wrapper" data-section="bantuan">
-      <div class="nav-section-content">
-        <a href="/help" class="nav-item <%= activePage === 'help' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-life-preserver"></i></span> Panduan &amp; Bantuan
-        </a>
-      </div>
-    </div>
-
-  </nav>
-
-  <div class="sidebar-footer" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-    <div style="line-height: 1.4;">
-      SE2026 · PPU · v<%= packageVersion %><br>
-      <span style="color: var(--text-muted)">© BPS Penajam Paser Utara</span>
-    </div>
-    <div>
-      <% if (typeof user !== 'undefined' && user) { %>
-        <a href="/logout" class="btn btn-secondary btn-xs" title="Logout (<%= user.username %>)" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); text-decoration: none; color: var(--accent-red); font-weight: 600;">
-          <i class="bi bi-box-arrow-right"></i> Logout
-        </a>
-      <% } else { %>
-        <a href="/login" class="btn btn-secondary btn-xs" title="Login Ke Sistem" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); text-decoration: none; color: var(--accent-blue); font-weight: 600;">
-          <i class="bi bi-box-arrow-in-right"></i> Login
-        </a>
-      <% } %>
-    </div>
-  </div>
-</aside>
-
-<!-- BOTTOM NAVIGATION BAR (MOBILE ONLY) -->
-<nav class="bottom-nav" aria-label="Mobile Navigation">
-  <a href="/" class="bottom-nav-item <%= activePage === 'overview' ? 'active' : '' %>">
-    <i class="bi bi-house-door"></i>
-    <span>Home</span>
-  </a>
-  <button id="bottomNavWilayahBtn" class="bottom-nav-item <%= ['kecamatan', 'subsls', 'map', 'kipp', 'pbi'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Wilayah">
-    <i class="bi bi-geo-alt"></i>
-    <span>Wilayah <i class="bi bi-chevron-up nav-sub-indicator"></i></span>
-  </button>
-  <button id="bottomNavPetugasBtn" class="bottom-nav-item <%= ['pcl', 'pml', 'korlap', 'performa', 'leaderboard', 'performa-terendah'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Petugas">
-    <i class="bi bi-people"></i>
-    <span>Petugas <i class="bi bi-chevron-up nav-sub-indicator"></i></span>
-  </button>
-  <a href="/agent" class="bottom-nav-item <%= activePage === 'agent' ? 'active' : '' %>">
-    <i class="bi bi-robot"></i>
-    <span>Pananyo Taka</span>
-  </a>
-  <button id="bottomNavMenuBtn" class="bottom-nav-item" aria-label="Buka Menu Lainnya">
-    <i class="bi bi-grid"></i>
-    <span>Menu</span>
-  </button>
-</nav>
-
-<!-- MOBILE BOTTOM NAV POPOVER / BOTTOM SHEETS -->
-<div id="bottomNavOverlay" class="bottom-nav-overlay" aria-hidden="true"></div>
-
-<!-- Sheet 1: Wilayah Hub -->
-<div id="bottomNavSheetWilayah" class="bottom-nav-sheet" aria-hidden="true" role="dialog">
-  <div class="bottom-nav-sheet-header">
-    <div class="bottom-nav-sheet-handle"></div>
-    <div class="bottom-nav-sheet-title"><i class="bi bi-geo-alt-fill" style="color:var(--accent-blue);"></i> Navigasi Wilayah</div>
-    <button class="bottom-nav-sheet-close" aria-label="Tutup"><i class="bi bi-x"></i></button>
-  </div>
-  <div class="bottom-nav-sheet-content">
-    <% if (typeof settings === 'undefined' || settings.page_kecamatan !== '0') { %>
-    <a href="/kecamatan" class="bottom-sheet-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8;"><i class="bi bi-geo-alt"></i></div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Kecamatan</div>
-        <div class="bottom-sheet-desc">Statistik & realisasi per 4 kecamatan PPU</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-    <% if (typeof settings === 'undefined' || settings.page_subsls !== '0') { %>
-    <a href="/subsls" class="bottom-sheet-item <%= activePage === 'subsls' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(168, 85, 247, 0.12); color: #c084fc;"><i class="bi bi-box-seam"></i></div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Sub SLS</div>
-        <div class="bottom-sheet-desc">Detail muatan per satuan lingkungan setempat</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-    <% if (typeof settings === 'undefined' || settings.page_map !== '0') { %>
-    <a href="/map" class="bottom-sheet-item <%= activePage === 'map' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(34, 197, 94, 0.12); color: #4ade80;"><i class="bi bi-map"></i></div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Peta Progres</div>
-        <div class="bottom-sheet-desc">Peta spasial & GIS progres pendataan</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-    <a href="/kipp" class="bottom-sheet-item <%= activePage === 'kipp' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(245, 158, 11, 0.12); color: #fbbf24;"><i class="bi bi-building"></i></div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Pendataan KIPP</div>
-        <div class="bottom-sheet-desc">Monitoring wilayah IKN / KIPP</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <a href="/pbi" class="bottom-sheet-item <%= activePage === 'pbi' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(236, 72, 153, 0.12); color: #f472b6;"><i class="bi bi-heart-pulse"></i></div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Pendataan PBI</div>
-        <div class="bottom-sheet-desc">Pencacahan usaha sektor PBI</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-  </div>
-</div>
-
-<!-- Sheet 2: Petugas Hub -->
-<div id="bottomNavSheetPetugas" class="bottom-nav-sheet" aria-hidden="true" role="dialog">
-  <div class="bottom-nav-sheet-header">
-    <div class="bottom-nav-sheet-handle"></div>
-    <div class="bottom-nav-sheet-title"><i class="bi bi-people-fill" style="color:var(--accent-purple);"></i> Navigasi Petugas</div>
-    <button class="bottom-nav-sheet-close" aria-label="Tutup"><i class="bi bi-x"></i></button>
-  </div>
-  <div class="bottom-nav-sheet-content">
-    <% if (typeof settings === 'undefined' || settings.page_pcl !== '0') { %>
-    <a href="/pcl" class="bottom-sheet-item <%= activePage === 'pcl' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8;"><i class="bi bi-person-gear"></i></div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">PCL (Pencacah Lapangan)</div>
-        <div class="bottom-sheet-desc">Daftar & status progres seluruh PCL</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-    <% if (typeof settings === 'undefined' || settings.page_pml !== '0') { %>
-    <a href="/pml" class="bottom-sheet-item <%= activePage === 'pml' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(168, 85, 247, 0.12); color: #c084fc;"><i class="bi bi-person-badge"></i></div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">PML (Pemeriksa Lapangan)</div>
-        <div class="bottom-sheet-desc">Rekapitulasi beban & pengawasan PML</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-    <% if (typeof settings === 'undefined' || settings.page_korlap !== '0') { %>
-    <a href="/korlap" class="bottom-sheet-item <%= activePage === 'korlap' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(34, 197, 94, 0.12); color: #4ade80;"><i class="bi bi-person-workspace"></i></div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Korlap (Koor. Lapangan)</div>
-        <div class="bottom-sheet-desc">Progres & performa per Koordinator Lapangan</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-    <% if (typeof settings === 'undefined' || settings.page_performa !== '0') { %>
-    <a href="/performa" class="bottom-sheet-item <%= activePage === 'performa' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(245, 158, 11, 0.12); color: #fbbf24;"><i class="bi bi-speedometer2"></i></div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Analisis Performa</div>
-        <div class="bottom-sheet-desc">Metrik kecepatan & produktivitas harian</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-    <% if (typeof settings === 'undefined' || settings.page_leaderboard !== '0') { %>
-    <a href="/leaderboard" class="bottom-sheet-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(234, 179, 8, 0.12); color: #facc15;"><i class="bi bi-trophy"></i></div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Performa Terbaik</div>
-        <div class="bottom-sheet-desc">Peringkat top petugas dengan progres tertinggi</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-    <% if (typeof settings === 'undefined' || settings.page_performatrendah !== '0') { %>
-    <a href="/performa-terendah" class="bottom-sheet-item <%= activePage === 'performa-terendah' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(239, 68, 68, 0.12); color: #f87171;"><i class="bi bi-graph-down"></i></div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Performa Terendah</div>
-        <div class="bottom-sheet-desc">Petugas yang membutuhkan perhatian/evaluasi</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-  </div>
-</div>
-
-<!-- MAIN WRAPPER -->
-<div class="main-wrapper">
-  <!-- TOPBAR -->
-  <header class="topbar">
-    <!-- LEFT: Logo + Title -->
-    <div class="topbar-left">
-      <button class="btn btn-secondary topbar-action-btn" id="sidebarToggle" title="Sembunyikan / Tampilkan Sidebar (Toggle)" aria-label="Toggle Sidebar" style="margin-right: 8px;">
-        <i class="bi bi-layout-sidebar-inset"></i>
-      </button>
-      <img src="/logo-horizontal.png" alt="Logo SE2026" class="logo-light topbar-logo" width="110" height="30" loading="eager">
-      <img src="/logo-horizontal-dark.png" alt="Logo SE2026" class="logo-dark topbar-logo" width="110" height="30" fetchpriority="high" loading="eager">
-      <div class="topbar-title-container">
-        <div class="topbar-title"><%= typeof title !== 'undefined' ? title : 'Dashboard' %></div>
-        <div class="topbar-subtitle">Penajam Paser Utara</div>
-      </div>
-    </div>
-
-    <!-- RIGHT: Action Buttons -->
-    <div class="topbar-actions">
-      <!-- Search -->
-      <button class="btn btn-secondary topbar-action-btn" id="globalSearchBtn" title="Cari... (Ctrl+K)" aria-label="Pencarian Global">
-        <i class="bi bi-search"></i>
-        <span class="topbar-action-label">Ctrl K</span>
-      </button>
-
-      <!-- Notification Bell -->
-      <div class="topbar-dropdown-wrapper" id="bellWrapper">
-        <button class="btn btn-secondary topbar-action-btn" id="notificationBellBtn" title="Notifikasi Update Data" aria-label="Notifikasi Update Data">
-          <i class="bi bi-bell-fill" id="notificationBellIcon"></i>
-          <span id="notificationBellBadge" class="topbar-badge"></span>
-        </button>
-        <div id="notificationBellDropdown" class="topbar-dropdown topbar-dropdown--right">
-          <div class="topbar-dropdown-header">
-            <span>Riwayat Update Data</span>
-            <span id="clearNotificationBadge" class="topbar-dropdown-action">Tandai Terbaca</span>
-          </div>
-          <div id="notificationBellList" class="topbar-dropdown-list">
-            <!-- content injected by JS -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Target Mode Selector -->
-      <div class="topbar-dropdown-wrapper" id="targetWrapper">
-        <button class="btn btn-secondary topbar-action-btn" id="targetSelectorBtn" title="Ubah Mode Target" aria-label="Ubah Mode Target">
-          <i class="bi bi-bullseye topbar-target-icon"></i>
-          <span class="target-btn-text topbar-action-label">Target: <%= settings.target_fasih_mode === 'fasih-sm' ? 'FASIH-SM' : 'Statis' %></span>
-          <i class="bi bi-chevron-down topbar-chevron"></i>
-        </button>
-        <div id="targetSelectorDropdown" class="topbar-dropdown topbar-dropdown--right">
-          <div class="topbar-dropdown-section">
-            <div class="topbar-dropdown-section-label"><i class="bi bi-phone" style="color:var(--accent-purple)"></i> Target FASIH</div>
-            <select id="publicTargetFasihMode" class="topbar-select" aria-label="Mode Target FASIH">
-              <option value="static" <%= settings.target_fasih_mode === 'static' || !settings.target_fasih_mode ? 'selected' : '' %>>Statis (Prelist)</option>
-              <option value="fasih-sm" <%= settings.target_fasih_mode === 'fasih-sm' ? 'selected' : '' %>>FASIH-SM</option>
-            </select>
-          </div>
-          <div class="topbar-dropdown-section topbar-dropdown-section--bordered">
-            <div class="topbar-dropdown-section-label"><i class="bi bi-box-seam" style="color:var(--accent-cyan)"></i> Target Muatan</div>
-            <select id="publicTargetMuatanMode" class="topbar-select" aria-label="Mode Target Muatan">
-              <option value="prelist" <%= settings.target_muatan_mode === 'prelist' || !settings.target_muatan_mode ? 'selected' : '' %>>Muatan Prelist</option>
-              <option value="honor" <%= settings.target_muatan_mode === 'honor' ? 'selected' : '' %>>Target Honor</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Theme Toggle -->
-      <button class="btn btn-secondary topbar-action-btn" id="themeToggle" title="Ubah Tema" aria-label="Ubah Tema">
-        <i class="bi bi-moon-fill" id="themeIcon"></i>
-      </button>
-
-      <!-- Admin Upload (desktop only) -->
-      <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-        <a href="/admin/upload" class="btn btn-primary topbar-admin-btn"><i class="bi bi-upload"></i><span class="topbar-action-label"> Upload</span></a>
-      <% } %>
-    </div>
-  </header>
-
-  <!-- BREADCRUMB NAVIGATION BAR -->
-  <nav id="breadcrumb-bar" aria-label="Breadcrumb" class="hidden">
-    <ol class="breadcrumb-list" id="breadcrumb-list">
-      <!-- Populated dynamically by updateBreadcrumbs() JS -->
-    </ol>
-  </nav>
-
-  <!-- PAGE CONTENT -->
-  <main class="page-content">
-    <!-- PJAX CLICK-BLOCK OVERLAY (invisible, only prevents interaction during load) -->
-    <div id="pjax-loading-overlay" class="pjax-loading-overlay"></div>
-    <!-- Flash Messages -->
-    <% if ((success && success.length) || (error && error.length)) { %>
-    <div class="flash-messages">
-      <% if (success && success.length) { %>
-        <% success.forEach(msg => { %>
-        <div class="alert alert-success">
-          <i class="bi bi-check-circle-fill"></i>
-          <div class="alert-content"><%= msg %></div>
-          <button type="button" class="alert-close-btn" onclick="const alert = this.parentElement; alert.classList.add('fade-out'); setTimeout(() => alert.remove(), 400);"><i class="bi bi-x"></i></button>
-        </div>
-        <% }) %>
-      <% } %>
-      <% if (error && error.length) { %>
-        <% error.forEach(msg => { %>
-        <div class="alert alert-error">
-          <i class="bi bi-x-circle-fill"></i>
-          <div class="alert-content"><%= msg %></div>
-          <button type="button" class="alert-close-btn" onclick="const alert = this.parentElement; alert.classList.add('fade-out'); setTimeout(() => alert.remove(), 400);"><i class="bi bi-x"></i></button>
-        </div>
-        <% }) %>
-      <% } %>
-    </div>
-    <script>
-      (function() {
-        const alerts = document.querySelectorAll('.flash-messages .alert');
-        alerts.forEach(alert => {
-          setTimeout(() => {
-            alert.classList.add('fade-out');
-            setTimeout(() => alert.remove(), 400);
-          }, 4000);
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+          // If preConfirm option is provided
+          if (options.preConfirm) {
+            const val = options.preConfirm();
+            if (val === false) return; // validation failed
+            closeModal(true, val);
+          } else {
+            closeModal(true, true);
+          }
         });
-      })();
-    </script>
-    <% } %>
+      }
 
-    <div id="pjax-container">
-      <%- body %>
-    </div>
-  </main>
-</div>
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+          closeModal(false);
+        });
+      }
 
+      // If didOpen is provided (like for starting loading or custom init)
+      if (options.didOpen) {
+        options.didOpen(backdrop);
+      }
+    });
+  },
 
-<!-- GLOBAL SEARCH MODAL -->
-<div id="globalSearchModal" class="search-modal-backdrop hidden" aria-hidden="true" role="dialog">
-  <div class="search-modal-card">
-    <div class="search-modal-header">
-      <i class="bi bi-search search-modal-icon"></i>
-      <input type="text" id="globalSearchInput" placeholder="Cari PCL, SLS, desa, kecamatan..." autocomplete="off" aria-label="Cari PCL, SLS, desa, kecamatan...">
-      <button id="closeSearchModalBtn" class="search-modal-close" title="Tutup (Esc)" aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
-    </div>
-    <div class="search-modal-body" id="globalSearchBody">
-      <div class="search-modal-results" id="globalSearchResults">
-        <div class="search-welcome-state">
-          <i class="bi bi-search" style="font-size: 24px; opacity: 0.5; margin-bottom: 8px;"></i>
-          <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">Ketik minimal 2 karakter untuk memulai pencarian global...</p>
-        </div>
-      </div>
-    </div>
-    <div class="search-modal-footer">
-      <span><kbd>↑↓</kbd> Navigasi</span>
-      <span><kbd>Enter</kbd> Pilih</span>
-      <span><kbd>Esc</kbd> Tutup</span>
-    </div>
-  </div>
-</div>
+  showLoading: function() {
+    // If modal already open, we can just insert spinner
+    const card = document.querySelector('#custom-swal-modal .custom-dialog-card');
+    if (card) {
+      let spinner = card.querySelector('.custom-dialog-spinner');
+      if (!spinner) {
+        spinner = document.createElement('div');
+        spinner.className = 'custom-dialog-spinner';
+        card.appendChild(spinner);
+      }
+      const footer = card.querySelector('.custom-dialog-footer');
+      if (footer) footer.style.display = 'none';
+    } else {
+      this.fire({
+        title: 'Mohon Tunggu...',
+        html: 'Sedang memproses data, harap tunggu.',
+        showConfirmButton: false
+      });
+    }
+  },
 
+  close: function() {
+    const backdrop = document.getElementById('custom-swal-modal');
+    if (backdrop) {
+      backdrop.classList.remove('active');
+      setTimeout(() => {
+        backdrop.remove();
+      }, 250);
+    }
+  },
 
-<% if (typeof sentryDsn !== 'undefined' && sentryDsn) { %>
-<!-- Sentry Browser SDK -->
-<script src="https://browser.sentry-cdn.com/8.0.0/bundle.min.js" crossorigin="anonymous"></script>
-<script>
-  Sentry.init({
-    dsn: "<%= sentryDsn %>",
-    tracesSampleRate: 1.0,
+  showValidationMessage: function(msg) {
+    const card = document.querySelector('#custom-swal-modal .custom-dialog-card');
+    if (card) {
+      let errMsg = card.querySelector('.custom-dialog-validation-error');
+      if (!errMsg) {
+        errMsg = document.createElement('div');
+        errMsg.className = 'custom-dialog-validation-error';
+        errMsg.style.color = 'var(--accent-red)';
+        errMsg.style.fontSize = '11px';
+        errMsg.style.marginTop = '8px';
+        errMsg.style.fontWeight = '600';
+        const body = card.querySelector('.custom-dialog-body');
+        if (body) body.appendChild(errMsg);
+      }
+      errMsg.textContent = msg;
+    }
+  }
+};
+
+// Make sure global helpers use this system
+window.showAlert = function(options) {
+  return window.Swal.fire(options);
+};
+
+window.showToast = function(title, type = 'success') {
+  window.Swal.toast(title, type);
+};
+
+window.showLoading = function(title, text) {
+  window.Swal.fire({
+    title: title || 'Memuat...',
+    text: text || 'Harap tunggu.',
+    showConfirmButton: false,
+    didOpen: () => {
+      window.Swal.showLoading();
+    }
   });
-</script>
-<% } %>
+};
 
-<script>
-  // Injected EJS variables for global client-side calculations
-  const latestUploadTanggal = "<%= latestUpload ? latestUpload.tanggal : '' %>";
-  const startSensusDate = new Date('<%= settings.speedometer_start_date || '2026-06-15' %>');
-  let diffDays = 1;
-  let daysRemaining = 0;
-  if (latestUploadTanggal) {
-    const d2 = new Date(latestUploadTanggal);
-    const diffTime = d2 - startSensusDate;
-    diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
-    const deadline = new Date('<%= settings.speedometer_target_date || '2026-08-31' %>');
-    daysRemaining = Math.max(0, Math.ceil((deadline - d2) / (1000 * 60 * 60 * 24)));
+window.closeLoading = function() {
+  window.Swal.close();
+};
+
+function updateTime() {
+  const optionsDate = { timeZone: 'Asia/Makassar', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('id-ID', optionsDate);
+  const timeStr = now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Makassar', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' WITA';
+    
+    // Topbar elements
+    const liveTimeEl = document.getElementById('liveTime');
+    const liveDateEl = document.getElementById('liveDate');
+    if (liveTimeEl) liveTimeEl.textContent = timeStr;
+    if (liveDateEl) liveDateEl.textContent = dateStr;
+
+    // Overview widgets if present
+    const overviewTimeEl = document.getElementById('overviewTime');
+    const overviewDateEl = document.getElementById('overviewDate');
+    if (overviewTimeEl) overviewTimeEl.textContent = timeStr;
+    if (overviewDateEl) overviewDateEl.textContent = dateStr;
   }
 
-  const kippPcls = <%- JSON.stringify(typeof kippPcls !== 'undefined' ? kippPcls : []) %>;
-  const kippPmls = <%- JSON.stringify(typeof kippPmls !== 'undefined' ? kippPmls : []) %>;
-  const kippKorlaps = <%- JSON.stringify(typeof kippKorlaps !== 'undefined' ? kippKorlaps : []) %>;
-  const globalSettings = <%- JSON.stringify(typeof settings !== 'undefined' ? settings : {}) %>;
-  const latestUploadDateVal = <%- latestUpload && latestUpload.tanggal ? JSON.stringify(latestUpload.tanggal) : 'null' %>;
-  const activeTargetPct = (latestUploadDateVal ? new Date(latestUploadDateVal) : new Date()) >= new Date('2026-07-01') ? 40 : 25;
+  // ===== BREADCRUMB NAVIGATION =====
+  // Builds breadcrumb trail based on current URL path and query parameters.
+  // Called on initial load and after every PJAX navigation.
+  function updateBreadcrumbs(targetUrl) {
+    const bar  = document.getElementById('breadcrumb-bar');
+    const list = document.getElementById('breadcrumb-list');
+    if (!bar || !list) return;
+
+    const url    = new URL(targetUrl || window.location.href, window.location.origin);
+    const path   = url.pathname.replace(/\/$/, '') || '/';
+    const params = url.searchParams;
+
+    // Map URL paths → { label, icon, href }
+    const PAGE_MAP = {
+      '/':                  { label: 'Overview',          icon: 'bi-house-door-fill' },
+      '/map':               { label: 'Peta Progres',      icon: 'bi-map-fill' },
+      '/agent':             { label: 'Pananyo Taka',      icon: 'bi-sparkles' },
+      '/kecamatan':         { label: 'Kecamatan',         icon: 'bi-geo-alt-fill' },
+      '/korlap':            { label: 'Korlap',            icon: 'bi-person-lines-fill' },
+      '/pml':               { label: 'PML',               icon: 'bi-person-badge-fill' },
+      '/pcl':               { label: 'PCL',               icon: 'bi-person-gear' },
+      '/subsls':            { label: 'Subsls',            icon: 'bi-grid-3x3-gap-fill' },
+      '/kipp':              { label: 'KIPP IKN',          icon: 'bi-building-check' },
+      '/leaderboard':       { label: 'Leaderboard',       icon: 'bi-trophy-fill' },
+      '/performa':          { label: 'Top Performers',    icon: 'bi-graph-up-arrow' },
+      '/performa-terendah': { label: 'Performa Terendah', icon: 'bi-graph-down-arrow' },
+      '/harian':            { label: 'Tren Harian',       icon: 'bi-bar-chart-line-fill' },
+      '/early-warning':     { label: 'Early Warning',     icon: 'bi-exclamation-triangle-fill' },
+      '/earlywarning':      { label: 'Early Warning',     icon: 'bi-exclamation-triangle-fill' },
+      '/deteksi-anomali':   { label: 'Anomali',           icon: 'bi-shield-exclamation' },
+      '/pbi':               { label: 'Power BI',          icon: 'bi-bar-chart-fill' },
+      '/master':            { label: 'Data Master',       icon: 'bi-table' },
+      '/admin':             { label: 'Menu Admin',        icon: 'bi-grid-fill' },
+      '/admin/upload':      { label: 'Upload Data',       icon: 'bi-upload' },
+      '/admin/master':      { label: 'Kelola Master Data', icon: 'bi-database-fill-gear' },
+      '/admin/users':       { label: 'Kelola Pengguna',   icon: 'bi-people-fill' },
+      '/admin/settings':    { label: 'Pengaturan Tampilan', icon: 'bi-sliders' },
+      '/admin/settings/chatbot': { label: 'Pengaturan Chatbot AI', icon: 'bi-chat-left-dots-fill' },
+      '/admin/whatsapp':    { label: 'Integrasi WhatsApp', icon: 'bi-whatsapp' },
+      '/settings':          { label: 'Pengaturan',        icon: 'bi-gear-fill' },
+      '/help':              { label: 'Panduan & Bantuan', icon: 'bi-life-preserver' },
+    };
+
+    // On root Overview page, hide breadcrumb (not needed)
+    if (path === '/') {
+      bar.classList.add('hidden');
+      list.innerHTML = '';
+      document.body.classList.remove('has-breadcrumb');
+      return;
+    }
+
+    // Build crumbs array
+    const crumbs = [];
+
+    // Always start with Home
+    crumbs.push({ label: 'Home', icon: 'bi-house-door', href: '/' });
+
+    // Resolve the current page info
+    const pageInfo = PAGE_MAP[path] || { label: decodeURIComponent(path.replace(/^\//, '').replace(/-/g, ' ')).replace(/\b\w/g, c => c.toUpperCase()), icon: 'bi-file-earmark' };
+    const pageHref = path;
+
+    // Check for drill-down filter params that indicate sub-level navigation
+    const filterKec    = params.get('kec');
+    const filterKorlap = params.get('korlap');
+    const filterPml    = params.get('pml');
+    const filterPcl    = params.get('pcl');
+    const filterDesa   = params.get('desa');
+
+    // If no filters at all → just show Home > PageName
+    const hasFilter = filterKec || filterKorlap || filterPml || filterPcl || filterDesa;
+
+    if (!hasFilter) {
+      // Simple page, no drill-down
+      crumbs.push({ label: pageInfo.label, icon: pageInfo.icon, href: null }); // null = current (active)
+    } else {
+      // Drill-down: show page as clickable, then filters as trail
+      crumbs.push({ label: pageInfo.label, icon: pageInfo.icon, href: pageHref });
+
+      // Build hierarchical context from filters
+      // Kecamatan level
+      if (filterKec && !filterKorlap && !filterPml && !filterPcl) {
+        crumbs.push({ label: filterKec, icon: 'bi-geo-alt', href: null });
+      }
+      // Korlap level
+      if (filterKorlap) {
+        if (filterKec) {
+          crumbs.push({ label: filterKec, icon: 'bi-geo-alt', href: `${pageHref}?kec=${encodeURIComponent(filterKec)}` });
+        }
+        if (!filterPml && !filterPcl) {
+          crumbs.push({ label: filterKorlap, icon: 'bi-person-lines-fill', href: null });
+        } else {
+          crumbs.push({ label: filterKorlap, icon: 'bi-person-lines-fill', href: `${pageHref}?korlap=${encodeURIComponent(filterKorlap)}${filterKec ? '&kec=' + encodeURIComponent(filterKec) : ''}` });
+        }
+      }
+      // PML level
+      if (filterPml) {
+        if (!filterPcl) {
+          crumbs.push({ label: filterPml, icon: 'bi-person-badge-fill', href: null });
+        } else {
+          crumbs.push({ label: filterPml, icon: 'bi-person-badge-fill', href: `${pageHref}?pml=${encodeURIComponent(filterPml)}${filterKorlap ? '&korlap=' + encodeURIComponent(filterKorlap) : ''}${filterKec ? '&kec=' + encodeURIComponent(filterKec) : ''}` });
+        }
+      }
+      // PCL level (leaf)
+      if (filterPcl) {
+        crumbs.push({ label: filterPcl, icon: 'bi-person-gear', href: null });
+      }
+      // Desa/SLS level (subsls page)
+      if (filterDesa && !filterPcl) {
+        if (filterKec) {
+          crumbs.push({ label: filterKec, icon: 'bi-geo-alt', href: `${pageHref}?kec=${encodeURIComponent(filterKec)}` });
+        }
+        crumbs.push({ label: filterDesa, icon: 'bi-house-door', href: null });
+      }
+    }
+
+    // Render crumbs
+    list.innerHTML = '';
+    crumbs.forEach((crumb, idx) => {
+      const isLast = idx === crumbs.length - 1;
+
+      // Separator (except before first item)
+      if (idx > 0) {
+        const sep = document.createElement('li');
+        sep.className = 'breadcrumb-separator';
+        sep.setAttribute('aria-hidden', 'true');
+        sep.innerHTML = '<i class="bi bi-chevron-right"></i>';
+        list.appendChild(sep);
       }
 
       const li = document.createElement('li');
@@ -1034,6 +660,7 @@
     });
     return window._scriptPromises[url];
   }
+  window.loadScript = loadScript;
 
   // ===== BOOKMARKS / FAVORIT SAYA =====
   window.getPinnedItems = function() {
@@ -1949,63 +1576,7 @@
         e.preventDefault();
         e.stopPropagation();
       }
-      
-      Swal.fire({
-        title: '<i class="bi bi-file-earmark-arrow-down-fill" style="color: var(--accent-blue); font-size: 20px;"></i> <span>Export Data &amp; Utilitas</span>',
-        html: `
-          <div style="text-align: left; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 16px;">
-            Pilih dataset yang ingin Anda ekspor dari database sistem Sensus Ekonomi 2026:
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
-            <label class="export-option-card">
-              <input type="radio" name="exportOption" value="/subsls/export" checked>
-              <div class="export-icon-badge blue">
-                <i class="bi bi-filetype-csv"></i>
-              </div>
-              <div style="flex: 1; min-width: 0;">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-                  <span style="font-weight: 700; color: var(--text-primary); font-size: 13px;">Data Sub-SLS (CSV)</span>
-                  <span class="badge badge-blue btn-xs" style="font-size: 9px; padding: 2px 6px;">CSV</span>
-                </div>
-                <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Rincian lengkap progres &amp; status muatan per satuan lingkungan setempat</div>
-              </div>
-            </label>
-
-            <label class="export-option-card">
-              <input type="radio" name="exportOption" value="/pcl/export-excel">
-              <div class="export-icon-badge green">
-                <i class="bi bi-file-earmark-excel-fill"></i>
-              </div>
-              <div style="flex: 1; min-width: 0;">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-                  <span style="font-weight: 700; color: var(--text-primary); font-size: 13px;">Kinerja Petugas (Excel)</span>
-                  <span class="badge badge-green btn-xs" style="font-size: 9px; padding: 2px 6px;">XLSX</span>
-                </div>
-                <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Rekapitulasi realisasi, target, &amp; indikator performa PCL, PML &amp; Korlap</div>
-              </div>
-            </label>
-          </div>
-        `,
-        showCancelButton: true,
-        confirmButtonText: '<i class="bi bi-download"></i> Unduh Berkas',
-        cancelButtonText: 'Batal',
-        focusConfirm: false,
-        customClass: {
-          popup: 'swal2-dark-popup'
-        },
-        preConfirm: () => {
-          const selected = document.querySelector('input[name="exportOption"]:checked');
-          if (!selected) {
-            Swal.showValidationMessage('Silakan pilih salah satu format dataset.');
-            return false;
-          }
-          return selected.value;
-        }
-      }).then((result) => {
-        if (result.isConfirmed && result.value) {
-          window.location.href = result.value;
-        }
-      });
+      window.location.href = '/export';
     };
 
     window.initTableExport = (container = document) => {
@@ -2673,8 +2244,11 @@
           // Swap content immediately and trigger smooth layout entrance animation
           oldContent.innerHTML = newContent.innerHTML;
           oldContent.classList.remove('pjax-animate-enter');
-          void oldContent.offsetWidth;
-          oldContent.classList.add('pjax-animate-enter');
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              oldContent.classList.add('pjax-animate-enter');
+            });
+          });
           setTimeout(() => {
             oldContent.classList.remove('pjax-animate-enter');
           }, 400);
@@ -3256,533 +2830,3 @@
       }
     });
   });
-=======
->>>>>>> master
-</script>
-<script src="/js/app.min.js?v=<%= appVersion %>" defer></script>
-
-<!-- IN-APP NOTIFICATION SYSTEM -->
-
-
-<script>
-  (function() {
-    <% if (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed) { %>
-      let latestMuatanDate = <%- latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.created_at ? JSON.stringify(latestUploadsDetailed.muatan.created_at) : 'null' %>;
-      let latestFasihDate = <%- latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.created_at ? JSON.stringify(latestUploadsDetailed.fasih.created_at) : 'null' %>;
-      let latestMuatanFile = <%- latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.filename ? JSON.stringify(latestUploadsDetailed.muatan.filename) : 'null' %>;
-      let latestFasihFile = <%- latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.status_filename ? JSON.stringify(latestUploadsDetailed.fasih.status_filename) : 'null' %>;
-    <% } else { %>
-      let latestMuatanDate = null;
-      let latestFasihDate = null;
-      let latestMuatanFile = null;
-      let latestFasihFile = null;
-    <% } %>
-
-    // Track which dates have been displayed as toast in this session to prevent spamming
-    let notifiedMuatanDate = latestMuatanDate;
-    let notifiedFasihDate = latestFasihDate;
-
-    // Client-side date formatter to display WITA timezone consistently
-    function formatWitaString(dateStr) {
-      if (!dateStr) return '';
-      const utcString = dateStr.endsWith('Z') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
-      const date = new Date(utcString);
-      if (isNaN(date.getTime())) return dateStr;
-      
-      const witaTime = new Date(date.getTime() + (8 * 60 * 60 * 1000)); // shift UTC+8
-      const day = witaTime.getUTCDate();
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-      const month = months[witaTime.getUTCMonth()];
-      const year = witaTime.getUTCFullYear();
-      const hours = String(witaTime.getUTCHours()).padStart(2, '0');
-      const minutes = String(witaTime.getUTCMinutes()).padStart(2, '0');
-      
-      return `${day} ${month} ${year}, ${hours}:${minutes} WITA`;
-    }
-
-    function checkEarlyWarningSummary() {
-      fetch('/api/early-warning-summary')
-        .then(res => res.json())
-        .then(data => {
-          if (!data.success) return;
-          
-          const totalWarnings = data.slow_pcl_count + data.zero_pml_count + data.stagnan_pcl_count + data.low_projected_pcl_count;
-          if (totalWarnings === 0) return;
-
-          const currentSig = `slow:${data.slow_pcl_count}_zeroPml:${data.zero_pml_count}_stagnan:${data.stagnan_pcl_count}_lowProj:${data.low_projected_pcl_count}`;
-          const lastSeenSig = localStorage.getItem('last_seen_ew_summary_signature');
-          
-          if (lastSeenSig === currentSig) {
-            return;
-          }
-
-          showEarlyWarningModal(data, currentSig);
-        })
-        .catch(err => console.error('Error fetching early warning summary:', err));
-    }
-
-    function showEarlyWarningModal(data, sig) {
-      const existing = document.getElementById('earlyWarningSummaryModal');
-      if (existing) existing.remove();
-
-      const modalHtml = `
-        <div id="earlyWarningSummaryModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.4); animation: fadeInEwModal 0.2s ease;">
-          <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 440px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 24px; position: relative; animation: slideInEwModal 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);">
-            
-            <!-- Header -->
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
-              <div class="pulse-icon-red">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-              </div>
-              <div style="text-align: left;">
-                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary);">Peringatan Dini Kinerja Petugas</h3>
-                <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Ringkasan performa kritis per ${formatWitaString(data.latest_upload_date)}</p>
-              </div>
-            </div>
-
-            <!-- Grid of metrics -->
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
-
-              ${data.zero_pml_count > 0 ? `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(239, 68, 68, 0.05); border-left: 3px solid var(--accent-red); border-radius: 4px;">
-                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-person-badge"></i> PML Tanpa Progres</span>
-                  <span class="badge badge-red" style="font-weight: 700;">${data.zero_pml_count} Pengawas</span>
-                </div>
-              ` : ''}
-
-              ${data.stagnan_pcl_count > 0 ? `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(251, 191, 36, 0.05); border-left: 3px solid var(--accent-yellow); border-radius: 4px;">
-                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-clock-history"></i> PCL Stagnan (1 Hari)</span>
-                  <span class="badge badge-yellow" style="font-weight: 700;">${data.stagnan_pcl_count} Petugas</span>
-                </div>
-              ` : ''}
-
-              ${data.slow_pcl_count > 0 ? `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(59, 130, 246, 0.05); border-left: 3px solid var(--accent-blue); border-radius: 4px;">
-                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-speedometer"></i> PCL Sangat Lambat</span>
-                  <span class="badge badge-blue" style="font-weight: 700;">${data.slow_pcl_count} Petugas</span>
-                </div>
-              ` : ''}
-
-              ${data.low_projected_pcl_count > 0 ? `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(167, 139, 250, 0.05); border-left: 3px solid var(--accent-purple); border-radius: 4px;">
-                  <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);"><i class="bi bi-graph-down"></i> PCL Risiko Tinggi Terlambat</span>
-                  <span class="badge badge-purple" style="font-weight: 700;">${data.low_projected_pcl_count} Petugas</span>
-                </div>
-              ` : ''}
-            </div>
-
-            <!-- Warning Info Text -->
-            <p style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 24px; text-align: left;">
-              Terdapat beberapa petugas lapangan dan pengawas yang memerlukan bimbingan khusus karena tidak menunjukkan aktivitas pengisian atau berisiko tinggi gagal menyelesaikan target sebelum tenggat waktu.
-            </p>
-
-            <!-- Action Buttons -->
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-              <button id="dismissEwModal" class="btn btn-secondary" style="font-size: 12px; padding: 8px 16px;">Abaikan</button>
-              <a href="/early-warning" id="viewEwModal" class="btn btn-primary" style="font-size: 12px; padding: 8px 16px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                <i class="bi bi-arrow-right-circle"></i> Lihat Rincian
-              </a>
-            </div>
-          </div>
-        </div>
-      `;
-
-      if (!document.getElementById('ewModalStyles')) {
-        const styleEl = document.createElement('style');
-        styleEl.id = 'ewModalStyles';
-        styleEl.innerHTML = `
-          @keyframes fadeInEwModal {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          @keyframes slideInEwModal {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-          }
-          .pulse-icon-red {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: rgba(239, 68, 68, 0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--accent-red);
-            font-size: 20px;
-            flex-shrink: 0;
-            position: relative;
-          }
-          .pulse-icon-red::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border-radius: 50%;
-            background: rgba(239, 68, 68, 0.2);
-            animation: pulseRed-ring 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
-            pointer-events: none;
-          }
-          @keyframes pulseRed-ring {
-            0% { transform: scale(1); opacity: 0.8; }
-            100% { transform: scale(1.4); opacity: 0; }
-          }
-        `;
-        document.head.appendChild(styleEl);
-      }
-
-      const div = document.createElement('div');
-      div.innerHTML = modalHtml;
-      const modalElement = div.firstElementChild;
-      document.body.appendChild(modalElement);
-
-      const dismissBtn = modalElement.querySelector('#dismissEwModal');
-      const viewBtn = modalElement.querySelector('#viewEwModal');
-
-      const closeModal = () => {
-        localStorage.setItem('last_seen_ew_summary_signature', sig);
-        modalElement.style.animation = 'fadeInEwModal 0.2s ease reverse';
-        setTimeout(() => modalElement.remove(), 180);
-      };
-
-      dismissBtn.addEventListener('click', closeModal);
-      viewBtn.addEventListener('click', closeModal);
-    }
-
-    // ====== TOAST NOTIFICATION FOR DATA UPDATES ======
-    function createToastNotification(updates) {
-      if (!updates || updates.length === 0) return;
-
-      // Ensure toast container exists
-      let container = document.getElementById('toastNotifContainer');
-      if (!container) {
-        container = document.createElement('div');
-        container.id = 'toastNotifContainer';
-        document.body.appendChild(container);
-      }
-
-      updates.forEach((u, i) => {
-        const iconMap = { muatan: 'bi-bar-chart-fill', fasih: 'bi-phone-fill' };
-        const colorMap = { muatan: 'var(--accent-cyan)', fasih: 'var(--accent-purple)' };
-        const icon  = iconMap[u.type]  || 'bi-bell-fill';
-        const color = colorMap[u.type] || 'var(--accent-blue)';
-
-        const toast = document.createElement('div');
-        toast.className = 'toast-notif-item';
-        toast.style.borderLeft = '4px solid ' + color;
-
-        toast.innerHTML = `
-          <div class="toast-notif-icon" style="background-color: ${color}22; color: ${color};">
-            <i class="bi ${icon}"></i>
-          </div>
-          <div class="toast-notif-content">
-            <div class="toast-notif-title">
-              ${u.title || 'Data Diperbarui'}
-            </div>
-            <div class="toast-notif-desc">
-              ${u.desc || ''}
-            </div>
-          </div>
-          <button class="toast-notif-close toast-close-btn" title="Tutup">
-            <i class="bi bi-x-lg"></i>
-          </button>`;
-
-        container.appendChild(toast);
-
-        // Animate in (staggered)
-        setTimeout(() => {
-          toast.style.opacity = '1';
-          toast.style.transform = 'translateY(0)';
-        }, 80 + i * 120);
-
-        // Auto-dismiss after 6 seconds
-        const autoDismiss = setTimeout(() => removeToast(toast), 6000 + i * 120);
-
-        // Manual close
-        toast.querySelector('.toast-close-btn').addEventListener('click', () => {
-          clearTimeout(autoDismiss);
-          removeToast(toast);
-        });
-
-        function removeToast(el) {
-          el.style.opacity = '0';
-          el.style.transform = 'translateY(8px)';
-          setTimeout(() => el.remove(), 350);
-        }
-      });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      checkEarlyWarningSummary();
-      const storedMuatan = localStorage.getItem('last_seen_muatan_date');
-      const storedFasih = localStorage.getItem('last_seen_fasih_date');
-
-      let showNotification = false;
-      let updates = [];
-
-      if (storedMuatan === null && storedFasih === null) {
-        // First visit: check if the latest upload is recent (e.g., within 24 hours) to notify, otherwise initialize silently
-        const now = new Date();
-        const oneDayMs = 24 * 60 * 60 * 1000;
-        
-        let shouldShowMuatan = false;
-        let shouldShowFasih = false;
-
-        if (latestMuatanDate) {
-          const muatanTime = new Date(latestMuatanDate.endsWith('Z') ? latestMuatanDate : latestMuatanDate.replace(' ', 'T') + 'Z');
-          if (!isNaN(muatanTime.getTime()) && (now - muatanTime) < oneDayMs) {
-            shouldShowMuatan = true;
-          } else {
-            localStorage.setItem('last_seen_muatan_date', latestMuatanDate);
-          }
-        }
-
-        if (latestFasihDate) {
-          const fasihTime = new Date(latestFasihDate.endsWith('Z') ? latestFasihDate : latestFasihDate.replace(' ', 'T') + 'Z');
-          if (!isNaN(fasihTime.getTime()) && (now - fasihTime) < oneDayMs) {
-            shouldShowFasih = true;
-          } else {
-            localStorage.setItem('last_seen_fasih_date', latestFasihDate);
-          }
-        }
-
-        if (shouldShowMuatan) {
-          showNotification = true;
-          updates.push({
-            type: 'muatan',
-            title: 'Data Muatan Diperbarui',
-            desc: `Data Muatan/Progres Utama baru telah di-upload pada <strong>${formatWitaString(latestMuatanDate)}</strong>`,
-            file: latestMuatanFile,
-            date: latestMuatanDate
-          });
-        }
-        if (shouldShowFasih) {
-          showNotification = true;
-          updates.push({
-            type: 'fasih',
-            title: 'Data FASIH Diperbarui',
-            desc: `Status progres FASIH baru telah di-upload pada <strong>${formatWitaString(latestFasihDate)}</strong>`,
-            file: latestFasihFile,
-            date: latestFasihDate
-          });
-        }
-      } else {
-        if (latestMuatanDate && storedMuatan !== latestMuatanDate) {
-          showNotification = true;
-          updates.push({
-            type: 'muatan',
-            title: 'Data Muatan Diperbarui',
-            desc: `Data Muatan/Progres Utama baru telah di-upload pada <strong>${formatWitaString(latestMuatanDate)}</strong>`,
-            file: latestMuatanFile,
-            date: latestMuatanDate
-          });
-        }
-        if (latestFasihDate && storedFasih !== latestFasihDate) {
-          showNotification = true;
-          updates.push({
-            type: 'fasih',
-            title: 'Data FASIH Diperbarui',
-            desc: `Status progres FASIH baru telah di-upload pada <strong>${formatWitaString(latestFasihDate)}</strong>`,
-            file: latestFasihFile,
-            date: latestFasihDate
-          });
-        }
-      }
-
-      if (showNotification && updates.length > 0) {
-        createToastNotification(updates);
-      }
-
-      // Background Polling: check for new uploads every 60 seconds
-      setInterval(async () => {
-        try {
-          const response = await fetch('/api/latest-updates');
-          if (!response.ok) return;
-          const data = await response.json();
-
-          let hasNewUpdate = false;
-          let newUpdates = [];
-
-          if (data.muatan && data.muatan.created_at && data.muatan.created_at !== notifiedMuatanDate) {
-            hasNewUpdate = true;
-            newUpdates.push({
-              type: 'muatan',
-              title: 'Data Muatan Diperbarui',
-              desc: `Data Muatan/Progres Utama baru telah di-upload pada <strong>${formatWitaString(data.muatan.created_at)}</strong>`,
-              file: data.muatan.filename,
-              date: data.muatan.created_at
-            });
-            notifiedMuatanDate = data.muatan.created_at;
-            latestMuatanDate = data.muatan.created_at;
-            latestMuatanFile = data.muatan.filename;
-
-            // Dynamically update sidebar Muatan dates in DOM
-            const sidebarUploadInfo = document.querySelector('.sidebar-upload-info');
-            const sidebarMuatanInfo = document.getElementById('sidebarMuatanInfo');
-            const sidebarMuatanDateEl = document.getElementById('sidebarMuatanDate');
-            if (sidebarUploadInfo) sidebarUploadInfo.style.display = 'flex';
-            if (sidebarMuatanInfo) sidebarMuatanInfo.style.display = 'flex';
-            if (sidebarMuatanDateEl) sidebarMuatanDateEl.innerHTML = formatWitaString(data.muatan.created_at);
-          }
-
-          if (data.fasih && data.fasih.created_at && data.fasih.created_at !== notifiedFasihDate) {
-            hasNewUpdate = true;
-            newUpdates.push({
-              type: 'fasih',
-              title: 'Data FASIH Diperbarui',
-              desc: `Status progres FASIH baru telah di-upload pada <strong>${formatWitaString(data.fasih.created_at)}</strong>`,
-              file: data.fasih.status_filename,
-              date: data.fasih.created_at
-            });
-            notifiedFasihDate = data.fasih.created_at;
-            latestFasihDate = data.fasih.created_at;
-            latestFasihFile = data.fasih.status_filename;
-
-            // Dynamically update sidebar FASIH dates in DOM
-            const sidebarUploadInfo = document.querySelector('.sidebar-upload-info');
-            const sidebarFasihInfo = document.getElementById('sidebarFasihInfo');
-            const sidebarFasihDateEl = document.getElementById('sidebarFasihDate');
-            if (sidebarUploadInfo) sidebarUploadInfo.style.display = 'flex';
-            if (sidebarFasihInfo) {
-              sidebarFasihInfo.style.display = 'flex';
-              if (data.muatan || notifiedMuatanDate) {
-                sidebarFasihInfo.style.borderTop = '1px solid var(--border)';
-                sidebarFasihInfo.style.paddingTop = '6px';
-                sidebarFasihInfo.style.marginTop = '2px';
-              }
-            }
-            if (sidebarFasihDateEl) sidebarFasihDateEl.innerHTML = formatWitaString(data.fasih.created_at);
-          }
-
-          if (hasNewUpdate && newUpdates.length > 0) {
-            updateBellState();
-            
-            // Re-check early warning on new data upload
-            checkEarlyWarningSummary();
-          }
-        } catch (err) {
-          console.error('Error checking for updates in background:', err);
-        }
-      }, 60000);
-
-      // === Notification Bell Logic ===
-      // Wrapper untuk pemanggilan dari cek background update data
-      function updateBellState() {
-        if (typeof window.updateBellState === 'function') {
-          window.updateBellState();
-        }
-      }
-
-      function initNotificationBell() {
-        const bellBtns = document.querySelectorAll('#notificationBellBtn, #notificationBellBtnAgent, .notification-bell-btn');
-        if (!bellBtns.length) return;
-
-        function updateBellStateInternal() {
-          const storedMuatan = localStorage.getItem('last_seen_muatan_date');
-          const storedFasih = localStorage.getItem('last_seen_fasih_date');
-
-          let isMuatanNew = latestMuatanDate && storedMuatan !== latestMuatanDate;
-          let isFasihNew = latestFasihDate && storedFasih !== latestFasihDate;
-
-          const bellBadges = document.querySelectorAll('#notificationBellBadge, #notificationBellBadgeAgent, .notification-bell-badge');
-          const bellIcons = document.querySelectorAll('#notificationBellIcon, #notificationBellIconAgent, .notification-bell-icon');
-          const clearBadgeBtns = document.querySelectorAll('#clearNotificationBadge, #clearNotificationBadgeAgent, .clear-notification-badge');
-          const bellLists = document.querySelectorAll('#notificationBellList, #notificationBellListAgent, .notification-bell-list');
-
-          // Show/hide red badge and style bell
-          bellBadges.forEach(badge => badge.style.display = (isMuatanNew || isFasihNew) ? 'block' : 'none');
-          bellIcons.forEach(icon => icon.style.color = (isMuatanNew || isFasihNew) ? '#f59e0b' : 'var(--text-muted)');
-          clearBadgeBtns.forEach(btn => btn.style.display = (isMuatanNew || isFasihNew) ? 'inline' : 'none');
-
-          // Build list items
-          let html = '';
-          if (latestMuatanDate) {
-            html += `
-              <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; min-width: 0;">
-                <span style="font-weight: 700; font-size: 10px; color: var(--accent-cyan); display: flex; align-items: center; gap: 6px;">
-                  <i class="bi bi-box-seam"></i> UPDATE MUATAN
-                  ${isMuatanNew ? '<span style="background: #ef4444; color: white; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: 800;">BARU</span>' : ''}
-                </span>
-                <span style="font-size: 11px; color: var(--text-primary); font-weight: 500;">${formatWitaString(latestMuatanDate)}</span>
-                <span style="font-size: 9px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;">File: ${latestMuatanFile}</span>
-              </div>
-            `;
-          }
-          if (latestFasihDate) {
-            html += `
-              <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; min-width: 0;">
-                <span style="font-weight: 700; font-size: 10px; color: var(--accent-purple); display: flex; align-items: center; gap: 6px;">
-                  <i class="bi bi-phone"></i> UPDATE FASIH
-                  ${isFasihNew ? '<span style="background: #ef4444; color: white; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: 800;">BARU</span>' : ''}
-                </span>
-                <span style="font-size: 11px; color: var(--text-primary); font-weight: 500;">${formatWitaString(latestFasihDate)}</span>
-                <span style="font-size: 9px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;">File: ${latestFasihFile}</span>
-              </div>
-            `;
-          }
-          if (!latestMuatanDate && !latestFasihDate) {
-            html = '<div style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 12px 0;">Belum ada riwayat update.</div>';
-          }
-          bellLists.forEach(list => list.innerHTML = html);
-        }
-
-        function markAllAsRead() {
-          if (latestMuatanDate) localStorage.setItem('last_seen_muatan_date', latestMuatanDate);
-          if (latestFasihDate) localStorage.setItem('last_seen_fasih_date', latestFasihDate);
-          updateBellStateInternal();
-        }
-
-        // Expose state update globally
-        window.updateBellState = updateBellStateInternal;
-
-        // Initialize state
-        updateBellStateInternal();
-
-        bellBtns.forEach(btn => {
-          btn.onclick = (e) => {
-            e.stopPropagation();
-            const wrapper = btn.closest('.topbar-dropdown-wrapper');
-            const dropdown = wrapper ? wrapper.querySelector('.topbar-dropdown') : null;
-            if (!dropdown) return;
-            const isOpen = dropdown.classList.contains('is-open');
-            
-            // Close all topbar dropdowns first
-            document.querySelectorAll('.topbar-dropdown').forEach(d => d.classList.remove('is-open'));
-
-            if (!isOpen) {
-              updateBellStateInternal();
-              dropdown.classList.add('is-open');
-            }
-          };
-        });
-
-        document.querySelectorAll('#clearNotificationBadge, #clearNotificationBadgeAgent, .clear-notification-badge').forEach(btn => {
-          btn.onclick = (e) => {
-            e.stopPropagation();
-            markAllAsRead();
-          };
-        });
-      }
-
-      window.initNotificationBell = initNotificationBell;
-      initNotificationBell();
-
-      // Document click listener to close all topbar dropdowns — registered once globally
-      document.addEventListener('click', (e) => {
-        document.querySelectorAll('.topbar-dropdown').forEach(dropdown => {
-          const wrapper = dropdown.closest('.topbar-dropdown-wrapper');
-          if (wrapper && !wrapper.contains(e.target)) {
-            dropdown.classList.remove('is-open');
-          }
-        });
-      });
-    });
-  })();
-</script>
-<%- typeof scripts !== 'undefined' ? scripts : '' %>
-<script src="/js/spreadsheet-editor.min.js?v=<%= appVersion %>" defer></script>
-<script src="/js/ai-widget.min.js?v=<%= appVersion %>" defer></script>
-</body>
-</html>

@@ -61,7 +61,7 @@
       </div>
       <div class="stat-card orange">
         <div class="stat-icon"><i class="bi bi-pause-circle"></i></div>
-        <div class="stat-label">PCL Stagnan 2 Hari</div>
+        <div class="stat-label">PCL Stagnan 1 Hari</div>
         <div class="stat-value"><%= warning.stagnanPcl.length %></div>
         <div class="stat-sub">Tidak ada penambahan dokumen FASIH</div>
       </div>
@@ -74,18 +74,18 @@
     </div>
 
     <!-- PENGUMUMAN EARLY WARNING -->
-     <!-- PCL STAGNAN (TIDAK ADA PENAMBAHAN SELAMA 2 HARI) -->
+     <!-- PCL STAGNAN (TIDAK ADA PENAMBAHAN SELAMA 1 HARI) -->
     <div class="card mt-4">
       <div class="card-header">
         <div class="card-title">
-          <span class="text-orange"><i class="bi bi-pause-circle"></i> PCL Stagnan — Tidak Ada Penambahan Dokumen FASIH selama 2 Hari</span>
+          <span class="text-orange"><i class="bi bi-pause-circle"></i> PCL Stagnan — Tidak Ada Penambahan Dokumen FASIH selama 1 Hari</span>
         </div>
         <span class="badge badge-orange"><%= warning.stagnanPcl.length %> Petugas</span>
       </div>
 
       <% if (warning.stagnanPcl.length > 0) { %>
         <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
-          PCL berikut tidak memiliki penambahan dokumen FASIH (Submit + Approve + Reject) selama 2 hari terakhir.
+          PCL berikut tidak memiliki penambahan dokumen FASIH (Submit + Approve + Reject) selama 1 hari terakhir.
           <% if (warning.stagnanPcl[0] && warning.stagnanPcl[0].tanggal_prev) { %>
             Pembanding: upload tanggal <strong><%= warning.stagnanPcl[0].tanggal_prev %></strong> vs upload sekarang.
           <% } %>
@@ -107,7 +107,7 @@
                 <div class="warning-stats">
                   <span class="warning-stat"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Target FASIH-SM' : 'Target Statis' %>: <strong><%= item.target_fasih_total %></strong></span>
                   <span class="warning-stat">Selesai saat ini: <strong class="text-orange"><%= item.selesai_sekarang %></strong></span>
-                  <span class="warning-stat">Selesai 2 hari lalu: <strong><%= item.selesai_lama %></strong></span>
+                  <span class="warning-stat">Selesai 1 hari lalu: <strong><%= item.selesai_lama %></strong></span>
                   <span class="warning-stat text-orange">Δ Penambahan: <strong><%= item.delta_selesai %></strong> dokumen (stagnan)</span>
                 </div>
                 <div class="fasih-grid-container">
@@ -147,9 +147,9 @@
         <% if (warning.stagnanPcl !== undefined && warning.stagnanPcl.length === 0) { %>
           <div class="no-data">
             <i class="bi bi-check-circle-fill text-green" style="font-size: 18px; margin-right: 6px;"></i>
-            Semua PCL memiliki penambahan dokumen FASIH dalam 2 hari terakhir.
-            <% if (warning.diffDays < 2) { %>
-              <em style="margin-left: 4px; color: var(--text-muted);">(Data < 2 hari, deteksi stagnan belum aktif)</em>
+            Semua PCL memiliki penambahan dokumen FASIH dalam 1 hari terakhir.
+            <% if (warning.diffDays < 1) { %>
+              <em style="margin-left: 4px; color: var(--text-muted);">(Data < 1 hari, deteksi stagnan belum aktif)</em>
             <% } %>
           </div>
         <% } else { %>
