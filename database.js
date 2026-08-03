@@ -54,6 +54,25 @@ function getDb() {
   return db;
 }
 
+function reloadDbConnection() {
+  if (db) {
+    try {
+      db.close();
+    } catch (_) {}
+    db = null;
+  }
+  return getDb();
+}
+
+function closeDbConnection() {
+  if (db) {
+    try {
+      db.close();
+    } catch (_) {}
+    db = null;
+  }
+}
+
 function runMigrations() {
   // Ensure migrations log table exists
   db.exec(`
@@ -2091,5 +2110,6 @@ module.exports = {
   saveRememberToken, getUserByRememberToken, deleteRememberToken, getIntradayUploadsByDate,
   logVisit, getVisitorStats,
   getPetugasEmails, searchPetugasEmails, getPetugasEmailByNama, getPetugasEmailBySobatId,
-  getPetugasEmailById, insertPetugasEmail, updatePetugasEmail, deletePetugasEmail, resyncPetugasEmailsToMaster
+  getPetugasEmailById, insertPetugasEmail, updatePetugasEmail, deletePetugasEmail, resyncPetugasEmailsToMaster,
+  reloadDbConnection, closeDbConnection
 };

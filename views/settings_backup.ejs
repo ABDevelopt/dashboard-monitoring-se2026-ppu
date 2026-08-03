@@ -1,0 +1,364 @@
+<div class="fade-in">
+  <style>
+    .backup-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 450px), 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    .backup-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 250px;
+    }
+    .backup-card-header {
+      display: flex;
+      align-items: start;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .backup-icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .backup-icon-box.export-theme {
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+    }
+    .backup-icon-box.import-theme {
+      background: linear-gradient(135deg, #ec4899, #8b5cf6);
+    }
+    .backup-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 0 0 4px 0;
+    }
+    .backup-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin: 0;
+    }
+    
+    .backup-file-list {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+    }
+
+    .custom-file-upload {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .custom-file-upload:hover {
+      border-color: var(--accent-purple);
+      background: var(--bg-card-hover);
+    }
+    .custom-file-upload i {
+      font-size: 32px;
+      color: var(--text-muted);
+    }
+    .custom-file-upload.dragover {
+      border-color: var(--accent-purple);
+      background: rgba(139, 92, 246, 0.05);
+    }
+
+    .btn-admin {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .btn-admin-primary {
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: #fff;
+    }
+    .btn-admin-primary:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+    .btn-admin-secondary {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+    .btn-admin-secondary:hover {
+      background: var(--bg-card-hover);
+    }
+    .btn-admin-danger {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    .btn-admin-danger:hover {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .backup-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 15px;
+    }
+    .backup-table th {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .backup-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+    .backup-table tr:hover {
+      background: var(--bg-secondary);
+    }
+  </style>
+
+  <!-- BREADCRUMBS & NAVIGATION -->
+  <div class="d-flex justify-between items-center mb-6 flex-wrap gap-4">
+    <div class="d-flex items-center gap-2.5">
+      <a href="/admin" class="btn-admin btn-admin-secondary py-1.5 px-3">
+        <i class="bi bi-arrow-left"></i> Kembali ke Menu Admin
+      </a>
+    </div>
+    <div class="d-flex items-center gap-2">
+      <span class="badge badge-purple fs-caption py-1.5 px-3 fw-bold">SISTEM MONITORING</span>
+    </div>
+  </div>
+
+  <!-- HERO TITLE -->
+  <div class="bg-gradient-admin-header rounded-lg py-8 px-6 mb-6 relative overflow-hidden">
+    <div class="absolute opacity-04 pointer-events-none" style="right: -20px; top: -20px; font-size: 120px; line-height: 1;">
+      <i class="bi bi-cloud-arrow-down-fill"></i>
+    </div>
+    <div class="d-flex items-center gap-4 flex-wrap">
+      <div class="w-14 h-14 bg-accent-subtle d-flex items-center justify-center flex-shrink-0" style="border-radius: 14px;">
+        <i class="bi bi-cloud-arrow-down-fill text-purple" style="font-size: 26px;"></i>
+      </div>
+      <div>
+        <h1 class="fs-xl fw-extrabold text-primary m-0 mb-1">Backup &amp; Restore Data</h1>
+        <p class="fs-sm text-secondary m-0">Ekspor, cadangkan, dan impor seluruh database monitoring secara instan untuk proteksi data.</p>
+      </div>
+    </div>
+  </div>
+
+
+
+
+  <div class="backup-grid">
+    <!-- EXPORT & LOCAL BACKUP CARD -->
+    <div class="backup-card">
+      <div>
+        <div class="backup-card-header">
+          <div class="backup-icon-box export-theme">
+            <i class="bi bi-download"></i>
+          </div>
+          <div>
+            <h2 class="backup-title">Ekspor &amp; Backup Lokal</h2>
+            <p class="backup-desc">Unduh database aktif saat ini secara instan atau simpan salinan cadangan lokal di server.</p>
+          </div>
+        </div>
+        
+        <div class="alert-info-subtle p-3 rounded-lg fs-xs text-primary mb-4" style="line-height: 1.4;">
+          <i class="bi bi-info-circle-fill text-blue me-1"></i>
+          File database berisi data master SubSLS, rekap kuota petugas, email petugas, progres pengisian, dan seluruh riwayat unggahan data sensus.
+        </div>
+      </div>
+      
+      <div class="d-flex gap-3 flex-wrap">
+        <a href="/admin/settings/backup/download" class="btn-admin btn-admin-primary" style="flex: 1; min-width: 140px;">
+          <i class="bi bi-file-earmark-arrow-down-fill"></i> Download File DB
+        </a>
+        <form action="/admin/settings/backup/create" method="POST" style="flex: 1; min-width: 140px; margin: 0;">
+          <button type="submit" class="btn-admin btn-admin-secondary w-full">
+            <i class="bi bi-folder-plus"></i> Buat Backup Lokal
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- IMPORT & RESTORE CARD -->
+    <div class="backup-card">
+      <div>
+        <div class="backup-card-header">
+          <div class="backup-icon-box import-theme">
+            <i class="bi bi-upload"></i>
+          </div>
+          <div>
+            <h2 class="backup-title">Import &amp; Restore Database</h2>
+            <p class="backup-desc">Unggah file database (.db) yang valid untuk menggantikan database aktif secara instan.</p>
+          </div>
+        </div>
+        
+        <div class="alert-danger-subtle p-3 rounded-lg fs-xs text-primary mb-4" style="line-height: 1.4;">
+          <i class="bi bi-exclamation-triangle-fill text-red me-1"></i>
+          <strong>PERINGATAN:</strong> Mengimpor database baru akan menimpa data yang saat ini aktif secara permanen. Pastikan Anda telah mengunduh backup sebelum melakukan ini.
+        </div>
+      </div>
+
+      <form action="/admin/settings/backup/restore" method="POST" enctype="multipart/form-data" id="restoreForm" style="margin: 0;">
+        <label for="db_file" class="custom-file-upload" id="dropArea">
+          <i class="bi bi-database-fill-up" id="uploadIcon"></i>
+          <span class="fs-xs fw-bold text-primary" id="uploadText">Klik atau Drag File database (.db) ke sini</span>
+          <span class="fs-caption text-muted">Maksimal file: 50MB</span>
+          <input type="file" name="db_file" id="db_file" accept=".db,.sqlite,.sqlite3" style="display: none;" onchange="handleFileSelect(this)">
+        </label>
+        
+        <button type="submit" id="submitRestoreBtn" class="btn-admin btn-admin-primary w-full mt-3" style="display: none;" onclick="return confirm('Apakah Anda yakin ingin menimpa seluruh database dasbor aktif? Sistem akan membuat auto-backup sebelum proses dimulai.');">
+          <i class="bi bi-shield-fill-exclamation"></i> Mulai Restore Database
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- LOCAL BACKUPS TABLE -->
+  <div class="backup-file-list">
+    <div class="d-flex justify-between items-center mb-3">
+      <h3 class="m-0 fs-md fw-bold text-primary d-flex items-center gap-2">
+        <i class="bi bi-archive-fill text-purple"></i> Daftar File Backup Lokal di Server
+      </h3>
+      <span class="badge badge-purple-subtle fs-caption fw-bold"><%= backups.length %> File</span>
+    </div>
+
+    <% if (backups.length === 0) { %>
+      <div class="text-center py-6 text-muted fs-sm">
+        Belum ada file backup lokal yang disimpan di folder server.
+      </div>
+    <% } else { %>
+      <div class="overflow-x-auto">
+        <table class="backup-table">
+          <thead>
+            <tr>
+              <th>Nama File</th>
+              <th>Ukuran</th>
+              <th>Tanggal Dibuat</th>
+              <th style="width: 240px; text-align: right;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% backups.forEach(b => { %>
+              <tr>
+                <td class="fw-medium text-primary d-flex items-center gap-2">
+                  <i class="bi bi-file-earmark-medical-fill text-muted"></i>
+                  <span><%= b.filename %></span>
+                  <% if (b.filename.startsWith('pre_restore_auto_')) { %>
+                    <span class="badge badge-blue fs-caption px-1.5 py-0.5" style="transform: scale(0.85); transform-origin: left;">Auto-Backup</span>
+                  <% } %>
+                </td>
+                <td><%= (b.sizeBytes / (1024 * 1024)).toFixed(2) %> MB</td>
+                <td><%= new Date(b.createdAt).toLocaleString('id-ID') %></td>
+                <td style="text-align: right;">
+                  <div class="d-flex gap-2 justify-end" style="margin: 0;">
+                    <!-- Restore Form -->
+                    <form action="/admin/settings/backup/restore-local" method="POST" style="margin: 0;" onsubmit="return confirm('Apakah Anda yakin ingin me-restore file ini? Data aktif saat ini akan ditimpa.');">
+                      <input type="hidden" name="filename" value="<%= b.filename %>">
+                      <button type="submit" class="btn-admin btn-admin-secondary py-1 px-2.5 fs-caption">
+                        <i class="bi bi-arrow-counterclockwise"></i> Restore
+                      </button>
+                    </form>
+                    
+                    <!-- Delete Form -->
+                    <form action="/admin/settings/backup/delete-local" method="POST" style="margin: 0;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus backup lokal ini?');">
+                      <input type="hidden" name="filename" value="<%= b.filename %>">
+                      <button type="submit" class="btn-admin btn-admin-danger py-1 px-2.5 fs-caption">
+                        <i class="bi bi-trash"></i> Hapus
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  function handleFileSelect(input) {
+    const file = input.files[0];
+    const uploadText = document.getElementById('uploadText');
+    const submitBtn = document.getElementById('submitRestoreBtn');
+    const uploadIcon = document.getElementById('uploadIcon');
+    const dropArea = document.getElementById('dropArea');
+
+    if (file) {
+      uploadText.innerText = "File terpilih: " + file.name + " (" + (file.size / (1024 * 1024)).toFixed(2) + " MB)";
+      submitBtn.style.display = 'inline-flex';
+      uploadIcon.className = 'bi bi-database-fill-check text-green';
+      dropArea.style.borderColor = 'var(--accent-green, #10b981)';
+    } else {
+      uploadText.innerText = "Klik atau Drag File database (.db) ke sini";
+      submitBtn.style.display = 'none';
+      uploadIcon.className = 'bi bi-database-fill-up';
+      dropArea.style.borderColor = 'var(--border)';
+    }
+  }
+
+  // Setup drag and drop events
+  const dropArea = document.getElementById('dropArea');
+  if (dropArea) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropArea.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropArea.classList.add('dragover');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropArea.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropArea.classList.remove('dragover');
+      }, false);
+    });
+
+    dropArea.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      const fileInput = document.getElementById('db_file');
+      
+      if (files && files.length > 0) {
+        fileInput.files = files;
+        handleFileSelect(fileInput);
+      }
+    }, false);
+  }
+</script>

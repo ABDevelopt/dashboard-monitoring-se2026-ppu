@@ -85,6 +85,26 @@ router.get('/', (req, res) => {
     }
   }
 
+  // Calculate diffTotal and latestUpdateSpeedPerPcl (productivity from last upload)
+  let diffTotal = 0;
+  let latestUpdateSpeedPerPcl = 0;
+  if (uploadId) {
+    const { getDb } = require('../database');
+    const db = getDb();
+    const prevUpload = db.prepare('SELECT id FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(uploadId);
+    
+    if (prevUpload) {
+      const prevStats = getOverviewSummary(prevUpload.id, res.locals.settings);
+      const prevRealisasi = prevStats ? ((prevStats.submitted_total || 0) + (prevStats.approved_total || 0) + (prevStats.rejected_total || 0)) : 0;
+      const currRealisasi = summary ? ((summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0)) : 0;
+      diffTotal = Math.max(0, currRealisasi - prevRealisasi);
+    } else {
+      diffTotal = summary ? ((summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0)) : 0;
+    }
+    const totalPcl = summary ? (summary.total_pcl || 1) : 1;
+    latestUpdateSpeedPerPcl = totalPcl > 0 ? (diffTotal / totalPcl) : 0;
+  }
+
   res.render('overview', {
     title: 'Overview',
     activePage: 'overview',
@@ -92,7 +112,9 @@ router.get('/', (req, res) => {
     kecStats,
     tren: JSON.stringify(tren),
     distLast,
-    pclDeltas: JSON.stringify(pclDeltas)
+    pclDeltas: JSON.stringify(pclDeltas),
+    latestUpdateSpeedPerPcl,
+    diffTotal
   });
 });
 

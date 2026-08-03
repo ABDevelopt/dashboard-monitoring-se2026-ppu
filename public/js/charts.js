@@ -1439,3 +1439,140 @@ function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl 
   return chart;
 }
 
+// ===== SPORTS VEHICLE STYLE DAILY RATE LINE CHART =====
+function createSportsDailyRateLineChart(canvasId, labels, data, targetVal = 13) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+
+  const existingChart = Chart.getChart(ctx);
+  if (existingChart) {
+    existingChart.destroy();
+  }
+
+  const theme = getThemeColors();
+  const c2d = ctx.getContext('2d');
+  
+  // Neon gradient for line fill (sports dashboard acceleration vibe)
+  const gradFill = c2d.createLinearGradient(0, 0, 0, 140);
+  gradFill.addColorStop(0, 'rgba(239, 68, 68, 0.35)'); // neon red
+  gradFill.addColorStop(0.5, 'rgba(249, 115, 22, 0.15)'); // neon orange
+  gradFill.addColorStop(1, 'rgba(249, 115, 22, 0)');
+
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Laju Harian (dok/PCL/hari)',
+          data: data,
+          borderColor: '#ff3344', // Tachometer redline neon red
+          borderWidth: 2.5,
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: '#ff3344',
+          pointBorderWidth: 1.5,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          tension: 0.4, // aerodynamic curved line
+          fill: true,
+          backgroundColor: gradFill,
+          shadowColor: 'rgba(255, 51, 68, 0.45)', // glowing sports car dash light
+          shadowBlur: 8
+        },
+        {
+          label: 'Target Tetap (13 dok/hari)',
+          data: Array(labels.length).fill(targetVal),
+          borderColor: '#10b981', // Neon green zone
+          borderWidth: 1.5,
+          borderDash: [4, 4],
+          pointRadius: 0,
+          fill: false,
+          tension: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: theme.isLight ? '#0f172a' : '#1e293b',
+          titleColor: '#ffffff',
+          bodyColor: '#ffffff',
+          borderColor: '#ff3344',
+          borderWidth: 1.5,
+          displayColors: false,
+          callbacks: {
+            label: function(context) {
+              return ` ${context.parsed.y.toFixed(2)} dok/PCL/hari`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: {
+            display: false,
+            drawBorder: false
+          },
+          ticks: {
+            color: theme.text,
+            font: {
+              family: 'Inter, sans-serif',
+              size: 9,
+              weight: '500'
+            },
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 7
+          }
+        },
+        y: {
+          grid: {
+            color: theme.isLight ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.05)',
+            drawBorder: false
+          },
+          ticks: {
+            color: theme.text,
+            font: {
+              family: 'Inter, sans-serif',
+              size: 9
+            },
+            stepSize: 5
+          },
+          min: 0
+        }
+      }
+    },
+    plugins: [{
+      id: 'sportsShadowPlugin',
+      beforeDraw(chart) {
+        const { ctx } = chart;
+        ctx.save();
+        const originalStroke = ctx.stroke;
+        ctx.stroke = function () {
+          ctx.save();
+          if (this.strokeStyle === '#ff3344') {
+            ctx.shadowColor = 'rgba(255, 51, 68, 0.45)';
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 2;
+          }
+          originalStroke.apply(this, arguments);
+          ctx.restore();
+        };
+      },
+      afterDraw(chart) {
+        const { ctx } = chart;
+        ctx.restore();
+      }
+    }]
+  });
+
+  window.activeCharts = window.activeCharts || [];
+  window.activeCharts.push(chart);
+  return chart;
+}
+

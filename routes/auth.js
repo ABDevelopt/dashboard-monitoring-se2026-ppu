@@ -96,9 +96,9 @@ router.post('/login', (req, res) => {
       const token = crypto.randomBytes(32).toString('hex');
       saveRememberToken(user.id, token);
       
-      // Set cookies for 30 days
-      res.cookie('remember_token', token, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
-      res.cookie('saved_username', user.username, { maxAge: 30 * 24 * 60 * 60 * 1000 });
+      // Set cookies for 30 days with SameSite Lax
+      res.cookie('remember_token', token, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
+      res.cookie('saved_username', user.username, { maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
     }
 
     // Keep backwards compatibility for isAdmin
@@ -152,9 +152,9 @@ router.post('/login/token', (req, res) => {
     deleteRememberToken(token);
     saveRememberToken(user.id, newToken);
     
-    // Update cookies
-    res.cookie('remember_token', newToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true });
-    res.cookie('saved_username', user.username, { maxAge: 30 * 24 * 60 * 60 * 1000 });
+    // Update cookies with SameSite Lax
+    res.cookie('remember_token', newToken, { maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
+    res.cookie('saved_username', user.username, { maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: 'lax' });
 
     if (user.role === 'admin') {
       req.session.isAdmin = true;

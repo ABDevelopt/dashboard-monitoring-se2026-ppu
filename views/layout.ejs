@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= typeof title !== 'undefined' ? title + ' — ' : '' %>Dashboard SE2026 PPU</title>
   <meta name="description" content="Dashboard Monitoring Sensus Ekonomi 2026 Kabupaten Penajam Paser Utara">
+  <meta name="csrf-token" content="<%= csrfToken %>">
   <link rel="icon" type="image/png" href="/logo-mark.png">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#f97316">
@@ -40,7 +41,7 @@
   <script src="/js/search-helper.min.js?v=<%= appVersion %>"></script>
   <link rel="stylesheet" href="/css/spreadsheet.min.css?v=<%= appVersion %>">
   <link rel="stylesheet" href="/css/ai-widget.min.css?v=<%= appVersion %>">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
 
   <script src="/js/charts.min.js?v=<%= appVersion %>" defer></script>
   <script src="/js/table-filter.min.js?v=<%= appVersion %>" defer></script>
@@ -116,7 +117,7 @@
   });
 </script>
 
-<!-- PULL TO REFRESH SPINNER -->
+<%# PULL TO REFRESH SPINNER %>
 <div id="pull-to-refresh" class="pull-to-refresh-container">
   <div class="ptr-spinner-box">
     <i class="bi bi-arrow-clockwise ptr-icon"></i>
@@ -124,10 +125,10 @@
   </div>
 </div>
 
-<!-- SIDEBAR OVERLAY -->
+<%# SIDEBAR OVERLAY %>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<!-- SIDEBAR -->
+<%# SIDEBAR %>
 <aside class="sidebar" id="sidebar" aria-label="Sidebar Menu">
   <button class="btn-close-sidebar" id="sidebarClose" aria-label="Tutup Sidebar"><i class="bi bi-x-lg"></i></button>
   <div class="sidebar-logo" style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 16px; border-bottom: 1px solid var(--border);">
@@ -163,7 +164,7 @@
   </div>
 
   <nav class="sidebar-nav">
-    <!-- Section 1: Utama -->
+    <%# Section 1: Utama %>
     <div class="nav-section-wrapper" data-section="utama">
       <div class="nav-section-header">
         <span>Utama</span>
@@ -185,7 +186,7 @@
       </div>
     </div>
 
-    <!-- Section: Favorit / Pinned (Local Storage client-side) -->
+    <%# Section: Favorit / Pinned (Local Storage client-side) %>
     <div class="nav-section-wrapper" data-section="favorit" id="sidebarPinnedSection" style="display: none;">
       <div class="nav-section-header">
         <span>Favorit Saya</span>
@@ -356,6 +357,9 @@
         <a href="/admin/whatsapp" class="nav-item <%= activePage === 'whatsapp' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-whatsapp"></i></span> Integrasi WhatsApp
         </a>
+        <a href="/admin/settings/backup" class="nav-item <%= activePage === 'settings-backup' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-cloud-arrow-down-fill"></i></span> Backup &amp; Restore
+        </a>
       </div>
     </div>
     <% } %>
@@ -373,7 +377,7 @@
 
   <div class="sidebar-footer" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
     <div style="line-height: 1.4;">
-      SE2026 · PPU · v<%= packageVersion %><br>
+      SE2026 · PPU · v<%= typeof packageVersion !== 'undefined' ? packageVersion : '2.3.0' %><br>
       <span style="color: var(--text-muted)">© BPS Penajam Paser Utara</span>
     </div>
     <div>
@@ -390,7 +394,7 @@
   </div>
 </aside>
 
-<!-- BOTTOM NAVIGATION BAR (MOBILE ONLY) -->
+<%# BOTTOM NAVIGATION BAR (MOBILE ONLY) %>
 <nav class="bottom-nav" aria-label="Mobile Navigation">
   <a href="/" class="bottom-nav-item <%= activePage === 'overview' ? 'active' : '' %>">
     <i class="bi bi-house-door"></i>
@@ -703,8 +707,8 @@
 
 
 <% if (typeof sentryDsn !== 'undefined' && sentryDsn) { %>
-<!-- Sentry Browser SDK -->
-<script src="https://browser.sentry-cdn.com/8.0.0/bundle.min.js" crossorigin="anonymous"></script>
+<%# Sentry Browser SDK %>
+<script src="https://browser.sentry-cdn.com/8.0.0/bundle.min.js" integrity="sha384-KgfNZ/yPJH4C25ELk249/OmtPWiqwJxTf/Z5CMlCvdas3BGPSktVyCyXMGXg8vg5" crossorigin="anonymous"></script>
 <script>
   Sentry.init({
     dsn: "<%= sentryDsn %>",

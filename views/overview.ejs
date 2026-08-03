@@ -8,7 +8,7 @@
   }
 %>
 <div class="fade-in">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
   <% if (!summary) { %>
     <!-- EMPTY STATE -->
     <div class="card empty-state text-center" style="padding: 80px 20px;">
@@ -715,12 +715,17 @@
                 </p>
               </div>
             </div>
+            
             <!-- Help Tooltip Icon in Corner -->
             <div class="help-tooltip-container">
               <i class="bi bi-question-circle help-tooltip-icon"></i>
               <div class="help-tooltip-box">
                 <strong class="text-primary d-block mb-1">Panduan Speedometer Pendataan:</strong>
-                Speedometer mengukur kecepatan rata-rata harian pengumpulan berkas per petugas (PCL). Laju kerja saat ini dibandingkan dengan target standar (<strong><%= targetNormalPerPclText %> dok/hari/petugas</strong>). Status <strong>On-Track</strong> menunjukkan kecepatan saat ini cukup untuk menyelesaikan pendataan sebelum tanggal target (<%= formatIndonesianDateShort(settings.speedometer_target_date || '2026-08-31') %>). Jika <strong>Off-Track</strong>, diperlukan percepatan laju kerja minimal ke angka laju aman yang tertera di panel analisis.
+                Speedometer mengukur kecepatan rata-rata harian pengumpulan berkas per petugas (PCL).
+                <br><br>
+                <strong>Laju Akumulatif:</strong> Rata-rata harian sejak hari pertama pendataan hingga saat ini. Laju kerja dibandingkan dengan target standar (<strong><%= targetNormalPerPclText %> dok/hari/petugas</strong>).
+                <br><br>
+                <strong>Laju Update Terakhir:</strong> Kecepatan harian yang dihasilkan khusus pada periode unggah data terakhir (seperti notifikasi WhatsApp).
               </div>
             </div>
           </div>
@@ -728,9 +733,24 @@
           <!-- Main Grid: Speedometer Gauge (Left) & Speed KPI & Analysis (Right) -->
           <div class="d-grid grid-fit-300 gap-5 items-stretch mt-3">
             
-            <!-- Gauge Canvas Box -->
-            <div class="relative w-full h-full d-flex flex-col items-center justify-center bg-white-subtle border-default rounded-lg py-5 px-2-5" style="min-height: 235px;">
-              <canvas id="speedometerChartCanvas" class="w-full" style="max-height: 215px;"></canvas>
+            <!-- Gauge Canvas Box (Dual Gauge Asymmetrical Layout - Forced Side-by-Side) -->
+            <div class="w-full bg-white-subtle border-default rounded-lg py-4 px-3" style="min-height: 235px; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px;">
+              <!-- Left Side: Accumulative Gauge (Smaller, Secondary Reference) -->
+              <div class="text-center d-flex flex-col items-center justify-center" style="flex: 0.8; min-width: 90px; width: 35%;">
+                <canvas id="speedometerChartCanvas" class="w-full" style="max-height: 135px;"></canvas>
+                <div class="fs-sm fw-bold text-primary mt-1" style="white-space: nowrap;">Laju Akumulatif</div>
+                <div class="fs-caption text-muted" style="white-space: nowrap;">Rata-rata proyek</div>
+              </div>
+              
+              <!-- Subtle vertical divider -->
+              <div style="border-left: 1px dashed var(--border); height: 130px; align-self: center; margin: 0 4px;"></div>
+              
+              <!-- Right Side: Last Update Gauge (Larger, Primary) -->
+              <div class="text-center d-flex flex-col items-center justify-center" style="flex: 1.4; min-width: 130px; width: 60%;">
+                <canvas id="speedometerLastUpdateCanvas" class="w-full" style="max-height: 210px;"></canvas>
+                <div class="fs-sm fw-bold text-primary mt-1" style="white-space: nowrap;">Laju Update Terakhir</div>
+                <div class="fs-caption text-muted" style="white-space: nowrap;">Realisasi update terakhir</div>
+              </div>
             </div>
 
             <!-- KPI Cards & Timeline Targets -->
@@ -780,7 +800,7 @@
                 <% } else { %>
                   Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak <%= formatIndonesianDate(settings.speedometer_start_date || '2026-06-15') %>). Sisa hari menuju deadline (<%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>): <strong><%= daysRemaining %> hari</strong>.<br>
                   Sisa beban kerja: <strong><%= remainingFasih.toLocaleString('id-ID') %> dokumen</strong>. 
-                  Dengan kecepatan saat ini (<strong><%= speedPerPclText %> dok/PCL/hari</strong> or <strong><%= currentSpeedText %> dok/hari total</strong>), 
+                  Dengan kecepatan rata-rata harian (<strong><%= speedPerPclText %> dok/PCL/hari</strong> atau <strong><%= currentSpeedText %> dok/hari total</strong>), 
                   <% if (currentSpeed === 0) { %>
                     pendataan belum merealisasikan dokumen FASIH sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.
                   <% } else { %>
@@ -790,7 +810,7 @@
                   <% if (isOfftrack) { %>
                     <div class="alert-danger-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
                       <i class="bi bi-exclamation-triangle-fill text-red fs-md mt-0-5"></i>
-                      <div><strong>Off-Track:</strong> Kecepatan saat ini (<%= speedPerPclText %> dok/PCL/hari) di bawah target normal <%= targetNormalPerPclText %> dok/hari/petugas. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeedPerPclText %> dok/PCL/hari</strong> (atau <strong><%= reqSpeed.toFixed(2) %> dok/hari total</strong>) agar selesai sesuai target pada <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>.</div>
+                      <div><strong>Off-Track:</strong> Kecepatan saat ini (Laju Akumulatif <%= speedPerPclText %> dok/PCL/hari) di bawah target normal <%= targetNormalPerPclText %> dok/hari/petugas. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeedPerPclText %> dok/PCL/hari</strong> (atau <strong><%= reqSpeed.toFixed(2) %> dok/hari total</strong>) agar selesai sesuai target pada <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>.</div>
                     </div>
                   <% } else { %>
                     <div class="alert-success-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
@@ -801,6 +821,17 @@
                 <% } %>
               </div>
 
+            </div>
+          </div>
+
+          <!-- Daily Rate Line Chart Box (Sports Dashboard Style - Full Width Underneath) -->
+          <div class="w-full bg-white-subtle border-default rounded-lg p-4 mt-4" style="min-height: 220px; display: flex; flex-direction: column;">
+            <div class="fs-xs fw-bold text-muted mb-2 text-uppercase d-flex items-center justify-between" style="letter-spacing: 0.05em;">
+              <span class="d-flex items-center gap-1"><i class="bi bi-speedometer text-red" style="font-size: 13px;"></i> Tren Laju Harian Petugas (dok/PCL/hari)</span>
+              <span class="badge badge-green-subtle" style="font-size: 9px; font-weight: 700;">Target Tetap: <%= settings.speedometer_target_speed_per_pcl || '13' %></span>
+            </div>
+            <div style="flex: 1; min-height: 150px; position: relative;">
+              <canvas id="dailyRateLineChartCanvas"></canvas>
             </div>
           </div>
       </div>
@@ -1924,7 +1955,32 @@
       }
       <% } %>
       
+      // Initialize Speedometer Gauge (Accumulative)
       createSpeedometerChart('speedometerChartCanvas', <%= speedPerPcl %>, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>, <%= currentSpeed %>, <%= targetSpeedTotal %>);
+
+      // Initialize Speedometer Gauge (Last Update)
+      createSpeedometerChart('speedometerLastUpdateCanvas', <%= latestUpdateSpeedPerPcl %>, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>, <%= diffTotal %>, <%= targetSpeedTotal %>);
+
+      // Initialize Sports Daily Rate Line Chart
+      const sportsDailyRates = [];
+      const sportsDailyRateLabels = [];
+      const totalPclCount = <%= totalPcl %>;
+      for (let i = 0; i < dailyTrenData.length; i++) {
+        const current = dailyTrenData[i];
+        sportsDailyRateLabels.push(current.tanggal);
+        const currentTotal = (current.submitted_total || 0) + (current.approved_total || 0) + (current.rejected_total || 0);
+        let increment = 0;
+        if (i === 0) {
+          increment = currentTotal;
+        } else {
+          const prev = dailyTrenData[i - 1];
+          const prevTotal = (prev.submitted_total || 0) + (prev.approved_total || 0) + (prev.rejected_total || 0);
+          increment = Math.max(0, currentTotal - prevTotal);
+        }
+        const dailyRate = totalPclCount > 0 ? (increment / totalPclCount) : 0;
+        sportsDailyRates.push(parseFloat(dailyRate.toFixed(2)));
+      }
+      createSportsDailyRateLineChart('dailyRateLineChartCanvas', sportsDailyRateLabels, sportsDailyRates, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>);
 
       // Hitung penambahan harian total FASIH (Submitted + Approved + Rejected)
       const countyIncrementLabels = [];
