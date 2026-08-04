@@ -38,8 +38,14 @@ function minifyAll() {
       if (minified.errors.length) {
         console.error(`[Minifier] Error minifying CSS ${relPath}:`, minified.errors);
       } else {
-        fs.writeFileSync(destPath, minified.styles, 'utf8');
-        console.log(`[Minifier] ✔ CSS Minified: ${relPath} -> ${path.basename(destPath)} (${(raw.length/1024).toFixed(1)}KB -> ${(minified.styles.length/1024).toFixed(1)}KB)`);
+        const existing = fs.existsSync(destPath) ? fs.readFileSync(destPath, 'utf8') : null;
+        const newline = (existing && existing.includes('\r\n')) ? '\r\n' : '\n';
+        const formattedStyles = minified.styles.replace(/\r?\n/g, newline);
+
+        if (existing !== formattedStyles) {
+          fs.writeFileSync(destPath, formattedStyles, 'utf8');
+          console.log(`[Minifier] ✔ CSS Minified: ${relPath} -> ${path.basename(destPath)} (${(raw.length/1024).toFixed(1)}KB -> ${(minified.styles.length/1024).toFixed(1)}KB)`);
+        }
       }
     } catch (err) {
       console.error(`[Minifier] Exception minifying CSS ${relPath}:`, err);
@@ -61,8 +67,14 @@ function minifyAll() {
       if (minified.error) {
         console.error(`[Minifier] Error minifying JS ${relPath}:`, minified.error);
       } else {
-        fs.writeFileSync(destPath, minified.code, 'utf8');
-        console.log(`[Minifier] ✔ JS Minified: ${relPath} -> ${path.basename(destPath)} (${(raw.length/1024).toFixed(1)}KB -> ${(minified.code.length/1024).toFixed(1)}KB)`);
+        const existing = fs.existsSync(destPath) ? fs.readFileSync(destPath, 'utf8') : null;
+        const newline = (existing && existing.includes('\r\n')) ? '\r\n' : '\n';
+        const formattedCode = minified.code.replace(/\r?\n/g, newline);
+
+        if (existing !== formattedCode) {
+          fs.writeFileSync(destPath, formattedCode, 'utf8');
+          console.log(`[Minifier] ✔ JS Minified: ${relPath} -> ${path.basename(destPath)} (${(raw.length/1024).toFixed(1)}KB -> ${(minified.code.length/1024).toFixed(1)}KB)`);
+        }
       }
     } catch (err) {
       console.error(`[Minifier] Exception minifying JS ${relPath}:`, err);

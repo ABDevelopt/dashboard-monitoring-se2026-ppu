@@ -55,8 +55,8 @@ app.use((req, res, next) => {
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://browser.sentry-cdn.com; " +
     "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://unpkg.com; " +
     "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
-    "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://unpkg.com https://*.basemaps.cartocdn.com https://server.arcgisonline.com; " +
-    "connect-src 'self' https://openrouter.ai https://browser.sentry-cdn.com https://cdn.jsdelivr.net https://*.sentry.io https://unpkg.com https://api.open-meteo.com; " +
+    "img-src 'self' data: blob: https: http:; " +
+    "connect-src 'self' https: http:; " +
     "frame-ancestors 'self';"
   );
   

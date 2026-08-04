@@ -614,54 +614,126 @@
         const centerCoords = [-1.30, 116.65];
         const defaultZoom = 10;
         
+        // Clean container state to ensure clean re-initialization on PJAX swaps
+        const mapContainerEl = document.getElementById('map');
+        if (mapContainerEl && mapContainerEl._leaflet_id) {
+          mapContainerEl._leaflet_id = null;
+        }
+
         const map = L.map('map', {
           zoomControl: true,
           maxZoom: 18,
           minZoom: 9
         }).setView(centerCoords, defaultZoom);
 
-        // Basemaps (CartoDB Light/Dark Vector + Esri Satellite)
-        const lightBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-          attribution: '&copy; OpenStreetMap &copy; CARTO',
-          subdomains: 'abcd'
+        let currentBasemapLayer = null;
+
+        // Helper to force Leaflet to recalculate canvas size and redraw tiles
+        const invalidateMapSize = () => {
+          if (map && typeof map.invalidateSize === 'function') {
+            map.invalidateSize({ animate: false });
+          }
+          if (currentBasemapLayer && typeof currentBasemapLayer.redraw === 'function') {
+            currentBasemapLayer.redraw();
+          }
+        };
+
+        // Staggered invalidations to guarantee tile grid recalculation after PJAX enter animation (380ms)
+        invalidateMapSize();
+        [50, 150, 300, 450, 800, 1200].forEach(delay => {
+          setTimeout(invalidateMapSize, delay);
         });
 
-        const darkBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        // Use ResizeObserver for automatic sizing adjustment when sidebar or window container resizes
+        if (window.ResizeObserver && mapContainerEl) {
+          const ro = new ResizeObserver(() => {
+            invalidateMapSize();
+          });
+          ro.observe(mapContainerEl);
+          if (window._pjaxCleanups) {
+            window._pjaxCleanups.push({ type: 'pjax:start', listener: () => ro.disconnect() });
+          }
+        }
+
+        // Clean up map instance safely when navigating away via PJAX
+        const onPjaxStart = () => {
+          try {
+            if (map) map.remove();
+          } catch (_) {}
+        };
+        window.addEventListener('pjax:start', onPjaxStart, { once: true });
+
+        // Basemaps (OpenStreetMap / CartoDB Voyager Vector + Esri Satellite)
+        const lightBasemap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          subdomains: ['a', 'b', 'c'],
+          maxZoom: 19,
+          crossOrigin: true
+        });
+
+        const darkBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
           attribution: '&copy; OpenStreetMap &copy; CARTO',
-          subdomains: 'abcd'
+          subdomains: ['a', 'b', 'c', 'd'],
+          maxZoom: 19,
+          crossOrigin: true
         });
 
         const satelliteBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-          attribution: 'Tiles &copy; Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP'
+          attribution: 'Tiles &copy; Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP',
+          maxZoom: 19,
+          crossOrigin: true
         });
 
         let currentBasemapType = 'default'; // 'default' or 'satellite'
 
         function updateBasemap() {
+          const isLight = document.body.classList.contains('light-mode');
+          let targetLayer = null;
+
           if (currentBasemapType === 'satellite') {
-            if (map.hasLayer(lightBasemap)) map.removeLayer(lightBasemap);
-            if (map.hasLayer(darkBasemap)) map.removeLayer(darkBasemap);
-            satelliteBasemap.addTo(map);
+            targetLayer = satelliteBasemap;
+          } else if (isLight) {
+            targetLayer = lightBasemap;
           } else {
-            if (map.hasLayer(satelliteBasemap)) map.removeLayer(satelliteBasemap);
-            const isLight = document.body.classList.contains('light-mode');
-            if (isLight) {
-              if (map.hasLayer(darkBasemap)) map.removeLayer(darkBasemap);
-              lightBasemap.addTo(map);
-            } else {
-              if (map.hasLayer(lightBasemap)) map.removeLayer(lightBasemap);
-              darkBasemap.addTo(map);
-            }
+            targetLayer = darkBasemap;
           }
+
+          [lightBasemap, darkBasemap, satelliteBasemap].forEach(l => {
+            if (l !== targetLayer && map.hasLayer(l)) {
+              map.removeLayer(l);
+            }
+          });
+
+          if (!map.hasLayer(targetLayer)) {
+            targetLayer.addTo(map);
+          }
+          
+          targetLayer.bringToBack();
+          if (typeof targetLayer.redraw === 'function') {
+            targetLayer.redraw();
+          }
+          currentBasemapLayer = targetLayer;
         }
         updateBasemap();
 
-        // Listen for theme toggle events
-        window.addEventListener('themechange', () => {
+        // Listen for theme toggle events & register cleanup
+        const onThemeChange = () => {
           updateBasemap();
           if (desaLayer) desaLayer.setStyle(desaStyle);
           if (slsLayer) slsLayer.setStyle(slsStyle);
-        });
+        };
+        window.addEventListener('themechange', onThemeChange);
+
+        const onWindowResize = () => invalidateMapSize();
+        window.addEventListener('resize', onWindowResize);
+
+        if (window._pjaxCleanups) {
+          window._pjaxCleanups.push(
+            { type: 'themechange', listener: onThemeChange },
+            { type: 'resize', listener: onWindowResize },
+            { type: 'pjax:start', listener: onPjaxStart }
+          );
+        }
 
         // Data holders
         let desaGeoJson = null;
@@ -698,9 +770,9 @@
             btnMobileMapTab.classList.add('active');
             mapContainerWrap.classList.remove('show-info-mobile');
             mapContainerWrap.classList.add('show-map-mobile');
-            map.invalidateSize();
-            setTimeout(() => map.invalidateSize(), 150);
-            setTimeout(() => map.invalidateSize(), 400);
+            invalidateMapSize();
+            setTimeout(invalidateMapSize, 150);
+            setTimeout(invalidateMapSize, 400);
           });
 
           btnMobileInfoTab.addEventListener('click', () => {
@@ -711,15 +783,10 @@
           });
         }
 
-        // Global resize and initial invalidate to ensure mobile map renders
-        setTimeout(() => map.invalidateSize(), 200);
-        setTimeout(() => map.invalidateSize(), 600);
-        window.addEventListener('resize', () => map.invalidateSize());
-
         // Styles
         function getBorderColor() {
           if (currentBasemapType === 'satellite') return '#ffffff';
-          return document.body.classList.contains('light-mode') ? '#ffffff' : '#1b1b24';
+          return document.body.classList.contains('light-mode') ? '#1e293b' : '#ffffff';
         }
 
         function getHoverBorderColor() {
@@ -753,7 +820,7 @@
             weight: 1.5,
             opacity: isSelectedKec ? 1 : 0.08,
             color: getBorderColor(),
-            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.45 : 0.65) : 0.02
+            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.45 : 0.38) : 0.02
           };
         }
 
@@ -764,7 +831,7 @@
             weight: 1.2,
             opacity: isSelectedKec ? 1 : 0.08,
             color: getBorderColor(),
-            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.45 : 0.6) : 0.02
+            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.45 : 0.38) : 0.02
           };
         }
 
@@ -1137,6 +1204,10 @@
             // Setup Desa boundary mapping layer
             setupDesaLayer();
             desaLayer.addTo(map);
+
+            // Ensure basemap tile layer is positioned at the back and redrawn after GeoJSON overlay is added
+            updateBasemap();
+            invalidateMapSize();
 
             // Hide initial loading screen
             loadingOverlay.style.opacity = '0';

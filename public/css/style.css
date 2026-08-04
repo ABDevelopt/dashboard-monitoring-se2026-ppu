@@ -4068,7 +4068,13 @@ th:has(.filter-header-wrapper) {
 }
 
 /* visible state */
-.topbar-dropdown.is-open { display: flex; }
+.topbar-dropdown.is-open {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: 99999 !important;
+}
 
 /* --- Dropdown internals --- */
 .topbar-dropdown-header {
@@ -4213,8 +4219,7 @@ th:has(.filter-header-wrapper) {
   }
   .topbar-admin-btn .topbar-action-label { display: none !important; }
 
-  /* Dropdown wrapper: switch parent to static so dropdown
-     can be anchored to the viewport via fixed positioning */
+@media (max-width: 768px) {
   .topbar-dropdown-wrapper {
     position: static !important;
   }
@@ -4222,20 +4227,20 @@ th:has(.filter-header-wrapper) {
   /* Fixed dropdown — anchored below topbar, full-safe width */
   .topbar-dropdown {
     position: fixed !important;
-    top: var(--header-height) !important;
-    left: 8px !important;
-    right: 8px !important;
+    top: calc(var(--header-height) + 6px) !important;
+    left: 12px !important;
+    right: 12px !important;
     width: auto !important;
     min-width: unset !important;
-    max-height: calc(100dvh - var(--header-height) - 16px) !important;
+    max-height: calc(100dvh - var(--header-height) - 20px) !important;
     overflow-y: auto !important;
-    border-radius: 12px !important;
-    z-index: 1500 !important;
-    box-shadow: 0 16px 40px -8px rgba(0,0,0,0.35) !important;
+    border-radius: 14px !important;
+    z-index: 99999 !important;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.4) !important;
   }
 
-  /* On mobile: override --right class since we use fixed left/right */
-  .topbar-dropdown--right { right: 8px !important; }
+  .topbar-dropdown--right { right: 12px !important; }
+}
 }
 
 /* Fullscreen AI Chat View (Keep Sidebar, Hide Topbar & Breadcrumb) */
