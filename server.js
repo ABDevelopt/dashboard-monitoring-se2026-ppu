@@ -511,11 +511,20 @@ function init() {
     const { rebuildAllSummaryCaches } = require('./database');
     setTimeout(() => {
       try {
+        const { runAutoImputation } = require('./services/imputerService');
+        logger.info('🔄 Checking for missing upload dates to impute...');
+        const imputedCount = runAutoImputation();
+        if (imputedCount > 0) {
+          logger.info(`✅ Imputed ${imputedCount} missing dates automatically!`);
+        } else {
+          logger.info('✅ No missing dates found. Database is complete.');
+        }
+
         logger.info('🔄 Rebuilding summary caches...');
         rebuildAllSummaryCaches();
         logger.info('✅ Summary caches successfully rebuilt');
       } catch (e) {
-        logger.error('❌ Failed to rebuild summary caches on startup:', e);
+        logger.error('❌ Failed to run auto-imputation / rebuild summary caches on startup:', e);
       }
     }, 1000);
   } catch (err) {
