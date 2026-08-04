@@ -1252,6 +1252,7 @@ function updateTime() {
       const themeToggleBtn = e.target.closest('#themeToggle, #themeToggleAgent, .theme-toggle-btn');
       if (themeToggleBtn) {
         e.preventDefault();
+        e.stopPropagation();
         document.body.classList.toggle('light-mode');
         const isLight = document.body.classList.contains('light-mode');
         localStorage.setItem('theme', isLight ? 'light' : 'dark');
@@ -1266,17 +1267,63 @@ function updateTime() {
           }
         });
         
-        // Dispatch event for charts to adapt
         window.dispatchEvent(new Event('themechange'));
         return;
       }
 
-      // 4. Global Search Button Click (Event Delegation)
+      // 4. Target Mode Selector Button Click
+      const targetBtn = e.target.closest('#targetSelectorBtn');
+      if (targetBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const dropdown = document.getElementById('targetSelectorDropdown');
+        if (dropdown) {
+          const isOpen = dropdown.classList.contains('is-open');
+          document.querySelectorAll('.topbar-dropdown').forEach(d => {
+            if (d !== dropdown) d.classList.remove('is-open');
+          });
+          dropdown.classList.toggle('is-open', !isOpen);
+        }
+        return;
+      }
+
+      // 5. Notification Bell Button Click
+      const bellBtn = e.target.closest('#notificationBellBtn, #notificationBellBtnAgent, .notification-bell-btn');
+      if (bellBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const wrapper = bellBtn.closest('.topbar-dropdown-wrapper');
+        const dropdown = wrapper ? wrapper.querySelector('.topbar-dropdown') : document.getElementById('notificationBellDropdown');
+        if (dropdown) {
+          const isOpen = dropdown.classList.contains('is-open');
+          document.querySelectorAll('.topbar-dropdown').forEach(d => {
+            if (d !== dropdown) d.classList.remove('is-open');
+          });
+          if (!isOpen) {
+            if (typeof window.updateBellState === 'function') window.updateBellState();
+            dropdown.classList.add('is-open');
+          }
+        }
+        return;
+      }
+
+      // 6. Global Search Button Click (Event Delegation)
       const globalSearchBtn = e.target.closest('#globalSearchBtn');
       if (globalSearchBtn) {
         e.preventDefault();
         window.toggleGlobalSearchModal(true);
         return;
+      }
+
+      // 7. Outside Click: Close topbar dropdowns
+      const openDropdowns = document.querySelectorAll('.topbar-dropdown.is-open');
+      if (openDropdowns.length > 0) {
+        openDropdowns.forEach(dropdown => {
+          const wrapper = dropdown.closest('.topbar-dropdown-wrapper');
+          if (wrapper && !wrapper.contains(e.target)) {
+            dropdown.classList.remove('is-open');
+          }
+        });
       }
     });
 
@@ -2793,19 +2840,6 @@ function updateTime() {
       });
     }
 
-    // Target Selector Dropdown Toggler (using event delegation to support PJAX content swaps)
-    document.addEventListener('click', (e) => {
-      const btn = e.target.closest('#targetSelectorBtn');
-      const dropdown = document.getElementById('targetSelectorDropdown');
-      if (btn && dropdown) {
-        e.stopPropagation();
-        const isOpen = dropdown.classList.contains('is-open');
-        // Close bell dropdown
-        const bellDrop = document.getElementById('notificationBellDropdown');
-        if (bellDrop) bellDrop.classList.remove('is-open');
-        dropdown.classList.toggle('is-open', !isOpen);
-      }
-    });
 
     const updateTargetMode = async (payload) => {
       if (typeof Swal !== 'undefined') {

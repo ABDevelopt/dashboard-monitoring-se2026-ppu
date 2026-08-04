@@ -65,6 +65,43 @@
     document.body.classList.add('sidebar-collapsed');
   }
 
+  // Instant Fail-safe Theme Switcher
+  window.toggleTheme = function(e) {
+    if (e) {
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+    }
+    document.body.classList.toggle('light-mode');
+    const isLight = document.body.classList.contains('light-mode');
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    
+    document.querySelectorAll('#themeIcon, .theme-icon').forEach(icon => {
+      if (isLight) {
+        icon.classList.remove('bi-moon-fill');
+        icon.classList.add('bi-sun-fill');
+      } else {
+        icon.classList.remove('bi-sun-fill');
+        icon.classList.add('bi-moon-fill');
+      }
+    });
+    window.dispatchEvent(new Event('themechange'));
+  };
+
+  // Instant Fail-safe Target Dropdown Switcher
+  window.toggleTargetDropdown = function(e) {
+    if (e) {
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+    }
+    const dropdown = document.getElementById('targetSelectorDropdown');
+    if (!dropdown) return;
+    const isOpen = dropdown.classList.contains('is-open');
+    document.querySelectorAll('.topbar-dropdown').forEach(d => {
+      if (d !== dropdown) d.classList.remove('is-open');
+    });
+    dropdown.classList.toggle('is-open', !isOpen);
+  };
+
   // Registry of page-specific event listeners that need to be cleaned up on PJAX load
   window._pjaxCleanups = [];
 
@@ -462,7 +499,7 @@
 
       <!-- Target Mode Selector -->
       <div class="topbar-dropdown-wrapper" id="targetWrapper">
-        <button class="btn btn-secondary topbar-action-btn" id="targetSelectorBtn" title="Ubah Mode Target" aria-label="Ubah Mode Target">
+        <button class="btn btn-secondary topbar-action-btn" id="targetSelectorBtn" title="Ubah Mode Target" aria-label="Ubah Mode Target" onclick="window.toggleTargetDropdown(event)">
           <i class="bi bi-bullseye topbar-target-icon"></i>
           <span class="target-btn-text topbar-action-label">Target: <%= settings.target_fasih_mode === 'fasih-sm' ? 'FASIH-SM' : 'Statis' %></span>
           <i class="bi bi-chevron-down topbar-chevron"></i>
@@ -486,7 +523,7 @@
       </div>
 
       <!-- Theme Toggle -->
-      <button class="btn btn-secondary topbar-action-btn" id="themeToggle" title="Ubah Tema" aria-label="Ubah Tema">
+      <button class="btn btn-secondary topbar-action-btn" id="themeToggle" title="Ubah Tema" aria-label="Ubah Tema" onclick="window.toggleTheme(event)">
         <i class="bi bi-moon-fill" id="themeIcon"></i>
       </button>
 
@@ -1562,28 +1599,6 @@
         return;
       }
 
-      // 3. Theme Toggle Button Click
-      const themeToggleBtn = e.target.closest('#themeToggle, #themeToggleAgent, .theme-toggle-btn');
-      if (themeToggleBtn) {
-        e.preventDefault();
-        document.body.classList.toggle('light-mode');
-        const isLight = document.body.classList.contains('light-mode');
-        localStorage.setItem('theme', isLight ? 'light' : 'dark');
-        
-        document.querySelectorAll('#themeIcon, .theme-icon').forEach(themeIcon => {
-          if (isLight) {
-            themeIcon.classList.remove('bi-moon-fill');
-            themeIcon.classList.add('bi-sun-fill');
-          } else {
-            themeIcon.classList.remove('bi-sun-fill');
-            themeIcon.classList.add('bi-moon-fill');
-          }
-        });
-        
-        // Dispatch event for charts to adapt
-        window.dispatchEvent(new Event('themechange'));
-        return;
-      }
 
       // 4. Global Search Button Click (Event Delegation)
       const globalSearchBtn = e.target.closest('#globalSearchBtn');
@@ -3160,66 +3175,6 @@
       });
     }
 
-    // Target Selector Dropdown Toggler (using event delegation to support PJAX content swaps)
-    document.addEventListener('click', (e) => {
-      const btn = e.target.closest('#targetSelectorBtn');
-      const dropdown = document.getElementById('targetSelectorDropdown');
-      if (btn && dropdown) {
-        e.stopPropagation();
-        const isOpen = dropdown.classList.contains('is-open');
-        // Close bell dropdown
-        const bellDrop = document.getElementById('notificationBellDropdown');
-        if (bellDrop) bellDrop.classList.remove('is-open');
-        dropdown.classList.toggle('is-open', !isOpen);
-      }
-    });
-
-    const updateTargetMode = async (payload) => {
-      if (typeof Swal !== 'undefined') {
-        Swal.fire({
-          title: 'Memperbarui Target...',
-          text: 'Mohon tunggu sejenak, data sedang disesuaikan.',
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          }
-        });
-      }
-
-      try {
-        const response = await fetch('/api/settings/target-mode', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        if (result.success) {
-          window.location.reload();
-        } else {
-          if (typeof Swal !== 'undefined') {
-            Swal.fire('Gagal', result.error || 'Terjadi kesalahan saat memperbarui target.', 'error');
-          } else {
-            alert(result.error || 'Terjadi kesalahan saat memperbarui target.');
-          }
-        }
-      } catch (err) {
-        if (typeof Swal !== 'undefined') {
-          Swal.fire('Gagal', 'Koneksi server terputus.', 'error');
-        } else {
-          alert('Koneksi server terputus.');
-        }
-      }
-    };
-
-    document.addEventListener('change', (e) => {
-      if (e.target.id === 'publicTargetFasihMode') {
-        updateTargetMode({ target_fasih_mode: e.target.value });
-      } else if (e.target.id === 'publicTargetMuatanMode') {
-        updateTargetMode({ target_muatan_mode: e.target.value });
-      }
-    });
 
     // 1. Interceptor Form Submit Global untuk feedback instan & cegah double-submit
     document.addEventListener('submit', (e) => {
@@ -3246,7 +3201,7 @@
     });
   });
 </script>
-<script src="/js/app.min.js?v=<%= appVersion %>" defer></script>
+<script src="/js/app.min.js?v=<%= typeof appVersion !== 'undefined' && appVersion ? appVersion : Date.now() %>" defer></script>
 
 <!-- IN-APP NOTIFICATION SYSTEM -->
 
@@ -3727,24 +3682,6 @@
         // Initialize state
         updateBellStateInternal();
 
-        bellBtns.forEach(btn => {
-          btn.onclick = (e) => {
-            e.stopPropagation();
-            const wrapper = btn.closest('.topbar-dropdown-wrapper');
-            const dropdown = wrapper ? wrapper.querySelector('.topbar-dropdown') : null;
-            if (!dropdown) return;
-            const isOpen = dropdown.classList.contains('is-open');
-            
-            // Close all topbar dropdowns first
-            document.querySelectorAll('.topbar-dropdown').forEach(d => d.classList.remove('is-open'));
-
-            if (!isOpen) {
-              updateBellStateInternal();
-              dropdown.classList.add('is-open');
-            }
-          };
-        });
-
         document.querySelectorAll('#clearNotificationBadge, #clearNotificationBadgeAgent, .clear-notification-badge').forEach(btn => {
           btn.onclick = (e) => {
             e.stopPropagation();
@@ -3755,17 +3692,8 @@
 
       window.initNotificationBell = initNotificationBell;
       initNotificationBell();
-
-      // Document click listener to close all topbar dropdowns — registered once globally
-      document.addEventListener('click', (e) => {
-        document.querySelectorAll('.topbar-dropdown').forEach(dropdown => {
-          const wrapper = dropdown.closest('.topbar-dropdown-wrapper');
-          if (wrapper && !wrapper.contains(e.target)) {
-            dropdown.classList.remove('is-open');
-          }
-        });
-      });
     });
+  })();
   })();
 </script>
 <%- typeof scripts !== 'undefined' ? scripts : '' %>
