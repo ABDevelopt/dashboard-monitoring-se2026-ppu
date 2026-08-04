@@ -1382,7 +1382,14 @@
         </div>
       </div>
 
-
+      <div class="card" style="margin: 0;">
+        <div class="card-header">
+          <div class="card-title"><i class="bi bi-bar-chart-steps"></i> Tren Penambahan Harian Status Dokumen FASIH</div>
+        </div>
+        <div style="height: 300px; position: relative; padding: 0 16px 16px 16px;">
+          <canvas id="dailyFasihStatusChartCanvas"></canvas>
+        </div>
+      </div>
       <% } %>
 
     </div>
@@ -2043,7 +2050,7 @@
         }
       }
 
-      createDailyFasihStatusChart('fasihDailyIncrementChartCanvas', dailyIncrementLabels, dailyIncrements, 'Penambahan Harian FASIH Per Status (Daily Increment)', dailyTrenData);
+      createDailyFasihStatusChart('dailyFasihStatusChartCanvas', dailyIncrementLabels, dailyIncrements, '', dailyTrenData);
 
 
       <% } %>

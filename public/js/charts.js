@@ -388,12 +388,29 @@ function createFasihTrenChart(canvasId, trenData) {
   const ctx = document.getElementById(canvasId);
   if (!ctx || !trenData || !trenData.length) return;
 
+  // Destroy existing chart instance to prevent canvas reuse issue
+  if (typeof Chart !== 'undefined') {
+    const existingChart = Chart.getChart(canvasId);
+    if (existingChart) {
+      existingChart.destroy();
+    }
+  }
+
   const theme = getThemeColors();
   const labels = trenData.map(d => d.tanggal);
   const dataDraft = trenData.map(d => d.draft_total || 0);
   const dataSubmitted = trenData.map(d => d.submitted_total || 0);
   const dataApproved = trenData.map(d => d.approved_total || 0);
   const dataRejected = trenData.map(d => d.rejected_total || 0);
+
+  const context = ctx.getContext('2d');
+  const getGradient = (r, g, b) => {
+    const gradient = context.createLinearGradient(0, 0, 0, 180);
+    gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.22)`);
+    gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.04)`);
+    gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+    return gradient;
+  };
 
   const chart = new Chart(ctx, {
     type: 'line',
@@ -404,41 +421,57 @@ function createFasihTrenChart(canvasId, trenData) {
           label: 'Draft',
           data: dataDraft,
           borderColor: '#eab308',
-          backgroundColor: 'rgba(234, 179, 8, 0.04)',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: '#eab308',
+          pointBorderWidth: 1.5,
+          pointRadius: 3,
+          pointHoverRadius: 5,
           tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          pointBackgroundColor: '#eab308'
+          fill: true,
+          backgroundColor: getGradient(234, 179, 8)
         },
         {
           label: 'Submitted',
           data: dataSubmitted,
           borderColor: '#3b82f6',
-          backgroundColor: 'rgba(59, 130, 246, 0.04)',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: '#3b82f6',
+          pointBorderWidth: 1.5,
+          pointRadius: 3,
+          pointHoverRadius: 5,
           tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          pointBackgroundColor: '#3b82f6'
+          fill: true,
+          backgroundColor: getGradient(59, 130, 246)
         },
         {
           label: 'Approved',
           data: dataApproved,
           borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.04)',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: '#10b981',
+          pointBorderWidth: 1.5,
+          pointRadius: 3,
+          pointHoverRadius: 5,
           tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          pointBackgroundColor: '#10b981'
+          fill: true,
+          backgroundColor: getGradient(16, 185, 129)
         },
         {
           label: 'Rejected',
           data: dataRejected,
           borderColor: '#ef4444',
-          backgroundColor: 'rgba(239, 68, 68, 0.04)',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: '#ef4444',
+          pointBorderWidth: 1.5,
+          pointRadius: 3,
+          pointHoverRadius: 5,
           tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          pointBackgroundColor: '#ef4444'
+          fill: true,
+          backgroundColor: getGradient(239, 68, 68)
         }
       ]
     },
@@ -448,11 +481,11 @@ function createFasihTrenChart(canvasId, trenData) {
       plugins: {
         legend: { labels: { color: theme.text, font: { size: 11, family: 'Inter' } } },
         tooltip: {
-          backgroundColor: theme.bgCard,
-          borderColor: theme.border,
-          borderWidth: 1,
-          titleColor: theme.title,
-          bodyColor: theme.text,
+          backgroundColor: theme.isLight ? '#0f172a' : '#1e293b',
+          titleColor: '#ffffff',
+          bodyColor: '#ffffff',
+          borderColor: '#8b5cf6',
+          borderWidth: 1.5,
           mode: 'index',
           intersect: false,
           callbacks: {
@@ -464,14 +497,49 @@ function createFasihTrenChart(canvasId, trenData) {
         }
       },
       scales: {
-        x: { ticks: { color: theme.text, font: { size: 11 } }, grid: { color: theme.grid } },
+        x: {
+          grid: { display: false, drawBorder: false },
+          ticks: { color: theme.text, font: { family: 'Inter, sans-serif', size: 9, weight: '500' } }
+        },
         y: {
-          ticks: { color: theme.text, font: { size: 11 } },
-          grid: { color: theme.grid },
+          grid: { color: theme.isLight ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.05)', drawBorder: false },
+          ticks: { color: theme.text, font: { family: 'Inter, sans-serif', size: 9 } },
           title: { display: true, text: 'Jumlah Dokumen', color: theme.text, font: { size: 10 } }
         }
       }
-    }
+    },
+    plugins: [{
+      id: "fasihTrenShadowPlugin",
+      beforeDraw(chartInstance) {
+        let ctx = chartInstance.ctx;
+        let stroke = ctx.stroke;
+        ctx.stroke = function() {
+          ctx.save();
+          if (this.strokeStyle === "#eab308") {
+            ctx.shadowColor = "rgba(234, 179, 8, 0.35)";
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 2;
+          } else if (this.strokeStyle === "#3b82f6") {
+            ctx.shadowColor = "rgba(59, 130, 246, 0.35)";
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 2;
+          } else if (this.strokeStyle === "#10b981") {
+            ctx.shadowColor = "rgba(16, 185, 129, 0.35)";
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 2;
+          } else if (this.strokeStyle === "#ef4444") {
+            ctx.shadowColor = "rgba(239, 68, 68, 0.35)";
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 2;
+          }
+          stroke.apply(this, arguments);
+          ctx.restore();
+        }
+      },
+      afterDraw(chartInstance) {
+        chartInstance.ctx.restore();
+      }
+    }]
   });
   window.activeCharts = window.activeCharts || [];
   window.activeCharts.push(chart);
