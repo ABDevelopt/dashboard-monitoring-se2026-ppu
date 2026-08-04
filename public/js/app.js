@@ -427,7 +427,10 @@ function updateTime() {
           // Save weather to DB
           fetch('/api/weather', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
             body: JSON.stringify({
               tanggal: tanggalStr,
               temp: weatherObj.temp,
@@ -636,9 +639,9 @@ function updateTime() {
       });
   }
 
-  // Dynamic script loader for performance optimization
+  // Dynamic script loader for performance optimization with SRI support
   window._scriptPromises = {};
-  function loadScript(url) {
+  function loadScript(url, integrity) {
     if (window._scriptPromises[url]) {
       return window._scriptPromises[url];
     }
@@ -651,6 +654,10 @@ function updateTime() {
       const script = document.createElement('script');
       script.src = url;
       script.defer = true;
+      if (integrity) {
+        script.setAttribute('integrity', integrity);
+        script.setAttribute('crossorigin', 'anonymous');
+      }
       script.onload = resolve;
       script.onerror = (err) => {
         window._scriptPromises[url] = null; // allow retry
@@ -705,7 +712,7 @@ function updateTime() {
         <a href="${item.href}" class="nav-item ${isCurrentActive ? 'active' : ''}">
           <span class="nav-icon"><i class="bi ${icon}" style="${colorStyle}"></i></span>
           <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${item.name}</span>
-          <button class="unpin-sidebar-btn" data-type="${item.type}" data-name="${item.name}" title="Hapus dari Favorit" onclick="event.preventDefault(); window.togglePin('${item.type}', '${item.name}', '${item.href}');">
+          <button class="unpin-sidebar-btn" data-type="${item.type}" data-name="${item.name}" data-href="${item.href}" title="Hapus dari Favorit">
             <i class="bi bi-x"></i>
           </button>
         </a>
@@ -913,6 +920,46 @@ function updateTime() {
     // Initialize Bookmarks
     window.updatePinnedSidebar();
     window.syncPinButtons();
+
+    // Dynamic CSRF Token Injection for all POST forms
+    document.addEventListener('submit', (e) => {
+      const form = e.target;
+      if (form.method && form.method.toUpperCase() === 'POST') {
+        const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+        if (csrfTokenMeta && !form.querySelector('input[name="_csrf"]')) {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = '_csrf';
+          input.value = csrfTokenMeta.getAttribute('content');
+          form.appendChild(input);
+        }
+      }
+    });
+
+    // Event Delegation for Pin (.pin-btn) and Unpin (.unpin-sidebar-btn) Buttons
+    document.addEventListener('click', (e) => {
+      const pinBtn = e.target.closest('.pin-btn');
+      if (pinBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const type = pinBtn.getAttribute('data-type');
+        const name = pinBtn.getAttribute('data-name');
+        const href = pinBtn.getAttribute('data-href');
+        window.togglePin(type, name, href);
+        return;
+      }
+
+      const unpinBtn = e.target.closest('.unpin-sidebar-btn');
+      if (unpinBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const type = unpinBtn.getAttribute('data-type');
+        const name = unpinBtn.getAttribute('data-name');
+        const href = unpinBtn.getAttribute('data-href') || unpinBtn.closest('a')?.getAttribute('href') || '';
+        window.togglePin(type, name, href);
+        return;
+      }
+    });
 
     // Global Search trigger button
     const globalSearchBtn = document.getElementById('globalSearchBtn');
@@ -2775,7 +2822,8 @@ function updateTime() {
         const response = await fetch('/api/settings/target-mode', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
           },
           body: JSON.stringify(payload)
         });

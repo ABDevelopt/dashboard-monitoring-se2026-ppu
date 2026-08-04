@@ -321,24 +321,28 @@
     <% } %>
 
     function initPmlHistoryChart() {
-      const dataEl = document.getElementById('pmlHistoryData');
-      if (!dataEl) return;
-      try {
-        const data = JSON.parse(dataEl.textContent);
-        if (data && data.length) {
-          if (typeof Chart !== 'undefined') {
-            const existingChart = Chart.getChart("pmlHistoryChartCanvas");
-            if (existingChart) {
-              existingChart.destroy();
-            }
+      // Defer to next paint cycle so injected canvas has proper dimensions
+      requestAnimationFrame(() => {
+        const dataEl = document.getElementById('pmlHistoryData');
+        if (!dataEl) return;
+        try {
+          const data = JSON.parse(dataEl.textContent);
+          if (!data || !data.length) return;
+
+          // Retry if Chart.js / createPclHistoryChart not ready yet
+          if (typeof Chart === 'undefined' || typeof createPclHistoryChart !== 'function') {
+            setTimeout(initPmlHistoryChart, 150);
+            return;
           }
-          if (typeof createPclHistoryChart === 'function') {
-            createPclHistoryChart('pmlHistoryChartCanvas', data);
-          }
+
+          const existingChart = Chart.getChart('pmlHistoryChartCanvas');
+          if (existingChart) existingChart.destroy();
+
+          createPclHistoryChart('pmlHistoryChartCanvas', data);
+        } catch (e) {
+          console.error('Failed to init PML history chart:', e);
         }
-      } catch (e) {
-        console.error('Failed to init PML history chart:', e);
-      }
+      });
     }
 
     // AJAX Drilldown logic for PML

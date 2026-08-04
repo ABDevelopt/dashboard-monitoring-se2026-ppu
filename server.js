@@ -37,11 +37,43 @@ const app = express();
 const expressLayouts = require('express-ejs-layouts');
 const PORT = process.env.PORT || 3000;
 
+// Disable X-Powered-By header to prevent technology fingerprinting
+app.disable('x-powered-by');
+
 // View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(expressLayouts);
 app.set('layout', 'layout');
+
+// Global Security Headers Middleware
+app.use((req, res, next) => {
+  // Content Security Policy (CSP)
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://browser.sentry-cdn.com; " +
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://unpkg.com; " +
+    "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
+    "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://unpkg.com https://*.basemaps.cartocdn.com https://server.arcgisonline.com; " +
+    "connect-src 'self' https://openrouter.ai https://browser.sentry-cdn.com https://cdn.jsdelivr.net https://*.sentry.io https://unpkg.com; " +
+    "frame-ancestors 'self';"
+  );
+  
+  // Anti-clickjacking
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  
+  // Strict-Transport-Security (HSTS)
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  
+  // Prevent MIME-sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  
+  // Referrer Policy
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  next();
+});
 
 // Static files with cache control
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -86,10 +118,51 @@ app.use(session({
   cookie: { 
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 Hari
     httpOnly: true,
-    secure: false // Set true jika menggunakan https saja, biarkan false agar flexibel
+    secure: false, // Set true jika menggunakan https saja, biarkan false agar flexibel
+    sameSite: 'lax' // Cegah pengiriman cookie sesi dalam permintaan lintas situs (CSRF mitigation)
   }
 }));
 app.use(flash());
+
+// CSRF Protection Middleware
+const crypto = require('crypto');
+app.use((req, res, next) => {
+  if (!req.session) return next();
+
+  // Generate token CSRF jika belum ada di sesi
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = crypto.randomBytes(32).toString('hex');
+  }
+
+  // Sediakan token CSRF untuk template rendering
+  res.locals.csrfToken = req.session.csrfToken;
+
+  // Lewati verifikasi CSRF untuk metode yang aman (safe methods)
+  const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
+  if (safeMethods.includes(req.method)) {
+    return next();
+  }
+
+  // Lewati verifikasi CSRF untuk request multipart (upload file) karena body belum diparse oleh multer
+  const contentType = req.headers['content-type'] || '';
+  if (contentType.includes('multipart/form-data')) {
+    return next();
+  }
+
+  // Verifikasi token CSRF dari berbagai input sumber
+  const reqToken = (req.body && req.body._csrf) || req.headers['x-csrf-token'] || req.query._csrf;
+  if (!reqToken || reqToken !== req.session.csrfToken) {
+    res.status(403);
+    return res.render('error', {
+      title: 'Akses Ditolak (CSRF)',
+      message: 'Token CSRF tidak valid atau kedaluwarsa. Silakan muat ulang halaman dan coba lagi.',
+      activePage: ''
+    });
+  }
+
+  next();
+});
+
 
 // Auto-login from Remember Me cookie (Instagram Style)
 app.use((req, res, next) => {
@@ -161,25 +234,44 @@ app.use((req, res, next) => {
   res.locals.sentryDsn = process.env.SENTRY_DSN || '';
 
   // Inject upload info globally
-  const latest = getLatestUpload();
-  res.locals.latestUpload = latest || null;
-  res.locals.uploadId = latest ? latest.id : null;
-  res.locals.latestUploadsDetailed = getLatestUploadsDetailed();
+  try {
+    const latest = getLatestUpload();
+    res.locals.latestUpload = latest || null;
+    res.locals.uploadId = latest ? latest.id : null;
+    res.locals.latestUploadsDetailed = getLatestUploadsDetailed();
+  } catch (err) {
+    logger.error('Error injecting global upload info:', err);
+    res.locals.latestUpload = null;
+    res.locals.uploadId = null;
+    res.locals.latestUploadsDetailed = { fasih: null, muatan: null };
+  }
   res.locals.user = req.session.user || null;
   res.locals.isAdmin = req.session.isAdmin || false;
 
   // Inject display settings globally (with session override)
-  const globalSettings = getSettings() || {};
-  if (!req.session.settings) {
-    req.session.settings = {};
+  try {
+    const globalSettings = getSettings() || {};
+    if (!req.session.settings) {
+      req.session.settings = {};
+    }
+    res.locals.settings = { ...globalSettings, ...req.session.settings };
+  } catch (err) {
+    logger.error('Error injecting global settings:', err);
+    res.locals.settings = {};
   }
-  res.locals.settings = { ...globalSettings, ...req.session.settings };
 
   // Inject KIPP lists globally
-  const kipp = getKippOfficers();
-  res.locals.kippPcls = kipp.pcls;
-  res.locals.kippPmls = kipp.pmls;
-  res.locals.kippKorlaps = kipp.korlaps;
+  try {
+    const kipp = getKippOfficers();
+    res.locals.kippPcls = kipp.pcls;
+    res.locals.kippPmls = kipp.pmls;
+    res.locals.kippKorlaps = kipp.korlaps;
+  } catch (err) {
+    logger.error('Error injecting global KIPP officers:', err);
+    res.locals.kippPcls = [];
+    res.locals.kippPmls = [];
+    res.locals.kippKorlaps = [];
+  }
 
   // Inject helper functions for formatting dates to WITA (UTC+8)
   const getWitaParts = (dateInput) => {
@@ -371,6 +463,7 @@ adminRouter.get('/logout', (req, res) => {
 adminRouter.use('/upload', requireAdmin, require('./routes/upload'));
 adminRouter.use('/master', requireAdmin, require('./routes/master'));
 adminRouter.use('/settings', requireAdmin, require('./routes/settings'));
+adminRouter.use('/settings/backup', requireAdmin, require('./routes/backup'));
 adminRouter.use('/users', requireAdmin, require('./routes/users'));
 adminRouter.use('/petugas-email', requireAdmin, require('./routes/petugas_email'));
 adminRouter.use('/whatsapp', requireAdmin, require('./routes/whatsapp'));

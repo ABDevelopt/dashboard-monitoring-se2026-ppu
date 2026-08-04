@@ -7,7 +7,7 @@
   if (settings.show_status_rejected === '1' || settings.show_status_rejected === undefined) activeSubslsStatusCols++;
 %>
 <div class="fade-in">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
   <% if (!uploadId) { %>
     <div class="card empty-state">
       <div class="empty-state-icon"><i class="bi bi-geo-alt"></i></div>
@@ -182,7 +182,7 @@
                         <a href="/subsls?kode=<%= row.kode %>&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>&q=<%= encodeURIComponent(filterQ) %>" style="color: inherit; text-decoration: none; display: inline-block;">
                           <%= row.nama_sls %>
                         </a>
-                        <button class="pin-btn" data-type="sls" data-name="<%= row.nama_sls %> (<%= row.desa %>)" data-href="/subsls?kode=<%= row.kode %>" title="Sematkan SLS ke Favorit" onclick="window.togglePin('sls', '<%= row.nama_sls %> (<%= row.desa %>)', '/subsls?kode=<%= row.kode %>')" style="font-size: 11px; padding: 2px;">
+                        <button class="pin-btn" data-type="sls" data-name="<%= row.nama_sls %> (<%= row.desa %>)" data-href="/subsls?kode=<%= row.kode %>" title="Sematkan SLS ke Favorit" style="font-size: 11px; padding: 2px;">
                           <i class="bi bi-star"></i>
                         </button>
                       </div>

@@ -15,7 +15,7 @@
   if (settings.show_status_approved === '1' || settings.show_status_approved === undefined) activeStatusCols++;
 %>
 <div class="fade-in">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
   <% if (!uploadId) { %>
     <div class="card empty-state">
       <div class="empty-state-icon"><i class="bi bi-person-vcard"></i></div>
@@ -88,7 +88,7 @@
                   <th colspan="<%= activeStatusCols %>" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
                    <th colspan="2" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
                   <th colspan="6" class="text-center bg-green-soft muatan-col" style="border-bottom: 1px solid var(--border);">Temuan Keberadaan Usaha</th>
-                  <th colspan="2" class="text-center bg-blue-soft hide-sm" style="border-bottom: 1px solid var(--border);">Proyeksi (Deadline: 31 Agt)</th>
+                  <th colspan="4" class="text-center bg-blue-soft hide-sm" style="border-bottom: 1px solid var(--border);">Proyeksi (Deadline: 31 Agt)</th>
                 </tr>
                 <tr>
                   <% if (settings.show_status_open === '1' || settings.show_status_open === undefined) { %>
@@ -143,11 +143,28 @@
                       <% if (kippPcls.includes(p.pcl.toUpperCase())) { %>
                         <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 4px;">KIPP</span>
                       <% } %>
-                      <% if (p.email) { %>
+                      <% if (p.email && isAdmin) { %>
                         <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
                           <a href="mailto:<%= p.email %>" style="color: var(--text-muted); text-decoration: none;" title="Kirim Email: <%= p.email %>">
                             <i class="bi bi-envelope" style="font-size: 10px;"></i> <%= p.email %>
                           </a>
+                        </div>
+                      <% } else if (p.email) { %>
+                        <% 
+                          let maskedEmail = '';
+                          const parts = p.email.split('@');
+                          if (parts.length === 2) {
+                            const namePart = parts[0];
+                            const domainPart = parts[1];
+                            maskedEmail = namePart.substring(0, Math.min(2, namePart.length)) + '***@' + domainPart;
+                          } else {
+                            maskedEmail = '***';
+                          }
+                        %>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                          <span title="Hanya Administrator yang dapat melihat email lengkap">
+                            <i class="bi bi-envelope" style="font-size: 10px;"></i> <%= maskedEmail %>
+                          </span>
                         </div>
                       <% } %>
                     </td>
@@ -327,7 +344,7 @@
             <div class="card-header flex-between" style="gap: 8px;">
               <div class="card-title mb-0 flex-start" style="flex-wrap: wrap; gap: 4px;">
                 <i class="bi bi-search"></i> Rincian Tugas SLS: <mark class="highlight-name"><%= filterPcl %></mark>
-                <button class="pin-btn" data-type="pcl" data-name="<%= filterPcl %>" data-href="/pcl?pcl=<%= encodeURIComponent(filterPcl) %>" title="Sematkan Petugas ke Favorit" onclick="window.togglePin('pcl', '<%= filterPcl %>', '/pcl?pcl=<%= encodeURIComponent(filterPcl) %>')">
+                <button class="pin-btn" data-type="pcl" data-name="<%= filterPcl %>" data-href="/pcl?pcl=<%= encodeURIComponent(filterPcl) %>" title="Sematkan Petugas ke Favorit">
                   <i class="bi bi-star"></i>
                 </button>
                 <% if (kippPcls.includes(filterPcl.toUpperCase())) { %>
