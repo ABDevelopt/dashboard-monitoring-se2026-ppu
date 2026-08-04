@@ -594,17 +594,17 @@ function runMigrations() {
   }
 }
 
-// Ambil upload terakhir
+// Ambil upload terakhir berdasarkan tanggal (bukan ID), agar upload imputasi tidak mengacaukan urutan
 function getLatestUpload() {
-  return getDb().prepare('SELECT * FROM uploads ORDER BY id DESC LIMIT 1').get();
+  return getDb().prepare('SELECT * FROM uploads ORDER BY tanggal DESC, id DESC LIMIT 1').get();
 }
 
 // Ambil upload terakhir yang memiliki data FASIH dan data Muatan secara terpisah
 function getLatestUploadsDetailed() {
   try {
     const db = getDb();
-    const latestFasih = db.prepare("SELECT * FROM uploads WHERE status_filename IS NOT NULL AND status_filename != '' AND status_filename != 'null' ORDER BY id DESC LIMIT 1").get();
-    const latestMuatan = db.prepare("SELECT * FROM uploads WHERE filename IS NOT NULL AND filename != '' AND filename != 'null' ORDER BY id DESC LIMIT 1").get();
+    const latestFasih = db.prepare("SELECT * FROM uploads WHERE status_filename IS NOT NULL AND status_filename != '' AND status_filename != 'null' ORDER BY tanggal DESC, id DESC LIMIT 1").get();
+    const latestMuatan = db.prepare("SELECT * FROM uploads WHERE filename IS NOT NULL AND filename != '' AND filename != 'null' AND filename != 'Imputasi Otomatis (Hari Kosong)' ORDER BY tanggal DESC, id DESC LIMIT 1").get();
     return {
       fasih: latestFasih || null,
       muatan: latestMuatan || null
