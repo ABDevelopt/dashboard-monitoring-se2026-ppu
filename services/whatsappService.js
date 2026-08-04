@@ -1,250 +1,140 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
+const pino = require('pino');
 const qrcode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
 const logger = require('./logger');
 const { getSettings } = require('../database');
 
-let client = null;
+let sock = null;
 let qrCodeDataUri = '';
 let clientStatus = 'DISCONNECTED'; // DISCONNECTED, CONNECTING, QR_READY, CONNECTED
 let userInfo = null;
-let initTimeout = null;
+let isInitializing = false;
+
+const authDir = path.join(__dirname, '../.wwebjs_auth/baileys-session');
 
 /**
- * Remove stale SingletonLock to prevent Puppeteer hanging
+ * Membersihkan direktori sesi autentikasi
  */
-function removeSingletonLock() {
-  const lockPath = path.join(__dirname, '../.wwebjs_auth/session-se2026-monitoring/SingletonLock');
-  if (fs.existsSync(lockPath)) {
-    try {
-      fs.unlinkSync(lockPath);
-      logger.info('Successfully removed stale SingletonLock file.');
-    } catch (err) {
-      logger.warn('Failed to remove stale SingletonLock (might be locked by active process):', err.message);
+function cleanAuthDir() {
+  try {
+    if (fs.existsSync(authDir)) {
+      fs.rmSync(authDir, { recursive: true, force: true });
+      logger.info('[WA-Clean] Session directory cleaned successfully.');
     }
+  } catch (e) {
+    logger.error('[WA-Clean] Failed to clean session directory:', e.message);
   }
 }
 
 /**
- * Inisialisasi WhatsApp Client
+ * Inisialisasi WhatsApp Client menggunakan Baileys (WebSocket murni)
  */
-function initialize() {
-  if (client) {
-    logger.info('[WA-Init] WhatsApp Client already initialized or initializing.');
+async function initialize() {
+  if (sock || isInitializing) {
+    logger.info('[WA-Init] WhatsApp Baileys Client already initialized or initializing.');
     return;
   }
-
-  // Bersihkan lock file usang sebelum startup
-  removeSingletonLock();
-
+  isInitializing = true;
   clientStatus = 'CONNECTING';
-  logger.info('[WA-Init] Starting WhatsApp Client initialization sequence...');
+  logger.info('[WA-Init] Starting WhatsApp Baileys initialization sequence...');
 
-  // Timeout lebih panjang untuk server yang lambat (60s)
-  if (initTimeout) clearTimeout(initTimeout);
-  initTimeout = setTimeout(() => {
-    if (clientStatus === 'CONNECTING') {
-      logger.warn('[WA-Init] Timeout reached (60s stuck at CONNECTING). Destroying stuck client...');
-      clientStatus = 'DISCONNECTED';
-      qrCodeDataUri = '';
-      try { if (client) client.destroy(); } catch (e) {
-        logger.error('[WA-Init] Error during client destroy on timeout:', e.message);
-      }
-      client = null;
-    }
-  }, 60000);
-
-  /**
-   * Deteksi executable Chromium/Chrome yang tersedia di server.
-   */
-  function findChromiumExecutable() {
-    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-      logger.info(`[WA-Init] Using env PUPPETEER_EXECUTABLE_PATH: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
-      return process.env.PUPPETEER_EXECUTABLE_PATH;
-    }
-    if (process.env.CHROME_PATH) {
-      logger.info(`[WA-Init] Using env CHROME_PATH: ${process.env.CHROME_PATH}`);
-      return process.env.CHROME_PATH;
+  try {
+    if (!fs.existsSync(authDir)) {
+      fs.mkdirSync(authDir, { recursive: true });
     }
 
+    const { state, saveCreds } = await useMultiFileAuthState(authDir);
+
+    let version = [2, 3000, 1015901307];
     try {
-      const puppeteer = require('puppeteer');
-      const execPath = puppeteer.executablePath();
-      if (execPath && fs.existsSync(execPath)) {
-        logger.info(`[WA-Init] Using puppeteer bundled Chrome: ${execPath}`);
-        return execPath;
+      const fetchedVersion = await fetchLatestBaileysVersion();
+      if (fetchedVersion && fetchedVersion.version) {
+        version = fetchedVersion.version;
       }
     } catch (e) {
-      logger.warn('[WA-Init] puppeteer package not available or Chrome not yet downloaded:', e.message);
+      logger.warn('[WA-Init] Could not fetch latest Baileys version, using fallback:', e.message);
     }
 
-    const { execSync } = require('child_process');
-    const candidates = ['google-chrome-stable', 'google-chrome', 'chromium-browser', 'chromium'];
-    for (const name of candidates) {
-      try {
-        const p = execSync(`which ${name} 2>/dev/null`, { encoding: 'utf8' }).trim();
-        if (p) { logger.info(`[WA-Init] Found system browser via which: ${p}`); return p; }
-      } catch (_) {}
-    }
+    sock = makeWASocket({
+      version,
+      auth: state,
+      printQRInTerminal: false,
+      logger: pino({ level: 'silent' }),
+      browser: ['SE2026 Monitoring PPU', 'Chrome', '1.0.0'],
+      syncFullHistory: false,
+      connectTimeoutMs: 60000,
+      defaultQueryTimeoutMs: 60000,
+      keepAliveIntervalMs: 25000,
+    });
 
-    const staticPaths = [
-      '/home/bpsppuco/chrome-portable/chrome-linux64/chrome',
-      '/home/bpsppu/chrome-portable/chrome-linux64/chrome',
-      '/usr/bin/google-chrome-stable',
-      '/usr/bin/google-chrome',
-      '/usr/bin/chromium-browser',
-      '/usr/bin/chromium',
-      '/usr/local/bin/chromium',
-      '/usr/local/bin/google-chrome',
-    ];
-    for (const p of staticPaths) {
-      if (fs.existsSync(p)) { logger.info(`[WA-Init] Found static browser path: ${p}`); return p; }
-    }
+    isInitializing = false;
 
-    logger.warn('[WA-Init] No Chrome/Chromium found on this system. WhatsApp may fail to start.');
-    return undefined;
-  }
+    sock.ev.on('creds.update', saveCreds);
 
-  const executablePath = findChromiumExecutable();
-  const puppeteerConfig = {
-    headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--disable-gpu',
-      '--no-first-run',
-      '--no-zygote',
-      '--disable-extensions',
-      '--disable-background-networking',
-      '--disable-default-apps',
-      '--disable-sync',
-      '--disable-translate',
-      '--metrics-recording-only',
-      '--mute-audio',
-      '--safebrowsing-disable-auto-update',
-      '--js-flags=--max-old-space-size=512',
-      // Tambahan khusus bypass Passenger restriction:
-      '--single-process',
-      '--disable-features=site-per-process',
-      '--disable-features=dbus',
-    ],
-  };
-  
-  if (executablePath) {
-    logger.info(`[WA-Init] Configuring Puppeteer with executablePath: ${executablePath}`);
-    puppeteerConfig.executablePath = executablePath;
-  } else {
-    logger.warn('[WA-Init] Configuring Puppeteer WITHOUT custom executablePath (falling back to default launcher)');
-  }
+    sock.ev.on('connection.update', (update) => {
+      const { connection, lastDisconnect, qr } = update;
 
-  logger.info('[WA-Init] Instantiating Client instance...');
-  client = new Client({
-    authStrategy: new LocalAuth({
-      clientId: 'se2026-monitoring',
-      dataPath: path.join(__dirname, '../.wwebjs_auth')
-    }),
-    // Gunakan versi web statis yang stabil dan cocok untuk Chrome 122+ untuk bypass link device rejection
-    webVersion: '2.3000.1017849495',
-    webVersionCache: {
-      type: 'local'
-    },
-    puppeteer: puppeteerConfig
-  });
+      if (qr) {
+        logger.info('[WA-Event] WhatsApp QR Code received via Baileys.');
+        qrcode.toDataURL(qr, (err, url) => {
+          if (err) {
+            logger.error('[WA-Event] Failed to convert QR code to Data URL:', err);
+            clientStatus = 'DISCONNECTED';
+          } else {
+            qrCodeDataUri = url;
+            clientStatus = 'QR_READY';
+          }
+        });
+      }
 
-  logger.info('[WA-Init] Binding connection event listeners...');
+      if (connection === 'open') {
+        logger.info('[WA-Event] WhatsApp Baileys Connection OPENED & CONNECTED!');
+        clientStatus = 'CONNECTED';
+        qrCodeDataUri = '';
 
-  client.on('qr', (qr) => {
-    if (initTimeout) {
-      clearTimeout(initTimeout);
-      initTimeout = null;
-    }
-    logger.info('[WA-Event] WhatsApp QR Code generated successfully. Ready to be scanned.');
-    qrcode.toDataURL(qr, (err, url) => {
-      if (err) {
-        logger.error('[WA-Event] Failed to convert QR code to Data URL:', err);
+        const userJid = sock.user ? sock.user.id : '';
+        const phoneNumber = userJid ? userJid.split('@')[0].split(':')[0] : '';
+        const pushName = (sock.user && (sock.user.name || sock.user.notify)) || 'Bot Monitoring SE2026';
+
+        userInfo = {
+          pushname: pushName,
+          wid: { user: phoneNumber }
+        };
+        logger.info(`[WA-Event] Connected user info: ${pushName} (${phoneNumber})`);
+      }
+
+      if (connection === 'close') {
+        const statusCode = lastDisconnect?.error?.output?.statusCode;
+        const reason = lastDisconnect?.error?.message || statusCode || 'Unknown';
+        logger.warn(`[WA-Event] WhatsApp Connection Closed. StatusCode: ${statusCode}, Reason: ${reason}`);
+
         clientStatus = 'DISCONNECTED';
-      } else {
-        qrCodeDataUri = url;
-        clientStatus = 'QR_READY';
+        qrCodeDataUri = '';
+        userInfo = null;
+        sock = null;
+
+        const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+        if (isLoggedOut) {
+          logger.warn('[WA-Event] User logged out. Cleaning session credentials...');
+          cleanAuthDir();
+        }
+
+        // Auto reconnect after 5 seconds
+        logger.info('[WA-Event] Scheduling reconnection in 5 seconds...');
+        setTimeout(() => {
+          initialize();
+        }, 5000);
       }
     });
-  });
 
-  client.on('ready', async () => {
-    if (initTimeout) {
-      clearTimeout(initTimeout);
-      initTimeout = null;
-    }
-    logger.info('[WA-Event] WhatsApp Client is fully READY and CONNECTED!');
-    clientStatus = 'CONNECTED';
-    qrCodeDataUri = '';
-    try {
-      userInfo = client.info;
-      logger.info(`[WA-Event] Connected user info: ${userInfo.pushname} (${userInfo.wid.user})`);
-    } catch (err) {
-      logger.error('[WA-Event] Failed to retrieve WhatsApp user info:', err);
-    }
-  });
-
-  client.on('authenticated', () => {
-    if (initTimeout) {
-      clearTimeout(initTimeout);
-      initTimeout = null;
-    }
-    logger.info('[WA-Event] Sesi WhatsApp terautentikasi (authenticated).');
-  });
-
-  client.on('auth_failure', (msg) => {
-    if (initTimeout) {
-      clearTimeout(initTimeout);
-      initTimeout = null;
-    }
-    logger.error('[WA-Event] Authentication failed:', msg);
+  } catch (err) {
+    isInitializing = false;
     clientStatus = 'DISCONNECTED';
-    qrCodeDataUri = '';
-  });
-
-  client.on('disconnected', (reason) => {
-    if (initTimeout) {
-      clearTimeout(initTimeout);
-      initTimeout = null;
-    }
-    logger.warn('[WA-Event] WhatsApp Client disconnected. Reason:', reason);
-    clientStatus = 'DISCONNECTED';
-    qrCodeDataUri = '';
-    userInfo = null;
-    
-    try {
-      logger.info('[WA-Event] Destroying old client instance...');
-      client.destroy();
-    } catch (e) {
-      logger.error('[WA-Event] Error destroying client after disconnect:', e.message);
-    }
-    client = null;
-    
-    // Auto reinitialize after 5 seconds to get a new QR code
-    logger.info('[WA-Event] Scheduling automatic reinitialization in 5 seconds...');
-    setTimeout(() => {
-      initialize();
-    }, 5000);
-  });
-
-  logger.info('[WA-Init] Calling client.initialize() promise...');
-  client.initialize().then(() => {
-    logger.info('[WA-Init] client.initialize() promise resolved successfully.');
-  }).catch(err => {
-    if (initTimeout) {
-      clearTimeout(initTimeout);
-      initTimeout = null;
-    }
-    logger.error('[WA-Init] Fatal error during client.initialize() execution:', err);
-    if (err.stack) logger.error('[WA-Init] Stack: ' + err.stack);
-    clientStatus = 'DISCONNECTED';
-    client = null;
-  });
+    sock = null;
+    logger.error('[WA-Init] Fatal error during Baileys initialize():', err);
+  }
 }
 
 /**
@@ -265,28 +155,20 @@ function getStatus() {
  * Mengambil daftar grup WhatsApp yang diikuti
  */
 async function getGroups() {
-  if (clientStatus !== 'CONNECTED' || !client || !client.pupPage || client.pupPage.isClosed()) {
+  if (clientStatus !== 'CONNECTED' || !sock) {
     return [];
   }
   try {
-    // Beri batas waktu (timeout 6 detik) agar getChats tidak menggantung jika WhatsApp Web sedang sinkronisasi
-    const getChatsPromise = client.getChats();
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Sinkronisasi chat WhatsApp Web masih berlangsung')), 6000)
-    );
+    const groups = await sock.groupFetchAllParticipating();
+    if (!groups) return [];
 
-    const chats = await Promise.race([getChatsPromise, timeoutPromise]);
-    if (!Array.isArray(chats)) return [];
-
-    return chats
-      .filter(chat => chat && chat.isGroup)
-      .map(group => ({
-        id: group.id ? group.id._serialized : '',
-        name: group.name || 'Grup Tanpa Nama'
-      }));
+    return Object.values(groups).map(group => ({
+      id: group.id,
+      name: group.subject || 'Grup Tanpa Nama'
+    }));
   } catch (err) {
     const errMsg = err && (err.message || String(err));
-    logger.warn(`WhatsApp getGroups: ${errMsg}`);
+    logger.warn(`WhatsApp getGroups error: ${errMsg}`);
     return [];
   }
 }
@@ -295,11 +177,15 @@ async function getGroups() {
  * Mengirim pesan langsung ke chat/grup ID tertentu
  */
 async function sendDirectMessage(chatId, message) {
-  if (clientStatus !== 'CONNECTED' || !client) {
+  if (clientStatus !== 'CONNECTED' || !sock) {
     throw new Error('WhatsApp client is not connected');
   }
   try {
-    const response = await client.sendMessage(chatId, message);
+    let formattedJid = chatId.trim();
+    if (!formattedJid.includes('@')) {
+      formattedJid = formattedJid + '@g.us';
+    }
+    const response = await sock.sendMessage(formattedJid, { text: message });
     return response;
   } catch (err) {
     logger.error(`Failed to send WhatsApp message to ${chatId}:`, err);
@@ -311,22 +197,21 @@ async function sendDirectMessage(chatId, message) {
  * Keluar (Logout) dan Hapus Sesi
  */
 async function logout() {
-  if (!client) return;
   logger.info('Logging out WhatsApp client...');
-  try {
-    await client.logout();
-    await client.destroy();
-  } catch (err) {
-    logger.error('Error logging out WhatsApp:', err);
+  if (sock) {
     try {
-      await client.destroy();
-    } catch (e) {}
+      await sock.logout();
+    } catch (err) {
+      logger.error('Error logging out WhatsApp:', err);
+    }
   }
-  client = null;
+  sock = null;
   clientStatus = 'DISCONNECTED';
   qrCodeDataUri = '';
   userInfo = null;
-  
+
+  cleanAuthDir();
+
   setTimeout(() => {
     initialize();
   }, 3000);
@@ -492,16 +377,6 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     const uploadDate = new Date(upload.tanggal);
     const startDate = new Date(startDateStr);
     const deadline = new Date(targetDateStr);
-    const totalDays = Math.max(1, Math.ceil((deadline - startDate) / (1000 * 60 * 60 * 24)));
-
-    let targetSpeedTotal = 0;
-    if (settings.speedometer_calc_mode === 'pcl_speed') {
-      const targetSpeedPerPcl = parseFloat(settings.speedometer_target_speed_per_pcl) || 13;
-      targetSpeedTotal = targetSpeedPerPcl * totalPcl;
-    } else {
-      // Mode Default: 'total_target' (Berbasis Total Target FASIH)
-      targetSpeedTotal = totalDays > 0 ? (targetFasih / totalDays) : 0;
-    }
 
     const targetTetap = 13 * totalPcl;
 
@@ -518,7 +393,7 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       ? `–${Math.round(Math.abs(deviasiUpdate)).toLocaleString('id-ID')}` 
       : `${deviasiUpdateSign}${Math.round(deviasiUpdate).toLocaleString('id-ID')}`;
 
-    // Hitung deviasi kumulatif (Sejak awal pendataan, terhadap Target Tetap & Kebutuhan Laju Aman)
+    // Hitung deviasi kumulatif
     const diffTime = uploadDate - startDate;
     const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
     const currentSpeedKumulatif = diffDays > 0 ? (realisasiFasih / diffDays) : 0;
@@ -597,7 +472,6 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
 
     let message = '';
     if (settings.whatsapp_message_template && settings.whatsapp_message_template.trim() !== '') {
-      // Ganti variabel dalam template kustom
       message = settings.whatsapp_message_template
         .replace(/\{tanggal_sekarang\}/g, timeFormatted)
         .replace(/\{jam_sekarang\}/g, timeOnlyFormatted)
@@ -617,7 +491,6 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
         .replace(/\{submitted_total\}/g, stats.submitted_total || 0)
         .replace(/\{approved_total\}/g, stats.approved_total || 0)
         .replace(/\{rejected_total\}/g, stats.rejected_total || 0)
-        // placeholder baru
         .replace(/\{diff_submitted\}/g, diffSubmitted)
         .replace(/\{diff_approved\}/g, diffApproved)
         .replace(/\{diff_rejected\}/g, diffRejected)
@@ -635,7 +508,6 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
         .replace(/\{deviasi_24h\}/g, deviasi24hFormatted)
         .replace(/\{deviasi_update\}/g, deviasiUpdateFormatted)
         .replace(/\{deviasi_kumulatif\}/g, deviasiKumulatifFormatted)
-        // distribution placeholders
         .replace(/\{dist_0\}/g, distLast.bucket_0)
         .replace(/\{dist_1_4\}/g, distLast.bucket_1_4)
         .replace(/\{dist_5_7\}/g, distLast.bucket_5_7)
@@ -650,7 +522,6 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       const formattedDateWweb = `${witaTime.getUTCDate()} ${monthNames[witaTime.getUTCMonth()]} ${witaTime.getUTCFullYear()}`;
       const formattedTimeWweb = `${hours}.${minutes} WITA`;
 
-      // Pesan bawaan sistem baru sesuai contoh pengguna
       message = `*📢 UPDATE HARIAN SE2026 PPU*\n` +
                 `🗓️ ${formattedDateWweb} | ⏰ ${formattedTimeWweb}\n\n` +
                 `*AKUMULASI PROGRES PENDATAAN*\n` +
@@ -689,25 +560,21 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
  */
 async function forceReset() {
   logger.info('Force resetting WhatsApp client...');
-  if (initTimeout) {
-    clearTimeout(initTimeout);
-    initTimeout = null;
-  }
-  
-  if (client) {
+  if (sock) {
     try {
-      await client.destroy();
+      sock.end(undefined);
     } catch (e) {}
   }
-  
-  client = null;
+  sock = null;
   clientStatus = 'DISCONNECTED';
   qrCodeDataUri = '';
   userInfo = null;
-  
-  removeSingletonLock();
-  
-  initialize();
+
+  cleanAuthDir();
+
+  setTimeout(() => {
+    initialize();
+  }, 2000);
 }
 
 module.exports = {
