@@ -42,9 +42,11 @@
   <link rel="stylesheet" href="/css/spreadsheet.min.css?v=<%= appVersion %>">
   <link rel="stylesheet" href="/css/ai-widget.min.css?v=<%= appVersion %>">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="" />
 
   <script src="/js/charts.min.js?v=<%= appVersion %>" defer></script>
   <script src="/js/table-filter.min.js?v=<%= appVersion %>" defer></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin=""></script>
   <style>
     <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') { %>
       .muatan-col { display: none !important; }
@@ -54,7 +56,7 @@
     }
   </style>
 </head>
-<body class="<%= (typeof activePage !== 'undefined' && activePage === 'login') ? 'page-login' : '' %> <%= (typeof activePage !== 'undefined' && activePage === 'agent') ? 'page-agent' : '' %>">
+<body class="<%= (typeof activePage !== 'undefined' && activePage === 'login') ? 'page-login' : '' %> <%= (typeof activePage !== 'undefined' && activePage === 'agent') ? 'page-agent' : '' %> <%= (typeof activePage !== 'undefined' && activePage === 'map') ? 'page-map' : '' %>">
 <script>
   // Apply saved theme immediately to prevent flashing
   if (localStorage.getItem('theme') === 'light') {
@@ -2735,6 +2737,16 @@
 
         // Update Sidebar/Bottomnav Active Classes
         const targetPath = new URL(url, window.location.origin).pathname;
+        if (targetPath === '/agent') {
+          document.body.classList.add('page-agent');
+        } else {
+          document.body.classList.remove('page-agent');
+        }
+        if (targetPath === '/map') {
+          document.body.classList.add('page-map');
+        } else {
+          document.body.classList.remove('page-map');
+        }
         
         // Sidebar items
         document.querySelectorAll('.sidebar .nav-item').forEach(item => {
@@ -2988,6 +3000,11 @@
           document.body.classList.add('page-agent');
         } else {
           document.body.classList.remove('page-agent');
+        }
+        if (targetPath === '/map') {
+          document.body.classList.add('page-map');
+        } else {
+          document.body.classList.remove('page-map');
         }
 
         document.querySelectorAll('.sidebar .nav-item').forEach(item => {
