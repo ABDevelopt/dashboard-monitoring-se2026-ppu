@@ -17,11 +17,12 @@ function formatDate(date) {
 function runAutoImputation() {
   const db = getDb();
   
-  // Ambil semua upload riil (bukan hasil imputasi sebelumnya)
+  // Ambil upload riil terbaru (terakhir di-upload) untuk setiap tanggal
   // Untuk membedakan, upload imputasi ditandai dengan filename 'Imputasi Otomatis (Hari Kosong)'
   const uploads = db.prepare(`
     SELECT id, tanggal, filename FROM uploads 
     WHERE filename != 'Imputasi Otomatis (Hari Kosong)'
+    AND id IN (SELECT MAX(id) FROM uploads GROUP BY tanggal)
     ORDER BY tanggal ASC
   `).all();
   
