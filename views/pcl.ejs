@@ -60,12 +60,11 @@
       
       <!-- PCL LIST TABLE -->
       <div class="card" style="margin-bottom: 0;">
-        <div class="card-header flex-between">
-          <div class="card-title"><i class="bi bi-person-gear"></i> Progres Kinerja per PCL (Pencacah)</div>
-          <div class="flex-start" style="gap: 6px;">
-            <a href="/pcl/export-daily-assignments" class="btn btn-xs" style="background: #06b6d4; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Rekap Count Assignment Harian Seluruh Petugas"><i class="bi bi-calendar3-range"></i> Export Assignment Harian</a>
-            <a href="/pcl/export-excel" class="btn btn-xs" style="background: #22c55e; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Progres Kinerja Terbaru"><i class="bi bi-file-earmark-excel"></i> Export Excel Petugas</a>
-            <span class="badge badge-blue"><%= pclStats.length %> PCL</span>
+        <div class="card-header flex-between" style="gap: 8px;">
+          <div class="card-title"><i class="bi bi-person-gear"></i> Progres Kinerja per PCL (Pencacah) <span class="badge badge-blue"><%= pclStats.length %> PCL</span></div>
+          <div class="card-actions flex-start" style="gap: 6px;">
+            <a href="/pcl/export-daily-assignments" class="btn btn-xs" style="background: #06b6d4; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Rekap Count Assignment Harian Seluruh Petugas"><i class="bi bi-calendar3-range"></i><span class="btn-text-desktop"> Export Assignment Harian</span></a>
+            <a href="/pcl/export-excel" class="btn btn-xs" style="background: #22c55e; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Progres Kinerja Terbaru"><i class="bi bi-file-earmark-excel"></i><span class="btn-text-desktop"> Export Excel Petugas</span></a>
           </div>
         </div>
 
@@ -342,7 +341,7 @@
       <div id="pclDetailContainer">
         <% if (filterPcl) { %>
           <div class="card" id="pclDetailCard" style="margin-bottom: 0; position: sticky; top: 80px;">
-            <div class="card-header flex-between">
+            <div class="card-header flex-between" style="gap: 8px;">
               <div class="card-title mb-0 flex-start" style="flex-wrap: wrap; gap: 4px;">
                 <i class="bi bi-search"></i> Rincian Tugas SLS: <mark class="highlight-name"><%= filterPcl %></mark>
                 <button class="pin-btn" data-type="pcl" data-name="<%= filterPcl %>" data-href="/pcl?pcl=<%= encodeURIComponent(filterPcl) %>" title="Sematkan Petugas ke Favorit">
@@ -352,10 +351,10 @@
                   <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 6px;">KIPP</span>
                 <% } %>
               </div>
-              <div class="flex-start" style="gap: 6px; margin-left: auto;">
+              <div class="card-actions flex-start" style="gap: 6px; margin-left: auto;">
                 <button onclick="window.shareElementAsImage('pclDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
                 <button onclick="window.copyElementAsImage('pclDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
-                <a href="/pcl?kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="btn btn-secondary btn-xs" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
+                <a href="/pcl?kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="btn btn-secondary btn-xs btn-close-detail" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
               </div>
             </div>
 

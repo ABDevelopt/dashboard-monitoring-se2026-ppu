@@ -1775,9 +1775,10 @@ function updateTime() {
 
           const expandBtn = document.createElement('button');
           expandBtn.type = 'button';
-          expandBtn.className = 'btn btn-secondary btn-sm btn-expand-table';
+          expandBtn.className = 'btn btn-secondary btn-xs btn-expand-table';
+          expandBtn.setAttribute('title', 'Perluas / Fullscreen Tabel');
           expandBtn.style.padding = '4px 8px';
-          expandBtn.style.fontSize = '12px';
+          expandBtn.style.fontSize = '11px';
           expandBtn.style.display = 'inline-flex';
           expandBtn.style.alignItems = 'center';
           expandBtn.style.gap = '4px';
@@ -2651,7 +2652,18 @@ function updateTime() {
     const ptrMaxPull = 110;
     
     document.addEventListener('touchstart', (e) => {
-      // Trigger PTR only at scroll top and when there is exactly 1 touch
+      // Disable PTR on AI Agent page (/agent), inside chat wrappers, modals, overlays, or interactive scrollable elements
+      if (window.location.pathname.startsWith('/agent') || document.body.classList.contains('page-agent')) return;
+      if (e.target.closest('.chat-wrapper, .chat-box, .ai-chat-container, .no-ptr, .modal, .bottom-nav-sheet, select, textarea, input, .table-wrap, .sheet-overlay')) return;
+
+      // Check if touch target or any ancestor element is scrolled down
+      let el = e.target;
+      while (el && el !== document.body && el !== document.documentElement) {
+        if (el.scrollTop > 0) return;
+        el = el.parentElement;
+      }
+
+      // Trigger PTR only at page top scroll and when there is exactly 1 touch
       if (window.scrollY === 0 && e.touches.length === 1) {
         ptrStartY = e.touches[0].pageY;
         ptrCurrentY = ptrStartY; // Reset current Y to prevent using old touch coordinates

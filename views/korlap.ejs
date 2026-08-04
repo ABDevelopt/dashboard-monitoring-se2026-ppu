@@ -22,9 +22,9 @@
       
       <!-- KORLAP LIST TABLE -->
       <div class="card" style="margin-bottom: 0;">
-        <div class="card-header">
-          <div class="card-title"><i class="bi bi-person-workspace"></i> Progres Kinerja per Korlap (Koordinator Lapangan)</div>
-          <span class="badge badge-blue"><%= korlapStats.length %> Korlap</span>
+        <div class="card-header flex-between" style="gap: 8px;">
+          <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-person-workspace"></i> Progres Kinerja per Korlap (Koordinator Lapangan) <span class="badge badge-blue"><%= korlapStats.length %> Korlap</span></div>
+          <div class="card-actions flex-start" style="gap: 6px;"></div>
         </div>
 
         <div class="search-wrap mb-4">
@@ -134,12 +134,12 @@
       <div id="korlapDetailContainer">
         <% if (filterKorlap) { %>
           <div class="card" id="korlapDetailCard" style="margin-bottom: 0; position: sticky; top: 80px;">
-            <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="card-header flex-between" style="gap: 8px;">
               <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-clipboard2-data"></i> Anggota Tim PML: <mark class="highlight-name"><%= filterKorlap %></mark></div>
-              <div style="display: flex; gap: 6px; align-items: center; margin-left: auto;">
+              <div class="card-actions flex-start" style="gap: 6px; margin-left: auto;">
                 <button onclick="window.shareElementAsImage('korlapDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
                 <button onclick="window.copyElementAsImage('korlapDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
-                <a href="/korlap" class="btn btn-secondary btn-xs" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
+                <a href="/korlap" class="btn btn-secondary btn-xs btn-close-detail" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
               </div>
             </div>
 

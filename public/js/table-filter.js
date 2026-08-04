@@ -230,19 +230,37 @@
         const isColFiltered = activeFilters[colIdx] !== undefined && Array.isArray(activeFilters[colIdx]);
 
         // Style the TH cell relative for dropdown positioning
+        th.classList.add('has-filter');
         th.style.position = 'relative';
-        th.style.paddingRight = '34px';
+        th.style.paddingRight = '30px';
 
-        // Wrap original TH contents in an inline-block span to ensure separation
+        const originalContent = th.innerHTML;
+        th.innerHTML = '';
+
+        // Wrap original TH contents in a marquee-scrollable wrapper
         const wrapper = document.createElement('span');
         wrapper.className = 'filter-header-wrapper';
-        wrapper.style.marginRight = '4px';
-        wrapper.style.display = 'inline-block';
-        wrapper.style.verticalAlign = 'middle';
-        wrapper.style.whiteSpace = 'nowrap';
-        wrapper.innerHTML = th.innerHTML;
-        th.innerHTML = '';
+
+        const scrollInner = document.createElement('span');
+        scrollInner.className = 'th-text-scroll';
+        scrollInner.innerHTML = originalContent;
+
+        wrapper.appendChild(scrollInner);
         th.appendChild(wrapper);
+
+        // Auto marquee scroll trigger if text overflows wrapper
+        const updateMarquee = () => {
+          scrollInner.classList.remove('has-marquee');
+          scrollInner.style.removeProperty('--marquee-dist');
+          const overflowDist = scrollInner.scrollWidth - wrapper.clientWidth;
+          if (overflowDist > 3) {
+            scrollInner.style.setProperty('--marquee-dist', `-${overflowDist + 6}px`);
+            scrollInner.classList.add('has-marquee');
+          }
+        };
+
+        requestAnimationFrame(() => setTimeout(updateMarquee, 80));
+        window.addEventListener('resize', updateMarquee, { passive: true });
 
         // Create filter funnel button
         const filterBtn = document.createElement('span');
