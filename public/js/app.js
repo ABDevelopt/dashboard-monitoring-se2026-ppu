@@ -1178,55 +1178,56 @@ function updateTime() {
     window.addEventListener('pjax:start', closeNavSheets);
     window.addEventListener('popstate', closeNavSheets);
 
+    function openSidebarDrawer(sectionName = null) {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const mainToggleBtn = document.getElementById('sidebarToggle');
+      if (sidebar && overlay) {
+        sidebar.classList.add('active');
+        overlay.classList.add('active');
+        if (mainToggleBtn) mainToggleBtn.setAttribute('aria-expanded', 'true');
+
+        if (sectionName) {
+          setTimeout(() => {
+            const targetSection = sidebar.querySelector(`.nav-section-wrapper[data-section="${sectionName}"]`);
+            if (targetSection) {
+              targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 120);
+        }
+      }
+    }
+
     // Event delegation on document for sidebar toggling and theme toggling
     // This ensures buttons remain clickable even after PJAX page swaps them
     document.addEventListener('click', (e) => {
-      // 0. Mobile Bottom Nav Popover Sheets
+      // 0. Mobile Bottom Nav & Sidebar Toggle Clicks
       const wilayahBtn = e.target.closest('#bottomNavWilayahBtn');
       const petugasBtn = e.target.closest('#bottomNavPetugasBtn');
-      const bottomNavOverlay = e.target.closest('#bottomNavOverlay');
-      const sheetCloseBtn = e.target.closest('.bottom-nav-sheet-close');
-      const sheetItem = e.target.closest('.bottom-sheet-item');
+      const bottomNavMenuBtn = e.target.closest('#bottomNavMenuBtn');
+      const toggleBtn = e.target.closest('#sidebarToggle');
 
       if (wilayahBtn) {
         e.preventDefault();
-        openNavSheet('bottomNavSheetWilayah');
+        openSidebarDrawer('wilayah');
         return;
       }
       if (petugasBtn) {
         e.preventDefault();
-        openNavSheet('bottomNavSheetPetugas');
+        openSidebarDrawer('petugas');
         return;
       }
-      if (bottomNavOverlay || sheetCloseBtn || sheetItem) {
-        closeNavSheets();
-        if (sheetCloseBtn || bottomNavOverlay) e.preventDefault();
-      }
-
-      // 1. Sidebar Toggle / Menu Button Click
-      const toggleBtn = e.target.closest('#sidebarToggle');
-      const bottomNavMenuBtn = e.target.closest('#bottomNavMenuBtn');
-      
-      if (toggleBtn || bottomNavMenuBtn) {
+      if (bottomNavMenuBtn || toggleBtn) {
         e.preventDefault();
-        closeNavSheets();
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        const mainToggleBtn = document.getElementById('sidebarToggle');
-        
-        if (sidebar && overlay) {
-          if (window.innerWidth > 768 && toggleBtn) {
-            // Desktop collapse logic
-            document.body.classList.toggle('sidebar-collapsed');
-            const isCollapsed = document.body.classList.contains('sidebar-collapsed');
-            localStorage.setItem('sidebar-collapsed', isCollapsed);
-            toggleBtn.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
-          } else {
-            // Mobile slide-out overlay logic
-            sidebar.classList.add('active');
-            overlay.classList.add('active');
-            if (mainToggleBtn) mainToggleBtn.setAttribute('aria-expanded', 'true');
-          }
+        if (window.innerWidth > 768 && toggleBtn) {
+          // Desktop collapse logic
+          document.body.classList.toggle('sidebar-collapsed');
+          const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+          localStorage.setItem('sidebar-collapsed', isCollapsed);
+          toggleBtn.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
+        } else {
+          // Mobile slide-out overlay logic
+          openSidebarDrawer();
         }
         return;
       }
