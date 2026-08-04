@@ -824,7 +824,7 @@ router.get('/pcl-distribution', (req, res) => {
     }
 
     const targetUploadId = selectedUpload.id;
-    const prevUpload = db.prepare('SELECT id FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(targetUploadId);
+    const prevUpload = db.prepare('SELECT id FROM uploads WHERE tanggal < ? ORDER BY tanggal DESC, id DESC LIMIT 1').get(selectedUpload.tanggal);
 
     let distLast = null;
     let pclDeltas = [];

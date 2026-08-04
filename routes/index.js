@@ -18,7 +18,8 @@ router.get('/', (req, res) => {
     // Hitung sebaran penambahan dokumen oleh petugas (Update Ini)
     const { getDb } = require('../database');
     const db = getDb();
-    const prevUpload = db.prepare('SELECT id FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(uploadId);
+    const currentUpload = db.prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
+    const prevUpload = currentUpload ? db.prepare('SELECT id FROM uploads WHERE tanggal < ? ORDER BY tanggal DESC, id DESC LIMIT 1').get(currentUpload.tanggal) : null;
     
     if (prevUpload) {
       distLast = db.prepare(`
@@ -91,7 +92,8 @@ router.get('/', (req, res) => {
   if (uploadId) {
     const { getDb } = require('../database');
     const db = getDb();
-    const prevUpload = db.prepare('SELECT id FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(uploadId);
+    const currentUpload = db.prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
+    const prevUpload = currentUpload ? db.prepare('SELECT id FROM uploads WHERE tanggal < ? ORDER BY tanggal DESC, id DESC LIMIT 1').get(currentUpload.tanggal) : null;
     
     if (prevUpload) {
       const prevStats = getOverviewSummary(prevUpload.id, res.locals.settings);
