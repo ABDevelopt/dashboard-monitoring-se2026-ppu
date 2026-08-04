@@ -606,6 +606,126 @@
   const globalSettings = <%- JSON.stringify(typeof settings !== 'undefined' ? settings : {}) %>;
   const latestUploadDateVal = <%- latestUpload && latestUpload.tanggal ? JSON.stringify(latestUpload.tanggal) : 'null' %>;
   const activeTargetPct = (latestUploadDateVal ? new Date(latestUploadDateVal) : new Date()) >= new Date('2026-07-01') ? 40 : 25;
+
+  // Builds breadcrumb trail based on current URL path and query parameters.
+  // Called on initial load and after every PJAX navigation.
+  function updateBreadcrumbs(targetUrl) {
+    const bar  = document.getElementById('breadcrumb-bar');
+    const list = document.getElementById('breadcrumb-list');
+    if (!bar || !list) return;
+
+    const url    = new URL(targetUrl || window.location.href, window.location.origin);
+    const path   = url.pathname.replace(/\/$/, '') || '/';
+    const params = url.searchParams;
+
+    // Map URL paths → { label, icon, href }
+    const PAGE_MAP = {
+      '/':                  { label: 'Overview',          icon: 'bi-house-door-fill' },
+      '/map':               { label: 'Peta Progres',      icon: 'bi-map-fill' },
+      '/agent':             { label: 'Asisten AI',        icon: 'bi-robot' },
+      '/kecamatan':         { label: 'Per Kecamatan',     icon: 'bi-geo-alt-fill' },
+      '/korlap':            { label: 'Per Korlap',        icon: 'bi-person-lines-fill' },
+      '/pml':               { label: 'Per PML',           icon: 'bi-person-badge-fill' },
+      '/pcl':               { label: 'Per PCL',           icon: 'bi-person-gear' },
+      '/subsls':            { label: 'Detail SLS',        icon: 'bi-grid-3x3-gap-fill' },
+      '/kipp':              { label: 'KIPP IKN',          icon: 'bi-building-check' },
+      '/leaderboard':       { label: 'Leaderboard',       icon: 'bi-trophy-fill' },
+      '/performa':          { label: 'Top Performers',    icon: 'bi-graph-up-arrow' },
+      '/performa-terendah': { label: 'Performa Terendah', icon: 'bi-graph-down-arrow' },
+      '/harian':            { label: 'Tren Harian',       icon: 'bi-bar-chart-line-fill' },
+      '/earlywarning':      { label: 'Early Warning',     icon: 'bi-exclamation-triangle-fill' },
+      '/deteksianomali':    { label: 'Deteksi Anomali',   icon: 'bi-bug-fill' },
+      '/pbi':               { label: 'Power BI',          icon: 'bi-bar-chart-fill' },
+      '/master':            { label: 'Data Master',       icon: 'bi-table' },
+      '/admin/upload':      { label: 'Upload Data',       icon: 'bi-upload' },
+      '/settings':          { label: 'Pengaturan',        icon: 'bi-gear-fill' },
+      '/help':              { label: 'Panduan & Bantuan', icon: 'bi-life-preserver' },
+    };
+
+    // On root Overview page, hide breadcrumb (not needed)
+    if (path === '/') {
+      bar.classList.add('hidden');
+      list.innerHTML = '';
+      document.body.classList.remove('has-breadcrumb');
+      return;
+    }
+
+    // Build crumbs array
+    const crumbs = [];
+
+    // Always start with Home
+    crumbs.push({ label: 'Home', icon: 'bi-house-door', href: '/' });
+
+    // Resolve the current page info
+    const pageInfo = PAGE_MAP[path] || { label: decodeURIComponent(path.replace(/^\//, '').replace(/-/g, ' ')).replace(/\b\w/g, c => c.toUpperCase()), icon: 'bi-file-earmark' };
+    const pageHref = path;
+
+    // Check for drill-down filter params that indicate sub-level navigation
+    const filterKec    = params.get('kec');
+    const filterKorlap = params.get('korlap');
+    const filterPml    = params.get('pml');
+    const filterPcl    = params.get('pcl');
+    const filterDesa   = params.get('desa');
+
+    // If no filters at all → just show Home > PageName
+    const hasFilter = filterKec || filterKorlap || filterPml || filterPcl || filterDesa;
+
+    if (!hasFilter) {
+      // Simple page, no drill-down
+      crumbs.push({ label: pageInfo.label, icon: pageInfo.icon, href: null }); // null = current (active)
+    } else {
+      // Drill-down: show page as clickable, then filters as trail
+      crumbs.push({ label: pageInfo.label, icon: pageInfo.icon, href: pageHref });
+
+      // Build hierarchical context from filters
+      // Kecamatan level
+      if (filterKec && !filterKorlap && !filterPml && !filterPcl) {
+        crumbs.push({ label: filterKec, icon: 'bi-geo-alt', href: null });
+      }
+      // Korlap level
+      if (filterKorlap) {
+        if (filterKec) {
+          crumbs.push({ label: filterKec, icon: 'bi-geo-alt', href: `${pageHref}?kec=${encodeURIComponent(filterKec)}` });
+        }
+        if (!filterPml && !filterPcl) {
+          crumbs.push({ label: filterKorlap, icon: 'bi-person-lines-fill', href: null });
+        } else {
+          crumbs.push({ label: filterKorlap, icon: 'bi-person-lines-fill', href: `${pageHref}?korlap=${encodeURIComponent(filterKorlap)}${filterKec ? '&kec=' + encodeURIComponent(filterKec) : ''}` });
+        }
+      }
+      // PML level
+      if (filterPml) {
+        if (!filterPcl) {
+          crumbs.push({ label: filterPml, icon: 'bi-person-badge-fill', href: null });
+        } else {
+          crumbs.push({ label: filterPml, icon: 'bi-person-badge-fill', href: `${pageHref}?pml=${encodeURIComponent(filterPml)}${filterKorlap ? '&korlap=' + encodeURIComponent(filterKorlap) : ''}${filterKec ? '&kec=' + encodeURIComponent(filterKec) : ''}` });
+        }
+      }
+      // PCL level (leaf)
+      if (filterPcl) {
+        crumbs.push({ label: filterPcl, icon: 'bi-person-gear', href: null });
+      }
+      // Desa/SLS level (subsls page)
+      if (filterDesa && !filterPcl) {
+        if (filterKec) {
+          crumbs.push({ label: filterKec, icon: 'bi-geo-alt', href: `${pageHref}?kec=${encodeURIComponent(filterKec)}` });
+        }
+        crumbs.push({ label: filterDesa, icon: 'bi-house-door', href: null });
+      }
+    }
+
+    // Render crumbs
+    list.innerHTML = '';
+    crumbs.forEach((crumb, idx) => {
+      const isLast = idx === crumbs.length - 1;
+
+      // Separator (except before first item)
+      if (idx > 0) {
+        const sep = document.createElement('li');
+        sep.className = 'breadcrumb-separator';
+        sep.setAttribute('aria-hidden', 'true');
+        sep.innerHTML = '<i class="bi bi-chevron-right"></i>';
+        list.appendChild(sep);
       }
 
       const li = document.createElement('li');

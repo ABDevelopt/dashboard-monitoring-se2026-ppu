@@ -864,6 +864,8 @@ function getTrenHarian() {
       SUM(COALESCE(s.submitted_total, 0)) AS submitted_total,
       SUM(COALESCE(s.approved_total, 0)) AS approved_total,
       SUM(COALESCE(s.rejected_total, 0)) AS rejected_total,
+      SUM(COALESCE(s.target_fasih_total, 0)) AS target_fasih_total,
+      COUNT(DISTINCT CASE WHEN s.pcl IS NOT NULL AND s.pcl != '' THEN s.pcl END) AS total_pcl,
       w.temp AS weather_temp,
       w.code AS weather_code,
       w.humidity AS weather_humidity

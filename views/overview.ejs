@@ -212,6 +212,15 @@
       #distDateSelector:hover {
         border-color: var(--accent-green) !important;
       }
+      #speedometerDateSelector:hover {
+        border-color: var(--accent-purple) !important;
+      }
+      body.light-mode #speedometerDateSelector {
+        background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>") !important;
+      }
+      body.light-mode #distDateSelector {
+        background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>") !important;
+      }
       
       .ai-btn-group {
         display: flex;
@@ -711,21 +720,38 @@
                   Speedometer Pendataan
                 </h4>
                 <p class="m-0 mt-0-5 fs-sm text-muted">
-                  Realisasi vs Target Standar <strong><%= targetNormalPerPclText %> dok/PCL/hari</strong> (Laju Aman Tepat Waktu: <strong><%= reqSpeedPerPclText %> dok/PCL/hari</strong>)
+                  Realisasi vs Target Standar <strong id="speedometerTargetNormalField"><%= targetNormalPerPclText %> dok/PCL/hari</strong> (Laju Aman Tepat Waktu: <strong id="speedometerReqSpeedField"><%= reqSpeedPerPclText %> dok/PCL/hari</strong>)
                 </p>
               </div>
             </div>
             
-            <!-- Help Tooltip Icon in Corner -->
-            <div class="help-tooltip-container">
-              <i class="bi bi-question-circle help-tooltip-icon"></i>
-              <div class="help-tooltip-box">
-                <strong class="text-primary d-block mb-1">Panduan Speedometer Pendataan:</strong>
-                Speedometer mengukur kecepatan rata-rata harian pengumpulan berkas per petugas (PCL).
-                <br><br>
-                <strong>Laju Akumulatif:</strong> Rata-rata harian sejak hari pertama pendataan hingga saat ini. Laju kerja dibandingkan dengan target standar (<strong><%= targetNormalPerPclText %> dok/hari/petugas</strong>).
-                <br><br>
-                <strong>Laju Update Terakhir:</strong> Kecepatan harian yang dihasilkan khusus pada periode unggah data terakhir (seperti notifikasi WhatsApp).
+            <div style="display: flex; align-items: center; gap: 12px; margin-left: auto;">
+              <!-- Date Navigator Controls -->
+              <div style="display: flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 8px; padding: 4px 6px;">
+                <button id="btnSpeedometerPrev" onclick="navigateSpeedometerDate(-1)" class="btn-icon" style="background: transparent; border: none; color: var(--text-primary); cursor: pointer; padding: 6px 10px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: var(--transition);" title="Sebelumnya">
+                  <i class="bi bi-chevron-left"></i>
+                </button>
+                
+                <select id="speedometerDateSelector" aria-label="Pilih Tanggal Speedometer" onchange="onSpeedometerDateSelectChange(this.value)" style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 12px; font-weight: 600; padding: 4px 28px 4px 8px; outline: none; cursor: pointer; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url(&quot;data:image/svg+xml;utf8,&lt;svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'&gt;&lt;path d='M7 10l5 5 5-5z'/&gt;&lt;path d='M0 0h24v24H0z' fill='none'/&gt;&lt;/svg&gt;&quot;); background-repeat: no-repeat; background-position-x: 100%; background-position-y: 50%;">
+                  <!-- Populated dynamically via JS -->
+                </select>
+                
+                <button id="btnSpeedometerNext" onclick="navigateSpeedometerDate(1)" class="btn-icon" style="background: transparent; border: none; color: var(--text-primary); cursor: pointer; padding: 6px 10px; font-size: 14px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: var(--transition);" title="Berikutnya">
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+              </div>
+
+              <!-- Help Tooltip Icon in Corner -->
+              <div class="help-tooltip-container" style="position: relative; top: 0; right: 0; margin: 0;">
+                <i class="bi bi-question-circle help-tooltip-icon"></i>
+                <div class="help-tooltip-box" style="right: 0; transform: translateX(0); margin-top: 8px; width: 280px; z-index: 1000;">
+                  <strong class="text-primary d-block mb-1">Panduan Speedometer Pendataan:</strong>
+                  Speedometer mengukur kecepatan rata-rata harian pengumpulan berkas per petugas (PCL).
+                  <br><br>
+                  <strong>Laju Akumulatif:</strong> Rata-rata harian sejak hari pertama pendataan hingga saat ini. Laju kerja dibandingkan dengan target standar (<strong><%= targetNormalPerPclText %> dok/hari/petugas</strong>).
+                  <br><br>
+                  <strong>Laju Update Terakhir:</strong> Kecepatan harian yang dihasilkan khusus pada periode unggah data terakhir (seperti notifikasi WhatsApp).
+                </div>
               </div>
             </div>
           </div>
@@ -760,7 +786,7 @@
               <div class="d-grid grid-fit-110 gap-2">
                 <div class="bg-white-subtle border-default rounded-sm py-2 px-2-5 text-center">
                   <div class="fs-caption text-muted fw-medium">Status Lapangan</div>
-                  <div class="mt-1">
+                  <div class="mt-1" id="speedometerStatusField">
                     <% if (remainingFasih === 0) { %>
                       <span class="badge badge-green fs-caption py-1 px-2">Selesai 100%</span>
                     <% } else if (isOfftrack) { %>
@@ -774,14 +800,14 @@
                 <div class="bg-info-subtle border-info-subtle rounded-sm py-2 px-2-5 text-center">
                   <div class="fs-caption text-muted fw-medium">Kecepatan Ideal</div>
                   <div class="fs-caption fw-bold text-primary mt-1 d-flex items-center justify-center gap-1 flex-wrap">
-                    <i class="bi bi-lightning-charge-fill text-blue"></i><span><%= reqSpeedPerPclText %> dok/PCL/hari</span>
+                    <i class="bi bi-lightning-charge-fill text-blue"></i><span id="speedometerIdealSpeedField"><%= reqSpeedPerPclText %> dok/PCL/hari</span>
                   </div>
                 </div>
 
                 <div class="bg-success-subtle border-success-subtle rounded-sm py-2 px-2-5 text-center">
                   <div class="fs-caption text-muted fw-medium">Est. Selesai 100%</div>
                   <div class="fs-caption fw-bold text-primary mt-1 d-flex items-center justify-center gap-1 flex-wrap">
-                    <i class="bi bi-calendar-check-fill text-green"></i><span><%= estDate100Text %></span>
+                    <i class="bi bi-calendar-check-fill text-green"></i><span id="speedometerEst100Field"><%= estDate100Text %></span>
                   </div>
                 </div>
 
@@ -794,7 +820,7 @@
               </div>
 
               <!-- Narrative Speed Analysis Text -->
-              <div class="fs-sm lh-relaxed text-secondary border-default rounded-sm py-2-5 px-3 bg-white-subtle">
+              <div id="speedometerAnalysisText" class="fs-sm lh-relaxed text-secondary border-default rounded-sm py-2-5 px-3 bg-white-subtle">
                 <% if (remainingFasih === 0) { %>
                   Pendataan secara global telah menyelesaikan seluruh target pengisian dokumen FASIH sebanyak <strong><%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></strong> dokumen. Kinerja luar biasa!
                 <% } else { %>
@@ -1382,7 +1408,14 @@
         </div>
       </div>
 
-
+      <div class="card" style="margin: 0;">
+        <div class="card-header">
+          <div class="card-title"><i class="bi bi-bar-chart-steps"></i> Tren Penambahan Harian Status Dokumen FASIH</div>
+        </div>
+        <div style="height: 300px; position: relative; padding: 0 16px 16px 16px;">
+          <canvas id="dailyFasihStatusChartCanvas"></canvas>
+        </div>
+      </div>
       <% } %>
 
     </div>
@@ -1955,11 +1988,209 @@
       }
       <% } %>
       
-      // Initialize Speedometer Gauge (Accumulative)
-      createSpeedometerChart('speedometerChartCanvas', <%= speedPerPcl %>, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>, <%= currentSpeed %>, <%= targetSpeedTotal %>);
+      // Speedometer dynamic date navigator controls setup
+      const sensorStartDateStr = '<%= settings.speedometer_start_date || "2026-06-15" %>';
+      const sensorDeadlineDateStr = '<%= settings.speedometer_target_date || "2026-08-31" %>';
+      const speedometerCalcMode = '<%= settings.speedometer_calc_mode %>';
+      const targetSpeedPerPclSetting = parseFloat('<%= settings.speedometer_target_speed_per_pcl || "13" %>') || 13;
 
-      // Initialize Speedometer Gauge (Last Update)
-      createSpeedometerChart('speedometerLastUpdateCanvas', <%= latestUpdateSpeedPerPcl %>, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>, <%= diffTotal %>, <%= targetSpeedTotal %>);
+      function clientFormatIndonesianDate(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr;
+        const months = [
+          'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+          'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+        return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+      }
+
+      function clientFormatIndonesianDateShort(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr;
+        const months = [
+          'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+          'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'
+        ];
+        return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+      }
+
+      window.updateSpeedometersForDate = function(targetDate) {
+        const itemIdx = dailyTrenData.findIndex(d => d.tanggal === targetDate);
+        if (itemIdx === -1) return;
+        
+        const current = dailyTrenData[itemIdx];
+        
+        // Find previous item to compute last update delta
+        const prev = itemIdx > 0 ? dailyTrenData[itemIdx - 1] : null;
+        
+        const totalPengerjaan = (current.submitted_total || 0) + (current.approved_total || 0) + (current.rejected_total || 0);
+        const prevPengerjaan = prev ? ((prev.submitted_total || 0) + (prev.approved_total || 0) + (prev.rejected_total || 0)) : 0;
+        
+        // diffTotal is the delta from the previous upload
+        const diffTotal = Math.max(0, totalPengerjaan - prevPengerjaan);
+        
+        const startSensusDate = new Date(sensorStartDateStr);
+        const uploadDate = new Date(current.tanggal);
+        const deadline = new Date(sensorDeadlineDateStr);
+        
+        const diffTime = uploadDate - startSensusDate;
+        const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+        
+        const totalDays = Math.max(1, Math.ceil((deadline - startSensusDate) / (1000 * 60 * 60 * 24)));
+        const daysRemaining = Math.max(0, Math.ceil((deadline - uploadDate) / (1000 * 60 * 60 * 24)));
+        
+        const target_fasih_total = current.target_fasih_total || 0;
+        const remainingFasih = Math.max(0, target_fasih_total - totalPengerjaan);
+        const currentSpeed = diffDays > 0 ? (totalPengerjaan / diffDays) : 0;
+        
+        const estDaysToFinish = currentSpeed > 0 ? (remainingFasih / currentSpeed) : null;
+        const isOfftrack = (currentSpeed === 0 && remainingFasih > 0) || (estDaysToFinish !== null && estDaysToFinish > daysRemaining);
+        const reqSpeed = daysRemaining > 0 ? (remainingFasih / daysRemaining) : remainingFasih;
+        
+        const totalPcl = current.total_pcl || 1;
+        const speedPerPcl = totalPcl > 0 ? (currentSpeed / totalPcl) : 0;
+        const reqSpeedPerPcl = totalPcl > 0 ? (reqSpeed / totalPcl) : 0;
+        const latestUpdateSpeedPerPcl = totalPcl > 0 ? (diffTotal / totalPcl) : 0;
+        
+        let targetSpeedTotal = 0;
+        let targetNormalPerPcl = 0;
+        if (speedometerCalcMode === 'pcl_speed') {
+          targetSpeedTotal = targetSpeedPerPclSetting * totalPcl;
+          targetNormalPerPcl = targetSpeedPerPclSetting;
+        } else {
+          targetSpeedTotal = totalDays > 0 ? (target_fasih_total / totalDays) : 0;
+          targetNormalPerPcl = totalPcl > 0 ? (targetSpeedTotal / totalPcl) : 0;
+        }
+        
+        // Re-create Speedometer Gauge (Accumulative)
+        createSpeedometerChart('speedometerChartCanvas', speedPerPcl, targetNormalPerPcl, currentSpeed, targetSpeedTotal);
+        
+        // Re-create Speedometer Gauge (Last Update)
+        createSpeedometerChart('speedometerLastUpdateCanvas', latestUpdateSpeedPerPcl, targetNormalPerPcl, diffTotal, targetSpeedTotal);
+        
+        // Update header sub-text fields
+        const normalSpeedEl = document.getElementById('speedometerTargetNormalField');
+        if (normalSpeedEl) normalSpeedEl.textContent = `${targetNormalPerPcl.toFixed(1)} dok/PCL/hari`;
+        const reqSpeedEl = document.getElementById('speedometerReqSpeedField');
+        if (reqSpeedEl) reqSpeedEl.textContent = `${reqSpeedPerPcl.toFixed(2)} dok/PCL/hari`;
+        
+        // Update Status Badge
+        const statusField = document.getElementById('speedometerStatusField');
+        if (statusField) {
+          if (remainingFasih === 0) {
+            statusField.innerHTML = '<span class="badge badge-green fs-caption py-1 px-2">Selesai 100%</span>';
+          } else if (isOfftrack) {
+            statusField.innerHTML = '<span class="badge badge-red fs-caption py-1 px-2"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>';
+          } else {
+            statusField.innerHTML = '<span class="badge badge-green fs-caption py-1 px-2"><i class="bi bi-check-circle-fill"></i> On-Track</span>';
+          }
+        }
+        
+        // Update Kecepatan Ideal Card
+        const idealSpeedField = document.getElementById('speedometerIdealSpeedField');
+        if (idealSpeedField) {
+          idealSpeedField.textContent = `${reqSpeedPerPcl.toFixed(2)} dok/PCL/hari`;
+        }
+        
+        // Update Est. Selesai 100% Card
+        const est100Field = document.getElementById('speedometerEst100Field');
+        if (est100Field) {
+          if (remainingFasih === 0) {
+            est100Field.textContent = 'Sudah tercapai';
+          } else if (currentSpeed === 0) {
+            est100Field.textContent = 'Tidak dapat diprediksi (stagnan)';
+          } else {
+            const finishDate = new Date(uploadDate);
+            finishDate.setDate(finishDate.getDate() + Math.ceil(estDaysToFinish));
+            est100Field.textContent = clientFormatIndonesianDateShort(finishDate);
+          }
+        }
+        
+        // Update Narrative Speed Analysis Text
+        const analysisText = document.getElementById('speedometerAnalysisText');
+        if (analysisText) {
+          if (remainingFasih === 0) {
+            analysisText.innerHTML = `Pendataan secara global telah menyelesaikan seluruh target pengisian dokumen FASIH sebanyak <strong>${target_fasih_total.toLocaleString('id-ID')}</strong> dokumen. Kinerja luar biasa!`;
+          } else {
+            let inner = `Hari berjalan pendataan: <strong>${diffDays} hari</strong> (sejak ${clientFormatIndonesianDate(sensorStartDateStr)}). Sisa hari menuju deadline (${clientFormatIndonesianDate(sensorDeadlineDateStr)}): <strong>${daysRemaining} hari</strong>.<br>
+            Sisa beban kerja: <strong>${remainingFasih.toLocaleString('id-ID')} dokumen</strong>. 
+            Dengan kecepatan rata-rata harian (<strong>${speedPerPcl.toFixed(2)} dok/PCL/hari</strong> atau <strong>${currentSpeed.toFixed(2)} dok/hari total</strong>), `;
+            
+            if (currentSpeed === 0) {
+              inner += `pendataan belum merealisasikan dokumen FASIH sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.`;
+            } else {
+              inner += `pendataan secara global diprediksi akan menyelesaikan sisa dokumen dalam waktu sekitar <strong>${Math.ceil(estDaysToFinish)} hari</strong>.`;
+            }
+            
+            if (isOfftrack) {
+              inner += `<div class="alert-danger-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
+                <i class="bi bi-exclamation-triangle-fill text-red fs-md mt-0-5"></i>
+                <div><strong>Off-Track:</strong> Kecepatan saat ini (Laju Akumulatif ${speedPerPcl.toFixed(2)} dok/PCL/hari) di bawah target normal ${targetNormalPerPcl.toFixed(1)} dok/hari/petugas. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong>${reqSpeedPerPcl.toFixed(2)} dok/PCL/hari</strong> (atau <strong>${reqSpeed.toFixed(2)} dok/hari total</strong>) agar selesai sesuai target pada ${clientFormatIndonesianDate(sensorDeadlineDateStr)}.</div>
+              </div>`;
+            } else {
+              inner += `<div class="alert-success-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
+                <i class="bi bi-check-circle-fill text-green fs-md mt-0-5"></i>
+                <div><strong>On-Track:</strong> Kecepatan kerja saat ini sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum ${clientFormatIndonesianDate(sensorDeadlineDateStr)}).</div>
+              </div>`;
+            }
+            analysisText.innerHTML = inner;
+          }
+        }
+
+        // Disable/enable next/prev buttons
+        const btnPrev = document.getElementById('btnSpeedometerPrev');
+        const btnNext = document.getElementById('btnSpeedometerNext');
+        if (btnPrev) {
+          const isEarliest = (itemIdx === 0);
+          btnPrev.disabled = isEarliest;
+          btnPrev.style.opacity = isEarliest ? '0.3' : '1';
+          btnPrev.style.cursor = isEarliest ? 'not-allowed' : 'pointer';
+        }
+        if (btnNext) {
+          const isLatest = (itemIdx === dailyTrenData.length - 1);
+          btnNext.disabled = isLatest;
+          btnNext.style.opacity = isLatest ? '0.3' : '1';
+          btnNext.style.cursor = isLatest ? 'not-allowed' : 'pointer';
+        }
+      };
+
+      window.onSpeedometerDateSelectChange = function(selectedDate) {
+        updateSpeedometersForDate(selectedDate);
+      };
+
+      window.navigateSpeedometerDate = function(direction) {
+        const selector = document.getElementById('speedometerDateSelector');
+        if (!selector) return;
+        const index = selector.selectedIndex;
+        const nextIndex = index - direction; // descending order: prev is index+1, next is index-1
+        if (nextIndex >= 0 && nextIndex < selector.options.length) {
+          selector.selectedIndex = nextIndex;
+          updateSpeedometersForDate(selector.value);
+        }
+      };
+
+      // Populate selector dropdown
+      const speedometerSelector = document.getElementById('speedometerDateSelector');
+      if (speedometerSelector) {
+        speedometerSelector.innerHTML = '';
+        // Sort descending for dropdown
+        const sortedDesc = [...dailyTrenData].sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+        sortedDesc.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.tanggal;
+          opt.textContent = clientFormatIndonesianDate(item.tanggal);
+          speedometerSelector.appendChild(opt);
+        });
+        
+        // Select latest date by default
+        if (dailyTrenData.length > 0) {
+          const latestDate = dailyTrenData[dailyTrenData.length - 1].tanggal;
+          speedometerSelector.value = latestDate;
+          updateSpeedometersForDate(latestDate);
+        }
+      }
 
       // Initialize Sports Daily Rate Line Chart
       const sportsDailyRates = [];
@@ -2043,7 +2274,7 @@
         }
       }
 
-      createDailyFasihStatusChart('fasihDailyIncrementChartCanvas', dailyIncrementLabels, dailyIncrements, 'Penambahan Harian FASIH Per Status (Daily Increment)', dailyTrenData);
+      createDailyFasihStatusChart('dailyFasihStatusChartCanvas', dailyIncrementLabels, dailyIncrements, '', dailyTrenData);
 
 
       <% } %>
