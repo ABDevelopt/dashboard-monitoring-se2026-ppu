@@ -121,6 +121,16 @@ router.post('/restore-local', (req, res) => {
     fs.copyFileSync(backupPath, mainDbPath);
     // Reopen connection and initialize
     getDb();
+    
+    // Auto run imputation and rebuild caches
+    try {
+      const { runAutoImputation } = require('../services/imputerService');
+      const { rebuildAllSummaryCaches } = require('../database');
+      runAutoImputation();
+      rebuildAllSummaryCaches();
+    } catch (imputeErr) {
+      console.error('[Restore-Impute] Failed to auto impute database after restore:', imputeErr);
+    }
 
     req.flash('success', 'Database berhasil di-restore dari file lokal.');
   } catch (err) {
@@ -187,6 +197,16 @@ router.post('/restore', upload.single('db_file'), (req, res) => {
     
     // Reopen connection and initialize
     getDb();
+
+    // Auto run imputation and rebuild caches
+    try {
+      const { runAutoImputation } = require('../services/imputerService');
+      const { rebuildAllSummaryCaches } = require('../database');
+      runAutoImputation();
+      rebuildAllSummaryCaches();
+    } catch (imputeErr) {
+      console.error('[Restore-Upload-Impute] Failed to auto impute database after restore:', imputeErr);
+    }
 
     // Remove uploaded temp file
     try { fs.unlinkSync(tempPath); } catch (_) {}
