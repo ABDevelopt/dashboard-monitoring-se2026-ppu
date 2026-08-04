@@ -245,27 +245,57 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       return;
     }
 
-    // Ambil detail data upload sebelumnya
-    const prevUpload = db.prepare('SELECT * FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(uploadId);
+    // ── Tentukan sesi upload (Pagi / Siang-Sore) ─────────────────────────────
+    const cutoffHour = parseInt(settings.whatsapp_session_cutoff_hour || '12', 10);
+    const intradayEnabled = settings.whatsapp_intraday_enabled === '1';
+
+    // Jam upload dalam waktu lokal server (UTC+8 / WITA)
+    const uploadCreatedAt = new Date(upload.created_at.replace(' ', 'T') + 'Z');
+    const uploadHourWITA = (uploadCreatedAt.getUTCHours() + 8) % 24;
+    const isSiangSore = uploadHourWITA >= cutoffHour;
+    const sesiLabel = isSiangSore ? 'Siang/Sore' : 'Pagi';
+
+    // ── Cari upload sebelumnya untuk perbandingan ─────────────────────────────
+    let prevUpload = null;
+    if (intradayEnabled) {
+      // Mode intraday: cari upload pada sesi yang SAMA di hari sebelumnya
+      const prevSessionStart = cutoffHour; // jam mulai sesi siang (dalam UTC = cutoffHour - 8)
+      if (isSiangSore) {
+        // Sesi siang/sore: cari upload kemarin dengan jam >= cutoffHour WITA (UTC = cutoff - 8)
+        const utcCutoff = ((cutoffHour - 8) + 24) % 24; // cutoff dalam UTC
+        prevUpload = db.prepare(`
+          SELECT * FROM uploads
+          WHERE tanggal < ?
+            AND CAST(strftime('%H', created_at) AS INTEGER) >= ?
+          ORDER BY tanggal DESC, id DESC
+          LIMIT 1
+        `).get(upload.tanggal, utcCutoff);
+      } else {
+        // Sesi pagi: cari upload kemarin dengan jam < cutoffHour WITA (UTC = cutoff - 8)
+        const utcCutoff = ((cutoffHour - 8) + 24) % 24;
+        prevUpload = db.prepare(`
+          SELECT * FROM uploads
+          WHERE tanggal < ?
+            AND CAST(strftime('%H', created_at) AS INTEGER) < ?
+          ORDER BY tanggal DESC, id DESC
+          LIMIT 1
+        `).get(upload.tanggal, utcCutoff);
+      }
+      // Fallback: jika tidak ada upload sesi sama di hari sebelumnya, gunakan upload terlama yang ada
+      if (!prevUpload) {
+        prevUpload = db.prepare('SELECT * FROM uploads WHERE id < ? ORDER BY tanggal DESC, id DESC LIMIT 1').get(uploadId);
+      }
+    } else {
+      // Mode normal: upload tepat sebelum ini (berdasarkan tanggal/id)
+      prevUpload = db.prepare('SELECT * FROM uploads WHERE tanggal <= ? AND id < ? ORDER BY tanggal DESC, id DESC LIMIT 1').get(upload.tanggal, uploadId);
+      // Fallback ke id saja
+      if (!prevUpload) {
+        prevUpload = db.prepare('SELECT * FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(uploadId);
+      }
+    }
     let prevStats = null;
     if (prevUpload) {
       prevStats = getOverviewSummary(prevUpload.id, settings);
-    }
-
-    // Ambil detail data upload 24 jam yang lalu
-    const upload24h = db.prepare(`
-      SELECT * FROM uploads 
-      WHERE created_at <= datetime(?, '-1 day') 
-      ORDER BY created_at DESC LIMIT 1
-    `).get(upload.created_at);
-    let stats24h = null;
-    let baseUpload24h = upload24h;
-    if (!baseUpload24h) {
-      // Fallback: gunakan upload pertama
-      baseUpload24h = db.prepare('SELECT * FROM uploads ORDER BY id ASC LIMIT 1').get();
-    }
-    if (baseUpload24h && baseUpload24h.id !== uploadId) {
-      stats24h = getOverviewSummary(baseUpload24h.id, settings);
     }
 
     // Ambil statistik summary
@@ -314,19 +344,19 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     const targetMuatan = stats.total_muatan || 0;
     const persenMuatan = stats.muatan_pct_str || '0.00';
 
-    // Penambahan dari update sebelumnya
+    // Penambahan dari update sebelumnya (sesi yang sama)
     const diffSubmitted = stats.submitted_total - (prevStats ? prevStats.submitted_total : 0);
     const diffApproved = stats.approved_total - (prevStats ? prevStats.approved_total : 0);
     const diffRejected = stats.rejected_total - (prevStats ? prevStats.rejected_total : 0);
     const diffTotal = realisasiFasih - (prevStats ? ((prevStats.submitted_total || 0) + (prevStats.approved_total || 0) + (prevStats.rejected_total || 0)) : 0);
 
-    // Penambahan dalam 24 jam terakhir (atau sejak data pertama)
-    const diff24Submitted = stats.submitted_total - (stats24h ? stats24h.submitted_total : 0);
-    const diff24Approved = stats.approved_total - (stats24h ? stats24h.approved_total : 0);
-    const diff24Rejected = stats.rejected_total - (stats24h ? stats24h.rejected_total : 0);
-    const diff24Total = realisasiFasih - (stats24h ? ((stats24h.submitted_total || 0) + (stats24h.approved_total || 0) + (stats24h.rejected_total || 0)) : 0);
+    // Alias 24h = sama dengan diff (sekarang berbasis sesi, bukan 24 jam)
+    const diff24Submitted = diffSubmitted;
+    const diff24Approved = diffApproved;
+    const diff24Rejected = diffRejected;
+    const diff24Total = diffTotal;
 
-    // Hitung petugas aktif yang bertambah progresnya sejak update terakhir
+    // Hitung petugas aktif yang bertambah progresnya sejak upload sesi sebelumnya
     let activeDiffPclCount = 0;
     if (prevUpload) {
       const activeDiffResult = db.prepare(`
@@ -348,28 +378,8 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       activeDiffPclCount = stats.active_pcl || 0;
     }
 
-    // Hitung petugas aktif yang bertambah progresnya dalam 24 jam terakhir (atau sejak data pertama)
-    let activeDiffPcl24hCount = 0;
-    const base24hId = baseUpload24h ? baseUpload24h.id : null;
-    if (base24hId && base24hId !== uploadId) {
-      const activeDiff24hResult = db.prepare(`
-        SELECT COUNT(*) AS cnt FROM (
-          SELECT 
-            m.pcl,
-            (SUM(COALESCE(p_curr.submitted_by_pcl, 0) + COALESCE(p_curr.approved, 0) + COALESCE(p_curr.rejected, 0)) -
-             SUM(COALESCE(p_24h.submitted_by_pcl, 0) + COALESCE(p_24h.approved, 0) + COALESCE(p_24h.rejected, 0))) AS diff
-          FROM subsls_master m
-          JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
-          LEFT JOIN progres p_24h ON m.kode = p_24h.kode AND p_24h.upload_id = ?
-          WHERE m.pcl IS NOT NULL AND m.pcl != ''
-          GROUP BY m.pcl
-          HAVING diff > 0
-        )
-      `).get(uploadId, base24hId);
-      activeDiffPcl24hCount = activeDiff24hResult ? activeDiff24hResult.cnt : 0;
-    } else {
-      activeDiffPcl24hCount = stats.active_pcl || 0;
-    }
+    // Alias 24h = sama dengan sesi sebelumnya
+    const activeDiffPcl24hCount = activeDiffPclCount;
 
     const totalPcl = stats.total_pcl || 1;
     const startDateStr = settings.speedometer_start_date || '2026-06-15';
@@ -458,7 +468,7 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     }
 
     const distLast = getPclPerformanceDistribution(uploadId, prevUpload ? prevUpload.id : null);
-    const dist24h = getPclPerformanceDistribution(uploadId, baseUpload24h && baseUpload24h.id !== uploadId ? baseUpload24h.id : null);
+    const dist24h = distLast; // Alias: dalam mode sesi, dist24h = dist perbandingan sesi sebelumnya
 
     // Tentukan label berdasarkan pengaturan website
     let labelFasih = 'FASIH';
@@ -470,11 +480,18 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       labelFasih = 'FASIH Statis';
     }
 
+    // Pilih template: intraday template untuk sesi siang/sore (jika ada), atau template utama
+    let activeTemplate = settings.whatsapp_message_template || '';
+    if (intradayEnabled && isSiangSore && settings.whatsapp_intraday_message_template && settings.whatsapp_intraday_message_template.trim() !== '') {
+      activeTemplate = settings.whatsapp_intraday_message_template;
+    }
+
     let message = '';
-    if (settings.whatsapp_message_template && settings.whatsapp_message_template.trim() !== '') {
-      message = settings.whatsapp_message_template
+    if (activeTemplate.trim() !== '') {
+      message = activeTemplate
         .replace(/\{tanggal_sekarang\}/g, timeFormatted)
         .replace(/\{jam_sekarang\}/g, timeOnlyFormatted)
+        .replace(/\{sesi_upload\}/g, sesiLabel)
         .replace(/\{waktu_upload_sebelumnya\}/g, prevUploadTimeStr)
         .replace(/\{label_fasih\}/g, labelFasih)
         .replace(/\{filename\}/g, upload.filename)

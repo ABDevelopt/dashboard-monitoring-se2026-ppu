@@ -502,6 +502,16 @@ function runMigrations() {
         try { db.prepare('ALTER TABLE progres ADD COLUMN open INTEGER DEFAULT 0').run(); } catch (_) {}
         try { db.prepare('ALTER TABLE summary_cache ADD COLUMN open_total INTEGER DEFAULT 0').run(); } catch (_) {}
       }
+    },
+    {
+      version: '20260804000000_add_intraday_wa_settings',
+      up: (db) => {
+        try {
+          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_intraday_enabled', '0')").run();
+          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_session_cutoff_hour', '12')").run();
+          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_intraday_message_template', '')").run();
+        } catch (_) {}
+      }
     }
   ];
 
@@ -1521,7 +1531,10 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`,
     'show_status_draft': '1',
     'show_status_submitted': '1',
     'show_status_approved': '1',
-    'show_status_rejected': '1'
+    'show_status_rejected': '1',
+    'whatsapp_intraday_enabled': '0',
+    'whatsapp_session_cutoff_hour': '12',
+    'whatsapp_intraday_message_template': ''
   };
 
   const insert = getDb().prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');

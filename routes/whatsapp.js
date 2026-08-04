@@ -46,6 +46,9 @@ router.post('/settings', (req, res) => {
     updatedSettings.whatsapp_group_name = 'Grup Notifikasi (Manual)';
   }
   updatedSettings.whatsapp_message_template = req.body.whatsapp_message_template ? req.body.whatsapp_message_template.trim() : '';
+  updatedSettings.whatsapp_intraday_enabled = req.body.whatsapp_intraday_enabled === '1' ? '1' : '0';
+  updatedSettings.whatsapp_session_cutoff_hour = req.body.whatsapp_session_cutoff_hour ? String(parseInt(req.body.whatsapp_session_cutoff_hour, 10) || 12) : '12';
+  updatedSettings.whatsapp_intraday_message_template = req.body.whatsapp_intraday_message_template ? req.body.whatsapp_intraday_message_template.trim() : '';
 
   try {
     updateSettings(updatedSettings);

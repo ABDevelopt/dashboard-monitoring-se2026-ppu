@@ -386,55 +386,106 @@
               Anda dapat merancang format notifikasi kustom. Klik variabel di bawah ini untuk memasukkannya ke template:
             </p>
             <div class="token-list">
-              <span class="token-badge" data-token="{tanggal_sekarang}">{tanggal_sekarang}</span>
-              <span class="token-badge" data-token="{jam_sekarang}">{jam_sekarang}</span>
-              <span class="token-badge" data-token="{waktu_upload_sebelumnya}">{waktu_upload_sebelumnya}</span>
-              <span class="token-badge" data-token="{label_fasih}">{label_fasih}</span>
-              <span class="token-badge" data-token="{filename}">{filename}</span>
-              <span class="token-badge" data-token="{tanggal_data}">{tanggal_data}</span>
-              <span class="token-badge" data-token="{subsls_count}">{subsls_count}</span>
-              <span class="token-badge" data-token="{realisasi_fasih}">{realisasi_fasih}</span>
-              <span class="token-badge" data-token="{target_fasih}">{target_fasih}</span>
-              <span class="token-badge" data-token="{persen_fasih}">{persen_fasih}</span>
-              <span class="token-badge" data-token="{realisasi_muatan}">{realisasi_muatan}</span>
-              <span class="token-badge" data-token="{target_muatan}">{target_muatan}</span>
-              <span class="token-badge" data-token="{persen_muatan}">{persen_muatan}</span>
-              <span class="token-badge" data-token="{open_total}">{open_total}</span>
-              <span class="token-badge" data-token="{draft_total}">{draft_total}</span>
-              <span class="token-badge" data-token="{submitted_total}">{submitted_total}</span>
-              <span class="token-badge" data-token="{approved_total}">{approved_total}</span>
-              <span class="token-badge" data-token="{rejected_total}">{rejected_total}</span>
-              <div style="margin-top: 8px; margin-bottom: 4px; font-size: 10px; font-weight: bold; color: var(--text-secondary); width: 100%;">VARIABEL PENAMBAHAN PROGRES & RATA-RATA:</div>
-              <span class="token-badge" data-token="{diff_submitted}">{diff_submitted}</span>
-              <span class="token-badge" data-token="{diff_approved}">{diff_approved}</span>
-              <span class="token-badge" data-token="{diff_rejected}">{diff_rejected}</span>
-              <span class="token-badge" data-token="{diff_total}">{diff_total}</span>
-              <span class="token-badge" data-token="{diff_24h_submitted}">{diff_24h_submitted}</span>
-              <span class="token-badge" data-token="{diff_24h_approved}">{diff_24h_approved}</span>
-              <span class="token-badge" data-token="{diff_24h_rejected}">{diff_24h_rejected}</span>
-              <span class="token-badge" data-token="{diff_24h_total}">{diff_24h_total}</span>
-              <span class="token-badge" data-token="{avg_diff_all}">{avg_diff_all}</span>
-              <span class="token-badge" data-token="{avg_diff_active}">{avg_diff_active}</span>
-              <span class="token-badge" data-token="{avg_diff_24h_all}">{avg_diff_24h_all}</span>
-              <span class="token-badge" data-token="{avg_diff_24h_active}">{avg_diff_24h_active}</span>
-              <span class="token-badge" data-token="{active_diff_pcl_count}">{active_diff_pcl_count}</span>
-              <span class="token-badge" data-token="{active_diff_pcl_24h_count}">{active_diff_pcl_24h_count}</span>
-              <span class="token-badge" data-token="{deviasi_24h}">{deviasi_24h}</span>
-              <span class="token-badge" data-token="{deviasi_update}">{deviasi_update}</span>
-              <span class="token-badge" data-token="{deviasi_kumulatif}">{deviasi_kumulatif}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{tanggal_sekarang}">{tanggal_sekarang}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{jam_sekarang}">{jam_sekarang}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{sesi_upload}">{sesi_upload}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{waktu_upload_sebelumnya}">{waktu_upload_sebelumnya}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{label_fasih}">{label_fasih}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{filename}">{filename}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{tanggal_data}">{tanggal_data}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{subsls_count}">{subsls_count}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{realisasi_fasih}">{realisasi_fasih}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{target_fasih}">{target_fasih}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{persen_fasih}">{persen_fasih}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{realisasi_muatan}">{realisasi_muatan}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{target_muatan}">{target_muatan}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{persen_muatan}">{persen_muatan}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{open_total}">{open_total}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{draft_total}">{draft_total}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{submitted_total}">{submitted_total}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{approved_total}">{approved_total}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{rejected_total}">{rejected_total}</span>
+              <div style="margin-top: 8px; margin-bottom: 4px; font-size: 10px; font-weight: bold; color: var(--text-secondary); width: 100%;">VARIABEL PENAMBAHAN PROGRES &amp; RATA-RATA:</div>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{diff_submitted}">{diff_submitted}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{diff_approved}">{diff_approved}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{diff_rejected}">{diff_rejected}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{diff_total}">{diff_total}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{avg_diff_all}">{avg_diff_all}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{avg_diff_active}">{avg_diff_active}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{active_diff_pcl_count}">{active_diff_pcl_count}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{deviasi_update}">{deviasi_update}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{deviasi_kumulatif}">{deviasi_kumulatif}</span>
               <div style="margin-top: 8px; margin-bottom: 4px; font-size: 10px; font-weight: bold; color: var(--text-secondary); width: 100%;">VARIABEL SEBARAN PERFORMA PETUGAS (PCL):</div>
-              <span class="token-badge" data-token="{dist_0}">{dist_0}</span>
-              <span class="token-badge" data-token="{dist_1_4}">{dist_1_4}</span>
-               <span class="token-badge" data-token="{dist_5_7}">{dist_5_7}</span>
-              <span class="token-badge" data-token="{dist_8_12}">{dist_8_12}</span>
-              <span class="token-badge" data-token="{dist_13_plus}">{dist_13_plus}</span>
-              <span class="token-badge" data-token="{dist_24h_0}">{dist_24h_0}</span>
-              <span class="token-badge" data-token="{dist_24h_1_4}">{dist_24h_1_4}</span>
-              <span class="token-badge" data-token="{dist_24h_5_7}">{dist_24h_5_7}</span>
-              <span class="token-badge" data-token="{dist_24h_8_12}">{dist_24h_8_12}</span>
-              <span class="token-badge" data-token="{dist_24h_13_plus}">{dist_24h_13_plus}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{dist_0}">{dist_0}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{dist_1_4}">{dist_1_4}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{dist_5_7}">{dist_5_7}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{dist_8_12}">{dist_8_12}</span>
+              <span class="token-badge" data-target="whatsapp_message_template" data-token="{dist_13_plus}">{dist_13_plus}</span>
             </div>
           </div>
+
+          <!-- ===== INTRADAY SECTION ===== -->
+          <div style="margin-top: 24px; padding-top: 20px; border-top: 2px dashed var(--border);">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <i class="bi bi-sun-fill" style="color: #f59e0b; font-size: 16px;"></i>
+              <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Notifikasi Intraday (Siang/Sore)</span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
+              Aktifkan jika ada <strong>dua upload per hari</strong> (pagi + siang/sore). Notifikasi pagi membandingkan vs upload <em>pagi hari sebelumnya</em>, dan notifikasi siang/sore membandingkan vs upload <em>siang/sore hari sebelumnya</em>.
+            </p>
+
+            <!-- Toggle Intraday -->
+            <div class="settings-field" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed var(--border);">
+              <div>
+                <label style="margin-bottom: 2px;">Aktifkan Notifikasi Intraday</label>
+                <p class="settings-hint" style="margin-top: 0;">Pisahkan perbandingan antara sesi pagi dan sesi siang/sore.</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" name="whatsapp_intraday_enabled" value="1" <%= settings.whatsapp_intraday_enabled === '1' ? 'checked' : '' %>>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+
+            <!-- Cutoff Hour -->
+            <div class="settings-field">
+              <label for="whatsapp_session_cutoff_hour">Jam Batas Sesi Pagi → Siang/Sore (WITA)</label>
+              <input type="number" id="whatsapp_session_cutoff_hour" name="whatsapp_session_cutoff_hour"
+                min="1" max="23" step="1"
+                value="<%= settings.whatsapp_session_cutoff_hour || '12' %>"
+                style="width: 100px;"
+                placeholder="12">
+              <p class="settings-hint">Upload sebelum jam ini = sesi <strong>Pagi</strong>. Upload pada/setelah jam ini = sesi <strong>Siang/Sore</strong>. Default: <code>12</code> WITA.</p>
+            </div>
+
+            <!-- Intraday Message Template -->
+            <div class="settings-field">
+              <label for="whatsapp_intraday_message_template">Template Khusus Siang/Sore <span style="font-weight: 400; color: var(--text-muted);">(Opsional)</span></label>
+              <textarea id="whatsapp_intraday_message_template" name="whatsapp_intraday_message_template" rows="6"
+                placeholder="Biarkan kosong untuk menggunakan template utama yang sama..."><%= settings.whatsapp_intraday_message_template || '' %></textarea>
+              <p class="settings-hint">Jika diisi, template ini akan digunakan khusus untuk notifikasi sesi siang/sore. Klik variabel di bawah untuk memasukkannya:</p>
+              <div class="token-list">
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{sesi_upload}">{sesi_upload}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{tanggal_sekarang}">{tanggal_sekarang}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{jam_sekarang}">{jam_sekarang}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{waktu_upload_sebelumnya}">{waktu_upload_sebelumnya}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{realisasi_fasih}">{realisasi_fasih}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{target_fasih}">{target_fasih}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{persen_fasih}">{persen_fasih}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{diff_total}">{diff_total}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{diff_submitted}">{diff_submitted}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{diff_approved}">{diff_approved}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{avg_diff_all}">{avg_diff_all}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{active_diff_pcl_count}">{active_diff_pcl_count}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{deviasi_update}">{deviasi_update}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{dist_0}">{dist_0}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{dist_1_4}">{dist_1_4}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{dist_5_7}">{dist_5_7}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{dist_8_12}">{dist_8_12}</span>
+                <span class="token-badge" data-target="whatsapp_intraday_message_template" data-token="{dist_13_plus}">{dist_13_plus}</span>
+              </div>
+            </div>
+          </div>
+
 
           <!-- Sticky Action Bar -->
           <div class="sticky-action-bar">
@@ -532,23 +583,26 @@
       });
     }
 
-    // 3. Memasukkan token kustom ke textarea template
-    const templateTextarea = document.getElementById('whatsapp_message_template');
+    // 3. Memasukkan token kustom ke textarea template (mendukung multi-textarea via data-target)
     const tokenBadges = document.querySelectorAll('.token-badge');
-    if (templateTextarea && tokenBadges.length > 0) {
+    if (tokenBadges.length > 0) {
       tokenBadges.forEach(badge => {
         badge.addEventListener('click', function() {
           const token = this.getAttribute('data-token');
-          const startPos = templateTextarea.selectionStart;
-          const endPos = templateTextarea.selectionEnd;
-          const text = templateTextarea.value;
+          const targetId = this.getAttribute('data-target') || 'whatsapp_message_template';
+          const textarea = document.getElementById(targetId);
+          if (!textarea) return;
+          
+          const startPos = textarea.selectionStart;
+          const endPos = textarea.selectionEnd;
+          const text = textarea.value;
           
           // Masukkan token pada posisi kursor
-          templateTextarea.value = text.substring(0, startPos) + token + text.substring(endPos, text.length);
+          textarea.value = text.substring(0, startPos) + token + text.substring(endPos, text.length);
           
           // Kembalikan fokus dan kursor setelah token
-          templateTextarea.focus();
-          templateTextarea.selectionStart = templateTextarea.selectionEnd = startPos + token.length;
+          textarea.focus();
+          textarea.selectionStart = textarea.selectionEnd = startPos + token.length;
         });
       });
     }
