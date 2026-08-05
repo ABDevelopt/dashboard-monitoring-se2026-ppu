@@ -2110,6 +2110,12 @@ body.has-expanded-card .page-content {
     transition: max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1), padding 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
+  /* Full-bleed Map View: remove extra outer margins and paddings */
+  body.page-map,
+  body.page-map .main-wrapper {
+    overflow: hidden !important;
+  }
+
   body.page-map .page-content,
   body.page-agent .page-content,
   body.sidebar-collapsed.page-map .page-content,
@@ -2118,6 +2124,48 @@ body.has-expanded-card .page-content {
     width: 100% !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+  }
+
+  body.page-map .page-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    height: calc(100vh - var(--header-height, 60px)) !important;
+    padding-top: var(--header-height, 60px) !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  body.has-breadcrumb.page-map .page-content {
+    padding-top: calc(var(--header-height, 60px) + 36px) !important;
+    height: calc(100vh - var(--header-height, 60px) - 36px) !important;
+  }
+
+  @media (max-width: 768px) {
+    body.page-map .page-content {
+      padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
+      height: calc(100vh - var(--header-height, 60px) - 68px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+    }
+    body.has-breadcrumb.page-map .page-content {
+      padding-top: calc(var(--header-height, 60px) + env(safe-area-inset-top, 0px) + 32px) !important;
+      height: calc(100vh - var(--header-height, 60px) - 32px - 68px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+    }
+  }
+
+  body.page-map #pjax-container,
+  body.page-map .fade-in {
+    height: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body.page-map .gmaps-container-wrap {
+    height: 100% !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
   /* Extra-large screens: widen padding for breathing room */
@@ -4256,8 +4304,10 @@ body.page-agent .main-wrapper {
   max-height: 100vh !important;
 }
 
-body.page-agent .page-content {
+body.page-agent .page-content,
+body.page-agent.has-breadcrumb .page-content {
   padding: 0 !important;
+  padding-top: 0 !important;
   margin: 0 !important;
   margin-top: 0 !important;
   height: 100vh !important;

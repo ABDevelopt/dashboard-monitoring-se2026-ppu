@@ -1,4 +1,3 @@
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="" />
 <style>
   .map-kpi-grid {
     display: grid;
@@ -44,12 +43,12 @@
   .gmaps-container-wrap {
     position: relative;
     width: 100%;
-    height: calc(100vh - var(--header-height, 60px) - 24px);
+    height: 100%;
     min-height: 0;
-    border-radius: 16px;
+    border-radius: 0;
     overflow: hidden;
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-md);
+    border: none;
+    box-shadow: none;
   }
 
   .gmaps-container-wrap .map-canvas-container {
@@ -155,9 +154,9 @@
     background: var(--bg-secondary);
     border: 1px solid var(--border);
     color: var(--text-primary);
-    font-size: 11px;
+    font-size: 12px;
     border-radius: 99px;
-    padding: 4px 10px;
+    padding: 4px 11px;
     cursor: pointer;
   }
 
@@ -173,9 +172,9 @@
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    font-size: 10.5px;
+    font-size: 11.5px;
     font-weight: 500;
-    padding: 3px 10px;
+    padding: 4px 11px;
     border-radius: 99px;
     cursor: pointer;
     white-space: nowrap;
@@ -207,8 +206,8 @@
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border);
     border-radius: 99px;
-    padding: 5px 12px;
-    font-size: 11px;
+    padding: 6px 13px;
+    font-size: 12px;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -222,30 +221,31 @@
   /* Floating Info & Legend Drawer Card (Bottom Left) */
   .gmaps-floating-drawer-card {
     position: absolute;
-    bottom: 20px;
+    bottom: 30px;
     left: 14px;
     z-index: 1000;
-    width: 360px;
+    width: 390px;
     max-width: calc(100% - 28px);
-    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.90);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--border);
     border-radius: 14px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
     overflow: hidden;
-    transition: max-height 0.3s ease, transform 0.3s ease;
+    transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s ease;
   }
 
   body.light-mode .gmaps-floating-drawer-card {
-    background: rgba(255, 255, 255, 0.94);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
   }
 
   .gmaps-drawer-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: 9px 13px;
     border-bottom: 1px solid var(--border);
   }
 
@@ -259,14 +259,15 @@
     background: transparent;
     border: none;
     color: var(--text-muted);
-    font-size: 11.5px;
+    font-size: 12.5px;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 5px 11px;
     border-radius: 8px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
+    transition: all 0.15s ease;
   }
 
   .gmaps-tab-btn.active {
@@ -284,30 +285,125 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: color 0.15s ease;
   }
 
+  .gmaps-collapse-btn:hover {
+    color: var(--accent-blue);
+  }
+
+  /* Fixed Height Drawer Content to Prevent Tab-Switch Height Jumps */
   .gmaps-drawer-content {
-    padding: 12px;
-    max-height: 280px;
+    padding: 14px;
+    height: 330px;
+    min-height: 330px;
+    max-height: 330px;
     overflow-y: auto;
     scrollbar-width: thin;
+    box-sizing: border-box;
   }
 
   .gmaps-floating-drawer-card.collapsed .gmaps-drawer-content {
     display: none;
   }
 
+  /* Metric Cards Grid Inside Drawer */
+  .map-card-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 7px;
+    margin-bottom: 10px;
+  }
+
+  .map-card-stat-item {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .map-card-stat-item.full-width {
+    grid-column: span 2;
+  }
+
+  .map-card-stat-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    line-height: 1.2;
+  }
+
+  .map-card-stat-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Status Pill Badges Row */
+  .map-status-pills-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  .map-status-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .map-status-pill.approved { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+  .map-status-pill.submitted { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+  .map-status-pill.rejected { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+  .map-status-pill.draft { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+
+  /* Action Buttons Container */
+  .map-drawer-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-top: 10px;
+    padding-top: 9px;
+    border-top: 1px dashed var(--border);
+  }
+
+  .map-action-btn-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+  }
+
   .map-legend-item {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 12px;
-    margin-bottom: 8px;
+    font-size: 12.5px;
+    padding: 7px 10px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 6px;
   }
 
   .map-legend-color {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     border-radius: 4px;
     flex-shrink: 0;
   }
@@ -432,9 +528,19 @@
     color: var(--accent-blue) !important;
   }
 
+  .leaflet-bottom.leaflet-right {
+    margin-right: 16px !important;
+    margin-bottom: 20px !important;
+    z-index: 1000 !important;
+  }
+
   @media (max-width: 768px) {
+    .leaflet-bottom.leaflet-right {
+      margin-right: 12px !important;
+      margin-bottom: 60px !important;
+    }
     .gmaps-container-wrap {
-      height: calc(100vh - var(--header-height, 60px) - 68px);
+      height: 100%;
       min-height: 0;
     }
     .gmaps-floating-search-panel {
@@ -525,7 +631,7 @@
     </div>
 
     <!-- 4. FLOATING SIDE CARD DRAWER (LEFT SIDE) FOR STATS & LEGEND -->
-    <div class="gmaps-floating-drawer-card" id="gmapsDrawerCard">
+    <div class="gmaps-floating-drawer-card collapsed" id="gmapsDrawerCard">
       <div class="gmaps-drawer-header">
         <div class="gmaps-drawer-tabs">
           <button type="button" class="gmaps-tab-btn active" id="tabBtnStats" onclick="switchGmapsTab('stats')">
@@ -536,7 +642,7 @@
           </button>
         </div>
         <button type="button" class="gmaps-collapse-btn" onclick="toggleGmapsDrawer()" title="Sembunyikan / Tampilkan Panel">
-          <i class="bi bi-chevron-down" id="drawerCollapseIcon"></i>
+          <i class="bi bi-chevron-up" id="drawerCollapseIcon"></i>
         </button>
       </div>
 
@@ -544,9 +650,14 @@
         <!-- TAB 1: STATS -->
         <div id="gmapsStatsTabContent">
           <div id="mapSummaryStats">
-            <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 20px 10px;">
-              <i class="bi bi-geo-alt-fill" style="font-size: 26px; color: var(--accent-blue); display: block; margin-bottom: 6px; opacity: 0.8;"></i>
-              Klik salah satu wilayah pada peta untuk melihat rincian progres di sini.
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 22px 10px; text-align: center;">
+              <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(59, 130, 246, 0.12); display: flex; align-items: center; justify-content: center; margin-bottom: 10px; color: var(--accent-blue); font-size: 20px;">
+                <i class="bi bi-geo-alt-fill"></i>
+              </div>
+              <div style="font-size: 12.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">Detail Wilayah Spasial</div>
+              <div style="font-size: 11px; color: var(--text-muted); max-width: 260px; line-height: 1.4;">
+                Klik salah satu wilayah desa atau SLS pada peta untuk menampilkan rincian progres di sini.
+              </div>
             </div>
           </div>
         </div>
@@ -574,7 +685,6 @@
   </div>
 </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin=""></script>
     <script>
       window.switchGmapsTab = function(tabName) {
         const statsTab = document.getElementById('gmapsStatsTabContent');
@@ -609,22 +719,40 @@
         }
       };
 
-      document.addEventListener('DOMContentLoaded', () => {
+      window.ensureGmapsDrawerOpen = function() {
+        const card = document.getElementById('gmapsDrawerCard');
+        const icon = document.getElementById('drawerCollapseIcon');
+        if (card && card.classList.contains('collapsed')) {
+          card.classList.remove('collapsed');
+          if (icon) icon.className = 'bi bi-chevron-down';
+        }
+      };
+
+      function initMapPage() {
+        if (typeof L === 'undefined') {
+          setTimeout(initMapPage, 50);
+          return;
+        }
+
+        const mapContainerEl = document.getElementById('map');
+        if (!mapContainerEl) return;
+
         // Initial setup
         const centerCoords = [-1.30, 116.65];
         const defaultZoom = 10;
         
         // Clean container state to ensure clean re-initialization on PJAX swaps
-        const mapContainerEl = document.getElementById('map');
-        if (mapContainerEl && mapContainerEl._leaflet_id) {
+        if (mapContainerEl._leaflet_id) {
           mapContainerEl._leaflet_id = null;
         }
 
         const map = L.map('map', {
-          zoomControl: true,
+          zoomControl: false,
           maxZoom: 18,
           minZoom: 9
         }).setView(centerCoords, defaultZoom);
+
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
 
         let currentBasemapLayer = null;
 
@@ -638,11 +766,14 @@
           }
         };
 
-        // Staggered invalidations to guarantee tile grid recalculation after PJAX enter animation (380ms)
+        // Staggered invalidations to guarantee tile grid recalculation after load & PJAX enter animation
         invalidateMapSize();
         [50, 150, 300, 450, 800, 1200].forEach(delay => {
           setTimeout(invalidateMapSize, delay);
         });
+
+        // Extra invalidation on window load to handle late CSS/font rendering
+        window.addEventListener('load', invalidateMapSize);
 
         // Use ResizeObserver for automatic sizing adjustment when sidebar or window container resizes
         if (window.ResizeObserver && mapContainerEl) {
@@ -663,26 +794,68 @@
         };
         window.addEventListener('pjax:start', onPjaxStart, { once: true });
 
-        // Basemaps (OpenStreetMap / CartoDB Voyager Vector + Esri Satellite)
-        const lightBasemap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          subdomains: ['a', 'b', 'c'],
-          maxZoom: 19,
-          crossOrigin: true
-        });
+        // Robust tile creation helper with smart fallback & zoom scaling protection
+        const createRobustTileLayer = (primaryUrl, options = {}, fallbackUrl = null, fallbackMaxNativeZoom = 16) => {
+          const layer = L.tileLayer(primaryUrl, options);
+          if (fallbackUrl) {
+            layer.on('tileerror', (e) => {
+              if (e.tile && !e.tile.dataset.fallbackTried) {
+                e.tile.dataset.fallbackTried = 'true';
+                const coords = e.coords;
+                if (coords) {
+                  let z = coords.z;
+                  let x = coords.x;
+                  let y = coords.y;
+                  if (z > fallbackMaxNativeZoom) {
+                    const factor = Math.pow(2, z - fallbackMaxNativeZoom);
+                    x = Math.floor(x / factor);
+                    y = Math.floor(y / factor);
+                    z = fallbackMaxNativeZoom;
+                  }
+                  e.tile.src = fallbackUrl
+                    .replace('{z}', z)
+                    .replace('{x}', x)
+                    .replace('{y}', y);
+                }
+              }
+            });
+          }
+          return layer;
+        };
 
-        const darkBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap &copy; CARTO',
-          subdomains: ['a', 'b', 'c', 'd'],
-          maxZoom: 19,
-          crossOrigin: true
-        });
+        // Basemaps using CARTO CDN with high-DPI support and fallback protection
+        const lightBasemap = createRobustTileLayer(
+          'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+          {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20,
+            maxNativeZoom: 19
+          },
+          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          19
+        );
 
-        const satelliteBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-          attribution: 'Tiles &copy; Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP',
-          maxZoom: 19,
-          crossOrigin: true
-        });
+        const darkBasemap = createRobustTileLayer(
+          'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+          {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20,
+            maxNativeZoom: 19
+          },
+          'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+          16
+        );
+
+        const satelliteBasemap = createRobustTileLayer(
+          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          {
+            attribution: 'Tiles &copy; Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP',
+            maxZoom: 20,
+            maxNativeZoom: 18
+          }
+        );
 
         let currentBasemapType = 'default'; // 'default' or 'satellite'
 
@@ -709,10 +882,8 @@
           }
           
           targetLayer.bringToBack();
-          if (typeof targetLayer.redraw === 'function') {
-            targetLayer.redraw();
-          }
           currentBasemapLayer = targetLayer;
+          invalidateMapSize();
         }
         updateBasemap();
 
@@ -914,6 +1085,7 @@
 
         // Show details in Sidebar + Integrated Drilldown Links
         function showDesaDetails(properties) {
+          ensureGmapsDrawerOpen();
           const stat = desaStats.find(s => s.iddesa === properties.iddesa);
           const total = stat ? stat.total_subsls : 0;
           const selesai = stat ? stat.selesai : 0;
@@ -929,71 +1101,91 @@
           const rejected = stat ? stat.rejected_total : 0;
           const totalRealisasiFasih = submitted + approved + rejected;
           const fasihPct = targetFasih ? Math.min(parseFloat(((totalRealisasiFasih / targetFasih) * 100).toFixed(2)), 100) : 0;
-          const fasihColor = fasihPct >= 100 ? 'var(--accent-green)' : (fasihPct < 25 ? 'var(--accent-red)' : 'var(--accent-purple)');
+          const fasihColor = fasihPct >= 100 ? '#10b981' : (fasihPct < 25 ? '#ef4444' : '#3b82f6');
+          const isComplete = fasihPct >= 100;
 
           sidebarStats.innerHTML = `
-            <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px; color: var(--accent-blue); display: flex; align-items: center; gap: 6px;">
-              <i class="bi bi-geo-alt-fill"></i> Desa/Kel. ${properties.nmdesa}
+            <!-- Header Title Card -->
+            <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+              <div>
+                <div style="font-size: 14.5px; font-weight: 800; color: var(--accent-blue); display: flex; align-items: center; gap: 6px;">
+                  <i class="bi bi-geo-alt-fill"></i> Desa/Kel. ${properties.nmdesa}
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                  Kecamatan ${properties.nmkec}
+                </div>
+              </div>
+              <span class="badge ${isComplete ? 'badge-green' : 'badge-purple'}" style="font-size: 11px; padding: 4px 9px; flex-shrink: 0;">
+                ${isComplete ? '<i class="bi bi-check-circle-fill"></i> 100% Selesai' : `${fasihPct}% FASIH`}
+              </span>
             </div>
-            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 10px;">Kecamatan ${properties.nmkec}</div>
-            
-            <!-- Progress Bar Vis -->
-            <div style="background: var(--bg-secondary); padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px;">
-              <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; margin-bottom: 4px;">
-                <span>Progres Realisasi FASIH</span>
-                <span style="color: ${fasihColor};">${fasihPct}%</span>
+
+            <!-- Visual Progress Track -->
+            <div style="background: var(--bg-secondary); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; margin-bottom: 6px;">
+                <span style="color: var(--text-primary);"><i class="bi bi-bar-chart-line" style="color: var(--accent-blue);"></i> Realisasi FASIH</span>
+                <span style="color: ${fasihColor}; font-weight: 700;">${fasihPct}%</span>
               </div>
-              <div class="progress-track-sm" style="height: 8px;">
-                <div class="progress-bar ${fasihPct >= 100 ? 'green' : (fasihPct < 25 ? 'red' : 'purple')}" data-width="${fasihPct}" style="width: ${fasihPct}%; height: 100%; border-radius: 99px;"></div>
+              <div class="progress-track-sm" style="height: 8px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden;">
+                <div class="progress-bar ${fasihPct >= 100 ? 'green' : (fasihPct < 25 ? 'red' : 'purple')}" style="width: ${fasihPct}%; height: 100%; border-radius: 99px; transition: width 0.4s ease;"></div>
               </div>
-              <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px; text-align: right;">
-                ${totalRealisasiFasih.toLocaleString('id-ID')} / ${targetFasih.toLocaleString('id-ID')} Dokumen
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 6px; display: flex; justify-content: space-between;">
+                <span>Realisasi: <strong style="color: var(--text-primary);">${totalRealisasiFasih.toLocaleString('id-ID')}</strong></span>
+                <span>Target: <strong style="color: var(--text-primary);">${targetFasih.toLocaleString('id-ID')} Dok</strong></span>
               </div>
             </div>
 
-            <div class="map-card-stat">
-              <span class="map-card-label">Jumlah SubSLS</span>
-              <span class="map-card-value">${total} SLS</span>
-            </div>
-            <div class="map-card-stat">
-              <span class="map-card-label">Target FASIH Selesai</span>
-              <span class="map-card-value" style="color: var(--accent-green);">${selesai} SLS</span>
-            </div>
-            <div class="map-card-stat muatan-col">
-              <span class="map-card-label">Progres Muatan</span>
-              <span class="map-card-value">${pct}%</span>
-            </div>
-            <div class="map-card-stat muatan-col">
-              <span class="map-card-label">Muatan Target</span>
-              <span class="map-card-value">${totalMuatan.toLocaleString('id-ID')}</span>
-            </div>
-            <div class="map-card-stat muatan-col">
-              <span class="map-card-label">Total Usaha Terdata</span>
-              <span class="map-card-value">${usaha.toLocaleString('id-ID')}</span>
-            </div>
-            <div class="map-card-stat muatan-col">
-              <span class="map-card-label">Total Keluarga Terdata</span>
-              <span class="map-card-value">${keluarga.toLocaleString('id-ID')}</span>
+            <!-- Metric Cards Grid -->
+            <div class="map-card-stat-grid">
+              <div class="map-card-stat-item">
+                <span class="map-card-stat-label"><i class="bi bi-box-seam" style="color: var(--accent-blue);"></i> SubSLS</span>
+                <span class="map-card-stat-value">${total} SLS</span>
+              </div>
+              <div class="map-card-stat-item">
+                <span class="map-card-stat-label"><i class="bi bi-check2-circle" style="color: var(--accent-green);"></i> Target Selesai</span>
+                <span class="map-card-stat-value" style="color: var(--accent-green);">${selesai} SLS</span>
+              </div>
+              <div class="map-card-stat-item muatan-col">
+                <span class="map-card-stat-label"><i class="bi bi-pie-chart" style="color: var(--accent-yellow);"></i> Progres Muatan</span>
+                <span class="map-card-stat-value">${pct}%</span>
+              </div>
+              <div class="map-card-stat-item muatan-col">
+                <span class="map-card-stat-label"><i class="bi bi-flag" style="color: var(--accent-purple);"></i> Target Muatan</span>
+                <span class="map-card-stat-value">${totalMuatan.toLocaleString('id-ID')}</span>
+              </div>
+              <div class="map-card-stat-item muatan-col">
+                <span class="map-card-stat-label"><i class="bi bi-shop" style="color: var(--accent-cyan);"></i> Usaha Terdata</span>
+                <span class="map-card-stat-value">${usaha.toLocaleString('id-ID')}</span>
+              </div>
+              <div class="map-card-stat-item muatan-col">
+                <span class="map-card-stat-label"><i class="bi bi-people" style="color: var(--accent-green);"></i> Keluarga Terdata</span>
+                <span class="map-card-stat-value">${keluarga.toLocaleString('id-ID')}</span>
+              </div>
             </div>
 
-            <!-- Integrated Drilldown Navigation Links -->
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
-              <button class="btn btn-primary btn-xs" id="btnFocusDesa" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 6px; padding: 6px 10px;">
+            <!-- Navigation Buttons -->
+            <div class="map-drawer-actions">
+              <button class="btn btn-primary btn-sm" id="btnFocusDesa" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 9px 14px; font-weight: 700; font-size: 13px; border-radius: 8px;">
                 <i class="bi bi-search"></i> Zoom &amp; Tampilkan Batas SLS
               </button>
-              <a href="/subsls?kec=${encodeURIComponent(properties.nmkec)}&desa=${encodeURIComponent(properties.nmdesa)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; text-decoration: none;">
-                <i class="bi bi-table"></i> Drilldown Tabel SLS Desa ${properties.nmdesa}
-              </a>
-              <a href="/kecamatan?kec=${encodeURIComponent(properties.nmkec)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; text-decoration: none;">
-                <i class="bi bi-diagram-3"></i> Drilldown Kec. ${properties.nmkec}
-              </a>
+              <div class="map-action-btn-group">
+                <a href="/subsls?kec=${encodeURIComponent(properties.nmkec)}&desa=${encodeURIComponent(properties.nmdesa)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
+                  <i class="bi bi-table"></i> Tabel SLS Desa
+                </a>
+                <a href="/kecamatan?kec=${encodeURIComponent(properties.nmkec)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
+                  <i class="bi bi-diagram-3"></i> Detail Kec.
+                </a>
+              </div>
             </div>
           `;
 
           // Focus Desa Button Listener
-          document.getElementById('btnFocusDesa').addEventListener('click', () => {
-            fitBoundsToDesa(properties.iddesa);
-          });
+          const focusBtn = document.getElementById('btnFocusDesa');
+          if (focusBtn) {
+            focusBtn.addEventListener('click', () => {
+              fitBoundsToDesa(properties.iddesa);
+            });
+          }
         }
 
         function fitBoundsToDesa(iddesa) {
@@ -1013,6 +1205,7 @@
         }
 
         function showSlsDetails(properties) {
+          ensureGmapsDrawerOpen();
           const stat = slsStats.find(s => s.kode === properties.kode);
           const isSelesai = stat ? stat.selesai === 1 : false;
           const muatan = stat ? stat.muatan : (properties.muatan || 0);
@@ -1031,64 +1224,79 @@
           const fasihPct = targetFasih ? Math.min(parseFloat(((realisasiFasih / targetFasih) * 100).toFixed(2)), 100) : 0;
 
           sidebarStats.innerHTML = `
-            <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px; color: var(--accent-blue); flex-wrap: wrap;"><i class="bi bi-box-seam"></i> SLS: ${properties.nmsls}</div>
-            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 10px;">Desa ${properties.nmdesa}, Kec. ${properties.nmkec}</div>
-            
-            <div class="map-card-stat">
-              <span class="map-card-label">Kode SLS</span>
-              <span class="map-card-value" style="font-family: monospace; font-size: 11px;">${properties.kode}</span>
-            </div>
-            <div class="map-card-stat">
-              <span class="map-card-label">Status Target FASIH</span>
-              <span class="map-card-value">${isSelesai ? '<span class="badge badge-green btn-xs">Tercapai</span>' : '<span class="badge badge-red btn-xs">Belum Tercapai</span>'}</span>
-            </div>
-            <div class="map-card-stat">
-              <span class="map-card-label">Petugas PCL</span>
-              <span class="map-card-value">${pcl}</span>
-            </div>
-            <div class="map-card-stat">
-              <span class="map-card-label">Pengawas PML</span>
-              <span class="map-card-value">${pml}</span>
-            </div>
-            <div class="map-card-stat">
-              <span class="map-card-label">Atasan Korlap</span>
-              <span class="map-card-value">${korlap}</span>
-            </div>
-            <div class="map-card-stat">
-              <span class="map-card-label">Target FASIH</span>
-              <span class="map-card-value">${targetFasih.toLocaleString('id-ID')}</span>
-            </div>
-            <div class="map-card-stat">
-              <span class="map-card-label">Realisasi FASIH</span>
-              <span class="map-card-value">${realisasiFasih.toLocaleString('id-ID')} (${fasihPct}%)</span>
-            </div>
-            <div class="map-card-stat">
-              <span class="map-card-label">Rincian Status</span>
-              <span class="map-card-value" style="font-size: 11px;">D: ${draft} | S: ${submitted} | A: ${approved} | R: ${rejected}</span>
-            </div>
-            <div class="map-card-stat muatan-col">
-              <span class="map-card-label">Target Muatan</span>
-              <span class="map-card-value">${muatan}</span>
-            </div>
-            <div class="map-card-stat muatan-col">
-              <span class="map-card-label">Usaha Terdata</span>
-              <span class="map-card-value">${usaha.toLocaleString('id-ID')}</span>
-            </div>
-            <div class="map-card-stat muatan-col">
-              <span class="map-card-label">Keluarga Terdata</span>
-              <span class="map-card-value">${keluarga.toLocaleString('id-ID')}</span>
+            <!-- Header Title Card -->
+            <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+              <div>
+                <div style="font-size: 14px; font-weight: 800; color: var(--accent-blue); display: flex; align-items: center; gap: 6px;">
+                  <i class="bi bi-box-seam"></i> SLS: ${properties.nmsls}
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                  Desa ${properties.nmdesa}, Kec. ${properties.nmkec}
+                </div>
+              </div>
+              <span class="badge ${isSelesai ? 'badge-green' : 'badge-red'}" style="font-size: 11px; padding: 4px 9px; flex-shrink: 0;">
+                ${isSelesai ? '<i class="bi bi-check-circle-fill"></i> Target Tercapai' : '<i class="bi bi-hourglass-split"></i> Belum Tercapai'}
+              </span>
             </div>
 
-            <!-- Integrated Drilldown Action Links for SLS -->
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px;">
-              <a href="/subsls?search=${encodeURIComponent(properties.kode)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; text-decoration: none;">
-                <i class="bi bi-table"></i> Buka Tabel SLS (${properties.kode})
-              </a>
-              ${(pcl && pcl !== 'Belum Ditentukan') ? `
-                <a href="/pcl?pcl=${encodeURIComponent(pcl)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; text-decoration: none;">
-                  <i class="bi bi-person"></i> Drilldown PCL (${pcl})
+            <!-- Status Breakdown Pills -->
+            <div style="background: var(--bg-secondary); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px;">
+              <div style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between;">
+                <span>Rincian Status FASIH</span>
+                <span style="color: var(--accent-blue); font-weight: 700;">${realisasiFasih} / ${targetFasih} Dok (${fasihPct}%)</span>
+              </div>
+              <div class="map-status-pills-row">
+                <span class="map-status-pill approved" title="Approved / Di-approve"><i class="bi bi-check-lg"></i> App: ${approved}</span>
+                <span class="map-status-pill submitted" title="Submitted by PCL"><i class="bi bi-send"></i> Sub: ${submitted}</span>
+                <span class="map-status-pill rejected" title="Rejected"><i class="bi bi-x-lg"></i> Rej: ${rejected}</span>
+                <span class="map-status-pill draft" title="Draft / Belum Di-submit"><i class="bi bi-file-earmark-text"></i> Draft: ${draft}</span>
+              </div>
+            </div>
+
+            <!-- Metric Cards Grid -->
+            <div class="map-card-stat-grid">
+              <div class="map-card-stat-item full-width">
+                <span class="map-card-stat-label"><i class="bi bi-qr-code" style="color: var(--accent-purple);"></i> Kode SLS</span>
+                <span class="map-card-stat-value" style="font-family: monospace; font-size: 12px; color: var(--accent-cyan);">${properties.kode}</span>
+              </div>
+              <div class="map-card-stat-item">
+                <span class="map-card-stat-label"><i class="bi bi-person-badge" style="color: var(--accent-blue);"></i> PCL</span>
+                <span class="map-card-stat-value" title="${pcl}">${pcl}</span>
+              </div>
+              <div class="map-card-stat-item">
+                <span class="map-card-stat-label"><i class="bi bi-person-check" style="color: var(--accent-green);"></i> PML</span>
+                <span class="map-card-stat-value" title="${pml}">${pml}</span>
+              </div>
+              <div class="map-card-stat-item">
+                <span class="map-card-stat-label"><i class="bi bi-person-workspace" style="color: var(--accent-yellow);"></i> Korlap</span>
+                <span class="map-card-stat-value" title="${korlap}">${korlap}</span>
+              </div>
+              <div class="map-card-stat-item muatan-col">
+                <span class="map-card-stat-label"><i class="bi bi-target" style="color: var(--accent-red);"></i> Target Muatan</span>
+                <span class="map-card-stat-value">${muatan}</span>
+              </div>
+              <div class="map-card-stat-item muatan-col">
+                <span class="map-card-stat-label"><i class="bi bi-shop" style="color: var(--accent-cyan);"></i> Usaha Terdata</span>
+                <span class="map-card-stat-value">${usaha.toLocaleString('id-ID')}</span>
+              </div>
+              <div class="map-card-stat-item muatan-col">
+                <span class="map-card-stat-label"><i class="bi bi-people" style="color: var(--accent-green);"></i> Keluarga Terdata</span>
+                <span class="map-card-stat-value">${keluarga.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+
+            <!-- Action Navigation Links -->
+            <div class="map-drawer-actions">
+              <div class="map-action-btn-group" style="grid-template-columns: ${(pcl && pcl !== 'Belum Ditentukan') ? '1fr 1fr' : '1fr'};">
+                <a href="/subsls?search=${encodeURIComponent(properties.kode)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
+                  <i class="bi bi-table"></i> Tabel SLS (${properties.kode})
                 </a>
-              ` : ''}
+                ${(pcl && pcl !== 'Belum Ditentukan') ? `
+                  <a href="/pcl?pcl=${encodeURIComponent(pcl)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
+                    <i class="bi bi-person"></i> Detail PCL
+                  </a>
+                ` : ''}
+              </div>
             </div>
           `;
         }
@@ -1187,6 +1395,10 @@
         // Asynchronous bootstrap sequence
         async function bootstrap() {
           try {
+            // Immediately render tile layer & recalculate canvas size
+            updateBasemap();
+            invalidateMapSize();
+
             // Step 1: load real-time stats and Desa geojson in parallel
             const [statsRes, desaGeoRes] = await Promise.all([
               fetch('/api/map-stats'),
@@ -1194,8 +1406,8 @@
             ]);
             
             const stats = await statsRes.json();
-            desaStats = stats.desaStats;
-            slsStats = stats.slsStats;
+            desaStats = stats.desaStats || [];
+            slsStats = stats.slsStats || [];
             desaGeoJson = await desaGeoRes.json();
 
             // Update top KPI cards
@@ -1203,22 +1415,32 @@
 
             // Setup Desa boundary mapping layer
             setupDesaLayer();
-            desaLayer.addTo(map);
+            if (desaLayer) {
+              desaLayer.addTo(map);
+            }
 
-            // Ensure basemap tile layer is positioned at the back and redrawn after GeoJSON overlay is added
+            // Position tile layer at back & recalculate map bounds
             updateBasemap();
             invalidateMapSize();
 
             // Hide initial loading screen
-            loadingOverlay.style.opacity = '0';
-            setTimeout(() => { loadingOverlay.style.display = 'none'; }, 300);
+            if (loadingOverlay) {
+              loadingOverlay.style.opacity = '0';
+              setTimeout(() => { loadingOverlay.style.display = 'none'; }, 300);
+            }
 
             // Lazy load high-detail SLS boundaries in background
             lazyLoadSlsGeoJSON();
 
           } catch (err) {
             console.error('Error bootstrapping map:', err);
-            loadingText.innerHTML = '<span style="color: var(--accent-red);"><i class="bi bi-exclamation-triangle"></i> Gagal Memuat Data Spasial. Coba refresh halaman.</span>';
+            if (loadingOverlay) {
+              loadingOverlay.style.opacity = '0';
+              setTimeout(() => { loadingOverlay.style.display = 'none'; }, 300);
+            }
+            if (loadingText) {
+              loadingText.innerHTML = '<span style="color: var(--accent-red);"><i class="bi bi-exclamation-triangle"></i> Gagal Memuat Data Spasial. Coba refresh halaman.</span>';
+            }
           }
         }
 
@@ -1359,8 +1581,14 @@
           });
         }
 
-        // Initialize!
+        // Initialize map & load data!
         bootstrap();
-      });
+      }
+
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        initMapPage();
+      } else {
+        document.addEventListener('DOMContentLoaded', initMapPage);
+      }
     </script>
 </div>
