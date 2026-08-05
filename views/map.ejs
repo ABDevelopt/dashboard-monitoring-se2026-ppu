@@ -221,7 +221,7 @@
   /* Floating Info & Legend Drawer Card (Bottom Left) */
   .gmaps-floating-drawer-card {
     position: absolute;
-    bottom: 20px;
+    bottom: 30px;
     left: 14px;
     z-index: 1000;
     width: 390px;
@@ -292,11 +292,15 @@
     color: var(--accent-blue);
   }
 
+  /* Fixed Height Drawer Content to Prevent Tab-Switch Height Jumps */
   .gmaps-drawer-content {
     padding: 14px;
+    height: 330px;
+    min-height: 330px;
     max-height: 330px;
     overflow-y: auto;
     scrollbar-width: thin;
+    box-sizing: border-box;
   }
 
   .gmaps-floating-drawer-card.collapsed .gmaps-drawer-content {
@@ -373,29 +377,33 @@
   .map-drawer-actions {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 7px;
     margin-top: 10px;
-    padding-top: 8px;
+    padding-top: 9px;
     border-top: 1px dashed var(--border);
   }
 
   .map-action-btn-group {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 7px;
   }
 
   .map-legend-item {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 12px;
-    margin-bottom: 8px;
+    font-size: 12.5px;
+    padding: 7px 10px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 6px;
   }
 
   .map-legend-color {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     border-radius: 4px;
     flex-shrink: 0;
   }
@@ -613,7 +621,7 @@
     </div>
 
     <!-- 4. FLOATING SIDE CARD DRAWER (LEFT SIDE) FOR STATS & LEGEND -->
-    <div class="gmaps-floating-drawer-card" id="gmapsDrawerCard">
+    <div class="gmaps-floating-drawer-card collapsed" id="gmapsDrawerCard">
       <div class="gmaps-drawer-header">
         <div class="gmaps-drawer-tabs">
           <button type="button" class="gmaps-tab-btn active" id="tabBtnStats" onclick="switchGmapsTab('stats')">
@@ -624,7 +632,7 @@
           </button>
         </div>
         <button type="button" class="gmaps-collapse-btn" onclick="toggleGmapsDrawer()" title="Sembunyikan / Tampilkan Panel">
-          <i class="bi bi-chevron-down" id="drawerCollapseIcon"></i>
+          <i class="bi bi-chevron-up" id="drawerCollapseIcon"></i>
         </button>
       </div>
 
@@ -698,6 +706,15 @@
           } else {
             icon.className = 'bi bi-chevron-down';
           }
+        }
+      };
+
+      window.ensureGmapsDrawerOpen = function() {
+        const card = document.getElementById('gmapsDrawerCard');
+        const icon = document.getElementById('drawerCollapseIcon');
+        if (card && card.classList.contains('collapsed')) {
+          card.classList.remove('collapsed');
+          if (icon) icon.className = 'bi bi-chevron-down';
         }
       };
 
@@ -1041,6 +1058,7 @@
 
         // Show details in Sidebar + Integrated Drilldown Links
         function showDesaDetails(properties) {
+          ensureGmapsDrawerOpen();
           const stat = desaStats.find(s => s.iddesa === properties.iddesa);
           const total = stat ? stat.total_subsls : 0;
           const selesai = stat ? stat.selesai : 0;
@@ -1120,14 +1138,14 @@
 
             <!-- Navigation Buttons -->
             <div class="map-drawer-actions">
-              <button class="btn btn-primary btn-xs" id="btnFocusDesa" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 6px; padding: 7px 10px; font-weight: 600; font-size: 12px;">
+              <button class="btn btn-primary btn-sm" id="btnFocusDesa" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 9px 14px; font-weight: 700; font-size: 13px; border-radius: 8px;">
                 <i class="bi bi-search"></i> Zoom &amp; Tampilkan Batas SLS
               </button>
               <div class="map-action-btn-group">
-                <a href="/subsls?kec=${encodeURIComponent(properties.nmkec)}&desa=${encodeURIComponent(properties.nmdesa)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px 8px; text-decoration: none; font-size: 12px;">
+                <a href="/subsls?kec=${encodeURIComponent(properties.nmkec)}&desa=${encodeURIComponent(properties.nmdesa)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
                   <i class="bi bi-table"></i> Tabel SLS Desa
                 </a>
-                <a href="/kecamatan?kec=${encodeURIComponent(properties.nmkec)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px 8px; text-decoration: none; font-size: 12px;">
+                <a href="/kecamatan?kec=${encodeURIComponent(properties.nmkec)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
                   <i class="bi bi-diagram-3"></i> Detail Kec.
                 </a>
               </div>
@@ -1160,6 +1178,7 @@
         }
 
         function showSlsDetails(properties) {
+          ensureGmapsDrawerOpen();
           const stat = slsStats.find(s => s.kode === properties.kode);
           const isSelesai = stat ? stat.selesai === 1 : false;
           const muatan = stat ? stat.muatan : (properties.muatan || 0);
@@ -1242,11 +1261,11 @@
             <!-- Action Navigation Links -->
             <div class="map-drawer-actions">
               <div class="map-action-btn-group" style="grid-template-columns: ${(pcl && pcl !== 'Belum Ditentukan') ? '1fr 1fr' : '1fr'};">
-                <a href="/subsls?search=${encodeURIComponent(properties.kode)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px 8px; text-decoration: none; font-size: 12px;">
+                <a href="/subsls?search=${encodeURIComponent(properties.kode)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
                   <i class="bi bi-table"></i> Tabel SLS (${properties.kode})
                 </a>
                 ${(pcl && pcl !== 'Belum Ditentukan') ? `
-                  <a href="/pcl?pcl=${encodeURIComponent(pcl)}" class="btn btn-secondary btn-xs" style="display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px 8px; text-decoration: none; font-size: 12px;">
+                  <a href="/pcl?pcl=${encodeURIComponent(pcl)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
                     <i class="bi bi-person"></i> Detail PCL
                   </a>
                 ` : ''}
