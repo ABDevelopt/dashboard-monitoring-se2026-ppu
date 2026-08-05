@@ -823,29 +823,37 @@
           return layer;
         };
 
-        // Basemaps using CARTO CDN with high-DPI support and fallback protection
+        // Basemaps using CARTO CDN with high-DPI support, buffer protection, and OSM fallbacks
         const lightBasemap = createRobustTileLayer(
-          'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+          'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
           {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
             subdomains: 'abcd',
             maxZoom: 20,
-            maxNativeZoom: 19
+            maxNativeZoom: 19,
+            keepBuffer: 6,
+            updateWhenIdle: false,
+            updateWhenZooming: false,
+            crossOrigin: true
           },
-          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
           19
         );
 
         const darkBasemap = createRobustTileLayer(
-          'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+          'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
           {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
             subdomains: 'abcd',
             maxZoom: 20,
-            maxNativeZoom: 19
+            maxNativeZoom: 19,
+            keepBuffer: 6,
+            updateWhenIdle: false,
+            updateWhenZooming: false,
+            crossOrigin: true
           },
-          'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-          16
+          'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          19
         );
 
         const satelliteBasemap = createRobustTileLayer(
@@ -853,7 +861,21 @@
           {
             attribution: 'Tiles &copy; Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP',
             maxZoom: 20,
-            maxNativeZoom: 18
+            maxNativeZoom: 18,
+            keepBuffer: 6,
+            updateWhenIdle: false,
+            updateWhenZooming: false,
+            crossOrigin: true
+          }
+        );
+
+        const satelliteLabels = L.tileLayer(
+          'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+          {
+            maxZoom: 20,
+            maxNativeZoom: 18,
+            keepBuffer: 6,
+            crossOrigin: true
           }
         );
 
@@ -865,10 +887,18 @@
 
           if (currentBasemapType === 'satellite') {
             targetLayer = satelliteBasemap;
-          } else if (isLight) {
-            targetLayer = lightBasemap;
+            if (!map.hasLayer(satelliteLabels)) {
+              satelliteLabels.addTo(map);
+            }
           } else {
-            targetLayer = darkBasemap;
+            if (map.hasLayer(satelliteLabels)) {
+              map.removeLayer(satelliteLabels);
+            }
+            if (isLight) {
+              targetLayer = lightBasemap;
+            } else {
+              targetLayer = darkBasemap;
+            }
           }
 
           [lightBasemap, darkBasemap, satelliteBasemap].forEach(l => {

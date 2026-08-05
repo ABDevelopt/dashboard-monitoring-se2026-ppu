@@ -1,4 +1,4 @@
-const CACHE_NAME = 'se2026-ppu-v1';
+const CACHE_NAME = 'se2026-ppu-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/css/style.css',
@@ -32,27 +32,29 @@ self.addEventListener('activate', (event) => {
 
 // Safe cache put helper — silently swallows storage errors
 async function safeCachePut(request, response) {
-  // Do not cache opaque responses (cross-origin, type 'opaque') —
-  // they can trigger quota errors and have hidden error status codes
+  // Do not cache opaque responses or non-200 responses
   if (!response || response.status !== 200 || response.type === 'opaque') return;
   try {
     const cache = await caches.open(CACHE_NAME);
     await cache.put(request, response);
   } catch (err) {
-    // Silently ignore cache storage errors (quota exceeded, internal errors, etc.)
     console.warn('[SW] cache.put failed (ignored):', err.message);
   }
 }
 
 // Fetch Event (Network First Fallback to Cache)
 self.addEventListener('fetch', (event) => {
-  // Only intercept GET requests, avoid API / dynamic pages
+  // Only intercept GET requests
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
-  // Cache static assets (CSS, JS, images, fonts)
+  // IMPORTANT: Only intercept same-origin requests!
+  // Never intercept external CDNs, map tiles (Carto, OpenStreetMap, Esri, Google), or external APIs.
+  if (url.origin !== self.location.origin) return;
+
+  // Cache same-origin static assets (CSS, JS, images, fonts)
   if (
     url.pathname.includes('/css/') ||
     url.pathname.includes('/js/') ||
@@ -65,24 +67,22 @@ self.addEventListener('fetch', (event) => {
         if (cachedResponse) return cachedResponse;
 
         return fetch(event.request).then((networkResponse) => {
-          // Clone before consuming — safeCachePut uses the clone
           safeCachePut(event.request, networkResponse.clone());
           return networkResponse;
-        }).catch(() => caches.match('/'));
+        }).catch(() => new Response('', { status: 404, statusText: 'Not Found' }));
       })
     );
     return;
   }
 
-  // For normal page navigation: Network First, fall back to cache when offline
+  // For normal HTML page navigation: Network First, fall back to cache when offline
   const isHtml = event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html');
-  if (!isHtml) return; // Bypass API, AJAX, JSON, and other formats
+  if (!isHtml) return;
 
   event.respondWith(
     fetch(event.request).catch(() => {
       return caches.match(event.request).then((response) => {
         if (response) return response;
-        // Offline fallback for HTML pages: serve root cache
         return caches.match('/');
       });
     })
