@@ -528,7 +528,17 @@
     color: var(--accent-blue) !important;
   }
 
+  .leaflet-bottom.leaflet-right {
+    margin-right: 16px !important;
+    margin-bottom: 20px !important;
+    z-index: 1000 !important;
+  }
+
   @media (max-width: 768px) {
+    .leaflet-bottom.leaflet-right {
+      margin-right: 12px !important;
+      margin-bottom: 60px !important;
+    }
     .gmaps-container-wrap {
       height: 100%;
       min-height: 0;
@@ -737,10 +747,12 @@
         }
 
         const map = L.map('map', {
-          zoomControl: true,
+          zoomControl: false,
           maxZoom: 18,
           minZoom: 9
         }).setView(centerCoords, defaultZoom);
+
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
 
         let currentBasemapLayer = null;
 
