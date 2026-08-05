@@ -540,9 +540,8 @@
     if (currentStatus !== 'CONNECTED') {
       const interval = setInterval(async () => {
         try {
-          // Cari base path halaman saat ini untuk mendukung domain subdirectory cPanel
-          const basePath = window.location.pathname.split('/admin/')[0] || '';
-          const res = await fetch(`${basePath}/whatsapp-status`);
+          // Gunakan origin (protokol+host) agar URL selalu benar tanpa bergantung pathname
+          const res = await fetch(`${window.location.origin}/whatsapp-status`);
           const data = await res.json();
           
           if (data.status === 'CONNECTED') {

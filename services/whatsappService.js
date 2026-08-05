@@ -12,10 +12,28 @@ let clientStatus = 'DISCONNECTED'; // DISCONNECTED, CONNECTING, QR_READY, CONNEC
 let userInfo = null;
 let isInitializing = false;
 
+// Exponential backoff state
+let reconnectAttempt = 0;
+const RECONNECT_DELAY_MIN = 5000;   // 5 detik
+const RECONNECT_DELAY_MAX = 60000;  // 60 detik
+
+// Health check interval handle
+let healthCheckInterval = null;
+
 const authDir = path.join(__dirname, '../.wwebjs_auth/baileys-session');
 
 /**
- * Membersihkan direktori sesi autentikasi
+ * Menghitung delay reconnect dengan exponential backoff
+ */
+function getReconnectDelay() {
+  const delay = Math.min(RECONNECT_DELAY_MIN * Math.pow(2, reconnectAttempt), RECONNECT_DELAY_MAX);
+  reconnectAttempt++;
+  logger.info(`[WA-Backoff] Reconnect attempt #${reconnectAttempt}, delay: ${delay}ms`);
+  return delay;
+}
+
+/**
+ * Membersihkan direktori sesi autentikasi (hanya untuk logout penuh)
  */
 function cleanAuthDir() {
   try {
@@ -29,11 +47,60 @@ function cleanAuthDir() {
 }
 
 /**
+ * Menghentikan health check interval
+ */
+function stopHealthCheck() {
+  if (healthCheckInterval) {
+    clearInterval(healthCheckInterval);
+    healthCheckInterval = null;
+  }
+}
+
+/**
+ * Memulai health check interval — deteksi koneksi zombie setiap 90 detik
+ */
+function startHealthCheck() {
+  stopHealthCheck();
+  healthCheckInterval = setInterval(async () => {
+    if (clientStatus !== 'CONNECTED' || !sock) return;
+    try {
+      // Kirim query ringan untuk memverifikasi koneksi masih hidup
+      await sock.fetchStatus('0@s.whatsapp.net').catch(() => {});
+      logger.info('[WA-Health] Heartbeat OK — connection is alive.');
+    } catch (err) {
+      logger.warn('[WA-Health] Heartbeat FAILED — connection may be zombie. Triggering reconnect...');
+      await _closeSocket();
+    }
+  }, 90000); // setiap 90 detik
+}
+
+/**
+ * Menutup socket saat ini secara bersih tanpa menghapus sesi
+ */
+async function _closeSocket() {
+  stopHealthCheck();
+  if (sock) {
+    const oldSock = sock;
+    sock = null; // null dulu agar event handler baru tidak trigger
+    try {
+      oldSock.ev.removeAllListeners();
+      oldSock.end(undefined);
+    } catch (e) {
+      // Ignore close errors
+    }
+  }
+  clientStatus = 'DISCONNECTED';
+  qrCodeDataUri = '';
+  userInfo = null;
+  isInitializing = false;
+}
+
+/**
  * Inisialisasi WhatsApp Client menggunakan Baileys (WebSocket murni)
  */
 async function initialize() {
   if (sock || isInitializing) {
-    logger.info('[WA-Init] WhatsApp Baileys Client already initialized or initializing.');
+    logger.info('[WA-Init] Already initialized or initializing, skip.');
     return;
   }
   isInitializing = true;
@@ -52,12 +119,13 @@ async function initialize() {
       const fetchedVersion = await fetchLatestBaileysVersion();
       if (fetchedVersion && fetchedVersion.version) {
         version = fetchedVersion.version;
+        logger.info(`[WA-Init] Using Baileys version: ${version.join('.')}`);
       }
     } catch (e) {
       logger.warn('[WA-Init] Could not fetch latest Baileys version, using fallback:', e.message);
     }
 
-    sock = makeWASocket({
+    const newSock = makeWASocket({
       version,
       auth: state,
       printQRInTerminal: false,
@@ -67,20 +135,26 @@ async function initialize() {
       connectTimeoutMs: 60000,
       defaultQueryTimeoutMs: 60000,
       keepAliveIntervalMs: 25000,
+      retryRequestDelayMs: 2000,
     });
 
+    // Assign socket hanya setelah berhasil dibuat, reset flag
+    sock = newSock;
     isInitializing = false;
 
     sock.ev.on('creds.update', saveCreds);
 
-    sock.ev.on('connection.update', (update) => {
+    sock.ev.on('connection.update', async (update) => {
+      // Guard: pastikan event ini dari socket yang sedang aktif
+      if (newSock !== sock) return;
+
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
-        logger.info('[WA-Event] WhatsApp QR Code received via Baileys.');
+        logger.info('[WA-Event] QR Code received via Baileys.');
         qrcode.toDataURL(qr, (err, url) => {
           if (err) {
-            logger.error('[WA-Event] Failed to convert QR code to Data URL:', err);
+            logger.error('[WA-Event] Failed to convert QR to Data URL:', err);
             clientStatus = 'DISCONNECTED';
           } else {
             qrCodeDataUri = url;
@@ -90,7 +164,10 @@ async function initialize() {
       }
 
       if (connection === 'open') {
-        logger.info('[WA-Event] WhatsApp Baileys Connection OPENED & CONNECTED!');
+        // Reset backoff counter karena berhasil connect
+        reconnectAttempt = 0;
+
+        logger.info('[WA-Event] WhatsApp Connection OPENED & CONNECTED!');
         clientStatus = 'CONNECTED';
         qrCodeDataUri = '';
 
@@ -102,38 +179,52 @@ async function initialize() {
           pushname: pushName,
           wid: { user: phoneNumber }
         };
-        logger.info(`[WA-Event] Connected user info: ${pushName} (${phoneNumber})`);
+        logger.info(`[WA-Event] Connected: ${pushName} (${phoneNumber})`);
+
+        // Mulai heartbeat health check
+        startHealthCheck();
       }
 
       if (connection === 'close') {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
         const reason = lastDisconnect?.error?.message || statusCode || 'Unknown';
-        logger.warn(`[WA-Event] WhatsApp Connection Closed. StatusCode: ${statusCode}, Reason: ${reason}`);
+        logger.warn(`[WA-Event] Connection Closed. StatusCode: ${statusCode}, Reason: ${reason}`);
 
-        clientStatus = 'DISCONNECTED';
-        qrCodeDataUri = '';
-        userInfo = null;
-        sock = null;
+        // Tutup socket lama secara bersih (tanpa hapus sesi)
+        await _closeSocket();
 
         const isLoggedOut = statusCode === DisconnectReason.loggedOut;
         if (isLoggedOut) {
-          logger.warn('[WA-Event] User logged out. Cleaning session credentials...');
+          logger.warn('[WA-Event] Logged out by server. Cleaning session...');
           cleanAuthDir();
+          reconnectAttempt = 0; // Reset backoff untuk fresh start
         }
 
-        // Auto reconnect after 5 seconds
-        logger.info('[WA-Event] Scheduling reconnection in 5 seconds...');
+        // Reconnect dengan exponential backoff
+        const delay = getReconnectDelay();
+        logger.info(`[WA-Event] Will reconnect in ${delay}ms...`);
         setTimeout(() => {
           initialize();
-        }, 5000);
+        }, delay);
       }
     });
 
   } catch (err) {
+    // Pastikan flag direset agar initialize() bisa dipanggil ulang
     isInitializing = false;
     clientStatus = 'DISCONNECTED';
-    sock = null;
-    logger.error('[WA-Init] Fatal error during Baileys initialize():', err);
+    if (sock) {
+      try { sock.ev.removeAllListeners(); sock.end(undefined); } catch (_) {}
+      sock = null;
+    }
+    logger.error('[WA-Init] Fatal error during Baileys initialize():', err.message || err);
+
+    // Coba reconnect setelah backoff
+    const delay = getReconnectDelay();
+    logger.info(`[WA-Init] Will retry initialization in ${delay}ms...`);
+    setTimeout(() => {
+      initialize();
+    }, delay);
   }
 }
 
@@ -194,27 +285,52 @@ async function sendDirectMessage(chatId, message) {
 }
 
 /**
- * Keluar (Logout) dan Hapus Sesi
+ * Keluar (Logout) penuh — hapus sesi, minta scan QR ulang
  */
 async function logout() {
-  logger.info('Logging out WhatsApp client...');
+  logger.info('Logging out WhatsApp client (full logout + clean session)...');
+  stopHealthCheck();
+
   if (sock) {
+    const oldSock = sock;
+    sock = null;
     try {
-      await sock.logout();
+      oldSock.ev.removeAllListeners();
+      await oldSock.logout();
     } catch (err) {
-      logger.error('Error logging out WhatsApp:', err);
+      logger.error('Error during WhatsApp logout:', err.message);
+      try { oldSock.end(undefined); } catch (_) {}
     }
   }
-  sock = null;
+
   clientStatus = 'DISCONNECTED';
   qrCodeDataUri = '';
   userInfo = null;
+  isInitializing = false;
+  reconnectAttempt = 0;
 
+  // Hapus sesi agar pengguna perlu scan QR ulang
   cleanAuthDir();
 
   setTimeout(() => {
     initialize();
   }, 3000);
+}
+
+/**
+ * Force Reset — tutup koneksi dan reconnect, TANPA menghapus sesi
+ * (Pengguna tidak perlu scan QR ulang jika sesi masih valid)
+ */
+async function forceReset() {
+  logger.info('Force resetting WhatsApp connection (keeping session)...');
+
+  // Tutup socket lama secara bersih (TIDAK menghapus session credentials)
+  await _closeSocket();
+  reconnectAttempt = 0; // Reset backoff agar reconnect segera
+
+  setTimeout(() => {
+    initialize();
+  }, 2000);
 }
 
 /**
@@ -245,60 +361,28 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       return;
     }
 
-    // ── Tentukan sesi upload (Pagi / Siang-Sore) ─────────────────────────────
-    const cutoffHour = parseInt(settings.whatsapp_session_cutoff_hour || '12', 10);
-    const intradayEnabled = settings.whatsapp_intraday_enabled === '1';
-
-    // Jam upload dalam waktu lokal server (UTC+8 / WITA)
-    const uploadCreatedAt = new Date(upload.created_at.replace(' ', 'T') + 'Z');
-    const uploadHourWITA = (uploadCreatedAt.getUTCHours() + 8) % 24;
-    const isSiangSore = uploadHourWITA >= cutoffHour;
-    const sesiLabel = isSiangSore ? 'Siang/Sore' : 'Pagi';
-
-    // ── Cari upload sebelumnya untuk perbandingan ─────────────────────────────
-    let prevUpload = null;
-    if (intradayEnabled) {
-      // Mode intraday: cari upload pada sesi yang SAMA di hari sebelumnya
-      const prevSessionStart = cutoffHour; // jam mulai sesi siang (dalam UTC = cutoffHour - 8)
-      if (isSiangSore) {
-        // Sesi siang/sore: cari upload kemarin dengan jam >= cutoffHour WITA (UTC = cutoff - 8)
-        const utcCutoff = ((cutoffHour - 8) + 24) % 24; // cutoff dalam UTC
-        prevUpload = db.prepare(`
-          SELECT * FROM uploads
-          WHERE tanggal < ?
-            AND CAST(strftime('%H', created_at) AS INTEGER) >= ?
-          ORDER BY tanggal DESC, id DESC
-          LIMIT 1
-        `).get(upload.tanggal, utcCutoff);
-      } else {
-        // Sesi pagi: cari upload kemarin dengan jam < cutoffHour WITA (UTC = cutoff - 8)
-        const utcCutoff = ((cutoffHour - 8) + 24) % 24;
-        prevUpload = db.prepare(`
-          SELECT * FROM uploads
-          WHERE tanggal < ?
-            AND CAST(strftime('%H', created_at) AS INTEGER) < ?
-          ORDER BY tanggal DESC, id DESC
-          LIMIT 1
-        `).get(upload.tanggal, utcCutoff);
-      }
-      // Fallback: jika tidak ada upload sesi sama di hari sebelumnya, gunakan upload terlama yang ada
-      if (!prevUpload) {
-        prevUpload = db.prepare('SELECT * FROM uploads WHERE id < ? ORDER BY tanggal DESC, id DESC LIMIT 1').get(uploadId);
-      }
-    } else {
-      // Mode normal: upload tepat sebelum ini (berdasarkan tanggal/id)
-      prevUpload = db.prepare('SELECT * FROM uploads WHERE tanggal <= ? AND id < ? ORDER BY tanggal DESC, id DESC LIMIT 1').get(upload.tanggal, uploadId);
-      // Fallback ke id saja
-      if (!prevUpload) {
-        prevUpload = db.prepare('SELECT * FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(uploadId);
-      }
-    }
+    // Ambil detail data upload sebelumnya
+    const prevUpload = db.prepare('SELECT * FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(uploadId);
     let prevStats = null;
     if (prevUpload) {
       prevStats = getOverviewSummary(prevUpload.id, settings);
     }
 
-    // Ambil statistik summary
+    // Ambil detail data upload 24 jam yang lalu
+    const upload24h = db.prepare(`
+      SELECT * FROM uploads 
+      WHERE created_at <= datetime(?, '-1 day') 
+      ORDER BY created_at DESC LIMIT 1
+    `).get(upload.created_at);
+    let stats24h = null;
+    let baseUpload24h = upload24h;
+    if (!baseUpload24h) {
+      baseUpload24h = db.prepare('SELECT * FROM uploads ORDER BY id ASC LIMIT 1').get();
+    }
+    if (baseUpload24h && baseUpload24h.id !== uploadId) {
+      stats24h = getOverviewSummary(baseUpload24h.id, settings);
+    }
+
     const stats = getOverviewSummary(uploadId, settings);
     if (!stats) {
       logger.warn('Failed to retrieve summary stats for WhatsApp notification.');
@@ -335,7 +419,6 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       prevUploadTimeStr = `${prevDayName}, ${prevDateStr} ${prevMonthName} ${prevYearStr} ${prevHours}.${prevMinutes} WITA`;
     }
 
-    // Kalkulasi persentase dan format realisasi
     const realisasiFasih = (stats.submitted_total || 0) + (stats.approved_total || 0) + (stats.rejected_total || 0);
     const targetFasih = stats.target_fasih_total || 0;
     const persenFasih = stats.fasih_pct_str || '0.00';
@@ -344,19 +427,16 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     const targetMuatan = stats.total_muatan || 0;
     const persenMuatan = stats.muatan_pct_str || '0.00';
 
-    // Penambahan dari update sebelumnya (sesi yang sama)
     const diffSubmitted = stats.submitted_total - (prevStats ? prevStats.submitted_total : 0);
     const diffApproved = stats.approved_total - (prevStats ? prevStats.approved_total : 0);
     const diffRejected = stats.rejected_total - (prevStats ? prevStats.rejected_total : 0);
     const diffTotal = realisasiFasih - (prevStats ? ((prevStats.submitted_total || 0) + (prevStats.approved_total || 0) + (prevStats.rejected_total || 0)) : 0);
 
-    // Alias 24h = sama dengan diff (sekarang berbasis sesi, bukan 24 jam)
-    const diff24Submitted = diffSubmitted;
-    const diff24Approved = diffApproved;
-    const diff24Rejected = diffRejected;
-    const diff24Total = diffTotal;
+    const diff24Submitted = stats.submitted_total - (stats24h ? stats24h.submitted_total : 0);
+    const diff24Approved = stats.approved_total - (stats24h ? stats24h.approved_total : 0);
+    const diff24Rejected = stats.rejected_total - (stats24h ? stats24h.rejected_total : 0);
+    const diff24Total = realisasiFasih - (stats24h ? ((stats24h.submitted_total || 0) + (stats24h.approved_total || 0) + (stats24h.rejected_total || 0)) : 0);
 
-    // Hitung petugas aktif yang bertambah progresnya sejak upload sesi sebelumnya
     let activeDiffPclCount = 0;
     if (prevUpload) {
       const activeDiffResult = db.prepare(`
@@ -378,8 +458,27 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       activeDiffPclCount = stats.active_pcl || 0;
     }
 
-    // Alias 24h = sama dengan sesi sebelumnya
-    const activeDiffPcl24hCount = activeDiffPclCount;
+    let activeDiffPcl24hCount = 0;
+    const base24hId = baseUpload24h ? baseUpload24h.id : null;
+    if (base24hId && base24hId !== uploadId) {
+      const activeDiff24hResult = db.prepare(`
+        SELECT COUNT(*) AS cnt FROM (
+          SELECT 
+            m.pcl,
+            (SUM(COALESCE(p_curr.submitted_by_pcl, 0) + COALESCE(p_curr.approved, 0) + COALESCE(p_curr.rejected, 0)) -
+             SUM(COALESCE(p_24h.submitted_by_pcl, 0) + COALESCE(p_24h.approved, 0) + COALESCE(p_24h.rejected, 0))) AS diff
+          FROM subsls_master m
+          JOIN progres p_curr ON m.kode = p_curr.kode AND p_curr.upload_id = ?
+          LEFT JOIN progres p_24h ON m.kode = p_24h.kode AND p_24h.upload_id = ?
+          WHERE m.pcl IS NOT NULL AND m.pcl != ''
+          GROUP BY m.pcl
+          HAVING diff > 0
+        )
+      `).get(uploadId, base24hId);
+      activeDiffPcl24hCount = activeDiff24hResult ? activeDiff24hResult.cnt : 0;
+    } else {
+      activeDiffPcl24hCount = stats.active_pcl || 0;
+    }
 
     const totalPcl = stats.total_pcl || 1;
     const startDateStr = settings.speedometer_start_date || '2026-06-15';
@@ -390,7 +489,6 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
 
     const targetTetap = 13 * totalPcl;
 
-    // Hitung deviasi harian (24 jam & update terakhir) terhadap Target Tetap
     const deviasi24h = diff24Total - targetTetap;
     const deviasi24hSign = deviasi24h >= 0 ? '+' : '';
     const deviasi24hFormatted = deviasi24h < 0 
@@ -403,7 +501,6 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       ? `–${Math.round(Math.abs(deviasiUpdate)).toLocaleString('id-ID')}` 
       : `${deviasiUpdateSign}${Math.round(deviasiUpdate).toLocaleString('id-ID')}`;
 
-    // Hitung deviasi kumulatif
     const diffTime = uploadDate - startDate;
     const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
     const currentSpeedKumulatif = diffDays > 0 ? (realisasiFasih / diffDays) : 0;
@@ -417,14 +514,12 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     const maxDeficitKumulatif = Math.max(stdDeficit, reqDeficit);
     const deviasiKumulatifFormatted = maxDeficitKumulatif > 0 ? `–${Math.ceil(maxDeficitKumulatif).toLocaleString('id-ID')}` : 'Terpenuhi';
 
-    // Rata-rata penambahan progres petugas
     const avgDiffAll = totalPcl > 0 ? parseFloat((diffTotal / totalPcl).toFixed(2)) : 0;
     const avgDiffActive = activeDiffPclCount > 0 ? parseFloat((diffTotal / activeDiffPclCount).toFixed(2)) : 0;
 
     const avgDiff24All = totalPcl > 0 ? parseFloat((diff24Total / totalPcl).toFixed(2)) : 0;
     const avgDiff24Active = activeDiffPcl24hCount > 0 ? parseFloat((diff24Total / activeDiffPcl24hCount).toFixed(2)) : 0;
 
-    // Hitung sebaran performa petugas
     function getPclPerformanceDistribution(currId, prevId = null) {
       if (prevId) {
         return db.prepare(`
@@ -468,9 +563,8 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     }
 
     const distLast = getPclPerformanceDistribution(uploadId, prevUpload ? prevUpload.id : null);
-    const dist24h = distLast; // Alias: dalam mode sesi, dist24h = dist perbandingan sesi sebelumnya
+    const dist24h = getPclPerformanceDistribution(uploadId, baseUpload24h && baseUpload24h.id !== uploadId ? baseUpload24h.id : null);
 
-    // Tentukan label berdasarkan pengaturan website
     let labelFasih = 'FASIH';
     if (settings.target_fasih_mode === 'fasih-sm') {
       labelFasih = 'FASIH-SM';
@@ -480,18 +574,11 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       labelFasih = 'FASIH Statis';
     }
 
-    // Pilih template: intraday template untuk sesi siang/sore (jika ada), atau template utama
-    let activeTemplate = settings.whatsapp_message_template || '';
-    if (intradayEnabled && isSiangSore && settings.whatsapp_intraday_message_template && settings.whatsapp_intraday_message_template.trim() !== '') {
-      activeTemplate = settings.whatsapp_intraday_message_template;
-    }
-
     let message = '';
-    if (activeTemplate.trim() !== '') {
-      message = activeTemplate
+    if (settings.whatsapp_message_template && settings.whatsapp_message_template.trim() !== '') {
+      message = settings.whatsapp_message_template
         .replace(/\{tanggal_sekarang\}/g, timeFormatted)
         .replace(/\{jam_sekarang\}/g, timeOnlyFormatted)
-        .replace(/\{sesi_upload\}/g, sesiLabel)
         .replace(/\{waktu_upload_sebelumnya\}/g, prevUploadTimeStr)
         .replace(/\{label_fasih\}/g, labelFasih)
         .replace(/\{filename\}/g, upload.filename)
@@ -570,28 +657,6 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
   } catch (err) {
     logger.error('Failed to send WhatsApp update notification:', err);
   }
-}
-
-/**
- * Force Reset WhatsApp Client
- */
-async function forceReset() {
-  logger.info('Force resetting WhatsApp client...');
-  if (sock) {
-    try {
-      sock.end(undefined);
-    } catch (e) {}
-  }
-  sock = null;
-  clientStatus = 'DISCONNECTED';
-  qrCodeDataUri = '';
-  userInfo = null;
-
-  cleanAuthDir();
-
-  setTimeout(() => {
-    initialize();
-  }, 2000);
 }
 
 module.exports = {

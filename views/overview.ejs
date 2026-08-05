@@ -8,7 +8,18 @@
   }
 %>
 <div class="fade-in">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
+  <script>
+    // Chart.js Ready Queue — agar chart tidak error saat async Chart.js belum selesai load
+    window._chartJsReady = false;
+    window._chartJsCallbacks = [];
+    window.onChartJsReady = function(cb) {
+      if (window._chartJsReady) { cb(); } else { window._chartJsCallbacks.push(cb); }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+    integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g"
+    crossorigin="anonymous"
+    onload="window._chartJsReady=true; window._chartJsCallbacks.forEach(function(cb){cb();}); window._chartJsCallbacks=[];"></script>
   <% if (!summary) { %>
     <!-- EMPTY STATE -->
     <div class="card empty-state text-center" style="padding: 80px 20px;">
@@ -105,7 +116,7 @@
       </div>
  
       <!-- AI SMART INSIGHTS WIDGET -->
-      <div id="aiInsightsWidget" class="card" style="margin: 0; background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(139, 92, 246, 0.02) 100%); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: var(--radius-lg); padding: 12px 16px; position: relative; overflow: hidden; backdrop-filter: blur(8px);">
+      <div id="aiInsightsWidget" class="card" style="margin: 0; background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(139, 92, 246, 0.02) 100%); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: var(--radius-lg); padding: 12px 16px; position: relative; overflow: hidden;">
         <!-- Glowing robot background decoration -->
         <div style="position: absolute; right: -15px; top: -15px; font-size: 110px; opacity: 0.03; line-height: 1; pointer-events: none; color: var(--accent-cyan);">
           <i class="bi bi-robot"></i>
@@ -1499,53 +1510,7 @@
             </tbody>
           </table>
 
-          <!-- Mobile Table (visible on mobile only) -->
-          <table id="kecOverviewTableMobile" class="show-sm-table">
-            <thead>
-              <tr>
-                <th class="text-center th-no" scope="col">No</th>
-                <th scope="col">Kecamatan</th>
-                <th class="text-right bg-purple-soft" scope="col">FASIH %</th>
-                <th class="text-right bg-cyan-soft muatan-col" scope="col">Muatan %</th>
-                <th class="text-right" scope="col">Total SLS</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% kecStats.forEach((k, index) => { %>
-                <% let fasihPct = k.fasih_pct_str; %>
-                <% let muatanPct = k.muatan_pct_str; %>
-                <tr>
-                  <td class="text-center td-index"><%= index + 1 %></td>
-                  <td class="td-primary" scope="row"><a href="/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" class="link-plain"><i class="bi bi-geo-alt"></i> <%= k.kecamatan %></a></td>
-                  <td class="bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>" style="min-width: 95px; padding: 4px 6px; vertical-align: middle;">
-                    <%
-                      const fReal = (k.submitted_total || 0) + (k.approved_total || 0) + (k.rejected_total || 0);
-                      const fTgt = k.target_fasih_total || 0;
-                      const fW = Math.min(parseFloat(fasihPct), 100);
-                      const fColor = fW >= 100 ? 'var(--accent-green)' : (fW < 40 ? 'var(--accent-red)' : 'var(--accent-purple)');
-                    %>
-                    <div class="bar-label" style="font-size:9px; margin-bottom:2px;">
-                      <span style="font-weight:700; color:<%= fColor %>"><%= fasihPct %>%</span>
-                      <span style="font-size: 8px;"><%= fReal %>/<%= fTgt %></span>
-                    </div>
-                    <div style="height:4px; background:var(--bg-progress-wrap); border-radius:99px; overflow:hidden;">
-                      <div class="progress-bar <%= fW >= 100 ? 'green' : (fW < 40 ? 'red' : 'purple') %>" data-width="<%= fW %>" style="width:0%; height:100%; border-radius:99px;"></div>
-                    </div>
-                  </td>
-                  <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>">
-                    <% if (parseFloat(muatanPct) >= 100) { %>
-                      <span class="badge badge-green">100%</span>
-                    <% } else if (parseFloat(muatanPct) < 40) { %>
-                      <span class="badge badge-red"><%= muatanPct %>%</span>
-                    <% } else { %>
-                      <span class="badge badge-blue"><%= muatanPct %>%</span>
-                    <% } %>
-                  </td>
-                  <td class="text-right" data-sort="<%= k.total_subsls %>"><%= k.total_subsls %></td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
+
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 20px; width: 100%; margin-top: 16px;">
@@ -1974,14 +1939,18 @@
         dailyTrenData.push(value);
       });
 
-      // Automatically render AI Smart Insights on page load
-      loadAiInsights(false);
+      // Automatically render AI Smart Insights (deferred 1.2s to avoid blocking initial paint)
+      setTimeout(() => loadAiInsights(false), 1200);
 
       // Initialize Heatmap
       <% if (settings.overview_heatmap === '1') { %>
       const heatmapSelect = document.getElementById('heatmapMetricSelect');
       if (heatmapSelect) {
-        renderHeatmap(rawTrenData, heatmapSelect.value);
+        const _doRenderHeatmap = () => renderHeatmap(rawTrenData, heatmapSelect.value);
+        // Defer heatmap build ke saat browser idle — hindari DOM thrashing saat initial load
+        'requestIdleCallback' in window
+          ? requestIdleCallback(_doRenderHeatmap, { timeout: 3000 })
+          : setTimeout(_doRenderHeatmap, 800);
         heatmapSelect.addEventListener('change', () => {
           renderHeatmap(rawTrenData, heatmapSelect.value);
         });
@@ -2064,11 +2033,13 @@
           targetNormalPerPcl = totalPcl > 0 ? (targetSpeedTotal / totalPcl) : 0;
         }
         
-        // Re-create Speedometer Gauge (Accumulative)
-        createSpeedometerChart('speedometerChartCanvas', speedPerPcl, targetNormalPerPcl, currentSpeed, targetSpeedTotal);
+        onChartJsReady(() => {
+          createSpeedometerChart('speedometerChartCanvas', speedPerPcl, targetNormalPerPcl, currentSpeed, targetSpeedTotal);
+        });
         
-        // Re-create Speedometer Gauge (Last Update)
-        createSpeedometerChart('speedometerLastUpdateCanvas', latestUpdateSpeedPerPcl, targetNormalPerPcl, diffTotal, targetSpeedTotal);
+        onChartJsReady(() => {
+          createSpeedometerChart('speedometerLastUpdateCanvas', latestUpdateSpeedPerPcl, targetNormalPerPcl, diffTotal, targetSpeedTotal);
+        });
         
         // Update header sub-text fields
         const normalSpeedEl = document.getElementById('speedometerTargetNormalField');
@@ -2192,6 +2163,20 @@
         }
       }
 
+      // === Lazy Chart Initializer via IntersectionObserver ===
+      // Chart hanya diinisialisasi saat canvas masuk viewport DAN Chart.js sudah siap
+      function lazyInitChart(canvasId, initFn) {
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+        const obs = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting) {
+            obs.disconnect();
+            onChartJsReady(initFn);
+          }
+        }, { rootMargin: '120px' });
+        obs.observe(el);
+      }
+
       // Initialize Sports Daily Rate Line Chart
       const sportsDailyRates = [];
       const sportsDailyRateLabels = [];
@@ -2211,7 +2196,9 @@
         const dailyRate = totalPclCount > 0 ? (increment / totalPclCount) : 0;
         sportsDailyRates.push(parseFloat(dailyRate.toFixed(2)));
       }
-      createSportsDailyRateLineChart('dailyRateLineChartCanvas', sportsDailyRateLabels, sportsDailyRates, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>);
+      lazyInitChart('dailyRateLineChartCanvas', () =>
+        createSportsDailyRateLineChart('dailyRateLineChartCanvas', sportsDailyRateLabels, sportsDailyRates, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>)
+      );
 
       // Hitung penambahan harian total FASIH (Submitted + Approved + Rejected)
       const countyIncrementLabels = [];
@@ -2229,23 +2216,25 @@
         }
       }
 
-      createDailyIncrementBarChart(
-        'dailyCountyIncrementChartCanvas',
-        countyIncrementLabels,
-        countyIncrements,
-        <%= targetSpeedTotal %>,
-        <%= reqSpeed %>,
-        dailyTrenData
+      lazyInitChart('dailyCountyIncrementChartCanvas', () =>
+        createDailyIncrementBarChart(
+          'dailyCountyIncrementChartCanvas',
+          countyIncrementLabels,
+          countyIncrements,
+          <%= targetSpeedTotal %>,
+          <%= reqSpeed %>,
+          dailyTrenData
+        )
       );
 
       // Initialize tren line chart
       <% if (settings.overview_tren_muatan === '1') { %>
-      createTrenChart('trenChartCanvas', rawTrenData);
+      lazyInitChart('trenChartCanvas', () => createTrenChart('trenChartCanvas', rawTrenData));
       <% } %>
 
       // Initialize FASIH assignment trend line chart
       <% if (settings.overview_tren_fasih === '1') { %>
-      createFasihTrenChart('trenFasihChartCanvas', rawTrenData);
+      lazyInitChart('trenFasihChartCanvas', () => createFasihTrenChart('trenFasihChartCanvas', rawTrenData));
 
       // Hitung dan inisialisasi penambahan harian FASIH per status (Daily Increment per Status)
       const dailyIncrementLabels = [];
@@ -2274,7 +2263,9 @@
         }
       }
 
-      createDailyFasihStatusChart('dailyFasihStatusChartCanvas', dailyIncrementLabels, dailyIncrements, '', dailyTrenData);
+      lazyInitChart('dailyFasihStatusChartCanvas', () =>
+        createDailyFasihStatusChart('dailyFasihStatusChartCanvas', dailyIncrementLabels, dailyIncrements, '', dailyTrenData)
+      );
 
 
       <% } %>
@@ -2294,14 +2285,15 @@
         kecFasihTotal.push(<%= k.target_fasih_total || 0 %>);
       <% }) %>
 
-      createBarChart('kecBarChartCanvas', kecLabels, kecSelesai, kecTotal, 'Progres Per Kecamatan (Muatan)');
-      createKecFasihBarChart('kecFasihBarChartCanvas', kecLabels, kecFasihSelesai, kecFasihTotal, 'Progres Per Kecamatan (FASIH)');
-
+      lazyInitChart('kecBarChartCanvas', () =>
+        createBarChart('kecBarChartCanvas', kecLabels, kecSelesai, kecTotal, 'Progres Per Kecamatan (Muatan)')
+      );
+      lazyInitChart('kecFasihBarChartCanvas', () =>
+        createKecFasihBarChart('kecFasihBarChartCanvas', kecLabels, kecFasihSelesai, kecFasihTotal, 'Progres Per Kecamatan (FASIH)')
+      );
       // Initialize table sorting and searching
       makeTableSortable('kecOverviewTable');
       makeTableSearchable('kecOverviewSearch', 'kecOverviewTable');
-      makeTableSortable('kecOverviewTableMobile');
-      makeTableSearchable('kecOverviewSearch', 'kecOverviewTableMobile');
       <% } %>
 
       // Modal Sebaran Petugas Detail Controller
@@ -2471,9 +2463,7 @@
 
       async function initDistDateSelector() {
         try {
-          const basePath = window.location.pathname.split('/admin/')[0] || '';
-          const cleanBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
-          const res = await fetch(`${cleanBasePath}/api/pcl-distribution`);
+          const res = await fetch(`${window.location.origin}/api/pcl-distribution`);
           const data = await res.json();
           if (data.success) {
             distAvailableDates = data.availableDates || [];
@@ -2494,8 +2484,8 @@
         }
       }
 
-      // Trigger initialization
-      initDistDateSelector();
+      // Trigger initialization (deferred 600ms agar tidak berkompetisi dengan render awal)
+      setTimeout(() => initDistDateSelector(), 600);
 
       window.showPclDistributionModal = function(bucketId, label, color) {
         const modal = document.getElementById('pclDistModal');
