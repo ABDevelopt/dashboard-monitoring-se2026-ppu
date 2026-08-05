@@ -8,7 +8,18 @@
   }
 %>
 <div class="fade-in">
-  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g" crossorigin="anonymous"></script>
+  <script>
+    // Chart.js Ready Queue — agar chart tidak error saat async Chart.js belum selesai load
+    window._chartJsReady = false;
+    window._chartJsCallbacks = [];
+    window.onChartJsReady = function(cb) {
+      if (window._chartJsReady) { cb(); } else { window._chartJsCallbacks.push(cb); }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+    integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g"
+    crossorigin="anonymous"
+    onload="window._chartJsReady=true; window._chartJsCallbacks.forEach(function(cb){cb();}); window._chartJsCallbacks=[];"></script>
   <% if (!summary) { %>
     <!-- EMPTY STATE -->
     <div class="card empty-state text-center" style="padding: 80px 20px;">
@@ -2022,11 +2033,13 @@
           targetNormalPerPcl = totalPcl > 0 ? (targetSpeedTotal / totalPcl) : 0;
         }
         
-        // Re-create Speedometer Gauge (Accumulative)
-        createSpeedometerChart('speedometerChartCanvas', speedPerPcl, targetNormalPerPcl, currentSpeed, targetSpeedTotal);
+        onChartJsReady(() => {
+          createSpeedometerChart('speedometerChartCanvas', speedPerPcl, targetNormalPerPcl, currentSpeed, targetSpeedTotal);
+        });
         
-        // Re-create Speedometer Gauge (Last Update)
-        createSpeedometerChart('speedometerLastUpdateCanvas', latestUpdateSpeedPerPcl, targetNormalPerPcl, diffTotal, targetSpeedTotal);
+        onChartJsReady(() => {
+          createSpeedometerChart('speedometerLastUpdateCanvas', latestUpdateSpeedPerPcl, targetNormalPerPcl, diffTotal, targetSpeedTotal);
+        });
         
         // Update header sub-text fields
         const normalSpeedEl = document.getElementById('speedometerTargetNormalField');
@@ -2150,6 +2163,20 @@
         }
       }
 
+      // === Lazy Chart Initializer via IntersectionObserver ===
+      // Chart hanya diinisialisasi saat canvas masuk viewport DAN Chart.js sudah siap
+      function lazyInitChart(canvasId, initFn) {
+        const el = document.getElementById(canvasId);
+        if (!el) return;
+        const obs = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting) {
+            obs.disconnect();
+            onChartJsReady(initFn);
+          }
+        }, { rootMargin: '120px' });
+        obs.observe(el);
+      }
+
       // Initialize Sports Daily Rate Line Chart
       const sportsDailyRates = [];
       const sportsDailyRateLabels = [];
@@ -2169,7 +2196,9 @@
         const dailyRate = totalPclCount > 0 ? (increment / totalPclCount) : 0;
         sportsDailyRates.push(parseFloat(dailyRate.toFixed(2)));
       }
-      createSportsDailyRateLineChart('dailyRateLineChartCanvas', sportsDailyRateLabels, sportsDailyRates, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>);
+      lazyInitChart('dailyRateLineChartCanvas', () =>
+        createSportsDailyRateLineChart('dailyRateLineChartCanvas', sportsDailyRateLabels, sportsDailyRates, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>)
+      );
 
       // Hitung penambahan harian total FASIH (Submitted + Approved + Rejected)
       const countyIncrementLabels = [];
@@ -2187,23 +2216,25 @@
         }
       }
 
-      createDailyIncrementBarChart(
-        'dailyCountyIncrementChartCanvas',
-        countyIncrementLabels,
-        countyIncrements,
-        <%= targetSpeedTotal %>,
-        <%= reqSpeed %>,
-        dailyTrenData
+      lazyInitChart('dailyCountyIncrementChartCanvas', () =>
+        createDailyIncrementBarChart(
+          'dailyCountyIncrementChartCanvas',
+          countyIncrementLabels,
+          countyIncrements,
+          <%= targetSpeedTotal %>,
+          <%= reqSpeed %>,
+          dailyTrenData
+        )
       );
 
       // Initialize tren line chart
       <% if (settings.overview_tren_muatan === '1') { %>
-      createTrenChart('trenChartCanvas', rawTrenData);
+      lazyInitChart('trenChartCanvas', () => createTrenChart('trenChartCanvas', rawTrenData));
       <% } %>
 
       // Initialize FASIH assignment trend line chart
       <% if (settings.overview_tren_fasih === '1') { %>
-      createFasihTrenChart('trenFasihChartCanvas', rawTrenData);
+      lazyInitChart('trenFasihChartCanvas', () => createFasihTrenChart('trenFasihChartCanvas', rawTrenData));
 
       // Hitung dan inisialisasi penambahan harian FASIH per status (Daily Increment per Status)
       const dailyIncrementLabels = [];
@@ -2232,7 +2263,9 @@
         }
       }
 
-      createDailyFasihStatusChart('dailyFasihStatusChartCanvas', dailyIncrementLabels, dailyIncrements, '', dailyTrenData);
+      lazyInitChart('dailyFasihStatusChartCanvas', () =>
+        createDailyFasihStatusChart('dailyFasihStatusChartCanvas', dailyIncrementLabels, dailyIncrements, '', dailyTrenData)
+      );
 
 
       <% } %>
@@ -2252,9 +2285,12 @@
         kecFasihTotal.push(<%= k.target_fasih_total || 0 %>);
       <% }) %>
 
-      createBarChart('kecBarChartCanvas', kecLabels, kecSelesai, kecTotal, 'Progres Per Kecamatan (Muatan)');
-      createKecFasihBarChart('kecFasihBarChartCanvas', kecLabels, kecFasihSelesai, kecFasihTotal, 'Progres Per Kecamatan (FASIH)');
-
+      lazyInitChart('kecBarChartCanvas', () =>
+        createBarChart('kecBarChartCanvas', kecLabels, kecSelesai, kecTotal, 'Progres Per Kecamatan (Muatan)')
+      );
+      lazyInitChart('kecFasihBarChartCanvas', () =>
+        createKecFasihBarChart('kecFasihBarChartCanvas', kecLabels, kecFasihSelesai, kecFasihTotal, 'Progres Per Kecamatan (FASIH)')
+      );
       // Initialize table sorting and searching
       makeTableSortable('kecOverviewTable');
       makeTableSearchable('kecOverviewSearch', 'kecOverviewTable');
