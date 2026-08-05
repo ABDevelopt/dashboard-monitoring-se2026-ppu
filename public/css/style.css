@@ -4304,8 +4304,10 @@ body.page-agent .main-wrapper {
   max-height: 100vh !important;
 }
 
-body.page-agent .page-content {
+body.page-agent .page-content,
+body.page-agent.has-breadcrumb .page-content {
   padding: 0 !important;
+  padding-top: 0 !important;
   margin: 0 !important;
   margin-top: 0 !important;
   height: 100vh !important;

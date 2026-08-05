@@ -280,8 +280,8 @@ function updateTime() {
       '/help':              { label: 'Panduan & Bantuan', icon: 'bi-life-preserver' },
     };
 
-    // On root Overview page, hide breadcrumb (not needed)
-    if (path === '/') {
+    // On root Overview page and AI agent page, hide breadcrumb (not needed)
+    if (path === '/' || path === '/agent') {
       bar.classList.add('hidden');
       list.innerHTML = '';
       document.body.classList.remove('has-breadcrumb');
@@ -2357,6 +2357,16 @@ function updateTime() {
       }
 
       if (targetDoc) {
+        // Sync page-specific body layout classes (page-agent, page-map, page-login)
+        const pageClasses = ['page-agent', 'page-map', 'page-login'];
+        pageClasses.forEach(cls => {
+          if (targetDoc.body.classList.contains(cls)) {
+            document.body.classList.add(cls);
+          } else {
+            document.body.classList.remove(cls);
+          }
+        });
+
         // Update document title
         document.title = targetDoc.title || document.title;
 
@@ -2536,6 +2546,9 @@ function updateTime() {
         if (typeof window.updateAiWidgetVisibility === 'function') {
           window.updateAiWidgetVisibility();
         }
+
+        // Trigger window resize event so Leaflet maps, canvas charts, etc. recalculate container dimensions
+        window.dispatchEvent(new Event('resize'));
       }
 
       } catch (err) {
@@ -2651,8 +2664,13 @@ function updateTime() {
         const targetPath = new URL(targetUrl, window.location.origin).pathname;
         if (targetPath === '/agent') {
           document.body.classList.add('page-agent');
+          document.body.classList.remove('page-map');
+        } else if (targetPath === '/map') {
+          document.body.classList.add('page-map');
+          document.body.classList.remove('page-agent');
         } else {
           document.body.classList.remove('page-agent');
+          document.body.classList.remove('page-map');
         }
 
         document.querySelectorAll('.sidebar .nav-item').forEach(item => {
