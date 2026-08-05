@@ -1,4 +1,3 @@
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="" />
 <style>
   .map-kpi-grid {
     display: grid;
@@ -574,7 +573,6 @@
   </div>
 </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin=""></script>
     <script>
       window.switchGmapsTab = function(tabName) {
         const statsTab = document.getElementById('gmapsStatsTabContent');
@@ -609,14 +607,21 @@
         }
       };
 
-      document.addEventListener('DOMContentLoaded', () => {
+      function initMapPage() {
+        if (typeof L === 'undefined') {
+          setTimeout(initMapPage, 50);
+          return;
+        }
+
+        const mapContainerEl = document.getElementById('map');
+        if (!mapContainerEl) return;
+
         // Initial setup
         const centerCoords = [-1.30, 116.65];
         const defaultZoom = 10;
         
         // Clean container state to ensure clean re-initialization on PJAX swaps
-        const mapContainerEl = document.getElementById('map');
-        if (mapContainerEl && mapContainerEl._leaflet_id) {
+        if (mapContainerEl._leaflet_id) {
           mapContainerEl._leaflet_id = null;
         }
 
@@ -638,11 +643,14 @@
           }
         };
 
-        // Staggered invalidations to guarantee tile grid recalculation after PJAX enter animation (380ms)
+        // Staggered invalidations to guarantee tile grid recalculation after load & PJAX enter animation
         invalidateMapSize();
         [50, 150, 300, 450, 800, 1200].forEach(delay => {
           setTimeout(invalidateMapSize, delay);
         });
+
+        // Extra invalidation on window load to handle late CSS/font rendering
+        window.addEventListener('load', invalidateMapSize);
 
         // Use ResizeObserver for automatic sizing adjustment when sidebar or window container resizes
         if (window.ResizeObserver && mapContainerEl) {
@@ -663,26 +671,53 @@
         };
         window.addEventListener('pjax:start', onPjaxStart, { once: true });
 
-        // Basemaps (OpenStreetMap / CartoDB Voyager Vector + Esri Satellite)
-        const lightBasemap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          subdomains: ['a', 'b', 'c'],
-          maxZoom: 19,
-          crossOrigin: true
-        });
+        // Robust tile creation helper with tileerror fallback support
+        const createRobustTileLayer = (primaryUrl, options = {}, fallbackUrl = null) => {
+          const layer = L.tileLayer(primaryUrl, options);
+          if (fallbackUrl) {
+            layer.on('tileerror', (e) => {
+              if (e.tile && !e.tile.dataset.fallbackTried) {
+                e.tile.dataset.fallbackTried = 'true';
+                const coords = e.coords;
+                if (coords) {
+                  e.tile.src = fallbackUrl
+                    .replace('{z}', coords.z)
+                    .replace('{x}', coords.x)
+                    .replace('{y}', coords.y);
+                }
+              }
+            });
+          }
+          return layer;
+        };
 
-        const darkBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap &copy; CARTO',
-          subdomains: ['a', 'b', 'c', 'd'],
-          maxZoom: 19,
-          crossOrigin: true
-        });
+        // Basemaps with instant CDN failover
+        const lightBasemap = createRobustTileLayer(
+          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+          },
+          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}'
+        );
 
-        const satelliteBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-          attribution: 'Tiles &copy; Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP',
-          maxZoom: 19,
-          crossOrigin: true
-        });
+        const darkBasemap = createRobustTileLayer(
+          'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+          {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: ['a', 'b', 'c', 'd'],
+            maxZoom: 19
+          },
+          'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+        );
+
+        const satelliteBasemap = createRobustTileLayer(
+          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          {
+            attribution: 'Tiles &copy; Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP',
+            maxZoom: 19
+          }
+        );
 
         let currentBasemapType = 'default'; // 'default' or 'satellite'
 
@@ -709,10 +744,8 @@
           }
           
           targetLayer.bringToBack();
-          if (typeof targetLayer.redraw === 'function') {
-            targetLayer.redraw();
-          }
           currentBasemapLayer = targetLayer;
+          invalidateMapSize();
         }
         updateBasemap();
 
@@ -1187,6 +1220,10 @@
         // Asynchronous bootstrap sequence
         async function bootstrap() {
           try {
+            // Immediately render tile layer & recalculate canvas size
+            updateBasemap();
+            invalidateMapSize();
+
             // Step 1: load real-time stats and Desa geojson in parallel
             const [statsRes, desaGeoRes] = await Promise.all([
               fetch('/api/map-stats'),
@@ -1194,8 +1231,8 @@
             ]);
             
             const stats = await statsRes.json();
-            desaStats = stats.desaStats;
-            slsStats = stats.slsStats;
+            desaStats = stats.desaStats || [];
+            slsStats = stats.slsStats || [];
             desaGeoJson = await desaGeoRes.json();
 
             // Update top KPI cards
@@ -1203,22 +1240,32 @@
 
             // Setup Desa boundary mapping layer
             setupDesaLayer();
-            desaLayer.addTo(map);
+            if (desaLayer) {
+              desaLayer.addTo(map);
+            }
 
-            // Ensure basemap tile layer is positioned at the back and redrawn after GeoJSON overlay is added
+            // Position tile layer at back & recalculate map bounds
             updateBasemap();
             invalidateMapSize();
 
             // Hide initial loading screen
-            loadingOverlay.style.opacity = '0';
-            setTimeout(() => { loadingOverlay.style.display = 'none'; }, 300);
+            if (loadingOverlay) {
+              loadingOverlay.style.opacity = '0';
+              setTimeout(() => { loadingOverlay.style.display = 'none'; }, 300);
+            }
 
             // Lazy load high-detail SLS boundaries in background
             lazyLoadSlsGeoJSON();
 
           } catch (err) {
             console.error('Error bootstrapping map:', err);
-            loadingText.innerHTML = '<span style="color: var(--accent-red);"><i class="bi bi-exclamation-triangle"></i> Gagal Memuat Data Spasial. Coba refresh halaman.</span>';
+            if (loadingOverlay) {
+              loadingOverlay.style.opacity = '0';
+              setTimeout(() => { loadingOverlay.style.display = 'none'; }, 300);
+            }
+            if (loadingText) {
+              loadingText.innerHTML = '<span style="color: var(--accent-red);"><i class="bi bi-exclamation-triangle"></i> Gagal Memuat Data Spasial. Coba refresh halaman.</span>';
+            }
           }
         }
 
@@ -1359,8 +1406,14 @@
           });
         }
 
-        // Initialize!
+        // Initialize map & load data!
         bootstrap();
-      });
+      }
+
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        initMapPage();
+      } else {
+        document.addEventListener('DOMContentLoaded', initMapPage);
+      }
     </script>
 </div>
