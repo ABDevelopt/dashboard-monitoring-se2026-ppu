@@ -8,18 +8,6 @@
   }
 %>
 <div class="fade-in">
-  <script>
-    // Chart.js Ready Queue — agar chart tidak error saat async Chart.js belum selesai load
-    window._chartJsReady = false;
-    window._chartJsCallbacks = [];
-    window.onChartJsReady = function(cb) {
-      if (window._chartJsReady) { cb(); } else { window._chartJsCallbacks.push(cb); }
-    };
-  </script>
-  <script async src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
-    integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g"
-    crossorigin="anonymous"
-    onload="window._chartJsReady=true; window._chartJsCallbacks.forEach(function(cb){cb();}); window._chartJsCallbacks=[];"></script>
   <% if (!summary) { %>
     <!-- EMPTY STATE -->
     <div class="card empty-state text-center" style="padding: 80px 20px;">
@@ -2033,13 +2021,9 @@
           targetNormalPerPcl = totalPcl > 0 ? (targetSpeedTotal / totalPcl) : 0;
         }
         
-        onChartJsReady(() => {
-          createSpeedometerChart('speedometerChartCanvas', speedPerPcl, targetNormalPerPcl, currentSpeed, targetSpeedTotal);
-        });
-        
-        onChartJsReady(() => {
-          createSpeedometerChart('speedometerLastUpdateCanvas', latestUpdateSpeedPerPcl, targetNormalPerPcl, diffTotal, targetSpeedTotal);
-        });
+        // Re-create Speedometer Gauge (Accumulative & Last Update)
+        createSpeedometerChart('speedometerChartCanvas', speedPerPcl, targetNormalPerPcl, currentSpeed, targetSpeedTotal);
+        createSpeedometerChart('speedometerLastUpdateCanvas', latestUpdateSpeedPerPcl, targetNormalPerPcl, diffTotal, targetSpeedTotal);
         
         // Update header sub-text fields
         const normalSpeedEl = document.getElementById('speedometerTargetNormalField');
@@ -2196,9 +2180,7 @@
         const dailyRate = totalPclCount > 0 ? (increment / totalPclCount) : 0;
         sportsDailyRates.push(parseFloat(dailyRate.toFixed(2)));
       }
-      lazyInitChart('dailyRateLineChartCanvas', () =>
-        createSportsDailyRateLineChart('dailyRateLineChartCanvas', sportsDailyRateLabels, sportsDailyRates, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>)
-      );
+      createSportsDailyRateLineChart('dailyRateLineChartCanvas', sportsDailyRateLabels, sportsDailyRates, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>);
 
       // Hitung penambahan harian total FASIH (Submitted + Approved + Rejected)
       const countyIncrementLabels = [];

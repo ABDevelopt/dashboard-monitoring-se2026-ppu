@@ -11,7 +11,7 @@
         </span>
       </div>
       <p style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0 0;">
-        Audit kualitas data &amp; perbarui status tindak lanjut langsung ke Google Spreadsheet.
+        Audit kualitas data &amp; pemantauan status tindak lanjut Google Spreadsheet.
       </p>
     </div>
     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -216,7 +216,7 @@
                 <th>Desa / SLS</th>
                 <th>Detail Anomali</th>
                 <th class="text-center">Status Tindak Lanjut</th>
-                <th class="text-center" style="width: 150px;">Aksi &amp; Sync</th>
+                <th class="text-center" style="width: 80px;">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -250,13 +250,12 @@
                     <% } %>
                   </td>
                   <td class="text-center">
-                    <button type="button" class="btn btn-secondary btn-xs" onclick="openEditModal('<%= item.id %>', '<%= item.assignment_id %>', 'usaha', `<%= item.nama_usaha.replace(/`/g, '') %>`, '<%= item.petugas.replace(/`/g, '') %>', `<%= (item.tindak_lanjut || '').replace(/`/g, '') %>`, `<%= (item.penjelasan || '').replace(/`/g, '') %>`, '<%= item.no %>', `<%= (item.nama_anomali || '').replace(/`/g, '') %>`)" style="font-weight: 600; color: var(--accent-yellow);" title="Edit Status Tindak Lanjut">
-                      <i class="bi bi-pencil-square"></i> Edit
-                    </button>
                     <% if (item.link_fasih) { %>
-                      <a href="<%= item.link_fasih %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs" title="Buka Detail di Aplikasi FASIH" style="margin-left: 2px;">
-                        <i class="bi bi-box-arrow-up-right text-blue"></i>
+                      <a href="<%= item.link_fasih %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs" title="Buka Detail di Aplikasi FASIH">
+                        <i class="bi bi-box-arrow-up-right text-blue"></i> FASIH
                       </a>
+                    <% } else { %>
+                      <span style="color: var(--text-muted); font-size: 11px;">-</span>
                     <% } %>
                   </td>
                 </tr>
@@ -329,7 +328,7 @@
                 <th>Desa / SLS</th>
                 <th>Detail Anomali</th>
                 <th class="text-center">Status Tindak Lanjut</th>
-                <th class="text-center" style="width: 150px;">Aksi &amp; Sync</th>
+                <th class="text-center" style="width: 80px;">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -363,13 +362,12 @@
                     <% } %>
                   </td>
                   <td class="text-center">
-                    <button type="button" class="btn btn-secondary btn-xs" onclick="openEditModal('<%= item.id %>', '<%= item.assignment_id %>', 'keluarga', `<%= item.nama_kk.replace(/`/g, '') %>`, '<%= item.petugas.replace(/`/g, '') %>', `<%= (item.tindak_lanjut || '').replace(/`/g, '') %>`, `<%= (item.penjelasan || '').replace(/`/g, '') %>`, '<%= item.no %>', `<%= (item.nama_anomali || '').replace(/`/g, '') %>`)" style="font-weight: 600; color: var(--accent-yellow);" title="Edit Status Tindak Lanjut">
-                      <i class="bi bi-pencil-square"></i> Edit
-                    </button>
                     <% if (item.link_fasih) { %>
-                      <a href="<%= item.link_fasih %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs" title="Buka Detail di Aplikasi FASIH" style="margin-left: 2px;">
-                        <i class="bi bi-box-arrow-up-right text-blue"></i>
+                      <a href="<%= item.link_fasih %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-xs" title="Buka Detail di Aplikasi FASIH">
+                        <i class="bi bi-box-arrow-up-right text-blue"></i> FASIH
                       </a>
+                    <% } else { %>
+                      <span style="color: var(--text-muted); font-size: 11px;">-</span>
                     <% } %>
                   </td>
                 </tr>
@@ -519,62 +517,6 @@
 
 </div>
 
-<!-- MODAL EDIT STATUS ANOMALI -->
-<div id="editAnomalyModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
-  <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; max-width: 500px; width: 100%; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); animation: modalFade 0.2s ease;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: var(--accent-yellow); display: flex; align-items: center; justify-content: center; font-size: 18px;">
-          <i class="bi bi-pencil-square"></i>
-        </div>
-        <div>
-          <h3 style="font-size: 15px; font-weight: 700; margin: 0; color: var(--text-primary);">Update Status Anomali</h3>
-          <span style="font-size: 11px; color: var(--text-muted);">Tersinkronisasi otomatis ke Google Spreadsheet</span>
-        </div>
-      </div>
-      <button type="button" onclick="closeEditModal()" style="background: transparent; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer; line-height: 1;">&times;</button>
-    </div>
-
-    <form id="editAnomalyForm" onsubmit="saveAnomalyStatus(event)">
-      <input type="hidden" id="modalItemId" name="item_id">
-      <input type="hidden" id="modalAssignmentId" name="assignment_id">
-      <input type="hidden" id="modalType" name="type">
-      <input type="hidden" id="modalNama" name="nama">
-      <input type="hidden" id="modalNo" name="no">
-      <input type="hidden" id="modalNamaAnomali" name="nama_anomali">
-
-      <div style="margin-bottom: 16px; background: var(--bg-secondary); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);">
-        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Target Anomali:</div>
-        <div id="modalItemName" style="font-size: 14px; font-weight: 700; color: var(--text-primary); font-family: monospace;">...</div>
-        <div id="modalPclName" style="font-size: 12px; color: var(--accent-cyan); margin-top: 4px; font-weight: 500;">...</div>
-      </div>
-
-      <div style="margin-bottom: 16px;">
-        <label for="modalStatus" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Status Tindak Lanjut Baru</label>
-        <select id="modalStatus" name="tindak_lanjut" required style="width: 100%; padding: 10px 12px; font-size: 13px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); outline: none;">
-          <option value="Sudah Ditindaklanjuti dengan Perbaikan">✅ Sudah Ditindaklanjuti dengan Perbaikan</option>
-          <option value="Sudah Ditindaklanjuti dengan Penjelasan (Sesuai Kondisi Lapangan)">📝 Sudah Ditindaklanjuti dengan Penjelasan (Sesuai Kondisi Lapangan)</option>
-          <option value="Belum Ditindaklanjuti">❌ Belum Ditindaklanjuti</option>
-        </select>
-      </div>
-
-      <div style="margin-bottom: 20px;">
-        <label for="modalPenjelasan" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Catatan / Penjelasan Lapangan (Opsional)</label>
-        <textarea id="modalPenjelasan" name="penjelasan" rows="3" placeholder="Tuliskan keterangan verifikasi atau penjelasan kondisi lapangan..." style="width: 100%; padding: 10px 12px; font-size: 13px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary); resize: vertical; outline: none;"></textarea>
-      </div>
-
-      <div id="modalAlert" style="display: none; padding: 10px 12px; border-radius: 8px; font-size: 12px; margin-bottom: 16px;"></div>
-
-      <div style="display: flex; justify-content: flex-end; gap: 10px;">
-        <button type="button" onclick="closeEditModal()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px; border-radius: 8px;">Batal</button>
-        <button type="submit" id="modalSaveBtn" class="btn btn-primary" style="padding: 9px 20px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, var(--accent-yellow), #d97706); color: #000; border: none; border-radius: 8px; display: flex; align-items: center; gap: 6px;">
-          <i class="bi bi-save-fill"></i> Simpan &amp; Sync ke Google Sheets
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof makeTableSortable === 'function') {
@@ -583,119 +525,6 @@ document.addEventListener('DOMContentLoaded', () => {
     makeTableSortable('pclAnomalyTable');
   }
 });
-
-function openEditModal(itemId, assignmentId, type, itemName, pclName, currentStatus, currentNotes, noVal, namaAnomaliVal) {
-  document.getElementById('modalItemId').value = itemId || '';
-  document.getElementById('modalAssignmentId').value = assignmentId || '';
-  document.getElementById('modalType').value = type || 'usaha';
-  document.getElementById('modalNama').value = itemName || '';
-  document.getElementById('modalNo').value = noVal || '';
-  document.getElementById('modalNamaAnomali').value = namaAnomaliVal || '';
-  document.getElementById('modalItemName').textContent = itemName || '-';
-  document.getElementById('modalPclName').textContent = 'PCL: ' + (pclName || '-');
-
-  const statusSelect = document.getElementById('modalStatus');
-  if (currentStatus) {
-    statusSelect.value = currentStatus;
-  }
-  document.getElementById('modalPenjelasan').value = currentNotes || '';
-
-  const alertBox = document.getElementById('modalAlert');
-  alertBox.style.display = 'none';
-
-  const modal = document.getElementById('editAnomalyModal');
-  modal.style.display = 'flex';
-}
-
-function closeEditModal() {
-  const modal = document.getElementById('editAnomalyModal');
-  modal.style.display = 'none';
-}
-
-async function saveAnomalyStatus(e) {
-  e.preventDefault();
-  const form = document.getElementById('editAnomalyForm');
-  const saveBtn = document.getElementById('modalSaveBtn');
-  const alertBox = document.getElementById('modalAlert');
-  
-  const itemId = document.getElementById('modalItemId').value;
-  const assignmentId = document.getElementById('modalAssignmentId').value;
-  const type = document.getElementById('modalType').value;
-  const nama = document.getElementById('modalNama').value;
-  const no = document.getElementById('modalNo').value;
-  const namaAnomali = document.getElementById('modalNamaAnomali').value;
-  const tindakLanjut = document.getElementById('modalStatus').value;
-  const penjelasan = document.getElementById('modalPenjelasan').value;
-
-  saveBtn.disabled = true;
-  saveBtn.innerHTML = '<i class="bi bi-arrow-repeat bi-spin"></i> Menghubungkan Apps Script (max 30s)...';
-  
-  alertBox.style.display = 'block';
-  alertBox.style.background = 'rgba(6, 182, 212, 0.15)';
-  alertBox.style.border = '1px solid rgba(6, 182, 212, 0.3)';
-  alertBox.style.color = 'var(--accent-cyan)';
-  alertBox.innerHTML = '<i class="bi bi-arrow-clockwise bi-spin"></i> Memproses sinkronisasi ke Google Spreadsheet... Harap tunggu.';
-
-  try {
-    const res = await fetch('/deteksi-anomali/update-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        assignment_id: assignmentId,
-        type: type,
-        nama: nama,
-        no: no,
-        nama_anomali: namaAnomali,
-        tindak_lanjut: tindakLanjut,
-        penjelasan: penjelasan
-      })
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      const latencySec = data.latencyMs ? (data.latencyMs / 1000).toFixed(1) : null;
-      alertBox.className = 'badge-green';
-      alertBox.style.background = 'rgba(16, 185, 129, 0.15)';
-      alertBox.style.border = '1px solid rgba(16, 185, 129, 0.3)';
-      alertBox.style.color = 'var(--accent-green)';
-      alertBox.innerHTML = `<i class="bi bi-check-circle-fill"></i> ${data.message || 'Tersinkronisasi ke Google Spreadsheet!'}` + (latencySec ? ` <small style="opacity: 0.85;">(${latencySec}s)</small>` : '');
-
-      // Update exact target row in DOM without full reload
-      const row = document.getElementById('row-' + itemId);
-      if (row) {
-        const isDone = tindakLanjut.toLowerCase().includes('sudah') || tindakLanjut.toLowerCase().includes('selesai');
-        const statusTd = row.querySelector('.item-status-td');
-        if (statusTd) {
-          if (isDone) {
-            statusTd.innerHTML = `<span class="badge badge-green" style="font-size: 11px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;"><i class="bi bi-check-circle-fill"></i> ${tindakLanjut}</span>`;
-          } else {
-            statusTd.innerHTML = `<span class="badge badge-red" style="font-size: 11px; padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px;"><i class="bi bi-exclamation-triangle-fill"></i> ${tindakLanjut}</span>`;
-          }
-        }
-
-        const penjelasanDiv = row.querySelector('.item-penjelasan');
-        if (penjelasanDiv) {
-          penjelasanDiv.innerHTML = penjelasan ? `💬 <i>${penjelasan}</i>` : '';
-        }
-      }
-
-      setTimeout(() => {
-        closeEditModal();
-      }, 1500);
-    } else {
-      throw new Error(data.error || 'Terjadi kesalahan saat mengupdate data.');
-    }
-  } catch (err) {
-    alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
-    alertBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-    alertBox.style.color = 'var(--accent-red)';
-    alertBox.innerHTML = `<i class="bi bi-exclamation-octagon-fill"></i> <strong>Gagal Sync:</strong> ${err.message}<br><small style="margin-top: 4px; display: block; opacity: 0.9;">Periksa kembali Apps Script di Google Sheets atau coba klik Simpan lagi.</small>`;
-  } finally {
-    saveBtn.disabled = false;
-    saveBtn.innerHTML = '<i class="bi bi-save-fill"></i> Simpan &amp; Sync ke Google Sheets';
-  }
-}
 
 // PARTIAL PJAX TAB & PAGINATION SWITCHER (NO FULL PAGE FLICKER)
 (function() {

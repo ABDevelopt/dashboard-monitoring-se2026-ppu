@@ -3,19 +3,66 @@ const pino = require('pino');
 const qrcode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
 const logger = require('./logger');
 const { getSettings } = require('../database');
+
+const customAgent = new https.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 10000,
+  family: 4, // Paksa koneksi IPv4 murni (Mencegah IPv6 DNS resolution delay/block di cPanel/Dewaweb)
+  timeout: 30000
+});
 
 let sock = null;
 let qrCodeDataUri = '';
 let clientStatus = 'DISCONNECTED'; // DISCONNECTED, CONNECTING, QR_READY, CONNECTED
 let userInfo = null;
 let isInitializing = false;
+let hasEverConnectedInSession = false;
 
-// Exponential backoff state
+// Memory log buffer untuk WhatsApp (maksimal 100 baris log terbaru)
+const waLogs = [];
+const MAX_WA_LOGS = 100;
+
+/**
+ * Mencatat log koneksi WhatsApp dan menyimpannya di memori buffer untuk dikirim ke browser console & terminal UI
+ */
+function addWaLog(type, message) {
+  const now = new Date();
+  const witaOffset = 8 * 60 * 60 * 1000;
+  const witaTime = new Date(now.getTime() + witaOffset);
+  const hours = String(witaTime.getUTCHours()).padStart(2, '0');
+  const minutes = String(witaTime.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(witaTime.getUTCSeconds()).padStart(2, '0');
+  const timeStr = `${hours}:${minutes}:${seconds} WITA`;
+
+  const logEntry = {
+    id: Date.now() + Math.random().toString(36).substring(2, 6),
+    timestamp: timeStr,
+    type, // 'info', 'warn', 'error', 'success'
+    message
+  };
+
+  waLogs.push(logEntry);
+  if (waLogs.length > MAX_WA_LOGS) {
+    waLogs.shift();
+  }
+
+  // Kirim juga ke logger utama server
+  if (type === 'error') logger.error(`[WA-Service] ${message}`);
+  else if (type === 'warn') logger.warn(`[WA-Service] ${message}`);
+  else logger.info(`[WA-Service] ${message}`);
+}
+
+function getLogs() {
+  return [...waLogs];
+}
+
+// Exponential backoff state untuk reconnect
 let reconnectAttempt = 0;
-const RECONNECT_DELAY_MIN = 5000;   // 5 detik
-const RECONNECT_DELAY_MAX = 60000;  // 60 detik
+const RECONNECT_DELAY_MIN = 3000;   // 3 detik
+const RECONNECT_DELAY_MAX = 30000;  // 30 detik (cap max)
 
 // Health check interval handle
 let healthCheckInterval = null;
@@ -23,26 +70,38 @@ let healthCheckInterval = null;
 const authDir = path.join(__dirname, '../.wwebjs_auth/baileys-session');
 
 /**
+ * Cek apakah direktori auth berisi file kredensial sesi yang valid (creds.json)
+ */
+function hasValidSession() {
+  const credsFile = path.join(authDir, 'creds.json');
+  try {
+    return fs.existsSync(credsFile) && fs.statSync(credsFile).size > 10;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
  * Menghitung delay reconnect dengan exponential backoff
  */
 function getReconnectDelay() {
-  const delay = Math.min(RECONNECT_DELAY_MIN * Math.pow(2, reconnectAttempt), RECONNECT_DELAY_MAX);
+  const delay = Math.min(RECONNECT_DELAY_MIN * Math.pow(1.5, reconnectAttempt), RECONNECT_DELAY_MAX);
   reconnectAttempt++;
-  logger.info(`[WA-Backoff] Reconnect attempt #${reconnectAttempt}, delay: ${delay}ms`);
+  addWaLog('info', `[WA-Backoff] Reconnect attempt #${reconnectAttempt}, delay: ${Math.round(delay)}ms`);
   return delay;
 }
 
 /**
- * Membersihkan direktori sesi autentikasi (hanya untuk logout penuh)
+ * Membersihkan direktori sesi autentikasi (hanya untuk logout penuh / session corrupt)
  */
 function cleanAuthDir() {
   try {
     if (fs.existsSync(authDir)) {
       fs.rmSync(authDir, { recursive: true, force: true });
-      logger.info('[WA-Clean] Session directory cleaned successfully.');
+      addWaLog('warn', '[WA-Clean] Session directory cleaned successfully.');
     }
   } catch (e) {
-    logger.error('[WA-Clean] Failed to clean session directory:', e.message);
+    addWaLog('error', `[WA-Clean] Failed to clean session directory: ${e.message}`);
   }
 }
 
@@ -57,7 +116,7 @@ function stopHealthCheck() {
 }
 
 /**
- * Memulai health check interval — deteksi koneksi zombie setiap 90 detik
+ * Memulai health check interval — deteksi koneksi zombie setiap 60 detik & sembuhkan otomatis
  */
 function startHealthCheck() {
   stopHealthCheck();
@@ -66,18 +125,20 @@ function startHealthCheck() {
     try {
       // Kirim query ringan untuk memverifikasi koneksi masih hidup
       await sock.fetchStatus('0@s.whatsapp.net').catch(() => {});
-      logger.info('[WA-Health] Heartbeat OK — connection is alive.');
+      addWaLog('info', '[WA-Health] Heartbeat OK — Koneksi aktif & responsif.');
     } catch (err) {
-      logger.warn('[WA-Health] Heartbeat FAILED — connection may be zombie. Triggering reconnect...');
-      await _closeSocket();
+      addWaLog('warn', '[WA-Health] Heartbeat FAILED — Socket zombie terdeteksi. Merestart koneksi otomatis...');
+      await _closeSocket(true);
+      initialize();
     }
-  }, 90000); // setiap 90 detik
+  }, 60000); // per 60 detik untuk ketahanan ekstra di Dewaweb
 }
 
 /**
- * Menutup socket saat ini secara bersih tanpa menghapus sesi
+ * Menutup socket saat ini secara bersih
+ * @param {boolean} isReconnecting Jika true, tandai status sebagai CONNECTING bukan DISCONNECTED
  */
-async function _closeSocket() {
+async function _closeSocket(isReconnecting = false) {
   stopHealthCheck();
   if (sock) {
     const oldSock = sock;
@@ -89,9 +150,15 @@ async function _closeSocket() {
       // Ignore close errors
     }
   }
-  clientStatus = 'DISCONNECTED';
+  if (!isReconnecting && !hasValidSession()) {
+    clientStatus = 'DISCONNECTED';
+    userInfo = null;
+  } else if (isReconnecting || hasValidSession()) {
+    clientStatus = 'CONNECTING';
+  } else {
+    clientStatus = 'DISCONNECTED';
+  }
   qrCodeDataUri = '';
-  userInfo = null;
   isInitializing = false;
 }
 
@@ -100,12 +167,15 @@ async function _closeSocket() {
  */
 async function initialize() {
   if (sock || isInitializing) {
-    logger.info('[WA-Init] Already initialized or initializing, skip.');
+    addWaLog('info', '[WA-Init] Socket sudah aktif atau dalam inisialisasi. Melewati panggilan duplikat.');
     return;
   }
+
   isInitializing = true;
-  clientStatus = 'CONNECTING';
-  logger.info('[WA-Init] Starting WhatsApp Baileys initialization sequence...');
+  if (clientStatus !== 'CONNECTED') {
+    clientStatus = 'CONNECTING';
+  }
+  addWaLog('info', '[WA-Init] Menginisialisasi urutan koneksi WhatsApp Baileys...');
 
   try {
     if (!fs.existsSync(authDir)) {
@@ -116,13 +186,17 @@ async function initialize() {
 
     let version = [2, 3000, 1015901307];
     try {
-      const fetchedVersion = await fetchLatestBaileysVersion();
+      const fetchVersionWithTimeout = Promise.race([
+        fetchLatestBaileysVersion(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Fetch Baileys version timeout (2s)')), 2000))
+      ]);
+      const fetchedVersion = await fetchVersionWithTimeout;
       if (fetchedVersion && fetchedVersion.version) {
         version = fetchedVersion.version;
-        logger.info(`[WA-Init] Using Baileys version: ${version.join('.')}`);
+        addWaLog('info', `[WA-Init] Menggunakan versi Baileys fetched: ${version.join('.')}`);
       }
     } catch (e) {
-      logger.warn('[WA-Init] Could not fetch latest Baileys version, using fallback:', e.message);
+      addWaLog('info', `[WA-Init] Pengecekan versi Baileys skip/timeout. Menggunakan versi stabil: ${version.join('.')}`);
     }
 
     const newSock = makeWASocket({
@@ -130,12 +204,21 @@ async function initialize() {
       auth: state,
       printQRInTerminal: false,
       logger: pino({ level: 'silent' }),
-      browser: ['SE2026 Monitoring PPU', 'Chrome', '1.0.0'],
+      browser: ['Windows', 'Chrome', '121.0.0.0'],
       syncFullHistory: false,
-      connectTimeoutMs: 60000,
+      markOnlineOnConnect: true,       // Jaga status bot aktif/online di WA Server
+      connectTimeoutMs: 60000,         // Timeout 60s
       defaultQueryTimeoutMs: 60000,
-      keepAliveIntervalMs: 25000,
+      keepAliveIntervalMs: 25000,      // Ping per 25s (Sesuai batas idle Nginx/Dewaweb)
       retryRequestDelayMs: 2000,
+      maxRetries: 5,
+      wsOptions: {
+        agent: customAgent,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+          'Origin': 'https://web.whatsapp.com'
+        }
+      }
     });
 
     // Assign socket hanya setelah berhasil dibuat, reset flag
@@ -151,10 +234,11 @@ async function initialize() {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
-        logger.info('[WA-Event] QR Code received via Baileys.');
+        consecutive408Count = 0;
+        addWaLog('info', '[WA-Event] QR Code baru diterima dari WhatsApp Server. Siap di-scan.');
         qrcode.toDataURL(qr, (err, url) => {
           if (err) {
-            logger.error('[WA-Event] Failed to convert QR to Data URL:', err);
+            addWaLog('error', `[WA-Event] Gagal mengkonversi QR Code ke Data URL: ${err.message}`);
             clientStatus = 'DISCONNECTED';
           } else {
             qrCodeDataUri = url;
@@ -164,10 +248,11 @@ async function initialize() {
       }
 
       if (connection === 'open') {
-        // Reset backoff counter karena berhasil connect
+        // Reset backoff counter & tandai sudah pernah connect
         reconnectAttempt = 0;
+        consecutive408Count = 0;
+        hasEverConnectedInSession = true;
 
-        logger.info('[WA-Event] WhatsApp Connection OPENED & CONNECTED!');
         clientStatus = 'CONNECTED';
         qrCodeDataUri = '';
 
@@ -179,7 +264,7 @@ async function initialize() {
           pushname: pushName,
           wid: { user: phoneNumber }
         };
-        logger.info(`[WA-Event] Connected: ${pushName} (${phoneNumber})`);
+        addWaLog('success', `[WA-Event] 🟢 WhatsApp Terhubung & Aktif! User: ${pushName} (${phoneNumber})`);
 
         // Mulai heartbeat health check
         startHealthCheck();
@@ -187,44 +272,109 @@ async function initialize() {
 
       if (connection === 'close') {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
-        const reason = lastDisconnect?.error?.message || statusCode || 'Unknown';
-        logger.warn(`[WA-Event] Connection Closed. StatusCode: ${statusCode}, Reason: ${reason}`);
+        const reason = lastDisconnect?.error?.message || String(statusCode || 'Unknown');
+        addWaLog('warn', `[WA-Event] ⚠️ Koneksi terputus. StatusCode: ${statusCode}, Reason: ${reason}`);
 
-        // Tutup socket lama secara bersih (tanpa hapus sesi)
-        await _closeSocket();
-
-        const isLoggedOut = statusCode === DisconnectReason.loggedOut;
-        if (isLoggedOut) {
-          logger.warn('[WA-Event] Logged out by server. Cleaning session...');
-          cleanAuthDir();
-          reconnectAttempt = 0; // Reset backoff untuk fresh start
+        const is408Error = statusCode === 408 || reason.includes('WebSocket Error') || statusCode === DisconnectReason.timedOut;
+        if (is408Error) {
+          consecutive408Count++;
+          addWaLog('warn', `[WA-AutoRecovery] Deteksi WebSocket Error 408/Timeout (Percobaan #${consecutive408Count})...`);
+        } else {
+          consecutive408Count = 0;
         }
 
-        // Reconnect dengan exponential backoff
-        const delay = getReconnectDelay();
-        logger.info(`[WA-Event] Will reconnect in ${delay}ms...`);
+        // AUTO-RECOVERY UNTUK LOOP 408: Jika 408 terjadi 3x berturut-turut pada sesi yang belum terverifikasi:
+        if (consecutive408Count >= 3 && !hasEverConnectedInSession) {
+          addWaLog('warn', '[WA-AutoRecovery] Sesi corrupt terdeteksi (3x WebSocket 408 error berturut-turut). Membersihkan sesi gantung otomatis & menerbitkan QR Code baru...');
+          await _closeSocket(false);
+          cleanAuthDir();
+          consecutive408Count = 0;
+          reconnectAttempt = 0;
+          clientStatus = 'DISCONNECTED';
+          setTimeout(() => {
+            initialize();
+          }, 1000);
+          return;
+        }
+
+        const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+        const isRestartRequired = statusCode === DisconnectReason.restartRequired || statusCode === 515;
+        const isQrTimeout = statusCode === DisconnectReason.timedOut || reason.includes('QR refs attempts ended');
+
+        // Jika restartRequired (515) dari Baileys (setelah QR di-scan/sync), SEGERA RECONNECT TANPA RESET SESI
+        if (isRestartRequired) {
+          addWaLog('info', '[WA-Event] Restart socket diminta oleh Baileys setelah sync. Reconnecting langsung...');
+          await _closeSocket(true);
+          initialize();
+          return;
+        }
+
+        // HANYA hapus sesi dari disk jika pengguna EKSPLISIT di-logout dari HP
+        if (isLoggedOut && hasEverConnectedInSession) {
+          addWaLog('warn', '[WA-Event] Pengguna di-logout dari WhatsApp Mobile. Membersihkan berkas sesi...');
+          await _closeSocket(false);
+          cleanAuthDir();
+          reconnectAttempt = 0;
+          hasEverConnectedInSession = false;
+          clientStatus = 'DISCONNECTED';
+          return;
+        }
+
+        // Jika QR Code timeout saat BELUM CONNECTED, otomatis regenerasi QR Code baru!
+        if (isQrTimeout && !hasValidSession()) {
+          addWaLog('info', '[WA-Event] Batas waktu QR Code habis. Meng-generate QR Code baru...');
+          await _closeSocket(false);
+          cleanAuthDir();
+          reconnectAttempt = 0;
+          clientStatus = 'DISCONNECTED';
+          setTimeout(() => {
+            initialize();
+          }, 1500);
+          return;
+        }
+
+        // Jika sesi tersimpan di disk (creds.json ADA), SELALU LAKUKAN INFINITE AUTO-RECONNECT!
+        if (hasValidSession()) {
+          const delay = getReconnectDelay();
+          addWaLog('info', `[WA-Event] Sesi tersimpan di disk. Menghubungkan ulang otomatis dalam ${Math.round(delay)}ms...`);
+          await _closeSocket(true);
+          setTimeout(() => {
+            initialize();
+          }, delay);
+          return;
+        }
+
+        // Fallback jika tidak ada sesi dan disconnect acak saat QR pairing
+        await _closeSocket(false);
         setTimeout(() => {
           initialize();
-        }, delay);
+        }, 3000);
       }
     });
 
   } catch (err) {
     // Pastikan flag direset agar initialize() bisa dipanggil ulang
     isInitializing = false;
-    clientStatus = 'DISCONNECTED';
     if (sock) {
       try { sock.ev.removeAllListeners(); sock.end(undefined); } catch (_) {}
       sock = null;
     }
-    logger.error('[WA-Init] Fatal error during Baileys initialize():', err.message || err);
+    addWaLog('error', `[WA-Init] Fatal error pada Baileys initialize(): ${err.message || err}`);
 
-    // Coba reconnect setelah backoff
-    const delay = getReconnectDelay();
-    logger.info(`[WA-Init] Will retry initialization in ${delay}ms...`);
-    setTimeout(() => {
-      initialize();
-    }, delay);
+    if (hasValidSession()) {
+      clientStatus = 'CONNECTING';
+      const delay = getReconnectDelay();
+      addWaLog('info', `[WA-Init] Mencoba ulang inisialisasi dalam ${Math.round(delay)}ms...`);
+      setTimeout(() => {
+        initialize();
+      }, delay);
+    } else {
+      addWaLog('warn', '[WA-Init] Inisialisasi dicoba ulang dalam 5 detik...');
+      clientStatus = 'DISCONNECTED';
+      setTimeout(() => {
+        initialize();
+      }, 5000);
+    }
   }
 }
 
@@ -232,13 +382,19 @@ async function initialize() {
  * Mendapatkan status koneksi saat ini
  */
 function getStatus() {
+  let effectiveStatus = clientStatus;
+  if (clientStatus === 'DISCONNECTED' && hasValidSession()) {
+    effectiveStatus = 'CONNECTING';
+  }
+
   return {
-    status: clientStatus,
+    status: effectiveStatus,
     qrCode: qrCodeDataUri,
     user: userInfo ? {
       name: userInfo.pushname,
       number: userInfo.wid.user
-    } : null
+    } : null,
+    logs: waLogs.slice(-20) // 20 log terbaru
   };
 }
 
@@ -259,7 +415,7 @@ async function getGroups() {
     }));
   } catch (err) {
     const errMsg = err && (err.message || String(err));
-    logger.warn(`WhatsApp getGroups error: ${errMsg}`);
+    addWaLog('warn', `WhatsApp getGroups error: ${errMsg}`);
     return [];
   }
 }
@@ -269,6 +425,7 @@ async function getGroups() {
  */
 async function sendDirectMessage(chatId, message) {
   if (clientStatus !== 'CONNECTED' || !sock) {
+    addWaLog('error', 'Gagal mengirim pesan: WhatsApp client belum terhubung.');
     throw new Error('WhatsApp client is not connected');
   }
   try {
@@ -277,9 +434,10 @@ async function sendDirectMessage(chatId, message) {
       formattedJid = formattedJid + '@g.us';
     }
     const response = await sock.sendMessage(formattedJid, { text: message });
+    addWaLog('success', `[WA-Message] Pesan berhasil dikirim ke: ${chatId}`);
     return response;
   } catch (err) {
-    logger.error(`Failed to send WhatsApp message to ${chatId}:`, err);
+    addWaLog('error', `[WA-Message] Gagal mengirim pesan ke ${chatId}: ${err.message}`);
     throw err;
   }
 }
@@ -288,7 +446,7 @@ async function sendDirectMessage(chatId, message) {
  * Keluar (Logout) penuh — hapus sesi, minta scan QR ulang
  */
 async function logout() {
-  logger.info('Logging out WhatsApp client (full logout + clean session)...');
+  addWaLog('warn', '[WA-Logout] Logout penuh dipicu. Membersihkan sesi & meminta QR baru...');
   stopHealthCheck();
 
   if (sock) {
@@ -298,7 +456,7 @@ async function logout() {
       oldSock.ev.removeAllListeners();
       await oldSock.logout();
     } catch (err) {
-      logger.error('Error during WhatsApp logout:', err.message);
+      addWaLog('error', `[WA-Logout] Error saat logout: ${err.message}`);
       try { oldSock.end(undefined); } catch (_) {}
     }
   }
@@ -308,29 +466,102 @@ async function logout() {
   userInfo = null;
   isInitializing = false;
   reconnectAttempt = 0;
+  hasEverConnectedInSession = false;
 
   // Hapus sesi agar pengguna perlu scan QR ulang
   cleanAuthDir();
 
+  // Inisialisasi ulang untuk minta QR baru
   setTimeout(() => {
     initialize();
-  }, 3000);
+  }, 1000);
 }
 
 /**
- * Force Reset — tutup koneksi dan reconnect, TANPA menghapus sesi
- * (Pengguna tidak perlu scan QR ulang jika sesi masih valid)
+ * Force Reset — Mereset koneksi WhatsApp
+ * @param {boolean} cleanSession Jika true, hapus file sesi temporary/corrupt untuk memaksa penerbitan QR Code baru dari awal
  */
-async function forceReset() {
-  logger.info('Force resetting WhatsApp connection (keeping session)...');
+async function forceReset(cleanSession = false) {
+  addWaLog('info', `[WA-Reset] Force reset koneksi dipicu (cleanSession: ${cleanSession})...`);
 
-  // Tutup socket lama secara bersih (TIDAK menghapus session credentials)
-  await _closeSocket();
-  reconnectAttempt = 0; // Reset backoff agar reconnect segera
+  // Stop socket aktif
+  await _closeSocket(false);
+  reconnectAttempt = 0;
+  isInitializing = false;
+
+  if (cleanSession) {
+    addWaLog('warn', '[WA-Reset] Membersihkan berkas sesi temporary untuk pembuatan QR Code baru dari awal...');
+    cleanAuthDir();
+    hasEverConnectedInSession = false;
+    userInfo = null;
+  }
+
+  clientStatus = 'CONNECTING';
 
   setTimeout(() => {
     initialize();
-  }, 2000);
+  }, 500);
+}
+
+/**
+ * Mengekstrak waktu pengambilan data dari nama file upload FASIH
+ */
+function extractUploadDataTime(upload) {
+  const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  
+  const fn = upload.status_filename || upload.filename || '';
+  const match = fn.match(/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})?/);
+  
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    const hour = parseInt(match[4], 10);
+    const minute = parseInt(match[5], 10);
+    const second = match[6] ? parseInt(match[6], 10) : 0;
+    
+    // Waktu di filename FASIH adalah WITA (UTC+8)
+    const dateUtc = new Date(Date.UTC(year, month, day, hour - 8, minute, second));
+    if (!isNaN(dateUtc.getTime())) {
+      const witaTime = new Date(dateUtc.getTime() + 8 * 60 * 60 * 1000);
+      const dayName = dayNames[witaTime.getUTCDay()];
+      const dateStr = witaTime.getUTCDate();
+      const monthName = monthNames[witaTime.getUTCMonth()];
+      const yearStr = witaTime.getUTCFullYear();
+      const hours = String(witaTime.getUTCHours()).padStart(2, '0');
+      const minutes = String(witaTime.getUTCMinutes()).padStart(2, '0');
+      return {
+        fullFormatted: `${dayName}, ${dateStr} ${monthName} ${yearStr} ${hours}.${minutes} WITA`,
+        timeOnly: `${hours}.${minutes} WITA`,
+        dateOnly: `${dayName}, ${dateStr} ${monthName} ${yearStr}`
+      };
+    }
+  }
+
+  // Fallback ke created_at
+  const createdStr = upload.created_at || upload.tanggal;
+  if (createdStr) {
+    const dateUtc = new Date(createdStr.replace(' ', 'T') + (createdStr.includes('T') ? '' : 'Z'));
+    const witaTime = new Date(dateUtc.getTime() + 8 * 60 * 60 * 1000);
+    const dayName = dayNames[witaTime.getUTCDay()];
+    const dateStr = witaTime.getUTCDate();
+    const monthName = monthNames[witaTime.getUTCMonth()];
+    const yearStr = witaTime.getUTCFullYear();
+    const hours = String(witaTime.getUTCHours()).padStart(2, '0');
+    const minutes = String(witaTime.getUTCMinutes()).padStart(2, '0');
+    return {
+      fullFormatted: `${dayName}, ${dateStr} ${monthName} ${yearStr} ${hours}.${minutes} WITA`,
+      timeOnly: `${hours}.${minutes} WITA`,
+      dateOnly: `${dayName}, ${dateStr} ${monthName} ${yearStr}`
+    };
+  }
+
+  return {
+    fullFormatted: upload.tanggal || 'Awal Pendataan',
+    timeOnly: '',
+    dateOnly: upload.tanggal || ''
+  };
 }
 
 /**
@@ -342,12 +573,12 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     const groupId = overrideGroupId || settings.whatsapp_group_id;
 
     if (!overrideGroupId && (settings.whatsapp_enabled !== '1' || !settings.whatsapp_group_id)) {
-      logger.info('WhatsApp notifications are disabled or group ID is not configured.');
+      addWaLog('info', 'Notifikasi WhatsApp tidak aktif atau grup ID belum dikonfigurasi.');
       return;
     }
 
     if (!groupId) {
-      logger.warn('No group ID specified for WhatsApp notification.');
+      addWaLog('warn', 'Grup ID tidak ditentukan untuk notifikasi WhatsApp.');
       return;
     }
 
@@ -357,27 +588,40 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     // Ambil detail data upload
     const upload = db.prepare('SELECT * FROM uploads WHERE id = ?').get(uploadId);
     if (!upload) {
-      logger.warn(`Upload with ID ${uploadId} not found. Cannot send notification.`);
+      addWaLog('warn', `Upload ID ${uploadId} tidak ditemukan. Batal mengirim notifikasi.`);
       return;
     }
 
-    // Ambil detail data upload sebelumnya
-    const prevUpload = db.prepare('SELECT * FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(uploadId);
+    // Ambil detail data upload sebelumnya (hanya upload riil pengguna, bukan Imputasi Otomatis)
+    const prevUpload = db.prepare(`
+      SELECT * FROM uploads 
+      WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%') 
+        AND (tanggal < ? OR (tanggal = ? AND id < ?))
+      ORDER BY tanggal DESC, created_at DESC, id DESC 
+      LIMIT 1
+    `).get(upload.tanggal, upload.tanggal, uploadId);
     let prevStats = null;
     if (prevUpload) {
       prevStats = getOverviewSummary(prevUpload.id, settings);
     }
 
-    // Ambil detail data upload 24 jam yang lalu
+    // Ambil detail data upload 24 jam / hari sebelumnya (hanya upload riil pengguna)
     const upload24h = db.prepare(`
       SELECT * FROM uploads 
-      WHERE created_at <= datetime(?, '-1 day') 
-      ORDER BY created_at DESC LIMIT 1
-    `).get(upload.created_at);
+      WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%') 
+        AND tanggal < ?
+      ORDER BY tanggal DESC, created_at DESC, id DESC 
+      LIMIT 1
+    `).get(upload.tanggal);
     let stats24h = null;
-    let baseUpload24h = upload24h;
+    let baseUpload24h = upload24h || prevUpload;
     if (!baseUpload24h) {
-      baseUpload24h = db.prepare('SELECT * FROM uploads ORDER BY id ASC LIMIT 1').get();
+      baseUpload24h = db.prepare(`
+        SELECT * FROM uploads 
+        WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%')
+        ORDER BY tanggal ASC, id ASC 
+        LIMIT 1
+      `).get();
     }
     if (baseUpload24h && baseUpload24h.id !== uploadId) {
       stats24h = getOverviewSummary(baseUpload24h.id, settings);
@@ -385,11 +629,11 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
 
     const stats = getOverviewSummary(uploadId, settings);
     if (!stats) {
-      logger.warn('Failed to retrieve summary stats for WhatsApp notification.');
+      addWaLog('warn', 'Gagal mengambil data ringkasan untuk notifikasi WhatsApp.');
       return;
     }
 
-    // Waktu sekarang dalam format WITA (UTC+8)
+    // Waktu System Update / Notifikasi (WITA UTC+8)
     const now = new Date();
     const witaOffset = 8 * 60 * 60 * 1000;
     const witaTime = new Date(now.getTime() + witaOffset);
@@ -403,20 +647,20 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     const hours = String(witaTime.getUTCHours()).padStart(2, '0');
     const minutes = String(witaTime.getUTCMinutes()).padStart(2, '0');
     
-    const timeFormatted = `${dayName}, ${dateStr} ${monthName} ${yearStr} ${hours}.${minutes} WITA`;
-    const timeOnlyFormatted = `${hours}.${minutes} WITA`;
+    const systemUpdateFormatted = `${dayName}, ${dateStr} ${monthName} ${yearStr} ${hours}.${minutes} WITA`;
+    const systemUpdateHoursOnly = `${hours}.${minutes} WITA`;
 
+    // Waktu Pengambilan Data dari Filename FASIH (misal rekap_..._20260806_084332.csv)
+    const dataTimeObj = extractUploadDataTime(upload);
+    const dataTimeFormatted = dataTimeObj.fullFormatted;
+    const dataTimeHoursOnly = dataTimeObj.timeOnly;
+    const dataTimeDateOnly = dataTimeObj.dateOnly;
+
+    // Waktu Upload Sebelumnya
     let prevUploadTimeStr = 'Awal Pendataan';
     if (prevUpload) {
-      const prevDate = new Date(prevUpload.created_at.replace(' ', 'T') + 'Z');
-      const witaPrev = new Date(prevDate.getTime() + witaOffset);
-      const prevDayName = dayNames[witaPrev.getUTCDay()];
-      const prevDateStr = witaPrev.getUTCDate();
-      const prevMonthName = monthNames[witaPrev.getUTCMonth()];
-      const prevYearStr = witaPrev.getUTCFullYear();
-      const prevHours = String(witaPrev.getUTCHours()).padStart(2, '0');
-      const prevMinutes = String(witaPrev.getUTCMinutes()).padStart(2, '0');
-      prevUploadTimeStr = `${prevDayName}, ${prevDateStr} ${prevMonthName} ${prevYearStr} ${prevHours}.${prevMinutes} WITA`;
+      const prevDataObj = extractUploadDataTime(prevUpload);
+      prevUploadTimeStr = prevDataObj.fullFormatted;
     }
 
     const realisasiFasih = (stats.submitted_total || 0) + (stats.approved_total || 0) + (stats.rejected_total || 0);
@@ -577,32 +821,36 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     let message = '';
     if (settings.whatsapp_message_template && settings.whatsapp_message_template.trim() !== '') {
       message = settings.whatsapp_message_template
-        .replace(/\{tanggal_sekarang\}/g, timeFormatted)
-        .replace(/\{jam_sekarang\}/g, timeOnlyFormatted)
+        .replace(/\{waktu_pengambilan_data\}/g, dataTimeFormatted)
+        .replace(/\{waktu_update_system\}/g, systemUpdateFormatted)
+        .replace(/\{jam_pengambilan_data\}/g, dataTimeHoursOnly)
+        .replace(/\{tanggal_pengambilan_data\}/g, dataTimeDateOnly)
+        .replace(/\{tanggal_sekarang\}/g, systemUpdateFormatted)
+        .replace(/\{jam_sekarang\}/g, systemUpdateHoursOnly)
         .replace(/\{waktu_upload_sebelumnya\}/g, prevUploadTimeStr)
         .replace(/\{label_fasih\}/g, labelFasih)
         .replace(/\{filename\}/g, upload.filename)
         .replace(/\{tanggal_data\}/g, upload.tanggal)
         .replace(/\{subsls_count\}/g, upload.total_subsls_terisi)
-        .replace(/\{realisasi_fasih\}/g, realisasiFasih)
-        .replace(/\{target_fasih\}/g, targetFasih)
+        .replace(/\{realisasi_fasih\}/g, realisasiFasih.toLocaleString('id-ID'))
+        .replace(/\{target_fasih\}/g, targetFasih.toLocaleString('id-ID'))
         .replace(/\{persen_fasih\}/g, persenFasih)
-        .replace(/\{realisasi_muatan\}/g, realisasiMuatan)
-        .replace(/\{target_muatan\}/g, targetMuatan)
+        .replace(/\{realisasi_muatan\}/g, realisasiMuatan.toLocaleString('id-ID'))
+        .replace(/\{target_muatan\}/g, targetMuatan.toLocaleString('id-ID'))
         .replace(/\{persen_muatan\}/g, persenMuatan)
-        .replace(/\{open_total\}/g, stats.open_total || 0)
-        .replace(/\{draft_total\}/g, stats.draft_total || 0)
-        .replace(/\{submitted_total\}/g, stats.submitted_total || 0)
-        .replace(/\{approved_total\}/g, stats.approved_total || 0)
-        .replace(/\{rejected_total\}/g, stats.rejected_total || 0)
-        .replace(/\{diff_submitted\}/g, diffSubmitted)
-        .replace(/\{diff_approved\}/g, diffApproved)
-        .replace(/\{diff_rejected\}/g, diffRejected)
-        .replace(/\{diff_total\}/g, diffTotal)
-        .replace(/\{diff_24h_submitted\}/g, diff24Submitted)
-        .replace(/\{diff_24h_approved\}/g, diff24Approved)
-        .replace(/\{diff_24h_rejected\}/g, diff24Rejected)
-        .replace(/\{diff_24h_total\}/g, diff24Total)
+        .replace(/\{open_total\}/g, (stats.open_total || 0).toLocaleString('id-ID'))
+        .replace(/\{draft_total\}/g, (stats.draft_total || 0).toLocaleString('id-ID'))
+        .replace(/\{submitted_total\}/g, (stats.submitted_total || 0).toLocaleString('id-ID'))
+        .replace(/\{approved_total\}/g, (stats.approved_total || 0).toLocaleString('id-ID'))
+        .replace(/\{rejected_total\}/g, (stats.rejected_total || 0).toLocaleString('id-ID'))
+        .replace(/\{diff_submitted\}/g, diffSubmitted.toLocaleString('id-ID'))
+        .replace(/\{diff_approved\}/g, diffApproved.toLocaleString('id-ID'))
+        .replace(/\{diff_rejected\}/g, diffRejected.toLocaleString('id-ID'))
+        .replace(/\{diff_total\}/g, diffTotal.toLocaleString('id-ID'))
+        .replace(/\{diff_24h_submitted\}/g, diff24Submitted.toLocaleString('id-ID'))
+        .replace(/\{diff_24h_approved\}/g, diff24Approved.toLocaleString('id-ID'))
+        .replace(/\{diff_24h_rejected\}/g, diff24Rejected.toLocaleString('id-ID'))
+        .replace(/\{diff_24h_total\}/g, diff24Total.toLocaleString('id-ID'))
         .replace(/\{avg_diff_all\}/g, avgDiffAll)
         .replace(/\{avg_diff_active\}/g, avgDiffActive)
         .replace(/\{avg_diff_24h_all\}/g, avgDiff24All)
@@ -623,11 +871,9 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
         .replace(/\{dist_24h_8_12\}/g, dist24h.bucket_8_12)
         .replace(/\{dist_24h_13_plus\}/g, dist24h.bucket_13_plus);
     } else {
-      const formattedDateWweb = `${witaTime.getUTCDate()} ${monthNames[witaTime.getUTCMonth()]} ${witaTime.getUTCFullYear()}`;
-      const formattedTimeWweb = `${hours}.${minutes} WITA`;
-
       message = `*📢 UPDATE HARIAN SE2026 PPU*\n` +
-                `🗓️ ${formattedDateWweb} | ⏰ ${formattedTimeWweb}\n\n` +
+                `📥 Data FASIH: *${dataTimeFormatted}*\n` +
+                `⏰ Update System: *${systemUpdateFormatted}*\n\n` +
                 `*AKUMULASI PROGRES PENDATAAN*\n` +
                 `✅ Selesai (Subm/Appr/Rej): *${realisasiFasih.toLocaleString('id-ID')}* dokumen (*${persenFasih}%*)\n` +
                 `   ├ 🟢 Approved: *${(stats.approved_total || 0).toLocaleString('id-ID')}* dokumen\n` +
@@ -651,11 +897,11 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
                 `_Notifikasi otomatis [monitoring.bpsppu.com]_`;
     }
 
-    logger.info(`Sending data update notification to group ${groupId}...`);
+    addWaLog('info', `Mengirim notifikasi update data ke grup WhatsApp ${groupId}...`);
     await sendDirectMessage(groupId, message);
-    logger.info('WhatsApp notification successfully sent.');
+    addWaLog('success', 'Notifikasi WhatsApp berhasil dikirim ke grup!');
   } catch (err) {
-    logger.error('Failed to send WhatsApp update notification:', err);
+    addWaLog('error', `Gagal mengirim notifikasi update WhatsApp: ${err.message}`);
   }
 }
 
@@ -663,8 +909,10 @@ module.exports = {
   initialize,
   getStatus,
   getGroups,
+  getLogs,
   sendDirectMessage,
   sendUpdateNotification,
   logout,
-  forceReset
+  forceReset,
+  hasValidSession
 };

@@ -6,8 +6,14 @@ const { getSettings, updateSettings } = require('../database');
 // GET /admin/whatsapp - Halaman Utama Integrasi WhatsApp
 router.get('/', async (req, res) => {
   const settings = getSettings();
-  const waStatus = whatsappService.getStatus();
+  let waStatus = whatsappService.getStatus();
   
+  // Jika status DISCONNECTED, inisialisasi socket (akan menggunakan sesi tersimpan jika ada, atau buat QR jika baru)
+  if (waStatus.status === 'DISCONNECTED') {
+    whatsappService.initialize();
+    waStatus = whatsappService.getStatus();
+  }
+
   // Jika terhubung, ambil daftar grup
   let groups = [];
   if (waStatus.status === 'CONNECTED') {
@@ -25,7 +31,20 @@ router.get('/', async (req, res) => {
 
 // GET /admin/whatsapp/status - API Status Koneksi & QR Code (Untuk Real-time Polling)
 router.get('/status', (req, res) => {
-  res.json(whatsappService.getStatus());
+  let waStatus = whatsappService.getStatus();
+  if (waStatus.status === 'DISCONNECTED') {
+    whatsappService.initialize();
+    waStatus = whatsappService.getStatus();
+  }
+  res.json(waStatus);
+});
+
+// GET /admin/whatsapp/logs - API Log Koneksi Real-time
+router.get('/logs', (req, res) => {
+  res.json({
+    status: whatsappService.getStatus(),
+    logs: whatsappService.getLogs()
+  });
 });
 
 // GET /admin/whatsapp/groups - API Ambil Daftar Grup
@@ -108,11 +127,19 @@ router.post('/logout', async (req, res) => {
   res.redirect('/admin/whatsapp');
 });
 
-// POST /admin/whatsapp/reconnect - Reset Koneksi WhatsApp (Force Reconnect)
+// POST /admin/whatsapp/reconnect - Reset Koneksi WhatsApp (Force Reconnect / Refresh QR)
 router.post('/reconnect', async (req, res) => {
   try {
-    await whatsappService.forceReset();
-    req.flash('success', 'Koneksi WhatsApp berhasil di-reset. Mencoba menghubungkan ulang...');
+    const waStatus = whatsappService.getStatus();
+    // Jika belum CONNECTED, lakukan Clean Reset (hapus file auth temp) agar QR Code baru dijamin terbit dari disk bersih
+    const cleanSession = waStatus.status !== 'CONNECTED';
+    await whatsappService.forceReset(cleanSession);
+
+    if (cleanSession) {
+      req.flash('success', 'Sistem berhasil di-reset total. QR Code segar terbaru sedang di-generate...');
+    } else {
+      req.flash('success', 'Koneksi WhatsApp berhasil di-reset. Mencoba menghubungkan ulang...');
+    }
   } catch (err) {
     req.flash('error', `Gagal mereset koneksi: ${err.message}`);
   }
