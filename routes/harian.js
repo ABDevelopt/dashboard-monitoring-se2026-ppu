@@ -8,12 +8,13 @@ router.get('/', (req, res) => {
   const filterKorlap = req.query.korlap || '';
   const filterPml = req.query.pml || '';
 
-  // Get recent 5 distinct upload dates for daily progress tracking
+  // Get recent 5 distinct upload dates for daily progress tracking (hanya upload riil pengguna)
   const recentUploads = getDb().prepare(`
     SELECT id, tanggal 
     FROM (
       SELECT MAX(id) AS id, tanggal 
       FROM uploads 
+      WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%')
       GROUP BY tanggal 
       ORDER BY tanggal DESC 
       LIMIT 5
@@ -25,7 +26,12 @@ router.get('/', (req, res) => {
   recentUploads.forEach(u => {
     const weather = getDb().prepare('SELECT temp, code, humidity FROM weather_history WHERE tanggal = ?').get(u.tanggal);
     u.weather = weather || null;
-    const countStmt = getDb().prepare('SELECT COUNT(*) AS cnt FROM uploads WHERE tanggal = ?').get(u.tanggal);
+    const countStmt = getDb().prepare(`
+      SELECT COUNT(*) AS cnt 
+      FROM uploads 
+      WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%')
+        AND tanggal = ?
+    `).get(u.tanggal);
     u.session_count = countStmt ? countStmt.cnt : 1;
   });
 
@@ -37,12 +43,13 @@ router.get('/', (req, res) => {
     let queryParams = [];
     const settings = res.locals.settings;
 
-    // Check if there is a previous upload before the first of the 5 recent uploads
+    // Check if there is a previous upload before the first of the 5 recent uploads (hanya upload riil pengguna)
     const prevUploadOfFirst = getDb().prepare(`
       SELECT MAX(id) AS id, tanggal 
       FROM uploads 
-      WHERE tanggal < ? 
-      ORDER BY tanggal DESC 
+      WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%')
+        AND tanggal < ? 
+      ORDER BY tanggal DESC, id DESC 
       LIMIT 1
     `).get(recentUploads[0].tanggal);
 
