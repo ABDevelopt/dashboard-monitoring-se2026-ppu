@@ -196,14 +196,20 @@ async function initialize() {
       auth: state,
       printQRInTerminal: false,
       logger: pino({ level: 'silent' }),
-      browser: ['SE2026 Monitoring PPU', 'Chrome', '1.0.0'],
+      browser: ['Ubuntu', 'Chrome', '120.0.0.0'],
       syncFullHistory: false,
       markOnlineOnConnect: true,       // Jaga status bot aktif/online di WA Server
-      connectTimeoutMs: 120000,        // Timeout 120s untuk fleksibilitas jaringan hosting
-      defaultQueryTimeoutMs: 120000,
-      keepAliveIntervalMs: 15000,      // Ping per 15s (Cegah idle-kill oleh cPanel/Dewaweb Nginx)
-      retryRequestDelayMs: 2000,
-      maxRetries: 10,
+      connectTimeoutMs: 60000,         // Timeout 60s
+      defaultQueryTimeoutMs: 60000,
+      keepAliveIntervalMs: 25000,      // Ping per 25s (Sesuai batas idle Nginx/Dewaweb)
+      retryRequestDelayMs: 3000,
+      maxRetries: 5,
+      wsOptions: {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Origin': 'https://web.whatsapp.com'
+        }
+      }
     });
 
     // Assign socket hanya setelah berhasil dibuat, reset flag
@@ -219,6 +225,7 @@ async function initialize() {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
+        consecutive408Count = 0;
         addWaLog('info', '[WA-Event] QR Code baru diterima dari WhatsApp Server. Siap di-scan.');
         qrcode.toDataURL(qr, (err, url) => {
           if (err) {
@@ -234,6 +241,7 @@ async function initialize() {
       if (connection === 'open') {
         // Reset backoff counter & tandai sudah pernah connect
         reconnectAttempt = 0;
+        consecutive408Count = 0;
         hasEverConnectedInSession = true;
 
         clientStatus = 'CONNECTED';
@@ -257,6 +265,28 @@ async function initialize() {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
         const reason = lastDisconnect?.error?.message || String(statusCode || 'Unknown');
         addWaLog('warn', `[WA-Event] ⚠️ Koneksi terputus. StatusCode: ${statusCode}, Reason: ${reason}`);
+
+        const is408Error = statusCode === 408 || reason.includes('WebSocket Error') || statusCode === DisconnectReason.timedOut;
+        if (is408Error) {
+          consecutive408Count++;
+          addWaLog('warn', `[WA-AutoRecovery] Deteksi WebSocket Error 408/Timeout (Percobaan #${consecutive408Count})...`);
+        } else {
+          consecutive408Count = 0;
+        }
+
+        // AUTO-RECOVERY UNTUK LOOP 408: Jika 408 terjadi 3x berturut-turut pada sesi yang belum terverifikasi:
+        if (consecutive408Count >= 3 && !hasEverConnectedInSession) {
+          addWaLog('warn', '[WA-AutoRecovery] Sesi corrupt terdeteksi (3x WebSocket 408 error berturut-turut). Membersihkan sesi gantung otomatis & menerbitkan QR Code baru...');
+          await _closeSocket(false);
+          cleanAuthDir();
+          consecutive408Count = 0;
+          reconnectAttempt = 0;
+          clientStatus = 'DISCONNECTED';
+          setTimeout(() => {
+            initialize();
+          }, 1000);
+          return;
+        }
 
         const isLoggedOut = statusCode === DisconnectReason.loggedOut;
         const isRestartRequired = statusCode === DisconnectReason.restartRequired || statusCode === 515;
