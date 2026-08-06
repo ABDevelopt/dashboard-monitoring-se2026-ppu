@@ -16,6 +16,7 @@ let isInitializing = false;
 let reconnectAttempt = 0;
 const RECONNECT_DELAY_MIN = 5000;   // 5 detik
 const RECONNECT_DELAY_MAX = 60000;  // 60 detik
+const MAX_RECONNECT_ATTEMPTS = 5;   // Maksimal 5x retry otomatis jika terputus tiba-tiba
 
 // Health check interval handle
 let healthCheckInterval = null;
@@ -23,17 +24,29 @@ let healthCheckInterval = null;
 const authDir = path.join(__dirname, '../.wwebjs_auth/baileys-session');
 
 /**
+ * Cek apakah direktori auth berisi file kredensial sesi yang valid (creds.json)
+ */
+function hasValidSession() {
+  const credsFile = path.join(authDir, 'creds.json');
+  try {
+    return fs.existsSync(credsFile) && fs.statSync(credsFile).size > 10;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
  * Menghitung delay reconnect dengan exponential backoff
  */
 function getReconnectDelay() {
   const delay = Math.min(RECONNECT_DELAY_MIN * Math.pow(2, reconnectAttempt), RECONNECT_DELAY_MAX);
   reconnectAttempt++;
-  logger.info(`[WA-Backoff] Reconnect attempt #${reconnectAttempt}, delay: ${delay}ms`);
+  logger.info(`[WA-Backoff] Reconnect attempt #${reconnectAttempt}/${MAX_RECONNECT_ATTEMPTS}, delay: ${delay}ms`);
   return delay;
 }
 
 /**
- * Membersihkan direktori sesi autentikasi (hanya untuk logout penuh)
+ * Membersihkan direktori sesi autentikasi (hanya untuk logout penuh / session corrupt)
  */
 function cleanAuthDir() {
   try {
@@ -97,12 +110,24 @@ async function _closeSocket() {
 
 /**
  * Inisialisasi WhatsApp Client menggunakan Baileys (WebSocket murni)
+ * @param {Object} options 
+ * @param {boolean} options.onlyIfSessionExists Jika true, hanya inisialisasi jika creds.json tersimpan
  */
-async function initialize() {
+async function initialize(options = {}) {
+  const { onlyIfSessionExists = false } = options;
+
   if (sock || isInitializing) {
     logger.info('[WA-Init] Already initialized or initializing, skip.');
     return;
   }
+
+  // Jika dipanggil dari startup dan belum pernah login (tidak ada creds.json), lewati inisialisasi otomatis
+  if (onlyIfSessionExists && !hasValidSession()) {
+    logger.info('[WA-Init] No saved session found (creds.json missing). Skipping auto-start until requested.');
+    clientStatus = 'DISCONNECTED';
+    return;
+  }
+
   isInitializing = true;
   clientStatus = 'CONNECTING';
   logger.info('[WA-Init] Starting WhatsApp Baileys initialization sequence...');
@@ -132,10 +157,10 @@ async function initialize() {
       logger: pino({ level: 'silent' }),
       browser: ['SE2026 Monitoring PPU', 'Chrome', '1.0.0'],
       syncFullHistory: false,
-      connectTimeoutMs: 60000,
-      defaultQueryTimeoutMs: 60000,
-      keepAliveIntervalMs: 25000,
-      retryRequestDelayMs: 2000,
+      connectTimeoutMs: 90000,        // Tingkatkan timeout ke 90s untuk stabilitas Dewaweb
+      defaultQueryTimeoutMs: 90000,
+      keepAliveIntervalMs: 30000,     // Heartbeat websocket 30s
+      retryRequestDelayMs: 3000,
     });
 
     // Assign socket hanya setelah berhasil dibuat, reset flag
@@ -187,20 +212,43 @@ async function initialize() {
 
       if (connection === 'close') {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
-        const reason = lastDisconnect?.error?.message || statusCode || 'Unknown';
+        const reason = lastDisconnect?.error?.message || String(statusCode || 'Unknown');
         logger.warn(`[WA-Event] Connection Closed. StatusCode: ${statusCode}, Reason: ${reason}`);
 
         // Tutup socket lama secara bersih (tanpa hapus sesi)
         await _closeSocket();
 
         const isLoggedOut = statusCode === DisconnectReason.loggedOut;
-        if (isLoggedOut) {
-          logger.warn('[WA-Event] Logged out by server. Cleaning session...');
+        const isSessionInvalid = statusCode === DisconnectReason.badSession || statusCode === 401;
+        const isQrTimeout = statusCode === DisconnectReason.timedOut || reason.includes('QR refs attempts ended');
+
+        // Jika ter-logout atau sesi rusak, bersihkan direktori sesi & hentikan auto-reconnect
+        if (isLoggedOut || isSessionInvalid) {
+          logger.warn('[WA-Event] Logged out by server / invalid session. Cleaning session files...');
           cleanAuthDir();
-          reconnectAttempt = 0; // Reset backoff untuk fresh start
+          reconnectAttempt = 0;
+          clientStatus = 'DISCONNECTED';
+          return;
         }
 
-        // Reconnect dengan exponential backoff
+        // Jika QR Code timeout karena tidak ada yang scan, HENTIKAN auto-reconnect!
+        if (isQrTimeout && !hasValidSession()) {
+          logger.info('[WA-Event] QR Code expired (not scanned). Cleaned temp auth and stopping auto-reconnect.');
+          cleanAuthDir();
+          reconnectAttempt = 0;
+          clientStatus = 'DISCONNECTED';
+          return;
+        }
+
+        // Jika percobaan reconnect sudah mencapai batas maksimal (MAX_RECONNECT_ATTEMPTS)
+        if (reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
+          logger.warn(`[WA-Event] Reached max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}). Halting background reconnect.`);
+          reconnectAttempt = 0;
+          clientStatus = 'DISCONNECTED';
+          return;
+        }
+
+        // Reconnect dengan exponential backoff jika koneksi terputus saat sudah pernah login
         const delay = getReconnectDelay();
         logger.info(`[WA-Event] Will reconnect in ${delay}ms...`);
         setTimeout(() => {
@@ -219,12 +267,17 @@ async function initialize() {
     }
     logger.error('[WA-Init] Fatal error during Baileys initialize():', err.message || err);
 
-    // Coba reconnect setelah backoff
-    const delay = getReconnectDelay();
-    logger.info(`[WA-Init] Will retry initialization in ${delay}ms...`);
-    setTimeout(() => {
-      initialize();
-    }, delay);
+    // Hanya coba retry jika ada sesi terautentikasi dan percobaan retry < MAX_RECONNECT_ATTEMPTS
+    if (hasValidSession() && reconnectAttempt < MAX_RECONNECT_ATTEMPTS) {
+      const delay = getReconnectDelay();
+      logger.info(`[WA-Init] Will retry initialization in ${delay}ms...`);
+      setTimeout(() => {
+        initialize();
+      }, delay);
+    } else {
+      logger.warn('[WA-Init] Skipping background retry (no valid session or max attempts reached).');
+      reconnectAttempt = 0;
+    }
   }
 }
 
@@ -312,9 +365,10 @@ async function logout() {
   // Hapus sesi agar pengguna perlu scan QR ulang
   cleanAuthDir();
 
+  // Inisialisasi ulang untuk minta QR baru
   setTimeout(() => {
     initialize();
-  }, 3000);
+  }, 2000);
 }
 
 /**
@@ -666,5 +720,6 @@ module.exports = {
   sendDirectMessage,
   sendUpdateNotification,
   logout,
-  forceReset
+  forceReset,
+  hasValidSession
 };

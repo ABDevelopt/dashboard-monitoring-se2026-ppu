@@ -531,10 +531,10 @@ function init() {
     logger.error('❌ Error loading master data:', err);
   }
 
-  // Inisialisasi WhatsApp Service saat startup
+  // Inisialisasi WhatsApp Service saat startup (hanya jika sesi tersimpan sudah ada)
   try {
     const whatsappService = require('./services/whatsappService');
-    whatsappService.initialize();
+    whatsappService.initialize({ onlyIfSessionExists: true });
   } catch (err) {
     logger.error('❌ Gagal menginisialisasi WhatsApp Service pada startup:', err);
   }
