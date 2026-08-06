@@ -39,6 +39,14 @@ router.get('/status', (req, res) => {
   res.json(waStatus);
 });
 
+// GET /admin/whatsapp/logs - API Log Koneksi Real-time
+router.get('/logs', (req, res) => {
+  res.json({
+    status: whatsappService.getStatus(),
+    logs: whatsappService.getLogs()
+  });
+});
+
 // GET /admin/whatsapp/groups - API Ambil Daftar Grup
 router.get('/groups', async (req, res) => {
   const groups = await whatsappService.getGroups();

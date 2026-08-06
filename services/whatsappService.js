@@ -13,6 +13,44 @@ let userInfo = null;
 let isInitializing = false;
 let hasEverConnectedInSession = false;
 
+// Memory log buffer untuk WhatsApp (maksimal 100 baris log terbaru)
+const waLogs = [];
+const MAX_WA_LOGS = 100;
+
+/**
+ * Mencatat log koneksi WhatsApp dan menyimpannya di memori buffer untuk dikirim ke browser console & terminal UI
+ */
+function addWaLog(type, message) {
+  const now = new Date();
+  const witaOffset = 8 * 60 * 60 * 1000;
+  const witaTime = new Date(now.getTime() + witaOffset);
+  const hours = String(witaTime.getUTCHours()).padStart(2, '0');
+  const minutes = String(witaTime.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(witaTime.getUTCSeconds()).padStart(2, '0');
+  const timeStr = `${hours}:${minutes}:${seconds} WITA`;
+
+  const logEntry = {
+    id: Date.now() + Math.random().toString(36).substring(2, 6),
+    timestamp: timeStr,
+    type, // 'info', 'warn', 'error', 'success'
+    message
+  };
+
+  waLogs.push(logEntry);
+  if (waLogs.length > MAX_WA_LOGS) {
+    waLogs.shift();
+  }
+
+  // Kirim juga ke logger utama server
+  if (type === 'error') logger.error(`[WA-Service] ${message}`);
+  else if (type === 'warn') logger.warn(`[WA-Service] ${message}`);
+  else logger.info(`[WA-Service] ${message}`);
+}
+
+function getLogs() {
+  return [...waLogs];
+}
+
 // Exponential backoff state untuk reconnect
 let reconnectAttempt = 0;
 const RECONNECT_DELAY_MIN = 3000;   // 3 detik
@@ -41,7 +79,7 @@ function hasValidSession() {
 function getReconnectDelay() {
   const delay = Math.min(RECONNECT_DELAY_MIN * Math.pow(1.5, reconnectAttempt), RECONNECT_DELAY_MAX);
   reconnectAttempt++;
-  logger.info(`[WA-Backoff] Reconnect attempt #${reconnectAttempt}, delay: ${Math.round(delay)}ms`);
+  addWaLog('info', `[WA-Backoff] Reconnect attempt #${reconnectAttempt}, delay: ${Math.round(delay)}ms`);
   return delay;
 }
 
@@ -52,10 +90,10 @@ function cleanAuthDir() {
   try {
     if (fs.existsSync(authDir)) {
       fs.rmSync(authDir, { recursive: true, force: true });
-      logger.info('[WA-Clean] Session directory cleaned successfully.');
+      addWaLog('warn', '[WA-Clean] Session directory cleaned successfully.');
     }
   } catch (e) {
-    logger.error('[WA-Clean] Failed to clean session directory:', e.message);
+    addWaLog('error', `[WA-Clean] Failed to clean session directory: ${e.message}`);
   }
 }
 
@@ -79,9 +117,9 @@ function startHealthCheck() {
     try {
       // Kirim query ringan untuk memverifikasi koneksi masih hidup
       await sock.fetchStatus('0@s.whatsapp.net').catch(() => {});
-      logger.info('[WA-Health] Heartbeat OK — connection is alive.');
+      addWaLog('info', '[WA-Health] Heartbeat OK — Koneksi aktif & responsif.');
     } catch (err) {
-      logger.warn('[WA-Health] Heartbeat FAILED — socket may be zombie. Auto-healing connection...');
+      addWaLog('warn', '[WA-Health] Heartbeat FAILED — Socket zombie terdeteksi. Merestart koneksi otomatis...');
       await _closeSocket(true);
       initialize();
     }
@@ -121,7 +159,7 @@ async function _closeSocket(isReconnecting = false) {
  */
 async function initialize() {
   if (sock || isInitializing) {
-    logger.info('[WA-Init] Already initialized or initializing, skip.');
+    addWaLog('info', '[WA-Init] Socket sudah aktif atau dalam inisialisasi. Melewati panggilan duplikat.');
     return;
   }
 
@@ -129,7 +167,7 @@ async function initialize() {
   if (clientStatus !== 'CONNECTED') {
     clientStatus = 'CONNECTING';
   }
-  logger.info('[WA-Init] Starting WhatsApp Baileys initialization sequence...');
+  addWaLog('info', '[WA-Init] Menginisialisasi urutan koneksi WhatsApp Baileys...');
 
   try {
     if (!fs.existsSync(authDir)) {
@@ -147,10 +185,10 @@ async function initialize() {
       const fetchedVersion = await fetchVersionWithTimeout;
       if (fetchedVersion && fetchedVersion.version) {
         version = fetchedVersion.version;
-        logger.info(`[WA-Init] Using fetched Baileys version: ${version.join('.')}`);
+        addWaLog('info', `[WA-Init] Menggunakan versi Baileys fetched: ${version.join('.')}`);
       }
     } catch (e) {
-      logger.warn('[WA-Init] Baileys version fetch skipped/timeout, using stable fallback:', version.join('.'));
+      addWaLog('info', `[WA-Init] Pengecekan versi Baileys skip/timeout. Menggunakan versi stabil: ${version.join('.')}`);
     }
 
     const newSock = makeWASocket({
@@ -181,10 +219,10 @@ async function initialize() {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
-        logger.info('[WA-Event] Fresh QR Code received via Baileys.');
+        addWaLog('info', '[WA-Event] QR Code baru diterima dari WhatsApp Server. Siap di-scan.');
         qrcode.toDataURL(qr, (err, url) => {
           if (err) {
-            logger.error('[WA-Event] Failed to convert QR to Data URL:', err);
+            addWaLog('error', `[WA-Event] Gagal mengkonversi QR Code ke Data URL: ${err.message}`);
             clientStatus = 'DISCONNECTED';
           } else {
             qrCodeDataUri = url;
@@ -198,7 +236,6 @@ async function initialize() {
         reconnectAttempt = 0;
         hasEverConnectedInSession = true;
 
-        logger.info('[WA-Event] WhatsApp Connection OPENED & CONNECTED!');
         clientStatus = 'CONNECTED';
         qrCodeDataUri = '';
 
@@ -210,7 +247,7 @@ async function initialize() {
           pushname: pushName,
           wid: { user: phoneNumber }
         };
-        logger.info(`[WA-Event] Connected user: ${pushName} (${phoneNumber})`);
+        addWaLog('success', `[WA-Event] 🟢 WhatsApp Terhubung & Aktif! User: ${pushName} (${phoneNumber})`);
 
         // Mulai heartbeat health check
         startHealthCheck();
@@ -219,7 +256,7 @@ async function initialize() {
       if (connection === 'close') {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
         const reason = lastDisconnect?.error?.message || String(statusCode || 'Unknown');
-        logger.warn(`[WA-Event] Connection Closed. StatusCode: ${statusCode}, Reason: ${reason}`);
+        addWaLog('warn', `[WA-Event] ⚠️ Koneksi terputus. StatusCode: ${statusCode}, Reason: ${reason}`);
 
         const isLoggedOut = statusCode === DisconnectReason.loggedOut;
         const isRestartRequired = statusCode === DisconnectReason.restartRequired || statusCode === 515;
@@ -227,7 +264,7 @@ async function initialize() {
 
         // Jika restartRequired (515) dari Baileys (setelah QR di-scan/sync), SEGERA RECONNECT TANPA RESET SESI
         if (isRestartRequired) {
-          logger.info('[WA-Event] Restart required by Baileys after pairing/sync. Reconnecting immediately...');
+          addWaLog('info', '[WA-Event] Restart socket diminta oleh Baileys setelah sync. Reconnecting langsung...');
           await _closeSocket(true);
           initialize();
           return;
@@ -235,7 +272,7 @@ async function initialize() {
 
         // HANYA hapus sesi dari disk jika pengguna EKSPLISIT di-logout dari HP
         if (isLoggedOut && hasEverConnectedInSession) {
-          logger.warn('[WA-Event] User explicitly logged out from WhatsApp Mobile. Cleaning session files...');
+          addWaLog('warn', '[WA-Event] Pengguna di-logout dari WhatsApp Mobile. Membersihkan berkas sesi...');
           await _closeSocket(false);
           cleanAuthDir();
           reconnectAttempt = 0;
@@ -246,7 +283,7 @@ async function initialize() {
 
         // Jika QR Code timeout saat BELUM CONNECTED, otomatis regenerasi QR Code baru!
         if (isQrTimeout && !hasValidSession()) {
-          logger.info('[WA-Event] QR Code expired without scan. Auto-refreshing fresh QR Code...');
+          addWaLog('info', '[WA-Event] Batas waktu QR Code habis. Meng-generate QR Code baru...');
           await _closeSocket(false);
           cleanAuthDir();
           reconnectAttempt = 0;
@@ -260,7 +297,7 @@ async function initialize() {
         // Jika sesi tersimpan di disk (creds.json ADA), SELALU LAKUKAN INFINITE AUTO-RECONNECT!
         if (hasValidSession()) {
           const delay = getReconnectDelay();
-          logger.info(`[WA-Event] Session exists on disk. Infinite auto-reconnect triggered in ${Math.round(delay)}ms...`);
+          addWaLog('info', `[WA-Event] Sesi tersimpan di disk. Menghubungkan ulang otomatis dalam ${Math.round(delay)}ms...`);
           await _closeSocket(true);
           setTimeout(() => {
             initialize();
@@ -283,17 +320,17 @@ async function initialize() {
       try { sock.ev.removeAllListeners(); sock.end(undefined); } catch (_) {}
       sock = null;
     }
-    logger.error('[WA-Init] Fatal error during Baileys initialize():', err.message || err);
+    addWaLog('error', `[WA-Init] Fatal error pada Baileys initialize(): ${err.message || err}`);
 
     if (hasValidSession()) {
       clientStatus = 'CONNECTING';
       const delay = getReconnectDelay();
-      logger.info(`[WA-Init] Will retry initialization in ${Math.round(delay)}ms...`);
+      addWaLog('info', `[WA-Init] Mencoba ulang inisialisasi dalam ${Math.round(delay)}ms...`);
       setTimeout(() => {
         initialize();
       }, delay);
     } else {
-      logger.warn('[WA-Init] Non-fatal initialization error. Retrying in 5s...');
+      addWaLog('warn', '[WA-Init] Inisialisasi dicoba ulang dalam 5 detik...');
       clientStatus = 'DISCONNECTED';
       setTimeout(() => {
         initialize();
@@ -317,7 +354,8 @@ function getStatus() {
     user: userInfo ? {
       name: userInfo.pushname,
       number: userInfo.wid.user
-    } : null
+    } : null,
+    logs: waLogs.slice(-20) // 20 log terbaru
   };
 }
 
@@ -338,7 +376,7 @@ async function getGroups() {
     }));
   } catch (err) {
     const errMsg = err && (err.message || String(err));
-    logger.warn(`WhatsApp getGroups error: ${errMsg}`);
+    addWaLog('warn', `WhatsApp getGroups error: ${errMsg}`);
     return [];
   }
 }
@@ -348,6 +386,7 @@ async function getGroups() {
  */
 async function sendDirectMessage(chatId, message) {
   if (clientStatus !== 'CONNECTED' || !sock) {
+    addWaLog('error', 'Gagal mengirim pesan: WhatsApp client belum terhubung.');
     throw new Error('WhatsApp client is not connected');
   }
   try {
@@ -356,9 +395,10 @@ async function sendDirectMessage(chatId, message) {
       formattedJid = formattedJid + '@g.us';
     }
     const response = await sock.sendMessage(formattedJid, { text: message });
+    addWaLog('success', `[WA-Message] Pesan berhasil dikirim ke: ${chatId}`);
     return response;
   } catch (err) {
-    logger.error(`Failed to send WhatsApp message to ${chatId}:`, err);
+    addWaLog('error', `[WA-Message] Gagal mengirim pesan ke ${chatId}: ${err.message}`);
     throw err;
   }
 }
@@ -367,7 +407,7 @@ async function sendDirectMessage(chatId, message) {
  * Keluar (Logout) penuh — hapus sesi, minta scan QR ulang
  */
 async function logout() {
-  logger.info('Logging out WhatsApp client (full logout + clean session)...');
+  addWaLog('warn', '[WA-Logout] Logout penuh dipicu. Membersihkan sesi & meminta QR baru...');
   stopHealthCheck();
 
   if (sock) {
@@ -377,7 +417,7 @@ async function logout() {
       oldSock.ev.removeAllListeners();
       await oldSock.logout();
     } catch (err) {
-      logger.error('Error during WhatsApp logout:', err.message);
+      addWaLog('error', `[WA-Logout] Error saat logout: ${err.message}`);
       try { oldSock.end(undefined); } catch (_) {}
     }
   }
@@ -403,7 +443,7 @@ async function logout() {
  * @param {boolean} cleanSession Jika true, hapus file sesi temporary/corrupt untuk memaksa penerbitan QR Code baru dari awal
  */
 async function forceReset(cleanSession = false) {
-  logger.info(`Force resetting WhatsApp connection (cleanSession: ${cleanSession})...`);
+  addWaLog('info', `[WA-Reset] Force reset koneksi dipicu (cleanSession: ${cleanSession})...`);
 
   // Stop socket aktif
   await _closeSocket(false);
@@ -411,7 +451,7 @@ async function forceReset(cleanSession = false) {
   isInitializing = false;
 
   if (cleanSession) {
-    logger.info('[WA-Reset] Cleaning session directory for fresh QR code generation...');
+    addWaLog('warn', '[WA-Reset] Membersihkan berkas sesi temporary untuk pembuatan QR Code baru dari awal...');
     cleanAuthDir();
     hasEverConnectedInSession = false;
     userInfo = null;
@@ -494,12 +534,12 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     const groupId = overrideGroupId || settings.whatsapp_group_id;
 
     if (!overrideGroupId && (settings.whatsapp_enabled !== '1' || !settings.whatsapp_group_id)) {
-      logger.info('WhatsApp notifications are disabled or group ID is not configured.');
+      addWaLog('info', 'Notifikasi WhatsApp tidak aktif atau grup ID belum dikonfigurasi.');
       return;
     }
 
     if (!groupId) {
-      logger.warn('No group ID specified for WhatsApp notification.');
+      addWaLog('warn', 'Grup ID tidak ditentukan untuk notifikasi WhatsApp.');
       return;
     }
 
@@ -509,7 +549,7 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     // Ambil detail data upload
     const upload = db.prepare('SELECT * FROM uploads WHERE id = ?').get(uploadId);
     if (!upload) {
-      logger.warn(`Upload with ID ${uploadId} not found. Cannot send notification.`);
+      addWaLog('warn', `Upload ID ${uploadId} tidak ditemukan. Batal mengirim notifikasi.`);
       return;
     }
 
@@ -550,7 +590,7 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
 
     const stats = getOverviewSummary(uploadId, settings);
     if (!stats) {
-      logger.warn('Failed to retrieve summary stats for WhatsApp notification.');
+      addWaLog('warn', 'Gagal mengambil data ringkasan untuk notifikasi WhatsApp.');
       return;
     }
 
@@ -818,11 +858,11 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
                 `_Notifikasi otomatis [monitoring.bpsppu.com]_`;
     }
 
-    logger.info(`Sending data update notification to group ${groupId}...`);
+    addWaLog('info', `Mengirim notifikasi update data ke grup WhatsApp ${groupId}...`);
     await sendDirectMessage(groupId, message);
-    logger.info('WhatsApp notification successfully sent.');
+    addWaLog('success', 'Notifikasi WhatsApp berhasil dikirim ke grup!');
   } catch (err) {
-    logger.error('Failed to send WhatsApp update notification:', err);
+    addWaLog('error', `Gagal mengirim notifikasi update WhatsApp: ${err.message}`);
   }
 }
 
@@ -830,6 +870,7 @@ module.exports = {
   initialize,
   getStatus,
   getGroups,
+  getLogs,
   sendDirectMessage,
   sendUpdateNotification,
   logout,

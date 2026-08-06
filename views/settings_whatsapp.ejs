@@ -339,7 +339,21 @@
             <i class="bi bi-arrow-clockwise" style="margin-right: 4px;"></i> Reset &amp; Terbitkan QR Code Baru
           </button>
         </form>
-      <% } %>
+      <!-- LIVE CONSOLE TERMINAL UI -->
+      <div style="margin-top: 20px; background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; overflow: hidden; color: #f8fafc;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #1e293b; border-bottom: 1px solid #334155;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
+            <strong style="font-size: 12px; font-family: monospace; color: #38bdf8;">Browser Console Log (Live Stream F12)</strong>
+          </div>
+          <button type="button" id="btn-clear-wa-logs" class="btn" style="padding: 2px 8px; font-size: 11px; background: #334155; border: none; color: #cbd5e1; border-radius: 4px;">
+            <i class="bi bi-trash"></i> Clear
+          </button>
+        </div>
+        <div id="wa-terminal-body" style="padding: 10px 14px; max-height: 180px; overflow-y: auto; font-family: 'Consolas', 'Courier New', monospace; font-size: 11px; line-height: 1.5; background: #090d16; color: #e2e8f0;">
+          <div id="wa-terminal-empty" style="color: #64748b; font-style: italic;">Memuat log koneksi... Buka Console Browser (F12) untuk melihat log konsol penuh.</div>
+        </div>
+      </div>
     </div>
 
     <!-- CARD 2: PENGATURAN GRUP TUJUAN -->
@@ -546,22 +560,83 @@
     
     const currentStatus = '<%= waStatus.status %>';
     
-    if (currentStatus !== 'CONNECTED') {
-      const interval = setInterval(async () => {
-        try {
-          // Gunakan origin (protokol+host) agar URL selalu benar tanpa bergantung pathname
-          const res = await fetch(`${window.location.origin}/whatsapp-status`);
-          const data = await res.json();
-          
-          if (data.status === 'CONNECTED') {
-            clearInterval(interval);
+    // Printed log IDs set untuk mencegah pencetakan duplikat di browser console
+    const printedLogIds = new Set();
+    const terminalBody = document.getElementById('wa-terminal-body');
+    const terminalEmpty = document.getElementById('wa-terminal-empty');
+    const btnClearLogs = document.getElementById('btn-clear-wa-logs');
+
+    if (btnClearLogs && terminalBody) {
+      btnClearLogs.addEventListener('click', () => {
+        terminalBody.innerHTML = '<div style="color: #64748b; font-style: italic;">Log dibersihkan. Memuat log koneksi baru...</div>';
+      });
+    }
+
+    function processWaLogs(logs) {
+      if (!logs || !Array.isArray(logs)) return;
+      
+      logs.forEach(log => {
+        if (!printedLogIds.has(log.id)) {
+          printedLogIds.add(log.id);
+
+          // 1. Cetak ke Console Browser (F12 -> Console)
+          let cssStyle = 'color: #38bdf8; font-weight: 600;';
+          if (log.type === 'success') {
+            cssStyle = 'color: #10b981; font-weight: bold; background: rgba(16, 185, 129, 0.1); padding: 2px 6px; border-radius: 4px;';
+            console.log(`%c[WA Bot ${log.timestamp}] ${log.message}`, cssStyle);
+          } else if (log.type === 'warn') {
+            cssStyle = 'color: #f59e0b; font-weight: bold;';
+            console.warn(`%c[WA Bot ${log.timestamp}] ${log.message}`, cssStyle);
+          } else if (log.type === 'error') {
+            cssStyle = 'color: #ef4444; font-weight: bold;';
+            console.error(`%c[WA Bot ${log.timestamp}] ${log.message}`, cssStyle);
+          } else {
+            console.info(`%c[WA Bot ${log.timestamp}] ${log.message}`, cssStyle);
+          }
+
+          // 2. Append ke Live Terminal UI di Halaman
+          if (terminalBody) {
+            if (terminalEmpty && terminalEmpty.parentNode) {
+              terminalEmpty.remove();
+            }
+            const line = document.createElement('div');
+            line.style.marginBottom = '4px';
+            
+            let badgeColor = '#38bdf8';
+            let icon = 'ℹ️';
+            if (log.type === 'success') { badgeColor = '#10b981'; icon = '🟢'; }
+            else if (log.type === 'warn') { badgeColor = '#f59e0b'; icon = '⚠️'; }
+            else if (log.type === 'error') { badgeColor = '#ef4444'; icon = '❌'; }
+
+            line.innerHTML = `<span style="color: #64748b;">[${log.timestamp}]</span> <span style="color: ${badgeColor}; font-weight: 600;">${icon} ${log.message}</span>`;
+            terminalBody.appendChild(line);
+            terminalBody.scrollTop = terminalBody.scrollHeight;
+          }
+        }
+      });
+    }
+
+    // Polling status & logs secara kontinyu
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`${window.location.origin}/admin/whatsapp/logs`);
+        const data = await res.json();
+        
+        if (data.logs) {
+          processWaLogs(data.logs);
+        }
+
+        if (currentStatus !== 'CONNECTED') {
+          const st = data.status ? data.status.status : data.status;
+          if (st === 'CONNECTED') {
+            clearInterval(pollInterval);
             window.location.reload();
-          } else if (data.status === 'QR_READY') {
+          } else if (st === 'QR_READY') {
             if (loadingEl) loadingEl.style.display = 'none';
             if (qrContainer) qrContainer.style.display = 'block';
-            if (qrImage) qrImage.src = data.qrCode;
+            if (qrImage) qrImage.src = data.status.qrCode || '';
             if (statusEl) statusEl.textContent = 'Menunggu Scan QR Code...';
-          } else if (data.status === 'CONNECTING') {
+          } else if (st === 'CONNECTING') {
             if (loadingEl) loadingEl.style.display = 'block';
             if (qrContainer) qrContainer.style.display = 'none';
             if (statusEl) statusEl.textContent = 'Menghubungkan ke WhatsApp...';
@@ -570,11 +645,11 @@
             if (qrContainer) qrContainer.style.display = 'none';
             if (statusEl) statusEl.textContent = 'Terputus';
           }
-        } catch (err) {
-          console.error('Error polling status:', err);
         }
-      }, 1200);
-    }
+      } catch (err) {
+        console.error('Error polling WA logs:', err);
+      }
+    }, 1500);
 
     // 2. Event Listener Pilihan Grup (Simpan JID dan nama grup terpilh saat helper dropdown dipilih)
     const groupSelect = document.getElementById('group_select_helper');
