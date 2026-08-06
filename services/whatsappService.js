@@ -425,6 +425,67 @@ async function forceReset(cleanSession = false) {
 }
 
 /**
+ * Mengekstrak waktu pengambilan data dari nama file upload FASIH
+ */
+function extractUploadDataTime(upload) {
+  const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  
+  const fn = upload.status_filename || upload.filename || '';
+  const match = fn.match(/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})?/);
+  
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    const hour = parseInt(match[4], 10);
+    const minute = parseInt(match[5], 10);
+    const second = match[6] ? parseInt(match[6], 10) : 0;
+    
+    // Waktu di filename FASIH adalah WITA (UTC+8)
+    const dateUtc = new Date(Date.UTC(year, month, day, hour - 8, minute, second));
+    if (!isNaN(dateUtc.getTime())) {
+      const witaTime = new Date(dateUtc.getTime() + 8 * 60 * 60 * 1000);
+      const dayName = dayNames[witaTime.getUTCDay()];
+      const dateStr = witaTime.getUTCDate();
+      const monthName = monthNames[witaTime.getUTCMonth()];
+      const yearStr = witaTime.getUTCFullYear();
+      const hours = String(witaTime.getUTCHours()).padStart(2, '0');
+      const minutes = String(witaTime.getUTCMinutes()).padStart(2, '0');
+      return {
+        fullFormatted: `${dayName}, ${dateStr} ${monthName} ${yearStr} ${hours}.${minutes} WITA`,
+        timeOnly: `${hours}.${minutes} WITA`,
+        dateOnly: `${dayName}, ${dateStr} ${monthName} ${yearStr}`
+      };
+    }
+  }
+
+  // Fallback ke created_at
+  const createdStr = upload.created_at || upload.tanggal;
+  if (createdStr) {
+    const dateUtc = new Date(createdStr.replace(' ', 'T') + (createdStr.includes('T') ? '' : 'Z'));
+    const witaTime = new Date(dateUtc.getTime() + 8 * 60 * 60 * 1000);
+    const dayName = dayNames[witaTime.getUTCDay()];
+    const dateStr = witaTime.getUTCDate();
+    const monthName = monthNames[witaTime.getUTCMonth()];
+    const yearStr = witaTime.getUTCFullYear();
+    const hours = String(witaTime.getUTCHours()).padStart(2, '0');
+    const minutes = String(witaTime.getUTCMinutes()).padStart(2, '0');
+    return {
+      fullFormatted: `${dayName}, ${dateStr} ${monthName} ${yearStr} ${hours}.${minutes} WITA`,
+      timeOnly: `${hours}.${minutes} WITA`,
+      dateOnly: `${dayName}, ${dateStr} ${monthName} ${yearStr}`
+    };
+  }
+
+  return {
+    fullFormatted: upload.tanggal || 'Awal Pendataan',
+    timeOnly: '',
+    dateOnly: upload.tanggal || ''
+  };
+}
+
+/**
  * Mengirimkan notifikasi update data setelah sukses upload
  */
 async function sendUpdateNotification(uploadId, overrideGroupId = null) {
@@ -493,7 +554,7 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       return;
     }
 
-    // Waktu sekarang dalam format WITA (UTC+8)
+    // Waktu System Update / Notifikasi (WITA UTC+8)
     const now = new Date();
     const witaOffset = 8 * 60 * 60 * 1000;
     const witaTime = new Date(now.getTime() + witaOffset);
@@ -507,20 +568,20 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     const hours = String(witaTime.getUTCHours()).padStart(2, '0');
     const minutes = String(witaTime.getUTCMinutes()).padStart(2, '0');
     
-    const timeFormatted = `${dayName}, ${dateStr} ${monthName} ${yearStr} ${hours}.${minutes} WITA`;
-    const timeOnlyFormatted = `${hours}.${minutes} WITA`;
+    const systemUpdateFormatted = `${dayName}, ${dateStr} ${monthName} ${yearStr} ${hours}.${minutes} WITA`;
+    const systemUpdateHoursOnly = `${hours}.${minutes} WITA`;
 
+    // Waktu Pengambilan Data dari Filename FASIH (misal rekap_..._20260806_084332.csv)
+    const dataTimeObj = extractUploadDataTime(upload);
+    const dataTimeFormatted = dataTimeObj.fullFormatted;
+    const dataTimeHoursOnly = dataTimeObj.timeOnly;
+    const dataTimeDateOnly = dataTimeObj.dateOnly;
+
+    // Waktu Upload Sebelumnya
     let prevUploadTimeStr = 'Awal Pendataan';
     if (prevUpload) {
-      const prevDate = new Date(prevUpload.created_at.replace(' ', 'T') + 'Z');
-      const witaPrev = new Date(prevDate.getTime() + witaOffset);
-      const prevDayName = dayNames[witaPrev.getUTCDay()];
-      const prevDateStr = witaPrev.getUTCDate();
-      const prevMonthName = monthNames[witaPrev.getUTCMonth()];
-      const prevYearStr = witaPrev.getUTCFullYear();
-      const prevHours = String(witaPrev.getUTCHours()).padStart(2, '0');
-      const prevMinutes = String(witaPrev.getUTCMinutes()).padStart(2, '0');
-      prevUploadTimeStr = `${prevDayName}, ${prevDateStr} ${prevMonthName} ${prevYearStr} ${prevHours}.${prevMinutes} WITA`;
+      const prevDataObj = extractUploadDataTime(prevUpload);
+      prevUploadTimeStr = prevDataObj.fullFormatted;
     }
 
     const realisasiFasih = (stats.submitted_total || 0) + (stats.approved_total || 0) + (stats.rejected_total || 0);
@@ -681,32 +742,36 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     let message = '';
     if (settings.whatsapp_message_template && settings.whatsapp_message_template.trim() !== '') {
       message = settings.whatsapp_message_template
-        .replace(/\{tanggal_sekarang\}/g, timeFormatted)
-        .replace(/\{jam_sekarang\}/g, timeOnlyFormatted)
+        .replace(/\{waktu_pengambilan_data\}/g, dataTimeFormatted)
+        .replace(/\{waktu_update_system\}/g, systemUpdateFormatted)
+        .replace(/\{jam_pengambilan_data\}/g, dataTimeHoursOnly)
+        .replace(/\{tanggal_pengambilan_data\}/g, dataTimeDateOnly)
+        .replace(/\{tanggal_sekarang\}/g, systemUpdateFormatted)
+        .replace(/\{jam_sekarang\}/g, systemUpdateHoursOnly)
         .replace(/\{waktu_upload_sebelumnya\}/g, prevUploadTimeStr)
         .replace(/\{label_fasih\}/g, labelFasih)
         .replace(/\{filename\}/g, upload.filename)
         .replace(/\{tanggal_data\}/g, upload.tanggal)
         .replace(/\{subsls_count\}/g, upload.total_subsls_terisi)
-        .replace(/\{realisasi_fasih\}/g, realisasiFasih)
-        .replace(/\{target_fasih\}/g, targetFasih)
+        .replace(/\{realisasi_fasih\}/g, realisasiFasih.toLocaleString('id-ID'))
+        .replace(/\{target_fasih\}/g, targetFasih.toLocaleString('id-ID'))
         .replace(/\{persen_fasih\}/g, persenFasih)
-        .replace(/\{realisasi_muatan\}/g, realisasiMuatan)
-        .replace(/\{target_muatan\}/g, targetMuatan)
+        .replace(/\{realisasi_muatan\}/g, realisasiMuatan.toLocaleString('id-ID'))
+        .replace(/\{target_muatan\}/g, targetMuatan.toLocaleString('id-ID'))
         .replace(/\{persen_muatan\}/g, persenMuatan)
-        .replace(/\{open_total\}/g, stats.open_total || 0)
-        .replace(/\{draft_total\}/g, stats.draft_total || 0)
-        .replace(/\{submitted_total\}/g, stats.submitted_total || 0)
-        .replace(/\{approved_total\}/g, stats.approved_total || 0)
-        .replace(/\{rejected_total\}/g, stats.rejected_total || 0)
-        .replace(/\{diff_submitted\}/g, diffSubmitted)
-        .replace(/\{diff_approved\}/g, diffApproved)
-        .replace(/\{diff_rejected\}/g, diffRejected)
-        .replace(/\{diff_total\}/g, diffTotal)
-        .replace(/\{diff_24h_submitted\}/g, diff24Submitted)
-        .replace(/\{diff_24h_approved\}/g, diff24Approved)
-        .replace(/\{diff_24h_rejected\}/g, diff24Rejected)
-        .replace(/\{diff_24h_total\}/g, diff24Total)
+        .replace(/\{open_total\}/g, (stats.open_total || 0).toLocaleString('id-ID'))
+        .replace(/\{draft_total\}/g, (stats.draft_total || 0).toLocaleString('id-ID'))
+        .replace(/\{submitted_total\}/g, (stats.submitted_total || 0).toLocaleString('id-ID'))
+        .replace(/\{approved_total\}/g, (stats.approved_total || 0).toLocaleString('id-ID'))
+        .replace(/\{rejected_total\}/g, (stats.rejected_total || 0).toLocaleString('id-ID'))
+        .replace(/\{diff_submitted\}/g, diffSubmitted.toLocaleString('id-ID'))
+        .replace(/\{diff_approved\}/g, diffApproved.toLocaleString('id-ID'))
+        .replace(/\{diff_rejected\}/g, diffRejected.toLocaleString('id-ID'))
+        .replace(/\{diff_total\}/g, diffTotal.toLocaleString('id-ID'))
+        .replace(/\{diff_24h_submitted\}/g, diff24Submitted.toLocaleString('id-ID'))
+        .replace(/\{diff_24h_approved\}/g, diff24Approved.toLocaleString('id-ID'))
+        .replace(/\{diff_24h_rejected\}/g, diff24Rejected.toLocaleString('id-ID'))
+        .replace(/\{diff_24h_total\}/g, diff24Total.toLocaleString('id-ID'))
         .replace(/\{avg_diff_all\}/g, avgDiffAll)
         .replace(/\{avg_diff_active\}/g, avgDiffActive)
         .replace(/\{avg_diff_24h_all\}/g, avgDiff24All)
@@ -727,11 +792,9 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
         .replace(/\{dist_24h_8_12\}/g, dist24h.bucket_8_12)
         .replace(/\{dist_24h_13_plus\}/g, dist24h.bucket_13_plus);
     } else {
-      const formattedDateWweb = `${witaTime.getUTCDate()} ${monthNames[witaTime.getUTCMonth()]} ${witaTime.getUTCFullYear()}`;
-      const formattedTimeWweb = `${hours}.${minutes} WITA`;
-
       message = `*📢 UPDATE HARIAN SE2026 PPU*\n` +
-                `🗓️ ${formattedDateWweb} | ⏰ ${formattedTimeWweb}\n\n` +
+                `📥 Data FASIH: *${dataTimeFormatted}*\n` +
+                `⏰ Update System: *${systemUpdateFormatted}*\n\n` +
                 `*AKUMULASI PROGRES PENDATAAN*\n` +
                 `✅ Selesai (Subm/Appr/Rej): *${realisasiFasih.toLocaleString('id-ID')}* dokumen (*${persenFasih}%*)\n` +
                 `   ├ 🟢 Approved: *${(stats.approved_total || 0).toLocaleString('id-ID')}* dokumen\n` +
