@@ -285,11 +285,18 @@
           </p>
         </div>
 
-        <form action="/admin/whatsapp/logout" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin memutuskan hubungan WhatsApp?')">
-          <button type="submit" class="btn btn-danger" style="padding: 8px 16px; font-size: 13px;">
-            <i class="bi bi-box-arrow-right"></i> Putuskan Hubungan
-          </button>
-        </form>
+        <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+          <form action="/admin/whatsapp/reconnect" method="POST">
+            <button type="submit" class="btn btn-secondary" style="padding: 8px 14px; font-size: 12px; font-weight: 600;">
+              <i class="bi bi-arrow-clockwise"></i> Reset Koneksi
+            </button>
+          </form>
+          <form action="/admin/whatsapp/logout" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin memutuskan hubungan WhatsApp?')">
+            <button type="submit" class="btn btn-danger" style="padding: 8px 14px; font-size: 12px; font-weight: 600;">
+              <i class="bi bi-box-arrow-right"></i> Putuskan Hubungan
+            </button>
+          </form>
+        </div>
 
       <% } else if (waStatus.status === 'QR_READY') { %>
         <div class="status-badge status-disconnected">
@@ -328,8 +335,8 @@
       
       <% if (waStatus.status !== 'CONNECTED') { %>
         <form action="/admin/whatsapp/reconnect" method="POST" style="margin-top: 16px; display: flex; justify-content: center;">
-          <button type="submit" class="btn btn-secondary btn-action-trigger" style="font-size: 12px; padding: 8px 16px; border-color: var(--accent-red); color: var(--accent-red); font-weight: bold;">
-            <i class="bi bi-arrow-clockwise" style="margin-right: 4px;"></i> Reset &amp; Hubungkan Ulang
+          <button type="submit" class="btn btn-secondary btn-action-trigger" style="font-size: 12px; padding: 8px 16px; border-color: var(--accent-red); color: var(--accent-red); font-weight: bold;" title="Hapus sesi temporary gantung dan terbitkan QR Code baru yang segar">
+            <i class="bi bi-arrow-clockwise" style="margin-right: 4px;"></i> Reset &amp; Terbitkan QR Code Baru
           </button>
         </form>
       <% } %>
@@ -564,7 +571,7 @@
         } catch (err) {
           console.error('Error polling status:', err);
         }
-      }, 2500);
+      }, 1200);
     }
 
     // 2. Event Listener Pilihan Grup (Simpan JID dan nama grup terpilh saat helper dropdown dipilih)

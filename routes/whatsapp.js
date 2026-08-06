@@ -119,11 +119,19 @@ router.post('/logout', async (req, res) => {
   res.redirect('/admin/whatsapp');
 });
 
-// POST /admin/whatsapp/reconnect - Reset Koneksi WhatsApp (Force Reconnect)
+// POST /admin/whatsapp/reconnect - Reset Koneksi WhatsApp (Force Reconnect / Refresh QR)
 router.post('/reconnect', async (req, res) => {
   try {
-    await whatsappService.forceReset();
-    req.flash('success', 'Koneksi WhatsApp berhasil di-reset. Mencoba menghubungkan ulang...');
+    const waStatus = whatsappService.getStatus();
+    // Jika belum CONNECTED, lakukan Clean Reset (hapus file auth temp) agar QR Code baru dijamin terbit dari disk bersih
+    const cleanSession = waStatus.status !== 'CONNECTED';
+    await whatsappService.forceReset(cleanSession);
+
+    if (cleanSession) {
+      req.flash('success', 'Sistem berhasil di-reset total. QR Code segar terbaru sedang di-generate...');
+    } else {
+      req.flash('success', 'Koneksi WhatsApp berhasil di-reset. Mencoba menghubungkan ulang...');
+    }
   } catch (err) {
     req.flash('error', `Gagal mereset koneksi: ${err.message}`);
   }

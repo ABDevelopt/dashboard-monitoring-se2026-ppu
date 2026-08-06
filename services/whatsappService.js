@@ -89,7 +89,7 @@ function startHealthCheck() {
 }
 
 /**
- * Menutup socket saat ini secara bersih tanpa menghapus sesi
+ * Menutup socket saat ini secara bersih
  * @param {boolean} isReconnecting Jika true, tandai status sebagai CONNECTING bukan DISCONNECTED
  */
 async function _closeSocket(isReconnecting = false) {
@@ -118,8 +118,6 @@ async function _closeSocket(isReconnecting = false) {
 
 /**
  * Inisialisasi WhatsApp Client menggunakan Baileys (WebSocket murni)
- * PILAR 1: Selalu pastikan QR Code ter-generate saat belum connected.
- * PILAR 2: Selalu pertahankan koneksi & auto-reconnect tanpa henti saat sudah pernah login.
  */
 async function initialize() {
   if (sock || isInitializing) {
@@ -178,7 +176,6 @@ async function initialize() {
 
       const { connection, lastDisconnect, qr } = update;
 
-      // PILAR 1: Tangkap QR Code dan pastikan selalu di-update
       if (qr) {
         logger.info('[WA-Event] Fresh QR Code received via Baileys.');
         qrcode.toDataURL(qr, (err, url) => {
@@ -224,7 +221,7 @@ async function initialize() {
         const isRestartRequired = statusCode === DisconnectReason.restartRequired || statusCode === 515;
         const isQrTimeout = statusCode === DisconnectReason.timedOut || reason.includes('QR refs attempts ended');
 
-        // PERBAIKAN PILAR 2: Jika restartRequired (515) dari Baileys (setelah QR di-scan/sync), SEGERA RECONNECT TANPA RESET SESI
+        // Jika restartRequired (515) dari Baileys (setelah QR di-scan/sync), SEGERA RECONNECT TANPA RESET SESI
         if (isRestartRequired) {
           logger.info('[WA-Event] Restart required by Baileys after pairing/sync. Reconnecting immediately...');
           await _closeSocket(true);
@@ -243,7 +240,7 @@ async function initialize() {
           return;
         }
 
-        // PILAR 1: Jika QR Code timeout saat BELUM CONNECTED, otomatis regenerasi QR Code baru!
+        // Jika QR Code timeout saat BELUM CONNECTED, otomatis regenerasi QR Code baru!
         if (isQrTimeout && !hasValidSession()) {
           logger.info('[WA-Event] QR Code expired without scan. Auto-refreshing fresh QR Code...');
           await _closeSocket(false);
@@ -256,7 +253,7 @@ async function initialize() {
           return;
         }
 
-        // PILAR 2: Jika sesi tersimpan di disk (creds.json ADA), SELALU LAKUKAN INFINITE AUTO-RECONNECT!
+        // Jika sesi tersimpan di disk (creds.json ADA), SELALU LAKUKAN INFINITE AUTO-RECONNECT!
         if (hasValidSession()) {
           const delay = getReconnectDelay();
           logger.info(`[WA-Event] Session exists on disk. Infinite auto-reconnect triggered in ${Math.round(delay)}ms...`);
@@ -284,7 +281,6 @@ async function initialize() {
     }
     logger.error('[WA-Init] Fatal error during Baileys initialize():', err.message || err);
 
-    // PILAR 2: Jika ada sesi di disk, selalu retry
     if (hasValidSession()) {
       clientStatus = 'CONNECTING';
       const delay = getReconnectDelay();
@@ -395,23 +391,33 @@ async function logout() {
   // Inisialisasi ulang untuk minta QR baru
   setTimeout(() => {
     initialize();
-  }, 2000);
+  }, 1000);
 }
 
 /**
- * Force Reset — tutup koneksi dan reconnect, TANPA menghapus sesi
- * (Pengguna tidak perlu scan QR ulang jika sesi masih valid)
+ * Force Reset — Mereset koneksi WhatsApp
+ * @param {boolean} cleanSession Jika true, hapus file sesi temporary/corrupt untuk memaksa penerbitan QR Code baru dari awal
  */
-async function forceReset() {
-  logger.info('Force resetting WhatsApp connection (keeping session)...');
+async function forceReset(cleanSession = false) {
+  logger.info(`Force resetting WhatsApp connection (cleanSession: ${cleanSession})...`);
 
-  // Tutup socket lama secara bersih (TIDAK menghapus session credentials)
-  await _closeSocket(true);
-  reconnectAttempt = 0; // Reset backoff agar reconnect segera
+  // Stop socket aktif
+  await _closeSocket(false);
+  reconnectAttempt = 0;
+  isInitializing = false;
+
+  if (cleanSession) {
+    logger.info('[WA-Reset] Cleaning session directory for fresh QR code generation...');
+    cleanAuthDir();
+    hasEverConnectedInSession = false;
+    userInfo = null;
+  }
+
+  clientStatus = 'CONNECTING';
 
   setTimeout(() => {
     initialize();
-  }, 1000);
+  }, 500);
 }
 
 /**
