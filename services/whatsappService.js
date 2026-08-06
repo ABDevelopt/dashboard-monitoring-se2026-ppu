@@ -1,10 +1,11 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
-const pino = require('pino');
-const qrcode = require('qrcode');
-const path = require('path');
-const fs = require('fs');
-const logger = require('./logger');
-const { getSettings } = require('../database');
+const https = require('https');
+
+const customAgent = new https.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 10000,
+  family: 4, // Paksa koneksi IPv4 murni (Mencegah IPv6 DNS resolution delay/block di cPanel/Dewaweb)
+  timeout: 30000
+});
 
 let sock = null;
 let qrCodeDataUri = '';
@@ -196,17 +197,18 @@ async function initialize() {
       auth: state,
       printQRInTerminal: false,
       logger: pino({ level: 'silent' }),
-      browser: ['Ubuntu', 'Chrome', '120.0.0.0'],
+      browser: ['Windows', 'Chrome', '121.0.0.0'],
       syncFullHistory: false,
       markOnlineOnConnect: true,       // Jaga status bot aktif/online di WA Server
       connectTimeoutMs: 60000,         // Timeout 60s
       defaultQueryTimeoutMs: 60000,
       keepAliveIntervalMs: 25000,      // Ping per 25s (Sesuai batas idle Nginx/Dewaweb)
-      retryRequestDelayMs: 3000,
+      retryRequestDelayMs: 2000,
       maxRetries: 5,
       wsOptions: {
+        agent: customAgent,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
           'Origin': 'https://web.whatsapp.com'
         }
       }
