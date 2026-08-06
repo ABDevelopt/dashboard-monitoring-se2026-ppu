@@ -140,13 +140,17 @@ async function initialize() {
 
     let version = [2, 3000, 1015901307];
     try {
-      const fetchedVersion = await fetchLatestBaileysVersion();
+      const fetchVersionWithTimeout = Promise.race([
+        fetchLatestBaileysVersion(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Fetch Baileys version timeout (2s)')), 2000))
+      ]);
+      const fetchedVersion = await fetchVersionWithTimeout;
       if (fetchedVersion && fetchedVersion.version) {
         version = fetchedVersion.version;
-        logger.info(`[WA-Init] Using Baileys version: ${version.join('.')}`);
+        logger.info(`[WA-Init] Using fetched Baileys version: ${version.join('.')}`);
       }
     } catch (e) {
-      logger.warn('[WA-Init] Could not fetch latest Baileys version, using fallback:', e.message);
+      logger.warn('[WA-Init] Baileys version fetch skipped/timeout, using stable fallback:', version.join('.'));
     }
 
     const newSock = makeWASocket({
