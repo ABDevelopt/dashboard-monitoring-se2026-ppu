@@ -1,4 +1,11 @@
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
+const pino = require('pino');
+const qrcode = require('qrcode');
+const path = require('path');
+const fs = require('fs');
 const https = require('https');
+const logger = require('./logger');
+const { getSettings } = require('../database');
 
 const customAgent = new https.Agent({
   keepAlive: true,
