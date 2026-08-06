@@ -448,23 +448,36 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       return;
     }
 
-    // Ambil detail data upload sebelumnya
-    const prevUpload = db.prepare('SELECT * FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1').get(uploadId);
+    // Ambil detail data upload sebelumnya (hanya upload riil pengguna, bukan Imputasi Otomatis)
+    const prevUpload = db.prepare(`
+      SELECT * FROM uploads 
+      WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%') 
+        AND (tanggal < ? OR (tanggal = ? AND id < ?))
+      ORDER BY tanggal DESC, created_at DESC, id DESC 
+      LIMIT 1
+    `).get(upload.tanggal, upload.tanggal, uploadId);
     let prevStats = null;
     if (prevUpload) {
       prevStats = getOverviewSummary(prevUpload.id, settings);
     }
 
-    // Ambil detail data upload 24 jam yang lalu
+    // Ambil detail data upload 24 jam / hari sebelumnya (hanya upload riil pengguna)
     const upload24h = db.prepare(`
       SELECT * FROM uploads 
-      WHERE created_at <= datetime(?, '-1 day') 
-      ORDER BY created_at DESC LIMIT 1
-    `).get(upload.created_at);
+      WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%') 
+        AND tanggal < ?
+      ORDER BY tanggal DESC, created_at DESC, id DESC 
+      LIMIT 1
+    `).get(upload.tanggal);
     let stats24h = null;
-    let baseUpload24h = upload24h;
+    let baseUpload24h = upload24h || prevUpload;
     if (!baseUpload24h) {
-      baseUpload24h = db.prepare('SELECT * FROM uploads ORDER BY id ASC LIMIT 1').get();
+      baseUpload24h = db.prepare(`
+        SELECT * FROM uploads 
+        WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%')
+        ORDER BY tanggal ASC, id ASC 
+        LIMIT 1
+      `).get();
     }
     if (baseUpload24h && baseUpload24h.id !== uploadId) {
       stats24h = getOverviewSummary(baseUpload24h.id, settings);
