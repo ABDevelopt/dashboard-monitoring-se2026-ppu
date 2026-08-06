@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
   const settings = getSettings();
   let waStatus = whatsappService.getStatus();
   
-  // Jika status masih DISCONNECTED dan belum ada sesi/QR, picu inisialisasi on-demand
+  // Jika status DISCONNECTED, inisialisasi socket (akan menggunakan sesi tersimpan jika ada, atau buat QR jika baru)
   if (waStatus.status === 'DISCONNECTED') {
     whatsappService.initialize();
     waStatus = whatsappService.getStatus();
@@ -32,6 +32,10 @@ router.get('/', async (req, res) => {
 // GET /admin/whatsapp/status - API Status Koneksi & QR Code (Untuk Real-time Polling)
 router.get('/status', (req, res) => {
   let waStatus = whatsappService.getStatus();
+  if (waStatus.status === 'DISCONNECTED' && whatsappService.hasValidSession()) {
+    whatsappService.initialize();
+    waStatus = whatsappService.getStatus();
+  }
   res.json(waStatus);
 });
 
