@@ -131,31 +131,10 @@ router.get('/', async (req, res) => {
   });
 });
 
-// POST: Update anomaly status via Google Apps Script
+// POST: Update anomaly status via Google Apps Script (SEMENTARA DINONAKTIFKAN)
 router.post('/update-status', async (req, res) => {
-  const { assignment_id, type, nama, no, nama_anomali, tindak_lanjut, penjelasan } = req.body;
-
-  if (!assignment_id && !nama) {
-    return res.json({ success: false, error: 'Assignment ID atau Nama Anomali wajib diisi.' });
-  }
-
-  try {
-    const { updateAnomalyStatusInGoogleSheets } = require('../services/googleSheetsAnomalyService');
-    const result = await updateAnomalyStatusInGoogleSheets({
-      assignment_id: assignment_id || '',
-      type: type || 'usaha',
-      nama: nama || '',
-      no: no || '',
-      nama_anomali: nama_anomali || '',
-      tindak_lanjut: tindak_lanjut || 'Sudah Ditindaklanjuti',
-      penjelasan: penjelasan || ''
-    }, res.locals.settings || {});
-
-    res.json(result);
-  } catch (err) {
-    console.error('Error updating Google Sheets anomaly status:', err);
-    res.json({ success: false, error: err.message });
-  }
+  return res.status(403).json({ success: false, error: 'Fitur edit status anomali sementara dinonaktifkan.' });
 });
 
 module.exports = router;
+
