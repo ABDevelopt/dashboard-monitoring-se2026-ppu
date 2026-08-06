@@ -1157,7 +1157,6 @@
 
         // Show details in Sidebar + Integrated Drilldown Links
         function showDesaDetails(properties) {
-          ensureGmapsDrawerOpen();
           const stat = desaStats.find(s => s.iddesa === properties.iddesa);
           const total = stat ? stat.total_subsls : 0;
           const selesai = stat ? stat.selesai : 0;
@@ -1277,7 +1276,6 @@
         }
 
         function showSlsDetails(properties) {
-          ensureGmapsDrawerOpen();
           const stat = slsStats.find(s => s.kode === properties.kode);
           const isSelesai = stat ? stat.selesai === 1 : false;
           const muatan = stat ? stat.muatan : (properties.muatan || 0);
