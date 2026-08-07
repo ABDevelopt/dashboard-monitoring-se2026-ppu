@@ -299,7 +299,18 @@ async function initialize() {
 
         const isLoggedOut = statusCode === DisconnectReason.loggedOut;
         const isRestartRequired = statusCode === DisconnectReason.restartRequired || statusCode === 515;
+        const isConflict = statusCode === DisconnectReason.connectionReplaced || statusCode === 440 || reason.includes('conflict');
         const isQrTimeout = statusCode === DisconnectReason.timedOut || reason.includes('QR refs attempts ended');
+
+        // Jika Conflict (440): Sesi sedang dipakai oleh proses Node.js lain di server / device lain
+        if (isConflict) {
+          addWaLog('warn', '⚠️ [WA-Conflict] Terdeteksi bentrokan koneksi ganda (StatusCode 440 Conflict). Pastikan hanya ada 1 proses node server.js yang berjalan di Dewaweb! Menunda reconnect 12 detik...');
+          await _closeSocket(true);
+          setTimeout(() => {
+            initialize();
+          }, 12000);
+          return;
+        }
 
         // Jika restartRequired (515) dari Baileys (setelah QR di-scan/sync), SEGERA RECONNECT TANPA RESET SESI
         if (isRestartRequired) {
