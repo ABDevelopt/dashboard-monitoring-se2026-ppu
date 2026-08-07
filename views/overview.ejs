@@ -2149,6 +2149,19 @@
 
       // === Lazy Chart Initializer via IntersectionObserver ===
       // Chart hanya diinisialisasi saat canvas masuk viewport DAN Chart.js sudah siap
+      function onChartJsReady(fn) {
+        if (typeof Chart !== 'undefined') {
+          fn();
+        } else {
+          const checkChart = setInterval(() => {
+            if (typeof Chart !== 'undefined') {
+              clearInterval(checkChart);
+              fn();
+            }
+          }, 50);
+        }
+      }
+
       function lazyInitChart(canvasId, initFn) {
         const el = document.getElementById(canvasId);
         if (!el) return;
@@ -2180,7 +2193,9 @@
         const dailyRate = totalPclCount > 0 ? (increment / totalPclCount) : 0;
         sportsDailyRates.push(parseFloat(dailyRate.toFixed(2)));
       }
-      createSportsDailyRateLineChart('dailyRateLineChartCanvas', sportsDailyRateLabels, sportsDailyRates, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>);
+      lazyInitChart('dailyRateLineChartCanvas', () => {
+        createSportsDailyRateLineChart('dailyRateLineChartCanvas', sportsDailyRateLabels, sportsDailyRates, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>);
+      });
 
       // Hitung penambahan harian total FASIH (Submitted + Approved + Rejected)
       const countyIncrementLabels = [];
