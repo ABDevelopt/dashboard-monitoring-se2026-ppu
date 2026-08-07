@@ -826,28 +826,42 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
   // Map to hold merged progress data by Sub-SLS code
   const mergedData = {};
   
+  // Helper to resolve row index containing column headers
+  function findHeaderRowIndex(rows) {
+    for (let i = 0; i < Math.min(10, rows.length); i++) {
+      if (!rows[i]) continue;
+      const rowStr = rows[i].map(c => String(c || '').toLowerCase().trim());
+      if (rowStr.some(c => ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls'].some(alias => c.includes(alias)))) {
+        return i;
+      }
+    }
+    return 0;
+  }
+
   // 1. Parse Keluarga if provided
   if (keluargaPath && fs.existsSync(keluargaPath)) {
     const wb = XLSX.readFile(keluargaPath, { raw: true });
     const ws = wb.Sheets['KELUARGA'] || findDataSheet(wb);
     if (ws) {
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: 0 });
-      if (rows.length >= 5) {
-        // Headers are on row index 3
-        const headers = rows[3].map(h => String(h || '').toLowerCase().trim());
-        const kodeIdx = headers.indexOf('kode');
-        const ditemukanIdx = headers.indexOf('ditemukan');
-        const baruIdx = headers.indexOf('keluarga baru');
-        const meninggalIdx = headers.indexOf('meninggal');
-        const teIdx = headers.indexOf('tidak eligible');
-        const tddIdx = headers.indexOf('tidak dapat ditemui sampai akhir pendataan');
-        const tdIdx = headers.indexOf('tidak ditemukan');
+      if (rows.length >= 2) {
+        const headerIdx = findHeaderRowIndex(rows);
+        const headers = rows[headerIdx].map(h => String(h || '').toLowerCase().trim());
+        
+        const kodeIdx = findCol(headers, ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls']);
+        const ditemukanIdx = findCol(headers, ['ditemukan', 'keluarga_ditemukan', 'kk_ditemukan']);
+        const baruIdx = findCol(headers, ['baru', 'keluarga baru', 'keluarga_baru', 'kk_baru', 'kk baru']);
+        const meninggalIdx = findCol(headers, ['meninggal', 'keluarga_meninggal', 'kk_meninggal']);
+        const teIdx = findCol(headers, ['tidak eligible', 'tidak_eligible', 'kk_tidak_eligible']);
+        const tddIdx = findCol(headers, ['tidak dapat ditemui', 'tidak_dapat_ditemui', 'kk_tidak_dapat_ditemui']);
+        const tdIdx = findCol(headers, ['tidak ditemukan', 'tidak_ditemukan', 'kk_tidak_ditemukan']);
         
         if (kodeIdx !== -1) {
-          for (let i = 4; i < rows.length; i++) {
+          for (let i = headerIdx + 1; i < rows.length; i++) {
             const row = rows[i];
-            const kode = String(row[kodeIdx] || '').trim();
-            if (!kode || kode.length < 10) continue;
+            let kode = String(row[kodeIdx] || '').trim();
+            if (kode.endsWith('.0')) kode = kode.slice(0, -2);
+            if (!kode || kode.length < 10 || kode === '6409000000000000' || kode.endsWith('000000000000')) continue;
             
             if (!mergedData[kode]) {
               mergedData[kode] = createEmptyProgresRecord();
@@ -869,77 +883,51 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
   if (usahaPath && fs.existsSync(usahaPath)) {
     const wb = XLSX.readFile(usahaPath, { raw: true });
     
-    // Parse USAHA PERUSAHAAN (BKU)
-    const wsPerusahaan = wb.Sheets['USAHA PERUSAHAAN'];
-    if (wsPerusahaan) {
-      const rows = XLSX.utils.sheet_to_json(wsPerusahaan, { header: 1, raw: true, defval: 0 });
+    // Check if workbook has separate sheets 'USAHA PERUSAHAAN' and 'USAHA KELUARGA' (legacy export format)
+    const legacySheets = ['USAHA PERUSAHAAN', 'USAHA KELUARGA'].filter(s => wb.Sheets[s]);
+    const sheetsToProcess = legacySheets.length > 0 ? legacySheets : [findDataSheet(wb) ? wb.SheetNames.find(s => wb.Sheets[s] === findDataSheet(wb)) || wb.SheetNames[0] : wb.SheetNames[0]];
+
+    for (const sheetName of sheetsToProcess) {
+      const ws = wb.Sheets[sheetName];
+      if (!ws) continue;
+
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: 0 });
+      if (rows.length < 2) continue;
+
       let headerIdx = -1;
-      for (let i = 0; i < 10; i++) {
-        if (rows[i] && rows[i].includes('Kode')) {
+      let subHeaders = null;
+
+      for (let i = 0; i < Math.min(10, rows.length); i++) {
+        if (rows[i] && rows[i].map(c => String(c || '').toLowerCase()).some(c => c.includes('kode') || c.includes('level_6_full_code') || c.includes('smallcode'))) {
           headerIdx = i;
           break;
         }
       }
-      
-      if (headerIdx !== -1 && rows[headerIdx + 1]) {
-        const headers = rows[headerIdx];
-        const subHeaders = rows[headerIdx + 1];
-        const kodeIdx = headers.indexOf('Kode');
-        
-        const ditemukanIdx = subHeaders.indexOf('Ditemukan');
-        const tutupIdx = subHeaders.indexOf('Tutup');
-        const gandaIdx = subHeaders.indexOf('Ganda');
-        const tdIdx = subHeaders.indexOf('Tidak Ditemukan');
-        const baruIdx = subHeaders.indexOf('Baru');
-        
-        if (kodeIdx !== -1) {
-          for (let i = headerIdx + 2; i < rows.length; i++) {
-            const row = rows[i];
-            const kode = String(row[kodeIdx] || '').trim();
-            if (!kode || kode.length < 10) continue;
-            
-            if (!mergedData[kode]) {
-              mergedData[kode] = createEmptyProgresRecord();
-            }
-            
-            mergedData[kode].usaha_ditemukan += ditemukanIdx !== -1 ? toInt(row[ditemukanIdx]) : 0;
-            mergedData[kode].usaha_tutup += tutupIdx !== -1 ? toInt(row[tutupIdx]) : 0;
-            mergedData[kode].usaha_ganda += gandaIdx !== -1 ? toInt(row[gandaIdx]) : 0;
-            mergedData[kode].usaha_tidak_ditemukan += tdIdx !== -1 ? toInt(row[tdIdx]) : 0;
-            mergedData[kode].usaha_baru += baruIdx !== -1 ? toInt(row[baruIdx]) : 0;
-          }
+
+      if (headerIdx !== -1) {
+        const headers = rows[headerIdx].map(h => String(h || '').toLowerCase().trim());
+        // Check if there is a multi-tier header (like subheaders on next row)
+        if (rows[headerIdx + 1] && rows[headerIdx + 1].map(c => String(c || '').toLowerCase()).some(c => c.includes('ditemukan') || c.includes('tutup') || c.includes('baru'))) {
+          subHeaders = rows[headerIdx + 1].map(h => String(h || '').toLowerCase().trim());
         }
-      }
-    }
-    
-    // Parse USAHA KELUARGA
-    const wsUsahaKeluarga = wb.Sheets['USAHA KELUARGA'];
-    if (wsUsahaKeluarga) {
-      const rows = XLSX.utils.sheet_to_json(wsUsahaKeluarga, { header: 1, raw: true, defval: 0 });
-      let headerIdx = -1;
-      for (let i = 0; i < 10; i++) {
-        if (rows[i] && rows[i].includes('Kode')) {
-          headerIdx = i;
-          break;
-        }
-      }
-      
-      if (headerIdx !== -1 && rows[headerIdx + 1]) {
-        const headers = rows[headerIdx];
-        const subHeaders = rows[headerIdx + 1];
-        const kodeIdx = headers.indexOf('Kode');
+
+        const effectiveHeaders = subHeaders ? subHeaders : headers;
+        const kodeIdx = findCol(headers, ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls']);
         
-        const ditemukanIdx = subHeaders.indexOf('Ditemukan');
-        const tutupIdx = subHeaders.indexOf('Tutup');
-        const gandaIdx = subHeaders.indexOf('Ganda');
-        const tdIdx = subHeaders.indexOf('Tidak Ditemukan');
-        const baruIdx = subHeaders.indexOf('Baru');
+        const ditemukanIdx = findCol(effectiveHeaders, ['ditemukan', 'usaha_ditemukan']);
+        const tutupIdx = findCol(effectiveHeaders, ['tutup', 'usaha_tutup']);
+        const gandaIdx = findCol(effectiveHeaders, ['ganda', 'usaha_ganda']);
+        const tdIdx = findCol(effectiveHeaders, ['tidak ditemukan', 'tidak_ditemukan', 'usaha_tidak_ditemukan']);
+        const baruIdx = findCol(effectiveHeaders, ['baru', 'usaha_baru']);
         
+        const startRow = subHeaders ? headerIdx + 2 : headerIdx + 1;
+
         if (kodeIdx !== -1) {
-          for (let i = headerIdx + 2; i < rows.length; i++) {
+          for (let i = startRow; i < rows.length; i++) {
             const row = rows[i];
-            const kode = String(row[kodeIdx] || '').trim();
-            if (!kode || kode.length < 10) continue;
+            let kode = String(row[kodeIdx] || '').trim();
+            if (kode.endsWith('.0')) kode = kode.slice(0, -2);
+            if (!kode || kode.length < 10 || kode === '6409000000000000' || kode.endsWith('000000000000')) continue;
             
             if (!mergedData[kode]) {
               mergedData[kode] = createEmptyProgresRecord();
@@ -1001,7 +989,7 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
        tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
        rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
        draft, open, submitted_by_pcl, approved, rejected, target_upload)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   
   const getPrevStatus = db.prepare(`
