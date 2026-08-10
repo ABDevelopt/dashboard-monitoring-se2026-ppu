@@ -107,15 +107,37 @@ function loadMasterFromJson(jsonPath) {
 }
 
 function findCol(headers, aliases) {
+  if (!headers || !Array.isArray(headers)) return -1;
   for (const alias of aliases) {
     const idx = headers.indexOf(alias);
     if (idx !== -1) return idx;
   }
   for (const alias of aliases) {
-    const idx = headers.findIndex(h => h.includes(alias));
+    const idx = headers.findIndex(h => {
+      const cleanH = String(h || '').toLowerCase().trim();
+      return cleanH === alias || cleanH.includes(alias);
+    });
     if (idx !== -1) return idx;
   }
   return -1;
+}
+
+const KODE_ALIASES = ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls', 'id_subsls', 'id subsls', 'kode_subsls', 'kode subsls', 'subsls_code', 'subsls code', 'full_code', 'full code', 'id_sls', 'id sls', 'sls_code', 'sls code', 'kode_sls', 'kode sls'];
+const DITEMUKAN_ALIASES = ['ditemukan', 'keluarga_ditemukan', 'kk_ditemukan', 'jumlah_keluarga_ditemukan', 'jml_keluarga_ditemukan', 'jumlah_kk_ditemukan', 'jml_kk_ditemukan', 'keluarga_terdata', 'keluarga terdata', 'keluarga_selesai', 'keluarga selesai', 'terdata', 'selesai', 'keluarga', 'kk', 'jml_kk'];
+const KELUARGA_BARU_ALIASES = ['baru', 'keluarga baru', 'keluarga_baru', 'kk_baru', 'kk baru', 'jumlah_keluarga_baru', 'jml_keluarga_baru', 'jumlah_kk_baru', 'jml_kk_baru'];
+const USAHA_DITEMUKAN_ALIASES = ['usaha_ditemukan', 'usaha ditemukan', 'ditemukan', 'jumlah_usaha_ditemukan', 'jml_usaha_ditemukan', 'usaha_terdata', 'usaha terdata', 'usaha_selesai', 'usaha selesai', 'terdata', 'selesai', 'usaha', 'jml_usaha'];
+const USAHA_BARU_ALIASES = ['usaha_baru', 'usaha baru', 'baru', 'jumlah_usaha_baru', 'jml_usaha_baru'];
+
+function findHeaderRowIndex(rows) {
+  if (!rows || rows.length === 0) return 0;
+  for (let i = 0; i < Math.min(15, rows.length); i++) {
+    if (!rows[i] || !Array.isArray(rows[i])) continue;
+    const rowStr = rows[i].map(c => String(c || '').toLowerCase().trim());
+    if (rowStr.some(c => KODE_ALIASES.some(alias => c.includes(alias)))) {
+      return i;
+    }
+  }
+  return 0;
 }
 
 function findDataSheet(wb) {
@@ -128,8 +150,9 @@ function findDataSheet(wb) {
       if (ws) {
         const tempRows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
         if (tempRows.length > 0) {
-          const tempHeaders = tempRows[0].map(h => String(h || '').toLowerCase().trim());
-          const hasKode = tempHeaders.some(h => ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls'].some(alias => h.includes(alias)));
+          const headerIdx = findHeaderRowIndex(tempRows);
+          const tempHeaders = tempRows[headerIdx] ? tempRows[headerIdx].map(h => String(h || '').toLowerCase().trim()) : [];
+          const hasKode = tempHeaders.some(h => KODE_ALIASES.some(alias => h.includes(alias)));
           if (hasKode) return ws;
         }
       }
@@ -143,8 +166,9 @@ function findDataSheet(wb) {
     if (ws) {
       const tempRows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
       if (tempRows.length > 0) {
-        const tempHeaders = tempRows[0].map(h => String(h || '').toLowerCase().trim());
-        const hasKode = tempHeaders.some(h => ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls'].some(alias => h.includes(alias)));
+        const headerIdx = findHeaderRowIndex(tempRows);
+        const tempHeaders = tempRows[headerIdx] ? tempRows[headerIdx].map(h => String(h || '').toLowerCase().trim()) : [];
+        const hasKode = tempHeaders.some(h => KODE_ALIASES.some(alias => h.includes(alias)));
         if (hasKode) return ws;
       }
     }
@@ -173,21 +197,21 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: 0 });
   if (rows.length < 2) throw new Error('Sheet data kosong.');
 
-  // Header row index 0
-  const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
+  const headerIdx = findHeaderRowIndex(rows);
+  const headers = rows[headerIdx].map(h => String(h || '').toLowerCase().trim());
 
   // Cari index kolom
   const colIdx = {
     desa: findCol(headers, ['desa', 'nama_desa', 'kelurahan']),
-    kode: findCol(headers, ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls']),
+    kode: findCol(headers, KODE_ALIASES),
     usaha_tidak_ditemukan: findCol(headers, ['usaha_tidak_ditemukan', 'usaha tidak ditemukan', 'usaha_tutup_sementara']),
-    usaha_ditemukan: findCol(headers, ['usaha_ditemukan', 'usaha ditemukan']),
-    usaha_baru: findCol(headers, ['usaha_baru', 'usaha baru']),
-    usaha_tutup: findCol(headers, ['usaha_tutup', 'usaha tutup', 'usaha_tutup_permanen']),
-    usaha_ganda: findCol(headers, ['usaha_ganda', 'usaha ganda']),
+    usaha_ditemukan: findCol(headers, USAHA_DITEMUKAN_ALIASES),
+    usaha_baru: findCol(headers, USAHA_BARU_ALIASES),
+    usaha_tutup: findCol(headers, ['usaha_tutup', 'usaha tutup', 'usaha_tutup_permanen', 'tutup']),
+    usaha_ganda: findCol(headers, ['usaha_ganda', 'usaha ganda', 'ganda']),
     tidak_ditemukan: findCol(headers, ['tidak_ditemukan', 'tidak ditemukan', 'kk_tidak_ditemukan', 'keluarga_tidak_ditemukan']),
-    ditemukan: findCol(headers, ['ditemukan', 'kk_ditemukan', 'keluarga_ditemukan']),
-    keluarga_baru: findCol(headers, ['keluarga_baru', 'keluarga baru', 'kk_baru', 'kk baru']),
+    ditemukan: findCol(headers, DITEMUKAN_ALIASES),
+    keluarga_baru: findCol(headers, KELUARGA_BARU_ALIASES),
     meninggal: findCol(headers, ['meninggal', 'kk_meninggal', 'kk meninggal', 'keluarga_meninggal']),
     tidak_eligible: findCol(headers, ['tidak_eligible', 'kk_tidak_eligible', 'kk tidak eligible', 'keluarga_tidak_eligible', 'tidak eligible']),
     tidak_dapat_ditemui: findCol(headers, ['tidak_dapat_ditemui', 'kk_tidak_dapat_ditemui', 'kk tidak dapat ditemui', 'keluarga_tidak_dapat_ditemui', 'tidak dapat ditemui']),
@@ -200,12 +224,9 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
 
   const missingCols = [];
   if (colIdx.kode === -1) missingCols.push('level_6_full_code / kode');
-  if (colIdx.desa === -1) missingCols.push('desa / nama_desa');
-  if (colIdx.ditemukan === -1) missingCols.push('ditemukan / keluarga_ditemukan');
-  if (colIdx.usaha_ditemukan === -1) missingCols.push('usaha_ditemukan');
 
   if (missingCols.length > 0) {
-    throw new Error(`Berkas Progres Utama tidak valid. Kolom wajib berikut tidak ditemukan: [${missingCols.join(', ')}]. Pastikan format kolom sesuai dengan template standard.`);
+    throw new Error(`Berkas Progres Utama tidak valid. Kolom kode wajib berikut tidak ditemukan: [${missingCols.join(', ')}]. Pastikan format kolom sesuai dengan template standard.`);
   }
 
   // Insert upload record
@@ -857,9 +878,9 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
         const headerIdx = findHeaderRowIndex(rows);
         const headers = rows[headerIdx].map(h => String(h || '').toLowerCase().trim());
         
-        const kodeIdx = findCol(headers, ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls']);
-        const ditemukanIdx = findCol(headers, ['ditemukan', 'keluarga_ditemukan', 'kk_ditemukan']);
-        const baruIdx = findCol(headers, ['baru', 'keluarga baru', 'keluarga_baru', 'kk_baru', 'kk baru']);
+        const kodeIdx = findCol(headers, KODE_ALIASES);
+        const ditemukanIdx = findCol(headers, DITEMUKAN_ALIASES);
+        const baruIdx = findCol(headers, KELUARGA_BARU_ALIASES);
         const meninggalIdx = findCol(headers, ['meninggal', 'keluarga_meninggal', 'kk_meninggal']);
         const teIdx = findCol(headers, ['tidak eligible', 'tidak_eligible', 'kk_tidak_eligible']);
         const tddIdx = findCol(headers, ['tidak dapat ditemui', 'tidak_dapat_ditemui', 'kk_tidak_dapat_ditemui']);
@@ -907,7 +928,7 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
       let subHeaders = null;
 
       for (let i = 0; i < Math.min(10, rows.length); i++) {
-        if (rows[i] && rows[i].map(c => String(c || '').toLowerCase()).some(c => c.includes('kode') || c.includes('level_6_full_code') || c.includes('smallcode'))) {
+        if (rows[i] && rows[i].map(c => String(c || '').toLowerCase()).some(c => KODE_ALIASES.some(alias => c.includes(alias)))) {
           headerIdx = i;
           break;
         }
@@ -921,13 +942,13 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
         }
 
         const effectiveHeaders = subHeaders ? subHeaders : headers;
-        const kodeIdx = findCol(headers, ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls']);
+        const kodeIdx = findCol(headers, KODE_ALIASES);
         
-        const ditemukanIdx = findCol(effectiveHeaders, ['ditemukan', 'usaha_ditemukan']);
-        const tutupIdx = findCol(effectiveHeaders, ['tutup', 'usaha_tutup']);
+        const ditemukanIdx = findCol(effectiveHeaders, USAHA_DITEMUKAN_ALIASES);
+        const tutupIdx = findCol(effectiveHeaders, ['tutup', 'usaha_tutup', 'usaha_tutup_permanen']);
         const gandaIdx = findCol(effectiveHeaders, ['ganda', 'usaha_ganda']);
         const tdIdx = findCol(effectiveHeaders, ['tidak ditemukan', 'tidak_ditemukan', 'usaha_tidak_ditemukan']);
-        const baruIdx = findCol(effectiveHeaders, ['baru', 'usaha_baru']);
+        const baruIdx = findCol(effectiveHeaders, USAHA_BARU_ALIASES);
         
         const startRow = subHeaders ? headerIdx + 2 : headerIdx + 1;
 
@@ -979,7 +1000,7 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
   );
   const uploadId = uploadResult.lastInsertRowid;
   
-  // Get previous upload_id
+  // Get previous upload_id or any latest upload with status
   const prevUploadRow = db.prepare(`
     SELECT u.id 
     FROM uploads u
@@ -989,7 +1010,18 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
     HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
     ORDER BY u.id DESC LIMIT 1
   `).get(uploadId);
-  const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
+
+  const latestStatusRow = prevUploadRow || db.prepare(`
+    SELECT u.id 
+    FROM uploads u
+    JOIN progres p ON u.id = p.upload_id
+    WHERE u.id != ? 
+    GROUP BY u.id
+    HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
+    ORDER BY u.tanggal DESC, u.id DESC LIMIT 1
+  `).get(uploadId);
+
+  const prevUploadId = latestStatusRow ? latestStatusRow.id : null;
   
   const insertProgres = db.prepare(`
     INSERT OR REPLACE INTO progres 
