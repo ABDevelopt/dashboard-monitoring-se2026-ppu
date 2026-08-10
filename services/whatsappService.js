@@ -164,8 +164,17 @@ async function _closeSocket(isReconnecting = false) {
 
 /**
  * Inisialisasi WhatsApp Client menggunakan Baileys (WebSocket murni)
+ * @param {Object} [options]
+ * @param {boolean} [options.onlyIfSessionExists=false] Jika true, hanya inisialisasi jika file sesi autentikasi (creds.json) sudah ada.
  */
-async function initialize() {
+async function initialize(options = {}) {
+  const { onlyIfSessionExists = false } = options;
+
+  if (onlyIfSessionExists && !hasValidSession()) {
+    addWaLog('info', '[WA-Init] Sesi WhatsApp belum terdaftar (belum scan QR). Inisialisasi otomatis pada startup dilewati.');
+    return;
+  }
+
   if (sock || isInitializing) {
     addWaLog('info', '[WA-Init] Socket sudah aktif atau dalam inisialisasi. Melewati panggilan duplikat.');
     return;
