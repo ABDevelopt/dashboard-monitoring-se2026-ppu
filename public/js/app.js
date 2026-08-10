@@ -241,6 +241,7 @@ function updateTime() {
   // Builds breadcrumb trail based on current URL path and query parameters.
   // Called on initial load and after every PJAX navigation.
   function updateBreadcrumbs(targetUrl) {
+    document.body.classList.remove('has-breadcrumb');
     const bar  = document.getElementById('breadcrumb-bar');
     const list = document.getElementById('breadcrumb-list');
     if (!bar || !list) return;
@@ -2579,9 +2580,8 @@ function updateTime() {
       const a = e.target.closest('a');
       if (!a) return;
 
-      const href = a.getAttribute('href');
-      // Skip hashes, JS calls, blank target, external targets, downloads, export, or download endpoints
-      if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.getAttribute('target') === '_blank' || a.hasAttribute('download') || href.includes('/export') || href.includes('/download')) {
+      // Skip hashes, JS calls, blank target, external targets, downloads, export, or portal page separation
+      if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.getAttribute('target') === '_blank' || a.hasAttribute('download') || href.includes('/export') || href.includes('/download') || href === '/surveys' || href.startsWith('/surveys') || window.location.pathname === '/surveys') {
         return;
       }
       

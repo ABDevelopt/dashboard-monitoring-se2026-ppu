@@ -450,7 +450,7 @@ tbody tr:active {
 
 /* ====== BREADCRUMB NAVIGATION ====== */
 #breadcrumb-bar {
-  display: flex;
+  display: none !important;
   align-items: center;
   padding: 0 24px;
   height: 36px;
