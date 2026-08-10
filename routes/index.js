@@ -19,7 +19,15 @@ const uploadId = res.locals.uploadId;
     const { getDb } = require('../database');
     const db = getDb();
     const currentUpload = db.prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
-    const prevUpload = currentUpload ? db.prepare('SELECT id FROM uploads WHERE tanggal < ? ORDER BY tanggal DESC, id DESC LIMIT 1').get(currentUpload.tanggal) : null;
+    const prevUpload = currentUpload ? db.prepare(`
+      SELECT id 
+      FROM uploads 
+      WHERE total_subsls_terisi > 0 
+        AND (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%') 
+        AND tanggal < ? 
+      ORDER BY tanggal DESC, id DESC 
+      LIMIT 1
+    `).get(currentUpload.tanggal) : null;
     
     if (prevUpload) {
       distLast = db.prepare(`
@@ -93,7 +101,15 @@ const uploadId = res.locals.uploadId;
     const { getDb } = require('../database');
     const db = getDb();
     const currentUpload = db.prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
-    const prevUpload = currentUpload ? db.prepare('SELECT id FROM uploads WHERE tanggal < ? ORDER BY tanggal DESC, id DESC LIMIT 1').get(currentUpload.tanggal) : null;
+    const prevUpload = currentUpload ? db.prepare(`
+      SELECT id 
+      FROM uploads 
+      WHERE total_subsls_terisi > 0 
+        AND (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%') 
+        AND tanggal < ? 
+      ORDER BY tanggal DESC, id DESC 
+      LIMIT 1
+    `).get(currentUpload.tanggal) : null;
     
     if (prevUpload) {
       const prevStats = getOverviewSummary(prevUpload.id, res.locals.settings);
