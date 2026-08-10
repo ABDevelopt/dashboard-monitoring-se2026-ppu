@@ -109,7 +109,14 @@ router.get('/map-stats', (req, res) => {
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
   `).all(uploadId);
 
-  res.json({ desaStats: attachProgressPercentages(desaStats), slsStats: attachProgressPercentages(slsStats) });
+  const { getKecamatanStats } = require('../database');
+  const kecStats = getKecamatanStats(uploadId, settings);
+
+  res.json({ 
+    kecStats: attachProgressPercentages(kecStats), 
+    desaStats: attachProgressPercentages(desaStats), 
+    slsStats: attachProgressPercentages(slsStats) 
+  });
 });
 
 // Detail Korlap
