@@ -28,10 +28,9 @@ const upload = multer({
 router.get('/', (req, res) => {
   const uploads = getAllUploads();
   
-  // Scan workspace & file_upload_muatan folder for Excel & CSV files
+  // Scan workspace files per survey
   let workspaceFiles = [];
-  const wsDir = path.join(__dirname, '../');
-  const muatanDir = path.join(__dirname, '../file_upload_muatan');
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
 
   try {
     const scanDir = (dir, prefix = '') => {
@@ -53,9 +52,19 @@ router.get('/', (req, res) => {
         });
     };
 
-    const rootFiles = scanDir(wsDir);
-    const folderFiles = scanDir(muatanDir, 'file_upload_muatan');
-    workspaceFiles = [...folderFiles, ...rootFiles].sort((a, b) => b.mtime - a.mtime);
+    if (activeSurvey === 'se2026') {
+      const wsDir = path.join(__dirname, '../');
+      const muatanDir = path.join(__dirname, '../file_upload_muatan');
+      const rootFiles = scanDir(wsDir);
+      const folderFiles = scanDir(muatanDir, 'file_upload_muatan');
+      workspaceFiles = [...folderFiles, ...rootFiles].sort((a, b) => b.mtime - a.mtime);
+    } else {
+      const surveyDir = path.join(__dirname, '../file_upload_workspace', activeSurvey);
+      if (!fs.existsSync(surveyDir)) {
+        fs.mkdirSync(surveyDir, { recursive: true });
+      }
+      workspaceFiles = scanDir(surveyDir).sort((a, b) => b.mtime - a.mtime);
+    }
   } catch (err) {
     console.error('Error scanning workspace files:', err);
   }
@@ -216,7 +225,8 @@ router.post('/', upload.fields([
           statusFile.path,
           statusFile.originalname,
           statusFile.filename,
-          date
+          date,
+          res.locals.activeSurvey
         );
       }
 
@@ -331,7 +341,11 @@ router.post('/import-local', (req, res) => {
     return res.redirect('/admin/upload');
   }
 
-  const sourcePath = path.join(__dirname, '../', filename);
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  let sourcePath = path.join(__dirname, '../', filename);
+  if (activeSurvey !== 'se2026') {
+    sourcePath = path.join(__dirname, '../file_upload_workspace', activeSurvey, filename);
+  }
   if (!fs.existsSync(sourcePath)) {
     req.flash('error', 'File tidak ditemukan di folder workspace.');
     return res.redirect('/admin/upload');
@@ -505,7 +519,7 @@ router.post('/google-sheets', async (req, res) => {
 
     let result;
     if (dataType === 'status') {
-      result = parseAndSaveStatusExcelOnly(tempPath, filename, targetDate);
+      result = parseAndSaveStatusExcelOnly(tempPath, filename, null, targetDate, res.locals.activeSurvey);
     } else if (dataType === 'keluarga') {
       result = parseAndSaveSeparateExports(tempPath, null, filename, null, targetDate);
     } else if (dataType === 'usaha') {

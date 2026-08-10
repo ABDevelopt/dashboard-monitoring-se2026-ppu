@@ -3,7 +3,7 @@ const router = express.Router();
 const { getOverviewSummary, getKecamatanStats, getTrenHarian } = require('../database');
 
 router.get('/', (req, res) => {
-  const uploadId = res.locals.uploadId;
+const uploadId = res.locals.uploadId;
   let summary = null;
   let kecStats = [];
   let tren = [];

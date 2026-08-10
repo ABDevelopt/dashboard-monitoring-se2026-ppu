@@ -3,7 +3,7 @@ const router = express.Router();
 const { getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
 
 router.get('/', (req, res) => {
-  const uploadId = res.locals.uploadId;
+const uploadId = res.locals.uploadId;
 
   const filterKec = req.query.kec || '';
   const filterDesa = req.query.desa || '';
@@ -257,7 +257,7 @@ router.get('/', (req, res) => {
     const targetLimit = l !== undefined ? l : (limitQuery || '100');
     if (targetLimit) pMap.set('limit', targetLimit);
     pMap.set('page', p);
-    return `/subsls?${pMap.toString()}`;
+    return `${res.locals.navPrefix || ''}/subsls?${pMap.toString()}`;
   };
 
   res.render('subsls', {

@@ -95,7 +95,7 @@ const PBI_CODES = [
 ].map(code => code + '00');
 
 router.get('/', (req, res) => {
-  const uploadId = res.locals.uploadId;
+const uploadId = res.locals.uploadId;
 
   const filterKec = req.query.kec || '';
   const filterDesa = req.query.desa || '';

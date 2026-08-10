@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'Portal Pananyo Taka — BPS Kab. Penajam Paser Utara' %></title>
+  <meta name="description" content="Portal Induk Pemantauan Sensus & Survei Terpadu BPS Kabupaten Penajam Paser Utara">
+  <link rel="icon" type="image/png" href="/logo-mark.png">
+  <meta name="theme-color" content="#0b0f19">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+=" crossorigin="anonymous">
+  <link rel="stylesheet" href="/css/style.min.css?v=<%= typeof appVersion !== 'undefined' ? appVersion : '1' %>">
+  <link rel="stylesheet" href="/css/framework.min.css?v=<%= typeof appVersion !== 'undefined' ? appVersion : '1' %>">
+
+  <style>
+    /* =========================================================================
+       PANANYO TAKA PORTAL DESIGN SYSTEM — LUXURY, MODERN, ULTRA-CLEAN
+       ========================================================================= */
+    :root {
+      --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+      --bg-portal: #080c14;
+      --bg-portal-card: rgba(15, 23, 42, 0.75);
+      --bg-portal-card-hover: rgba(22, 33, 62, 0.85);
+      --bg-portal-glass: rgba(11, 17, 32, 0.82);
+      
+      --border-portal: rgba(255, 255, 255, 0.08);
+      --border-portal-hover: rgba(255, 255, 255, 0.18);
+
+      --text-portal-1: #f8fafc;
+      --text-portal-2: #cbd5e1;
+      --text-portal-3: #64748b;
+
+      --accent-orange: #f97316;
+      --accent-orange-rgb: 249, 115, 22;
+      --accent-cyan: #06b6d4;
+      --accent-cyan-rgb: 6, 182, 212;
+      --accent-purple: #8b5cf6;
+      --accent-purple-rgb: 139, 92, 246;
+      --accent-green: #10b981;
+      --accent-green-rgb: 16, 185, 129;
+      
+      --glow-orange: 0 10px 30px -10px rgba(249, 115, 22, 0.35);
+      --glow-cyan: 0 10px 30px -10px rgba(6, 182, 212, 0.35);
+      --glow-purple: 0 10px 30px -10px rgba(139, 92, 246, 0.35);
+    }
+
+    html.light-mode {
+      --bg-portal: #f8fafc;
+      --bg-portal-card: #ffffff;
+      --bg-portal-card-hover: #f1f5f9;
+      --bg-portal-glass: rgba(255, 255, 255, 0.88);
+      --border-portal: #e2e8f0;
+      --border-portal-hover: #cbd5e1;
+      --text-portal-1: #0f172a;
+      --text-portal-2: #334155;
+      --text-portal-3: #64748b;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-portal);
+      color: var(--text-portal-1);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Ambient Background Mesh */
+    .portal-ambient {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: 
+        radial-gradient(circle at 15% 15%, rgba(var(--accent-orange-rgb), 0.07) 0%, transparent 45%),
+        radial-gradient(circle at 85% 25%, rgba(var(--accent-cyan-rgb), 0.06) 0%, transparent 45%),
+        radial-gradient(circle at 50% 85%, rgba(var(--accent-purple-rgb), 0.05) 0%, transparent 50%);
+    }
+
+    .portal-wrapper {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ── TOPBAR ── */
+    .portal-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-portal-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-portal);
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .portal-nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .portal-nav-logo-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .portal-nav-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(234, 88, 12, 0.25));
+      border: 1px solid rgba(249, 115, 22, 0.4);
+      color: var(--accent-orange);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-family: var(--font-display);
+    }
+
+    .portal-nav-title {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+      color: var(--text-portal-1);
+      line-height: 1.2;
+    }
+
+    .portal-nav-sub {
+      font-size: 11px;
+      color: var(--text-portal-3);
+      font-weight: 500;
+    }
+
+    .portal-nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .portal-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--accent-green);
+      background: rgba(var(--accent-green-rgb), 0.08);
+      border: 1px solid rgba(var(--accent-green-rgb), 0.25);
+      padding: 5px 12px;
+      border-radius: 999px;
+    }
+
+    .portal-pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      position: relative;
+    }
+    .portal-pulse-dot::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      background: rgba(var(--accent-green-rgb), 0.4);
+      animation: portalPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes portalPulse {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.6); opacity: 0; }
+    }
+
+    .portal-clock {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-portal-2);
+      font-variant-numeric: tabular-nums;
+      padding: 5px 10px;
+      background: var(--bg-portal-card);
+      border: 1px solid var(--border-portal);
+      border-radius: 8px;
+    }
+
+    .portal-theme-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-portal-card);
+      border: 1px solid var(--border-portal);
+      color: var(--text-portal-2);
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    .portal-theme-btn:hover {
+      border-color: var(--border-portal-hover);
+      color: var(--accent-orange);
+      transform: translateY(-1px);
+    }
+
+    /* ── MAIN CONTENT CONTAINER ── */
+    .portal-main-content {
+      flex: 1;
+      width: 100%;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 36px 24px 64px;
+    }
+
+    /* ── FOOTER ── */
+    .portal-foot {
+      border-top: 1px solid var(--border-portal);
+      background: var(--bg-portal-glass);
+      backdrop-filter: blur(12px);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text-portal-3);
+    }
+
+    .portal-foot-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .portal-nav { padding: 10px 16px; }
+      .portal-main-content { padding: 20px 16px 48px; }
+      .portal-foot { padding: 16px; flex-direction: column; text-align: center; }
+      .portal-nav-sub, .portal-clock { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="portal-ambient"></div>
+
+  <div class="portal-wrapper">
+    <!-- Top Navigation Bar -->
+    <header class="portal-nav">
+      <a href="/surveys" class="portal-nav-brand">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #f97316, #ea580c); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);">
+          <i class="bi bi-grid-3x3-gap-fill"></i>
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="portal-nav-title">Pananyo Taka</span>
+            <span class="portal-nav-badge">Portal Induk</span>
+          </div>
+          <div class="portal-nav-sub">BPS Kabupaten Penajam Paser Utara</div>
+        </div>
+      </a>
+
+      <div class="portal-nav-actions">
+        <div class="portal-status-pill">
+          <div class="portal-pulse-dot"></div>
+          <span>Sistem Pemantauan Online</span>
+        </div>
+        
+        <div class="portal-clock" id="portalClock">--:--:-- WITA</div>
+
+        <button type="button" class="portal-theme-btn" id="themeToggleBtn" title="Ganti Mode Gelap / Terang">
+          <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main View Body -->
+    <main class="portal-main-content">
+      <%- body %>
+    </main>
+
+    <!-- Footer -->
+    <footer class="portal-foot">
+      <div class="portal-foot-brand">
+        <i class="bi bi-building-check" style="font-size: 15px; color: var(--accent-orange);"></i>
+        <span>Badan Pusat Statistik Kabupaten Penajam Paser Utara &bull; Jl. Propinsi Km. 9, Nipah-Nipah</span>
+      </div>
+      <div>
+        <span>&copy; 2026 BPS Kab. Penajam Paser Utara &bull; v<%= typeof appVersion !== 'undefined' ? appVersion : '2.4.0' %></span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Live WITA Clock
+    function updatePortalClock() {
+      const now = new Date();
+      const timeStr = new Intl.DateTimeFormat('id-ID', {
+        timeZone: 'Asia/Makassar',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }).format(now);
+      const clockEl = document.getElementById('portalClock');
+      if (clockEl) clockEl.textContent = timeStr + ' WITA';
+    }
+    updatePortalClock();
+    setInterval(updatePortalClock, 1000);
+
+    // Theme Switcher Sync with Dashboard
+    const themeBtn = document.getElementById('themeToggleBtn');
+    const themeIcon = document.getElementById('themeIcon');
+
+    function applyTheme(theme) {
+      if (theme === 'light') {
+        document.documentElement.classList.add('light-mode');
+        themeIcon.className = 'bi bi-sun-fill text-warning';
+      } else {
+        document.documentElement.classList.remove('light-mode');
+        themeIcon.className = 'bi bi-moon-stars-fill';
+      }
+      localStorage.setItem('theme', theme);
+    }
+
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    applyTheme(savedTheme);
+
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => {
+        const currentTheme = document.documentElement.classList.contains('light-mode') ? 'light' : 'dark';
+        const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+        applyTheme(nextTheme);
+      });
+    }
+  </script>
+</body>
+</html>

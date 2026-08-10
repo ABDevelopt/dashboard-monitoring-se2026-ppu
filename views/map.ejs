@@ -1401,7 +1401,7 @@
 
             // Step 1: load real-time stats and Desa geojson in parallel
             const [statsRes, desaGeoRes] = await Promise.all([
-              fetch('/api/map-stats'),
+              fetch('<%= navPrefix %>/api/map-stats'),
               fetch('/data/desa_boundaries.geojson')
             ]);
             

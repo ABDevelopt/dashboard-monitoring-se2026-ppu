@@ -14,8 +14,8 @@ function formatDate(date) {
  * dari data tanggal setelahnya.
  * @returns {number} Jumlah tanggal baru yang berhasil diimputasi
  */
-function runAutoImputation() {
-  const db = getDb();
+function runAutoImputation(surveyId = 'se2026') {
+  const db = getDb(surveyId);
   
   // Ambil upload riil terbaru (terakhir di-upload) untuk setiap tanggal
   // Untuk membedakan, upload imputasi ditandai dengan filename 'Imputasi Otomatis (Hari Kosong)'

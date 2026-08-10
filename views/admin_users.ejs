@@ -243,7 +243,7 @@
         <div class="custom-modal-title"><i class="bi bi-person-plus-fill"></i> Tambah Pengguna Baru</div>
         <button class="custom-modal-close" onclick="closeModal('createModal')"><i class="bi bi-x-lg"></i></button>
       </div>
-      <form action="/admin/users/create" method="POST">
+      <form action="<%= navPrefix %>/admin/users/create" method="POST">
         <div class="custom-modal-body">
           <div class="form-group">
             <label for="create_username">Username</label>
@@ -352,13 +352,13 @@
     document.getElementById('edit_username').value = userObj.username;
     document.getElementById('edit_password').value = '';
     document.getElementById('edit_role').value = userObj.role;
-    document.getElementById('editForm').action = `/admin/users/edit/${userObj.id}`;
+    document.getElementById('editForm').action = `<%= navPrefix %>/admin/users/edit/${userObj.id}`;
     document.getElementById('editModal').classList.add('active');
   }
 
   function openDeleteModal(userId, username) {
     document.getElementById('delete_username_label').textContent = username;
-    document.getElementById('deleteForm').action = `/admin/users/delete/${userId}`;
+    document.getElementById('deleteForm').action = `<%= navPrefix %>/admin/users/delete/${userId}`;
     document.getElementById('deleteModal').classList.add('active');
   }
 

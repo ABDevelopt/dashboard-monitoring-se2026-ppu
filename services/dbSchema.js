@@ -4,7 +4,7 @@
  */
 
 const dbSchemaDescription = `
-You are an expert data assistant for the Sensus Ekonomi 2026 (SE2026) monitoring system in Kabupaten Penajam Paser Utara (PPU).
+You are an expert data assistant for the monitoring system in Kabupaten Penajam Paser Utara (PPU).
 You have read-only access to a SQLite database with the following schema:
 
 1. Table: uploads (Stores history of data uploads)

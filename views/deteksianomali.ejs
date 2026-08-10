@@ -15,10 +15,18 @@
       </p>
     </div>
     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-      <% const sheetsUrlLink = (typeof settings !== 'undefined' && settings.google_sheets_anomaly_url) ? settings.google_sheets_anomaly_url : 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml'; %>
+      <% const isSe2026 = (typeof surveyConfig === 'undefined' || surveyConfig.id === 'se2026'); %>
+      <% const defaultUrl = isSe2026 ? 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml' : ''; %>
+      <% const sheetsUrlLink = (typeof settings !== 'undefined' && settings.google_sheets_anomaly_url) ? settings.google_sheets_anomaly_url : defaultUrl; %>
+      <% if (sheetsUrlLink) { %>
       <a href="<%= sheetsUrlLink %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="color: var(--accent-green);" title="Buka Google Spreadsheet Anomali">
         <i class="bi bi-file-earmark-excel-fill"></i> Buka Spreadsheet
       </a>
+      <% } else { %>
+      <a href="<%= (typeof navPrefix !== 'undefined' ? navPrefix : '') %>/admin/spreadsheet" class="btn btn-secondary btn-sm" style="color: var(--accent-yellow);" title="Konfigurasi Spreadsheet Anomali">
+        <i class="bi bi-gear-fill"></i> Atur Spreadsheet
+      </a>
+      <% } %>
       <a href="/deteksi-anomali?refresh=true&tab=<%= activeTab %>&kec=<%= encodeURIComponent(filterKec) %>&korlap=<%= encodeURIComponent(filterKorlap) %>&status=<%= encodeURIComponent(filterStatus) %>" onclick="this.innerHTML='<i class=\'bi bi-arrow-clockwise bi-spin\'></i> Syncing...'; this.style.pointerEvents='none';" class="btn btn-primary btn-sm" title="Segarkan Data dari Google Spreadsheet">
         <i class="bi bi-arrow-clockwise"></i> Sync Data
       </a>

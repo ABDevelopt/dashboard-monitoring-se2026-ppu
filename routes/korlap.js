@@ -3,7 +3,7 @@ const router = express.Router();
 const { getKorlapStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
 
 router.get('/', (req, res) => {
-  const uploadId = res.locals.uploadId;
+const uploadId = res.locals.uploadId;
   let korlapStats = [];
   let detailData = [];
   const filterKorlap = req.query.korlap || '';

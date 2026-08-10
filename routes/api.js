@@ -11,7 +11,7 @@ router.get('/tren', (req, res) => {
 router.get('/kecamatan', (req, res) => {
   const uploadId = res.locals.uploadId;
   if (!uploadId) return res.json([]);
-  res.json(getKecamatanStats(uploadId, res.locals.settings));
+  res.json(getKecamatanStats(uploadId, res.locals.settings, res.locals.activeSurvey));
 });
 
 // Search SubSLS
@@ -42,7 +42,7 @@ router.get('/summary', (req, res) => {
   if (!uploadId) return res.json(null);
 
   const { getOverviewSummary } = require('../database');
-  res.json(getOverviewSummary(uploadId, res.locals.settings));
+  res.json(getOverviewSummary(uploadId, res.locals.settings, res.locals.activeSurvey));
 });
 
 // Map Statistics API

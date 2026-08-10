@@ -3,31 +3,28 @@ const router = express.Router();
 const { getDb } = require('../database');
 const { getAnomalySheetsData } = require('../services/googleSheetsAnomalyService');
 
-let masterFiltersCache = {
-  kecList: null,
-  korlapList: null,
-  timestamp: 0
-};
+const masterFiltersCaches = {}; // surveyId -> cache
 
-function getMasterFilterLists() {
+function getMasterFilterLists(surveyId = 'se2026') {
   const now = Date.now();
-  if (masterFiltersCache.kecList && masterFiltersCache.korlapList && (now - masterFiltersCache.timestamp < 30 * 60 * 1000)) {
-    return masterFiltersCache;
+  const cache = masterFiltersCaches[surveyId];
+  if (cache && cache.kecList && cache.korlapList && (now - cache.timestamp < 30 * 60 * 1000)) {
+    return cache;
   }
   try {
-    const db = getDb();
+    const db = getDb(surveyId);
     const kecList = db.prepare('SELECT DISTINCT kecamatan FROM subsls_master WHERE kecamatan IS NOT NULL ORDER BY kecamatan').all();
     const korlapList = db.prepare('SELECT DISTINCT korlap FROM subsls_master WHERE korlap IS NOT NULL ORDER BY korlap').all();
-    masterFiltersCache = { kecList, korlapList, timestamp: now };
+    masterFiltersCaches[surveyId] = { kecList, korlapList, timestamp: now };
   } catch (err) {
     console.error('Error fetching master filter lists for deteksi anomali:', err.message);
-    masterFiltersCache = { kecList: [], korlapList: [], timestamp: now };
+    masterFiltersCaches[surveyId] = { kecList: [], korlapList: [], timestamp: now };
   }
-  return masterFiltersCache;
+  return masterFiltersCaches[surveyId];
 }
 
 router.get('/', async (req, res) => {
-  res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
+res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
 
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const filterKec = req.query.kec || '';
@@ -57,7 +54,8 @@ router.get('/', async (req, res) => {
   }
 
   // Get filter lists with 30-minute memory caching
-  const { kecList, korlapList } = getMasterFilterLists();
+  const activeSurvey = res.locals.activeSurvey || "se2026";
+  const { kecList, korlapList } = getMasterFilterLists(activeSurvey);
 
   // Filter helper
   const filterItems = (list, isKeluarga = false) => {

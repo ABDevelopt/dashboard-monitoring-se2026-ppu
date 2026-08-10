@@ -6,10 +6,18 @@ const fs = require('fs');
 const Database = require('better-sqlite3');
 const { closeDbConnection, getDb, getSettings } = require('../database');
 
-// Ensure backups folder exists
-const backupsDir = path.join(__dirname, '../data/backups');
-if (!fs.existsSync(backupsDir)) {
-  fs.mkdirSync(backupsDir, { recursive: true });
+// Helper to get survey-specific backups folder
+function getSurveyBackupsDir(surveyId = 'se2026') {
+  const dir = path.join(__dirname, '../data/backups', surveyId);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  return dir;
+}
+
+// Helper to get main DB path for a survey
+function getSurveyDbPath(surveyId = 'se2026') {
+  return path.join(__dirname, `../data/${surveyId}.db`);
 }
 
 // Multer storage configuration
@@ -33,6 +41,8 @@ const upload = multer({
 
 // GET: Backup & Restore Page
 router.get('/', (req, res) => {
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const backupsDir = getSurveyBackupsDir(activeSurvey);
   let files = [];
   try {
     files = fs.readdirSync(backupsDir)
@@ -54,16 +64,17 @@ router.get('/', (req, res) => {
     title: 'Backup & Restore Data',
     activePage: 'settings-backup',
     backups: files,
-    settings: getSettings()
+    settings: getSettings(activeSurvey)
   });
 });
 
 // GET: Download Current DB (Export)
 router.get('/download', (req, res) => {
-  const dbPath = path.join(__dirname, '../data/se2026.db');
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const dbPath = getSurveyDbPath(activeSurvey);
   if (fs.existsSync(dbPath)) {
     const ts = new Date().toISOString().slice(0, 10);
-    res.download(dbPath, `se2026_backup_${ts}.db`);
+    res.download(dbPath, `${activeSurvey}_backup_${ts}.db`);
   } else {
     req.flash('error', 'File database tidak ditemukan.');
     res.redirect('/admin/settings/backup');
@@ -72,7 +83,10 @@ router.get('/download', (req, res) => {
 
 // POST: Trigger Manual Backup
 router.post('/create', (req, res) => {
-  const dbPath = path.join(__dirname, '../data/se2026.db');
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const dbPath = getSurveyDbPath(activeSurvey);
+  const backupsDir = getSurveyBackupsDir(activeSurvey);
+  
   if (!fs.existsSync(dbPath)) {
     req.flash('error', 'File database tidak ditemukan.');
     return res.redirect('/admin/settings/backup');
@@ -80,7 +94,7 @@ router.post('/create', (req, res) => {
 
   try {
     const ts = Date.now();
-    const backupPath = path.join(backupsDir, `backup_${ts}.db`);
+    const backupPath = path.join(backupsDir, `${activeSurvey}_backup_${ts}.db`);
     fs.copyFileSync(dbPath, backupPath);
     req.flash('success', 'Backup database berhasil dibuat.');
   } catch (err) {
@@ -91,7 +105,10 @@ router.post('/create', (req, res) => {
 
 // POST: Restore from list
 router.post('/restore-local', (req, res) => {
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const backupsDir = getSurveyBackupsDir(activeSurvey);
   const { filename } = req.body;
+  
   if (!filename) {
     req.flash('error', 'Nama file backup tidak valid.');
     return res.redirect('/admin/settings/backup');
@@ -110,32 +127,36 @@ router.post('/restore-local', (req, res) => {
     testDb.close();
 
     // 2. Perform safe replacement
-    const mainDbPath = path.join(__dirname, '../data/se2026.db');
+    const mainDbPath = getSurveyDbPath(activeSurvey);
     
     // Auto-backup before overwrite
     const autoBackupPath = path.join(backupsDir, `pre_restore_auto_${Date.now()}.db`);
-    fs.copyFileSync(mainDbPath, autoBackupPath);
+    if (fs.existsSync(mainDbPath)) {
+      fs.copyFileSync(mainDbPath, autoBackupPath);
+    }
 
     // Close connection cleanly before copying
-    closeDbConnection();
+    closeDbConnection(activeSurvey);
     fs.copyFileSync(backupPath, mainDbPath);
+    
     // Reopen connection and initialize
-    getDb();
+    getDb(activeSurvey);
     
     // Auto run imputation and rebuild caches
     try {
       const { runAutoImputation } = require('../services/imputerService');
-      const { rebuildAllSummaryCaches } = require('../database');
-      runAutoImputation();
-      rebuildAllSummaryCaches();
+      const { rebuildSummaryCache } = require('../database');
+      runAutoImputation(activeSurvey);
+      const curDb = getDb(activeSurvey);
+      const curUploads = curDb.prepare('SELECT id FROM uploads').all();
+      curUploads.forEach(u => rebuildSummaryCache(u.id, activeSurvey));
     } catch (imputeErr) {
       console.error('[Restore-Impute] Failed to auto impute database after restore:', imputeErr);
     }
 
     req.flash('success', 'Database berhasil di-restore dari file lokal.');
   } catch (err) {
-    // Make sure DB is re-opened if it was closed
-    try { getDb(); } catch (_) {}
+    try { getDb(activeSurvey); } catch (_) {}
     req.flash('error', `Gagal restore database: ${err.message}`);
   }
   res.redirect('/admin/settings/backup');
@@ -143,7 +164,10 @@ router.post('/restore-local', (req, res) => {
 
 // POST: Delete local backup
 router.post('/delete-local', (req, res) => {
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const backupsDir = getSurveyBackupsDir(activeSurvey);
   const { filename } = req.body;
+  
   if (!filename) {
     req.flash('error', 'Nama file backup tidak valid.');
     return res.redirect('/admin/settings/backup');
@@ -165,6 +189,9 @@ router.post('/delete-local', (req, res) => {
 
 // POST: Import DB file (Upload and Restore)
 router.post('/restore', upload.single('db_file'), (req, res) => {
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const backupsDir = getSurveyBackupsDir(activeSurvey);
+  
   if (!req.file) {
     req.flash('error', 'Silakan pilih file database untuk diunggah.');
     return res.redirect('/admin/settings/backup');
@@ -183,39 +210,39 @@ router.post('/restore', upload.single('db_file'), (req, res) => {
     }
 
     // 2. Perform safe replacement
-    const mainDbPath = path.join(__dirname, '../data/se2026.db');
+    const mainDbPath = getSurveyDbPath(activeSurvey);
     
     // Auto-backup current DB before overwrite
     const autoBackupPath = path.join(backupsDir, `pre_restore_auto_${Date.now()}.db`);
-    fs.copyFileSync(mainDbPath, autoBackupPath);
+    if (fs.existsSync(mainDbPath)) {
+      fs.copyFileSync(mainDbPath, autoBackupPath);
+    }
 
     // Close connection cleanly before copying
-    closeDbConnection();
+    closeDbConnection(activeSurvey);
     
     // Overwrite database file
     fs.copyFileSync(tempPath, mainDbPath);
     
     // Reopen connection and initialize
-    getDb();
+    getDb(activeSurvey);
 
     // Auto run imputation and rebuild caches
     try {
       const { runAutoImputation } = require('../services/imputerService');
-      const { rebuildAllSummaryCaches } = require('../database');
-      runAutoImputation();
-      rebuildAllSummaryCaches();
+      const { rebuildSummaryCache } = require('../database');
+      runAutoImputation(activeSurvey);
+      const curDb = getDb(activeSurvey);
+      const curUploads = curDb.prepare('SELECT id FROM uploads').all();
+      curUploads.forEach(u => rebuildSummaryCache(u.id, activeSurvey));
     } catch (imputeErr) {
       console.error('[Restore-Upload-Impute] Failed to auto impute database after restore:', imputeErr);
     }
 
-    // Remove uploaded temp file
     try { fs.unlinkSync(tempPath); } catch (_) {}
-
     req.flash('success', 'Database berhasil di-import dan diperbarui secara instan.');
   } catch (err) {
-    // Make sure DB is re-opened if it was closed
-    try { getDb(); } catch (_) {}
-    // Cleanup upload
+    try { getDb(activeSurvey); } catch (_) {}
     try { fs.unlinkSync(tempPath); } catch (_) {}
     req.flash('error', `Gagal import database: ${err.message}`);
   }

@@ -1056,7 +1056,7 @@
         </div>
         <div>
           <span style="font-weight: 700; font-size: 15.5px;" class="gemini-gradient-text">Pananyo Taka</span>
-          <p style="margin: 2px 0 0 0; font-size: 10px; font-weight: 500; color: var(--text-muted);">Asisten AI Pintar Sensus Ekonomi 2026 Penajam Paser Utara</p>
+          <p style="margin: 2px 0 0 0; font-size: 10px; font-weight: 500; color: var(--text-muted);">Asisten AI Pintar <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.name : 'Sensus Ekonomi 2026') %> Penajam Paser Utara</p>
         </div>
       </div>
       <div class="chat-header-actions">
@@ -1101,13 +1101,13 @@
             <i class="bi bi-sparkles gemini-hero-sparkle" style="font-size: 34px; margin-bottom: 0;"></i>
           </div>
           <h1 class="gemini-hero-title">Halo, <span class="gemini-gradient-text">Saya Pananyo Taka</span></h1>
-          <p class="gemini-hero-subtitle">Asisten Pintar Sensus Ekonomi 2026 Penajam Paser Utara. Apa yang ingin Anda analisis atau tanyakan hari ini?</p>
+          <p class="gemini-hero-subtitle">Asisten Pintar <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.name : 'Sensus Ekonomi 2026') %> Penajam Paser Utara. Apa yang ingin Anda analisis atau tanyakan hari ini?</p>
         </div>
 
         <div class="gemini-suggestion-grid">
-          <div class="gemini-card" onclick="sendQuickPrompt('Bagaimana ringkasan progres pengolahan SE2026 Kabupaten Penajam Paser Utara saat ini?')">
+          <div class="gemini-card" onclick="sendQuickPrompt('Bagaimana ringkasan progres <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'SE2026') %> Kabupaten Penajam Paser Utara saat ini?')">
             <div class="gemini-card-icon blue"><i class="bi bi-bar-chart-line-fill"></i></div>
-            <div class="gemini-card-title">Ringkasan Progres SE2026</div>
+            <div class="gemini-card-title">Ringkasan Progres <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'SE2026') %></div>
             <div class="gemini-card-desc">Cek capaian realisasi muatan &amp; FASIH per kecamatan secara otomatis</div>
           </div>
 

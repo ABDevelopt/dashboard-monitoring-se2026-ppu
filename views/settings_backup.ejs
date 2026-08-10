@@ -154,7 +154,7 @@
   <!-- BREADCRUMBS & NAVIGATION -->
   <div class="d-flex justify-between items-center mb-6 flex-wrap gap-4">
     <div class="d-flex items-center gap-2.5">
-      <a href="/admin" class="btn-admin btn-admin-secondary py-1.5 px-3">
+      <a href="<%= navPrefix %>/admin" class="btn-admin btn-admin-secondary py-1.5 px-3">
         <i class="bi bi-arrow-left"></i> Kembali ke Menu Admin
       </a>
     </div>
@@ -203,10 +203,10 @@
       </div>
       
       <div class="d-flex gap-3 flex-wrap">
-        <a href="/admin/settings/backup/download" class="btn-admin btn-admin-primary" style="flex: 1; min-width: 140px;">
+        <a href="<%= navPrefix %>/admin/settings/backup/download" class="btn-admin btn-admin-primary" style="flex: 1; min-width: 140px;">
           <i class="bi bi-file-earmark-arrow-down-fill"></i> Download File DB
         </a>
-        <form action="/admin/settings/backup/create" method="POST" style="flex: 1; min-width: 140px; margin: 0;">
+        <form action="<%= navPrefix %>/admin/settings/backup/create" method="POST" style="flex: 1; min-width: 140px; margin: 0;">
           <button type="submit" class="btn-admin btn-admin-secondary w-full">
             <i class="bi bi-folder-plus"></i> Buat Backup Lokal
           </button>
@@ -233,7 +233,7 @@
         </div>
       </div>
 
-      <form action="/admin/settings/backup/restore" method="POST" enctype="multipart/form-data" id="restoreForm" style="margin: 0;">
+      <form action="<%= navPrefix %>/admin/settings/backup/restore" method="POST" enctype="multipart/form-data" id="restoreForm" style="margin: 0;">
         <label for="db_file" class="custom-file-upload" id="dropArea">
           <i class="bi bi-database-fill-up" id="uploadIcon"></i>
           <span class="fs-xs fw-bold text-primary" id="uploadText">Klik atau Drag File database (.db) ke sini</span>
@@ -287,7 +287,7 @@
                 <td style="text-align: right;">
                   <div class="d-flex gap-2 justify-end" style="margin: 0;">
                     <!-- Restore Form -->
-                    <form action="/admin/settings/backup/restore-local" method="POST" style="margin: 0;" onsubmit="return confirm('Apakah Anda yakin ingin me-restore file ini? Data aktif saat ini akan ditimpa.');">
+                    <form action="<%= navPrefix %>/admin/settings/backup/restore-local" method="POST" style="margin: 0;" onsubmit="return confirm('Apakah Anda yakin ingin me-restore file ini? Data aktif saat ini akan ditimpa.');">
                       <input type="hidden" name="filename" value="<%= b.filename %>">
                       <button type="submit" class="btn-admin btn-admin-secondary py-1 px-2.5 fs-caption">
                         <i class="bi bi-arrow-counterclockwise"></i> Restore
@@ -295,7 +295,7 @@
                     </form>
                     
                     <!-- Delete Form -->
-                    <form action="/admin/settings/backup/delete-local" method="POST" style="margin: 0;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus backup lokal ini?');">
+                    <form action="<%= navPrefix %>/admin/settings/backup/delete-local" method="POST" style="margin: 0;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus backup lokal ini?');">
                       <input type="hidden" name="filename" value="<%= b.filename %>">
                       <button type="submit" class="btn-admin btn-admin-danger py-1 px-2.5 fs-caption">
                         <i class="bi bi-trash"></i> Hapus

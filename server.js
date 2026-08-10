@@ -226,6 +226,11 @@ const APP_VERSION = Date.now(); // Startup timestamp for cache busting (updated 
 
 // Global locals
 app.use((req, res, next) => {
+  res.locals.navPrefix = '';
+  res.locals.routePrefix = '';
+  res.locals.activeSurvey = 'se2026';
+  res.locals.surveyConfig = require('./config/surveys.json')['se2026'];
+  res.locals.customStyles = '';
   res.locals.success = req.flash('success');
   res.locals.error = req.flash('error');
   res.locals.activePage = ''; // default value
@@ -350,6 +355,63 @@ app.use((req, res, next) => {
   next();
 });
 
+// Multi-Survey Template Context Resolver Middleware
+app.use((req, res, next) => {
+  try {
+    const surveysConfig = require("./config/surveys.json");
+    const parts = req.path.split("/");
+    const firstPart = parts[1];
+    
+    let matchedSurvey = null;
+    if (surveysConfig[firstPart]) {
+      matchedSurvey = surveysConfig[firstPart];
+      res.locals.activeSurvey = firstPart;
+      res.locals.surveyConfig = matchedSurvey;
+      res.locals.routePrefix = "/" + firstPart;
+      res.locals.navPrefix = "/" + firstPart;
+      req.url = "/" + parts.slice(2).join("/");
+    } else {
+      matchedSurvey = surveysConfig["se2026"];
+      res.locals.activeSurvey = "se2026";
+      res.locals.surveyConfig = matchedSurvey;
+      res.locals.routePrefix = "";
+      res.locals.navPrefix = "";
+    }
+    res.locals.customStyles = `
+      :root {
+        --accent-primary: ${matchedSurvey.themeColor};
+        --accent-rgb: ${matchedSurvey.themeRgb};
+        --accent-orange: ${matchedSurvey.themeColor};
+      }
+    `;
+    
+    // Override/update active upload info and settings for this request
+    const { getLatestUpload, getLatestUploadsDetailed, getSettings } = require('./database');
+    const latest = getLatestUpload(res.locals.activeSurvey);
+    res.locals.latestUpload = latest || null;
+    res.locals.uploadId = latest ? latest.id : null;
+    res.locals.latestUploadsDetailed = getLatestUploadsDetailed(res.locals.activeSurvey);
+    res.locals.settings = getSettings(res.locals.activeSurvey);
+    
+    // Override res.redirect to automatically prepend routePrefix for admin URLs
+    const originalRedirect = res.redirect;
+    res.redirect = function(url) {
+      if (typeof url === 'string' && url.startsWith('/admin') && res.locals.routePrefix) {
+        return originalRedirect.call(this, res.locals.routePrefix + url);
+      }
+      return originalRedirect.call(this, url);
+    };
+
+    const { surveyContext } = require('./services/contextService');
+    return surveyContext.run({ activeSurvey: res.locals.activeSurvey }, () => {
+      next();
+    });
+  } catch (err) {
+    logger.error("Error resolving multi-survey context:", err);
+    next();
+  }
+});
+
 // Route Guard Middleware based on Page Display settings
 const routeSettingsMap = {
   '/map': 'page_map',
@@ -419,6 +481,7 @@ app.use('/performa', require('./routes/performa'));
 app.use('/harian', require('./routes/harian'));
 app.use('/deteksi-anomali', require('./routes/deteksianomali'));
 app.use('/agent', require('./routes/agent'));
+app.use('/surveys', require('./routes/surveys'));
 app.use('/api', require('./routes/api'));
 app.use('/api/search-global', require('./routes/search'));
 
@@ -497,14 +560,16 @@ function init() {
   }
 
   try {
-    const db = getDb(); // initialize schema
+    const db = getDb('se2026'); // initialize schema for se2026
     const rowCount = db.prepare('SELECT COUNT(*) as count FROM subsls_master').get().count;
     if (rowCount === 0) {
       const masterPath = path.join(__dirname, 'kelompok_populasi_pml_pcl_korlap_muatan.json');
-      const count = loadMasterFromJson(masterPath);
-      logger.info(`✅ Master SubSLS loaded: ${count} records (from JSON)`);
+      if (fs.existsSync(masterPath)) {
+        const count = loadMasterFromJson(masterPath, 'se2026');
+        logger.info(`✅ Master SubSLS SE2026 loaded: ${count} records (from JSON)`);
+      }
     } else {
-      logger.info(`✅ Master SubSLS already populated: ${rowCount} records (from DB)`);
+      logger.info(`✅ Master SubSLS SE2026 already populated: ${rowCount} records (from DB)`);
     }
 
     // Rebuild cache on startup to ensure any code/formula updates are reflected
@@ -513,11 +578,12 @@ function init() {
       try {
         const { runAutoImputation } = require('./services/imputerService');
         logger.info('🔄 Checking for missing upload dates to impute...');
-        const imputedCount = runAutoImputation();
-        if (imputedCount > 0) {
-          logger.info(`✅ Imputed ${imputedCount} missing dates automatically!`);
-        } else {
-          logger.info('✅ No missing dates found. Database is complete.');
+        const surveysConfig = require('./config/surveys.json');
+        for (const sKey of Object.keys(surveysConfig)) {
+          const imputedCount = runAutoImputation(sKey);
+          if (imputedCount > 0) {
+            logger.info(`✅ Imputed ${imputedCount} missing dates automatically for ${sKey}!`);
+          }
         }
 
         logger.info('🔄 Rebuilding summary caches...');

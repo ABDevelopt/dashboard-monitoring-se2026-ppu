@@ -13,7 +13,7 @@
       <div class="empty-state-icon"><i class="bi bi-geo-alt"></i></div>
       <div class="empty-state-title">Belum Ada Data Sub-SLS</div>
       <div class="empty-state-text">Upload file Excel untuk mulai memantau progres pendataan per satuan lingkungan setempat (SLS) di seluruh wilayah.</div>
-      <a href="/admin/upload" class="empty-state-action"><i class="bi bi-cloud-arrow-up-fill"></i> Upload Data Sekarang</a>
+      <a href="<%= navPrefix %>/admin/upload" class="empty-state-action"><i class="bi bi-cloud-arrow-up-fill"></i> Upload Data Sekarang</a>
     </div>
   <% } else { %>
     <div id="ajax-container">
@@ -23,11 +23,11 @@
       <div class="card-header flex-between" style="margin-bottom: 8px; padding-bottom: 8px; gap: 8px;">
         <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-search"></i> Filter Pencarian SubSLS</div>
         <div class="card-actions flex-start" style="gap: 6px;">
-          <a href="/subsls" class="btn btn-secondary btn-xs" title="Reset Filter"><i class="bi bi-arrow-repeat"></i><span class="btn-text-desktop"> Reset Filter</span></a>
+          <a href="<%= navPrefix %>/subsls" class="btn btn-secondary btn-xs" title="Reset Filter"><i class="bi bi-arrow-repeat"></i><span class="btn-text-desktop"> Reset Filter</span></a>
         </div>
       </div>
       
-      <form action="/subsls" method="GET" id="filterForm">
+      <form action="<%= navPrefix %>/subsls" method="GET" id="filterForm">
         <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           
           <div>

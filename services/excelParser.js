@@ -62,10 +62,10 @@ function loadMasterFromJson(jsonPath) {
 
   insertMany(rows);
 
-  // Override target_fasih dari rancangan alokasi jika file excel ada
+  // Override target_fasih dari rancangan alokasi jika file excel ada (khusus SE2026)
   try {
     const alokasiPath = path.join(__dirname, '../rancangan-muatan-se2026-ppu.xlsx');
-    if (fs.existsSync(alokasiPath)) {
+    if (surveyId === 'se2026' && fs.existsSync(alokasiPath)) {
       console.log('Applying target_fasih from rancangan-muatan-se2026-ppu.xlsx...');
       const wb = XLSX.readFile(alokasiPath);
       const ws = wb.Sheets[wb.SheetNames[0]];
@@ -371,6 +371,10 @@ function findStatusColumnIndexes(headers) {
   const totalIdx = findIndex(['total', 'target']);
   const desaIdx = findIndex(['desa', 'nama_desa', 'kelurahan']);
   const slsIdx = findIndex(['sls', 'nama_sls', 'subsls']);
+  const kecIdx = findIndex(['kecamatan', 'nama_kecamatan', 'kec']);
+  const pmlIdx = findIndex(['pengawas', 'pml', 'nama_pml', 'nama pengawas', 'nama_pml_pl']);
+  const pclIdx = findIndex(['pencacah', 'pcl', 'nama_pcl', 'nama pencacah', 'nama_pcl_pl']);
+  const korlapIdx = findIndex(['korlap', 'nama_korlap', 'kose']);
 
   const missingCols = [];
   if (kodeIdx === -1 && (desaIdx === -1 || slsIdx === -1)) missingCols.push('level_6_full_code / kode subsls');
@@ -392,7 +396,11 @@ function findStatusColumnIndexes(headers) {
     rejectedIdxs: rejectedIdxs,
     total: totalIdx,
     desa: desaIdx,
-    sls: slsIdx
+    sls: slsIdx,
+    kec: kecIdx,
+    pml: pmlIdx,
+    pcl: pclIdx,
+    korlap: korlapIdx
   };
 }
 
@@ -486,8 +494,8 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
   updateTx(rows);
 }
 
-function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename, tanggal) {
-  const db = getDb();
+function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename, tanggal, surveyId = 'se2026') {
+  const db = getDb(surveyId);
   const wb = XLSX.readFile(filePath, { raw: true });
   const ws = findDataSheet(wb);
   if (!ws) throw new Error('Sheet dalam file rekap status tidak ditemukan.');
@@ -498,8 +506,9 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
   const colIdx = findStatusColumnIndexes(headers);
 
-  // Pre-fetch master data
+  // Pre-fetch master data (each survey database now has its own subsls_master)
   const masterRows = db.prepare('SELECT kode, desa, nama_sls FROM subsls_master ORDER BY kode ASC').all();
+  
   const useIndexFallback = (rows.length - 1 === masterRows.length);
 
   let masterMap = null;
@@ -566,9 +575,9 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
       draft, open, submitted_by_pcl, approved, rejected, target_upload
     ) VALUES (
       ?, ?,
-      ?, ?, ?, ?, ?,
-      ?, ?, ?, ?, ?, ?,
-      ?, ?, ?, ?, ?,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0,
       ?, ?, ?, ?, ?, ?
     )
   `);
@@ -581,6 +590,15 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
     UPDATE progres 
     SET draft = ?, open = ?, submitted_by_pcl = ?, approved = ?, rejected = ?, target_upload = ?
     WHERE upload_id = ? AND kode = ?
+  `);
+
+  // Prepared statement to dynamically populate subsls_master data
+  const insertSubslsMaster = db.prepare(`
+    INSERT OR REPLACE INTO subsls_master (
+      kode, kecamatan, desa, nama_sls, korlap, pml, pcl, target_fasih
+    ) VALUES (
+      ?, ?, ?, ?, ?, ?, ?, ?
+    )
   `);
 
   let processedCount = 0;
@@ -601,37 +619,25 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
         openVal = Math.max(0, targetUpload - (draft + submitted + approved + rejected));
       }
 
-      let usaha_tidak_ditemukan = 0, usaha_ditemukan = 0, usaha_baru = 0, usaha_tutup = 0, usaha_ganda = 0;
-      let tidak_ditemukan = 0, ditemukan = 0, keluarga_baru = 0, meninggal = 0, tidak_eligible = 0, tidak_dapat_ditemui = 0;
-      let rumah_tunggal = 0, rumah_deret = 0, rumah_susun = 0, apartemen = 0, lainnya = 0;
+      // Dynamically populate master data if not se2026
+      if (surveyId !== 'se2026') {
+        let rowKec = colIdx.kec !== -1 ? String(row[colIdx.kec] || '').trim() : '';
+        let rowDesa = colIdx.desa !== -1 ? String(row[colIdx.desa] || '').trim() : '';
+        let rowKorlap = colIdx.korlap !== -1 ? String(row[colIdx.korlap] || '').trim() : '';
+        let rowPml = colIdx.pml !== -1 ? String(row[colIdx.pml] || '').trim() : '';
+        let rowPcl = colIdx.pcl !== -1 ? String(row[colIdx.pcl] || '').trim() : '';
 
-      if (prevUploadId) {
-        const prev = getPrevRecord.get(prevUploadId, kode);
-        if (prev) {
-          usaha_tidak_ditemukan = prev.usaha_tidak_ditemukan || 0;
-          usaha_ditemukan = prev.usaha_ditemukan || 0;
-          usaha_baru = prev.usaha_baru || 0;
-          usaha_tutup = prev.usaha_tutup || 0;
-          usaha_ganda = prev.usaha_ganda || 0;
-          tidak_ditemukan = prev.tidak_ditemukan || 0;
-          ditemukan = prev.ditemukan || 0;
-          keluarga_baru = prev.keluarga_baru || 0;
-          meninggal = prev.meninggal || 0;
-          tidak_eligible = prev.tidak_eligible || 0;
-          tidak_dapat_ditemui = prev.tidak_dapat_ditemui || 0;
-          rumah_tunggal = prev.rumah_tunggal || 0;
-          rumah_deret = prev.rumah_deret || 0;
-          rumah_susun = prev.rumah_susun || 0;
-          apartemen = prev.apartemen || 0;
-          lainnya = prev.lainnya || 0;
-        }
+        rowKec = toTitleCase(rowKec) || 'Kecamatan Lain';
+        rowDesa = toTitleCase(rowDesa) || 'Desa Lain';
+        rowKorlap = normalizeName(rowKorlap) || 'Lainnya';
+        rowPml = normalizeName(rowPml) || 'Lainnya';
+        rowPcl = normalizeName(rowPcl) || 'Lainnya';
+
+        insertSubslsMaster.run(kode, rowKec, rowDesa, kode, rowKorlap, rowPml, rowPcl, targetUpload);
       }
 
       insertStmt.run(
         uploadId, kode,
-        usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
-        tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
-        rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
         draft, openVal, submitted, approved, rejected, targetUpload
       );
 
@@ -669,8 +675,8 @@ function toTitleCase(str) {
   return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function loadMasterFromExcel(filePath) {
-  const db = getDb();
+function loadMasterFromExcel(filePath, surveyId = 'se2026') {
+  const db = getDb(surveyId);
   const wb = XLSX.readFile(filePath, { raw: true });
   const sheetName = wb.Sheets['master'] ? 'master' : (wb.SheetNames.find(s => s.toLowerCase().includes('data pencacahan')) || wb.SheetNames[0]);
   const ws = wb.Sheets[sheetName];

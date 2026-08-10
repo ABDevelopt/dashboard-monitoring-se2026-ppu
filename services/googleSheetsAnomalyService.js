@@ -3,48 +3,56 @@ const fs = require('fs');
 const path = require('path');
 
 const CACHE_DIR = path.join(__dirname, '../data');
-const CACHE_FILE = path.join(__dirname, '../data/anomaly_cache.json');
+const { surveyContext } = require('./contextService');
 
-let cache = {
-  data: null,
-  timestamp: 0,
-  url: null
-};
+const caches = {}; // surveyId -> cache object
 
-let isRevalidating = false;
+function getCacheFilePath(surveyId = 'se2026') {
+  return path.join(CACHE_DIR, `anomaly_cache_${surveyId}.json`);
+}
 
-// Load persistent cache from disk on startup
-function loadDiskCache() {
+function getSurveyCache(surveyId = 'se2026') {
+  if (!caches[surveyId]) {
+    caches[surveyId] = { data: null, timestamp: 0, url: null };
+    loadDiskCache(surveyId);
+  }
+  return caches[surveyId];
+}
+
+// Load persistent cache from disk for a survey
+function loadDiskCache(surveyId = 'se2026') {
   try {
     if (!fs.existsSync(CACHE_DIR)) {
       fs.mkdirSync(CACHE_DIR, { recursive: true });
     }
-    if (fs.existsSync(CACHE_FILE)) {
-      const raw = fs.readFileSync(CACHE_FILE, 'utf8');
+    const cacheFile = getCacheFilePath(surveyId);
+    if (fs.existsSync(cacheFile)) {
+      const raw = fs.readFileSync(cacheFile, 'utf8');
       const saved = JSON.parse(raw);
       if (saved && saved.data) {
-        cache = saved;
-        console.log('[GoogleSheetsService] 💾 Loaded persistent anomaly cache from disk.');
+        caches[surveyId] = saved;
+        console.log(`[GoogleSheetsService] 💾 Loaded persistent anomaly cache for ${surveyId} from disk.`);
       }
     }
   } catch (err) {
-    console.warn('[GoogleSheetsService] Could not load disk cache:', err.message);
+    console.warn(`[GoogleSheetsService] Could not load disk cache for ${surveyId}:`, err.message);
   }
 }
 
-function saveDiskCache() {
+function saveDiskCache(surveyId = 'se2026') {
   try {
     if (!fs.existsSync(CACHE_DIR)) {
       fs.mkdirSync(CACHE_DIR, { recursive: true });
     }
-    fs.writeFileSync(CACHE_FILE, JSON.stringify(cache), 'utf8');
+    const cacheFile = getCacheFilePath(surveyId);
+    fs.writeFileSync(cacheFile, JSON.stringify(getSurveyCache(surveyId)), 'utf8');
   } catch (err) {
-    console.warn('[GoogleSheetsService] Could not save disk cache:', err.message);
+    console.warn(`[GoogleSheetsService] Could not save disk cache for ${surveyId}:`, err.message);
   }
 }
 
-// Initial disk cache load
-loadDiskCache();
+// Initial disk cache load for se2026
+loadDiskCache('se2026');
 
 const DEFAULT_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml';
 
@@ -305,33 +313,67 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
-async function getAnomalySheetsData(settings = {}, forceRefresh = false) {
-  const rawUrl = settings.google_sheets_anomaly_url || DEFAULT_SHEETS_URL;
-  const baseUrl = extractBasePublishedUrl(rawUrl);
+async function getAnomalySheetsData(settings = {}, forceRefresh = false, surveyId) {
+  const store = surveyContext.getStore();
+  const sId = surveyId || (store && store.activeSurvey) || 'se2026';
   
+  // If not SE2026 and no specific URL configured, return empty anomaly data
+  if (sId !== 'se2026' && (!settings.google_sheets_anomaly_url || settings.google_sheets_anomaly_url.trim() === '')) {
+    return {
+      summary: { total_anomali: 0, total_usaha: 0, total_keluarga: 0, total_sudah: 0, total_belum: 0, pct_sudah: 0 },
+      usahaList: [],
+      keluargaList: [],
+      pclStats: [],
+      lastUpdated: '-',
+      fromCache: false
+    };
+  }
+
+  const rawUrl = settings.google_sheets_anomaly_url || (sId === 'se2026' ? DEFAULT_SHEETS_URL : '');
+  if (!rawUrl) {
+    return {
+      summary: { total_anomali: 0, total_usaha: 0, total_keluarga: 0, total_sudah: 0, total_belum: 0, pct_sudah: 0 },
+      usahaList: [],
+      keluargaList: [],
+      pclStats: [],
+      lastUpdated: '-',
+      fromCache: false
+    };
+  }
+
+  const baseUrl = extractBasePublishedUrl(rawUrl);
+  const surveyCache = getSurveyCache(sId);
   const FRESH_TTL_MS = 5 * 60 * 1000; // 5 minutes fresh
   const now = Date.now();
 
   // If forceRefresh is requested, bypass cache completely
   if (forceRefresh) {
-    return await fetchFreshDataFromGoogleSheets(baseUrl);
+    const fresh = await fetchFreshDataFromGoogleSheets(baseUrl);
+    surveyCache.data = fresh;
+    surveyCache.timestamp = now;
+    surveyCache.url = baseUrl;
+    saveDiskCache(sId);
+    return fresh;
   }
 
   // If cache exists and matches URL
-  if (cache.data && cache.url === baseUrl) {
-    const ageMs = now - cache.timestamp;
+  if (surveyCache.data && surveyCache.url === baseUrl) {
+    const ageMs = now - surveyCache.timestamp;
 
-    // Stale-While-Revalidate: Return cached data immediately (< 10ms)
-    // If older than 5 minutes, trigger background fetch silently
     if (ageMs > FRESH_TTL_MS) {
       triggerBackgroundRevalidation(baseUrl);
     }
 
-    return { ...cache.data, fromCache: true };
+    return { ...surveyCache.data, fromCache: true };
   }
 
   // If no cache exists at all, fetch synchronously
-  return await fetchFreshDataFromGoogleSheets(baseUrl);
+  const fresh = await fetchFreshDataFromGoogleSheets(baseUrl);
+  surveyCache.data = fresh;
+  surveyCache.timestamp = now;
+  surveyCache.url = baseUrl;
+  saveDiskCache(sId);
+  return fresh;
 }
 
 async function updateAnomalyStatusInGoogleSheets(payload, settings = {}) {
