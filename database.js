@@ -6,6 +6,8 @@ const logger = require('./services/logger');
 const DB_PATH = path.join(__dirname, 'data', 'se2026.db');
 
 let db;
+const dbs = {};
+const { surveyContext } = require('./services/contextService');
 
 const crypto = require('crypto');
 
@@ -13,8 +15,12 @@ function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
-function initUsers() {
-  db.exec(`
+function getMasterTableSql(surveyId = 'se2026') {
+  return 'subsls_master';
+}
+
+function initUsers(dbConn) {
+  dbConn.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
@@ -26,10 +32,10 @@ function initUsers() {
 
   // Clean up legacy petugas user
   try {
-    db.prepare('DELETE FROM users WHERE username = ?').run('petugas');
+    dbConn.prepare('DELETE FROM users WHERE username = ?').run('petugas');
   } catch (_) {}
 
-  const stmt = db.prepare('INSERT OR IGNORE INTO users (username, password, role) VALUES (?, ?, ?)');
+  const stmt = dbConn.prepare('INSERT OR IGNORE INTO users (username, password, role) VALUES (?, ?, ?)');
   stmt.run('admin', hashPassword('adminse2026'), 'admin');
   stmt.run('korlap', hashPassword('korlapse2026'), 'korlap');
 }
@@ -38,44 +44,59 @@ function getUserByUsername(username) {
   return getDb().prepare('SELECT * FROM users WHERE username = ?').get(username);
 }
 
-function getDb() {
-  if (!db) {
-    db = new Database(DB_PATH, { timeout: 15000 });
-    db.pragma('journal_mode = WAL');
-    db.pragma('synchronous = NORMAL');
-    db.pragma('cache_size = -32000');
-    db.pragma('temp_store = MEMORY');
-    db.pragma('mmap_size = 134217728');
-    db.pragma('foreign_keys = ON');
-    runMigrations();
-    initSettings();
-    initUsers();
+function getDb(surveyId) {
+  const store = surveyContext.getStore();
+  const sId = surveyId || (store && store.activeSurvey) || 'se2026';
+  if (!dbs[sId]) {
+    const dbName = `${sId}.db`;
+    const dbPath = path.join(__dirname, 'data', dbName);
+    fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+    const dbConn = new Database(dbPath, { timeout: 15000 });
+    dbConn.pragma('journal_mode = WAL');
+    dbConn.pragma('synchronous = NORMAL');
+    dbConn.pragma('cache_size = -32000');
+    dbConn.pragma('temp_store = MEMORY');
+    dbConn.pragma('mmap_size = 134217728');
+    dbConn.pragma('foreign_keys = ON');
+    
+    runMigrations(dbConn, sId);
+    initSettings(dbConn, sId);
+    initUsers(dbConn);
+    
+    dbs[sId] = dbConn;
+    if (sId === 'se2026') {
+      db = dbConn;
+    }
   }
-  return db;
+  return dbs[sId];
 }
 
-function reloadDbConnection() {
-  if (db) {
+function reloadDbConnection(surveyId) {
+  const store = surveyContext.getStore();
+  const sId = surveyId || (store && store.activeSurvey) || 'se2026';
+  if (dbs[sId]) {
     try {
-      db.close();
+      dbs[sId].close();
     } catch (_) {}
-    db = null;
+    delete dbs[sId];
   }
-  return getDb();
+  return getDb(sId);
 }
 
-function closeDbConnection() {
-  if (db) {
+function closeDbConnection(surveyId) {
+  const store = surveyContext.getStore();
+  const sId = surveyId || (store && store.activeSurvey) || 'se2026';
+  if (dbs[sId]) {
     try {
-      db.close();
+      dbs[sId].close();
     } catch (_) {}
-    db = null;
+    delete dbs[sId];
   }
 }
 
-function runMigrations() {
+function runMigrations(dbConn, surveyId = 'se2026') {
   // Ensure migrations log table exists
-  db.exec(`
+  dbConn.exec(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       version TEXT UNIQUE NOT NULL,
@@ -83,16 +104,19 @@ function runMigrations() {
     );
   `);
 
-  const appliedMigrations = db.prepare('SELECT version FROM schema_migrations').all().map(m => m.version);
+  const appliedMigrations = dbConn.prepare('SELECT version FROM schema_migrations').all().map(m => m.version);
 
   // Clean up any legacy "null" string values in the uploads table to prevent false matching
-  try {
-    db.prepare("UPDATE uploads SET status_filename = NULL WHERE status_filename = 'null'").run();
-    db.prepare("UPDATE uploads SET filename = '' WHERE filename = 'null'").run();
-    db.prepare("UPDATE uploads SET stored_status_filename = NULL WHERE stored_status_filename = 'null'").run();
-    db.prepare("UPDATE uploads SET stored_filename = NULL WHERE stored_filename = 'null'").run();
-  } catch (err) {
-    logger.error('Error cleaning up legacy "null" string values in database:', err);
+  const uploadsTableExists = dbConn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='uploads'").get();
+  if (uploadsTableExists) {
+    try {
+      dbConn.prepare("UPDATE uploads SET status_filename = NULL WHERE status_filename = 'null'").run();
+      dbConn.prepare("UPDATE uploads SET filename = '' WHERE filename = 'null'").run();
+      dbConn.prepare("UPDATE uploads SET stored_status_filename = NULL WHERE stored_status_filename = 'null'").run();
+      dbConn.prepare("UPDATE uploads SET stored_filename = NULL WHERE stored_filename = 'null'").run();
+    } catch (err) {
+      logger.error('Error cleaning up legacy "null" string values in database:', err);
+    }
   }
 
 
@@ -100,7 +124,7 @@ function runMigrations() {
     {
       version: '20260710000000_init',
       up: (db) => {
-        db.exec(`
+        dbConn.exec(`
           -- Tabel upload history
           CREATE TABLE IF NOT EXISTS uploads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -228,7 +252,7 @@ function runMigrations() {
       version: '20260710000001_add_target_fasih',
       up: (db) => {
         try {
-          db.prepare('ALTER TABLE subsls_master ADD COLUMN target_fasih INTEGER DEFAULT 0').run();
+          dbConn.prepare('ALTER TABLE subsls_master ADD COLUMN target_fasih INTEGER DEFAULT 0').run();
         } catch (_) {}
       }
     },
@@ -238,7 +262,7 @@ function runMigrations() {
         const progresCols = ['draft', 'submitted_by_pcl', 'approved', 'rejected'];
         progresCols.forEach(col => {
           try {
-            db.prepare(`ALTER TABLE progres ADD COLUMN ${col} INTEGER DEFAULT 0`).run();
+            dbConn.prepare(`ALTER TABLE progres ADD COLUMN ${col} INTEGER DEFAULT 0`).run();
           } catch (_) {}
         });
       }
@@ -249,7 +273,7 @@ function runMigrations() {
         const uploadsCols = ['stored_filename', 'status_filename', 'stored_status_filename'];
         uploadsCols.forEach(col => {
           try {
-            db.prepare(`ALTER TABLE uploads ADD COLUMN ${col} TEXT`).run();
+            dbConn.prepare(`ALTER TABLE uploads ADD COLUMN ${col} TEXT`).run();
           } catch (_) {}
         });
       }
@@ -262,8 +286,8 @@ function runMigrations() {
           return str.trim().toLowerCase().replace(/\s+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
         };
 
-        const rows = db.prepare('SELECT rowid, korlap, pml, pcl FROM subsls_master').all();
-        const updateStmt = db.prepare('UPDATE subsls_master SET korlap = ?, pml = ?, pcl = ? WHERE rowid = ?');
+        const rows = dbConn.prepare('SELECT rowid, korlap, pml, pcl FROM subsls_master').all();
+        const updateStmt = dbConn.prepare('UPDATE subsls_master SET korlap = ?, pml = ?, pcl = ? WHERE rowid = ?');
 
         db.transaction(() => {
           for (const row of rows) {
@@ -277,7 +301,7 @@ function runMigrations() {
         })();
 
         try {
-          db.prepare('DELETE FROM summary_cache').run();
+          dbConn.prepare('DELETE FROM summary_cache').run();
         } catch (_) {}
       }
     },
@@ -285,7 +309,7 @@ function runMigrations() {
       version: '20260713000000_add_target_upload_to_progres',
       up: (db) => {
         try {
-          db.prepare('ALTER TABLE progres ADD COLUMN target_upload INTEGER DEFAULT 0').run();
+          dbConn.prepare('ALTER TABLE progres ADD COLUMN target_upload INTEGER DEFAULT 0').run();
         } catch (_) {}
       }
     },
@@ -293,10 +317,10 @@ function runMigrations() {
       version: '20260713000001_add_dual_targets_to_summary_cache',
       up: (db) => {
         try {
-          db.prepare('ALTER TABLE summary_cache ADD COLUMN target_static_total INTEGER DEFAULT 0').run();
+          dbConn.prepare('ALTER TABLE summary_cache ADD COLUMN target_static_total INTEGER DEFAULT 0').run();
         } catch (_) {}
         try {
-          db.prepare('ALTER TABLE summary_cache ADD COLUMN target_upload_total INTEGER DEFAULT 0').run();
+          dbConn.prepare('ALTER TABLE summary_cache ADD COLUMN target_upload_total INTEGER DEFAULT 0').run();
         } catch (_) {}
       }
     },
@@ -304,13 +328,14 @@ function runMigrations() {
       version: '20260714000000_add_target_honor_to_master',
       up: (db) => {
         try {
-          db.prepare('ALTER TABLE subsls_master ADD COLUMN target_honor INTEGER DEFAULT 0').run();
+          dbConn.prepare('ALTER TABLE subsls_master ADD COLUMN target_honor INTEGER DEFAULT 0').run();
         } catch (_) {}
         try {
-          db.prepare('ALTER TABLE summary_cache ADD COLUMN target_honor_total INTEGER DEFAULT 0').run();
+          dbConn.prepare('ALTER TABLE summary_cache ADD COLUMN target_honor_total INTEGER DEFAULT 0').run();
         } catch (_) {}
 
         try {
+          if (surveyId !== 'se2026') return;
           const XLSX = require('xlsx');
           const path = require('path');
           const fs = require('fs');
@@ -328,7 +353,7 @@ function runMigrations() {
               const sbrIdx = headers.indexOf('Total_usaha_SBR');
 
               if (codeIdx !== -1 && keluargaIdx !== -1 && utpIdx !== -1 && sbrIdx !== -1) {
-                const updateStmt = db.prepare('UPDATE subsls_master SET target_honor = ? WHERE kode = ?');
+                const updateStmt = dbConn.prepare('UPDATE subsls_master SET target_honor = ? WHERE kode = ?');
                 let updatedCount = 0;
                 db.transaction(() => {
                   for (let i = 1; i < excelRows.length; i++) {
@@ -357,20 +382,20 @@ function runMigrations() {
       version: '20260714010000_add_muatan_original_and_setting',
       up: (db) => {
         try {
-          db.prepare('ALTER TABLE subsls_master ADD COLUMN muatan_original INTEGER DEFAULT 0').run();
+          dbConn.prepare('ALTER TABLE subsls_master ADD COLUMN muatan_original INTEGER DEFAULT 0').run();
         } catch (_) {}
         try {
-          db.prepare('UPDATE subsls_master SET muatan_original = muatan').run();
+          dbConn.prepare('UPDATE subsls_master SET muatan_original = muatan').run();
         } catch (_) {}
         try {
-          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('target_muatan_mode', 'prelist')").run();
+          dbConn.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('target_muatan_mode', 'prelist')").run();
         } catch (_) {}
       }
     },
     {
       version: '20260718000000_add_remember_tokens',
       up: (db) => {
-        db.exec(`
+        dbConn.exec(`
           CREATE TABLE IF NOT EXISTS remember_tokens (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
@@ -381,7 +406,7 @@ function runMigrations() {
           );
         `);
         try {
-          db.exec(`CREATE INDEX IF NOT EXISTS idx_remember_tokens_token ON remember_tokens(token);`);
+          dbConn.exec(`CREATE INDEX IF NOT EXISTS idx_remember_tokens_token ON remember_tokens(token);`);
         } catch (_) {}
       }
     },
@@ -389,17 +414,17 @@ function runMigrations() {
       version: '20260719000000_add_whatsapp_settings',
       up: (db) => {
         try {
-          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_enabled', '0')").run();
-          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_group_id', '')").run();
-          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_group_name', '')").run();
-          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_message_template', '')").run();
+          dbConn.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_enabled', '0')").run();
+          dbConn.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_group_id', '')").run();
+          dbConn.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_group_name', '')").run();
+          dbConn.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_message_template', '')").run();
         } catch (_) {}
       }
     },
     {
       version: '20260725000000_add_visitor_logs',
       up: (db) => {
-        db.exec(`
+        dbConn.exec(`
           CREATE TABLE IF NOT EXISTS visitor_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT,
@@ -411,15 +436,15 @@ function runMigrations() {
           );
         `);
         try {
-          db.exec(`CREATE INDEX IF NOT EXISTS idx_visitor_logs_created_at ON visitor_logs(created_at);`);
-          db.exec(`CREATE INDEX IF NOT EXISTS idx_visitor_logs_path ON visitor_logs(path);`);
+          dbConn.exec(`CREATE INDEX IF NOT EXISTS idx_visitor_logs_created_at ON visitor_logs(created_at);`);
+          dbConn.exec(`CREATE INDEX IF NOT EXISTS idx_visitor_logs_path ON visitor_logs(path);`);
         } catch (_) {}
       }
     },
     {
       version: '20260725000001_add_petugas_email',
       up: (db) => {
-        db.exec(`
+        dbConn.exec(`
           CREATE TABLE IF NOT EXISTS petugas_email (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             sobat_id TEXT,
@@ -433,9 +458,9 @@ function runMigrations() {
           );
         `);
         try {
-          db.exec(`CREATE INDEX IF NOT EXISTS idx_petugas_email_nama ON petugas_email(nama_lengkap);`);
-          db.exec(`CREATE INDEX IF NOT EXISTS idx_petugas_email_email ON petugas_email(email);`);
-          db.exec(`CREATE INDEX IF NOT EXISTS idx_petugas_email_sobat ON petugas_email(sobat_id);`);
+          dbConn.exec(`CREATE INDEX IF NOT EXISTS idx_petugas_email_nama ON petugas_email(nama_lengkap);`);
+          dbConn.exec(`CREATE INDEX IF NOT EXISTS idx_petugas_email_email ON petugas_email(email);`);
+          dbConn.exec(`CREATE INDEX IF NOT EXISTS idx_petugas_email_sobat ON petugas_email(sobat_id);`);
         } catch (_) {}
       }
     },
@@ -445,11 +470,11 @@ function runMigrations() {
         const cols = ['pcl_email', 'pcl_sobat_id', 'pml_email', 'pml_sobat_id', 'korlap_email', 'korlap_sobat_id'];
         cols.forEach(col => {
           try {
-            db.prepare(`ALTER TABLE subsls_master ADD COLUMN ${col} TEXT`).run();
+            dbConn.prepare(`ALTER TABLE subsls_master ADD COLUMN ${col} TEXT`).run();
           } catch (_) {}
         });
 
-        const emails = db.prepare('SELECT nama_lengkap, email, sobat_id FROM petugas_email').all();
+        const emails = dbConn.prepare('SELECT nama_lengkap, email, sobat_id FROM petugas_email').all();
         const cleanStr = (s) => (s ? s.toString().toLowerCase().replace(/[^a-z0-9]/g, '') : '');
         const emailMapExact = {};
         const emailMapClean = {};
@@ -470,7 +495,7 @@ function runMigrations() {
         ];
 
         roles.forEach(({ roleCol, emailCol, sobatCol }) => {
-          const uniqueOfficers = db.prepare(`SELECT DISTINCT ${roleCol} FROM subsls_master WHERE ${roleCol} IS NOT NULL AND ${roleCol} != ''`).all();
+          const uniqueOfficers = dbConn.prepare(`SELECT DISTINCT ${roleCol} FROM subsls_master WHERE ${roleCol} IS NOT NULL AND ${roleCol} != ''`).all();
           uniqueOfficers.forEach(o => {
             const name = o[roleCol] ? o[roleCol].trim() : '';
             if (!name) return;
@@ -479,7 +504,7 @@ function runMigrations() {
 
             const target = emailMapExact[ex] || emailMapClean[cl];
             if (target) {
-              db.prepare(`UPDATE subsls_master SET ${emailCol} = ?, ${sobatCol} = ? WHERE LOWER(TRIM(${roleCol})) = LOWER(TRIM(?))`)
+              dbConn.prepare(`UPDATE subsls_master SET ${emailCol} = ?, ${sobatCol} = ? WHERE LOWER(TRIM(${roleCol})) = LOWER(TRIM(?))`)
                 .run(target.email, target.sobat_id, name);
             }
           });
@@ -490,27 +515,56 @@ function runMigrations() {
       version: '20260726000001_support_officer_level_progres',
       up: (db) => {
         ['pcl_email', 'pcl_name', 'pcl_sobat_id'].forEach(col => {
-          try { db.prepare(`ALTER TABLE progres ADD COLUMN ${col} TEXT`).run(); } catch (_) {}
+          try { dbConn.prepare(`ALTER TABLE progres ADD COLUMN ${col} TEXT`).run(); } catch (_) {}
         });
-        try { db.exec('CREATE INDEX IF NOT EXISTS idx_progres_pcl_email ON progres(pcl_email)'); } catch (_) {}
-        try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_progres_upload_kode_email ON progres(upload_id, kode, COALESCE(pcl_email, ''))"); } catch (_) {}
+        try { dbConn.exec('CREATE INDEX IF NOT EXISTS idx_progres_pcl_email ON progres(pcl_email)'); } catch (_) {}
+        try { dbConn.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_progres_upload_kode_email ON progres(upload_id, kode, COALESCE(pcl_email, ''))"); } catch (_) {}
       }
     },
     {
       version: '20260726000003_add_open_to_progres',
       up: (db) => {
-        try { db.prepare('ALTER TABLE progres ADD COLUMN open INTEGER DEFAULT 0').run(); } catch (_) {}
-        try { db.prepare('ALTER TABLE summary_cache ADD COLUMN open_total INTEGER DEFAULT 0').run(); } catch (_) {}
+        try { dbConn.prepare('ALTER TABLE progres ADD COLUMN open INTEGER DEFAULT 0').run(); } catch (_) {}
+        try { dbConn.prepare('ALTER TABLE summary_cache ADD COLUMN open_total INTEGER DEFAULT 0').run(); } catch (_) {}
       }
     },
     {
       version: '20260804000000_add_intraday_wa_settings',
       up: (db) => {
         try {
-          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_intraday_enabled', '0')").run();
-          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_session_cutoff_hour', '12')").run();
-          db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_intraday_message_template', '')").run();
+          dbConn.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_intraday_enabled', '0')").run();
+          dbConn.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_session_cutoff_hour', '12')").run();
+          dbConn.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('whatsapp_intraday_message_template', '')").run();
         } catch (_) {}
+      }
+    },
+    {
+      version: '20260809000000_add_survey_id_to_uploads',
+      up: (db) => {
+        try {
+          dbConn.prepare("ALTER TABLE uploads ADD COLUMN survey_id TEXT NOT NULL DEFAULT 'se2026'").run();
+        } catch (_) {}
+        try {
+          dbConn.exec("CREATE INDEX IF NOT EXISTS idx_uploads_survey ON uploads(survey_id)");
+        } catch (_) {}
+
+        dbConn.exec(`
+          CREATE TABLE IF NOT EXISTS survey_subsls (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            survey_id TEXT NOT NULL,
+            kode TEXT NOT NULL,
+            kecamatan TEXT,
+            desa TEXT,
+            korlap TEXT,
+            pml TEXT,
+            pcl TEXT,
+            target_fasih INTEGER DEFAULT 0,
+            UNIQUE(survey_id, kode)
+          );
+          CREATE INDEX IF NOT EXISTS idx_survey_subsls_survey ON survey_subsls(survey_id);
+          CREATE INDEX IF NOT EXISTS idx_survey_subsls_kec ON survey_subsls(survey_id, kecamatan);
+          CREATE INDEX IF NOT EXISTS idx_survey_subsls_pcl ON survey_subsls(survey_id, pcl);
+        `);
       }
     }
   ];
@@ -520,8 +574,8 @@ function runMigrations() {
     if (!appliedMigrations.includes(m.version)) {
       logger.info(`Applying database migration: ${m.version}`);
       try {
-        m.up(db);
-        db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(m.version);
+        m.up(dbConn);
+        dbConn.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(m.version);
         appliedCount++;
       } catch (err) {
         logger.error(`Failed to apply migration ${m.version}:`, err);
@@ -537,12 +591,12 @@ function runMigrations() {
   // Verify and potentially populate summary_cache
   try {
     try {
-      const tableInfo = db.prepare("PRAGMA table_info(summary_cache)").all();
+      const tableInfo = dbConn.prepare("PRAGMA table_info(summary_cache)").all();
       const hasDesa = tableInfo.some(col => col.name === 'desa');
       const hasUsahaBaru = tableInfo.some(col => col.name === 'usaha_baru');
       if (tableInfo.length > 0 && (!hasDesa || !hasUsahaBaru)) {
         logger.info('summary_cache is missing required columns. Recreating summary_cache table...');
-        db.exec(`
+        dbConn.exec(`
           DROP TABLE IF EXISTS summary_cache;
           CREATE TABLE summary_cache (
             upload_id INTEGER NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
@@ -590,11 +644,11 @@ function runMigrations() {
       logger.error('Error checking summary_cache structure:', tblErr);
     }
 
-    const uploadCount = db.prepare('SELECT COUNT(*) as n FROM uploads').get().n;
-    const cacheCount = db.prepare('SELECT COUNT(*) as n FROM summary_cache').get().n;
+    const uploadCount = dbConn.prepare('SELECT COUNT(*) as n FROM uploads').get().n;
+    const cacheCount = dbConn.prepare('SELECT COUNT(*) as n FROM summary_cache').get().n;
     if (uploadCount > 0 && cacheCount === 0) {
       logger.info('Populating summary_cache for existing uploads...');
-      const uploadsList = db.prepare('SELECT id FROM uploads').all();
+      const uploadsList = dbConn.prepare('SELECT id FROM uploads').all();
       for (const u of uploadsList) {
         rebuildSummaryCache(u.id);
       }
@@ -605,14 +659,15 @@ function runMigrations() {
 }
 
 // Ambil upload terakhir berdasarkan tanggal (bukan ID), agar upload imputasi tidak mengacaukan urutan
-function getLatestUpload() {
-  return getDb().prepare('SELECT * FROM uploads ORDER BY tanggal DESC, id DESC LIMIT 1').get();
+function getLatestUpload(surveyId) {
+  const db = getDb(surveyId);
+  return db.prepare('SELECT * FROM uploads ORDER BY tanggal DESC, id DESC LIMIT 1').get();
 }
 
 // Ambil upload terakhir yang memiliki data FASIH dan data Muatan secara terpisah
-function getLatestUploadsDetailed() {
+function getLatestUploadsDetailed(surveyId) {
   try {
-    const db = getDb();
+    const db = getDb(surveyId);
     const latestFasih = db.prepare("SELECT * FROM uploads WHERE status_filename IS NOT NULL AND status_filename != '' AND status_filename != 'null' ORDER BY tanggal DESC, id DESC LIMIT 1").get();
     const latestMuatan = db.prepare("SELECT * FROM uploads WHERE filename IS NOT NULL AND filename != '' AND filename != 'null' AND filename != 'Imputasi Otomatis (Hari Kosong)' ORDER BY tanggal DESC, id DESC LIMIT 1").get();
     return {
@@ -626,8 +681,9 @@ function getLatestUploadsDetailed() {
 }
 
 // Ambil semua upload (untuk tren)
-function getAllUploads() {
-  return getDb().prepare('SELECT * FROM uploads ORDER BY tanggal ASC').all();
+function getAllUploads(surveyId) {
+  const db = getDb(surveyId);
+  return db.prepare('SELECT * FROM uploads ORDER BY tanggal ASC').all();
 }
 
 function getTargetFormula(mode, progresAlias = 'p', masterAlias = 'm') {
@@ -668,7 +724,8 @@ function getAdaptiveMuatanFormula(mode, progresAlias = 'p', masterAlias = 'm') {
 
 
 // Ambil data progres gabungan dengan master untuk upload tertentu
-function getProgresWithMaster(uploadId) {
+function getProgresWithMaster(uploadId, surveyId = 'se2026') {
+  const masterTable = getMasterTableSql(surveyId);
   const settings = getSettings();
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
@@ -699,14 +756,15 @@ function getProgresWithMaster(uploadId) {
       (${realFormula}) AS muatan_selesai,
       (${usahaTotalFormula}) AS usaha_total,
       (${keluargaTotalFormula}) AS keluarga_total
-    FROM subsls_master m
+    FROM ${masterTable} m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     ORDER BY m.kecamatan, m.desa, m.kode
   `).all(uploadId), settings);
 }
 
 // Agregate per kecamatan
-function getKecamatanStats(uploadId, settings = getSettings()) {
+function getKecamatanStats(uploadId, settings = getSettings(), surveyId = 'se2026') {
+  const masterTable = getMasterTableSql(surveyId);
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
@@ -733,7 +791,7 @@ function getKecamatanStats(uploadId, settings = getSettings()) {
       SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
       SUM(COALESCE(p.target_upload, 0)) AS target_upload_total,
       SUM(COALESCE(m.target_honor, 0)) AS target_honor_total
-    FROM subsls_master m
+    FROM ${masterTable} m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     GROUP BY m.kecamatan
     ORDER BY m.kecamatan
@@ -741,7 +799,8 @@ function getKecamatanStats(uploadId, settings = getSettings()) {
 }
 
 // Agregate per korlap
-function getKorlapStats(uploadId, settings = getSettings()) {
+function getKorlapStats(uploadId, settings = getSettings(), surveyId = 'se2026') {
+  const masterTable = getMasterTableSql(surveyId);
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
@@ -771,7 +830,7 @@ function getKorlapStats(uploadId, settings = getSettings()) {
       SUM(COALESCE(p.target_upload, 0)) AS target_upload_total,
       SUM(COALESCE(m.target_honor, 0)) AS target_honor_total
     FROM progres p
-    LEFT JOIN subsls_master m ON p.kode = m.kode
+    LEFT JOIN ${masterTable} m ON p.kode = m.kode
     WHERE p.upload_id = ? AND m.korlap IS NOT NULL
     GROUP BY m.korlap
     ORDER BY selesai ASC
@@ -779,7 +838,8 @@ function getKorlapStats(uploadId, settings = getSettings()) {
 }
 
 // Agregate per PML
-function getPmlStats(uploadId, settings = getSettings()) {
+function getPmlStats(uploadId, settings = getSettings(), surveyId = 'se2026') {
+  const masterTable = getMasterTableSql(surveyId);
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
@@ -809,7 +869,7 @@ function getPmlStats(uploadId, settings = getSettings()) {
       SUM(COALESCE(p.target_upload, 0)) AS target_upload_total,
       SUM(COALESCE(m.target_honor, 0)) AS target_honor_total
     FROM progres p
-    LEFT JOIN subsls_master m ON p.kode = m.kode
+    LEFT JOIN ${masterTable} m ON p.kode = m.kode
     WHERE p.upload_id = ? AND m.pml IS NOT NULL
     GROUP BY m.pml, m.korlap
     ORDER BY selesai ASC
@@ -817,7 +877,8 @@ function getPmlStats(uploadId, settings = getSettings()) {
 }
 
 // Agregate per PCL
-function getPclStats(uploadId, settings = getSettings()) {
+function getPclStats(uploadId, settings = getSettings(), surveyId = 'se2026') {
+  const masterTable = getMasterTableSql(surveyId);
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
@@ -854,7 +915,7 @@ function getPclStats(uploadId, settings = getSettings()) {
       SUM(COALESCE(p.usaha_tutup, 0)) AS usaha_tutup_total,
       SUM(COALESCE(p.usaha_ganda, 0)) AS usaha_ganda_total
     FROM progres p
-    LEFT JOIN subsls_master m ON p.kode = m.kode
+    LEFT JOIN ${masterTable} m ON p.kode = m.kode
     WHERE p.upload_id = ?
     GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), COALESCE(p.pcl_name, m.pcl)
     ORDER BY approved_total DESC
@@ -865,6 +926,7 @@ function getPclStats(uploadId, settings = getSettings()) {
 function getTrenHarian() {
   return getDb().prepare(`
     SELECT 
+      u.id,
       u.tanggal,
       u.filename,
       SUM(COALESCE(s.selesai, 0)) AS subsls_selesai,
@@ -879,20 +941,27 @@ function getTrenHarian() {
       w.temp AS weather_temp,
       w.code AS weather_code,
       w.humidity AS weather_humidity
-    FROM uploads u
+    FROM (
+      SELECT MAX(id) AS id, tanggal, MAX(filename) AS filename
+      FROM uploads
+      WHERE total_subsls_terisi > 0
+        AND (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%')
+      GROUP BY tanggal
+    ) u
     LEFT JOIN summary_cache s ON s.upload_id = u.id
     LEFT JOIN weather_history w ON w.tanggal = u.tanggal
-    GROUP BY u.id
+    GROUP BY u.tanggal
     ORDER BY u.tanggal ASC
   `).all();
 }
 
 
 // Overview summary
-function getOverviewSummary(uploadId, settings = getSettings()) {
+function getOverviewSummary(uploadId, settings = getSettings(), surveyId = 'se2026') {
+  const masterTable = getMasterTableSql(surveyId);
   if (!uploadId) return null;
-  const total = getDb().prepare('SELECT COUNT(*) as n FROM subsls_master').get().n;
-  const target_awal_total = getDb().prepare('SELECT SUM(target_fasih) AS n FROM subsls_master').get().n || 0;
+  const total = getDb().prepare(`SELECT COUNT(*) as n FROM ${masterTable}`).get().n;
+  const target_awal_total = getDb().prepare(`SELECT SUM(target_fasih) AS n FROM ${masterTable}`).get().n || 0;
 
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
   const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
@@ -930,7 +999,7 @@ function getOverviewSummary(uploadId, settings = getSettings()) {
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
       SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total
-    FROM subsls_master m
+    FROM ${masterTable} m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
   `).get(uploadId);
 
@@ -941,12 +1010,12 @@ function getOverviewSummary(uploadId, settings = getSettings()) {
   const target_static_total = stats.target_static_total || 0;
   const target_upload_total = stats.target_upload_total || 0;
 
-  const total_pcl = getDb().prepare("SELECT COUNT(DISTINCT pcl) AS n FROM subsls_master WHERE pcl IS NOT NULL AND pcl != ''").get().n || 0;
-  const total_pml = getDb().prepare("SELECT COUNT(DISTINCT pml) AS n FROM subsls_master WHERE pml IS NOT NULL AND pml != ''").get().n || 0;
+  const total_pcl = getDb().prepare(`SELECT COUNT(DISTINCT pcl) AS n FROM ${masterTable} WHERE pcl IS NOT NULL AND pcl != ''`).get().n || 0;
+  const total_pml = getDb().prepare(`SELECT COUNT(DISTINCT pml) AS n FROM ${masterTable} WHERE pml IS NOT NULL AND pml != ''`).get().n || 0;
 
   const active_pcl = getDb().prepare(`
     SELECT COUNT(DISTINCT m.pcl) AS n 
-    FROM subsls_master m 
+    FROM ${masterTable} m 
     JOIN progres p ON m.kode = p.kode AND p.upload_id = ? 
     WHERE m.pcl IS NOT NULL AND m.pcl != '' 
       AND (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
@@ -1455,7 +1524,16 @@ function getAnomalyStats(uploadId, filters = {}) {
   return getDb().prepare(sql).all(...params);
 }
 
-function initSettings() {
+function initSettings(dbConn, surveyId = 'se2026') {
+  const isSe2026 = (surveyId === 'se2026' || !surveyId);
+  const surveysConfig = require('./config/surveys.json');
+  const surveyInfo = surveysConfig[surveyId] || { name: 'Monitoring Survei', shortName: 'Survei PPU' };
+  const sShort = surveyInfo.shortName || 'Survei PPU';
+
+  const waTemplate = isSe2026 
+    ? `*📢 UPDATE HARIAN SE2026 PPU*\r\n🗓️ {tanggal_sekarang} | ⏰ {jam_sekarang}\r\n\r\n*AKUMULASI PROGRES PENDATAAN*\r\n✅ Selesai (Subm/Appr/Rej): *{realisasi_fasih}* dokumen (*{persen_fasih}%*)\r\n   ├ 🟢 Approved: *{approved_total}* dokumen\r\n   ├ 📨 Submitted PCL: *{submitted_total}* dokumen\r\n   └ 🔴 Rejected: *{rejected_total}* dokumen\r\n🟠 Open (Belum Diisi): *{open_total}* dokumen\r\n🟡 Draft (Sedang Diisi): *{draft_total}* dokumen\r\n📋 Total Assignment FASIH: *{target_fasih}* dokumen\r\n\r\n*KINERJA REALISASI SEJAK UPLOAD SEBELUMNYA ({waktu_upload_sebelumnya})*\r\nDEADLINE: 17 AGUSTUS 2026\r\n📨 Realisasi Masuk: *{diff_total}* dokumen\r\n👤 Produktifitas petugas keseluruhan: *{avg_diff_all}* dokumen/petugas/hari\r\n📈 Deviasi vs Target Normal (2145): *{deviasi_update}* dokumen\r\n📉 Defisit Laju Kumulatif: *{deviasi_kumulatif}* dokumen/hari\r\n\r\n*SEBARAN PRODUKTIVITAS PETUGAS (SEJAK UPLOAD SEBELUMNYA)*\r\n🔴 0 dokumen: *{dist_0}* orang\r\n🟠 1–4 dokumen: *{dist_1_4}* orang\r\n🟡 5–7 dokumen: *{dist_5_7}* orang\r\n🔵 8–12 dokumen: *{dist_8_12}* orang\r\n🟢 ≥13 dokumen: *{dist_13_plus}* orang\r\n\r\n_Notifikasi otomatis [monitoring.bpsppu.com]_`
+    : `*📢 UPDATE HARIAN ${sShort.toUpperCase()}*\r\n🗓️ {tanggal_sekarang} | ⏰ {jam_sekarang}\r\n\r\n*AKUMULASI PROGRES PENDATAAN*\r\n✅ Selesai (Subm/Appr/Rej): *{realisasi_fasih}* dokumen (*{persen_fasih}%*)\r\n   ├ 🟢 Approved: *{approved_total}* dokumen\r\n   ├ 📨 Submitted PCL: *{submitted_total}* dokumen\r\n   └ 🔴 Rejected: *{rejected_total}* dokumen\r\n🟠 Open (Belum Diisi): *{open_total}* dokumen\r\n🟡 Draft (Sedang Diisi): *{draft_total}* dokumen\r\n📋 Total Assignment FASIH: *{target_fasih}* dokumen\r\n\r\n*KINERJA REALISASI SEJAK UPLOAD SEBELUMNYA ({waktu_upload_sebelumnya})*\r\n📨 Realisasi Masuk: *{diff_total}* dokumen\r\n👤 Produktifitas petugas keseluruhan: *{avg_diff_all}* dokumen/petugas/hari\r\n\r\n_Notifikasi otomatis [monitoring.bpsppu.com]_`;
+
   const defaults = {
     'page_map': '1',
     'page_earlywarning': '1',
@@ -1492,8 +1570,11 @@ function initSettings() {
     'show_progres_muatan': '1',
     'target_fasih_mode': 'static',
     'target_muatan_mode': 'prelist',
-    'google_sheets_anomaly_url': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml',
-    'google_sheets_apps_script_url': 'https://script.google.com/macros/s/AKfycby3zpFtIN58xOf6GxnDqkl7gjwKX-oeUZwuAp93wL0OrejumH91ykBGa9XbsoMdhZQetA/exec',
+    'google_sheets_anomaly_url': isSe2026 ? 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml' : '',
+    'google_sheets_apps_script_url': isSe2026 ? 'https://script.google.com/macros/s/AKfycby3zpFtIN58xOf6GxnDqkl7gjwKX-oeUZwuAp93wL0OrejumH91ykBGa9XbsoMdhZQetA/exec' : '',
+    'whatsapp_message_template': waTemplate,
+    'speedometer_start_date': isSe2026 ? '2026-06-15' : new Date().toISOString().slice(0, 7) + '-01',
+    'speedometer_target_date': isSe2026 ? '2026-08-17' : new Date().toISOString().slice(0, 7) + '-28',
     'whatsapp_enabled': '0',
     'whatsapp_group_id': '',
     'whatsapp_group_name': '',
@@ -1537,35 +1618,35 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`,
     'whatsapp_intraday_message_template': ''
   };
 
-  const insert = getDb().prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
+  const insert = dbConn.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
   for (const [k, v] of Object.entries(defaults)) {
     insert.run(k, v);
   }
 
   // Force update openrouter_models_list to new set of models
   const openrouterModelsStr = 'openrouter/free, openrouter/owl-alpha, meta-llama/llama-3.3-70b-instruct:free, nvidia/nemotron-3-ultra-550b-a55b:free';
-  getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run(openrouterModelsStr, 'openrouter_models_list');
+  dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run(openrouterModelsStr, 'openrouter_models_list');
 
   // Force update empty or old whatsapp_message_template to new layout
-  const currentTemplate = getDb().prepare("SELECT value FROM settings WHERE key = 'whatsapp_message_template'").get();
+  const currentTemplate = dbConn.prepare("SELECT value FROM settings WHERE key = 'whatsapp_message_template'").get();
   if (currentTemplate && (currentTemplate.value === '' || currentTemplate.value.includes('Produktivitas Petugas Aktif') || currentTemplate.value.includes('24 JAM') || currentTemplate.value.includes('avg_diff_24h_all'))) {
-    getDb().prepare("UPDATE settings SET value = ? WHERE key = 'whatsapp_message_template'").run(defaults['whatsapp_message_template']);
+    dbConn.prepare("UPDATE settings SET value = ? WHERE key = 'whatsapp_message_template'").run(defaults['whatsapp_message_template']);
   }
 
   // If the current active model is not in the new list, reset it to openrouter/free
-  const currentModelRow = getDb().prepare('SELECT value FROM settings WHERE key = ?').get('openrouter_model');
+  const currentModelRow = dbConn.prepare('SELECT value FROM settings WHERE key = ?').get('openrouter_model');
   if (!currentModelRow || !openrouterModelsStr.includes(currentModelRow.value) || currentModelRow.value.includes('owl-alpha:free')) {
-    getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run('openrouter/free', 'openrouter_model');
+    dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run('openrouter/free', 'openrouter_model');
   }
 
-  const geminiModel = getDb().prepare('SELECT value FROM settings WHERE key = ?').get('gemini_model');
+  const geminiModel = dbConn.prepare('SELECT value FROM settings WHERE key = ?').get('gemini_model');
   if (geminiModel && geminiModel.value === 'gemini-1.5-flash') {
-    getDb().prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-2.5-flash', 'gemini_model');
+    dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-2.5-flash', 'gemini_model');
   }
 }
 
-function getSettings() {
-  const rows = getDb().prepare('SELECT key, value FROM settings').all();
+function getSettings(surveyId) {
+  const rows = getDb(surveyId).prepare('SELECT key, value FROM settings').all();
   const settings = {};
   rows.forEach(r => {
     settings[r.key] = r.value;
@@ -1577,8 +1658,16 @@ function getSettings() {
 }
 
 function rebuildAllSummaryCaches() {
-  const uploads = getDb().prepare('SELECT id FROM uploads').all();
-  uploads.forEach(u => rebuildSummaryCache(u.id));
+  const surveysConfig = require('./config/surveys.json');
+  for (const surveyId of Object.keys(surveysConfig)) {
+    try {
+      const db = getDb(surveyId);
+      const uploads = db.prepare('SELECT id FROM uploads').all();
+      uploads.forEach(u => rebuildSummaryCache(u.id, surveyId));
+    } catch (e) {
+      logger.error(`Failed to rebuild summary cache for ${surveyId}:`, e.message);
+    }
+  }
   try {
     const { triggerAsyncSync } = require('./services/firebaseSyncService');
     triggerAsyncSync();
@@ -1617,10 +1706,11 @@ function updateSettings(settingsObj) {
   }
 }
 
-function rebuildSummaryCache(uploadId) {
-  const db = getDb();
+function rebuildSummaryCache(uploadId, surveyId) {
+  const db = getDb(surveyId);
   db.prepare('DELETE FROM summary_cache WHERE upload_id = ?').run(uploadId);
-  
+  const masterTable = getMasterTableSql(surveyId);
+
   const settings = getSettings();
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
@@ -1678,7 +1768,7 @@ function rebuildSummaryCache(uploadId) {
       SUM(COALESCE(p.apartemen, 0)) AS apartemen,
       SUM(COALESCE(p.lainnya, 0)) AS lainnya
     FROM progres p
-    LEFT JOIN subsls_master m ON p.kode = m.kode
+    LEFT JOIN ${masterTable} m ON p.kode = m.kode
     WHERE p.upload_id = ?
     GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), m.kecamatan, m.desa
   `).run(uploadId, uploadId);
@@ -2126,5 +2216,5 @@ module.exports = {
   logVisit, getVisitorStats,
   getPetugasEmails, searchPetugasEmails, getPetugasEmailByNama, getPetugasEmailBySobatId,
   getPetugasEmailById, insertPetugasEmail, updatePetugasEmail, deletePetugasEmail, resyncPetugasEmailsToMaster,
-  reloadDbConnection, closeDbConnection
+  reloadDbConnection, closeDbConnection, getMasterTableSql
 };
