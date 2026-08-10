@@ -1000,28 +1000,18 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
   );
   const uploadId = uploadResult.lastInsertRowid;
   
-  // Get previous upload_id or any latest upload with status
+  // Get previous upload_id strictly before or on this date chronologically
   const prevUploadRow = db.prepare(`
     SELECT u.id 
     FROM uploads u
     JOIN progres p ON u.id = p.upload_id
-    WHERE u.id < ? 
-    GROUP BY u.id
-    HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
-    ORDER BY u.id DESC LIMIT 1
-  `).get(uploadId);
-
-  const latestStatusRow = prevUploadRow || db.prepare(`
-    SELECT u.id 
-    FROM uploads u
-    JOIN progres p ON u.id = p.upload_id
-    WHERE u.id != ? 
+    WHERE u.tanggal <= ? AND u.id != ?
     GROUP BY u.id
     HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
     ORDER BY u.tanggal DESC, u.id DESC LIMIT 1
-  `).get(uploadId);
+  `).get(tanggal, uploadId);
 
-  const prevUploadId = latestStatusRow ? latestStatusRow.id : null;
+  const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
   
   const insertProgres = db.prepare(`
     INSERT OR REPLACE INTO progres 
@@ -1074,6 +1064,9 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
   if (statusFilePath) {
     parseAndSaveStatusExcel(statusFilePath, uploadId);
   }
+
+  // Sinkronkan urutan status secara kronologis (mencegah out-of-order upload issue)
+  resyncChronologicalStatus();
   
   // Ensure 100% SubSLS coverage & rebuild summary cache
   ensureAllSubslsInUpload(uploadId);
@@ -1508,6 +1501,47 @@ function ensureAllSubslsInUpload(uploadId) {
   return missingSubsls.length;
 }
 
+/**
+ * Menyinkronkan status FASIH secara kronologis berdasarkan urutan tanggal (tanggal ASC, id ASC)
+ * apabila ada file yang diunggah dengan tanggal di masa lalu (out-of-order upload).
+ */
+function resyncChronologicalStatus() {
+  const db = getDb();
+  const uploads = db.prepare('SELECT id, tanggal FROM uploads ORDER BY tanggal ASC, id ASC').all();
+  if (uploads.length <= 1) return;
+
+  let lastKnownStatusUploadId = null;
+
+  for (const u of uploads) {
+    const hasStatus = db.prepare(`
+      SELECT SUM(COALESCE(draft, 0) + COALESCE(submitted_by_pcl, 0) + COALESCE(approved, 0) + COALESCE(rejected, 0)) AS total
+      FROM progres WHERE upload_id = ?
+    `).get(u.id);
+
+    if (hasStatus && hasStatus.total > 0) {
+      lastKnownStatusUploadId = u.id;
+    } else if (lastKnownStatusUploadId && lastKnownStatusUploadId !== u.id) {
+      db.transaction(() => {
+        db.prepare(`
+          UPDATE progres 
+          SET 
+            draft = (SELECT COALESCE(p2.draft, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            open = (SELECT COALESCE(p2.open, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            submitted_by_pcl = (SELECT COALESCE(p2.submitted_by_pcl, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            approved = (SELECT COALESCE(p2.approved, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            rejected = (SELECT COALESCE(p2.rejected, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            target_upload = (SELECT COALESCE(p2.target_upload, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode)
+          WHERE upload_id = ?
+        `).run(
+          lastKnownStatusUploadId, lastKnownStatusUploadId, lastKnownStatusUploadId, 
+          lastKnownStatusUploadId, lastKnownStatusUploadId, lastKnownStatusUploadId, 
+          u.id
+        );
+      })();
+    }
+  }
+}
+
 module.exports = {
   parseAndSaveExcel,
   loadMasterFromJson,
@@ -1516,6 +1550,7 @@ module.exports = {
   parseAndSaveStatusExcelOnly,
   parseAndSaveSeparateExports,
   parseRekapPetugasWilayah,
-  ensureAllSubslsInUpload
+  ensureAllSubslsInUpload,
+  resyncChronologicalStatus
 };
 
