@@ -924,7 +924,7 @@ function getPclStats(uploadId, settings = getSettings(), surveyId = 'se2026') {
 
 // Tren harian
 function getTrenHarian() {
-  return getDb().prepare(`
+  const rows = getDb().prepare(`
     SELECT 
       u.id,
       u.tanggal,
@@ -945,7 +945,6 @@ function getTrenHarian() {
       SELECT MAX(id) AS id, tanggal, MAX(filename) AS filename
       FROM uploads
       WHERE total_subsls_terisi > 0
-        AND (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%')
       GROUP BY tanggal
     ) u
     LEFT JOIN summary_cache s ON s.upload_id = u.id
@@ -953,6 +952,29 @@ function getTrenHarian() {
     GROUP BY u.tanggal
     ORDER BY u.tanggal ASC
   `).all();
+
+  const db = getDb();
+  const prevUploadStmt = db.prepare(`
+    SELECT u.id 
+    FROM uploads u 
+    WHERE u.total_subsls_terisi > 0 AND u.tanggal < ? 
+    ORDER BY u.tanggal DESC, u.id DESC LIMIT 1
+  `);
+
+  rows.forEach(r => {
+    const prev = prevUploadStmt.get(r.tanggal);
+    if (prev) {
+      const prevSum = db.prepare(`
+        SELECT SUM(COALESCE(submitted_total, 0) + COALESCE(approved_total, 0) + COALESCE(rejected_total, 0)) AS total 
+        FROM summary_cache WHERE upload_id = ?
+      `).get(prev.id);
+      r.prev_realisasi = prevSum ? (prevSum.total || 0) : 0;
+    } else {
+      r.prev_realisasi = 0;
+    }
+  });
+
+  return rows;
 }
 
 
