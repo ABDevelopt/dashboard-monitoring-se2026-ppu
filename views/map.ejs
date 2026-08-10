@@ -604,6 +604,10 @@
           <button id="btnBasemapDefault" class="gmaps-pill-btn active"><i class="bi bi-map"></i> Vektor</button>
           <button id="btnBasemapSatellite" class="gmaps-pill-btn"><i class="bi bi-globe-americas"></i> Satelit</button>
         </div>
+
+        <div class="gmaps-pill-group">
+          <button id="btnOutlineOnly" class="gmaps-pill-btn" title="Tampilkan Garis Batas Wilayah Saja (Tanpa Warna Isi)"><i class="bi bi-bounding-box-circles"></i> Garis Batas Saja</button>
+        </div>
       </div>
     </div>
 
@@ -929,7 +933,8 @@
         
         let desaLayer = null;
         let slsLayer = null;
-        let activeLayerName = 'desa'; // 'desa' or 'sls'
+        let isOutlineOnlyMode = false;
+        let activeLayerName = 'desa'; // 'desa', 'sls', or 'kec'
         let currentFilteredKec = '';
 
         // UI Selectors
@@ -943,6 +948,7 @@
         const btnLayerSls = document.getElementById('btnLayerSls');
         const btnBasemapDefault = document.getElementById('btnBasemapDefault');
         const btnBasemapSatellite = document.getElementById('btnBasemapSatellite');
+        const btnOutlineOnly = document.getElementById('btnOutlineOnly');
         const legendKec = document.getElementById('legendKec');
         const legendDesa = document.getElementById('legendDesa');
         const legendSls = document.getElementById('legendSls');
@@ -1029,9 +1035,18 @@
           return '#ef4444';                 // Red
         }
 
-        // Styles for layers with ultra-crisp reduced outline thickness
+        // Styles for layers with ultra-crisp reduced outline thickness & Outline Only mode
         function kecStyle(feature) {
           const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
+          if (isOutlineOnlyMode) {
+            return {
+              fillColor: 'transparent',
+              weight: isSelectedKec ? 1.2 : 0.4,
+              opacity: isSelectedKec ? 1 : 0.15,
+              color: currentBasemapType === 'satellite' ? '#38bdf8' : 'var(--accent-blue)',
+              fillOpacity: 0
+            };
+          }
           return {
             fillColor: getKecColor(feature.properties.nmkec),
             weight: 0.8,
@@ -1043,6 +1058,15 @@
 
         function desaStyle(feature) {
           const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
+          if (isOutlineOnlyMode) {
+            return {
+              fillColor: 'transparent',
+              weight: isSelectedKec ? 1.0 : 0.3,
+              opacity: isSelectedKec ? 1 : 0.15,
+              color: currentBasemapType === 'satellite' ? '#38bdf8' : 'var(--accent-blue)',
+              fillOpacity: 0
+            };
+          }
           return {
             fillColor: getDesaColor(feature.properties.iddesa),
             weight: 0.6,
@@ -1054,6 +1078,15 @@
 
         function slsStyle(feature) {
           const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
+          if (isOutlineOnlyMode) {
+            return {
+              fillColor: 'transparent',
+              weight: isSelectedKec ? 0.7 : 0.2,
+              opacity: isSelectedKec ? 1 : 0.15,
+              color: currentBasemapType === 'satellite' ? '#a7f3d0' : '#059669',
+              fillOpacity: 0
+            };
+          }
           return {
             fillColor: getSlsColor(feature.properties.kode),
             weight: 0.35,
@@ -1718,7 +1751,6 @@
             if (desaLayer) {
               desaLayer.addTo(map);
             }
-            updateKecOutlineLayer();
 
             // Position tile layer at back & recalculate map bounds
             updateBasemap();
@@ -1796,53 +1828,6 @@
           }
         };
 
-        let kecOutlineLayer = null;
-
-        function updateKecOutlineLayer() {
-          if (!map || !desaGeoJson) return;
-
-          if (kecOutlineLayer) {
-            if (map.hasLayer(kecOutlineLayer)) map.removeLayer(kecOutlineLayer);
-            kecOutlineLayer = null;
-          }
-
-          // Render prominent Kecamatan boundary line outline
-          if (activeLayerName === 'kec' || currentFilteredKec) {
-            kecOutlineLayer = L.geoJSON(desaGeoJson, {
-              style: (feature) => {
-                const nmkec = feature.properties.nmkec;
-                const isFiltered = currentFilteredKec && nmkec.toUpperCase() === currentFilteredKec.toUpperCase();
-
-                if (isFiltered) {
-                  return {
-                    weight: 3.5,
-                    color: '#06b6d4', // Glowing cyan outline for selected Kecamatan filter
-                    opacity: 1,
-                    fill: false,
-                    interactive: false
-                  };
-                }
-
-                if (activeLayerName === 'kec') {
-                  return {
-                    weight: 2.2,
-                    color: currentBasemapType === 'satellite' ? '#60a5fa' : '#2563eb', // Royal Blue boundary stroke
-                    opacity: 0.9,
-                    dashArray: '6, 4',
-                    fill: false,
-                    interactive: false
-                  };
-                }
-
-                return { weight: 0, opacity: 0, fill: false, interactive: false };
-              }
-            });
-
-            kecOutlineLayer.addTo(map);
-            kecOutlineLayer.bringToFront();
-          }
-        }
-
         // Layer Toggling Logic
         function switchToKecLayer() {
           activeLayerName = 'kec';
@@ -1859,7 +1844,6 @@
             desaLayer.addTo(map);
             desaLayer.setStyle(kecStyle);
           }
-          updateKecOutlineLayer();
         }
 
         function switchToDesaLayer() {
@@ -1877,7 +1861,6 @@
             desaLayer.addTo(map);
             desaLayer.setStyle(desaStyle);
           }
-          updateKecOutlineLayer();
         }
 
         function switchToSlsLayer() {
@@ -1899,12 +1882,30 @@
             slsLayer.addTo(map);
             slsLayer.setStyle(slsStyle);
           }
-          updateKecOutlineLayer();
         }
 
         if (btnLayerKec) btnLayerKec.addEventListener('click', switchToKecLayer);
         if (btnLayerDesa) btnLayerDesa.addEventListener('click', switchToDesaLayer);
         if (btnLayerSls) btnLayerSls.addEventListener('click', switchToSlsLayer);
+
+        if (btnOutlineOnly) {
+          btnOutlineOnly.addEventListener('click', () => {
+            isOutlineOnlyMode = !isOutlineOnlyMode;
+            if (isOutlineOnlyMode) {
+              btnOutlineOnly.classList.add('active');
+              btnOutlineOnly.setAttribute('aria-pressed', 'true');
+            } else {
+              btnOutlineOnly.classList.remove('active');
+              btnOutlineOnly.setAttribute('aria-pressed', 'false');
+            }
+
+            if (desaLayer) {
+              if (activeLayerName === 'kec') desaLayer.setStyle(kecStyle);
+              else desaLayer.setStyle(desaStyle);
+            }
+            if (slsLayer) slsLayer.setStyle(slsStyle);
+          });
+        }
 
         // Basemap Switcher Listeners
         btnBasemapDefault.addEventListener('click', () => {
@@ -1912,11 +1913,8 @@
           btnBasemapSatellite.classList.remove('active');
           btnBasemapDefault.classList.add('active');
           updateBasemap();
-          if (desaLayer) {
-            desaLayer.setStyle(activeLayerName === 'kec' ? kecStyle : desaStyle);
-          }
+          if (desaLayer) desaLayer.setStyle(desaStyle);
           if (slsLayer) slsLayer.setStyle(slsStyle);
-          updateKecOutlineLayer();
         });
 
         btnBasemapSatellite.addEventListener('click', () => {
@@ -1924,22 +1922,16 @@
           btnBasemapDefault.classList.remove('active');
           btnBasemapSatellite.classList.add('active');
           updateBasemap();
-          if (desaLayer) {
-            desaLayer.setStyle(activeLayerName === 'kec' ? kecStyle : desaStyle);
-          }
+          if (desaLayer) desaLayer.setStyle(desaStyle);
           if (slsLayer) slsLayer.setStyle(slsStyle);
-          updateKecOutlineLayer();
         });
 
         // Filter Dropdown Listener
         kecFilter.addEventListener('change', (e) => {
           currentFilteredKec = e.target.value;
           
-          if (desaLayer) {
-            desaLayer.setStyle(activeLayerName === 'kec' ? kecStyle : desaStyle);
-          }
+          if (desaLayer) desaLayer.setStyle(desaStyle);
           if (slsLayer) slsLayer.setStyle(slsStyle);
-          updateKecOutlineLayer();
 
           fitBoundsToKecamatan(currentFilteredKec);
         });
@@ -1948,11 +1940,6 @@
         btnResetView.addEventListener('click', () => {
           kecFilter.value = '';
           currentFilteredKec = '';
-          if (desaLayer) {
-            desaLayer.setStyle(activeLayerName === 'kec' ? kecStyle : desaStyle);
-          }
-          if (slsLayer) slsLayer.setStyle(slsStyle);
-          updateKecOutlineLayer();
           if (mapSearchInput) mapSearchInput.value = '';
           map.setView(centerCoords, defaultZoom);
           if (desaLayer) desaLayer.setStyle(desaStyle);
