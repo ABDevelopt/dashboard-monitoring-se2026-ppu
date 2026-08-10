@@ -603,14 +603,15 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
       return;
     }
 
-    // Ambil detail data upload sebelumnya (hanya upload riil pengguna, bukan Imputasi Otomatis)
+    // Ambil detail data upload sebelumnya (hanya upload riil pengguna yang terisi valid)
     const prevUpload = db.prepare(`
       SELECT * FROM uploads 
-      WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%') 
-        AND (tanggal < ? OR (tanggal = ? AND id < ?))
+      WHERE total_subsls_terisi > 0 
+        AND (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%') 
+        AND tanggal < ?
       ORDER BY tanggal DESC, created_at DESC, id DESC 
       LIMIT 1
-    `).get(upload.tanggal, upload.tanggal, uploadId);
+    `).get(upload.tanggal);
     let prevStats = null;
     if (prevUpload) {
       prevStats = getOverviewSummary(prevUpload.id, settings);
@@ -619,7 +620,8 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     // Ambil detail data upload 24 jam / hari sebelumnya (hanya upload riil pengguna)
     const upload24h = db.prepare(`
       SELECT * FROM uploads 
-      WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%') 
+      WHERE total_subsls_terisi > 0 
+        AND (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%') 
         AND tanggal < ?
       ORDER BY tanggal DESC, created_at DESC, id DESC 
       LIMIT 1
