@@ -672,6 +672,10 @@
             <div class="map-legend-item"><div class="map-legend-color" style="background: #eab308;"></div><span><strong>25% - 74%</strong> (Sedang)</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>1% - 24%</strong> (Awal Progres)</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>0%</strong> (Belum Ada Progres)</span></div>
+            <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px; font-size: 10.5px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+              <div style="width: 22px; height: 0px; border-top: 2.8px dashed var(--accent-blue);"></div>
+              <span><strong>Garis Batas Kecamatan</strong></span>
+            </div>
           </div>
 
           <div id="legendDesa">
@@ -929,7 +933,8 @@
         
         let desaLayer = null;
         let slsLayer = null;
-        let activeLayerName = 'desa'; // 'desa' or 'sls'
+        let kecOutlineLayer = null;
+        let activeLayerName = 'desa'; // 'desa', 'kec', or 'sls'
         let currentFilteredKec = '';
 
         // UI Selectors
@@ -1034,11 +1039,38 @@
           const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
           return {
             fillColor: getKecColor(feature.properties.nmkec),
-            weight: 0.8,
-            opacity: isSelectedKec ? 1 : 0.08,
+            weight: 0.4,
+            opacity: isSelectedKec ? 0.6 : 0.05,
             color: getBorderColor(),
             fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.48 : 0.40) : 0.02
           };
+        }
+
+        // Prominent Kecamatan boundary line overlay style
+        function kecOutlineStyle(feature) {
+          const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
+          const isDark = document.body.classList.contains('dark-mode') || currentBasemapType === 'satellite';
+          return {
+            fill: false,
+            fillOpacity: 0,
+            color: isDark ? '#93c5fd' : '#1e3a8a', // Accent Navy / Sky Blue for high visibility
+            weight: 2.8,                            // Prominent Garis Batas Kecamatan
+            opacity: isSelectedKec ? 0.95 : 0.12,
+            dashArray: '7, 4',                       // Standard GIS Administrative Boundary Line
+            interactive: false
+          };
+        }
+
+        function setupKecOutlineLayer() {
+          if (kecOutlineLayer && map.hasLayer(kecOutlineLayer)) {
+            map.removeLayer(kecOutlineLayer);
+          }
+          if (desaGeoJson) {
+            kecOutlineLayer = L.geoJSON(desaGeoJson, {
+              style: kecOutlineStyle,
+              interactive: false
+            });
+          }
         }
 
         function desaStyle(feature) {
@@ -1811,6 +1843,14 @@
             desaLayer.addTo(map);
             desaLayer.setStyle(kecStyle);
           }
+
+          // Add prominent Kecamatan outer boundary line overlay
+          if (!kecOutlineLayer) setupKecOutlineLayer();
+          if (kecOutlineLayer) {
+            kecOutlineLayer.addTo(map);
+            kecOutlineLayer.setStyle(kecOutlineStyle);
+            kecOutlineLayer.bringToFront();
+          }
         }
 
         function switchToDesaLayer() {
@@ -1823,6 +1863,7 @@
           if (legendSls) legendSls.style.display = 'none';
           if (legendDesa) legendDesa.style.display = 'block';
 
+          if (kecOutlineLayer && map.hasLayer(kecOutlineLayer)) map.removeLayer(kecOutlineLayer);
           if (slsLayer && map.hasLayer(slsLayer)) map.removeLayer(slsLayer);
           if (desaLayer) {
             desaLayer.addTo(map);
@@ -1844,6 +1885,7 @@
           if (legendDesa) legendDesa.style.display = 'none';
           if (legendSls) legendSls.style.display = 'block';
 
+          if (kecOutlineLayer && map.hasLayer(kecOutlineLayer)) map.removeLayer(kecOutlineLayer);
           if (desaLayer && map.hasLayer(desaLayer)) map.removeLayer(desaLayer);
           if (slsLayer) {
             slsLayer.addTo(map);
@@ -1861,8 +1903,10 @@
           btnBasemapSatellite.classList.remove('active');
           btnBasemapDefault.classList.add('active');
           updateBasemap();
-          if (desaLayer) desaLayer.setStyle(desaStyle);
+          if (activeLayerName === 'kec' && desaLayer) desaLayer.setStyle(kecStyle);
+          else if (desaLayer) desaLayer.setStyle(desaStyle);
           if (slsLayer) slsLayer.setStyle(slsStyle);
+          if (kecOutlineLayer) kecOutlineLayer.setStyle(kecOutlineStyle);
         });
 
         btnBasemapSatellite.addEventListener('click', () => {
@@ -1870,16 +1914,20 @@
           btnBasemapDefault.classList.remove('active');
           btnBasemapSatellite.classList.add('active');
           updateBasemap();
-          if (desaLayer) desaLayer.setStyle(desaStyle);
+          if (activeLayerName === 'kec' && desaLayer) desaLayer.setStyle(kecStyle);
+          else if (desaLayer) desaLayer.setStyle(desaStyle);
           if (slsLayer) slsLayer.setStyle(slsStyle);
+          if (kecOutlineLayer) kecOutlineLayer.setStyle(kecOutlineStyle);
         });
 
         // Filter Dropdown Listener
         kecFilter.addEventListener('change', (e) => {
           currentFilteredKec = e.target.value;
           
-          if (desaLayer) desaLayer.setStyle(desaStyle);
+          if (activeLayerName === 'kec' && desaLayer) desaLayer.setStyle(kecStyle);
+          else if (desaLayer) desaLayer.setStyle(desaStyle);
           if (slsLayer) slsLayer.setStyle(slsStyle);
+          if (kecOutlineLayer) kecOutlineLayer.setStyle(kecOutlineStyle);
 
           fitBoundsToKecamatan(currentFilteredKec);
         });
