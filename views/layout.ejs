@@ -1,10 +1,16 @@
+<%
+  var navPrefix = (typeof locals !== 'undefined' && typeof locals.navPrefix !== 'undefined') ? locals.navPrefix : (typeof navPrefix !== 'undefined' ? navPrefix : '');
+  var routePrefix = (typeof locals !== 'undefined' && typeof locals.routePrefix !== 'undefined') ? locals.routePrefix : (typeof routePrefix !== 'undefined' ? routePrefix : '');
+  var activeSurvey = (typeof locals !== 'undefined' && typeof locals.activeSurvey !== 'undefined') ? locals.activeSurvey : (typeof activeSurvey !== 'undefined' ? activeSurvey : 'se2026');
+  var surveyConfig = (typeof locals !== 'undefined' && typeof locals.surveyConfig !== 'undefined') ? locals.surveyConfig : (typeof surveyConfig !== 'undefined' ? surveyConfig : { id: 'se2026', name: 'Sensus Ekonomi 2026', shortName: 'SE2026 PPU', theme: 'orange', themeColor: '#f97316', showUsahaColumns: true });
+%>
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= typeof title !== 'undefined' ? title + ' — ' : '' %>Dashboard SE2026 PPU</title>
-  <meta name="description" content="Dashboard Monitoring Sensus Ekonomi 2026 Kabupaten Penajam Paser Utara">
+  <title><%= typeof title !== 'undefined' ? title + ' — ' : '' %>Dashboard <%= surveyConfig.shortName %></title>
+  <meta name="description" content="Dashboard Monitoring <%= surveyConfig.name %> Kabupaten Penajam Paser Utara">
   <meta name="csrf-token" content="<%= csrfToken %>">
   <link rel="icon" type="image/png" href="/logo-mark.png">
   <link rel="manifest" href="/manifest.json">
@@ -12,7 +18,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="SE2026 PPU">
+  <meta name="apple-mobile-web-app-title" content="<%= surveyConfig.shortName %>">
   <link rel="apple-touch-icon" href="/logo-mark.png">
   <% if (typeof activePage === 'undefined') { activePage = ''; } %>
   <% if (typeof appVersion === 'undefined') { appVersion = ''; } %>
@@ -49,6 +55,7 @@
   <script src="/js/table-filter.min.js?v=<%= appVersion %>" defer></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin=""></script>
   <style>
+    <%- typeof customStyles !== 'undefined' ? customStyles : '' %>
     <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') { %>
       .muatan-col { display: none !important; }
     <% } %>
@@ -165,9 +172,25 @@
 <aside class="sidebar" id="sidebar" aria-label="Sidebar Menu">
   <button class="btn-close-sidebar" id="sidebarClose" aria-label="Tutup Sidebar"><i class="bi bi-x-lg"></i></button>
   <div class="sidebar-logo" style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 16px; border-bottom: 1px solid var(--border);">
+<% if (activeSurvey === 'se2026') { %>
     <img src="/logo-vertical.png" alt="Logo SE2026" class="logo-light" width="140" height="90" loading="eager" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
     <img src="/logo-vertical-dark.png" alt="Logo SE2026" class="logo-dark" width="140" height="90" fetchpriority="high" loading="eager" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
-    <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 4px;">Penajam Paser Utara</p>
+    <% } else { %>
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 8px; margin-bottom: 8px; background: rgba(var(--accent-rgb), 0.08); border: 1px solid rgba(var(--accent-rgb), 0.25); border-radius: 12px; width: 100%; text-align: center;">
+      <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--accent-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 6px; box-shadow: 0 4px 10px rgba(var(--accent-rgb), 0.3);">
+        <i class="bi bi-bar-chart-fill"></i>
+      </div>
+      <div style="font-size: 13px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.2px; line-height: 1.2;"><%= surveyConfig.shortName %></div>
+      <div style="font-size: 10px; font-weight: 600; color: var(--accent-primary); margin-top: 2px;">BPS PPU</div>
+    </div>
+    <% } %>
+    <% if (typeof surveyConfig !== 'undefined' && surveyConfig.id !== 'se2026') { %>
+      <span style="font-size: 10.5px; color: var(--accent-primary); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 4px; background: rgba(var(--accent-rgb), 0.12); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(var(--accent-rgb), 0.25);">
+        <i class="bi bi-clipboard-check-fill"></i> <%= surveyConfig.name %>
+      </span>
+    <% } else { %>
+      <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 4px;">Penajam Paser Utara</p>
+    <% } %>
   </div>
 
   <div class="sidebar-upload-info" style="margin: 4px 16px 12px; padding: 10px; background: rgba(var(--accent-rgb), 0.03); border: 1px solid var(--border); border-radius: 8px; font-size: 10px; display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && (latestUploadsDetailed.muatan || latestUploadsDetailed.fasih)) ? 'flex' : 'none' %>; flex-direction: column; gap: 6px;">
@@ -203,16 +226,16 @@
         <span>Utama</span>
       </div>
       <div class="nav-section-content">
-        <a href="/" class="nav-item <%= activePage === 'overview' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/" class="nav-item <%= activePage === 'overview' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-house-door"></i></span> Overview
         </a>
         <% if (typeof settings !== 'undefined' && settings.page_map === '1') { %>
-        <a href="/map" class="nav-item <%= activePage === 'map' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/map" class="nav-item <%= activePage === 'map' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-map"></i></span> Peta Progres
         </a>
         <% } %>
         <% if (typeof settings === 'undefined' || !settings || settings.page_aiagent !== '0') { %>
-        <a href="/agent" class="nav-item <%= activePage === 'agent' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/agent" class="nav-item <%= activePage === 'agent' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-robot text-purple"></i></span> Pananyo Taka <span class="nav-tag-badge" style="background: linear-gradient(135deg, #4285F4, #9b72cb); color: white; font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 4px; margin-left: 4px; letter-spacing: 0.5px;">AI</span>
         </a>
         <% } %>
@@ -237,17 +260,17 @@
       </div>
       <div class="nav-section-content">
         <% if (settings.page_korlap === '1') { %>
-        <a href="/korlap" class="nav-item <%= activePage === 'korlap' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/korlap" class="nav-item <%= activePage === 'korlap' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-person-workspace"></i></span> Korlap
         </a>
         <% } %>
         <% if (settings.page_pml === '1') { %>
-        <a href="/pml" class="nav-item <%= activePage === 'pml' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/pml" class="nav-item <%= activePage === 'pml' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-clipboard2-data"></i></span> PML
         </a>
         <% } %>
         <% if (settings.page_pcl === '1') { %>
-        <a href="/pcl" class="nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/pcl" class="nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-person-gear"></i></span> PCL
         </a>
         <% } %>
@@ -263,12 +286,12 @@
       </div>
       <div class="nav-section-content">
         <% if (settings.page_earlywarning === '1') { %>
-        <a href="/early-warning" class="nav-item <%= activePage === 'earlywarning' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/early-warning" class="nav-item <%= activePage === 'earlywarning' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-exclamation-octagon"></i></span> Early Warning
         </a>
         <% } %>
         <% if (settings.page_deteksianomali === '1') { %>
-        <a href="/deteksi-anomali" class="nav-item <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/deteksi-anomali" class="nav-item <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-shield-exclamation"></i></span> Anomali
         </a>
         <% } %>
@@ -284,22 +307,22 @@
       </div>
       <div class="nav-section-content">
         <% if (settings.page_performa === '1') { %>
-        <a href="/performa" class="nav-item <%= activePage === 'performa' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/performa" class="nav-item <%= activePage === 'performa' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-speedometer2"></i></span> Performa Petugas
         </a>
         <% } %>
         <% if (settings.page_performa === '1') { %>
-        <a href="/harian" class="nav-item <%= activePage === 'harian' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/harian" class="nav-item <%= activePage === 'harian' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-calendar3"></i></span> Progres Harian
         </a>
         <% } %>
         <% if (settings.page_leaderboard === '1') { %>
-        <a href="/leaderboard" class="nav-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/leaderboard" class="nav-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-trophy"></i></span> Performa Terbaik
         </a>
         <% } %>
         <% if (settings.page_performatrendah === '1') { %>
-        <a href="/performa-terendah" class="nav-item <%= activePage === 'performa-terendah' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/performa-terendah" class="nav-item <%= activePage === 'performa-terendah' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-graph-down"></i></span> Performa Terendah
         </a>
         <% } %>
@@ -315,12 +338,12 @@
       </div>
       <div class="nav-section-content">
         <% if (settings.page_kecamatan === '1') { %>
-        <a href="/kecamatan" class="nav-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/kecamatan" class="nav-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-geo-alt"></i></span> Kecamatan
         </a>
         <% } %>
         <% if (settings.page_subsls === '1') { %>
-        <a href="/subsls" class="nav-item <%= activePage === 'subsls' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/subsls" class="nav-item <%= activePage === 'subsls' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-box-seam"></i></span> Subsls
         </a>
         <% } %>
@@ -334,10 +357,12 @@
         <span>Pendataan Khusus</span>
       </div>
       <div class="nav-section-content">
+        <% if (typeof surveyConfig !== 'undefined' && surveyConfig.id === 'se2026') { %>
         <a href="/kipp" class="nav-item <%= activePage === 'kipp' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-building"></i></span> Pendataan Wilayah KIPP
         </a>
-        <a href="/pbi" class="nav-item <%= activePage === 'pbi' ? 'active' : '' %>">
+        <% } %>
+        <a href="<%= navPrefix %>/pbi" class="nav-item <%= activePage === 'pbi' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-heart-pulse"></i></span> Pendataan PBI
         </a>
       </div>
@@ -352,7 +377,7 @@
         <span>Data &amp; Utilitas</span>
       </div>
       <div class="nav-section-content">
-        <a href="/export" class="nav-item <%= activePage === 'export' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/export" class="nav-item <%= activePage === 'export' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-download"></i></span> Export Data
         </a>
       </div>
@@ -366,31 +391,31 @@
         <span>Administrasi &amp; Sistem</span>
       </div>
       <div class="nav-section-content">
-        <a href="/admin" class="nav-item <%= activePage === 'admin-menu' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/admin" class="nav-item <%= activePage === 'admin-menu' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-grid-fill"></i></span> Menu Utama Admin
         </a>
-        <a href="/admin/upload" class="nav-item <%= activePage === 'upload' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/admin/upload" class="nav-item <%= activePage === 'upload' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-upload"></i></span> Upload Data
         </a>
-        <a href="/admin/master" class="nav-item <%= activePage === 'master' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/admin/master" class="nav-item <%= activePage === 'master' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-database-fill-gear"></i></span> Kelola Master Data
         </a>
-        <a href="/admin/users" class="nav-item <%= activePage === 'users' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/admin/users" class="nav-item <%= activePage === 'users' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-people-fill"></i></span> Kelola Pengguna
         </a>
-        <a href="/admin/petugas-email" class="nav-item <%= activePage === 'petugas-email' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/admin/petugas-email" class="nav-item <%= activePage === 'petugas-email' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-envelope-at-fill"></i></span> Data Email Petugas
         </a>
-        <a href="/admin/settings" class="nav-item <%= activePage === 'settings' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/admin/settings" class="nav-item <%= activePage === 'settings' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-sliders"></i></span> Pengaturan Tampilan
         </a>
-        <a href="/admin/settings/chatbot" class="nav-item <%= activePage === 'chatbot-settings' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/admin/settings/chatbot" class="nav-item <%= activePage === 'chatbot-settings' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-chat-left-dots-fill"></i></span> Pengaturan Chatbot AI
         </a>
-        <a href="/admin/whatsapp" class="nav-item <%= activePage === 'whatsapp' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/admin/whatsapp" class="nav-item <%= activePage === 'whatsapp' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-whatsapp"></i></span> Integrasi WhatsApp
         </a>
-        <a href="/admin/settings/backup" class="nav-item <%= activePage === 'settings-backup' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/admin/settings/backup" class="nav-item <%= activePage === 'settings-backup' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-cloud-arrow-down-fill"></i></span> Backup &amp; Restore
         </a>
       </div>
@@ -400,7 +425,7 @@
     <!-- Help / Bantuan -->
     <div class="nav-section-wrapper" data-section="bantuan">
       <div class="nav-section-content">
-        <a href="/help" class="nav-item <%= activePage === 'help' ? 'active' : '' %>">
+        <a href="<%= navPrefix %>/help" class="nav-item <%= activePage === 'help' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-life-preserver"></i></span> Panduan &amp; Bantuan
         </a>
       </div>
@@ -410,7 +435,7 @@
 
   <div class="sidebar-footer" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
     <div style="line-height: 1.4;">
-      SE2026 · PPU · v<%= typeof packageVersion !== 'undefined' ? packageVersion : '2.3.0' %><br>
+      <%= surveyConfig.shortName %> · PPU · v<%= typeof packageVersion !== 'undefined' ? packageVersion : '2.3.0' %><br>
       <span style="color: var(--text-muted)">© BPS Penajam Paser Utara</span>
     </div>
     <div>
@@ -441,7 +466,7 @@
     <i class="bi bi-people"></i>
     <span>Petugas</span>
   </button>
-  <a href="/agent" class="bottom-nav-item <%= activePage === 'agent' ? 'active' : '' %>">
+  <a href="<%= navPrefix %>/agent" class="bottom-nav-item <%= activePage === 'agent' ? 'active' : '' %>">
     <i class="bi bi-robot"></i>
     <span>Pananyo Taka</span>
   </a>
@@ -460,11 +485,20 @@
       <button class="btn btn-secondary topbar-action-btn" id="sidebarToggle" title="Sembunyikan / Tampilkan Sidebar (Toggle)" aria-label="Toggle Sidebar" style="margin-right: 8px;">
         <i class="bi bi-layout-sidebar-inset"></i>
       </button>
+<% if (activeSurvey === 'se2026') { %>
       <img src="/logo-horizontal.png" alt="Logo SE2026" class="logo-light topbar-logo" width="110" height="30" loading="eager">
       <img src="/logo-horizontal-dark.png" alt="Logo SE2026" class="logo-dark topbar-logo" width="110" height="30" fetchpriority="high" loading="eager">
+      <% } else { %>
+      <div style="display: inline-flex; align-items: center; gap: 8px;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background: var(--accent-primary); color: #fff; font-size: 13px;">
+          <i class="bi bi-bar-chart-fill"></i>
+        </span>
+        <span style="font-size: 14px; font-weight: 800; color: var(--text-primary);"><%= surveyConfig.shortName %></span>
+      </div>
+      <% } %>
       <div class="topbar-title-container">
         <div class="topbar-title"><%= typeof title !== 'undefined' ? title : 'Dashboard' %></div>
-        <div class="topbar-subtitle">Penajam Paser Utara</div>
+        <div class="topbar-subtitle"><%= (typeof surveyConfig !== 'undefined' && surveyConfig.id !== 'se2026') ? surveyConfig.name + ' 2026' : 'Penajam Paser Utara' %></div>
       </div>
     </div>
 
@@ -525,7 +559,7 @@
 
       <!-- Admin Upload (desktop only) -->
       <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-        <a href="/admin/upload" class="btn btn-primary topbar-admin-btn"><i class="bi bi-upload"></i><span class="topbar-action-label"> Upload</span></a>
+        <a href="<%= navPrefix %>/admin/upload" class="btn btn-primary topbar-admin-btn"><i class="bi bi-upload"></i><span class="topbar-action-label"> Upload</span></a>
       <% } %>
     </div>
   </header>
@@ -683,7 +717,7 @@
     }
 
     function checkEarlyWarningSummary() {
-      fetch('/api/early-warning-summary')
+      fetch('<%= navPrefix %>/api/early-warning-summary')
         .then(res => res.json())
         .then(data => {
           if (!data.success) return;
@@ -762,7 +796,7 @@
             <!-- Action Buttons -->
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
               <button id="dismissEwModal" class="btn btn-secondary" style="font-size: 12px; padding: 8px 16px;">Abaikan</button>
-              <a href="/early-warning" id="viewEwModal" class="btn btn-primary" style="font-size: 12px; padding: 8px 16px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+              <a href="<%= navPrefix %>/early-warning" id="viewEwModal" class="btn btn-primary" style="font-size: 12px; padding: 8px 16px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                 <i class="bi bi-arrow-right-circle"></i> Lihat Rincian
               </a>
             </div>
@@ -980,7 +1014,7 @@
       // Background Polling: check for new uploads every 60 seconds
       setInterval(async () => {
         try {
-          const response = await fetch('/api/latest-updates');
+          const response = await fetch('<%= navPrefix %>/api/latest-updates');
           if (!response.ok) return;
           const data = await response.json();
 
