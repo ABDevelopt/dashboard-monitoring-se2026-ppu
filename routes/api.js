@@ -111,12 +111,7 @@ router.get('/map-stats', (req, res) => {
 
   const { getKecamatanStats } = require('../database');
   const kecStats = getKecamatanStats(uploadId, settings);
-
-  res.json({ 
-    kecStats: attachProgressPercentages(kecStats), 
-    desaStats: attachProgressPercentages(desaStats), 
-    slsStats: attachProgressPercentages(slsStats) 
-  });
+  res.json({ kecStats: attachProgressPercentages(kecStats), desaStats: attachProgressPercentages(desaStats), slsStats: attachProgressPercentages(slsStats) });
 });
 
 // Detail Korlap

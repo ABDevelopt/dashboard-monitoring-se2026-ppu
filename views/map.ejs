@@ -595,7 +595,7 @@
         </select>
         
         <div class="gmaps-pill-group">
-          <button id="btnLayerKec" class="gmaps-pill-btn"><i class="bi bi-diagram-3"></i> Kec</button>
+          <button id="btnLayerKec" class="gmaps-pill-btn"><i class="bi bi-diagram-3"></i> Kecamatan</button>
           <button id="btnLayerDesa" class="gmaps-pill-btn active"><i class="bi bi-geo"></i> Desa</button>
           <button id="btnLayerSls" class="gmaps-pill-btn"><i class="bi bi-pin-map"></i> SLS</button>
         </div>
@@ -665,6 +665,15 @@
 
         <!-- TAB 2: LEGEND -->
         <div id="gmapsLegendTabContent" style="display: none;">
+          <div id="legendKec" style="display: none;">
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Progres Realisasi Kecamatan:</div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>100%</strong> (Target Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>75% - 99%</strong> (Sangat Baik)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #eab308;"></div><span><strong>25% - 74%</strong> (Sedang)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>1% - 24%</strong> (Awal Progres)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>0%</strong> (Belum Ada Progres)</span></div>
+          </div>
+
           <div id="legendDesa">
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Persentase Realisasi FASIH Desa:</div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>100%</strong> FASIH (Target Selesai)</span></div>
@@ -912,15 +921,15 @@
         }
 
         // Data holders
+        let desaGeoJson = null;
+        let slsGeoJson = null;
         let desaStats = [];
         let slsStats = [];
         let kecStats = [];
-        let desaGeoJson = null;
-        let slsGeoJson = null;
-        let kecLayer = null;
+        
         let desaLayer = null;
         let slsLayer = null;
-        let activeLayerName = 'desa'; // 'kecamatan', 'desa', or 'sls'
+        let activeLayerName = 'desa'; // 'desa' or 'sls'
         let currentFilteredKec = '';
 
         // UI Selectors
@@ -934,6 +943,7 @@
         const btnLayerSls = document.getElementById('btnLayerSls');
         const btnBasemapDefault = document.getElementById('btnBasemapDefault');
         const btnBasemapSatellite = document.getElementById('btnBasemapSatellite');
+        const legendKec = document.getElementById('legendKec');
         const legendDesa = document.getElementById('legendDesa');
         const legendSls = document.getElementById('legendSls');
         const sidebarStats = document.getElementById('mapSummaryStats');
@@ -971,52 +981,16 @@
           return 'var(--accent-cyan)';
         }
 
-        // Single-hue primary color gradient function for Kecamatan
-        function getKecColor(nmkec) {
-          const stat = kecStats.find(k => k.kecamatan && nmkec && k.kecamatan.toUpperCase() === nmkec.toUpperCase());
-          if (!stat) return '#cbd5e1'; // gray for no data
-          
-          let pct = 0;
-          if (typeof settings !== 'undefined' && settings.show_progres_muatan === '1') {
-            pct = parseFloat(stat.muatan_pct_str || 0);
-          } else {
-            pct = parseFloat(stat.fasih_pct_str || 0);
-            if (!pct && stat.target_fasih_total) {
-              const real = (stat.submitted_total || 0) + (stat.approved_total || 0) + (stat.rejected_total || 0);
-              pct = (real / stat.target_fasih_total) * 100;
-            }
-          }
-
-          if (pct >= 100) return '#1e40af'; // Deep Primary Blue (100% Selesai)
-          if (pct >= 75) return '#2563eb';  // Primary Royal Blue (75-99%)
-          if (pct >= 50) return '#3b82f6';  // Bright Blue (50-74%)
-          if (pct >= 25) return '#60a5fa';  // Medium Blue (25-49%)
-          if (pct > 0) return '#93c5fd';    // Soft Light Blue (1-24%)
-          return '#cbd5e1';                 // Muted Gray (0% Belum Ada Isian)
-        }
-
-        // Single-hue primary color gradient function for Desa
+        // Color coding function for Desa
         function getDesaColor(iddesa) {
           const stat = desaStats.find(s => s.iddesa === iddesa);
-          if (!stat) return '#cbd5e1'; // gray for no data
-          
-          let pct = 0;
-          if (typeof settings !== 'undefined' && settings.show_progres_muatan === '1') {
-            pct = parseFloat(stat.muatan_pct_str || 0);
-          } else {
-            pct = parseFloat(stat.fasih_pct_str || 0);
-            if (!pct && stat.target_fasih_total) {
-              const real = (stat.submitted_total || 0) + (stat.approved_total || 0) + (stat.rejected_total || 0);
-              pct = (real / stat.target_fasih_total) * 100;
-            }
-          }
-
-          if (pct >= 100) return '#1e40af'; // Deep Primary Blue (100% Selesai)
-          if (pct >= 75) return '#2563eb';  // Primary Royal Blue (75-99%)
-          if (pct >= 50) return '#3b82f6';  // Bright Blue (50-74%)
-          if (pct >= 25) return '#60a5fa';  // Medium Blue (25-49%)
-          if (pct > 0) return '#93c5fd';    // Soft Light Blue (1-24%)
-          return '#cbd5e1';                 // Muted Gray (0% Belum Ada Isian)
+          if (!stat) return '#94a3b8'; // gray for no data
+          const pct = stat.target_fasih_total ? ((stat.submitted_total + stat.approved_total + stat.rejected_total) / stat.target_fasih_total) * 100 : 0;
+          if (pct >= 100) return '#10b981'; // Green
+          if (pct >= 75) return '#0284c7';  // Blue
+          if (pct >= 25) return '#eab308';  // Yellow
+          if (pct > 0) return '#f97316';    // Orange
+          return '#ef4444';                 // Red
         }
 
         // Single-hue primary color gradient function for SLS
@@ -1043,15 +1017,27 @@
           return '#cbd5e1';                 // Muted Gray (0% Belum Ada Isian)
         }
 
-        // Styles for layers (Thinner crisp outline weights)
+        // Color coding function for Kecamatan
+        function getKecColor(nmkec) {
+          const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === nmkec.toUpperCase());
+          if (!stat) return '#94a3b8';
+          const pct = parseFloat(stat.fasih_pct_str || 0);
+          if (pct >= 100) return '#10b981'; // Green
+          if (pct >= 75) return '#0284c7';  // Blue
+          if (pct >= 25) return '#eab308';  // Yellow
+          if (pct > 0) return '#f97316';    // Orange
+          return '#ef4444';                 // Red
+        }
+
+        // Styles for layers with ultra-crisp reduced outline thickness
         function kecStyle(feature) {
           const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
           return {
             fillColor: getKecColor(feature.properties.nmkec),
             weight: 0.8,
-            opacity: isSelectedKec ? 0.9 : 0.08,
+            opacity: isSelectedKec ? 1 : 0.08,
             color: getBorderColor(),
-            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.48 : 0.42) : 0.02
+            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.48 : 0.40) : 0.02
           };
         }
 
@@ -1060,7 +1046,7 @@
           return {
             fillColor: getDesaColor(feature.properties.iddesa),
             weight: 0.6,
-            opacity: isSelectedKec ? 0.9 : 0.08,
+            opacity: isSelectedKec ? 1 : 0.08,
             color: getBorderColor(),
             fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.45 : 0.38) : 0.02
           };
@@ -1070,14 +1056,14 @@
           const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
           return {
             fillColor: getSlsColor(feature.properties.kode),
-            weight: 0.4,
-            opacity: isSelectedKec ? 0.9 : 0.08,
+            weight: 0.35,
+            opacity: isSelectedKec ? 1 : 0.08,
             color: getBorderColor(),
             fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.45 : 0.38) : 0.02
           };
         }
 
-        // Highlight features on hover
+        // Highlight features on hover with refined border width
         function highlightFeature(e) {
           const layer = e.target;
           layer.setStyle({
@@ -1152,6 +1138,126 @@
               map.fitBounds(bounds, { padding: [30, 30] });
             }
           }
+        }
+
+        function showKecDetails(nmkec) {
+          ensureGmapsDrawerOpen();
+          const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === nmkec.toUpperCase());
+          if (!stat) return;
+
+          const fasihPct = parseFloat(stat.fasih_pct_str || 0);
+          const fasihColor = fasihPct >= 100 ? '#10b981' : (fasihPct < 40 ? '#ef4444' : '#3b82f6');
+          const isComplete = fasihPct >= 100;
+          const totalRealisasiFasih = (stat.submitted_total || 0) + (stat.approved_total || 0) + (stat.rejected_total || 0);
+          const targetFasih = stat.target_fasih_total || 0;
+
+          // Render list of Desas in this Kecamatan
+          const kecDesaList = desaStats.filter(d => d.kecamatan && d.kecamatan.toUpperCase() === nmkec.toUpperCase());
+          let desaListHtml = '';
+
+          if (kecDesaList.length > 0) {
+            desaListHtml = `
+              <div style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px;">
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                  <span><i class="bi bi-houses" style="color: var(--accent-blue);"></i> Rincian ${kecDesaList.length} Desa/Kelurahan</span>
+                </div>
+                <div style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;" id="detailDesaList">
+            `;
+
+            kecDesaList.forEach(d => {
+              const dReal = (d.submitted_total || 0) + (d.approved_total || 0) + (d.rejected_total || 0);
+              const dTgt = d.target_fasih_total || 0;
+              const dPct = parseFloat(d.fasih_pct_str || 0);
+              const dColor = dPct >= 100 ? '#10b981' : (dPct < 40 ? '#ef4444' : '#3b82f6');
+
+              desaListHtml += `
+                <div class="desa-map-item" onclick="if (window.focusDesaOnMap) window.focusDesaOnMap('${d.iddesa}')" style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; transition: all 0.15s ease;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <strong style="font-size: 12px; color: var(--text-primary);">${d.desa}</strong>
+                    <span class="badge ${dPct >= 100 ? 'badge-green' : 'badge-purple'}" style="font-size: 9px; padding: 1px 6px;">${dPct}% FASIH</span>
+                  </div>
+                  <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden; margin-bottom: 4px;">
+                    <div style="width: ${dPct}%; height: 100%; background: ${dColor}; border-radius: 99px;"></div>
+                  </div>
+                  <div style="font-size: 10px; color: var(--text-muted); display: flex; justify-content: space-between;">
+                    <span>SLS Selesai: <strong>${d.selesai} / ${d.total_subsls}</strong></span>
+                    <span>Realisasi: <strong>${dReal.toLocaleString('id-ID')} / ${dTgt.toLocaleString('id-ID')}</strong></span>
+                  </div>
+                </div>
+              `;
+            });
+
+            desaListHtml += `
+                </div>
+              </div>
+            `;
+          }
+
+          sidebarStats.innerHTML = `
+            <!-- Header Title Card -->
+            <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+              <div>
+                <div style="font-size: 15px; font-weight: 800; color: var(--accent-blue); display: flex; align-items: center; gap: 6px;">
+                  <i class="bi bi-diagram-3-fill"></i> Kecamatan ${nmkec}
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                  Kabupaten Penajam Paser Utara
+                </div>
+              </div>
+              <span class="badge ${isComplete ? 'badge-green' : 'badge-purple'}" style="font-size: 11px; padding: 4px 9px; flex-shrink: 0;">
+                ${isComplete ? '<i class="bi bi-check-circle-fill"></i> 100% Selesai' : `${fasihPct}% FASIH`}
+              </span>
+            </div>
+
+            <!-- Visual Progress Track -->
+            <div style="background: var(--bg-secondary); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; margin-bottom: 6px;">
+                <span style="color: var(--text-primary);"><i class="bi bi-bar-chart-line" style="color: var(--accent-blue);"></i> Realisasi FASIH Kecamatan</span>
+                <span style="color: ${fasihColor}; font-weight: 700;">${fasihPct}%</span>
+              </div>
+              <div class="progress-track-sm" style="height: 8px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden;">
+                <div class="progress-bar ${fasihPct >= 100 ? 'green' : (fasihPct < 25 ? 'red' : 'purple')}" style="width: ${fasihPct}%; height: 100%; border-radius: 99px; transition: width 0.4s ease;"></div>
+              </div>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 6px; display: flex; justify-content: space-between;">
+                <span>Realisasi: <strong style="color: var(--text-primary);">${totalRealisasiFasih.toLocaleString('id-ID')}</strong></span>
+                <span>Target: <strong style="color: var(--text-primary);">${targetFasih.toLocaleString('id-ID')} Dok</strong></span>
+              </div>
+            </div>
+
+            <!-- Metric Cards Grid -->
+            <div class="map-card-stat-grid">
+              <div class="map-card-stat-item">
+                <span class="map-card-stat-label"><i class="bi bi-houses" style="color: var(--accent-blue);"></i> Total Desa</span>
+                <span class="map-card-stat-value">${stat.total_desa || kecDesaList.length} Desa</span>
+              </div>
+              <div class="map-card-stat-item">
+                <span class="map-card-stat-label"><i class="bi bi-box-seam" style="color: var(--accent-purple);"></i> Total SubSLS</span>
+                <span class="map-card-stat-value">${stat.total_subsls || 0} SLS</span>
+              </div>
+              <div class="map-card-stat-item">
+                <span class="map-card-stat-label"><i class="bi bi-check2-circle" style="color: var(--accent-green);"></i> Target Selesai</span>
+                <span class="map-card-stat-value" style="color: var(--accent-green);">${stat.selesai || 0} SLS</span>
+              </div>
+              <div class="map-card-stat-item muatan-col">
+                <span class="map-card-stat-label"><i class="bi bi-pie-chart" style="color: var(--accent-cyan);"></i> Progres Muatan</span>
+                <span class="map-card-stat-value">${stat.muatan_pct_str || '0.00'}%</span>
+              </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="map-drawer-actions">
+              <button class="btn btn-primary btn-sm" onclick="fitBoundsToKecamatan('${nmkec}')" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 9px 14px; font-weight: 700; font-size: 13px; border-radius: 8px;">
+                <i class="bi bi-search"></i> Zoom Wilayah Kecamatan
+              </button>
+              <div class="map-action-btn-group">
+                <a href="/kecamatan?kec=${encodeURIComponent(nmkec)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
+                  <i class="bi bi-diagram-3"></i> Halaman Drilldown Kec.
+                </a>
+              </div>
+            </div>
+
+            ${desaListHtml}
+          `;
         }
 
         // Show details in Sidebar + Integrated Drilldown Links
@@ -1449,137 +1555,38 @@
           `;
         }
 
-        function showKecDetails(nmkec) {
-          ensureGmapsDrawerOpen();
-          const stat = kecStats.find(k => k.kecamatan && nmkec && k.kecamatan.toUpperCase() === nmkec.toUpperCase());
-          
-          const totalSubsls = stat ? (stat.total_subsls || 0) : 0;
-          const targetFasih = stat ? (stat.target_fasih_total || 0) : 0;
-          const submitted = stat ? (stat.submitted_total || 0) : 0;
-          const approved = stat ? (stat.approved_total || 0) : 0;
-          const rejected = stat ? (stat.rejected_total || 0) : 0;
-          const totalRealisasiFasih = submitted + approved + rejected;
-          const fasihPct = targetFasih ? Math.min(parseFloat(((totalRealisasiFasih / targetFasih) * 100).toFixed(2)), 100) : 0;
-          const fasihColor = fasihPct >= 100 ? '#1e40af' : (fasihPct < 25 ? '#93c5fd' : '#2563eb');
-          const isComplete = fasihPct >= 100;
-
-          // Render desa list in this Kecamatan
-          const kecDesaList = desaStats.filter(d => d.kecamatan && nmkec && d.kecamatan.toUpperCase() === nmkec.toUpperCase());
-          let desaListHtml = '';
-
-          if (kecDesaList.length > 0) {
-            desaListHtml = `
-              <div style="margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px;">
-                <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                  <span><i class="bi bi-houses" style="color: var(--accent-blue);"></i> Rincian Progres ${kecDesaList.length} Desa/Kelurahan</span>
-                </div>
-                <div style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;" id="detailDesaList">
-            `;
-
-            kecDesaList.forEach(item => {
-              const dReal = (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0);
-              const dTgt = item.target_fasih_total || 0;
-              const dPct = dTgt > 0 ? Math.min(parseFloat(((dReal / dTgt) * 100).toFixed(1)), 100) : 0;
-              const dColor = dPct >= 100 ? '#1e40af' : (dPct < 25 ? '#93c5fd' : '#2563eb');
-
-              desaListHtml += `
-                <div class="desa-map-item" onclick="if (window.fitBoundsToDesa) window.fitBoundsToDesa('${item.iddesa}')" style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; transition: all 0.15s ease;">
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; margin-bottom: 4px;">
-                    <div>
-                      <strong style="font-size: 12px; color: var(--text-primary); display: block;">Desa ${item.desa}</strong>
-                      <span style="font-size: 9.5px; color: var(--text-muted);">${item.total_subsls} SubSLS</span>
-                    </div>
-                    <span class="badge ${dPct >= 100 ? 'badge-green' : 'badge-purple'}" style="font-size: 9px; padding: 1px 6px;">${dPct}%</span>
-                  </div>
-                  <div style="margin-top: 4px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-secondary); margin-bottom: 2px;">
-                      <span>FASIH: <strong>${dReal.toLocaleString('id-ID')} / ${dTgt.toLocaleString('id-ID')}</strong></span>
-                    </div>
-                    <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden;">
-                      <div style="width: ${dPct}%; height: 100%; background: ${dColor}; border-radius: 99px;"></div>
-                    </div>
-                  </div>
-                </div>
-              `;
-            });
-
-            desaListHtml += `
-                </div>
-              </div>
-            `;
-          }
-
-          sidebarStats.innerHTML = `
-            <!-- Header Title Card -->
-            <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-              <div>
-                <div style="font-size: 14.5px; font-weight: 800; color: var(--accent-blue); display: flex; align-items: center; gap: 6px;">
-                  <i class="bi bi-diagram-3-fill"></i> Kecamatan ${nmkec}
-                </div>
-                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
-                  Kab. Penajam Paser Utara
-                </div>
-              </div>
-              <span class="badge ${isComplete ? 'badge-green' : 'badge-purple'}" style="font-size: 11px; padding: 4px 9px; flex-shrink: 0;">
-                ${isComplete ? '<i class="bi bi-check-circle-fill"></i> 100% Selesai' : `${fasihPct}% FASIH`}
-              </span>
-            </div>
-
-            <!-- Visual Progress Track -->
-            <div style="background: var(--bg-secondary); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; margin-bottom: 6px;">
-                <span style="color: var(--text-primary);"><i class="bi bi-bar-chart-line" style="color: var(--accent-blue);"></i> Realisasi FASIH</span>
-                <span style="color: ${fasihColor}; font-weight: 700;">${fasihPct}%</span>
-              </div>
-              <div class="progress-track-sm" style="height: 8px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden;">
-                <div class="progress-bar" style="width: ${fasihPct}%; height: 100%; background: ${fasihColor}; border-radius: 99px; transition: width 0.4s ease;"></div>
-              </div>
-              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 6px; display: flex; justify-content: space-between;">
-                <span>Realisasi: <strong style="color: var(--text-primary);">${totalRealisasiFasih.toLocaleString('id-ID')}</strong></span>
-                <span>Target: <strong style="color: var(--text-primary);">${targetFasih.toLocaleString('id-ID')} Dok</strong></span>
-              </div>
-            </div>
-
-            <div class="map-drawer-actions">
-              <a href="/kecamatan?kec=${encodeURIComponent(nmkec)}" class="btn btn-primary btn-sm" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 700; border-radius: 8px;">
-                <i class="bi bi-diagram-3"></i> Halaman Drilldown Kec. ${nmkec}
-              </a>
-            </div>
-
-            ${desaListHtml}
-          `;
-        }
-
         // Initialize Map GeoJSON layers
         function setupDesaLayer() {
           desaLayer = L.geoJSON(desaGeoJson, {
             style: (feature) => {
-              if (activeLayerName === 'kecamatan') return kecStyle(feature);
+              if (activeLayerName === 'kec') return kecStyle(feature);
               return desaStyle(feature);
             },
             onEachFeature: (feature, layer) => {
               layer.on({
                 mouseover: highlightFeature,
-                mouseout: (e) => {
-                  if (activeLayerName === 'kecamatan') desaLayer.resetStyle(e.target);
-                  else resetHighlightDesa(e);
-                },
+                mouseout: resetHighlightDesa,
                 click: (e) => {
-                  if (activeLayerName === 'kecamatan') {
+                  if (activeLayerName === 'kec') {
                     showKecDetails(feature.properties.nmkec);
-                    const kecStat = kecStats.find(k => k.kecamatan && feature.properties.nmkec && k.kecamatan.toUpperCase() === feature.properties.nmkec.toUpperCase());
-                    const kFasihPct = kecStat ? kecStat.fasih_pct_str : '0';
+                    
+                    const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === feature.properties.nmkec.toUpperCase());
+                    const fasihPct = stat ? parseFloat(stat.fasih_pct_str || 0) : 0;
+                    const totalFasih = stat ? stat.target_fasih_total : 0;
+                    const realisasiFasih = stat ? ((stat.submitted_total || 0) + (stat.approved_total || 0) + (stat.rejected_total || 0)) : 0;
+
                     const popupHtml = `
                       <div style="font-family: 'Inter', sans-serif; min-width: 200px; padding: 2px;">
-                        <strong style="font-size: 13.5px; color: var(--text-primary);">Kecamatan ${feature.properties.nmkec}</strong><br>
-                        <span style="font-size: 11px; color: var(--text-secondary);">Kab. Penajam Paser Utara</span>
-                        <table class="info-table" style="margin-top: 6px;">
-                          <tr><td class="label">Progres FASIH</td><td class="value" style="color: var(--accent-blue); font-weight: 700;">${kFasihPct}%</td></tr>
-                          <tr><td class="label">Total SubSLS</td><td class="value">${kecStat ? kecStat.total_subsls || 0 : 0} SLS</td></tr>
+                        <strong style="font-size: 13.5px; color: var(--accent-blue);"><i class="bi bi-diagram-3-fill"></i> Kec. ${feature.properties.nmkec}</strong><br>
+                        <span style="font-size: 11px; color: var(--text-secondary);">Kabupaten Penajam Paser Utara</span>
+                        <table class="info-table">
+                          <tr><td class="label">Progres FASIH</td><td class="value" style="color: ${fasihPct >= 100 ? 'var(--accent-green)' : 'var(--accent-blue)'};">${fasihPct}%</td></tr>
+                          <tr><td class="label">Realisasi Dok.</td><td class="value">${realisasiFasih.toLocaleString('id-ID')} / ${totalFasih.toLocaleString('id-ID')}</td></tr>
+                          <tr><td class="label">Total SLS</td><td class="value">${stat ? stat.total_subsls : 0} SLS</td></tr>
                         </table>
                         <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
                           <a href="/kecamatan?kec=${encodeURIComponent(feature.properties.nmkec)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
-                            <i class="bi bi-diagram-3"></i> Detail Kec. ${feature.properties.nmkec}
+                            <i class="bi bi-diagram-3"></i> Drilldown Kec. ${feature.properties.nmkec}
                           </a>
                         </div>
                       </div>
@@ -1770,19 +1777,34 @@
           }
         };
 
+        window.focusDesaOnMap = function(iddesa) {
+          switchToDesaLayer();
+          let targetLayer = null;
+          if (desaLayer) {
+            desaLayer.eachLayer(layer => {
+              if (layer.feature && layer.feature.properties && layer.feature.properties.iddesa === iddesa) {
+                targetLayer = layer;
+              }
+            });
+          }
+          if (targetLayer) {
+            const bounds = targetLayer.getBounds ? targetLayer.getBounds() : null;
+            if (bounds) map.fitBounds(bounds, { padding: [40, 40] });
+            showDesaDetails(targetLayer.feature.properties);
+            targetLayer.fire('click');
+          }
+        };
+
         // Layer Toggling Logic
         function switchToKecLayer() {
-          activeLayerName = 'kecamatan';
-          btnLayerSls.classList.remove('active');
-          btnLayerSls.setAttribute('aria-pressed', 'false');
-          btnLayerDesa.classList.remove('active');
-          btnLayerDesa.setAttribute('aria-pressed', 'false');
-          if (btnLayerKec) {
-            btnLayerKec.classList.add('active');
-            btnLayerKec.setAttribute('aria-pressed', 'true');
-          }
-          legendSls.style.display = 'none';
-          legendDesa.style.display = 'block';
+          activeLayerName = 'kec';
+          if (btnLayerSls) { btnLayerSls.classList.remove('active'); btnLayerSls.setAttribute('aria-pressed', 'false'); }
+          if (btnLayerDesa) { btnLayerDesa.classList.remove('active'); btnLayerDesa.setAttribute('aria-pressed', 'false'); }
+          if (btnLayerKec) { btnLayerKec.classList.add('active'); btnLayerKec.setAttribute('aria-pressed', 'true'); }
+          
+          if (legendDesa) legendDesa.style.display = 'none';
+          if (legendSls) legendSls.style.display = 'none';
+          if (legendKec) legendKec.style.display = 'block';
 
           if (slsLayer && map.hasLayer(slsLayer)) map.removeLayer(slsLayer);
           if (desaLayer) {
@@ -1793,16 +1815,13 @@
 
         function switchToDesaLayer() {
           activeLayerName = 'desa';
-          btnLayerSls.classList.remove('active');
-          btnLayerSls.setAttribute('aria-pressed', 'false');
-          if (btnLayerKec) {
-            btnLayerKec.classList.remove('active');
-            btnLayerKec.setAttribute('aria-pressed', 'false');
-          }
-          btnLayerDesa.classList.add('active');
-          btnLayerDesa.setAttribute('aria-pressed', 'true');
-          legendSls.style.display = 'none';
-          legendDesa.style.display = 'block';
+          if (btnLayerKec) { btnLayerKec.classList.remove('active'); btnLayerKec.setAttribute('aria-pressed', 'false'); }
+          if (btnLayerSls) { btnLayerSls.classList.remove('active'); btnLayerSls.setAttribute('aria-pressed', 'false'); }
+          if (btnLayerDesa) { btnLayerDesa.classList.add('active'); btnLayerDesa.setAttribute('aria-pressed', 'true'); }
+
+          if (legendKec) legendKec.style.display = 'none';
+          if (legendSls) legendSls.style.display = 'none';
+          if (legendDesa) legendDesa.style.display = 'block';
 
           if (slsLayer && map.hasLayer(slsLayer)) map.removeLayer(slsLayer);
           if (desaLayer) {
@@ -1817,16 +1836,13 @@
             return;
           }
           activeLayerName = 'sls';
-          btnLayerDesa.classList.remove('active');
-          btnLayerDesa.setAttribute('aria-pressed', 'false');
-          if (btnLayerKec) {
-            btnLayerKec.classList.remove('active');
-            btnLayerKec.setAttribute('aria-pressed', 'false');
-          }
-          btnLayerSls.classList.add('active');
-          btnLayerSls.setAttribute('aria-pressed', 'true');
-          legendDesa.style.display = 'none';
-          legendSls.style.display = 'block';
+          if (btnLayerKec) { btnLayerKec.classList.remove('active'); btnLayerKec.setAttribute('aria-pressed', 'false'); }
+          if (btnLayerDesa) { btnLayerDesa.classList.remove('active'); btnLayerDesa.setAttribute('aria-pressed', 'false'); }
+          if (btnLayerSls) { btnLayerSls.classList.add('active'); btnLayerSls.setAttribute('aria-pressed', 'true'); }
+
+          if (legendKec) legendKec.style.display = 'none';
+          if (legendDesa) legendDesa.style.display = 'none';
+          if (legendSls) legendSls.style.display = 'block';
 
           if (desaLayer && map.hasLayer(desaLayer)) map.removeLayer(desaLayer);
           if (slsLayer) {
@@ -1836,8 +1852,8 @@
         }
 
         if (btnLayerKec) btnLayerKec.addEventListener('click', switchToKecLayer);
-        btnLayerDesa.addEventListener('click', switchToDesaLayer);
-        btnLayerSls.addEventListener('click', switchToSlsLayer);
+        if (btnLayerDesa) btnLayerDesa.addEventListener('click', switchToDesaLayer);
+        if (btnLayerSls) btnLayerSls.addEventListener('click', switchToSlsLayer);
 
         // Basemap Switcher Listeners
         btnBasemapDefault.addEventListener('click', () => {
