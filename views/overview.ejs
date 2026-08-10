@@ -2149,16 +2149,48 @@
 
       // === Lazy Chart Initializer via IntersectionObserver ===
       // Chart hanya diinisialisasi saat canvas masuk viewport DAN Chart.js sudah siap
-      function lazyInitChart(canvasId, initFn) {
+      window.onChartJsReady = function(fn) {
+        if (typeof Chart !== 'undefined') {
+          fn();
+        } else {
+          const checkChart = setInterval(() => {
+            if (typeof Chart !== 'undefined') {
+              clearInterval(checkChart);
+              fn();
+            }
+          }, 50);
+        }
+      };
+
+      function onChartJsReady(fn) {
+        return window.onChartJsReady(fn);
+      }
+
+      window.lazyInitChart = function(canvasId, initFn) {
         const el = document.getElementById(canvasId);
         if (!el) return;
         const obs = new IntersectionObserver((entries) => {
           if (entries[0].isIntersecting) {
             obs.disconnect();
-            onChartJsReady(initFn);
+            if (typeof window.onChartJsReady === 'function') {
+              window.onChartJsReady(initFn);
+            } else if (typeof Chart !== 'undefined') {
+              initFn();
+            } else {
+              const checkChart = setInterval(() => {
+                if (typeof Chart !== 'undefined') {
+                  clearInterval(checkChart);
+                  initFn();
+                }
+              }, 50);
+            }
           }
         }, { rootMargin: '120px' });
         obs.observe(el);
+      };
+
+      function lazyInitChart(canvasId, initFn) {
+        return window.lazyInitChart(canvasId, initFn);
       }
 
       // Initialize Sports Daily Rate Line Chart
@@ -2180,7 +2212,9 @@
         const dailyRate = totalPclCount > 0 ? (increment / totalPclCount) : 0;
         sportsDailyRates.push(parseFloat(dailyRate.toFixed(2)));
       }
-      createSportsDailyRateLineChart('dailyRateLineChartCanvas', sportsDailyRateLabels, sportsDailyRates, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>);
+      lazyInitChart('dailyRateLineChartCanvas', () => {
+        createSportsDailyRateLineChart('dailyRateLineChartCanvas', sportsDailyRateLabels, sportsDailyRates, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>);
+      });
 
       // Hitung penambahan harian total FASIH (Submitted + Approved + Rejected)
       const countyIncrementLabels = [];

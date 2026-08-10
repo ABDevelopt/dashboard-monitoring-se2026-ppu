@@ -28,25 +28,34 @@ const upload = multer({
 router.get('/', (req, res) => {
   const uploads = getAllUploads();
   
-  // Scan workspace for Excel & CSV files
+  // Scan workspace & file_upload_muatan folder for Excel & CSV files
   let workspaceFiles = [];
   const wsDir = path.join(__dirname, '../');
+  const muatanDir = path.join(__dirname, '../file_upload_muatan');
+
   try {
-    const items = fs.readdirSync(wsDir);
-    workspaceFiles = items
-      .filter(item => {
-        const ext = path.extname(item).toLowerCase();
-        return (ext === '.xlsx' || ext === '.xls' || ext === '.csv') && !item.startsWith('~');
-      })
-      .map(item => {
-        const stats = fs.statSync(path.join(wsDir, item));
-        return {
-          filename: item,
-          size: stats.size,
-          mtime: stats.mtime
-        };
-      })
-      .sort((a, b) => b.mtime - a.mtime);
+    const scanDir = (dir, prefix = '') => {
+      if (!fs.existsSync(dir)) return [];
+      const items = fs.readdirSync(dir);
+      return items
+        .filter(item => {
+          const ext = path.extname(item).toLowerCase();
+          return (ext === '.xlsx' || ext === '.xls' || ext === '.csv') && !item.startsWith('~');
+        })
+        .map(item => {
+          const fullPath = path.join(dir, item);
+          const stats = fs.statSync(fullPath);
+          return {
+            filename: prefix ? `${prefix}/${item}` : item,
+            size: stats.size,
+            mtime: stats.mtime
+          };
+        });
+    };
+
+    const rootFiles = scanDir(wsDir);
+    const folderFiles = scanDir(muatanDir, 'file_upload_muatan');
+    workspaceFiles = [...folderFiles, ...rootFiles].sort((a, b) => b.mtime - a.mtime);
   } catch (err) {
     console.error('Error scanning workspace files:', err);
   }
@@ -347,7 +356,7 @@ router.post('/import-local', (req, res) => {
       const nameLower = filename.toLowerCase();
       if (nameLower.includes('keluarga')) {
         result = parseAndSaveSeparateExports(destPath, null, filename, null, tanggal, null, null, null);
-      } else if (nameLower.includes('pendataan') || nameLower.includes('usaha')) {
+      } else if (nameLower.includes('pendataan') || nameLower.includes('usaha') || nameLower.includes('bku')) {
         result = parseAndSaveSeparateExports(null, destPath, null, filename, tanggal, null, null, null);
       } else {
         result = parseAndSaveExcel(destPath, filename, storedFilename, tanggal, null, null, null);
