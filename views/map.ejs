@@ -674,12 +674,13 @@
           </div>
 
           <div id="legendSls" style="display: none;">
-            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Progres Per SubSLS:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>100%</strong> (Target Memenuhi/Selesai)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #06b6d4;"></div><span><strong>75% - 99%</strong> (Sangat Tinggi)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #8b5cf6;"></div><span><strong>40% - 74%</strong> (Sedang Berjalan)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>1% - 39%</strong> (Awal Progres)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>0%</strong> (Belum Ada Isian)</span></div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Gradasi Warna Primer Progres SubSLS:</div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #1e40af;"></div><span><strong>100%</strong> (Selesai Memenuhi Target)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #2563eb;"></div><span><strong>75% - 99%</strong> (Sangat Tinggi)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #3b82f6;"></div><span><strong>50% - 74%</strong> (Tinggi)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #60a5fa;"></div><span><strong>25% - 49%</strong> (Sedang)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #93c5fd;"></div><span><strong>1% - 24%</strong> (Awal Progres)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #cbd5e1;"></div><span><strong>0%</strong> (Belum Ada Isian)</span></div>
           </div>
         </div>
       </div>
@@ -979,10 +980,10 @@
           return '#ef4444';                 // Red
         }
 
-        // Color coding function for SLS
+        // Single-hue primary color gradient function for SLS
         function getSlsColor(kode) {
           const stat = slsStats.find(s => s.kode === kode);
-          if (!stat) return '#94a3b8'; // gray
+          if (!stat) return '#cbd5e1'; // gray
           
           let pct = 0;
           if (typeof settings !== 'undefined' && settings.show_progres_muatan === '1') {
@@ -995,11 +996,12 @@
             }
           }
 
-          if (pct >= 100) return '#10b981'; // Emerald (100% / Selesai Target)
-          if (pct >= 75) return '#06b6d4';  // Cyan (75-99%)
-          if (pct >= 40) return '#8b5cf6';  // Purple (40-74%)
-          if (pct > 0) return '#f97316';    // Orange (1-39%)
-          return '#ef4444';                 // Red (0% / Belum Ada Isian)
+          if (pct >= 100) return '#1e40af'; // Deep Primary Blue (100% Selesai)
+          if (pct >= 75) return '#2563eb';  // Primary Royal Blue (75-99%)
+          if (pct >= 50) return '#3b82f6';  // Bright Blue (50-74%)
+          if (pct >= 25) return '#60a5fa';  // Medium Blue (25-49%)
+          if (pct > 0) return '#93c5fd';    // Soft Light Blue (1-24%)
+          return '#cbd5e1';                 // Muted Gray (0% Belum Ada Isian)
         }
 
         // Styles for layers
