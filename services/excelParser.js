@@ -577,19 +577,21 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   `).run('', null, tanggal, 0, safeNullableStr(originalFilename), safeNullableStr(storedFilename));
   const uploadId = uploadResult.lastInsertRowid;
 
-  // Find previous upload that has FASIH status data (draft/submitted/approved/rejected)
-  const prevUploadRow = db.prepare(`
+  // Find previous upload that has progress muatan data
+  const prevMuatanRow = db.prepare(`
     SELECT u.id FROM uploads u
     JOIN progres p ON u.id = p.upload_id
-    WHERE u.id < ?
+    WHERE u.tanggal <= ? AND u.id != ?
     GROUP BY u.id
-    HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
-    ORDER BY u.id DESC LIMIT 1
-  `).get(uploadId);
-  const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
+    HAVING SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) > 0
+    ORDER BY u.tanggal DESC, u.id DESC LIMIT 1
+  `).get(tanggal, uploadId);
+  const prevMuatanId = prevMuatanRow ? prevMuatanRow.id : null;
+
+  const getPrevMuatanRecord = db.prepare('SELECT * FROM progres WHERE upload_id = ? AND kode = ?');
 
   const insertStmt = db.prepare(`
-    INSERT OR IGNORE INTO progres (
+    INSERT OR REPLACE INTO progres (
       upload_id, kode,
       usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
       tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
@@ -597,8 +599,8 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
       draft, open, submitted_by_pcl, approved, rejected, target_upload
     ) VALUES (
       ?, ?,
-      0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0,
+      ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?,
       0, 0, 0, 0, 0,
       ?, ?, ?, ?, ?, ?
     )
@@ -658,8 +660,28 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
         insertSubslsMaster.run(kode, rowKec, rowDesa, kode, rowKorlap, rowPml, rowPcl, targetUpload);
       }
 
+      let uTd = 0, uDit = 0, uBaru = 0, uTut = 0, uGan = 0, kTd = 0, kDit = 0, kBaru = 0, kMeng = 0, kTe = 0, kTdd = 0;
+      if (prevMuatanId) {
+        const prevM = getPrevMuatanRecord.get(prevMuatanId, kode);
+        if (prevM) {
+          uTd = prevM.usaha_tidak_ditemukan || 0;
+          uDit = prevM.usaha_ditemukan || 0;
+          uBaru = prevM.usaha_baru || 0;
+          uTut = prevM.usaha_tutup || 0;
+          uGan = prevM.usaha_ganda || 0;
+          kTd = prevM.tidak_ditemukan || 0;
+          kDit = prevM.ditemukan || 0;
+          kBaru = prevM.keluarga_baru || 0;
+          kMeng = prevM.meninggal || 0;
+          kTe = prevM.tidak_eligible || 0;
+          kTdd = prevM.tidak_dapat_ditemui || 0;
+        }
+      }
+
       insertStmt.run(
         uploadId, kode,
+        uTd, uDit, uBaru, uTut, uGan,
+        kTd, kDit, kBaru, kMeng, kTe, kTdd,
         draft, openVal, submitted, approved, rejected, targetUpload
       );
 
@@ -669,6 +691,9 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   });
 
   updateTx(rows);
+
+  // Sinkronkan urutan status & muatan secara kronologis (mencegah data terhapus/0 saat upload parsial)
+  resyncChronologicalData();
 
   // Update total_subsls_terisi count
   ensureAllSubslsInUpload(uploadId);
@@ -1502,17 +1527,20 @@ function ensureAllSubslsInUpload(uploadId) {
 }
 
 /**
- * Menyinkronkan status FASIH secara kronologis berdasarkan urutan tanggal (tanggal ASC, id ASC)
- * apabila ada file yang diunggah dengan tanggal di masa lalu (out-of-order upload).
+ * Menyinkronkan status FASIH dan progres muatan secara kronologis berdasarkan urutan tanggal (tanggal ASC, id ASC)
+ * sehingga apabila pengguna meng-upload salah satu jenis berkas saja (parsial), data jenis berkas lainnya
+ * TIDAK PERNAH terhapus atau bernilai 0.
  */
-function resyncChronologicalStatus() {
+function resyncChronologicalData() {
   const db = getDb();
   const uploads = db.prepare('SELECT id, tanggal FROM uploads ORDER BY tanggal ASC, id ASC').all();
   if (uploads.length <= 1) return;
 
   let lastKnownStatusUploadId = null;
+  let lastKnownMuatanUploadId = null;
 
   for (const u of uploads) {
+    // 1. Cek keberadaan data status FASIH
     const hasStatus = db.prepare(`
       SELECT SUM(COALESCE(draft, 0) + COALESCE(submitted_by_pcl, 0) + COALESCE(approved, 0) + COALESCE(rejected, 0)) AS total
       FROM progres WHERE upload_id = ?
@@ -1539,7 +1567,46 @@ function resyncChronologicalStatus() {
         );
       })();
     }
+
+    // 2. Cek keberadaan data progres muatan (keluarga & usaha)
+    const hasMuatan = db.prepare(`
+      SELECT SUM(COALESCE(usaha_ditemukan, 0) + COALESCE(usaha_baru, 0) + COALESCE(ditemukan, 0) + COALESCE(keluarga_baru, 0)) AS total
+      FROM progres WHERE upload_id = ?
+    `).get(u.id);
+
+    if (hasMuatan && hasMuatan.total > 0) {
+      lastKnownMuatanUploadId = u.id;
+    } else if (lastKnownMuatanUploadId && lastKnownMuatanUploadId !== u.id) {
+      db.transaction(() => {
+        db.prepare(`
+          UPDATE progres 
+          SET 
+            usaha_tidak_ditemukan = (SELECT COALESCE(p2.usaha_tidak_ditemukan, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            usaha_ditemukan = (SELECT COALESCE(p2.usaha_ditemukan, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            usaha_baru = (SELECT COALESCE(p2.usaha_baru, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            usaha_tutup = (SELECT COALESCE(p2.usaha_tutup, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            usaha_ganda = (SELECT COALESCE(p2.usaha_ganda, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            tidak_ditemukan = (SELECT COALESCE(p2.tidak_ditemukan, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            ditemukan = (SELECT COALESCE(p2.ditemukan, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            keluarga_baru = (SELECT COALESCE(p2.keluarga_baru, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            meninggal = (SELECT COALESCE(p2.meninggal, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            tidak_eligible = (SELECT COALESCE(p2.tidak_eligible, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            tidak_dapat_ditemui = (SELECT COALESCE(p2.tidak_dapat_ditemui, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode)
+          WHERE upload_id = ?
+        `).run(
+          lastKnownMuatanUploadId, lastKnownMuatanUploadId, lastKnownMuatanUploadId,
+          lastKnownMuatanUploadId, lastKnownMuatanUploadId, lastKnownMuatanUploadId,
+          lastKnownMuatanUploadId, lastKnownMuatanUploadId, lastKnownMuatanUploadId,
+          lastKnownMuatanUploadId, lastKnownMuatanUploadId,
+          u.id
+        );
+      })();
+    }
   }
+}
+
+function resyncChronologicalStatus() {
+  resyncChronologicalData();
 }
 
 module.exports = {
@@ -1551,6 +1618,7 @@ module.exports = {
   parseAndSaveSeparateExports,
   parseRekapPetugasWilayah,
   ensureAllSubslsInUpload,
-  resyncChronologicalStatus
+  resyncChronologicalStatus,
+  resyncChronologicalData
 };
 
