@@ -89,6 +89,15 @@ app.use(express.static(path.join(__dirname, 'public'), {
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// Inisialisasi WhatsApp Service saat Top-Level Server Boot (Kompatibel dengan cPanel Passenger, PM2, & CLI)
+try {
+  const whatsappService = require('./services/whatsappService');
+  whatsappService.initialize();
+  logger.info('🚀 [Startup Top-Level] WhatsApp Service initialized background task.');
+} catch (err) {
+  logger.error('❌ Gagal menginisialisasi WhatsApp Service pada top-level startup:', err);
+}
+
 // Global API Status WhatsApp (Bypass Passenger & Admin middleware routing issues in cPanel)
 app.get('/whatsapp-status', (req, res) => {
   try {
@@ -576,34 +585,20 @@ function init() {
     const { rebuildAllSummaryCaches } = require('./database');
     setTimeout(() => {
       try {
-        const { runAutoImputation } = require('./services/imputerService');
-        logger.info('🔄 Checking for missing upload dates to impute...');
-        const surveysConfig = require('./config/surveys.json');
-        for (const sKey of Object.keys(surveysConfig)) {
-          const imputedCount = runAutoImputation(sKey);
-          if (imputedCount > 0) {
-            logger.info(`✅ Imputed ${imputedCount} missing dates automatically for ${sKey}!`);
-          }
-        }
+        const { cleanupAllImputations } = require('./services/imputerService');
+        cleanupAllImputations();
 
         logger.info('🔄 Rebuilding summary caches...');
         rebuildAllSummaryCaches();
         logger.info('✅ Summary caches successfully rebuilt');
       } catch (e) {
-        logger.error('❌ Failed to run auto-imputation / rebuild summary caches on startup:', e);
+        logger.error('❌ Failed to rebuild summary caches on startup:', e);
       }
     }, 1000);
   } catch (err) {
     logger.error('❌ Error loading master data:', err);
   }
 
-  // Inisialisasi WhatsApp Service saat startup (langsung aktif background di server)
-  try {
-    const whatsappService = require('./services/whatsappService');
-    whatsappService.initialize();
-  } catch (err) {
-    logger.error('❌ Gagal menginisialisasi WhatsApp Service pada startup:', err);
-  }
 
   // Inisialisasi Firebase Sync saat startup (jika key tersedia)
   try {
