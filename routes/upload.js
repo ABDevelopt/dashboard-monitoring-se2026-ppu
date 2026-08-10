@@ -286,14 +286,38 @@ router.post('/delete/:id', (req, res) => {
     if (uploadRec.stored_status_filename && fs.existsSync(statusPath)) {
       try { fs.unlinkSync(statusPath); } catch (e) {}
     }
+
+    // 1. Transaksi pembersihan total seluruh data terkait upload & imputasi otomatis sintetis
+    db.transaction(() => {
+      db.prepare('DELETE FROM progres WHERE upload_id = ?').run(id);
+      db.prepare('DELETE FROM summary_cache WHERE upload_id = ?').run(id);
+      db.prepare('DELETE FROM uploads WHERE id = ?').run(id);
+
+      // Bersihkan SEMUA record 'Imputasi Otomatis' sintetis lama agar statistik rebuild secara segar
+      const autoImputedRows = db.prepare("SELECT id FROM uploads WHERE filename LIKE '%Imputasi Otomatis%' OR filename LIKE '%Imputasi%'").all();
+      if (autoImputedRows.length > 0) {
+        const autoIds = autoImputedRows.map(r => r.id);
+        const placeholders = autoIds.map(() => '?').join(',');
+        db.prepare(`DELETE FROM progres WHERE upload_id IN (${placeholders})`).run(...autoIds);
+        db.prepare(`DELETE FROM summary_cache WHERE upload_id IN (${placeholders})`).run(...autoIds);
+        db.prepare(`DELETE FROM uploads WHERE id IN (${placeholders})`).run(...autoIds);
+      }
+    })();
+
+    // 2. Jalankan ulang auto-imputation dan rebuild summary cache untuk mengembalikan data ke file terakhir yang tersisa
+    try {
+      const { runAutoImputation } = require('../services/imputerService');
+      const surveysConfig = require('../config/surveys.json');
+      for (const sKey of Object.keys(surveysConfig)) {
+        runAutoImputation(sKey);
+      }
+      rebuildAllSummaryCaches();
+    } catch (err) {
+      console.error("Error rebuilding summary caches after delete:", err);
+    }
   }
-  db.prepare('DELETE FROM uploads WHERE id = ?').run(id);
-  try {
-    rebuildAllSummaryCaches();
-  } catch (err) {
-    console.error("Error rebuilding summary caches after delete:", err);
-  }
-  req.flash('success', 'Upload berhasil dihapus.');
+
+  req.flash('success', 'Upload berhasil dihapus. Semua data dan statistik telah otomatis dikembalikan ke file terakhir yang tersisa.');
   res.redirect('/admin/upload');
 });
 
