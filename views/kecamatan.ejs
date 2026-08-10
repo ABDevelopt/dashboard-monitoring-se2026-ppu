@@ -20,39 +20,67 @@
     <!-- KECAMATAN CARDS GRID -->
     <div class="kec-grid">
       <% kecStats.forEach(k => { %>
-        <% 
-          let pctVal = (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') ? k.fasih_pct_str : k.muatan_pct_str;
-        %>
         <a href="/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" class="kec-card <%= filterKec === k.kecamatan ? 'active' : '' %>">
           <div class="kec-name"><i class="bi bi-geo-alt"></i> Kec. <%= k.kecamatan %></div>
-          <div class="kec-pct"><%= pctVal %>%</div>
           
-          <div class="progress-bar-target-wrap" style="position: relative; height: 6px; margin-top: 16px; margin-bottom: 8px;">
-            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
-              <div class="progress-bar <%= parseFloat(pctVal) >= 100 ? 'green' : (parseFloat(pctVal) < 40 ? 'red' : 'blue') %>" data-width="<%= pctVal %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
+          <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '1') { %>
+            <!-- DUAL PROGRESS VIEW: FASIH + MUATAN -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; margin-bottom: 8px;">
+              <!-- FASIH BLOCK -->
+              <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 8px; padding: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-size: 11px; font-weight: 700; color: var(--accent-purple); text-transform: uppercase;"><i class="bi bi-file-earmark-check"></i> FASIH</span>
+                  <span style="font-size: 15px; font-weight: 800; color: var(--accent-purple);"><%= k.fasih_pct_str %>%</span>
+                </div>
+                <div style="height: 5px; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden; margin-bottom: 6px;">
+                  <div class="progress-bar <%= parseFloat(k.fasih_pct_str) >= 100 ? 'green' : (parseFloat(k.fasih_pct_str) < 40 ? 'red' : 'purple') %>" data-width="<%= k.fasih_pct_str %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+                  Appr/Subm: <strong><%= ((k.approved_total || 0) + (k.submitted_total || 0)).toLocaleString('id-ID') %></strong><br>
+                  Target: <strong><%= (k.target_fasih_total || 0).toLocaleString('id-ID') %></strong>
+                </div>
+              </div>
+
+              <!-- MUATAN BLOCK -->
+              <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 8px; padding: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span style="font-size: 11px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase;"><i class="bi bi-box-seam"></i> Muatan</span>
+                  <span style="font-size: 15px; font-weight: 800; color: var(--accent-cyan);"><%= k.muatan_pct_str %>%</span>
+                </div>
+                <div style="height: 5px; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden; margin-bottom: 6px;">
+                  <div class="progress-bar <%= parseFloat(k.muatan_pct_str) >= 100 ? 'green' : (parseFloat(k.muatan_pct_str) < 40 ? 'red' : 'blue') %>" data-width="<%= k.muatan_pct_str %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+                  Realisasi: <strong><%= (k.muatan_selesai !== undefined ? k.muatan_selesai : (k.usaha_total + k.keluarga_total)).toLocaleString('id-ID') %></strong><br>
+                  Target: <strong><%= (k.total_muatan || 0).toLocaleString('id-ID') %></strong>
+                </div>
+              </div>
+            </div>
+          <% else { %>
+            <!-- SINGLE PROGRESS VIEW: FASIH ONLY -->
+            <div class="kec-pct"><%= k.fasih_pct_str %>%</div>
+            <div class="progress-bar-target-wrap" style="position: relative; height: 6px; margin-top: 16px; margin-bottom: 8px;">
+              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
+                <div class="progress-bar <%= parseFloat(k.fasih_pct_str) >= 100 ? 'green' : (parseFloat(k.fasih_pct_str) < 40 ? 'red' : 'blue') %>" data-width="<%= k.fasih_pct_str %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
+              </div>
+              
+              <!-- Marker 25% (30 Juni) -->
+              <div style="position: absolute; left: 25%; top: -3px; height: 12px; border-left: 1px dashed <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 25 ? '1' : '0.5' %>; z-index: 2; pointer-events: none;">
+                <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">30 Jun: 25%</span>
+              </div>
+
+              <!-- Marker 40% (15 Juli) -->
+              <div style="position: absolute; left: 40%; top: -3px; height: 12px; border-left: 1px dashed <%= activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 40 ? '1' : '0.5' %>; z-index: 2; pointer-events: none;">
+                <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: <%= activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">15 Jul: 40%</span>
+              </div>
             </div>
             
-            <!-- Marker 25% (30 Juni) -->
-            <div style="position: absolute; left: 25%; top: -3px; height: 12px; border-left: 1px dashed <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 25 ? '1' : '0.5' %>; z-index: 2; pointer-events: none;">
-              <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">30 Jun: 25%</span>
-            </div>
-
-            <!-- Marker 40% (15 Juli) -->
-            <div style="position: absolute; left: 40%; top: -3px; height: 12px; border-left: 1px dashed <%= activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 40 ? '1' : '0.5' %>; z-index: 2; pointer-events: none;">
-              <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: <%= activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">15 Jul: 40%</span>
-            </div>
-          </div>
-          
-          <div class="kec-detail">
-            <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') { %>
+            <div class="kec-detail">
               <%= settings.target_fasih_mode === 'fasih-sm' ? 'Target FASIH-SM' : 'Target Statis' %>: <strong><%= k.target_fasih_total.toLocaleString('id-ID') %></strong><br>
               Approved: <strong><%= k.approved_total.toLocaleString('id-ID') %></strong> · Rejected: <strong><%= k.rejected_total.toLocaleString('id-ID') %></strong><br>
               Submitted: <strong><%= k.submitted_total.toLocaleString('id-ID') %></strong> · Draft: <strong><%= k.draft_total.toLocaleString('id-ID') %></strong>
-            <% } else { %>
-              Target Muatan: <strong><%= k.total_muatan.toLocaleString('id-ID') %></strong><br>
-              Realisasi Muatan: <strong><%= (k.muatan_selesai !== undefined ? k.muatan_selesai : (k.usaha_total + k.keluarga_total)).toLocaleString('id-ID') %></strong>
-            <% } %>
-          </div>
+            </div>
+          <% } %>
         </a>
       <% }) %>
     </div>
