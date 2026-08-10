@@ -1659,11 +1659,17 @@ function getSettings(surveyId) {
 
 function rebuildAllSummaryCaches() {
   const surveysConfig = require('./config/surveys.json');
+  const { ensureAllSubslsInUpload } = require('./services/excelParser');
   for (const surveyId of Object.keys(surveysConfig)) {
     try {
       const db = getDb(surveyId);
       const uploads = db.prepare('SELECT id FROM uploads').all();
-      uploads.forEach(u => rebuildSummaryCache(u.id, surveyId));
+      uploads.forEach(u => {
+        if (typeof ensureAllSubslsInUpload === 'function') {
+          try { ensureAllSubslsInUpload(u.id); } catch (_) {}
+        }
+        rebuildSummaryCache(u.id, surveyId);
+      });
     } catch (e) {
       logger.error(`Failed to rebuild summary cache for ${surveyId}:`, e.message);
     }

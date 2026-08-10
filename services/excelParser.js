@@ -320,6 +320,7 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
   }
 
   // Update total_subsls_terisi
+  ensureAllSubslsInUpload(uploadId);
   const actualCount = db.prepare('SELECT COUNT(*) as n FROM progres WHERE upload_id = ?').get(uploadId).n;
   db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(actualCount, uploadId);
 
@@ -649,7 +650,9 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   updateTx(rows);
 
   // Update total_subsls_terisi count
-  db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(processedCount, uploadId);
+  ensureAllSubslsInUpload(uploadId);
+  const actualCount = db.prepare('SELECT COUNT(*) as n FROM progres WHERE upload_id = ?').get(uploadId).n;
+  db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(actualCount, uploadId);
 
   // Rebuild summary cache for this upload
   const { rebuildSummaryCache } = require('../database');
@@ -1040,7 +1043,8 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
     parseAndSaveStatusExcel(statusFilePath, uploadId);
   }
   
-  // Rebuild summary cache
+  // Ensure 100% SubSLS coverage & rebuild summary cache
+  ensureAllSubslsInUpload(uploadId);
   const { rebuildSummaryCache } = require('../database');
   rebuildSummaryCache(uploadId);
   
@@ -1380,6 +1384,7 @@ function parseRekapPetugasWilayah(filePath) {
 
   // Rebuild summary cache
   try {
+    ensureAllSubslsInUpload(uploadId);
     const { rebuildSummaryCache } = require('../database');
     rebuildSummaryCache(uploadId);
   } catch (_) {}
@@ -1392,6 +1397,85 @@ function parseRekapPetugasWilayah(filePath) {
   };
 }
 
+function ensureAllSubslsInUpload(uploadId) {
+  const { getDb } = require('../database');
+  const db = getDb();
+
+  const prevUploadRow = db.prepare(`
+    SELECT u.id 
+    FROM uploads u
+    JOIN progres p ON u.id = p.upload_id
+    WHERE u.id < ? 
+    GROUP BY u.id
+    HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
+    ORDER BY u.id DESC LIMIT 1
+  `).get(uploadId);
+  const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
+
+  const masterSubsls = db.prepare('SELECT kode, target_fasih FROM subsls_master').all();
+  const existingSubsls = new Set(
+    db.prepare('SELECT kode FROM progres WHERE upload_id = ?').all(uploadId).map(r => r.kode)
+  );
+
+  const missingSubsls = masterSubsls.filter(m => !existingSubsls.has(m.kode));
+  if (missingSubsls.length === 0) return 0;
+
+  const getPrevProgres = db.prepare('SELECT * FROM progres WHERE upload_id = ? AND kode = ?');
+  const insertProgres = db.prepare(`
+    INSERT OR REPLACE INTO progres (
+      upload_id, kode,
+      usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
+      tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
+      rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
+      draft, open, submitted_by_pcl, approved, rejected, target_upload
+    ) VALUES (
+      ?, ?,
+      ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?
+    )
+  `);
+
+  db.transaction(() => {
+    for (const m of missingSubsls) {
+      let prev = null;
+      if (prevUploadId) {
+        prev = getPrevProgres.get(prevUploadId, m.kode);
+      }
+      insertProgres.run(
+        uploadId, m.kode,
+        prev ? prev.usaha_tidak_ditemukan : 0,
+        prev ? prev.usaha_ditemukan : 0,
+        prev ? prev.usaha_baru : 0,
+        prev ? prev.usaha_tutup : 0,
+        prev ? prev.usaha_ganda : 0,
+        prev ? prev.tidak_ditemukan : 0,
+        prev ? prev.ditemukan : 0,
+        prev ? prev.keluarga_baru : 0,
+        prev ? prev.meninggal : 0,
+        prev ? prev.tidak_eligible : 0,
+        prev ? prev.tidak_dapat_ditemui : 0,
+        prev ? prev.rumah_tunggal : 0,
+        prev ? prev.rumah_deret : 0,
+        prev ? prev.rumah_susun : 0,
+        prev ? prev.apartemen : 0,
+        prev ? prev.lainnya : 0,
+        prev ? prev.draft : 0,
+        prev ? prev.open : 0,
+        prev ? prev.submitted_by_pcl : 0,
+        prev ? prev.approved : 0,
+        prev ? prev.rejected : 0,
+        prev ? (prev.target_upload || m.target_fasih) : m.target_fasih
+      );
+    }
+  })();
+
+  const actualCount = db.prepare('SELECT COUNT(*) as n FROM progres WHERE upload_id = ?').get(uploadId).n;
+  db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(actualCount, uploadId);
+  return missingSubsls.length;
+}
+
 module.exports = {
   parseAndSaveExcel,
   loadMasterFromJson,
@@ -1399,6 +1483,7 @@ module.exports = {
   parseAndSaveStatusExcel,
   parseAndSaveStatusExcelOnly,
   parseAndSaveSeparateExports,
-  parseRekapPetugasWilayah
+  parseRekapPetugasWilayah,
+  ensureAllSubslsInUpload
 };
 
