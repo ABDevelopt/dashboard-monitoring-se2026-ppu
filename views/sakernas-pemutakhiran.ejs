@@ -1,0 +1,496 @@
+<div class="fade-in">
+
+  <!-- HEADER GRID: WEATHER & AI SMART INSIGHTS WIDGET -->
+  <div class="overview-top-grid" style="margin-top: 12px; margin-bottom: 4px; align-items: start;">
+
+    <!-- WEATHER & TIME WIDGET -->
+    <div class="card weather-overview-card" style="margin: 0; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(6, 182, 212, 0.04) 100%); border: 1px solid var(--border); padding: 12px 16px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; width: 100%;">
+        <div class="weather-info-group" style="display: flex; align-items: center; gap: 12px;">
+          <div id="overviewWeatherIcon" class="weather-icon-circle" style="font-size: 28px; width: 44px; height: 44px; border-radius: 50%; background: rgba(6, 182, 212, 0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <i class="bi bi-cloud-sun-fill" style="color: var(--accent-yellow, #fbbf24);"></i>
+          </div>
+          <div>
+            <div class="weather-location-text" style="font-weight: 700; font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+              Penajam Paser Utara <span id="overviewWeatherTemp" class="weather-temp-text" style="font-size: 14px; font-weight: 800; color: var(--accent-cyan, #06b6d4);">--°C</span>
+            </div>
+            <div id="overviewWeatherDesc" class="weather-desc-text" style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">Memuat cuaca...</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="time-date-group" style="text-align: right; border-left: 1px solid var(--border); padding-left: 12px; margin-right: 8px;">
+            <div id="overviewTime" class="time-text" style="font-size: 15px; font-weight: 800; color: var(--text-primary); font-family: monospace;">--:--:--</div>
+            <div id="overviewDate" class="date-text" style="font-size: 10px; color: var(--text-muted); font-weight: 600; margin-top: 2px; white-space: nowrap;">--/--/----</div>
+          </div>
+          <button onclick="toggleWeatherHistory(event)" class="btn btn-secondary btn-xs weather-toggle-btn" style="padding: 4px 6px; min-width: auto;" title="Tampilkan/Sembunyikan Riwayat Harian">
+            <i class="bi bi-clock-history"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Collapsible Weather History -->
+      <div id="weatherHistoryContainer" style="display: none; border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 4px;">
+        <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; gap: 4px;">
+          <i class="bi bi-calendar-week" style="color: var(--accent-cyan, #06b6d4);"></i> Riwayat Cuaca 7 Hari Terakhir
+        </div>
+        <div id="weatherHistoryList" style="display: flex; flex-direction: column; gap: 4px; max-height: 150px; overflow-y: auto; padding-right: 4px;">
+          <div style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 10px 0;">Memuat riwayat...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI SMART INSIGHTS WIDGET -->
+    <div id="aiInsightsWidget" class="card" style="margin: 0; background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(2, 132, 199, 0.03) 100%); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: var(--radius-lg); padding: 12px 16px; position: relative; overflow: hidden;">
+      <div style="position: absolute; right: -15px; top: -15px; font-size: 110px; opacity: 0.04; line-height: 1; pointer-events: none; color: var(--accent-cyan);">
+        <i class="bi bi-robot"></i>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; position: relative; z-index: 2;">
+        <div style="display: flex; gap: 12px; align-items: flex-start;">
+          <div onclick="toggleAiInsightsCollapse(event)" class="ai-header-icon-box" style="cursor: pointer; width: 42px; height: 42px; border-radius: 10px; background: rgba(6, 182, 212, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-cyan, #06b6d4); font-size: 22px; flex-shrink: 0; box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);" title="Klik untuk melihat/menyembunyikan Insight AI">
+            <i class="bi bi-robot"></i>
+          </div>
+          <div onclick="toggleAiInsightsCollapse(event)" style="cursor: pointer;">
+            <h4 class="ai-title-text" style="margin: 0 0 4px 0; font-size: 14px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+              AI Smart Insights — Sakernas Pemutakhiran
+            </h4>
+            <p class="ai-subtitle-text" style="font-size: 11px; color: var(--text-secondary); margin: 0;">Analisis otomatis progres verifikasi muatan keluarga dan kesiapan sampel Sakernas</p>
+          </div>
+        </div>
+        <div class="ai-btn-group">
+          <button onclick="refreshAiInsightsSakernas(event)" class="btn btn-secondary btn-xs ai-btn-segarkan" title="Segarkan Analisis">
+            <i id="aiRefreshIcon" class="bi bi-arrow-clockwise"></i> Segarkan
+          </button>
+          <button onclick="toggleAiInsightsCollapse(event)" class="btn btn-secondary btn-xs ai-btn-collapse" title="Tampilkan/Sembunyikan Insight">
+            <i id="aiCollapseIcon" class="bi bi-chevron-down"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Collapsible Container -->
+      <div id="aiInsightsCollapseContainer" style="display: none; border-top: 1px dashed rgba(6, 182, 212, 0.25); padding-top: 16px; margin-top: 16px; position: relative; z-index: 2;">
+        <div id="aiInsightsContent">
+          <ul>
+            <li>
+              <i class="bi bi-check-circle-fill text-green" style="font-size: 16px; margin-top: 2px;"></i>
+              <div>
+                <strong>Tahap Listing 100% Selesai:</strong> Seluruh 42 Blok Sensus sampel di 4 kecamatan telah tuntas dimutakhirkan dan telah diverifikasi penuh oleh 4 PML.
+              </div>
+            </li>
+            <li>
+              <i class="bi bi-people-fill text-cyan" style="font-size: 16px; margin-top: 2px;"></i>
+              <div>
+                <strong>Cakupan Keluarga:</strong> Terdata sebanyak 4.280 keluarga (3.980 keluarga ditemukan kembali dan 300 keluarga baru hasil pemutakhiran lapangan).
+              </div>
+            </li>
+            <li>
+              <i class="bi bi-journal-check text-purple" style="font-size: 16px; margin-top: 2px;"></i>
+              <div>
+                <strong>Kesiapan Sampel Rumah Tangga:</strong> Penarikan sampel 10 RT per Blok Sensus menghasilkan total 420 sampel rumah tangga yang siap dicacah pada tahap pendataan utama (8–27 Agustus 2026).
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXECUTIVE SPEEDOMETER & MILESTONE PANEL -->
+  <div class="card" style="margin-top: 16px; border: 1.5px solid rgba(6, 182, 212, 0.35); background: linear-gradient(135deg, var(--bg-card) 0%, rgba(6, 182, 212, 0.03) 100%); border-radius: var(--radius-lg); padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+          <span style="background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan, #06b6d4); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; border: 1px solid rgba(6, 182, 212, 0.3);">
+            <i class="bi bi-flag-fill"></i> Milestone Pemutakhiran
+          </span>
+          <span style="background: rgba(34, 197, 94, 0.12); color: var(--accent-green, #22c55e); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; border: 1px solid rgba(34, 197, 94, 0.3);">
+            <i class="bi bi-check2-circle"></i> Target 100% Tercapai
+          </span>
+        </div>
+        <h2 style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin: 0; line-height: 1.3;">
+          Speedometer Capaian Blok Sensus Sakernas Agustus 2026
+        </h2>
+        <p style="font-size: 12.5px; color: var(--text-muted); margin: 2px 0 0 0;">
+          Kabupaten Penajam Paser Utara &bull; 4 Kecamatan &bull; 42 Blok Sensus Sampel
+        </p>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="/surveys" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+          <i class="bi bi-grid-fill"></i> Portal Induk
+        </a>
+      </div>
+    </div>
+
+    <!-- Speedometer Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 20px; align-items: center;">
+      
+      <!-- Speedometer Gauge Card -->
+      <div style="background: var(--bg-secondary, rgba(15, 23, 42, 0.6)); border: 1px solid var(--border); border-radius: 14px; padding: 20px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <div style="position: relative; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+          <svg viewBox="0 0 36 36" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+            <path stroke="rgba(255, 255, 255, 0.08)" stroke-width="3.5" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path stroke="url(#cyanGradient)" stroke-width="3.5" stroke-dasharray="100, 100" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <defs>
+              <linearGradient id="cyanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#0284c7" />
+                <stop offset="100%" stop-color="#06b6d4" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div style="position: absolute; text-align: center;">
+            <div style="font-size: 26px; font-weight: 900; color: var(--accent-cyan, #06b6d4); line-height: 1;">100%</div>
+            <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-top: 2px;">Listing Selesai</div>
+          </div>
+        </div>
+        <div style="font-size: 13px; font-weight: 700; color: var(--text-primary);">42 dari 42 Blok Sensus Selesai</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Deadline: 7 Agustus 2026 (Tepat Waktu)</div>
+      </div>
+
+      <!-- Realisasi Info Panel -->
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="background: rgba(6, 182, 212, 0.06); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 12px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">STATUS VERIFIKASI PENGAWAS (PML)</div>
+            <div style="font-size: 16px; font-weight: 800; color: var(--accent-cyan, #06b6d4); margin-top: 2px;">42 BS Terverifikasi (100%)</div>
+          </div>
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(6, 182, 212, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-cyan); font-size: 18px;">
+            <i class="bi bi-shield-check"></i>
+          </div>
+        </div>
+
+        <div style="background: rgba(34, 197, 94, 0.06); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 12px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">SAMPEL RUMAH TANGGA TERPILIH</div>
+            <div style="font-size: 16px; font-weight: 800; color: var(--accent-green, #22c55e); margin-top: 2px;">420 Rumah Tangga (Siap Cacah)</div>
+          </div>
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(34, 197, 94, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-green); font-size: 18px;">
+            <i class="bi bi-check-all"></i>
+          </div>
+        </div>
+
+        <div style="background: rgba(124, 58, 237, 0.06); border: 1px solid rgba(124, 58, 237, 0.25); border-radius: 12px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">PRODUKTIVITAS RATA-RATA HARIAN</div>
+            <div style="font-size: 16px; font-weight: 800; color: var(--accent-purple, #a855f7); margin-top: 2px;">7,0 BS / Hari (Optimal)</div>
+          </div>
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(124, 58, 237, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-purple); font-size: 18px;">
+            <i class="bi bi-lightning-charge-fill"></i>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- STAT CARDS GRID (4 PRIMARY METRICS) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; margin-top: 16px;">
+    
+    <!-- CARD 1: BLOK SENSUS -->
+    <div class="card stat-card" style="padding: 20px; border-radius: var(--radius-lg); background: var(--bg-card); border: 1px solid var(--border); position: relative; overflow: hidden;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Blok Sensus</span>
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan); display: flex; align-items: center; justify-content: center; font-size: 16px;">
+          <i class="bi bi-grid-fill"></i>
+        </div>
+      </div>
+      <div style="font-size: 28px; font-weight: 900; color: var(--text-primary); line-height: 1.1;">42 <span style="font-size: 14px; font-weight: 600; color: var(--accent-cyan);">BS</span></div>
+      <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+        <span style="color: var(--accent-green); font-weight: 700;">100% Selesai</span> &bull; 0 BS Belum
+      </div>
+    </div>
+
+    <!-- CARD 2: KELUARGA TERDATA -->
+    <div class="card stat-card" style="padding: 20px; border-radius: var(--radius-lg); background: var(--bg-card); border: 1px solid var(--border); position: relative; overflow: hidden;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Keluarga Dimutakhirkan</span>
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(34, 197, 94, 0.12); color: var(--accent-green); display: flex; align-items: center; justify-content: center; font-size: 16px;">
+          <i class="bi bi-people-fill"></i>
+        </div>
+      </div>
+      <div style="font-size: 28px; font-weight: 900; color: var(--text-primary); line-height: 1.1;">4.280 <span style="font-size: 14px; font-weight: 600; color: var(--accent-green);">KK</span></div>
+      <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+        <span>3.980 Ditemukan</span> &bull; <span style="color: var(--accent-cyan);">300 KK Baru</span>
+      </div>
+    </div>
+
+    <!-- CARD 3: SAMPEL RUMAH TANGGA -->
+    <div class="card stat-card" style="padding: 20px; border-radius: var(--radius-lg); background: var(--bg-card); border: 1px solid var(--border); position: relative; overflow: hidden;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Sampel Rumah Tangga</span>
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(124, 58, 237, 0.12); color: var(--accent-purple); display: flex; align-items: center; justify-content: center; font-size: 16px;">
+          <i class="bi bi-house-check-fill"></i>
+        </div>
+      </div>
+      <div style="font-size: 28px; font-weight: 900; color: var(--text-primary); line-height: 1.1;">420 <span style="font-size: 14px; font-weight: 600; color: var(--accent-purple);">RT</span></div>
+      <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+        <span style="color: var(--accent-purple); font-weight: 700;">10 RT / BS</span> &bull; Siap Tahap Pendataan
+      </div>
+    </div>
+
+    <!-- CARD 4: PETUGAS LAPANGAN -->
+    <div class="card stat-card" style="padding: 20px; border-radius: var(--radius-lg); background: var(--bg-card); border: 1px solid var(--border); position: relative; overflow: hidden;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Petugas Lapangan</span>
+        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(249, 115, 22, 0.12); color: var(--accent-orange); display: flex; align-items: center; justify-content: center; font-size: 16px;">
+          <i class="bi bi-person-badge-fill"></i>
+        </div>
+      </div>
+      <div style="font-size: 28px; font-weight: 900; color: var(--text-primary); line-height: 1.1;">14 <span style="font-size: 14px; font-weight: 600; color: var(--accent-orange);">PCL</span> / 4 <span style="font-size: 14px; font-weight: 600; color: var(--accent-cyan);">PML</span></div>
+      <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+        <span>Beban: ~3 BS / PCL</span> &bull; <span style="color: var(--accent-green);">100% Aktif</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SECTION: TABEL REKAPITULASI KECAMATAN & GRAFIK TREN -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr)); gap: 20px; margin-top: 20px;">
+    
+    <!-- TABEL KECAMATAN -->
+    <div class="card" style="padding: 20px; border-radius: var(--radius-lg); background: var(--bg-card); border: 1px solid var(--border);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 15px; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+          <i class="bi bi-geo-alt-fill text-cyan"></i> Capaian Listing Per Kecamatan
+        </h3>
+        <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">4 Kecamatan</span>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border); text-align: left; color: var(--text-muted); font-size: 11px; text-transform: uppercase;">
+              <th style="padding: 10px 8px;">Kecamatan</th>
+              <th style="padding: 10px 8px; text-align: center;">Target BS</th>
+              <th style="padding: 10px 8px; text-align: center;">Selesai</th>
+              <th style="padding: 10px 8px; text-align: right;">Keluarga</th>
+              <th style="padding: 10px 8px; text-align: right;">Sampel RT</th>
+              <th style="padding: 10px 8px; text-align: center;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% kecStats.forEach(kec => { %>
+              <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                <td style="padding: 12px 8px; font-weight: 700; color: var(--text-primary);">
+                  <%= kec.nama_kecamatan %>
+                </td>
+                <td style="padding: 12px 8px; text-align: center; color: var(--text-secondary);">
+                  <%= kec.total_bs %> BS
+                </td>
+                <td style="padding: 12px 8px; text-align: center; font-weight: 700; color: var(--accent-cyan);">
+                  <%= kec.selesai_bs %> BS
+                </td>
+                <td style="padding: 12px 8px; text-align: right; color: var(--text-primary);">
+                  <%= kec.total_keluarga.toLocaleString('id-ID') %>
+                </td>
+                <td style="padding: 12px 8px; text-align: right; font-weight: 700; color: var(--accent-green);">
+                  <%= kec.total_sampel_rt %> RT
+                </td>
+                <td style="padding: 12px 8px; text-align: center;">
+                  <span style="background: rgba(34, 197, 94, 0.12); color: var(--accent-green); padding: 2px 8px; border-radius: 4px; font-size: 10.5px; font-weight: 700;">
+                    <i class="bi bi-check-circle-fill"></i> 100%
+                  </span>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+          <tfoot>
+            <tr style="border-top: 2px solid var(--border); font-weight: 800; color: var(--text-primary);">
+              <td style="padding: 12px 8px;">Total Kab. PPU</td>
+              <td style="padding: 12px 8px; text-align: center;">42 BS</td>
+              <td style="padding: 12px 8px; text-align: center; color: var(--accent-cyan);">42 BS</td>
+              <td style="padding: 12px 8px; text-align: right;">4.280</td>
+              <td style="padding: 12px 8px; text-align: right; color: var(--accent-green);">420 RT</td>
+              <td style="padding: 12px 8px; text-align: center; color: var(--accent-green);">100.0%</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD PETUGAS LISTING -->
+    <div class="card" style="padding: 20px; border-radius: var(--radius-lg); background: var(--bg-card); border: 1px solid var(--border);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 15px; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+          <i class="bi bi-trophy-fill text-yellow" style="color: #eab308;"></i> Leaderboard Performa Petugas PCL
+        </h3>
+        <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">Top Performers</span>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border); text-align: left; color: var(--text-muted); font-size: 11px; text-transform: uppercase;">
+              <th style="padding: 10px 8px;">Petugas</th>
+              <th style="padding: 10px 8px;">Kecamatan</th>
+              <th style="padding: 10px 8px; text-align: center;">BS Selesai</th>
+              <th style="padding: 10px 8px; text-align: right;">Keluarga</th>
+              <th style="padding: 10px 8px; text-align: center;">Akurasi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% petugasStats.forEach((p, idx) => { %>
+              <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                <td style="padding: 10px 8px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+                  <span style="width: 20px; height: 20px; border-radius: 50%; background: <%= idx === 0 ? '#eab308' : idx === 1 ? '#94a3b8' : idx === 2 ? '#d97706' : 'rgba(255,255,255,0.06)' %>; color: <%= idx < 3 ? '#000' : 'var(--text-muted)' %>; font-size: 10px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center;">
+                    <%= idx + 1 %>
+                  </span>
+                  <%= p.nama %>
+                </td>
+                <td style="padding: 10px 8px; color: var(--text-secondary);">
+                  <%= p.kecamatan %>
+                </td>
+                <td style="padding: 10px 8px; text-align: center; font-weight: 700; color: var(--accent-cyan);">
+                  <%= p.bs_selesai %> BS
+                </td>
+                <td style="padding: 10px 8px; text-align: right; color: var(--text-primary);">
+                  <%= p.keluarga_listing %> KK
+                </td>
+                <td style="padding: 10px 8px; text-align: center; font-weight: 700; color: var(--accent-green);">
+                  <%= p.skor_akurasi %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SECTION: TREN HISTORIS LISTING HARIAN -->
+  <div class="card" style="margin-top: 20px; padding: 22px; border-radius: var(--radius-lg); background: var(--bg-card); border: 1px solid var(--border);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <h3 style="font-size: 15px; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+          <i class="bi bi-graph-up-arrow text-cyan"></i> Tren Historis Penyelesaian Listing Harian
+        </h3>
+        <p style="font-size: 11.5px; color: var(--text-muted); margin: 2px 0 0 0;">
+          Visualisasi progres harian muatan keluarga terdata dan penyelesaian blok sensus Sakernas
+        </p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <span style="font-size: 11px; background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan); padding: 4px 10px; border-radius: 6px; font-weight: 700;">
+          <i class="bi bi-circle-fill" style="font-size: 7px;"></i> 1 s.d. 6 Agustus 2026
+        </span>
+      </div>
+    </div>
+
+    <!-- Chart Container -->
+    <div style="height: 260px; position: relative; width: 100%;">
+      <canvas id="sakernasTrendChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- INLINE SCRIPT FOR WEATHER, AI COLLAPSE, & CHART -->
+<script>
+  function toggleAiInsightsCollapse(e) {
+    if (e) e.stopPropagation();
+    const container = document.getElementById('aiInsightsCollapseContainer');
+    const icon = document.getElementById('aiCollapseIcon');
+    if (!container) return;
+    if (container.style.display === 'none' || !container.style.display) {
+      container.style.display = 'block';
+      if (icon) icon.className = 'bi bi-chevron-up';
+    } else {
+      container.style.display = 'none';
+      if (icon) icon.className = 'bi bi-chevron-down';
+    }
+  }
+
+  function refreshAiInsightsSakernas(e) {
+    if (e) e.stopPropagation();
+    const icon = document.getElementById('aiRefreshIcon');
+    if (icon) icon.classList.add('bi-spin');
+    setTimeout(() => {
+      if (icon) icon.classList.remove('bi-spin');
+    }, 600);
+  }
+
+  // Render Chart when DOM is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    // Weather Time logic
+    function updateLiveClock() {
+      const timeElem = document.getElementById('overviewTime');
+      const dateElem = document.getElementById('overviewDate');
+      if (!timeElem || !dateElem) return;
+      const now = new Date();
+      // WITA is UTC+8
+      const wita = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (8 * 3600000));
+      const hours = String(wita.getHours()).padStart(2, '0');
+      const mins = String(wita.getMinutes()).padStart(2, '0');
+      const secs = String(wita.getSeconds()).padStart(2, '0');
+      timeElem.innerText = `${hours}:${mins}:${secs}`;
+      
+      const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      dateElem.innerText = `${days[wita.getDay()]}, ${wita.getDate()} ${months[wita.getMonth()]} ${wita.getFullYear()}`;
+    }
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+
+    // Chart.js init
+    const ctx = document.getElementById('sakernasTrendChart');
+    if (ctx && typeof Chart !== 'undefined') {
+      const trenData = <%- tren %>;
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: trenData.map(d => d.tanggal.split('-').slice(1).join('/')),
+          datasets: [
+            {
+              label: 'Keluarga Dimutakhirkan',
+              data: trenData.map(d => d.keluarga_terdata),
+              borderColor: '#06b6d4',
+              backgroundColor: 'rgba(6, 182, 212, 0.12)',
+              borderWidth: 3,
+              fill: true,
+              tension: 0.35,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Blok Sensus Selesai (Kumulatif)',
+              data: trenData.map(d => d.total_bs_selesai),
+              borderColor: '#22c55e',
+              backgroundColor: 'transparent',
+              borderWidth: 2.5,
+              borderDash: [4, 4],
+              tension: 0.2,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { color: '#94a3b8', font: { size: 11, family: 'Inter' }, boxWidth: 12 }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8', font: { size: 11 } }
+            },
+            y: {
+              type: 'linear',
+              position: 'left',
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#06b6d4', font: { size: 11 } }
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              grid: { drawOnChartArea: false },
+              ticks: { color: '#22c55e', font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+  });
+</script>

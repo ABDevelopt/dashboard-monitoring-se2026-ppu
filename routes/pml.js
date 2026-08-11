@@ -181,7 +181,7 @@ function getReportData(selectedUploadIds, filterPml) {
 
 // GET: PML List and drilldown details (standard page)
 router.get('/', (req, res) => {
-  const uploadId = res.locals.uploadId;
+const uploadId = res.locals.uploadId;
   let pmlStats = [];
   let detailPcl = [];
   const filterPml = req.query.pml || '';

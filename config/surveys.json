@@ -1,0 +1,38 @@
+{
+  "se2026": {
+    "id": "se2026",
+    "name": "Sensus Ekonomi 2026",
+    "shortName": "SE2026 PPU",
+    "theme": "orange",
+    "themeColor": "#f97316",
+    "themeRgb": "249, 115, 22",
+    "unitName": "dokumen",
+    "showUsahaColumns": true,
+    "showMuatanUsaha": true,
+    "enabledPages": ["map", "agent", "korlap", "pml", "pcl", "earlywarning", "deteksi-anomali", "performa", "harian", "leaderboard", "kecamatan", "subsls", "export"]
+  },
+  "sakernas-pemutakhiran": {
+    "id": "sakernas-pemutakhiran",
+    "name": "Sakernas — Pemutakhiran",
+    "shortName": "Sakernas Listing",
+    "theme": "cyan",
+    "themeColor": "#06b6d4",
+    "themeRgb": "6, 182, 212",
+    "unitName": "Blok Sensus",
+    "showUsahaColumns": false,
+    "showMuatanUsaha": false,
+    "enabledPages": ["map", "agent", "pml", "pcl", "earlywarning", "deteksi-anomali", "harian", "leaderboard", "kecamatan", "subsls", "export"]
+  },
+  "sakernas-pendataan": {
+    "id": "sakernas-pendataan",
+    "name": "Sakernas — Pendataan",
+    "shortName": "Sakernas CAPI",
+    "theme": "purple",
+    "themeColor": "#7c3aed",
+    "themeRgb": "124, 58, 237",
+    "unitName": "Rumah Tangga",
+    "showUsahaColumns": false,
+    "showMuatanUsaha": false,
+    "enabledPages": ["map", "agent", "pml", "pcl", "performa", "harian", "leaderboard", "kecamatan", "subsls", "export"]
+  }
+}

@@ -28,10 +28,9 @@ const upload = multer({
 router.get('/', (req, res) => {
   const uploads = getAllUploads();
   
-  // Scan workspace & file_upload_muatan folder for Excel & CSV files
+  // Scan workspace files per survey
   let workspaceFiles = [];
-  const wsDir = path.join(__dirname, '../');
-  const muatanDir = path.join(__dirname, '../file_upload_muatan');
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
 
   try {
     const scanDir = (dir, prefix = '') => {
@@ -53,9 +52,19 @@ router.get('/', (req, res) => {
         });
     };
 
-    const rootFiles = scanDir(wsDir);
-    const folderFiles = scanDir(muatanDir, 'file_upload_muatan');
-    workspaceFiles = [...folderFiles, ...rootFiles].sort((a, b) => b.mtime - a.mtime);
+    if (activeSurvey === 'se2026') {
+      const wsDir = path.join(__dirname, '../');
+      const muatanDir = path.join(__dirname, '../file_upload_muatan');
+      const rootFiles = scanDir(wsDir);
+      const folderFiles = scanDir(muatanDir, 'file_upload_muatan');
+      workspaceFiles = [...folderFiles, ...rootFiles].sort((a, b) => b.mtime - a.mtime);
+    } else {
+      const surveyDir = path.join(__dirname, '../file_upload_workspace', activeSurvey);
+      if (!fs.existsSync(surveyDir)) {
+        fs.mkdirSync(surveyDir, { recursive: true });
+      }
+      workspaceFiles = scanDir(surveyDir).sort((a, b) => b.mtime - a.mtime);
+    }
   } catch (err) {
     console.error('Error scanning workspace files:', err);
   }
@@ -216,7 +225,8 @@ router.post('/', upload.fields([
           statusFile.path,
           statusFile.originalname,
           statusFile.filename,
-          date
+          date,
+          res.locals.activeSurvey
         );
       }
 
@@ -276,14 +286,38 @@ router.post('/delete/:id', (req, res) => {
     if (uploadRec.stored_status_filename && fs.existsSync(statusPath)) {
       try { fs.unlinkSync(statusPath); } catch (e) {}
     }
+
+    // 1. Transaksi pembersihan total seluruh data terkait upload & imputasi otomatis sintetis
+    db.transaction(() => {
+      db.prepare('DELETE FROM progres WHERE upload_id = ?').run(id);
+      db.prepare('DELETE FROM summary_cache WHERE upload_id = ?').run(id);
+      db.prepare('DELETE FROM uploads WHERE id = ?').run(id);
+
+      // Bersihkan SEMUA record 'Imputasi Otomatis' sintetis lama agar statistik rebuild secara segar
+      const autoImputedRows = db.prepare("SELECT id FROM uploads WHERE filename LIKE '%Imputasi Otomatis%' OR filename LIKE '%Imputasi%'").all();
+      if (autoImputedRows.length > 0) {
+        const autoIds = autoImputedRows.map(r => r.id);
+        const placeholders = autoIds.map(() => '?').join(',');
+        db.prepare(`DELETE FROM progres WHERE upload_id IN (${placeholders})`).run(...autoIds);
+        db.prepare(`DELETE FROM summary_cache WHERE upload_id IN (${placeholders})`).run(...autoIds);
+        db.prepare(`DELETE FROM uploads WHERE id IN (${placeholders})`).run(...autoIds);
+      }
+    })();
+
+    // 2. Jalankan ulang auto-imputation dan rebuild summary cache untuk mengembalikan data ke file terakhir yang tersisa
+    try {
+      const { runAutoImputation } = require('../services/imputerService');
+      const surveysConfig = require('../config/surveys.json');
+      for (const sKey of Object.keys(surveysConfig)) {
+        runAutoImputation(sKey);
+      }
+      rebuildAllSummaryCaches();
+    } catch (err) {
+      console.error("Error rebuilding summary caches after delete:", err);
+    }
   }
-  db.prepare('DELETE FROM uploads WHERE id = ?').run(id);
-  try {
-    rebuildAllSummaryCaches();
-  } catch (err) {
-    console.error("Error rebuilding summary caches after delete:", err);
-  }
-  req.flash('success', 'Upload berhasil dihapus.');
+
+  req.flash('success', 'Upload berhasil dihapus. Semua data dan statistik telah otomatis dikembalikan ke file terakhir yang tersisa.');
   res.redirect('/admin/upload');
 });
 
@@ -331,7 +365,11 @@ router.post('/import-local', (req, res) => {
     return res.redirect('/admin/upload');
   }
 
-  const sourcePath = path.join(__dirname, '../', filename);
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  let sourcePath = path.join(__dirname, '../', filename);
+  if (activeSurvey !== 'se2026') {
+    sourcePath = path.join(__dirname, '../file_upload_workspace', activeSurvey, filename);
+  }
   if (!fs.existsSync(sourcePath)) {
     req.flash('error', 'File tidak ditemukan di folder workspace.');
     return res.redirect('/admin/upload');
@@ -505,7 +543,7 @@ router.post('/google-sheets', async (req, res) => {
 
     let result;
     if (dataType === 'status') {
-      result = parseAndSaveStatusExcelOnly(tempPath, filename, targetDate);
+      result = parseAndSaveStatusExcelOnly(tempPath, filename, null, targetDate, res.locals.activeSurvey);
     } else if (dataType === 'keluarga') {
       result = parseAndSaveSeparateExports(tempPath, null, filename, null, targetDate);
     } else if (dataType === 'usaha') {

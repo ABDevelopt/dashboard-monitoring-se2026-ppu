@@ -3,7 +3,7 @@ const router = express.Router();
 const { getPclStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
 
 router.get('/', (req, res) => {
-  const uploadId = res.locals.uploadId;
+const uploadId = res.locals.uploadId;
   let pclStats = [];
   let detailSubsls = [];
   const filterPcl = req.query.pcl || '';

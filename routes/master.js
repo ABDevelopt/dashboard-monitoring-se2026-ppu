@@ -94,9 +94,9 @@ router.post('/upload', upload.single('masterFile'), (req, res) => {
   try {
     let count = 0;
     if (ext === '.json') {
-      count = loadMasterFromJson(filePath);
+      count = loadMasterFromJson(filePath, res.locals.activeSurvey);
     } else {
-      count = loadMasterFromExcel(filePath);
+      count = loadMasterFromExcel(filePath, res.locals.activeSurvey);
     }
 
     // Clean up uploaded file
@@ -115,20 +115,25 @@ router.post('/upload', upload.single('masterFile'), (req, res) => {
 // POST: Reset master data to default JSON
 router.post('/reset', (req, res) => {
   try {
-    const masterPath = path.join(__dirname, '../kelompok_populasi_pml_pcl_korlap_muatan.json');
-    if (!fs.existsSync(masterPath)) {
-      throw new Error('File master default kelompok_populasi_pml_pcl_korlap_muatan.json tidak ditemukan.');
-    }
-
-    const db = getDb();
+    const activeSurvey = res.locals.activeSurvey || 'se2026';
+    const db = getDb(activeSurvey);
     db.prepare('DELETE FROM subsls_master').run();
-    const count = loadMasterFromJson(masterPath);
 
-    req.flash('success', `Berhasil merestore master data bawaan! Total record terproses: ${count}`);
+    if (activeSurvey === 'se2026') {
+      const masterPath = path.join(__dirname, '../kelompok_populasi_pml_pcl_korlap_muatan.json');
+      if (fs.existsSync(masterPath)) {
+        const count = loadMasterFromJson(masterPath, 'se2026');
+        req.flash('success', `Berhasil merestore master data bawaan SE2026! Total record: ${count}`);
+      } else {
+        req.flash('success', 'Master data berhasil dikosongkan.');
+      }
+    } else {
+      req.flash('success', 'Master data untuk survei ini berhasil dikosongkan.');
+    }
     res.redirect('/admin/master');
   } catch (err) {
     console.error('Master reset error:', err);
-    req.flash('error', `Gagal merestore master data bawaan: ${err.message}`);
+    req.flash('error', `Gagal mereset master data: ${err.message}`);
     res.redirect('/admin/master');
   }
 });

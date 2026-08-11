@@ -13,11 +13,11 @@
     <div class="card empty-state text-center" style="padding: 80px 20px;">
       <img src="/logo-mark.png" alt="Emblem SE2026" class="logo-light" loading="eager" style="width: 80px; height: 80px; margin-bottom: 20px; opacity: 0.85; object-fit: contain;">
       <img src="/logo-mark-dark.png" alt="Emblem SE2026" class="logo-dark" fetchpriority="high" loading="eager" style="width: 80px; height: 80px; margin-bottom: 20px; opacity: 0.85; object-fit: contain;">
-      <h2 class="empty-state-title" style="font-size: 22px; margin-bottom: 12px;">Selamat Datang di Dashboard SE2026 PPU</h2>
+      <h2 class="empty-state-title" style="font-size: 22px; margin-bottom: 12px;">Selamat Datang di <%= surveyConfig.name %></h2>
       <p class="empty-state-text" style="font-size: 14px; max-width: 540px; margin: 0 auto 24px; color: var(--text-secondary);">
-        Dashboard monitoring progres Sensus Ekonomi 2026 Kabupaten Penajam Paser Utara belum terisi data. Silakan upload file Excel rekapitulasi harian pertama Anda untuk memulai visualisasi monitoring.
+        Dashboard monitoring progres <%= surveyConfig.name %> belum terisi data. Silakan upload file status FASIH harian pertama Anda untuk memulai visualisasi monitoring.
       </p>
-      <a href="/admin/upload" class="btn btn-primary"><i class="bi bi-lightning-charge-fill"></i> Upload Data Rekap Pertama</a>
+      <a href="<%= navPrefix %>/admin/upload" class="btn btn-primary"><i class="bi bi-lightning-charge-fill"></i> Upload Data Rekap Pertama</a>
     </div>
   <% } else { %>
     <!-- BANNER PEMBERITAHUAN UPDATE (DISMISSIBLE) -->
@@ -1234,15 +1234,15 @@
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
           <div>
             <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Realisasi</div>
-            <div style="font-size: 15px; font-weight: 800; color: var(--text-primary);"><%= summary.muatan_selesai.toLocaleString('id-ID') %></div>
+            <div style="font-size: 15px; font-weight: 800; color: var(--text-primary);"><%= (summary.muatan_selesai || 0).toLocaleString('id-ID') %></div>
           </div>
           <div>
             <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Target</div>
-            <div style="font-size: 15px; font-weight: 800; color: var(--text-primary);"><%= summary.muatan_total.toLocaleString('id-ID') %></div>
+            <div style="font-size: 15px; font-weight: 800; color: var(--text-primary);"><%= (summary.muatan_total || 0).toLocaleString('id-ID') %></div>
           </div>
           <div>
             <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase;">Sisa</div>
-            <div style="font-size: 15px; font-weight: 800; color: var(--accent-yellow);"><%= (summary.muatan_total - summary.muatan_selesai).toLocaleString('id-ID') %></div>
+            <div style="font-size: 15px; font-weight: 800; color: var(--accent-yellow);"><%= ((summary.muatan_total || 0) - (summary.muatan_selesai || 0)).toLocaleString('id-ID') %></div>
           </div>
         </div>
 
@@ -1252,6 +1252,7 @@
           
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px;">
             
+            <% if (typeof surveyConfig === 'undefined' || surveyConfig.showUsahaColumns) { %>
             <!-- KELOMPOK USAHA -->
             <div style="background: var(--bg-summary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px;">
               <div style="font-size: 11px; font-weight: 800; color: var(--accent-cyan); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;"><i class="bi bi-briefcase-fill"></i> Temuan Sektor Usaha</div>
@@ -1263,7 +1264,7 @@
                     <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">USAHA BARU</div>
                     <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Terdaftar baru</div>
                   </div>
-                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-green);">+<%= summary.usaha_baru.toLocaleString('id-ID') %></div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-green);">+<%= (summary.usaha_baru || 0).toLocaleString('id-ID') %></div>
                 </div>
 
                 <!-- Usaha Tutup -->
@@ -1272,7 +1273,7 @@
                     <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">USAHA TUTUP</div>
                     <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Tutup/Pindah</div>
                   </div>
-                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-red);"><%= summary.usaha_tutup.toLocaleString('id-ID') %></div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-red);"><%= (summary.usaha_tutup || 0).toLocaleString('id-ID') %></div>
                 </div>
 
                 <!-- Usaha Tidak Ditemukan -->
@@ -1281,7 +1282,7 @@
                     <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">TDK DITEMUKAN</div>
                     <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Tidak ada fisik</div>
                   </div>
-                  <div style="font-size: 13px; font-weight: 800; color: var(--text-primary);"><%= summary.usaha_tidak_ditemukan.toLocaleString('id-ID') %></div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--text-primary);"><%= (summary.usaha_tidak_ditemukan || 0).toLocaleString('id-ID') %></div>
                 </div>
 
                 <!-- Usaha Ganda (Sinyal Kualitas Data) -->
@@ -1295,6 +1296,7 @@
 
               </div>
             </div>
+            <% } %>
 
             <!-- KELOMPOK KELUARGA -->
             <div style="background: var(--bg-summary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px;">
@@ -1307,7 +1309,7 @@
                     <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">KK DITEMUKAN</div>
                     <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Total ditemukan</div>
                   </div>
-                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-purple);"><%= summary.keluarga_total.toLocaleString('id-ID') %></div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-purple);"><%= (summary.keluarga_total || 0).toLocaleString('id-ID') %></div>
                 </div>
 
                 <!-- Keluarga Baru -->
@@ -1316,7 +1318,7 @@
                     <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">KELUARGA BARU</div>
                     <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Terdaftar baru</div>
                   </div>
-                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-cyan);">+<%= summary.keluarga_baru.toLocaleString('id-ID') %></div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-cyan);">+<%= (summary.keluarga_baru || 0).toLocaleString('id-ID') %></div>
                 </div>
 
                 <!-- Meninggal -->
@@ -1325,7 +1327,7 @@
                     <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">MENINGGAL</div>
                     <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Anggota KK</div>
                   </div>
-                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-yellow);"><%= summary.meninggal.toLocaleString('id-ID') %></div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-yellow);"><%= (summary.meninggal || 0).toLocaleString('id-ID') %></div>
                 </div>
 
                 <!-- Keluarga Tidak Ditemukan -->
@@ -1334,7 +1336,7 @@
                     <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">TDK DITEMUKAN</div>
                     <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Tidak ditemukan</div>
                   </div>
-                  <div style="font-size: 13px; font-weight: 800; color: var(--text-primary);"><%= summary.keluarga_tidak_ditemukan.toLocaleString('id-ID') %></div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--text-primary);"><%= (summary.keluarga_tidak_ditemukan || 0).toLocaleString('id-ID') %></div>
                 </div>
 
               </div>
@@ -1492,7 +1494,7 @@
                   <td class="text-right bg-purple-soft" data-sort="<%= k.approved_total || 0 %>"><%= (k.approved_total || 0).toLocaleString('id-ID') %></td>
                   <td class="text-right bg-purple-soft" data-sort="<%= k.target_fasih_total || 0 %>"><%= (k.target_fasih_total || 0).toLocaleString('id-ID') %></td>
                   <td class="text-right fw-bold bg-cyan-soft muatan-col" data-sort="<%= k.muatan_selesai !== undefined ? k.muatan_selesai : (k.usaha_total + k.keluarga_total) %>"><%= (k.muatan_selesai !== undefined ? k.muatan_selesai : (k.usaha_total + k.keluarga_total)).toLocaleString('id-ID') %></td>
-                  <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= k.total_muatan %>"><%= k.total_muatan.toLocaleString('id-ID') %></td>
+                  <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= k.total_muatan %>"><%= (k.total_muatan || 0).toLocaleString('id-ID') %></td>
                 </tr>
               <% }) %>
             </tbody>
@@ -1621,7 +1623,7 @@
     `;
 
     try {
-      const url = `/api/ai-insights${forceRefresh ? '?refresh=true' : ''}`;
+      const url = `<%= navPrefix %>/api/ai-insights${forceRefresh ? '?refresh=true' : ''}`;
       const response = await fetch(url);
       const data = await response.json();
 
@@ -2202,12 +2204,14 @@
         sportsDailyRateLabels.push(current.tanggal);
         const currentTotal = (current.submitted_total || 0) + (current.approved_total || 0) + (current.rejected_total || 0);
         let increment = 0;
-        if (i === 0) {
-          increment = currentTotal;
-        } else {
+        if (i > 0) {
           const prev = dailyTrenData[i - 1];
           const prevTotal = (prev.submitted_total || 0) + (prev.approved_total || 0) + (prev.rejected_total || 0);
           increment = Math.max(0, currentTotal - prevTotal);
+        } else if (current.prev_realisasi !== undefined && current.prev_realisasi !== null && current.prev_realisasi > 0) {
+          increment = Math.max(0, currentTotal - current.prev_realisasi);
+        } else {
+          increment = currentTotal;
         }
         const dailyRate = totalPclCount > 0 ? (increment / totalPclCount) : 0;
         sportsDailyRates.push(parseFloat(dailyRate.toFixed(2)));
@@ -2223,13 +2227,17 @@
         const current = dailyTrenData[i];
         countyIncrementLabels.push(current.tanggal);
         const currentTotal = (current.submitted_total || 0) + (current.approved_total || 0) + (current.rejected_total || 0);
-        if (i === 0) {
-          countyIncrements.push(currentTotal);
-        } else {
+        let increment = 0;
+        if (i > 0) {
           const prev = dailyTrenData[i - 1];
           const prevTotal = (prev.submitted_total || 0) + (prev.approved_total || 0) + (prev.rejected_total || 0);
-          countyIncrements.push(Math.max(0, currentTotal - prevTotal));
+          increment = Math.max(0, currentTotal - prevTotal);
+        } else if (current.prev_realisasi !== undefined && current.prev_realisasi !== null && current.prev_realisasi > 0) {
+          increment = Math.max(0, currentTotal - current.prev_realisasi);
+        } else {
+          increment = currentTotal;
         }
+        countyIncrements.push(increment);
       }
 
       lazyInitChart('dailyCountyIncrementChartCanvas', () =>
@@ -2374,7 +2382,7 @@
         if (container) container.style.opacity = '0.5';
         
         try {
-          const basePath = window.location.pathname.split('/admin/')[0] || '';
+          const basePath = window.location.pathname.split('<%= navPrefix %>/admin/')[0] || '';
           const cleanBasePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
           const res = await fetch(`${cleanBasePath}/api/pcl-distribution?date=${dateStr}`);
           const data = await res.json();
@@ -2479,7 +2487,7 @@
 
       async function initDistDateSelector() {
         try {
-          const res = await fetch(`${window.location.origin}/api/pcl-distribution`);
+          const res = await fetch(`${window.location.origin}<%= navPrefix %>/api/pcl-distribution`);
           const data = await res.json();
           if (data.success) {
             distAvailableDates = data.availableDates || [];

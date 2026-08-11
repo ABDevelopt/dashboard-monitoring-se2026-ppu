@@ -6,13 +6,7 @@ const { getSettings, updateSettings } = require('../database');
 // GET /admin/whatsapp - Halaman Utama Integrasi WhatsApp
 router.get('/', async (req, res) => {
   const settings = getSettings();
-  let waStatus = whatsappService.getStatus();
-  
-  // Jika status DISCONNECTED, inisialisasi socket (akan menggunakan sesi tersimpan jika ada, atau buat QR jika baru)
-  if (waStatus.status === 'DISCONNECTED') {
-    whatsappService.initialize();
-    waStatus = whatsappService.getStatus();
-  }
+  const waStatus = whatsappService.getStatus();
 
   // Jika terhubung, ambil daftar grup
   let groups = [];
@@ -31,11 +25,7 @@ router.get('/', async (req, res) => {
 
 // GET /admin/whatsapp/status - API Status Koneksi & QR Code (Untuk Real-time Polling)
 router.get('/status', (req, res) => {
-  let waStatus = whatsappService.getStatus();
-  if (waStatus.status === 'DISCONNECTED') {
-    whatsappService.initialize();
-    waStatus = whatsappService.getStatus();
-  }
+  const waStatus = whatsappService.getStatus();
   res.json(waStatus);
 });
 

@@ -56,7 +56,7 @@
         Excel harus berisi header kolom: `kode`, `kecamatan`, `desa`, `nama_sls`, `korlap`, `pml`, `pcl`, `muatan` (target muatan).
       </p>
 
-      <form action="/admin/master/upload" method="POST" enctype="multipart/form-data">
+      <form action="<%= navPrefix %>/admin/master/upload" method="POST" enctype="multipart/form-data">
         <div class="upload-zone" id="masterUploadZone" style="padding: 30px 20px; border: 2px dashed var(--border); border-radius: var(--radius); text-align: center; cursor: pointer; transition: var(--transition);">
           <input type="file" name="masterFile" id="masterFileInput" accept=".json,.xlsx,.xls" style="display: none;" required>
           <div style="font-size: 32px; color: var(--accent-cyan); margin-bottom: 10px;"><i class="bi bi-cloud-arrow-up-fill"></i></div>
@@ -77,14 +77,14 @@
           <div class="card-title"><i class="bi bi-arrow-counterclockwise"></i> Reset ke Master Data Default</div>
         </div>
         <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5;">
-          Gunakan tombol di bawah ini untuk mengembalikan tabel master data ke versi bawaan yang dimuat dari file `kelompok_populasi_pml_pcl_korlap_muatan.json`.
+          <% if (activeSurvey === 'se2026') { %>Gunakan tombol di bawah ini untuk mengembalikan tabel master data ke versi bawaan yang dimuat dari file `kelompok_populasi_pml_pcl_korlap_muatan.json`.<% } else { %>Gunakan tombol di bawah ini untuk mengosongkan/mereset seluruh master data survei ini.<% } %>
         </p>
         <div class="alert alert-error" style="background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: var(--accent-red); margin-bottom: 20px;">
           <i class="bi bi-exclamation-triangle-fill"></i>
           <span style="font-size: 11px; line-height: 1.3;">Aksi ini akan menghapus seluruh data master saat ini dan menggantinya dengan data default.</span>
         </div>
       </div>
-      <form action="/admin/master/reset" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mengembalikan master data ke versi bawaan JSON? Seluruh perubahan manual akan terhapus.');">
+      <form action="<%= navPrefix %>/admin/master/reset" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mengembalikan master data ke versi bawaan JSON? Seluruh perubahan manual akan terhapus.');">
         <button type="submit" class="btn btn-danger" style="width: 100%; justify-content: center;"><i class="bi bi-trash3-fill"></i> Reset ke Master Bawaan (JSON)</button>
       </form>
     </div>
@@ -99,7 +99,7 @@
           Ganti nama PCL (PPL) atau PML secara massal pada seluruh wilayah SLS di master data.
         </p>
 
-        <form action="/admin/master/rename-officer" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin memperbarui nama petugas tersebut secara massal?');">
+        <form action="<%= navPrefix %>/admin/master/rename-officer" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin memperbarui nama petugas tersebut secara massal?');">
           <div class="form-group mb-3" style="margin-bottom: 12px;">
             <label for="renameRole" style="font-size: 11px; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 4px;">Peran Petugas:</label>
             <select name="role" id="renameRole" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);" required>
@@ -133,11 +133,11 @@
     </div>
 
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
-      <form action="/admin/master" method="GET" style="display: flex; gap: 8px; flex: 1; min-width: 200px;">
+      <form action="<%= navPrefix %>/admin/master" method="GET" style="display: flex; gap: 8px; flex: 1; min-width: 200px;">
         <input type="search" name="q" value="<%= q %>" placeholder="Cari Kode, SLS, Petugas, Wilayah..." aria-label="Cari Kode, SLS, Petugas, atau Wilayah" style="flex: 1; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); min-width: 0;">
         <button type="submit" class="btn btn-secondary" aria-label="Cari data SLS"><i class="bi bi-search"></i></button>
         <% if (q) { %>
-          <a href="/admin/master" class="btn btn-secondary" title="Reset Pencarian" aria-label="Reset pencarian dan tampilkan semua"><i class="bi bi-x-lg"></i></a>
+          <a href="<%= navPrefix %>/admin/master" class="btn btn-secondary" title="Reset Pencarian" aria-label="Reset pencarian dan tampilkan semua"><i class="bi bi-x-lg"></i></a>
         <% } %>
       </form>
       <div style="font-size: 12px; color: var(--text-secondary);">
@@ -192,7 +192,7 @@
                             title="Edit Record"
                             aria-label="Edit SLS <%= row.nama_sls %>"><i class="bi bi-pencil-fill"></i></button>
                     <% if (row.has_progress === 0) { %>
-                      <form action="/admin/master/delete/<%= row.kode %>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SLS master <%= row.kode %>?');" style="display: inline;">
+                      <form action="<%= navPrefix %>/admin/master/delete/<%= row.kode %>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SLS master <%= row.kode %>?');" style="display: inline;">
                         <button type="submit" class="btn btn-danger btn-xs" title="Hapus" aria-label="Hapus SLS <%= row.nama_sls %>"><i class="bi bi-trash-fill"></i></button>
                       </form>
                     <% } else { %>
@@ -236,7 +236,7 @@
       <div class="card-title"><i class="bi bi-plus-circle-fill" style="color: var(--accent-green);"></i> Tambah SLS Baru</div>
       <button class="btn btn-secondary btn-xs" id="btnCloseAddModal" aria-label="Tutup Dialog Tambah SLS" style="min-width: auto; padding: 4px 8px;"><i class="bi bi-x-lg"></i></button>
     </div>
-    <form action="/admin/master/add" method="POST">
+    <form action="<%= navPrefix %>/admin/master/add" method="POST">
       <div style="display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto; padding-right: 4px;">
         
         <div>
@@ -308,7 +308,7 @@
       <div class="card-title"><i class="bi bi-pencil-square" style="color: var(--accent-cyan);"></i> Edit Record SLS Master</div>
       <button class="btn btn-secondary btn-xs" id="btnCloseEditModal" aria-label="Tutup Dialog Edit SLS" style="min-width: auto; padding: 4px 8px;"><i class="bi bi-x-lg"></i></button>
     </div>
-    <form action="/admin/master/edit" method="POST">
+    <form action="<%= navPrefix %>/admin/master/edit" method="POST">
       <input type="hidden" name="kode" id="editKode">
       
       <div style="display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto; padding-right: 4px;">

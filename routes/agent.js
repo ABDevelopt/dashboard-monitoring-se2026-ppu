@@ -23,7 +23,7 @@ router.use(requireLogin);
 //  GET / — render halaman agent
 // ─────────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
-  const settings = getSettings();
+const settings = getSettings();
   const geminiEnabled = !!(settings.gemini_api_key && settings.gemini_api_key.trim());
   const openaiEnabled = !!(settings.openai_api_key && settings.openai_api_key.trim());
   const openrouterEnabled = !!(settings.openrouter_api_key && settings.openrouter_api_key.trim());

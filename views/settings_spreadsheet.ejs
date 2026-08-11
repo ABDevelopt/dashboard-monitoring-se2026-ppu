@@ -24,7 +24,7 @@
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 10px;">
-        <a href="/admin" class="btn btn-secondary" style="padding: 9px 14px; font-size: 12px; border-radius: 8px;">
+        <a href="<%= navPrefix %>/admin" class="btn btn-secondary" style="padding: 9px 14px; font-size: 12px; border-radius: 8px;">
           <i class="bi bi-arrow-left"></i> Kembali ke Admin
         </a>
       </div>
@@ -74,7 +74,7 @@
       </div>
     </div>
 
-    <form action="/admin/spreadsheet/save" method="POST" style="margin-top: 16px;">
+    <form action="<%= navPrefix %>/admin/spreadsheet/save" method="POST" style="margin-top: 16px;">
       
       <!-- Field 1: Read-Only PubHTML URL -->
       <div style="margin-bottom: 20px;">
@@ -107,18 +107,22 @@
         </button>
 
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <% const sheetsUrl = settings.google_sheets_anomaly_url || 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml'; %>
+          <% const isSe2026 = (typeof surveyConfig === 'undefined' || surveyConfig.id === 'se2026'); %>
+          <% const defaultUrl = isSe2026 ? 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml' : ''; %>
+          <% const sheetsUrl = settings.google_sheets_anomaly_url || defaultUrl; %>
+          <% if (sheetsUrl) { %>
           <a href="<%= sheetsUrl %>" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 10px 16px; font-size: 12px; font-weight: 600; border-radius: 8px; color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.08);" title="Buka Spreadsheet di Google Sheets">
             <i class="bi bi-file-earmark-excel-fill"></i> Buka Spreadsheet Anomali
           </a>
+          <% } %>
 
-          <form action="/admin/spreadsheet/sync-now" method="POST" onsubmit="const b=this.querySelector('button'); b.disabled=true; b.innerHTML='<i class=\'bi bi-arrow-clockwise bi-spin\'></i> Menyinkronkan...';" style="margin: 0; display: inline;">
+          <form action="<%= navPrefix %>/admin/spreadsheet/sync-now" method="POST" onsubmit="const b=this.querySelector('button'); b.disabled=true; b.innerHTML='<i class=\'bi bi-arrow-clockwise bi-spin\'></i> Menyinkronkan...';" style="margin: 0; display: inline;">
             <button type="submit" class="btn btn-secondary" style="padding: 10px 16px; font-size: 12px; font-weight: 600; border-radius: 8px;" title="Menghapus cache dan mengambil data terbaru dari Google Spreadsheet">
               <i class="bi bi-arrow-clockwise"></i> Paksa Sync Data Sekarang
             </button>
           </form>
 
-          <form action="/admin/spreadsheet/test-webhook" method="POST" onsubmit="const b=this.querySelector('button'); b.disabled=true; b.innerHTML='<i class=\'bi bi-arrow-repeat bi-spin\'></i> Menguji Webhook...';" style="margin: 0; display: inline;">
+          <form action="<%= navPrefix %>/admin/spreadsheet/test-webhook" method="POST" onsubmit="const b=this.querySelector('button'); b.disabled=true; b.innerHTML='<i class=\'bi bi-arrow-repeat bi-spin\'></i> Menguji Webhook...';" style="margin: 0; display: inline;">
             <button type="submit" class="btn btn-secondary" style="padding: 10px 16px; font-size: 12px; font-weight: 600; border-radius: 8px; color: var(--accent-cyan);" title="Kirim paket data uji coba ke URL Apps Script Web App">
               <i class="bi bi-send-fill"></i> Tes Webhook (Ping)
             </button>

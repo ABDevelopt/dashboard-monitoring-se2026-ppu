@@ -3,7 +3,7 @@ const router = express.Router();
 const { getBottomPerformers, getDb } = require('../database');
 
 router.get('/', (req, res) => {
-  const uploadId = res.locals.uploadId;
+const uploadId = res.locals.uploadId;
   const filterKec = req.query.kec || '';
   const filterKorlap = req.query.korlap || '';
   const filterPml = req.query.pml || '';

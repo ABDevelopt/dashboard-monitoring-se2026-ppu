@@ -13,7 +13,7 @@ const {
 
 // GET /export - Halaman Utama Ekspor Terpadu
 router.get('/', (req, res) => {
-  const settings = res.locals.settings || getSettings();
+const settings = res.locals.settings || getSettings();
   if (settings.page_export === '0') {
     return res.status(403).render('error', {
       title: 'Fitur Dinonaktifkan',

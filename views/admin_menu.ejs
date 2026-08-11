@@ -112,7 +112,7 @@
       </div>
       <div>
         <h1 class="fs-xl fw-extrabold text-primary m-0 mb-1">Menu Administrasi &amp; Sistem</h1>
-        <p class="fs-sm text-secondary m-0">Pusat kendali konfigurasi, tata kelola data, manajemen pengguna, dan integrasi monitoring SE2026 PPU</p>
+        <p class="fs-sm text-secondary m-0">Pusat kendali konfigurasi, tata kelola data, manajemen pengguna, dan integrasi monitoring <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'SE2026 PPU') %></p>
       </div>
     </div>
   </div>
@@ -120,7 +120,7 @@
 <div class="admin-menu-grid">
 
   <!-- CARD 1: UPLOAD DATA -->
-  <a href="/admin/upload" class="admin-menu-card theme-blue">
+  <a href="<%= navPrefix %>/admin/upload" class="admin-menu-card theme-blue">
     <div class="admin-card-icon-box">
       <i class="bi bi-upload"></i>
     </div>
@@ -134,7 +134,7 @@
   </a>
 
   <!-- CARD 2: KELOLA MASTER DATA -->
-  <a href="/admin/master" class="admin-menu-card theme-orange">
+  <a href="<%= navPrefix %>/admin/master" class="admin-menu-card theme-orange">
     <div class="admin-card-icon-box">
       <i class="bi bi-database-fill-gear"></i>
     </div>
@@ -148,7 +148,7 @@
   </a>
 
   <!-- CARD 3: KELOLA PENGGUNA -->
-  <a href="/admin/users" class="admin-menu-card theme-green">
+  <a href="<%= navPrefix %>/admin/users" class="admin-menu-card theme-green">
     <div class="admin-card-icon-box">
       <i class="bi bi-people-fill"></i>
     </div>
@@ -162,13 +162,13 @@
   </a>
 
   <!-- CARD 3B: DATA EMAIL PETUGAS -->
-  <a href="/admin/petugas-email" class="admin-menu-card theme-orange-dark">
+  <a href="<%= navPrefix %>/admin/petugas-email" class="admin-menu-card theme-orange-dark">
     <div class="admin-card-icon-box">
       <i class="bi bi-envelope-at-fill"></i>
     </div>
     <div>
       <h2 class="admin-card-title">Data Email Petugas</h2>
-      <p class="admin-card-desc">Manajemen database email, Sobat ID, dan identitas petugas pencacah (PCL/PML/Korlap) SE2026.</p>
+      <p class="admin-card-desc">Manajemen database email, Sobat ID, dan identitas petugas pencacah (PCL/PML/Korlap) <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'SE2026 PPU') %>.</p>
     </div>
     <div class="admin-card-action">
       Buka Data Email Petugas <i class="bi bi-arrow-right"></i>
@@ -176,7 +176,7 @@
   </a>
 
   <!-- CARD 4: PENGATURAN TAMPILAN -->
-  <a href="/admin/settings" class="admin-menu-card theme-pink">
+  <a href="<%= navPrefix %>/admin/settings" class="admin-menu-card theme-pink">
     <div class="admin-card-icon-box">
       <i class="bi bi-sliders"></i>
     </div>
@@ -190,7 +190,7 @@
   </a>
 
   <!-- CARD 5: PENGATURAN CHATBOT AI -->
-  <a href="/admin/settings/chatbot" class="admin-menu-card theme-indigo">
+  <a href="<%= navPrefix %>/admin/settings/chatbot" class="admin-menu-card theme-indigo">
     <div class="admin-card-icon-box">
       <i class="bi bi-chat-left-dots-fill"></i>
     </div>
@@ -204,7 +204,7 @@
   </a>
 
   <!-- CARD 6: INTEGRASI WHATSAPP -->
-  <a href="/admin/whatsapp" class="admin-menu-card theme-wa">
+  <a href="<%= navPrefix %>/admin/whatsapp" class="admin-menu-card theme-wa">
     <div class="admin-card-icon-box">
       <i class="bi bi-whatsapp"></i>
     </div>
@@ -218,7 +218,7 @@
   </a>
 
   <!-- CARD 7: SINKRONISASI SPREADSHEET -->
-  <a href="/admin/spreadsheet" class="admin-menu-card theme-yellow">
+  <a href="<%= navPrefix %>/admin/spreadsheet" class="admin-menu-card theme-yellow">
     <div class="admin-card-icon-box">
       <i class="bi bi-file-earmark-spreadsheet-fill"></i>
     </div>
@@ -232,7 +232,7 @@
   </a>
 
   <!-- CARD 8: STATISTIK PENGUNJUNG -->
-  <a href="/admin/stats" class="admin-menu-card theme-sky">
+  <a href="<%= navPrefix %>/admin/stats" class="admin-menu-card theme-sky">
     <div class="admin-card-icon-box">
       <i class="bi bi-activity"></i>
     </div>
@@ -246,7 +246,7 @@
   </a>
 
   <!-- CARD 9: BACKUP & RESTORE DATA -->
-  <a href="/admin/settings/backup" class="admin-menu-card theme-indigo">
+  <a href="<%= navPrefix %>/admin/settings/backup" class="admin-menu-card theme-indigo">
     <div class="admin-card-icon-box" style="background: linear-gradient(135deg, #6366f1, #a855f7);">
       <i class="bi bi-cloud-arrow-down-fill"></i>
     </div>

@@ -26,7 +26,7 @@ const sections = [
     </div>
     <div>
       <h1 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px 0;">Panduan & Bantuan</h1>
-      <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Semua yang perlu Anda ketahui tentang Dashboard Monitoring SE2026 PPU</p>
+      <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Semua yang perlu Anda ketahui tentang Dashboard Monitoring <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'SE2026 PPU') %></p>
     </div>
   </div>
 
@@ -60,7 +60,7 @@ const sections = [
         <i class="bi bi-display" style="color: var(--accent-blue);"></i>
       </div>
       <h3 class="help-card-title">Overview</h3>
-      <p class="help-card-body">Halaman utama berisi ringkasan progres pendataan SE2026 seluruh kabupaten — jumlah selesai, target, dan persentase pencapaian secara keseluruhan.</p>
+      <p class="help-card-body">Halaman utama berisi ringkasan progres pendataan <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'survei') %> seluruh kabupaten — jumlah selesai, target, dan persentase pencapaian secara keseluruhan.</p>
     </div>
     <div class="help-card">
       <div class="help-card-icon" style="background: rgba(52,211,153,0.1);">
@@ -560,7 +560,7 @@ const sections = [
         <div class="help-col-item"><code>Keluarga Baru</code><span>Keluarga baru yang tidak ada di prelist awal</span></div>
         <div class="help-col-item"><code>Tidak Ditemukan</code><span>Keluarga tidak ditemukan saat kunjungan</span></div>
         <div class="help-col-item"><code>Meninggal</code><span>Kepala keluarga/anggota telah meninggal</span></div>
-        <div class="help-col-item"><code>Tidak Eligible</code><span>Tidak memenuhi kriteria pendataan SE2026</span></div>
+        <div class="help-col-item"><code>Tidak Eligible</code><span>Tidak memenuhi kriteria pendataan <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'survei') %></span></div>
         <div class="help-col-item"><code>Tidak Dapat Ditemui</code><span>Keluarga tidak dapat dihubungi hingga akhir pendataan</span></div>
       </div>
     </div>

@@ -3,7 +3,7 @@ const router = express.Router();
 const { getDb, getSettings, getTargetFormula } = require('../database');
 
 router.get('/', (req, res) => {
-  const uploadId = res.locals.uploadId;
+const uploadId = res.locals.uploadId;
   const filterKec = req.query.kec || '';
   const filterKorlap = req.query.korlap || '';
   const filterPml = req.query.pml || '';
@@ -128,14 +128,10 @@ router.get('/', (req, res) => {
         row.desa = row.desa.split(',').join(', ');
       }
       // Calculate daily increment & total documents per day
-      let lastValidReal = row.realisasi_baseline || 0;
       recentUploads.forEach((u, i) => {
         const real = row['realisasi_' + i] || 0;
-        let inc = 0;
-        if (real > 0) {
-          inc = Math.max(0, real - lastValidReal);
-          lastValidReal = real;
-        }
+        const prevReal = i > 0 ? (row['realisasi_' + (i - 1)] || 0) : (row.realisasi_baseline || 0);
+        const inc = real - prevReal;
         row['inc_' + i] = inc;
         row['real_' + i] = real;
         const target = row['target_' + i] || 0;

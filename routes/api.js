@@ -11,7 +11,7 @@ router.get('/tren', (req, res) => {
 router.get('/kecamatan', (req, res) => {
   const uploadId = res.locals.uploadId;
   if (!uploadId) return res.json([]);
-  res.json(getKecamatanStats(uploadId, res.locals.settings));
+  res.json(getKecamatanStats(uploadId, res.locals.settings, res.locals.activeSurvey));
 });
 
 // Search SubSLS
@@ -42,7 +42,7 @@ router.get('/summary', (req, res) => {
   if (!uploadId) return res.json(null);
 
   const { getOverviewSummary } = require('../database');
-  res.json(getOverviewSummary(uploadId, res.locals.settings));
+  res.json(getOverviewSummary(uploadId, res.locals.settings, res.locals.activeSurvey));
 });
 
 // Map Statistics API
@@ -109,7 +109,9 @@ router.get('/map-stats', (req, res) => {
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
   `).all(uploadId);
 
-  res.json({ desaStats: attachProgressPercentages(desaStats), slsStats: attachProgressPercentages(slsStats) });
+  const { getKecamatanStats } = require('../database');
+  const kecStats = getKecamatanStats(uploadId, settings);
+  res.json({ kecStats: attachProgressPercentages(kecStats), desaStats: attachProgressPercentages(desaStats), slsStats: attachProgressPercentages(slsStats) });
 });
 
 // Detail Korlap

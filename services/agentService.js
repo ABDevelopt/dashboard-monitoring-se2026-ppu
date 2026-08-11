@@ -234,7 +234,7 @@ Untuk mempermudah pembacaan data, Anda harus memformat jawaban Anda dengan stand
 
 const TOOL_DECLARATION = {
   name: "run_read_only_query",
-  description: "Execute a read-only SELECT SQL query on the SQLite database to fetch data about SE2026 monitoring.",
+  description: "Execute a read-only SELECT SQL query on the SQLite database to fetch data about survey monitoring.",
   parameters: {
     type: "object",
     properties: {
@@ -1959,7 +1959,7 @@ async function callOpenRouterAPI(apiKey, payload, isToolResult = false) {
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'HTTP-Referer': 'http://localhost:3000',
-      'X-Title': 'SE2026 Monitoring',
+      'X-Title': 'Survey Monitoring BPS PPU',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(payload)

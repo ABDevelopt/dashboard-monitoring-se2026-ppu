@@ -62,10 +62,10 @@ function loadMasterFromJson(jsonPath) {
 
   insertMany(rows);
 
-  // Override target_fasih dari rancangan alokasi jika file excel ada
+  // Override target_fasih dari rancangan alokasi jika file excel ada (khusus SE2026)
   try {
     const alokasiPath = path.join(__dirname, '../rancangan-muatan-se2026-ppu.xlsx');
-    if (fs.existsSync(alokasiPath)) {
+    if (surveyId === 'se2026' && fs.existsSync(alokasiPath)) {
       console.log('Applying target_fasih from rancangan-muatan-se2026-ppu.xlsx...');
       const wb = XLSX.readFile(alokasiPath);
       const ws = wb.Sheets[wb.SheetNames[0]];
@@ -107,15 +107,37 @@ function loadMasterFromJson(jsonPath) {
 }
 
 function findCol(headers, aliases) {
+  if (!headers || !Array.isArray(headers)) return -1;
   for (const alias of aliases) {
     const idx = headers.indexOf(alias);
     if (idx !== -1) return idx;
   }
   for (const alias of aliases) {
-    const idx = headers.findIndex(h => h.includes(alias));
+    const idx = headers.findIndex(h => {
+      const cleanH = String(h || '').toLowerCase().trim();
+      return cleanH === alias || cleanH.includes(alias);
+    });
     if (idx !== -1) return idx;
   }
   return -1;
+}
+
+const KODE_ALIASES = ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls', 'id_subsls', 'id subsls', 'kode_subsls', 'kode subsls', 'subsls_code', 'subsls code', 'full_code', 'full code', 'id_sls', 'id sls', 'sls_code', 'sls code', 'kode_sls', 'kode sls'];
+const DITEMUKAN_ALIASES = ['ditemukan', 'keluarga_ditemukan', 'kk_ditemukan', 'jumlah_keluarga_ditemukan', 'jml_keluarga_ditemukan', 'jumlah_kk_ditemukan', 'jml_kk_ditemukan', 'keluarga_terdata', 'keluarga terdata', 'keluarga_selesai', 'keluarga selesai', 'terdata', 'selesai', 'keluarga', 'kk', 'jml_kk'];
+const KELUARGA_BARU_ALIASES = ['baru', 'keluarga baru', 'keluarga_baru', 'kk_baru', 'kk baru', 'jumlah_keluarga_baru', 'jml_keluarga_baru', 'jumlah_kk_baru', 'jml_kk_baru'];
+const USAHA_DITEMUKAN_ALIASES = ['usaha_ditemukan', 'usaha ditemukan', 'ditemukan', 'jumlah_usaha_ditemukan', 'jml_usaha_ditemukan', 'usaha_terdata', 'usaha terdata', 'usaha_selesai', 'usaha selesai', 'terdata', 'selesai', 'usaha', 'jml_usaha'];
+const USAHA_BARU_ALIASES = ['usaha_baru', 'usaha baru', 'baru', 'jumlah_usaha_baru', 'jml_usaha_baru'];
+
+function findHeaderRowIndex(rows) {
+  if (!rows || rows.length === 0) return 0;
+  for (let i = 0; i < Math.min(15, rows.length); i++) {
+    if (!rows[i] || !Array.isArray(rows[i])) continue;
+    const rowStr = rows[i].map(c => String(c || '').toLowerCase().trim());
+    if (rowStr.some(c => KODE_ALIASES.some(alias => c.includes(alias)))) {
+      return i;
+    }
+  }
+  return 0;
 }
 
 function findDataSheet(wb) {
@@ -128,8 +150,9 @@ function findDataSheet(wb) {
       if (ws) {
         const tempRows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
         if (tempRows.length > 0) {
-          const tempHeaders = tempRows[0].map(h => String(h || '').toLowerCase().trim());
-          const hasKode = tempHeaders.some(h => ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls'].some(alias => h.includes(alias)));
+          const headerIdx = findHeaderRowIndex(tempRows);
+          const tempHeaders = tempRows[headerIdx] ? tempRows[headerIdx].map(h => String(h || '').toLowerCase().trim()) : [];
+          const hasKode = tempHeaders.some(h => KODE_ALIASES.some(alias => h.includes(alias)));
           if (hasKode) return ws;
         }
       }
@@ -143,8 +166,9 @@ function findDataSheet(wb) {
     if (ws) {
       const tempRows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
       if (tempRows.length > 0) {
-        const tempHeaders = tempRows[0].map(h => String(h || '').toLowerCase().trim());
-        const hasKode = tempHeaders.some(h => ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls'].some(alias => h.includes(alias)));
+        const headerIdx = findHeaderRowIndex(tempRows);
+        const tempHeaders = tempRows[headerIdx] ? tempRows[headerIdx].map(h => String(h || '').toLowerCase().trim()) : [];
+        const hasKode = tempHeaders.some(h => KODE_ALIASES.some(alias => h.includes(alias)));
         if (hasKode) return ws;
       }
     }
@@ -173,21 +197,21 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: 0 });
   if (rows.length < 2) throw new Error('Sheet data kosong.');
 
-  // Header row index 0
-  const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
+  const headerIdx = findHeaderRowIndex(rows);
+  const headers = rows[headerIdx].map(h => String(h || '').toLowerCase().trim());
 
   // Cari index kolom
   const colIdx = {
     desa: findCol(headers, ['desa', 'nama_desa', 'kelurahan']),
-    kode: findCol(headers, ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls']),
+    kode: findCol(headers, KODE_ALIASES),
     usaha_tidak_ditemukan: findCol(headers, ['usaha_tidak_ditemukan', 'usaha tidak ditemukan', 'usaha_tutup_sementara']),
-    usaha_ditemukan: findCol(headers, ['usaha_ditemukan', 'usaha ditemukan']),
-    usaha_baru: findCol(headers, ['usaha_baru', 'usaha baru']),
-    usaha_tutup: findCol(headers, ['usaha_tutup', 'usaha tutup', 'usaha_tutup_permanen']),
-    usaha_ganda: findCol(headers, ['usaha_ganda', 'usaha ganda']),
+    usaha_ditemukan: findCol(headers, USAHA_DITEMUKAN_ALIASES),
+    usaha_baru: findCol(headers, USAHA_BARU_ALIASES),
+    usaha_tutup: findCol(headers, ['usaha_tutup', 'usaha tutup', 'usaha_tutup_permanen', 'tutup']),
+    usaha_ganda: findCol(headers, ['usaha_ganda', 'usaha ganda', 'ganda']),
     tidak_ditemukan: findCol(headers, ['tidak_ditemukan', 'tidak ditemukan', 'kk_tidak_ditemukan', 'keluarga_tidak_ditemukan']),
-    ditemukan: findCol(headers, ['ditemukan', 'kk_ditemukan', 'keluarga_ditemukan']),
-    keluarga_baru: findCol(headers, ['keluarga_baru', 'keluarga baru', 'kk_baru', 'kk baru']),
+    ditemukan: findCol(headers, DITEMUKAN_ALIASES),
+    keluarga_baru: findCol(headers, KELUARGA_BARU_ALIASES),
     meninggal: findCol(headers, ['meninggal', 'kk_meninggal', 'kk meninggal', 'keluarga_meninggal']),
     tidak_eligible: findCol(headers, ['tidak_eligible', 'kk_tidak_eligible', 'kk tidak eligible', 'keluarga_tidak_eligible', 'tidak eligible']),
     tidak_dapat_ditemui: findCol(headers, ['tidak_dapat_ditemui', 'kk_tidak_dapat_ditemui', 'kk tidak dapat ditemui', 'keluarga_tidak_dapat_ditemui', 'tidak dapat ditemui']),
@@ -200,12 +224,9 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
 
   const missingCols = [];
   if (colIdx.kode === -1) missingCols.push('level_6_full_code / kode');
-  if (colIdx.desa === -1) missingCols.push('desa / nama_desa');
-  if (colIdx.ditemukan === -1) missingCols.push('ditemukan / keluarga_ditemukan');
-  if (colIdx.usaha_ditemukan === -1) missingCols.push('usaha_ditemukan');
 
   if (missingCols.length > 0) {
-    throw new Error(`Berkas Progres Utama tidak valid. Kolom wajib berikut tidak ditemukan: [${missingCols.join(', ')}]. Pastikan format kolom sesuai dengan template standard.`);
+    throw new Error(`Berkas Progres Utama tidak valid. Kolom kode wajib berikut tidak ditemukan: [${missingCols.join(', ')}]. Pastikan format kolom sesuai dengan template standard.`);
   }
 
   // Insert upload record
@@ -320,6 +341,7 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
   }
 
   // Update total_subsls_terisi
+  ensureAllSubslsInUpload(uploadId);
   const actualCount = db.prepare('SELECT COUNT(*) as n FROM progres WHERE upload_id = ?').get(uploadId).n;
   db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(actualCount, uploadId);
 
@@ -371,6 +393,10 @@ function findStatusColumnIndexes(headers) {
   const totalIdx = findIndex(['total', 'target']);
   const desaIdx = findIndex(['desa', 'nama_desa', 'kelurahan']);
   const slsIdx = findIndex(['sls', 'nama_sls', 'subsls']);
+  const kecIdx = findIndex(['kecamatan', 'nama_kecamatan', 'kec']);
+  const pmlIdx = findIndex(['pengawas', 'pml', 'nama_pml', 'nama pengawas', 'nama_pml_pl']);
+  const pclIdx = findIndex(['pencacah', 'pcl', 'nama_pcl', 'nama pencacah', 'nama_pcl_pl']);
+  const korlapIdx = findIndex(['korlap', 'nama_korlap', 'kose']);
 
   const missingCols = [];
   if (kodeIdx === -1 && (desaIdx === -1 || slsIdx === -1)) missingCols.push('level_6_full_code / kode subsls');
@@ -392,7 +418,11 @@ function findStatusColumnIndexes(headers) {
     rejectedIdxs: rejectedIdxs,
     total: totalIdx,
     desa: desaIdx,
-    sls: slsIdx
+    sls: slsIdx,
+    kec: kecIdx,
+    pml: pmlIdx,
+    pcl: pclIdx,
+    korlap: korlapIdx
   };
 }
 
@@ -486,8 +516,8 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
   updateTx(rows);
 }
 
-function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename, tanggal) {
-  const db = getDb();
+function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename, tanggal, surveyId = 'se2026') {
+  const db = getDb(surveyId);
   const wb = XLSX.readFile(filePath, { raw: true });
   const ws = findDataSheet(wb);
   if (!ws) throw new Error('Sheet dalam file rekap status tidak ditemukan.');
@@ -498,8 +528,9 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
   const colIdx = findStatusColumnIndexes(headers);
 
-  // Pre-fetch master data
+  // Pre-fetch master data (each survey database now has its own subsls_master)
   const masterRows = db.prepare('SELECT kode, desa, nama_sls FROM subsls_master ORDER BY kode ASC').all();
+  
   const useIndexFallback = (rows.length - 1 === masterRows.length);
 
   let masterMap = null;
@@ -546,19 +577,21 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   `).run('', null, tanggal, 0, safeNullableStr(originalFilename), safeNullableStr(storedFilename));
   const uploadId = uploadResult.lastInsertRowid;
 
-  // Find previous upload that has FASIH status data (draft/submitted/approved/rejected)
-  const prevUploadRow = db.prepare(`
+  // Find previous upload that has progress muatan data
+  const prevMuatanRow = db.prepare(`
     SELECT u.id FROM uploads u
     JOIN progres p ON u.id = p.upload_id
-    WHERE u.id < ?
+    WHERE u.tanggal <= ? AND u.id != ?
     GROUP BY u.id
-    HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
-    ORDER BY u.id DESC LIMIT 1
-  `).get(uploadId);
-  const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
+    HAVING SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) > 0
+    ORDER BY u.tanggal DESC, u.id DESC LIMIT 1
+  `).get(tanggal, uploadId);
+  const prevMuatanId = prevMuatanRow ? prevMuatanRow.id : null;
+
+  const getPrevMuatanRecord = db.prepare('SELECT * FROM progres WHERE upload_id = ? AND kode = ?');
 
   const insertStmt = db.prepare(`
-    INSERT OR IGNORE INTO progres (
+    INSERT OR REPLACE INTO progres (
       upload_id, kode,
       usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
       tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
@@ -568,7 +601,7 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
       ?, ?,
       ?, ?, ?, ?, ?,
       ?, ?, ?, ?, ?, ?,
-      ?, ?, ?, ?, ?,
+      0, 0, 0, 0, 0,
       ?, ?, ?, ?, ?, ?
     )
   `);
@@ -581,6 +614,15 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
     UPDATE progres 
     SET draft = ?, open = ?, submitted_by_pcl = ?, approved = ?, rejected = ?, target_upload = ?
     WHERE upload_id = ? AND kode = ?
+  `);
+
+  // Prepared statement to dynamically populate subsls_master data
+  const insertSubslsMaster = db.prepare(`
+    INSERT OR REPLACE INTO subsls_master (
+      kode, kecamatan, desa, nama_sls, korlap, pml, pcl, target_fasih
+    ) VALUES (
+      ?, ?, ?, ?, ?, ?, ?, ?
+    )
   `);
 
   let processedCount = 0;
@@ -601,37 +643,45 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
         openVal = Math.max(0, targetUpload - (draft + submitted + approved + rejected));
       }
 
-      let usaha_tidak_ditemukan = 0, usaha_ditemukan = 0, usaha_baru = 0, usaha_tutup = 0, usaha_ganda = 0;
-      let tidak_ditemukan = 0, ditemukan = 0, keluarga_baru = 0, meninggal = 0, tidak_eligible = 0, tidak_dapat_ditemui = 0;
-      let rumah_tunggal = 0, rumah_deret = 0, rumah_susun = 0, apartemen = 0, lainnya = 0;
+      // Dynamically populate master data if not se2026
+      if (surveyId !== 'se2026') {
+        let rowKec = colIdx.kec !== -1 ? String(row[colIdx.kec] || '').trim() : '';
+        let rowDesa = colIdx.desa !== -1 ? String(row[colIdx.desa] || '').trim() : '';
+        let rowKorlap = colIdx.korlap !== -1 ? String(row[colIdx.korlap] || '').trim() : '';
+        let rowPml = colIdx.pml !== -1 ? String(row[colIdx.pml] || '').trim() : '';
+        let rowPcl = colIdx.pcl !== -1 ? String(row[colIdx.pcl] || '').trim() : '';
 
-      if (prevUploadId) {
-        const prev = getPrevRecord.get(prevUploadId, kode);
-        if (prev) {
-          usaha_tidak_ditemukan = prev.usaha_tidak_ditemukan || 0;
-          usaha_ditemukan = prev.usaha_ditemukan || 0;
-          usaha_baru = prev.usaha_baru || 0;
-          usaha_tutup = prev.usaha_tutup || 0;
-          usaha_ganda = prev.usaha_ganda || 0;
-          tidak_ditemukan = prev.tidak_ditemukan || 0;
-          ditemukan = prev.ditemukan || 0;
-          keluarga_baru = prev.keluarga_baru || 0;
-          meninggal = prev.meninggal || 0;
-          tidak_eligible = prev.tidak_eligible || 0;
-          tidak_dapat_ditemui = prev.tidak_dapat_ditemui || 0;
-          rumah_tunggal = prev.rumah_tunggal || 0;
-          rumah_deret = prev.rumah_deret || 0;
-          rumah_susun = prev.rumah_susun || 0;
-          apartemen = prev.apartemen || 0;
-          lainnya = prev.lainnya || 0;
+        rowKec = toTitleCase(rowKec) || 'Kecamatan Lain';
+        rowDesa = toTitleCase(rowDesa) || 'Desa Lain';
+        rowKorlap = normalizeName(rowKorlap) || 'Lainnya';
+        rowPml = normalizeName(rowPml) || 'Lainnya';
+        rowPcl = normalizeName(rowPcl) || 'Lainnya';
+
+        insertSubslsMaster.run(kode, rowKec, rowDesa, kode, rowKorlap, rowPml, rowPcl, targetUpload);
+      }
+
+      let uTd = 0, uDit = 0, uBaru = 0, uTut = 0, uGan = 0, kTd = 0, kDit = 0, kBaru = 0, kMeng = 0, kTe = 0, kTdd = 0;
+      if (prevMuatanId) {
+        const prevM = getPrevMuatanRecord.get(prevMuatanId, kode);
+        if (prevM) {
+          uTd = prevM.usaha_tidak_ditemukan || 0;
+          uDit = prevM.usaha_ditemukan || 0;
+          uBaru = prevM.usaha_baru || 0;
+          uTut = prevM.usaha_tutup || 0;
+          uGan = prevM.usaha_ganda || 0;
+          kTd = prevM.tidak_ditemukan || 0;
+          kDit = prevM.ditemukan || 0;
+          kBaru = prevM.keluarga_baru || 0;
+          kMeng = prevM.meninggal || 0;
+          kTe = prevM.tidak_eligible || 0;
+          kTdd = prevM.tidak_dapat_ditemui || 0;
         }
       }
 
       insertStmt.run(
         uploadId, kode,
-        usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
-        tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
-        rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
+        uTd, uDit, uBaru, uTut, uGan,
+        kTd, kDit, kBaru, kMeng, kTe, kTdd,
         draft, openVal, submitted, approved, rejected, targetUpload
       );
 
@@ -642,8 +692,13 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
 
   updateTx(rows);
 
+  // Sinkronkan urutan status & muatan secara kronologis (mencegah data terhapus/0 saat upload parsial)
+  resyncChronologicalData();
+
   // Update total_subsls_terisi count
-  db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(processedCount, uploadId);
+  ensureAllSubslsInUpload(uploadId);
+  const actualCount = db.prepare('SELECT COUNT(*) as n FROM progres WHERE upload_id = ?').get(uploadId).n;
+  db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(actualCount, uploadId);
 
   // Rebuild summary cache for this upload
   const { rebuildSummaryCache } = require('../database');
@@ -669,8 +724,8 @@ function toTitleCase(str) {
   return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function loadMasterFromExcel(filePath) {
-  const db = getDb();
+function loadMasterFromExcel(filePath, surveyId = 'se2026') {
+  const db = getDb(surveyId);
   const wb = XLSX.readFile(filePath, { raw: true });
   const sheetName = wb.Sheets['master'] ? 'master' : (wb.SheetNames.find(s => s.toLowerCase().includes('data pencacahan')) || wb.SheetNames[0]);
   const ws = wb.Sheets[sheetName];
@@ -848,9 +903,9 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
         const headerIdx = findHeaderRowIndex(rows);
         const headers = rows[headerIdx].map(h => String(h || '').toLowerCase().trim());
         
-        const kodeIdx = findCol(headers, ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls']);
-        const ditemukanIdx = findCol(headers, ['ditemukan', 'keluarga_ditemukan', 'kk_ditemukan']);
-        const baruIdx = findCol(headers, ['baru', 'keluarga baru', 'keluarga_baru', 'kk_baru', 'kk baru']);
+        const kodeIdx = findCol(headers, KODE_ALIASES);
+        const ditemukanIdx = findCol(headers, DITEMUKAN_ALIASES);
+        const baruIdx = findCol(headers, KELUARGA_BARU_ALIASES);
         const meninggalIdx = findCol(headers, ['meninggal', 'keluarga_meninggal', 'kk_meninggal']);
         const teIdx = findCol(headers, ['tidak eligible', 'tidak_eligible', 'kk_tidak_eligible']);
         const tddIdx = findCol(headers, ['tidak dapat ditemui', 'tidak_dapat_ditemui', 'kk_tidak_dapat_ditemui']);
@@ -898,7 +953,7 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
       let subHeaders = null;
 
       for (let i = 0; i < Math.min(10, rows.length); i++) {
-        if (rows[i] && rows[i].map(c => String(c || '').toLowerCase()).some(c => c.includes('kode') || c.includes('level_6_full_code') || c.includes('smallcode'))) {
+        if (rows[i] && rows[i].map(c => String(c || '').toLowerCase()).some(c => KODE_ALIASES.some(alias => c.includes(alias)))) {
           headerIdx = i;
           break;
         }
@@ -912,13 +967,13 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
         }
 
         const effectiveHeaders = subHeaders ? subHeaders : headers;
-        const kodeIdx = findCol(headers, ['level_6_full_code', 'smallcode', 'kode', 'code', 'idsubsls']);
+        const kodeIdx = findCol(headers, KODE_ALIASES);
         
-        const ditemukanIdx = findCol(effectiveHeaders, ['ditemukan', 'usaha_ditemukan']);
-        const tutupIdx = findCol(effectiveHeaders, ['tutup', 'usaha_tutup']);
+        const ditemukanIdx = findCol(effectiveHeaders, USAHA_DITEMUKAN_ALIASES);
+        const tutupIdx = findCol(effectiveHeaders, ['tutup', 'usaha_tutup', 'usaha_tutup_permanen']);
         const gandaIdx = findCol(effectiveHeaders, ['ganda', 'usaha_ganda']);
         const tdIdx = findCol(effectiveHeaders, ['tidak ditemukan', 'tidak_ditemukan', 'usaha_tidak_ditemukan']);
-        const baruIdx = findCol(effectiveHeaders, ['baru', 'usaha_baru']);
+        const baruIdx = findCol(effectiveHeaders, USAHA_BARU_ALIASES);
         
         const startRow = subHeaders ? headerIdx + 2 : headerIdx + 1;
 
@@ -970,16 +1025,17 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
   );
   const uploadId = uploadResult.lastInsertRowid;
   
-  // Get previous upload_id
+  // Get previous upload_id strictly before or on this date chronologically
   const prevUploadRow = db.prepare(`
     SELECT u.id 
     FROM uploads u
     JOIN progres p ON u.id = p.upload_id
-    WHERE u.id < ? 
+    WHERE u.tanggal <= ? AND u.id != ?
     GROUP BY u.id
     HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
-    ORDER BY u.id DESC LIMIT 1
-  `).get(uploadId);
+    ORDER BY u.tanggal DESC, u.id DESC LIMIT 1
+  `).get(tanggal, uploadId);
+
   const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
   
   const insertProgres = db.prepare(`
@@ -1033,8 +1089,12 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
   if (statusFilePath) {
     parseAndSaveStatusExcel(statusFilePath, uploadId);
   }
+
+  // Sinkronkan urutan status secara kronologis (mencegah out-of-order upload issue)
+  resyncChronologicalStatus();
   
-  // Rebuild summary cache
+  // Ensure 100% SubSLS coverage & rebuild summary cache
+  ensureAllSubslsInUpload(uploadId);
   const { rebuildSummaryCache } = require('../database');
   rebuildSummaryCache(uploadId);
   
@@ -1374,6 +1434,7 @@ function parseRekapPetugasWilayah(filePath) {
 
   // Rebuild summary cache
   try {
+    ensureAllSubslsInUpload(uploadId);
     const { rebuildSummaryCache } = require('../database');
     rebuildSummaryCache(uploadId);
   } catch (_) {}
@@ -1386,6 +1447,168 @@ function parseRekapPetugasWilayah(filePath) {
   };
 }
 
+function ensureAllSubslsInUpload(uploadId) {
+  const { getDb } = require('../database');
+  const db = getDb();
+
+  const prevUploadRow = db.prepare(`
+    SELECT u.id 
+    FROM uploads u
+    JOIN progres p ON u.id = p.upload_id
+    WHERE u.id < ? 
+    GROUP BY u.id
+    HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
+    ORDER BY u.id DESC LIMIT 1
+  `).get(uploadId);
+  const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
+
+  const masterSubsls = db.prepare('SELECT kode, target_fasih FROM subsls_master').all();
+  const existingSubsls = new Set(
+    db.prepare('SELECT kode FROM progres WHERE upload_id = ?').all(uploadId).map(r => r.kode)
+  );
+
+  const missingSubsls = masterSubsls.filter(m => !existingSubsls.has(m.kode));
+  if (missingSubsls.length === 0) return 0;
+
+  const getPrevProgres = db.prepare('SELECT * FROM progres WHERE upload_id = ? AND kode = ?');
+  const insertProgres = db.prepare(`
+    INSERT OR REPLACE INTO progres (
+      upload_id, kode,
+      usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
+      tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
+      rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
+      draft, open, submitted_by_pcl, approved, rejected, target_upload
+    ) VALUES (
+      ?, ?,
+      ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?
+    )
+  `);
+
+  db.transaction(() => {
+    for (const m of missingSubsls) {
+      let prev = null;
+      if (prevUploadId) {
+        prev = getPrevProgres.get(prevUploadId, m.kode);
+      }
+      insertProgres.run(
+        uploadId, m.kode,
+        prev ? prev.usaha_tidak_ditemukan : 0,
+        prev ? prev.usaha_ditemukan : 0,
+        prev ? prev.usaha_baru : 0,
+        prev ? prev.usaha_tutup : 0,
+        prev ? prev.usaha_ganda : 0,
+        prev ? prev.tidak_ditemukan : 0,
+        prev ? prev.ditemukan : 0,
+        prev ? prev.keluarga_baru : 0,
+        prev ? prev.meninggal : 0,
+        prev ? prev.tidak_eligible : 0,
+        prev ? prev.tidak_dapat_ditemui : 0,
+        prev ? prev.rumah_tunggal : 0,
+        prev ? prev.rumah_deret : 0,
+        prev ? prev.rumah_susun : 0,
+        prev ? prev.apartemen : 0,
+        prev ? prev.lainnya : 0,
+        prev ? prev.draft : 0,
+        prev ? prev.open : 0,
+        prev ? prev.submitted_by_pcl : 0,
+        prev ? prev.approved : 0,
+        prev ? prev.rejected : 0,
+        prev ? (prev.target_upload || m.target_fasih) : m.target_fasih
+      );
+    }
+  })();
+
+  const actualCount = db.prepare('SELECT COUNT(*) as n FROM progres WHERE upload_id = ?').get(uploadId).n;
+  db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(actualCount, uploadId);
+  return missingSubsls.length;
+}
+
+/**
+ * Menyinkronkan status FASIH dan progres muatan secara kronologis berdasarkan urutan tanggal (tanggal ASC, id ASC)
+ * sehingga apabila pengguna meng-upload salah satu jenis berkas saja (parsial), data jenis berkas lainnya
+ * TIDAK PERNAH terhapus atau bernilai 0.
+ */
+function resyncChronologicalData() {
+  const db = getDb();
+  const uploads = db.prepare('SELECT id, tanggal FROM uploads ORDER BY tanggal ASC, id ASC').all();
+  if (uploads.length <= 1) return;
+
+  let lastKnownStatusUploadId = null;
+  let lastKnownMuatanUploadId = null;
+
+  for (const u of uploads) {
+    // 1. Cek keberadaan data status FASIH
+    const hasStatus = db.prepare(`
+      SELECT SUM(COALESCE(draft, 0) + COALESCE(submitted_by_pcl, 0) + COALESCE(approved, 0) + COALESCE(rejected, 0)) AS total
+      FROM progres WHERE upload_id = ?
+    `).get(u.id);
+
+    if (hasStatus && hasStatus.total > 0) {
+      lastKnownStatusUploadId = u.id;
+    } else if (lastKnownStatusUploadId && lastKnownStatusUploadId !== u.id) {
+      db.transaction(() => {
+        db.prepare(`
+          UPDATE progres 
+          SET 
+            draft = (SELECT COALESCE(p2.draft, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            open = (SELECT COALESCE(p2.open, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            submitted_by_pcl = (SELECT COALESCE(p2.submitted_by_pcl, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            approved = (SELECT COALESCE(p2.approved, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            rejected = (SELECT COALESCE(p2.rejected, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            target_upload = (SELECT COALESCE(p2.target_upload, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode)
+          WHERE upload_id = ?
+        `).run(
+          lastKnownStatusUploadId, lastKnownStatusUploadId, lastKnownStatusUploadId, 
+          lastKnownStatusUploadId, lastKnownStatusUploadId, lastKnownStatusUploadId, 
+          u.id
+        );
+      })();
+    }
+
+    // 2. Cek keberadaan data progres muatan (keluarga & usaha)
+    const hasMuatan = db.prepare(`
+      SELECT SUM(COALESCE(usaha_ditemukan, 0) + COALESCE(usaha_baru, 0) + COALESCE(ditemukan, 0) + COALESCE(keluarga_baru, 0)) AS total
+      FROM progres WHERE upload_id = ?
+    `).get(u.id);
+
+    if (hasMuatan && hasMuatan.total > 0) {
+      lastKnownMuatanUploadId = u.id;
+    } else if (lastKnownMuatanUploadId && lastKnownMuatanUploadId !== u.id) {
+      db.transaction(() => {
+        db.prepare(`
+          UPDATE progres 
+          SET 
+            usaha_tidak_ditemukan = (SELECT COALESCE(p2.usaha_tidak_ditemukan, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            usaha_ditemukan = (SELECT COALESCE(p2.usaha_ditemukan, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            usaha_baru = (SELECT COALESCE(p2.usaha_baru, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            usaha_tutup = (SELECT COALESCE(p2.usaha_tutup, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            usaha_ganda = (SELECT COALESCE(p2.usaha_ganda, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            tidak_ditemukan = (SELECT COALESCE(p2.tidak_ditemukan, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            ditemukan = (SELECT COALESCE(p2.ditemukan, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            keluarga_baru = (SELECT COALESCE(p2.keluarga_baru, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            meninggal = (SELECT COALESCE(p2.meninggal, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            tidak_eligible = (SELECT COALESCE(p2.tidak_eligible, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            tidak_dapat_ditemui = (SELECT COALESCE(p2.tidak_dapat_ditemui, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode)
+          WHERE upload_id = ?
+        `).run(
+          lastKnownMuatanUploadId, lastKnownMuatanUploadId, lastKnownMuatanUploadId,
+          lastKnownMuatanUploadId, lastKnownMuatanUploadId, lastKnownMuatanUploadId,
+          lastKnownMuatanUploadId, lastKnownMuatanUploadId, lastKnownMuatanUploadId,
+          lastKnownMuatanUploadId, lastKnownMuatanUploadId,
+          u.id
+        );
+      })();
+    }
+  }
+}
+
+function resyncChronologicalStatus() {
+  resyncChronologicalData();
+}
+
 module.exports = {
   parseAndSaveExcel,
   loadMasterFromJson,
@@ -1393,6 +1616,9 @@ module.exports = {
   parseAndSaveStatusExcel,
   parseAndSaveStatusExcelOnly,
   parseAndSaveSeparateExports,
-  parseRekapPetugasWilayah
+  parseRekapPetugasWilayah,
+  ensureAllSubslsInUpload,
+  resyncChronologicalStatus,
+  resyncChronologicalData
 };
 

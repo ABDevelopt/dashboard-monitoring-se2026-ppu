@@ -6,7 +6,7 @@
       <i class="bi bi-envelope-at-fill text-blue"></i> Pengaturan Data Email Petugas
     </h1>
     <p class="m-0 mt-1 fs-sm text-muted">
-      Kelola daftar akun email, Sobat ID, dan identitas petugas pencacah (PCL/PML/Korlap) SE2026.
+      Kelola daftar akun email, Sobat ID, dan identitas petugas pencacah (PCL/PML/Korlap) <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'SE2026 PPU') %>.
     </p>
   </div>
   <div class="d-flex items-center gap-2-5 flex-wrap">
@@ -16,12 +16,12 @@
     <button onclick="openCreateModal()" class="btn btn-primary py-2 px-3-5 fs-13 fw-semibold rounded-10 d-flex items-center gap-1-5">
       <i class="bi bi-person-plus-fill"></i> Tambah Petugas
     </button>
-    <form action="/admin/petugas-email/resync" method="POST" class="m-0">
+    <form action="<%= navPrefix %>/admin/petugas-email/resync" method="POST" class="m-0">
       <button type="submit" class="btn btn-secondary py-2 px-3-5 fs-13 fw-semibold rounded-10 d-flex items-center gap-1-5" title="Cocokkan Ulang Email ke Master SubSLS">
         <i class="bi bi-arrow-repeat"></i> Sync Master
       </button>
     </form>
-    <a href="/admin/petugas-email/export" class="btn btn-secondary py-2 px-3-5 fs-13 fw-semibold rounded-10 d-flex items-center gap-1-5">
+    <a href="<%= navPrefix %>/admin/petugas-email/export" class="btn btn-secondary py-2 px-3-5 fs-13 fw-semibold rounded-10 d-flex items-center gap-1-5">
       <i class="bi bi-download"></i> Unduh CSV
     </a>
   </div>
@@ -53,7 +53,7 @@
 <!-- SEARCH BAR & DATA TABLE -->
 <div class="card p-5 rounded-lg bg-card border-default">
   
-  <form action="/admin/petugas-email" method="GET" class="mb-4-5 d-flex gap-2-5 flex-wrap">
+  <form action="<%= navPrefix %>/admin/petugas-email" method="GET" class="mb-4-5 d-flex gap-2-5 flex-wrap">
     <div class="relative flex-1" style="min-width: 260px;">
       <i class="bi bi-search absolute left-3 top-1-2 translate-y-center text-muted fs-md"></i>
       <input type="text" name="q" value="<%= query %>" placeholder="Cari nama lengkap, email, atau Sobat ID..." class="w-full py-2 px-3.5 border-default rounded-10 bg-body text-primary fs-13 outline-none" style="padding-left: 38px;">
@@ -62,7 +62,7 @@
       Cari
     </button>
     <% if (query) { %>
-      <a href="/admin/petugas-email" class="btn btn-secondary py-2 px-3-5 fs-13 rounded-10 text-red">
+      <a href="<%= navPrefix %>/admin/petugas-email" class="btn btn-secondary py-2 px-3-5 fs-13 rounded-10 text-red">
         Reset Filter
       </a>
     <% } %>
@@ -140,7 +140,7 @@
       <button onclick="closeCreateModal()" class="bg-none border-0 text-muted fs-title-md cursor-pointer">&times;</button>
     </div>
     
-    <form action="/admin/petugas-email/create" method="POST">
+    <form action="<%= navPrefix %>/admin/petugas-email/create" method="POST">
       <div class="mb-3-5">
         <label class="d-block fs-caption fw-semibold text-muted mb-1 text-uppercase">Nama Lengkap *</label>
         <input type="text" name="nama_lengkap" required placeholder="Contoh: Aco Fitriadi" class="w-full py-2-5 px-3 rounded-10 border-default bg-body text-primary fs-13 outline-none">
@@ -244,7 +244,7 @@
       <button onclick="closeUploadRekapModal()" class="bg-none border-0 text-muted fs-title-md cursor-pointer">&times;</button>
     </div>
     
-    <form action="/admin/petugas-email/upload-rekap" method="POST" enctype="multipart/form-data">
+    <form action="<%= navPrefix %>/admin/petugas-email/upload-rekap" method="POST" enctype="multipart/form-data">
       <p class="fs-xs text-muted mb-4 lh-base">
         Upload file <code>rekap_petugas_wilayah_*.csv</code> atau <code>.xlsx</code> untuk secara otomatis mengaitkan alamat email petugas dengan kode wilayah SubSLS pada master data.
       </p>
@@ -278,7 +278,7 @@
   }
 
   function openEditModal(p) {
-    document.getElementById('editForm').action = `/admin/petugas-email/edit/${p.id}`;
+    document.getElementById('editForm').action = `<%= navPrefix %>/admin/petugas-email/edit/${p.id}`;
     document.getElementById('editNama').value = p.nama_lengkap || '';
     document.getElementById('editEmail').value = p.email || '';
     document.getElementById('editSobatId').value = p.sobat_id || '';
@@ -290,7 +290,7 @@
   }
 
   function openDeleteModal(id, nama) {
-    document.getElementById('deleteForm').action = `/admin/petugas-email/delete/${id}`;
+    document.getElementById('deleteForm').action = `<%= navPrefix %>/admin/petugas-email/delete/${id}`;
     document.getElementById('deleteNama').textContent = nama;
     document.getElementById('modalDelete').style.display = 'flex';
   }

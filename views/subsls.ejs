@@ -13,7 +13,7 @@
       <div class="empty-state-icon"><i class="bi bi-geo-alt"></i></div>
       <div class="empty-state-title">Belum Ada Data Sub-SLS</div>
       <div class="empty-state-text">Upload file Excel untuk mulai memantau progres pendataan per satuan lingkungan setempat (SLS) di seluruh wilayah.</div>
-      <a href="/admin/upload" class="empty-state-action"><i class="bi bi-cloud-arrow-up-fill"></i> Upload Data Sekarang</a>
+      <a href="<%= navPrefix %>/admin/upload" class="empty-state-action"><i class="bi bi-cloud-arrow-up-fill"></i> Upload Data Sekarang</a>
     </div>
   <% } else { %>
     <div id="ajax-container">
@@ -23,11 +23,11 @@
       <div class="card-header flex-between" style="margin-bottom: 8px; padding-bottom: 8px; gap: 8px;">
         <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-search"></i> Filter Pencarian SubSLS</div>
         <div class="card-actions flex-start" style="gap: 6px;">
-          <a href="/subsls" class="btn btn-secondary btn-xs" title="Reset Filter"><i class="bi bi-arrow-repeat"></i><span class="btn-text-desktop"> Reset Filter</span></a>
+          <a href="<%= navPrefix %>/subsls" class="btn btn-secondary btn-xs" title="Reset Filter"><i class="bi bi-arrow-repeat"></i><span class="btn-text-desktop"> Reset Filter</span></a>
         </div>
       </div>
       
-      <form action="/subsls" method="GET" id="filterForm">
+      <form action="<%= navPrefix %>/subsls" method="GET" id="filterForm">
         <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           
           <div>
@@ -146,6 +146,8 @@
                   <th rowspan="2">Wilayah</th>
                   <th rowspan="2">Petugas (PCL/PML/Korlap)</th>
                   <th rowspan="2" class="text-center">Status</th>
+                  <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 130px; white-space: nowrap;">FASIH %</th>
+                  <th rowspan="2" class="text-center bg-cyan-soft muatan-col" style="min-width: 110px; white-space: nowrap;">Muatan %</th>
                   <th colspan="<%= activeSubslsStatusCols %>" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
                   <th colspan="3" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
                 </tr>
@@ -174,6 +176,18 @@
               </thead>
               <tbody>
                 <% data.forEach((row, index) => { %>
+                  <% 
+                    const fReal = (row.submitted_by_pcl || 0) + (row.approved || 0) + (row.rejected || 0);
+                    const fTgt = Math.round(row.target_fasih || 0);
+                    const fPctVal = fTgt > 0 ? ((100 * fReal) / fTgt).toFixed(2) : '0.00';
+                    const fW = Math.min(parseFloat(fPctVal), 100);
+                    const fColor = fW >= 100 ? 'var(--accent-green)' : (fW < 40 ? 'var(--accent-red)' : 'var(--accent-purple)');
+
+                    const mReal = row.muatan_selesai || 0;
+                    const mTgt = Math.round(row.muatan || 0);
+                    const mPctVal = mTgt > 0 ? ((100 * mReal) / mTgt).toFixed(2) : '0.00';
+                    const mW = Math.min(parseFloat(mPctVal), 100);
+                  %>
                   <tr class="<%= filterKode === row.kode ? 'active' : '' %>" style="<%= filterKode === row.kode ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                     <td class="td-code hide-md"><%= row.kode %></td>
@@ -224,6 +238,28 @@
                       <% } else { %>
                         <span class="badge badge-purple">Melebihi Target</span>
                       <% } %>
+                    </td>
+
+                    <!-- FASIH % Column with Progress Bar -->
+                    <td class="bg-purple-soft" data-sort="<%= parseFloat(fPctVal) %>" style="min-width: 130px; padding: 6px 10px; vertical-align: middle;">
+                      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px; white-space: nowrap;">
+                        <span style="font-weight:700; color:<%= fColor %>"><%= fPctVal %>%</span>
+                        <span><%= fReal.toLocaleString('id-ID') %> / <%= fTgt.toLocaleString('id-ID') %></span>
+                      </div>
+                      <div style="height:5px; background:var(--bg-progress-wrap); border-radius:99px; overflow:hidden;">
+                        <div class="progress-bar <%= fW >= 100 ? 'green' : (fW < 40 ? 'red' : 'purple') %>" data-width="<%= fW %>" style="width:0%; height:100%; border-radius:99px;"></div>
+                      </div>
+                    </td>
+
+                    <!-- Muatan % Column with Progress Bar -->
+                    <td class="bg-cyan-soft muatan-col" data-sort="<%= parseFloat(mPctVal) %>" style="min-width: 110px; padding: 6px 10px; vertical-align: middle; white-space: nowrap;">
+                      <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px; white-space: nowrap;">
+                        <span style="font-weight:700; color:var(--accent-cyan)"><%= mPctVal %>%</span>
+                        <span><%= mReal.toLocaleString('id-ID') %> / <%= mTgt.toLocaleString('id-ID') %></span>
+                      </div>
+                      <div style="height:5px; background:var(--bg-progress-wrap); border-radius:99px; overflow:hidden;">
+                        <div class="progress-bar <%= mW >= 100 ? 'green' : (mW < 40 ? 'red' : 'blue') %>" data-width="<%= mW %>" style="width:0%; height:100%; border-radius:99px;"></div>
+                      </div>
                     </td>
                     
                     <% if (settings.show_status_open === '1' || settings.show_status_open === undefined) { %>

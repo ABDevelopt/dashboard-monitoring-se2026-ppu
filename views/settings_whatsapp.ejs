@@ -286,12 +286,12 @@
         </div>
 
         <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-          <form action="/admin/whatsapp/reconnect" method="POST">
+          <form action="<%= navPrefix %>/admin/whatsapp/reconnect" method="POST">
             <button type="submit" class="btn btn-secondary" style="padding: 8px 14px; font-size: 12px; font-weight: 600;">
               <i class="bi bi-arrow-clockwise"></i> Reset Koneksi
             </button>
           </form>
-          <form action="/admin/whatsapp/logout" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin memutuskan hubungan WhatsApp?')">
+          <form action="<%= navPrefix %>/admin/whatsapp/logout" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin memutuskan hubungan WhatsApp?')">
             <button type="submit" class="btn btn-danger" style="padding: 8px 14px; font-size: 12px; font-weight: 600;">
               <i class="bi bi-box-arrow-right"></i> Putuskan Hubungan
             </button>
@@ -334,7 +334,7 @@
       <% } %>
       
       <% if (waStatus.status !== 'CONNECTED') { %>
-        <form action="/admin/whatsapp/reconnect" method="POST" style="margin-top: 16px; display: flex; justify-content: center;">
+        <form action="<%= navPrefix %>/admin/whatsapp/reconnect" method="POST" style="margin-top: 16px; display: flex; justify-content: center;">
           <button type="submit" class="btn btn-secondary btn-action-trigger" style="font-size: 12px; padding: 8px 16px; border-color: var(--accent-red); color: var(--accent-red); font-weight: bold;" title="Hapus sesi temporary gantung dan terbitkan QR Code baru yang segar">
             <i class="bi bi-arrow-clockwise" style="margin-right: 4px;"></i> Reset &amp; Terbitkan QR Code Baru
           </button>
@@ -364,7 +364,7 @@
           <i class="bi bi-chat-text"></i> Konfigurasi Grup & Notifikasi
         </div>
 
-        <form action="/admin/whatsapp/settings" method="POST" id="whatsapp-settings-form">
+        <form action="<%= navPrefix %>/admin/whatsapp/settings" method="POST" id="whatsapp-settings-form">
           <!-- Toggle Notification -->
           <div class="settings-field" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed var(--border);">
             <div>
@@ -530,7 +530,7 @@
             Kirimkan satu pesan tes langsung ke grup WhatsApp <strong><%= settings.whatsapp_group_name %></strong> untuk memverifikasi fungsionalitas pengiriman.
           </p>
           
-          <form action="/admin/whatsapp/test" method="POST">
+          <form action="<%= navPrefix %>/admin/whatsapp/test" method="POST">
             <button type="submit" class="btn btn-secondary" style="padding: 10px 20px; font-size: 13px; font-weight: bold; border-color: #25d366; color: var(--text-primary);">
               <i class="bi bi-whatsapp" style="color: #25d366; margin-right: 6px;"></i> Kirim Pesan Tes ke Grup
             </button>
