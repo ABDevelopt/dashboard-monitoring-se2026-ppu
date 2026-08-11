@@ -1184,20 +1184,10 @@
             color: getHoverBorderColor(),
             fillOpacity: 0.85
           });
-          if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-            // Only bring to front if the feature has a small bounding box area.
-            // Large container features (e.g. 100+ km2 SLS) must NOT be brought to front on hover,
-            // otherwise they jump on top of smaller enclosed SLS features and block all mouse/click events.
-            if (layer.getBounds) {
-              const b = layer.getBounds();
-              const approxSpan = (b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest());
-              if (approxSpan < 0.005) {
-                layer.bringToFront();
-              }
-            } else {
-              layer.bringToFront();
-            }
-          }
+          // Note: We deliberately do NOT call layer.bringToFront() here because features are already
+          // pre-sorted by area descending (largest first -> smallest last). Not calling bringToFront()
+          // preserves the natural DOM stacking order where smaller enclosed SLS features remain on top
+          // and receive all mouse click/hover events without being blocked by larger container features.
         }
 
         function resetHighlightKec(e) {
@@ -2072,11 +2062,7 @@
                 const nmkec = (layer.feature.properties.nmkec || '').toLowerCase();
                 if (nmkec.includes(q)) {
                   layer.setStyle({ weight: 3, color: 'var(--accent-cyan)', fillOpacity: 0.85 });
-                  if (layer.getBounds) {
-                    const b = layer.getBounds();
-                    if ((b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest()) < 0.005) layer.bringToFront();
-                    foundBounds.extend(b);
-                  }
+                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
                   hasMatch = true;
                 } else {
                   layer.setStyle({ opacity: 0.1, fillOpacity: 0.05 });
@@ -2088,11 +2074,7 @@
                 const nmkec = (layer.feature.properties.nmkec || '').toLowerCase();
                 if (nmdesa.includes(q) || nmkec.includes(q)) {
                   layer.setStyle({ weight: 3, color: 'var(--accent-cyan)', fillOpacity: 0.85 });
-                  if (layer.getBounds) {
-                    const b = layer.getBounds();
-                    if ((b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest()) < 0.005) layer.bringToFront();
-                    foundBounds.extend(b);
-                  }
+                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
                   hasMatch = true;
                 } else {
                   layer.setStyle({ opacity: 0.1, fillOpacity: 0.05 });
@@ -2105,11 +2087,7 @@
                 const kode = (layer.feature.properties.kode || '').toLowerCase();
                 if (nmsls.includes(q) || nmdesa.includes(q) || kode.includes(q)) {
                   layer.setStyle({ weight: 3, color: 'var(--accent-cyan)', fillOpacity: 0.85 });
-                  if (layer.getBounds) {
-                    const b = layer.getBounds();
-                    if ((b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest()) < 0.005) layer.bringToFront();
-                    foundBounds.extend(b);
-                  }
+                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
                   hasMatch = true;
                 } else {
                   layer.setStyle({ opacity: 0.1, fillOpacity: 0.05 });
