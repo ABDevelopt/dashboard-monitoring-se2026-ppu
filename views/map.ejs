@@ -1118,7 +1118,8 @@
               weight: isSelectedKec ? 2.0 : 0.6,
               opacity: isSelectedKec ? 1 : 0.15,
               color: currentBasemapType === 'satellite' ? '#38bdf8' : 'var(--accent-blue)',
-              fillOpacity: 0
+              fillOpacity: 0,
+              fillRule: 'nonzero'
             };
           }
           return {
@@ -1126,7 +1127,8 @@
             weight: 1.5,
             opacity: isSelectedKec ? 1 : 0.08,
             color: getBorderColor(),
-            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.50 : 0.42) : 0.02
+            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.50 : 0.42) : 0.02,
+            fillRule: 'nonzero'
           };
         }
 
@@ -1138,7 +1140,8 @@
               weight: isSelectedKec ? 1.0 : 0.3,
               opacity: isSelectedKec ? 1 : 0.15,
               color: currentBasemapType === 'satellite' ? '#38bdf8' : 'var(--accent-blue)',
-              fillOpacity: 0
+              fillOpacity: 0,
+              fillRule: 'nonzero'
             };
           }
           return {
@@ -1146,7 +1149,8 @@
             weight: 0.6,
             opacity: isSelectedKec ? 1 : 0.08,
             color: getBorderColor(),
-            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.45 : 0.38) : 0.02
+            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.45 : 0.38) : 0.02,
+            fillRule: 'nonzero'
           };
         }
 
@@ -1158,7 +1162,8 @@
               weight: isSelectedKec ? 0.7 : 0.2,
               opacity: isSelectedKec ? 1 : 0.15,
               color: currentBasemapType === 'satellite' ? '#a7f3d0' : '#059669',
-              fillOpacity: 0
+              fillOpacity: 0,
+              fillRule: 'nonzero'
             };
           }
           return {
@@ -1166,7 +1171,8 @@
             weight: 0.35,
             opacity: isSelectedKec ? 1 : 0.08,
             color: getBorderColor(),
-            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.45 : 0.38) : 0.02
+            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.45 : 0.38) : 0.02,
+            fillRule: 'nonzero'
           };
         }
 
@@ -1179,7 +1185,18 @@
             fillOpacity: 0.85
           });
           if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-            layer.bringToFront();
+            // Only bring to front if the feature has a small bounding box area.
+            // Large container features (e.g. 100+ km2 SLS) must NOT be brought to front on hover,
+            // otherwise they jump on top of smaller enclosed SLS features and block all mouse/click events.
+            if (layer.getBounds) {
+              const b = layer.getBounds();
+              const approxSpan = (b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest());
+              if (approxSpan < 0.005) {
+                layer.bringToFront();
+              }
+            } else {
+              layer.bringToFront();
+            }
           }
         }
 
@@ -2054,9 +2071,12 @@
               kecLayer.eachLayer(layer => {
                 const nmkec = (layer.feature.properties.nmkec || '').toLowerCase();
                 if (nmkec.includes(q)) {
-                  layer.bringToFront();
                   layer.setStyle({ weight: 3, color: 'var(--accent-cyan)', fillOpacity: 0.85 });
-                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
+                  if (layer.getBounds) {
+                    const b = layer.getBounds();
+                    if ((b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest()) < 0.005) layer.bringToFront();
+                    foundBounds.extend(b);
+                  }
                   hasMatch = true;
                 } else {
                   layer.setStyle({ opacity: 0.1, fillOpacity: 0.05 });
@@ -2067,9 +2087,12 @@
                 const nmdesa = (layer.feature.properties.nmdesa || '').toLowerCase();
                 const nmkec = (layer.feature.properties.nmkec || '').toLowerCase();
                 if (nmdesa.includes(q) || nmkec.includes(q)) {
-                  layer.bringToFront();
                   layer.setStyle({ weight: 3, color: 'var(--accent-cyan)', fillOpacity: 0.85 });
-                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
+                  if (layer.getBounds) {
+                    const b = layer.getBounds();
+                    if ((b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest()) < 0.005) layer.bringToFront();
+                    foundBounds.extend(b);
+                  }
                   hasMatch = true;
                 } else {
                   layer.setStyle({ opacity: 0.1, fillOpacity: 0.05 });
@@ -2081,9 +2104,12 @@
                 const nmdesa = (layer.feature.properties.nmdesa || '').toLowerCase();
                 const kode = (layer.feature.properties.kode || '').toLowerCase();
                 if (nmsls.includes(q) || nmdesa.includes(q) || kode.includes(q)) {
-                  layer.bringToFront();
                   layer.setStyle({ weight: 3, color: 'var(--accent-cyan)', fillOpacity: 0.85 });
-                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
+                  if (layer.getBounds) {
+                    const b = layer.getBounds();
+                    if ((b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest()) < 0.005) layer.bringToFront();
+                    foundBounds.extend(b);
+                  }
                   hasMatch = true;
                 } else {
                   layer.setStyle({ opacity: 0.1, fillOpacity: 0.05 });
