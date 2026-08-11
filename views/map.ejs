@@ -997,12 +997,14 @@
         }
 
         // Data holders
+        let kecGeoJson = null;
         let desaGeoJson = null;
         let slsGeoJson = null;
         let desaStats = [];
         let slsStats = [];
         let kecStats = [];
         
+        let kecLayer = null;
         let desaLayer = null;
         let slsLayer = null;
         let isOutlineOnlyMode = false;
@@ -1113,7 +1115,7 @@
           if (isOutlineOnlyMode) {
             return {
               fillColor: 'transparent',
-              weight: isSelectedKec ? 1.2 : 0.4,
+              weight: isSelectedKec ? 2.0 : 0.6,
               opacity: isSelectedKec ? 1 : 0.15,
               color: currentBasemapType === 'satellite' ? '#38bdf8' : 'var(--accent-blue)',
               fillOpacity: 0
@@ -1121,10 +1123,10 @@
           }
           return {
             fillColor: getKecColor(feature.properties.nmkec),
-            weight: 0.8,
+            weight: 1.5,
             opacity: isSelectedKec ? 1 : 0.08,
             color: getBorderColor(),
-            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.48 : 0.40) : 0.02
+            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.50 : 0.42) : 0.02
           };
         }
 
@@ -1181,12 +1183,16 @@
           }
         }
 
+        function resetHighlightKec(e) {
+          if (kecLayer) kecLayer.resetStyle(e.target);
+        }
+
         function resetHighlightDesa(e) {
-          desaLayer.resetStyle(e.target);
+          if (desaLayer) desaLayer.resetStyle(e.target);
         }
 
         function resetHighlightSls(e) {
-          slsLayer.resetStyle(e.target);
+          if (slsLayer) slsLayer.resetStyle(e.target);
         }
 
         // Top Statistics Calculator
@@ -1226,7 +1232,7 @@
           }
 
           const bounds = L.latLngBounds();
-          const targetLayer = activeLayerName === 'desa' ? desaLayer : slsLayer;
+          const targetLayer = activeLayerName === 'kec' ? kecLayer : (activeLayerName === 'desa' ? desaLayer : slsLayer);
           
           if (targetLayer) {
             targetLayer.eachLayer(layer => {
@@ -1659,77 +1665,87 @@
         }
 
         // Initialize Map GeoJSON layers
+        function setupKecLayer() {
+          if (!kecGeoJson) return;
+          kecLayer = L.geoJSON(kecGeoJson, {
+            style: kecStyle,
+            onEachFeature: (feature, layer) => {
+              layer.on({
+                mouseover: highlightFeature,
+                mouseout: resetHighlightKec,
+                click: (e) => {
+                  showKecDetails(feature.properties.nmkec);
+                  
+                  const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === feature.properties.nmkec.toUpperCase());
+                  const fasihPct = stat ? parseFloat(stat.fasih_pct_str || 0) : 0;
+                  const totalFasih = stat ? stat.target_fasih_total : 0;
+                  const realisasiFasih = stat ? ((stat.submitted_total || 0) + (stat.approved_total || 0) + (stat.rejected_total || 0)) : 0;
+
+                  const popupHtml = `
+                    <div style="font-family: 'Inter', sans-serif; min-width: 200px; padding: 2px;">
+                      <strong style="font-size: 13.5px; color: var(--accent-blue);"><i class="bi bi-diagram-3-fill"></i> Kec. ${feature.properties.nmkec}</strong><br>
+                      <span style="font-size: 11px; color: var(--text-secondary);">Kabupaten Penajam Paser Utara</span>
+                      <table class="info-table">
+                        <tr><td class="label">Progres FASIH</td><td class="value" style="color: ${fasihPct >= 100 ? 'var(--accent-green)' : 'var(--accent-blue)'};">${fasihPct}%</td></tr>
+                        <tr><td class="label">Realisasi Dok.</td><td class="value">${realisasiFasih.toLocaleString('id-ID')} / ${totalFasih.toLocaleString('id-ID')}</td></tr>
+                        <tr><td class="label">Total SLS</td><td class="value">${stat ? stat.total_subsls : 0} SLS</td></tr>
+                      </table>
+                      <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
+                        <a href="/kecamatan?kec=${encodeURIComponent(feature.properties.nmkec)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
+                          <i class="bi bi-diagram-3"></i> Drilldown Kec. ${feature.properties.nmkec}
+                        </a>
+                      </div>
+                    </div>
+                  `;
+                  layer.bindPopup(popupHtml).openPopup();
+                }
+              });
+            }
+          });
+        }
+
         function setupDesaLayer() {
+          if (!desaGeoJson) return;
           desaLayer = L.geoJSON(desaGeoJson, {
-            style: (feature) => {
-              if (activeLayerName === 'kec') return kecStyle(feature);
-              return desaStyle(feature);
-            },
+            style: desaStyle,
             onEachFeature: (feature, layer) => {
               layer.on({
                 mouseover: highlightFeature,
                 mouseout: resetHighlightDesa,
                 click: (e) => {
-                  if (activeLayerName === 'kec') {
-                    showKecDetails(feature.properties.nmkec);
-                    
-                    const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === feature.properties.nmkec.toUpperCase());
-                    const fasihPct = stat ? parseFloat(stat.fasih_pct_str || 0) : 0;
-                    const totalFasih = stat ? stat.target_fasih_total : 0;
-                    const realisasiFasih = stat ? ((stat.submitted_total || 0) + (stat.approved_total || 0) + (stat.rejected_total || 0)) : 0;
-
-                    const popupHtml = `
-                      <div style="font-family: 'Inter', sans-serif; min-width: 200px; padding: 2px;">
-                        <strong style="font-size: 13.5px; color: var(--accent-blue);"><i class="bi bi-diagram-3-fill"></i> Kec. ${feature.properties.nmkec}</strong><br>
-                        <span style="font-size: 11px; color: var(--text-secondary);">Kabupaten Penajam Paser Utara</span>
-                        <table class="info-table">
-                          <tr><td class="label">Progres FASIH</td><td class="value" style="color: ${fasihPct >= 100 ? 'var(--accent-green)' : 'var(--accent-blue)'};">${fasihPct}%</td></tr>
-                          <tr><td class="label">Realisasi Dok.</td><td class="value">${realisasiFasih.toLocaleString('id-ID')} / ${totalFasih.toLocaleString('id-ID')}</td></tr>
-                          <tr><td class="label">Total SLS</td><td class="value">${stat ? stat.total_subsls : 0} SLS</td></tr>
-                        </table>
-                        <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
-                          <a href="/kecamatan?kec=${encodeURIComponent(feature.properties.nmkec)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
-                            <i class="bi bi-diagram-3"></i> Drilldown Kec. ${feature.properties.nmkec}
-                          </a>
-                        </div>
+                  showDesaDetails(feature.properties);
+                  
+                  // Open popup
+                  const stat = desaStats.find(s => s.iddesa === feature.properties.iddesa);
+                  const total = stat ? stat.total_subsls : 0;
+                  const selesai = stat ? stat.selesai : 0;
+                  const targetFasih = stat ? stat.target_fasih_total : 0;
+                  const submitted = stat ? stat.submitted_total : 0;
+                  const approved = stat ? stat.approved_total : 0;
+                  const rejected = stat ? stat.rejected_total : 0;
+                  const totalRealisasiFasih = submitted + approved + rejected;
+                  const fasihPct = targetFasih ? Math.min(parseFloat(((totalRealisasiFasih / targetFasih) * 100).toFixed(2)), 100) : 0;
+                  const totalMuatan = stat ? stat.total_muatan : 0;
+                  const usaha = stat ? stat.usaha_total : 0;
+                  const pct = totalMuatan ? ((usaha / totalMuatan) * 100).toFixed(2) : '0.00';
+                  
+                  const popupHtml = `
+                    <div style="font-family: 'Inter', sans-serif; min-width: 190px; padding: 2px;">
+                      <strong style="font-size: 13px; color: var(--text-primary);">Desa ${feature.properties.nmdesa}</strong><br>
+                      <span style="font-size: 11px; color: var(--text-secondary);">Kec. ${feature.properties.nmkec}</span>
+                      <table class="info-table">
+                        <tr><td class="label">SLS Selesai</td><td class="value">${selesai} / ${total} SLS</td></tr>
+                        <tr><td class="label">Progres FASIH</td><td class="value" style="color: ${fasihPct >= 100 ? 'var(--accent-green)' : 'var(--accent-blue)'};">${fasihPct}%</td></tr>
+                        <tr class="muatan-col"><td class="label">Progres Muatan</td><td class="value">${pct}%</td></tr>
+                      </table>
+                      <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
+                        <a href="/subsls?kec=${encodeURIComponent(feature.properties.nmkec)}&desa=${encodeURIComponent(feature.properties.nmdesa)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
+                          <i class="bi bi-arrow-right-circle"></i> Buka Drilldown Wilayah
+                        </a>
                       </div>
-                    `;
-                    layer.bindPopup(popupHtml).openPopup();
-                  } else {
-                    showDesaDetails(feature.properties);
-                    
-                    // Open popup
-                    const stat = desaStats.find(s => s.iddesa === feature.properties.iddesa);
-                    const total = stat ? stat.total_subsls : 0;
-                    const selesai = stat ? stat.selesai : 0;
-                    const targetFasih = stat ? stat.target_fasih_total : 0;
-                    const submitted = stat ? stat.submitted_total : 0;
-                    const approved = stat ? stat.approved_total : 0;
-                    const rejected = stat ? stat.rejected_total : 0;
-                    const totalRealisasiFasih = submitted + approved + rejected;
-                    const fasihPct = targetFasih ? Math.min(parseFloat(((totalRealisasiFasih / targetFasih) * 100).toFixed(2)), 100) : 0;
-                    const totalMuatan = stat ? stat.total_muatan : 0;
-                    const usaha = stat ? stat.usaha_total : 0;
-                    const pct = totalMuatan ? ((usaha / totalMuatan) * 100).toFixed(2) : '0.00';
-                    
-                    const popupHtml = `
-                      <div style="font-family: 'Inter', sans-serif; min-width: 190px; padding: 2px;">
-                        <strong style="font-size: 13px; color: var(--text-primary);">Desa ${feature.properties.nmdesa}</strong><br>
-                        <span style="font-size: 11px; color: var(--text-secondary);">Kec. ${feature.properties.nmkec}</span>
-                        <table class="info-table">
-                          <tr><td class="label">SLS Selesai</td><td class="value">${selesai} / ${total} SLS</td></tr>
-                          <tr><td class="label">Progres FASIH</td><td class="value" style="color: ${fasihPct >= 100 ? 'var(--accent-green)' : 'var(--accent-blue)'};">${fasihPct}%</td></tr>
-                          <tr class="muatan-col"><td class="label">Progres Muatan</td><td class="value">${pct}%</td></tr>
-                        </table>
-                        <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
-                          <a href="/subsls?kec=${encodeURIComponent(feature.properties.nmkec)}&desa=${encodeURIComponent(feature.properties.nmdesa)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
-                            <i class="bi bi-arrow-right-circle"></i> Buka Drilldown Wilayah
-                          </a>
-                        </div>
-                      </div>
-                    `;
-                    layer.bindPopup(popupHtml).openPopup();
-                  }
+                    </div>
+                  `;
+                  layer.bindPopup(popupHtml).openPopup();
                 }
               });
             }
@@ -1737,6 +1753,7 @@
         }
 
         function setupSlsLayer() {
+          if (!slsGeoJson) return;
           slsLayer = L.geoJSON(slsGeoJson, {
             style: slsStyle,
             onEachFeature: (feature, layer) => {
@@ -1801,10 +1818,11 @@
             updateBasemap();
             invalidateMapSize();
 
-            // Step 1: load real-time stats and Desa geojson in parallel
-            const [statsRes, desaGeoRes] = await Promise.all([
-              fetch('<%= navPrefix %>/api/map-stats'),
-              fetch('/data/desa_boundaries.geojson')
+            // Step 1: load real-time stats, Desa geojson, and Kecamatan geojson in parallel
+            const [statsRes, desaGeoRes, kecGeoRes] = await Promise.all([
+              fetch('<%= typeof navPrefix !== "undefined" ? navPrefix : "" %>/api/map-stats'),
+              fetch('/data/desa_boundaries.geojson'),
+              fetch('/data/kecamatan_boundaries.geojson')
             ]);
             
             const stats = await statsRes.json();
@@ -1812,13 +1830,18 @@
             desaStats = stats.desaStats || [];
             slsStats = stats.slsStats || [];
             desaGeoJson = await desaGeoRes.json();
+            kecGeoJson = await kecGeoRes.json();
 
             // Update top KPI cards
             updateTopStats(desaStats);
 
-            // Setup Desa boundary mapping layer
+            // Setup boundary mapping layers
+            setupKecLayer();
             setupDesaLayer();
-            if (desaLayer) {
+
+            if (activeLayerName === 'kec' && kecLayer) {
+              kecLayer.addTo(map);
+            } else if (desaLayer) {
               desaLayer.addTo(map);
             }
 
@@ -1898,6 +1921,12 @@
           }
         };
 
+        function updateActiveLayerStyles() {
+          if (kecLayer && activeLayerName === 'kec') kecLayer.setStyle(kecStyle);
+          if (desaLayer && activeLayerName === 'desa') desaLayer.setStyle(desaStyle);
+          if (slsLayer && activeLayerName === 'sls') slsLayer.setStyle(slsStyle);
+        }
+
         // Layer Toggling Logic
         function switchToKecLayer() {
           activeLayerName = 'kec';
@@ -1910,9 +1939,10 @@
           if (legendKec) legendKec.style.display = 'block';
 
           if (slsLayer && map.hasLayer(slsLayer)) map.removeLayer(slsLayer);
-          if (desaLayer) {
-            desaLayer.addTo(map);
-            desaLayer.setStyle(kecStyle);
+          if (desaLayer && map.hasLayer(desaLayer)) map.removeLayer(desaLayer);
+          if (kecLayer) {
+            kecLayer.addTo(map);
+            kecLayer.setStyle(kecStyle);
           }
         }
 
@@ -1927,6 +1957,7 @@
           if (legendDesa) legendDesa.style.display = 'block';
 
           if (slsLayer && map.hasLayer(slsLayer)) map.removeLayer(slsLayer);
+          if (kecLayer && map.hasLayer(kecLayer)) map.removeLayer(kecLayer);
           if (desaLayer) {
             desaLayer.addTo(map);
             desaLayer.setStyle(desaStyle);
@@ -1948,6 +1979,7 @@
           if (legendSls) legendSls.style.display = 'block';
 
           if (desaLayer && map.hasLayer(desaLayer)) map.removeLayer(desaLayer);
+          if (kecLayer && map.hasLayer(kecLayer)) map.removeLayer(kecLayer);
           if (slsLayer) {
             slsLayer.addTo(map);
             slsLayer.setStyle(slsStyle);
@@ -1969,11 +2001,7 @@
               btnOutlineOnly.setAttribute('aria-pressed', 'false');
             }
 
-            if (desaLayer) {
-              if (activeLayerName === 'kec') desaLayer.setStyle(kecStyle);
-              else desaLayer.setStyle(desaStyle);
-            }
-            if (slsLayer) slsLayer.setStyle(slsStyle);
+            updateActiveLayerStyles();
           });
         }
 
@@ -1983,8 +2011,7 @@
           btnBasemapSatellite.classList.remove('active');
           btnBasemapDefault.classList.add('active');
           updateBasemap();
-          if (desaLayer) desaLayer.setStyle(desaStyle);
-          if (slsLayer) slsLayer.setStyle(slsStyle);
+          updateActiveLayerStyles();
         });
 
         btnBasemapSatellite.addEventListener('click', () => {
@@ -1992,17 +2019,13 @@
           btnBasemapDefault.classList.remove('active');
           btnBasemapSatellite.classList.add('active');
           updateBasemap();
-          if (desaLayer) desaLayer.setStyle(desaStyle);
-          if (slsLayer) slsLayer.setStyle(slsStyle);
+          updateActiveLayerStyles();
         });
 
         // Filter Dropdown Listener
         kecFilter.addEventListener('change', (e) => {
           currentFilteredKec = e.target.value;
-          
-          if (desaLayer) desaLayer.setStyle(desaStyle);
-          if (slsLayer) slsLayer.setStyle(slsStyle);
-
+          updateActiveLayerStyles();
           fitBoundsToKecamatan(currentFilteredKec);
         });
 
@@ -2012,8 +2035,7 @@
           currentFilteredKec = '';
           if (mapSearchInput) mapSearchInput.value = '';
           map.setView(centerCoords, defaultZoom);
-          if (desaLayer) desaLayer.setStyle(desaStyle);
-          if (slsLayer) slsLayer.setStyle(slsStyle);
+          updateActiveLayerStyles();
         });
 
         // Search Input Listener with auto-focus/highlight
@@ -2021,15 +2043,26 @@
           mapSearchInput.addEventListener('input', (e) => {
             const q = e.target.value.toLowerCase().trim();
             if (!q) {
-              if (desaLayer) desaLayer.setStyle(desaStyle);
-              if (slsLayer) slsLayer.setStyle(slsStyle);
+              updateActiveLayerStyles();
               return;
             }
 
             let foundBounds = L.latLngBounds();
             let hasMatch = false;
 
-            if (activeLayerName === 'desa' && desaLayer) {
+            if (activeLayerName === 'kec' && kecLayer) {
+              kecLayer.eachLayer(layer => {
+                const nmkec = (layer.feature.properties.nmkec || '').toLowerCase();
+                if (nmkec.includes(q)) {
+                  layer.bringToFront();
+                  layer.setStyle({ weight: 3, color: 'var(--accent-cyan)', fillOpacity: 0.85 });
+                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
+                  hasMatch = true;
+                } else {
+                  layer.setStyle({ opacity: 0.1, fillOpacity: 0.05 });
+                }
+              });
+            } else if (activeLayerName === 'desa' && desaLayer) {
               desaLayer.eachLayer(layer => {
                 const nmdesa = (layer.feature.properties.nmdesa || '').toLowerCase();
                 const nmkec = (layer.feature.properties.nmkec || '').toLowerCase();
