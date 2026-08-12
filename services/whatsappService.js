@@ -5,7 +5,10 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const logger = require('./logger');
-const { getSettings, acquireProcessLock, renewProcessLock, releaseProcessLock } = require('../database');
+const { 
+  getSettings, acquireProcessLock, renewProcessLock, releaseProcessLock,
+  saveWhatsappState, getWhatsappState, savePendingCommand, getPendingCommand, clearPendingCommand 
+} = require('../database');
 
 const customAgent = new https.Agent({
   keepAlive: true,
@@ -49,6 +52,18 @@ function addWaLog(type, message) {
     waLogs.shift();
   }
 
+  // Persist logs ke SQLite jika proses ini aktif/Master agar dibaca semua worker
+  if (sock || clientStatus === 'CONNECTED' || isInitializing || clientStatus === 'CONNECTING') {
+    try {
+      const dbConn = require('../database').getDb('se2026');
+      dbConn.prepare(`
+        INSERT INTO whatsapp_state (key, value, updated_at)
+        VALUES (?, ?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+      `).run('wa_logs', JSON.stringify(waLogs.slice(-40)), Date.now());
+    } catch (_) {}
+  }
+
   // Kirim juga ke logger utama server
   if (type === 'error') logger.error(`[WA-Service] ${message}`);
   else if (type === 'warn') logger.warn(`[WA-Service] ${message}`);
@@ -56,6 +71,13 @@ function addWaLog(type, message) {
 }
 
 function getLogs() {
+  try {
+    const dbConn = require('../database').getDb('se2026');
+    const row = dbConn.prepare("SELECT value FROM whatsapp_state WHERE key = 'wa_logs'").get();
+    if (row && row.value) {
+      return JSON.parse(row.value);
+    }
+  } catch (_) {}
   return [...waLogs];
 }
 
@@ -89,10 +111,27 @@ function acquireLock() {
 
 function startLockHeartbeat() {
   if (lockHeartbeatInterval) return;
-  lockHeartbeatInterval = setInterval(() => {
+  lockHeartbeatInterval = setInterval(async () => {
     try {
-      if (sock || clientStatus === 'CONNECTED' || isInitializing) {
+      if (sock || clientStatus === 'CONNECTED' || isInitializing || clientStatus === 'CONNECTING') {
         renewProcessLock('whatsapp_master', process.pid);
+        
+        // Sync state ke SQLite agar dibaca oleh Standby worker
+        saveWhatsappState(clientStatus, qrCodeDataUri, userInfo);
+
+        // Periksa apakah ada perintah tertunda dari proses Standby
+        const cmd = getPendingCommand();
+        if (cmd) {
+          addWaLog('info', `[WA-IPC] Menjalankan perintah IPC dari proses Standby: ${cmd.toUpperCase()}`);
+          clearPendingCommand();
+          if (cmd === 'logout') {
+            await logout();
+          } else if (cmd === 'reconnect') {
+            await forceReset(false);
+          } else if (cmd === 'force_reset') {
+            await forceReset(true);
+          }
+        }
       }
     } catch (_) {}
   }, 5000);
@@ -519,6 +558,23 @@ async function initialize() {
  * Mendapatkan status koneksi saat ini
  */
 function getStatus() {
+  try {
+    const state = getWhatsappState();
+    // Gunakan state ter-sinkronisasi dari SQLite jika terupdate kurang dari 35s lalu
+    if (state && state.status) {
+      let eff = state.status;
+      if (eff === 'DISCONNECTED' && hasValidSession()) {
+        eff = 'CONNECTING';
+      }
+      return {
+        status: eff,
+        qrCode: state.qrCode,
+        user: state.user,
+        logs: getLogs().slice(-20)
+      };
+    }
+  } catch (_) {}
+
   let effectiveStatus = clientStatus;
   if (clientStatus === 'DISCONNECTED' && hasValidSession()) {
     effectiveStatus = 'CONNECTING';
@@ -531,7 +587,7 @@ function getStatus() {
       name: userInfo.pushname,
       number: userInfo.wid.user
     } : null,
-    logs: waLogs.slice(-20) // 20 log terbaru
+    logs: getLogs().slice(-20) // 20 log terbaru
   };
 }
 
@@ -598,6 +654,12 @@ async function sendDirectMessage(chatId, message) {
  * Keluar (Logout) penuh — hapus sesi, minta scan QR ulang
  */
 async function logout() {
+  if (!lockHeartbeatInterval) {
+    addWaLog('info', '[WA-IPC] Mengirim perintah LOGOUT ke proses Master via SQLite...');
+    savePendingCommand('logout');
+    return;
+  }
+
   addWaLog('warn', '[WA-Logout] Logout penuh dipicu. Membersihkan sesi & meminta QR baru...');
   stopHealthCheck();
 
@@ -634,6 +696,13 @@ async function logout() {
  * @param {boolean} cleanSession Jika true, hapus file sesi temporary/corrupt untuk memaksa penerbitan QR Code baru dari awal
  */
 async function forceReset(cleanSession = false) {
+  if (!lockHeartbeatInterval) {
+    const cmd = cleanSession ? 'force_reset' : 'reconnect';
+    addWaLog('info', `[WA-IPC] Mengirim perintah ${cmd.toUpperCase()} ke proses Master via SQLite...`);
+    savePendingCommand(cmd);
+    return;
+  }
+
   addWaLog('info', `[WA-Reset] Force reset koneksi dipicu (cleanSession: ${cleanSession})...`);
 
   // Stop socket aktif
