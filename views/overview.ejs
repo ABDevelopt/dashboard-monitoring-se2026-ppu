@@ -2204,14 +2204,12 @@
         sportsDailyRateLabels.push(current.tanggal);
         const currentTotal = (current.submitted_total || 0) + (current.approved_total || 0) + (current.rejected_total || 0);
         let increment = 0;
-        if (i > 0) {
+        if (i === 0) {
+          increment = currentTotal;
+        } else {
           const prev = dailyTrenData[i - 1];
           const prevTotal = (prev.submitted_total || 0) + (prev.approved_total || 0) + (prev.rejected_total || 0);
           increment = Math.max(0, currentTotal - prevTotal);
-        } else if (current.prev_realisasi !== undefined && current.prev_realisasi !== null && current.prev_realisasi > 0) {
-          increment = Math.max(0, currentTotal - current.prev_realisasi);
-        } else {
-          increment = currentTotal;
         }
         const dailyRate = totalPclCount > 0 ? (increment / totalPclCount) : 0;
         sportsDailyRates.push(parseFloat(dailyRate.toFixed(2)));
@@ -2227,17 +2225,13 @@
         const current = dailyTrenData[i];
         countyIncrementLabels.push(current.tanggal);
         const currentTotal = (current.submitted_total || 0) + (current.approved_total || 0) + (current.rejected_total || 0);
-        let increment = 0;
-        if (i > 0) {
+        if (i === 0) {
+          countyIncrements.push(currentTotal);
+        } else {
           const prev = dailyTrenData[i - 1];
           const prevTotal = (prev.submitted_total || 0) + (prev.approved_total || 0) + (prev.rejected_total || 0);
-          increment = Math.max(0, currentTotal - prevTotal);
-        } else if (current.prev_realisasi !== undefined && current.prev_realisasi !== null && current.prev_realisasi > 0) {
-          increment = Math.max(0, currentTotal - current.prev_realisasi);
-        } else {
-          increment = currentTotal;
+          countyIncrements.push(Math.max(0, currentTotal - prevTotal));
         }
-        countyIncrements.push(increment);
       }
 
       lazyInitChart('dailyCountyIncrementChartCanvas', () =>

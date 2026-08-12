@@ -10,8 +10,7 @@ const { getSettings } = require('../database');
 const customAgent = new https.Agent({
   keepAlive: true,
   keepAliveMsecs: 10000,
-  family: 4, // Paksa koneksi IPv4 murni (Mencegah IPv6 DNS resolution delay/block di cPanel/Dewaweb)
-  timeout: 30000
+  family: 4 // Paksa koneksi IPv4 murni (Mencegah IPv6 DNS resolution delay/block di cPanel/Dewaweb)
 });
 
 let sock = null;
@@ -20,6 +19,7 @@ let clientStatus = 'DISCONNECTED'; // DISCONNECTED, CONNECTING, QR_READY, CONNEC
 let userInfo = null;
 let isInitializing = false;
 let hasEverConnectedInSession = false;
+let consecutive408Count = 0;
 
 // Memory log buffer untuk WhatsApp (maksimal 100 baris log terbaru)
 const waLogs = [];
@@ -64,8 +64,9 @@ let reconnectAttempt = 0;
 const RECONNECT_DELAY_MIN = 3000;   // 3 detik
 const RECONNECT_DELAY_MAX = 30000;  // 30 detik (cap max)
 
-// Health check interval handle
+// Health check interval handle & Background Supervisor handle
 let healthCheckInterval = null;
+let supervisorInterval = null;
 
 const authDir = path.join(__dirname, '../.wwebjs_auth/baileys-session');
 
@@ -116,7 +117,7 @@ function stopHealthCheck() {
 }
 
 /**
- * Memulai health check interval — deteksi koneksi zombie setiap 60 detik & sembuhkan otomatis
+ * Memulai health check interval — deteksi koneksi zombie setiap 45 detik & sembuhkan otomatis
  */
 function startHealthCheck() {
   stopHealthCheck();
@@ -131,7 +132,36 @@ function startHealthCheck() {
       await _closeSocket(true);
       initialize();
     }
-  }, 60000); // per 60 detik untuk ketahanan ekstra di Dewaweb
+  }, 45000);
+}
+
+/**
+ * Background Supervisor (Watchdog) 24/7
+ * Memastikan WhatsApp SELALU aktif di latar belakang tanpa perlu membuka halaman pengaturan.
+ */
+function startSupervisor() {
+  if (supervisorInterval) return;
+  addWaLog('info', '🛡️ [WA-Watchdog] Background Supervisor 24/7 diaktifkan. WhatsApp selalu dipantau otomatis.');
+
+  supervisorInterval = setInterval(async () => {
+    // 1. Jika sudah CONNECTED, biarkan healthCheck yang menangani heartbeat
+    if (clientStatus === 'CONNECTED' && sock) {
+      return;
+    }
+
+    // 2. Jika ada sesi tersimpan di disk tapi socket belum CONNECTED dan tidak sedang initializing:
+    if (hasValidSession() && clientStatus !== 'CONNECTED' && !isInitializing) {
+      addWaLog('info', '🛡️ [WA-Watchdog] Sesi tersimpan ditemukan tapi koneksi belum aktif. Memulai auto-reconnect background...');
+      initialize();
+      return;
+    }
+
+    // 3. Jika belum ada sesi sama sekali dan tidak sedang initializing, siapkan socket agar siap pairing
+    if (!hasValidSession() && clientStatus === 'DISCONNECTED' && !isInitializing) {
+      addWaLog('info', '🛡️ [WA-Watchdog] Inisialisasi awal background untuk pairing WhatsApp...');
+      initialize();
+    }
+  }, 20000); // Evaluasi setiap 20 detik
 }
 
 /**
@@ -436,6 +466,17 @@ async function getGroups() {
  */
 async function sendDirectMessage(chatId, message) {
   if (clientStatus !== 'CONNECTED' || !sock) {
+    if (hasValidSession()) {
+      addWaLog('warn', '[WA-Message] Sesi tersimpan terdeteksi tapi belum terhubung. Menunggu koneksi aktif (hingga 8 detik)...');
+      initialize();
+      const startTime = Date.now();
+      while ((clientStatus !== 'CONNECTED' || !sock) && Date.now() - startTime < 8000) {
+        await new Promise(r => setTimeout(r, 500));
+      }
+    }
+  }
+
+  if (clientStatus !== 'CONNECTED' || !sock) {
     addWaLog('error', 'Gagal mengirim pesan: WhatsApp client belum terhubung.');
     throw new Error('WhatsApp client is not connected');
   }
@@ -585,12 +626,12 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
 
     if (!overrideGroupId && (settings.whatsapp_enabled !== '1' || !settings.whatsapp_group_id)) {
       addWaLog('info', 'Notifikasi WhatsApp tidak aktif atau grup ID belum dikonfigurasi.');
-      return;
+      return { skipped: true, reason: 'Notifikasi WhatsApp dinonaktifkan di pengaturan.' };
     }
 
     if (!groupId) {
       addWaLog('warn', 'Grup ID tidak ditentukan untuk notifikasi WhatsApp.');
-      return;
+      return { error: 'Grup WhatsApp tujuan belum ditentukan.' };
     }
 
     const { getDb, getOverviewSummary } = require('../database');
@@ -600,7 +641,7 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     const upload = db.prepare('SELECT * FROM uploads WHERE id = ?').get(uploadId);
     if (!upload) {
       addWaLog('warn', `Upload ID ${uploadId} tidak ditemukan. Batal mengirim notifikasi.`);
-      return;
+      return { error: `Data Upload #${uploadId} tidak ditemukan di database.` };
     }
 
     // Ambil detail data upload sebelumnya (hanya upload riil pengguna yang terisi valid)
@@ -911,15 +952,24 @@ async function sendUpdateNotification(uploadId, overrideGroupId = null) {
     }
 
     addWaLog('info', `Mengirim notifikasi update data ke grup WhatsApp ${groupId}...`);
-    await sendDirectMessage(groupId, message);
+    const sendResult = await sendDirectMessage(groupId, message);
     addWaLog('success', 'Notifikasi WhatsApp berhasil dikirim ke grup!');
+    return {
+      success: true,
+      groupId,
+      groupName: settings.whatsapp_group_name || 'Grup WhatsApp',
+      messageId: sendResult?.key?.id
+    };
   } catch (err) {
-    addWaLog('error', `Gagal mengirim notifikasi update WhatsApp: ${err.message}`);
+    const errorMsg = err.message || String(err);
+    addWaLog('error', `Gagal mengirim notifikasi update WhatsApp: ${errorMsg}`);
+    return { error: errorMsg };
   }
 }
 
 module.exports = {
   initialize,
+  startSupervisor,
   getStatus,
   getGroups,
   getLogs,
@@ -929,3 +979,4 @@ module.exports = {
   forceReset,
   hasValidSession
 };
+
