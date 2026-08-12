@@ -2209,6 +2209,79 @@ function resyncPetugasEmailsToMaster() {
   });
 }
 
+/**
+ * Atomic Inter-Process Lock menggunakan SQLite (ACID compliant across multiple Passenger/Node processes)
+ */
+function initProcessLockTable(dbConn) {
+  dbConn.exec(`
+    CREATE TABLE IF NOT EXISTS process_locks (
+      lock_name TEXT PRIMARY KEY,
+      owner_pid INTEGER NOT NULL,
+      heartbeat INTEGER NOT NULL,
+      hostname TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+}
+
+function acquireProcessLock(lockName, ownerPid, ttlMs = 20000) {
+  try {
+    const dbConn = getDb('se2026');
+    initProcessLockTable(dbConn);
+    const now = Date.now();
+
+    const tx = dbConn.transaction(() => {
+      const row = dbConn.prepare('SELECT owner_pid, heartbeat FROM process_locks WHERE lock_name = ?').get(lockName);
+      if (row) {
+        const isAlive = (now - row.heartbeat) < ttlMs;
+        if (isAlive && row.owner_pid !== ownerPid) {
+          return { acquired: false, masterPid: row.owner_pid };
+        }
+      }
+      dbConn.prepare(`
+        INSERT INTO process_locks (lock_name, owner_pid, heartbeat, hostname)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(lock_name) DO UPDATE SET
+          owner_pid = excluded.owner_pid,
+          heartbeat = excluded.heartbeat,
+          hostname = excluded.hostname
+      `).run(lockName, ownerPid, now, require('os').hostname());
+      return { acquired: true, masterPid: ownerPid };
+    });
+
+    return tx();
+  } catch (e) {
+    logger.error('acquireProcessLock error:', e.message);
+    return { acquired: true, masterPid: ownerPid };
+  }
+}
+
+function renewProcessLock(lockName, ownerPid) {
+  try {
+    const dbConn = getDb('se2026');
+    dbConn.prepare('UPDATE process_locks SET heartbeat = ? WHERE lock_name = ? AND owner_pid = ?')
+      .run(Date.now(), lockName, ownerPid);
+  } catch (_) {}
+}
+
+function releaseProcessLock(lockName, ownerPid) {
+  try {
+    const dbConn = getDb('se2026');
+    dbConn.prepare('DELETE FROM process_locks WHERE lock_name = ? AND owner_pid = ?')
+      .run(lockName, ownerPid);
+  } catch (_) {}
+}
+
+function getProcessLock(lockName) {
+  try {
+    const dbConn = getDb('se2026');
+    initProcessLockTable(dbConn);
+    return dbConn.prepare('SELECT * FROM process_locks WHERE lock_name = ?').get(lockName);
+  } catch (_) {
+    return null;
+  }
+}
+
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -2222,5 +2295,6 @@ module.exports = {
   logVisit, getVisitorStats,
   getPetugasEmails, searchPetugasEmails, getPetugasEmailByNama, getPetugasEmailBySobatId,
   getPetugasEmailById, insertPetugasEmail, updatePetugasEmail, deletePetugasEmail, resyncPetugasEmailsToMaster,
-  reloadDbConnection, closeDbConnection, getMasterTableSql
+  reloadDbConnection, closeDbConnection, getMasterTableSql,
+  acquireProcessLock, renewProcessLock, releaseProcessLock, getProcessLock
 };

@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const logger = require('./logger');
-const { getSettings } = require('../database');
+const { getSettings, acquireProcessLock, renewProcessLock, releaseProcessLock } = require('../database');
 
 const customAgent = new https.Agent({
   keepAlive: true,
@@ -69,31 +69,21 @@ let healthCheckInterval = null;
 let supervisorInterval = null;
 
 const authDir = path.join(__dirname, '../.wwebjs_auth/baileys-session');
-const lockFilePath = path.join(__dirname, '../.wwebjs_auth/wa_instance.lock');
 let lockHeartbeatInterval = null;
 
 /**
- * Memastikan hanya 1 proses Node.js yang memegang koneksi aktif ke WhatsApp (Mencegah StatusCode 440 Conflict di multi-process Passenger/cPanel)
+ * Memastikan hanya 1 proses Node.js yang memegang koneksi aktif ke WhatsApp via SQLite Mutex
  */
 function acquireLock() {
   try {
-    const now = Date.now();
-    if (fs.existsSync(lockFilePath)) {
-      const raw = fs.readFileSync(lockFilePath, 'utf8');
-      try {
-        const lockData = JSON.parse(raw);
-        const isAlive = (now - lockData.timestamp) < 15000;
-        if (isAlive && lockData.pid !== process.pid) {
-          // Lock masih aktif dipegang oleh proses lain
-          return false;
-        }
-      } catch (_) {}
+    const res = acquireProcessLock('whatsapp_master', process.pid, 25000);
+    if (res && res.acquired) {
+      startLockHeartbeat();
+      return true;
     }
-    fs.writeFileSync(lockFilePath, JSON.stringify({ pid: process.pid, timestamp: now }));
-    startLockHeartbeat();
-    return true;
+    return false;
   } catch (e) {
-    return true; // Fallback jika gagal baca lock
+    return true;
   }
 }
 
@@ -102,7 +92,7 @@ function startLockHeartbeat() {
   lockHeartbeatInterval = setInterval(() => {
     try {
       if (sock || clientStatus === 'CONNECTED' || isInitializing) {
-        fs.writeFileSync(lockFilePath, JSON.stringify({ pid: process.pid, timestamp: Date.now() }));
+        renewProcessLock('whatsapp_master', process.pid);
       }
     } catch (_) {}
   }, 5000);
@@ -114,13 +104,7 @@ function releaseLock() {
     lockHeartbeatInterval = null;
   }
   try {
-    if (fs.existsSync(lockFilePath)) {
-      const raw = fs.readFileSync(lockFilePath, 'utf8');
-      const lockData = JSON.parse(raw);
-      if (lockData.pid === process.pid) {
-        fs.unlinkSync(lockFilePath);
-      }
-    }
+    releaseProcessLock('whatsapp_master', process.pid);
   } catch (_) {}
 }
 
@@ -196,36 +180,40 @@ function startHealthCheck() {
 
 /**
  * Background Supervisor (Watchdog) 24/7
- * Memastikan WhatsApp SELALU aktif di latar belakang tanpa perlu membuka halaman pengaturan.
+ * Memastikan WhatsApp SELALU aktif di latar belakang tanpa perlu membuka halaman pengaturan
  */
 function startSupervisor() {
   if (supervisorInterval) return;
   addWaLog('info', '🛡️ [WA-Watchdog] Background Supervisor 24/7 diaktifkan. WhatsApp selalu dipantau otomatis.');
 
-  supervisorInterval = setInterval(async () => {
-    // 1. Cek Process Lock: Jika proses lain yang memegang Master Lock, standby
-    if (!acquireLock()) {
-      return;
-    }
+  // Stagger acak startup (1s - 3s) agar semua worker Passenger tidak berebut acquireLock pada milidetik yang sama
+  const initialDelay = Math.floor(Math.random() * 2000) + 1000;
+  setTimeout(() => {
+    supervisorInterval = setInterval(async () => {
+      // 1. Cek Process Lock: Jika proses lain yang memegang Master Lock, standby
+      if (!acquireLock()) {
+        return;
+      }
 
-    // 2. Jika sudah CONNECTED, biarkan healthCheck yang menangani heartbeat
-    if (clientStatus === 'CONNECTED' && sock) {
-      return;
-    }
+      // 2. Jika sudah CONNECTED, biarkan healthCheck yang menangani heartbeat
+      if (clientStatus === 'CONNECTED' && sock) {
+        return;
+      }
 
-    // 3. Jika ada sesi tersimpan di disk tapi socket belum CONNECTED dan tidak sedang initializing:
-    if (hasValidSession() && clientStatus !== 'CONNECTED' && !isInitializing) {
-      addWaLog('info', '🛡️ [WA-Watchdog] Sesi tersimpan ditemukan tapi koneksi belum aktif. Memulai auto-reconnect background...');
-      initialize();
-      return;
-    }
+      // 3. Jika ada sesi tersimpan di disk tapi socket belum CONNECTED dan tidak sedang initializing:
+      if (hasValidSession() && clientStatus !== 'CONNECTED' && !isInitializing) {
+        addWaLog('info', '🛡️ [WA-Watchdog] Sesi tersimpan ditemukan tapi koneksi belum aktif. Memulai auto-reconnect background...');
+        initialize();
+        return;
+      }
 
-    // 4. Jika belum ada sesi sama sekali dan tidak sedang initializing, siapkan socket agar siap pairing
-    if (!hasValidSession() && clientStatus === 'DISCONNECTED' && !isInitializing) {
-      addWaLog('info', '🛡️ [WA-Watchdog] Inisialisasi awal background untuk pairing WhatsApp...');
-      initialize();
-    }
-  }, 20000); // Evaluasi setiap 20 detik
+      // 4. Jika belum ada sesi sama sekali dan tidak sedang initializing, siapkan socket agar siap pairing
+      if (!hasValidSession() && clientStatus === 'DISCONNECTED' && !isInitializing) {
+        addWaLog('info', '🛡️ [WA-Watchdog] Inisialisasi awal background untuk pairing WhatsApp...');
+        initialize();
+      }
+    }, 20000); // Evaluasi setiap 20 detik
+  }, initialDelay);
 }
 
 /**
@@ -267,7 +255,7 @@ async function initialize() {
 
   // Cek Inter-Process Lock sebelum membuka socket
   if (!acquireLock()) {
-    addWaLog('info', `[WA-Cluster] Proses (PID ${process.pid}) berstatus STANDBY. Koneksi WhatsApp aktif dikelola oleh proses Master lain.`);
+    addWaLog('info', `[WA-Cluster] Proses (PID ${process.pid}) berstatus STANDBY. Koneksi WhatsApp aktif dikelola oleh proses Master.`);
     return;
   }
 
@@ -304,19 +292,58 @@ async function initialize() {
       auth: state,
       printQRInTerminal: false,
       logger: pino({ level: 'silent' }),
-      browser: ['Windows', 'Chrome', '121.0.0.0'],
-      syncFullHistory: false,
-      markOnlineOnConnect: true,       // Jaga status bot aktif/online di WA Server
-      connectTimeoutMs: 60000,         // Timeout 60s
+      browser: ['Monitoring SE2026 PPU', 'Chrome', '124.0.0.0'],
+      connectTimeoutMs: 60000,
       defaultQueryTimeoutMs: 60000,
-      keepAliveIntervalMs: 25000,      // Ping per 25s (Sesuai batas idle Nginx/Dewaweb)
-      retryRequestDelayMs: 2000,
+      keepAliveIntervalMs: 25000,
+      retryRequestDelayMs: 5000,
       maxRetries: 5,
-      wsOptions: {
-        agent: customAgent,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-          'Origin': 'https://web.whatsapp.com'
+      emitOwnEvents: false,
+      agent: customAgent,
+      syncFullHistory: false,
+      markOnlineOnConnect: false,
+      getMessage: async (key) => {
+        return {
+          conversation: 'Monitoring SE2026 PPU Bot'
+        };
+      },
+      patchMessageBeforeSending: (message) => {
+        const requiresPatch = !!(
+          message.buttonsMessage ||
+          message.templateMessage ||
+          message.listMessage
+        );
+        if (requiresPatch) {
+          message = {
+            viewOnceMessage: {
+              message: {
+                messageContextInfo: {
+                  deviceListMetadataVersion: 2,
+                  deviceListMetadata: {}
+                },
+                ...message
+              }
+            }
+          };
+        }
+        return message;
+      }
+    });
+
+    // Handle WebSocket close events directly on WS to catch immediate connection drops
+    newSock.ws?.on?.('close', (code, reason) => {
+      const reasonStr = reason ? reason.toString() : '';
+      if (code === 440 || code === 408 || reasonStr.includes('conflict') || reasonStr.includes('Stream Errored')) {
+        addWaLog('warn', `[WA-WS] WebSocket raw close event code: ${code}, reason: ${reasonStr || 'N/A'}`);
+      }
+    });
+
+    // Guard against unhandled websocket socket level error
+    newSock.ws?.on?.('error', (err) => {
+      if (err) {
+        const errMsg = err.message || String(err);
+        if (!errMsg.includes('ECONNRESET') && !errMsg.includes('EPIPE')) {
+          addWaLog('warn', `[WA-WS] WebSocket error: ${errMsg}`);
         }
       }
     });
@@ -402,16 +429,12 @@ async function initialize() {
         const isConflict = statusCode === DisconnectReason.connectionReplaced || statusCode === 440 || reason.includes('conflict');
         const isQrTimeout = statusCode === DisconnectReason.timedOut || reason.includes('QR refs attempts ended');
 
-        // Jika Conflict (440): Sesi sedang dipakai oleh proses Node.js lain di server / device lain
+        // Jika Conflict (440): Sesi sedang dipakai oleh proses Node.js lain atau di device/server lain
         if (isConflict) {
-          addWaLog('warn', `⚠️ [WA-Conflict] Terdeteksi bentrokan koneksi ganda (StatusCode 440 Conflict) pada PID ${process.pid}. Melepaskan master lock dan menunda reconnect...`);
+          addWaLog('warn', `⚠️ [WA-Conflict] Terdeteksi bentrokan koneksi WhatsApp (StatusCode 440 Conflict) pada PID ${process.pid}. Melepaskan master lock.`);
           releaseLock();
-          await _closeSocket(true);
-          // Tambahkan jitter acak antara 15-25 detik agar proses tidak berebut reconnect bersamaan
-          const jitterDelay = 15000 + Math.floor(Math.random() * 10000);
-          setTimeout(() => {
-            initialize();
-          }, jitterDelay);
+          await _closeSocket(false);
+          // Jangan langsung loop reconnect agresif; biarkan Background Supervisor mengevaluasi secara teratur
           return;
         }
 
