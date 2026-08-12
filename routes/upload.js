@@ -26,7 +26,7 @@ const upload = multer({
 
 // GET: Upload page
 router.get('/', (req, res) => {
-  const uploads = getAllUploads();
+  const uploads = getAllUploads().sort((a, b) => (b.id - a.id) || b.tanggal.localeCompare(a.tanggal));
   
   // Scan workspace files per survey
   let workspaceFiles = [];
