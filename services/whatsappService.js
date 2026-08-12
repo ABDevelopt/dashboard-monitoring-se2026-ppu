@@ -69,6 +69,65 @@ let healthCheckInterval = null;
 let supervisorInterval = null;
 
 const authDir = path.join(__dirname, '../.wwebjs_auth/baileys-session');
+const lockFilePath = path.join(__dirname, '../.wwebjs_auth/wa_instance.lock');
+let lockHeartbeatInterval = null;
+
+/**
+ * Memastikan hanya 1 proses Node.js yang memegang koneksi aktif ke WhatsApp (Mencegah StatusCode 440 Conflict di multi-process Passenger/cPanel)
+ */
+function acquireLock() {
+  try {
+    const now = Date.now();
+    if (fs.existsSync(lockFilePath)) {
+      const raw = fs.readFileSync(lockFilePath, 'utf8');
+      try {
+        const lockData = JSON.parse(raw);
+        const isAlive = (now - lockData.timestamp) < 15000;
+        if (isAlive && lockData.pid !== process.pid) {
+          // Lock masih aktif dipegang oleh proses lain
+          return false;
+        }
+      } catch (_) {}
+    }
+    fs.writeFileSync(lockFilePath, JSON.stringify({ pid: process.pid, timestamp: now }));
+    startLockHeartbeat();
+    return true;
+  } catch (e) {
+    return true; // Fallback jika gagal baca lock
+  }
+}
+
+function startLockHeartbeat() {
+  if (lockHeartbeatInterval) return;
+  lockHeartbeatInterval = setInterval(() => {
+    try {
+      if (sock || clientStatus === 'CONNECTED' || isInitializing) {
+        fs.writeFileSync(lockFilePath, JSON.stringify({ pid: process.pid, timestamp: Date.now() }));
+      }
+    } catch (_) {}
+  }, 5000);
+}
+
+function releaseLock() {
+  if (lockHeartbeatInterval) {
+    clearInterval(lockHeartbeatInterval);
+    lockHeartbeatInterval = null;
+  }
+  try {
+    if (fs.existsSync(lockFilePath)) {
+      const raw = fs.readFileSync(lockFilePath, 'utf8');
+      const lockData = JSON.parse(raw);
+      if (lockData.pid === process.pid) {
+        fs.unlinkSync(lockFilePath);
+      }
+    }
+  } catch (_) {}
+}
+
+// Lepaskan lock saat proses node keluar
+process.on('exit', releaseLock);
+process.on('SIGINT', releaseLock);
+process.on('SIGTERM', releaseLock);
 
 /**
  * Cek apakah direktori auth berisi file kredensial sesi yang valid (creds.json)
@@ -144,19 +203,24 @@ function startSupervisor() {
   addWaLog('info', '🛡️ [WA-Watchdog] Background Supervisor 24/7 diaktifkan. WhatsApp selalu dipantau otomatis.');
 
   supervisorInterval = setInterval(async () => {
-    // 1. Jika sudah CONNECTED, biarkan healthCheck yang menangani heartbeat
+    // 1. Cek Process Lock: Jika proses lain yang memegang Master Lock, standby
+    if (!acquireLock()) {
+      return;
+    }
+
+    // 2. Jika sudah CONNECTED, biarkan healthCheck yang menangani heartbeat
     if (clientStatus === 'CONNECTED' && sock) {
       return;
     }
 
-    // 2. Jika ada sesi tersimpan di disk tapi socket belum CONNECTED dan tidak sedang initializing:
+    // 3. Jika ada sesi tersimpan di disk tapi socket belum CONNECTED dan tidak sedang initializing:
     if (hasValidSession() && clientStatus !== 'CONNECTED' && !isInitializing) {
       addWaLog('info', '🛡️ [WA-Watchdog] Sesi tersimpan ditemukan tapi koneksi belum aktif. Memulai auto-reconnect background...');
       initialize();
       return;
     }
 
-    // 3. Jika belum ada sesi sama sekali dan tidak sedang initializing, siapkan socket agar siap pairing
+    // 4. Jika belum ada sesi sama sekali dan tidak sedang initializing, siapkan socket agar siap pairing
     if (!hasValidSession() && clientStatus === 'DISCONNECTED' && !isInitializing) {
       addWaLog('info', '🛡️ [WA-Watchdog] Inisialisasi awal background untuk pairing WhatsApp...');
       initialize();
@@ -201,11 +265,17 @@ async function initialize() {
     return;
   }
 
+  // Cek Inter-Process Lock sebelum membuka socket
+  if (!acquireLock()) {
+    addWaLog('info', `[WA-Cluster] Proses (PID ${process.pid}) berstatus STANDBY. Koneksi WhatsApp aktif dikelola oleh proses Master lain.`);
+    return;
+  }
+
   isInitializing = true;
   if (clientStatus !== 'CONNECTED') {
     clientStatus = 'CONNECTING';
   }
-  addWaLog('info', '[WA-Init] Menginisialisasi urutan koneksi WhatsApp Baileys...');
+  addWaLog('info', `[WA-Init] Menginisialisasi urutan koneksi WhatsApp Baileys (PID ${process.pid})...`);
 
   try {
     if (!fs.existsSync(authDir)) {
@@ -334,11 +404,14 @@ async function initialize() {
 
         // Jika Conflict (440): Sesi sedang dipakai oleh proses Node.js lain di server / device lain
         if (isConflict) {
-          addWaLog('warn', '⚠️ [WA-Conflict] Terdeteksi bentrokan koneksi ganda (StatusCode 440 Conflict). Pastikan hanya ada 1 proses node server.js yang berjalan di Dewaweb! Menunda reconnect 12 detik...');
+          addWaLog('warn', `⚠️ [WA-Conflict] Terdeteksi bentrokan koneksi ganda (StatusCode 440 Conflict) pada PID ${process.pid}. Melepaskan master lock dan menunda reconnect...`);
+          releaseLock();
           await _closeSocket(true);
+          // Tambahkan jitter acak antara 15-25 detik agar proses tidak berebut reconnect bersamaan
+          const jitterDelay = 15000 + Math.floor(Math.random() * 10000);
           setTimeout(() => {
             initialize();
-          }, 12000);
+          }, jitterDelay);
           return;
         }
 
@@ -447,7 +520,11 @@ async function getGroups() {
     return [];
   }
   try {
-    const groups = await sock.groupFetchAllParticipating();
+    const fetchWithTimeout = Promise.race([
+      sock.groupFetchAllParticipating(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timed Out (5s)')), 5000))
+    ]);
+    const groups = await fetchWithTimeout;
     if (!groups) return [];
 
     return Object.values(groups).map(group => ({
@@ -456,7 +533,7 @@ async function getGroups() {
     }));
   } catch (err) {
     const errMsg = err && (err.message || String(err));
-    addWaLog('warn', `WhatsApp getGroups error: ${errMsg}`);
+    addWaLog('warn', `WhatsApp getGroups: ${errMsg}`);
     return [];
   }
 }
