@@ -1,0 +1,97 @@
+/* =========================================================================
+   SURVEY THEME PACKS DESIGN SYSTEM (PANANYO TAKA MULTI-SURVEY ARCHITECTURE)
+   ========================================================================= */
+
+/* ── 1. SENSUS EKONOMI 2026 THEME PACK (DEFAULT CURRENT THEME) ── */
+:root,
+body.survey-theme-se2026,
+.survey-card.theme-orange {
+  --survey-primary: #f97316;
+  --survey-primary-hover: #ea580c;
+  --survey-secondary: #facc15;
+  --survey-rgb: 249, 115, 22;
+  --survey-gradient: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #facc15 100%);
+  --survey-glow: 0 16px 36px -8px rgba(249, 115, 22, 0.35);
+  --survey-border-subtle: rgba(249, 115, 22, 0.3);
+  --survey-badge-bg: rgba(249, 115, 22, 0.12);
+  --survey-badge-border: rgba(249, 115, 22, 0.35);
+}
+
+/* ── 2. SAKERNAS PEMUTAKHIRAN THEME PACK (ELECTRIC CYAN & OCEANIC TEAL) ── */
+body.survey-theme-sakernas-pemutakhiran,
+.survey-card.theme-cyan {
+  --survey-primary: #06b6d4;
+  --survey-primary-hover: #0891b2;
+  --survey-secondary: #10b981;
+  --survey-rgb: 6, 182, 212;
+  --survey-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #10b981 100%);
+  --survey-glow: 0 16px 36px -8px rgba(6, 182, 212, 0.35);
+  --survey-border-subtle: rgba(6, 182, 212, 0.3);
+  --survey-badge-bg: rgba(6, 182, 212, 0.12);
+  --survey-badge-border: rgba(6, 182, 212, 0.35);
+}
+
+/* ── 3. SAKERNAS PENDATAAN THEME PACK (ROYAL INDIGO & VIOLET PULSE) ── */
+body.survey-theme-sakernas-pendataan,
+.survey-card.theme-purple {
+  --survey-primary: #8b5cf6;
+  --survey-primary-hover: #7c3aed;
+  --survey-secondary: #6366f1;
+  --survey-rgb: 139, 92, 246;
+  --survey-gradient: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6366f1 100%);
+  --survey-glow: 0 16px 36px -8px rgba(139, 92, 246, 0.35);
+  --survey-border-subtle: rgba(139, 92, 246, 0.3);
+  --survey-badge-bg: rgba(139, 92, 246, 0.12);
+  --survey-badge-border: rgba(139, 92, 246, 0.35);
+}
+
+/* ── THEME PACK BUTTONS ── */
+.btn-survey-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 20px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  margin-top: 10px;
+  color: #ffffff !important;
+}
+
+.btn-survey-cta:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.12);
+}
+
+.btn-survey-cta i {
+  font-size: 18px;
+  transition: transform 0.2s ease;
+}
+
+.btn-survey-cta:hover i {
+  transform: translateX(4px);
+}
+
+.btn-survey-cta.theme-orange {
+  background: var(--survey-gradient);
+  box-shadow: var(--survey-glow);
+}
+
+.btn-survey-cta.theme-cyan {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #10b981 100%);
+  box-shadow: 0 4px 16px rgba(6, 182, 212, 0.35);
+}
+
+.btn-survey-cta.theme-purple {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6366f1 100%);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35);
+}

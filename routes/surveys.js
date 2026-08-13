@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { getLatestUpload, getOverviewSummary, getSettings } = require('../database');
-const surveysConfig = require('../config/surveys.json');
+const { getSurveysConfig } = require('../services/surveyRegistry');
 
 // GET /surveys - Portal Induk Menu Utama Pananyo Taka & Katalog Dasbor Survei/Sensus
 router.get('/', (req, res) => {
+  const surveysConfig = getSurveysConfig();
   const surveysList = [];
   let totalRealisasiAll = 0;
   let totalTargetAll = 0;
@@ -39,9 +40,14 @@ router.get('/', (req, res) => {
       id: key,
       name: cfg.name,
       shortName: cfg.shortName,
+      tagline: cfg.tagline,
+      themePack: cfg.themePack,
       theme: cfg.theme || 'orange',
       themeColor: cfg.themeColor || '#f97316',
+      themeSecondary: cfg.themeSecondary || '#facc15',
       themeRgb: cfg.themeRgb || '249, 115, 22',
+      themeIcon: cfg.themeIcon || 'bi-bar-chart-fill',
+      themeGradient: cfg.themeGradient,
       unitName: cfg.unitName || 'dokumen',
       route: key === 'se2026' ? '/' : `/${key}/`,
       hasData: !!latestUpload || realisasi > 0,
@@ -50,6 +56,11 @@ router.get('/', (req, res) => {
       target,
       persen,
       status: (persen >= 100) ? 'Selesai 100%' : (latestUpload || realisasi > 0 ? 'Aktif Berjalan' : 'Siap Mulai'),
+      category: cfg.category || (key.startsWith('se') ? 'sensus' : 'survei'),
+      categoryLabel: cfg.categoryLabel || (key.startsWith('se') ? 'Sensus Lengkap' : 'Survei Sampel'),
+      categoryBadge: cfg.categoryBadge || (key.startsWith('se') ? 'Sensus Lengkap' : 'Survei Sampel'),
+      categoryIcon: cfg.categoryIcon || (key.startsWith('se') ? 'bi-globe2' : 'bi-pie-chart-fill'),
+      coverageDesc: cfg.coverageDesc || '',
       showUsahaColumns: cfg.showUsahaColumns,
       enabledPages: cfg.enabledPages || []
     });

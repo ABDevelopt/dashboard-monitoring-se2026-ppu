@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+=" crossorigin="anonymous">
   <link rel="stylesheet" href="/css/style.min.css?v=<%= typeof appVersion !== 'undefined' ? appVersion : '1' %>">
   <link rel="stylesheet" href="/css/framework.min.css?v=<%= typeof appVersion !== 'undefined' ? appVersion : '1' %>">
+  <link rel="stylesheet" href="/css/survey-themes.css?v=<%= typeof appVersion !== 'undefined' ? appVersion : '1' %>">
 
   <style>
     /* =========================================================================
@@ -58,33 +59,58 @@
       --border-portal-hover: #cbd5e1;
       --text-portal-1: #0f172a;
       --text-portal-2: #334155;
-      --text-portal-3: #64748b;
+      --text-portal-3: #94a3b8;
     }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
+      font-family: var(--font-body);
       background-color: var(--bg-portal);
       color: var(--text-portal-1);
-      font-family: var(--font-body);
       min-height: 100vh;
+      overflow-x: hidden;
       display: flex;
       flex-direction: column;
-      overflow-x: hidden;
+      line-height: 1.5;
       -webkit-font-smoothing: antialiased;
-      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    /* Ambient Background Mesh */
+    /* Ambient Background Glow */
     .portal-ambient {
       position: fixed;
       inset: 0;
       pointer-events: none;
       z-index: 0;
-      background: 
-        radial-gradient(circle at 15% 15%, rgba(var(--accent-orange-rgb), 0.07) 0%, transparent 45%),
-        radial-gradient(circle at 85% 25%, rgba(var(--accent-cyan-rgb), 0.06) 0%, transparent 45%),
-        radial-gradient(circle at 50% 85%, rgba(var(--accent-purple-rgb), 0.05) 0%, transparent 50%);
+      overflow: hidden;
+    }
+
+    .portal-ambient::before {
+      content: '';
+      position: absolute;
+      top: -200px;
+      left: 20%;
+      width: 700px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(var(--accent-orange-rgb), 0.07) 0%, transparent 70%);
+      filter: blur(80px);
+    }
+
+    .portal-ambient::after {
+      content: '';
+      position: absolute;
+      bottom: -150px;
+      right: 15%;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(var(--accent-cyan-rgb), 0.06) 0%, transparent 70%);
+      filter: blur(80px);
     }
 
     .portal-wrapper {
@@ -95,136 +121,34 @@
       min-height: 100vh;
     }
 
-    /* ── TOPBAR ── */
-    .portal-nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: var(--bg-portal-glass);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border-portal);
-      padding: 12px 28px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .portal-nav-brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      text-decoration: none;
-      color: inherit;
-    }
-
-    .portal-nav-logo-box {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .portal-nav-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 8px;
-      border-radius: 6px;
-      background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(234, 88, 12, 0.25));
-      border: 1px solid rgba(249, 115, 22, 0.4);
-      color: var(--accent-orange);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      font-family: var(--font-display);
-    }
-
-    .portal-nav-title {
-      font-family: var(--font-display);
-      font-size: 15px;
-      font-weight: 800;
-      letter-spacing: -0.2px;
-      color: var(--text-portal-1);
-      line-height: 1.2;
-    }
-
-    .portal-nav-sub {
-      font-size: 11px;
-      color: var(--text-portal-3);
-      font-weight: 500;
-    }
-
-    .portal-nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .portal-status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      font-size: 11.5px;
-      font-weight: 600;
-      color: var(--accent-green);
-      background: rgba(var(--accent-green-rgb), 0.08);
-      border: 1px solid rgba(var(--accent-green-rgb), 0.25);
-      padding: 5px 12px;
-      border-radius: 999px;
-    }
-
-    .portal-pulse-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--accent-green);
-      position: relative;
-    }
-    .portal-pulse-dot::after {
-      content: '';
-      position: absolute;
-      inset: -3px;
-      border-radius: 50%;
-      background: rgba(var(--accent-green-rgb), 0.4);
-      animation: portalPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-
-    @keyframes portalPulse {
-      0%, 100% { transform: scale(1); opacity: 0.8; }
-      50% { transform: scale(1.6); opacity: 0; }
-    }
-
-    .portal-clock {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-portal-2);
-      font-variant-numeric: tabular-nums;
-      padding: 5px 10px;
-      background: var(--bg-portal-card);
-      border: 1px solid var(--border-portal);
-      border-radius: 8px;
-    }
-
-    .portal-theme-btn {
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
+    /* ── FLOATING THEME TOGGLE BUTTON (TANPA PORTAL-NAV) ── */
+    .portal-floating-theme-btn {
+      position: fixed;
+      top: 18px;
+      right: 22px;
+      z-index: 1000;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       background: var(--bg-portal-card);
-      border: 1px solid var(--border-portal);
-      color: var(--text-portal-2);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1.5px solid var(--border-portal);
+      color: var(--text-portal-1);
       cursor: pointer;
-      font-size: 14px;
-      transition: all 0.2s ease;
+      font-size: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .portal-theme-btn:hover {
-      border-color: var(--border-portal-hover);
+
+    .portal-floating-theme-btn:hover {
+      border-color: var(--accent-orange);
       color: var(--accent-orange);
-      transform: translateY(-1px);
+      transform: scale(1.06);
+      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.15);
     }
 
     /* ── MAIN CONTENT CONTAINER ── */
@@ -233,7 +157,7 @@
       width: 100%;
       max-width: 1280px;
       margin: 0 auto;
-      padding: 36px 24px 64px;
+      padding: 24px 20px 64px;
     }
 
     /* ── FOOTER ── */
@@ -258,10 +182,9 @@
     }
 
     @media (max-width: 768px) {
-      .portal-nav { padding: 10px 16px; }
-      .portal-main-content { padding: 20px 16px 48px; }
+      .portal-floating-theme-btn { top: 12px; right: 14px; width: 38px; height: 38px; }
+      .portal-main-content { padding: 16px 12px 48px; }
       .portal-foot { padding: 16px; flex-direction: column; text-align: center; }
-      .portal-nav-sub, .portal-clock { display: none; }
     }
   </style>
 </head>
@@ -269,36 +192,12 @@
 
   <div class="portal-ambient"></div>
 
+  <!-- Floating Theme Button -->
+  <button type="button" class="portal-floating-theme-btn" id="themeToggleBtn" title="Ganti Mode Gelap / Terang" aria-label="Ganti Mode Tema">
+    <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+  </button>
+
   <div class="portal-wrapper">
-    <!-- Top Navigation Bar -->
-    <header class="portal-nav">
-      <a href="/surveys" class="portal-nav-brand">
-        <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #f97316, #ea580c); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);">
-          <i class="bi bi-grid-3x3-gap-fill"></i>
-        </div>
-        <div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="portal-nav-title">Pananyo Taka</span>
-            <span class="portal-nav-badge">Portal Induk</span>
-          </div>
-          <div class="portal-nav-sub">BPS Kabupaten Penajam Paser Utara</div>
-        </div>
-      </a>
-
-      <div class="portal-nav-actions">
-        <div class="portal-status-pill">
-          <div class="portal-pulse-dot"></div>
-          <span>Sistem Pemantauan Online</span>
-        </div>
-        
-        <div class="portal-clock" id="portalClock">--:--:-- WITA</div>
-
-        <button type="button" class="portal-theme-btn" id="themeToggleBtn" title="Ganti Mode Gelap / Terang">
-          <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
-        </button>
-      </div>
-    </header>
-
     <!-- Main View Body -->
     <main class="portal-main-content">
       <%- body %>
@@ -317,22 +216,6 @@
   </div>
 
   <script>
-    // Live WITA Clock
-    function updatePortalClock() {
-      const now = new Date();
-      const timeStr = new Intl.DateTimeFormat('id-ID', {
-        timeZone: 'Asia/Makassar',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      }).format(now);
-      const clockEl = document.getElementById('portalClock');
-      if (clockEl) clockEl.textContent = timeStr + ' WITA';
-    }
-    updatePortalClock();
-    setInterval(updatePortalClock, 1000);
-
     // Theme Switcher Sync with Dashboard
     const themeBtn = document.getElementById('themeToggleBtn');
     const themeIcon = document.getElementById('themeIcon');
@@ -340,21 +223,28 @@
     function applyTheme(theme) {
       if (theme === 'light') {
         document.documentElement.classList.add('light-mode');
-        themeIcon.className = 'bi bi-sun-fill text-warning';
+        if (themeIcon) {
+          themeIcon.classList.remove('bi-moon-stars-fill');
+          themeIcon.classList.add('bi-sun-fill');
+        }
       } else {
         document.documentElement.classList.remove('light-mode');
-        themeIcon.className = 'bi bi-moon-stars-fill';
+        if (themeIcon) {
+          themeIcon.classList.remove('bi-sun-fill');
+          themeIcon.classList.add('bi-moon-stars-fill');
+        }
       }
-      localStorage.setItem('theme', theme);
     }
 
+    // Init Theme from LocalStorage
     const savedTheme = localStorage.getItem('theme') || 'dark';
     applyTheme(savedTheme);
 
     if (themeBtn) {
       themeBtn.addEventListener('click', () => {
-        const currentTheme = document.documentElement.classList.contains('light-mode') ? 'light' : 'dark';
-        const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+        const isLight = document.documentElement.classList.contains('light-mode');
+        const nextTheme = isLight ? 'dark' : 'light';
+        localStorage.setItem('theme', nextTheme);
         applyTheme(nextTheme);
       });
     }
