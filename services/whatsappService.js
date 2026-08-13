@@ -7,7 +7,8 @@ const https = require('https');
 const logger = require('./logger');
 const { 
   getSettings, acquireProcessLock, renewProcessLock, releaseProcessLock,
-  saveWhatsappState, getWhatsappState, savePendingCommand, getPendingCommand, clearPendingCommand 
+  saveWhatsappState, getWhatsappState, savePendingCommand, getPendingCommand, clearPendingCommand,
+  queueWhatsappMessage, getPendingWhatsappMessages, updateWhatsappMessageStatus, checkQueuedMessageStatus
 } = require('../database');
 
 const customAgent = new https.Agent({
@@ -132,9 +133,14 @@ function startLockHeartbeat() {
             await forceReset(true);
           }
         }
+
+        // Proses antrean pesan keluar (outbox) jika terhubung
+        if (sock && clientStatus === 'CONNECTED') {
+          await processWhatsappOutbox();
+        }
       }
     } catch (_) {}
-  }, 5000);
+  }, 3000); // 3 detik agar pengiriman outbox responsif
 }
 
 function releaseLock() {
@@ -432,6 +438,24 @@ async function initialize() {
         };
         addWaLog('success', `[WA-Event] 🟢 WhatsApp Terhubung & Aktif! User: ${pushName} (${phoneNumber})`);
 
+        // Simpan langsung status CONNECTED ke SQLite agar dibaca instan oleh worker Standby
+        saveWhatsappState(clientStatus, qrCodeDataUri, userInfo);
+
+        // Ambil dan cache daftar grup ke SQLite setelah sinkronisasi internal Baileys selesai
+        setTimeout(async () => {
+          try {
+            const grps = await getGroups();
+            if (grps && grps.length > 0) {
+              const dbConn = require('../database').getDb('se2026');
+              dbConn.prepare(`
+                INSERT INTO whatsapp_state (key, value, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+              `).run('wa_groups', JSON.stringify(grps), Date.now());
+            }
+          } catch (_) {}
+        }, 2000);
+
         // Mulai heartbeat health check
         startHealthCheck();
       }
@@ -595,59 +619,107 @@ function getStatus() {
  * Mengambil daftar grup WhatsApp yang diikuti
  */
 async function getGroups() {
-  if (clientStatus !== 'CONNECTED' || !sock) {
-    return [];
+  // Jika Master, fetch langsung dari socket
+  if (sock && clientStatus === 'CONNECTED') {
+    try {
+      const fetchWithTimeout = Promise.race([
+        sock.groupFetchAllParticipating(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timed Out (5s)')), 5000))
+      ]);
+      const groups = await fetchWithTimeout;
+      if (groups) {
+        return Object.values(groups).map(group => ({
+          id: group.id,
+          name: group.subject || 'Grup Tanpa Nama'
+        }));
+      }
+    } catch (err) {
+      const errMsg = err && (err.message || String(err));
+      addWaLog('warn', `WhatsApp getGroups fetch langsung: ${errMsg}`);
+    }
   }
-  try {
-    const fetchWithTimeout = Promise.race([
-      sock.groupFetchAllParticipating(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Timed Out (5s)')), 5000))
-    ]);
-    const groups = await fetchWithTimeout;
-    if (!groups) return [];
 
-    return Object.values(groups).map(group => ({
-      id: group.id,
-      name: group.subject || 'Grup Tanpa Nama'
-    }));
-  } catch (err) {
-    const errMsg = err && (err.message || String(err));
-    addWaLog('warn', `WhatsApp getGroups: ${errMsg}`);
-    return [];
-  }
+  // Fallback ke SQLite cache agar standby worker bisa membaca daftar grup
+  try {
+    const dbConn = require('../database').getDb('se2026');
+    const row = dbConn.prepare("SELECT value FROM whatsapp_state WHERE key = 'wa_groups'").get();
+    if (row && row.value) {
+      return JSON.parse(row.value);
+    }
+  } catch (_) {}
+
+  return [];
 }
 
 /**
- * Mengirim pesan langsung ke chat/grup ID tertentu
+ * Memproses antrean pesan (outbox) dari database SQLite (Dipanggil eksklusif oleh proses Master)
+ */
+async function processWhatsappOutbox() {
+  if (!sock || clientStatus !== 'CONNECTED') return;
+
+  try {
+    const pendingMsgs = getPendingWhatsappMessages();
+    if (!pendingMsgs || pendingMsgs.length === 0) return;
+
+    for (const msg of pendingMsgs) {
+      try {
+        let formattedJid = msg.chat_id.trim();
+        if (!formattedJid.includes('@')) {
+          formattedJid = formattedJid + '@g.us';
+        }
+        await sock.sendMessage(formattedJid, { text: msg.message });
+        updateWhatsappMessageStatus(msg.id, 'SENT');
+        addWaLog('success', `[WA-Outbox] Pesan ID ${msg.id} berhasil dikirim oleh Master.`);
+      } catch (err) {
+        addWaLog('error', `[WA-Outbox] Gagal mengirim pesan ID ${msg.id}: ${err.message}`);
+        updateWhatsappMessageStatus(msg.id, 'FAILED', err.message);
+      }
+    }
+  } catch (_) {}
+}
+
+/**
+ * Mengirim pesan langsung ke chat/grup ID tertentu (Mendukung Multi-process / Standby worker)
  */
 async function sendDirectMessage(chatId, message) {
-  if (clientStatus !== 'CONNECTED' || !sock) {
-    if (hasValidSession()) {
-      addWaLog('warn', '[WA-Message] Sesi tersimpan terdeteksi tapi belum terhubung. Menunggu koneksi aktif (hingga 8 detik)...');
-      initialize();
-      const startTime = Date.now();
-      while ((clientStatus !== 'CONNECTED' || !sock) && Date.now() - startTime < 8000) {
-        await new Promise(r => setTimeout(r, 500));
+  // Jika proses ini adalah Master dan terhubung, kirim langsung
+  if (sock && clientStatus === 'CONNECTED') {
+    try {
+      let formattedJid = chatId.trim();
+      if (!formattedJid.includes('@')) {
+        formattedJid = formattedJid + '@g.us';
+      }
+      const response = await sock.sendMessage(formattedJid, { text: message });
+      addWaLog('success', `[WA-Message] Pesan berhasil dikirim langsung ke: ${chatId}`);
+      return response;
+    } catch (err) {
+      addWaLog('error', `[WA-Message] Gagal mengirim pesan langsung ke ${chatId}: ${err.message}`);
+      throw err;
+    }
+  }
+
+  // Jika proses ini adalah Standby (tidak memiliki socket aktif), antrekan ke Outbox SQLite
+  addWaLog('info', `[WA-Outbox] Mengantrekan pesan ke ${chatId} via SQLite Outbox...`);
+  const queueId = queueWhatsappMessage(chatId, message);
+  if (!queueId) {
+    throw new Error('Gagal menyimpan pesan ke database outbox');
+  }
+
+  // Polling status pengiriman dari SQLite selama maksimal 12 detik
+  const startTime = Date.now();
+  while (Date.now() - startTime < 12000) {
+    await new Promise(r => setTimeout(r, 500));
+    const msgState = checkQueuedMessageStatus(queueId);
+    if (msgState) {
+      if (msgState.status === 'SENT') {
+        return { success: true };
+      } else if (msgState.status === 'FAILED') {
+        throw new Error(msgState.error || 'Pengiriman gagal di proses Master');
       }
     }
   }
 
-  if (clientStatus !== 'CONNECTED' || !sock) {
-    addWaLog('error', 'Gagal mengirim pesan: WhatsApp client belum terhubung.');
-    throw new Error('WhatsApp client is not connected');
-  }
-  try {
-    let formattedJid = chatId.trim();
-    if (!formattedJid.includes('@')) {
-      formattedJid = formattedJid + '@g.us';
-    }
-    const response = await sock.sendMessage(formattedJid, { text: message });
-    addWaLog('success', `[WA-Message] Pesan berhasil dikirim ke: ${chatId}`);
-    return response;
-  } catch (err) {
-    addWaLog('error', `[WA-Message] Gagal mengirim pesan ke ${chatId}: ${err.message}`);
-    throw err;
-  }
+  throw new Error('Batas waktu tunggu pengiriman pesan habis (Master sedang tidak aktif atau sibuk)');
 }
 
 /**
