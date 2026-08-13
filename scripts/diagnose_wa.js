@@ -23,7 +23,7 @@ if (dns.setDefaultResultOrder) {
 }
 
 const db = require('../database');
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 let qrcodeTerminal = null;
 try {
@@ -181,7 +181,7 @@ async function runDiagnosis() {
       auth: state,
       printQRInTerminal: false,
       logger: pino({ level: 'silent' }),
-      browser: ['Monitoring SE2026 PPU Diag', 'Chrome', '124.0.0.0'],
+      browser: Browsers.ubuntu('Chrome'),
       connectTimeoutMs: 30000,
       defaultQueryTimeoutMs: 30000,
       agent: customAgent
