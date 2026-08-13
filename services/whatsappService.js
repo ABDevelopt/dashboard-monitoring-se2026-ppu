@@ -949,43 +949,66 @@ function buildNotificationMessage(template, uploadData, summary, kecStats, pmlSt
   const diffRejected = (diffRejectedNum >= 0 ? '+' : '') + formatNumber(diffRejectedNum);
   const diffTotal = (diffTotalNum >= 0 ? '+' : '') + formatNumber(diffTotalNum);
 
-  // Per PCL diff map
+  // Per PCL diff map (penambahan realisasi per PCL sejak upload sebelumnya)
   const prevPclMap = new Map();
   if (Array.isArray(prevPclStats)) {
     prevPclStats.forEach(p => {
       const key = p.email || p.pcl || p.sobat_id;
-      const real = (p.approved_total || p.approved || 0) + (p.submitted_total || p.submitted || 0);
+      const real = (p.fasih_real_total || ((p.approved_total || 0) + (p.submitted_total || 0) + (p.rejected_total || 0)));
       if (key) prevPclMap.set(key, real);
     });
   }
 
   let activeDiffPclCount = 0;
+  let dist0 = 0, dist1_4 = 0, dist5_7 = 0, dist8_12 = 0, dist13Plus = 0;
   if (Array.isArray(pclStats)) {
     pclStats.forEach(p => {
       const key = p.email || p.pcl || p.sobat_id;
-      const curReal = (p.approved_total || p.approved || 0) + (p.submitted_total || p.submitted || 0);
+      const curReal = (p.fasih_real_total || ((p.approved_total || 0) + (p.submitted_total || 0) + (p.rejected_total || 0)));
       const oldReal = key && prevPclMap.has(key) ? prevPclMap.get(key) : 0;
-      if (curReal > oldReal) {
+      const diffPcl = Math.max(0, curReal - oldReal);
+
+      if (diffPcl > 0) {
         activeDiffPclCount++;
       }
+
+      // Sebaran produktivitas petugas (sejak upload sebelumnya)
+      if (diffPcl === 0) dist0++;
+      else if (diffPcl >= 1 && diffPcl <= 4) dist1_4++;
+      else if (diffPcl >= 5 && diffPcl <= 7) dist5_7++;
+      else if (diffPcl >= 8 && diffPcl <= 12) dist8_12++;
+      else if (diffPcl >= 13) dist13Plus++;
     });
   }
 
   const avgDiffAll = totalPcl > 0 ? (diffTotalNum / totalPcl).toFixed(1) : '0.0';
   const avgDiffActive = activeDiffPclCount > 0 ? (diffTotalNum / activeDiffPclCount).toFixed(1) : '0.0';
 
-  // Sebaran performa PCL (Distribution Buckets)
-  let dist0 = 0, dist1_4 = 0, dist5_7 = 0, dist8_12 = 0, dist13Plus = 0;
-  if (Array.isArray(pclStats)) {
-    pclStats.forEach(p => {
-      const app = p.approved_total || p.approved || 0;
-      if (app === 0) dist0++;
-      else if (app >= 1 && app <= 4) dist1_4++;
-      else if (app >= 5 && app <= 7) dist5_7++;
-      else if (app >= 8 && app <= 12) dist8_12++;
-      else if (app >= 13) dist13Plus++;
-    });
+  // Target Standar & Speedometer Calculations
+  const startSensusDate = new Date((settings && settings.speedometer_start_date) || '2026-06-15');
+  const deadline = new Date((settings && settings.speedometer_target_date) || '2026-08-31');
+  const totalDays = Math.max(1, Math.ceil((deadline - startSensusDate) / (1000 * 60 * 60 * 24)));
+  
+  const uploadDate = uploadData.tanggal ? new Date(uploadData.tanggal) : new Date();
+  const diffDays = Math.max(1, Math.round((uploadDate - startSensusDate) / (1000 * 60 * 60 * 24)) + 1);
+
+  // Target Harian Normal (Target Speed Total)
+  let targetNormalHarian = 2145;
+  if (settings && settings.speedometer_calc_mode === 'pcl_speed') {
+    const targetSpeedPerPcl = parseFloat(settings.speedometer_target_speed_per_pcl || '13') || 13;
+    targetNormalHarian = Math.round(targetSpeedPerPcl * totalPcl);
+  } else {
+    targetNormalHarian = totalDays > 0 ? Math.round(totalFasih / totalDays) : 2145;
   }
+
+  // Deviasi Update = Realisasi Masuk pada update ini vs Target Normal Harian
+  const deviasiUpdateNum = diffTotalNum - targetNormalHarian;
+  const deviasiUpdateStr = (deviasiUpdateNum >= 0 ? '+' : '') + formatNumber(deviasiUpdateNum);
+
+  // Laju Kumulatif saat ini vs Target Normal Harian (Defisit/Surplus Laju Kumulatif)
+  const currentSpeed = diffDays > 0 ? (fasihReal / diffDays) : 0;
+  const defisitLajuKumulatifNum = currentSpeed - targetNormalHarian;
+  const defisitLajuKumulatifStr = (defisitLajuKumulatifNum >= 0 ? '+' : '') + formatNumber(Math.round(defisitLajuKumulatifNum));
 
   // Rincian per Kecamatan
   let rincianKecamatan = '';
@@ -1070,10 +1093,11 @@ function buildNotificationMessage(template, uploadData, summary, kecStats, pmlSt
     '{avg_diff_all}': avgDiffAll,
     '{avg_diff_active}': avgDiffActive,
     '{active_diff_pcl_count}': formatNumber(activeDiffPclCount),
-    '{deviasi_update}': diffTotal,
-    '{deviasi_kumulatif}': `${fasihPct}%`,
+    '{deviasi_update}': deviasiUpdateStr,
+    '{deviasi_kumulatif}': defisitLajuKumulatifStr,
+    '{target_normal_harian}': formatNumber(targetNormalHarian),
 
-    // Sebaran PCL
+    // Sebaran PCL (sejak upload sebelumnya)
     '{dist_0}': formatNumber(dist0),
     '{dist_1_4}': formatNumber(dist1_4),
     '{dist_5_7}': formatNumber(dist5_7),
