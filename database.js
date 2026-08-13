@@ -566,6 +566,239 @@ function runMigrations(dbConn, surveyId = 'se2026') {
           CREATE INDEX IF NOT EXISTS idx_survey_subsls_pcl ON survey_subsls(survey_id, pcl);
         `);
       }
+    },
+    {
+      version: '20260812000000_normalized_ref_schema',
+      up: (db) => {
+        dbConn.exec(`
+          -- 1. Master Wilayah Kecamatan
+          CREATE TABLE IF NOT EXISTS ref_kecamatan (
+            kode_kec TEXT PRIMARY KEY,
+            nama_kecamatan TEXT NOT NULL
+          );
+
+          -- 2. Master Wilayah Desa/Kelurahan
+          CREATE TABLE IF NOT EXISTS ref_desa (
+            kode_desa TEXT PRIMARY KEY,
+            kode_kec TEXT NOT NULL REFERENCES ref_kecamatan(kode_kec),
+            nama_desa TEXT NOT NULL
+          );
+
+          -- 3. Master Petugas Terpadu
+          CREATE TABLE IF NOT EXISTS ref_petugas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sobat_id TEXT UNIQUE,
+            nama_lengkap TEXT NOT NULL,
+            email TEXT UNIQUE,
+            jenis_kelamin TEXT,
+            kode_prov INTEGER DEFAULT 64,
+            kode_kab INTEGER DEFAULT 9,
+            nama_kab TEXT DEFAULT 'PENAJAM PASER UTARA',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE INDEX IF NOT EXISTS idx_ref_desa_kec ON ref_desa(kode_kec);
+          CREATE INDEX IF NOT EXISTS idx_ref_petugas_email ON ref_petugas(email);
+          CREATE INDEX IF NOT EXISTS idx_ref_petugas_nama ON ref_petugas(nama_lengkap);
+        `);
+
+        // Populate ref_kecamatan from subsls_master
+        try {
+          dbConn.exec(`
+            INSERT OR IGNORE INTO ref_kecamatan (kode_kec, nama_kecamatan)
+            SELECT DISTINCT kode_kec, UPPER(TRIM(kecamatan))
+            FROM subsls_master
+            WHERE kode_kec IS NOT NULL AND TRIM(kode_kec) != '' AND kecamatan IS NOT NULL;
+          `);
+        } catch (_) {}
+
+        // Populate ref_desa from subsls_master
+        try {
+          dbConn.exec(`
+            INSERT OR IGNORE INTO ref_desa (kode_desa, kode_kec, nama_desa)
+            SELECT DISTINCT SUBSTR(kode, 1, 10) AS kode_desa, kode_kec, UPPER(TRIM(desa))
+            FROM subsls_master
+            WHERE kode IS NOT NULL AND LENGTH(kode) >= 10 AND kode_kec IS NOT NULL AND desa IS NOT NULL;
+          `);
+        } catch (_) {}
+
+        // Populate ref_petugas from petugas_email & distinct names in subsls_master
+        try {
+          dbConn.exec(`
+            INSERT OR IGNORE INTO ref_petugas (sobat_id, nama_lengkap, email, jenis_kelamin, kode_prov, kode_kab, nama_kab)
+            SELECT sobat_id, TRIM(nama_lengkap), TRIM(email), jenis_kelamin, kode_prov, kode_kab, nama_kab
+            FROM petugas_email
+            WHERE nama_lengkap IS NOT NULL AND TRIM(nama_lengkap) != '';
+          `);
+        } catch (_) {}
+
+        // Add foreign key columns in subsls_master
+        ['korlap_id', 'pml_id', 'pcl_id'].forEach(col => {
+          try {
+            dbConn.prepare(`ALTER TABLE subsls_master ADD COLUMN ${col} INTEGER REFERENCES ref_petugas(id)`).run();
+          } catch (_) {}
+        });
+
+        // Link existing officer text names to ref_petugas ID
+        try {
+          dbConn.exec(`
+            UPDATE subsls_master
+            SET korlap_id = (SELECT id FROM ref_petugas WHERE LOWER(TRIM(nama_lengkap)) = LOWER(TRIM(subsls_master.korlap)) LIMIT 1)
+            WHERE korlap IS NOT NULL AND TRIM(korlap) != '';
+
+            UPDATE subsls_master
+            SET pml_id = (SELECT id FROM ref_petugas WHERE LOWER(TRIM(nama_lengkap)) = LOWER(TRIM(subsls_master.pml)) LIMIT 1)
+            WHERE pml IS NOT NULL AND TRIM(pml) != '';
+
+            UPDATE subsls_master
+            SET pcl_id = (SELECT id FROM ref_petugas WHERE LOWER(TRIM(nama_lengkap)) = LOWER(TRIM(subsls_master.pcl)) LIMIT 1)
+            WHERE pcl IS NOT NULL AND TRIM(pcl) != '';
+          `);
+        } catch (_) {}
+
+        // Create Database View for 100% Backward Compatibility
+        try {
+          dbConn.exec(`
+            CREATE VIEW IF NOT EXISTS v_subsls_detail AS
+            SELECT 
+              s.kode,
+              d.kode_kec,
+              COALESCE(k.nama_kecamatan, s.kecamatan) AS kecamatan,
+              COALESCE(d.nama_desa, s.desa) AS desa,
+              s.nama_sls,
+              COALESCE(p_korlap.nama_lengkap, s.korlap) AS korlap,
+              COALESCE(p_pml.nama_lengkap, s.pml) AS pml,
+              COALESCE(p_pcl.nama_lengkap, s.pcl) AS pcl,
+              s.muatan,
+              s.target_fasih_sm,
+              s.target_honor,
+              s.target_fasih,
+              s.kode_2025,
+              s.korlap_id,
+              s.pml_id,
+              s.pcl_id
+            FROM subsls_master s
+            LEFT JOIN ref_desa d ON SUBSTR(s.kode, 1, 10) = d.kode_desa
+            LEFT JOIN ref_kecamatan k ON d.kode_kec = k.kode_kec
+            LEFT JOIN ref_petugas p_korlap ON s.korlap_id = p_korlap.id
+            LEFT JOIN ref_petugas p_pml ON s.pml_id = p_pml.id
+            LEFT JOIN ref_petugas p_pcl ON s.pcl_id = p_pcl.id;
+          `);
+        } catch (_) {}
+      }
+    },
+    {
+      version: '20260812010000_surveys_registry',
+      up: (db) => {
+        // ── 1. Tabel registri survei/sensus ─────────────────────────────────
+        dbConn.exec(`
+          CREATE TABLE IF NOT EXISTS surveys_registry (
+            id            TEXT PRIMARY KEY,
+            slug          TEXT UNIQUE NOT NULL,
+            name          TEXT NOT NULL,
+            short_name    TEXT,
+            tagline       TEXT,
+            category      TEXT NOT NULL CHECK(category IN ('sensus','survei')),
+            category_label TEXT,
+            coverage_desc TEXT,
+            is_active     INTEGER DEFAULT 1,
+            sort_order    INTEGER DEFAULT 0,
+            created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+
+          -- ── 2. Tema visual per survei ─────────────────────────────────────
+          CREATE TABLE IF NOT EXISTS survey_themes (
+            survey_id       TEXT PRIMARY KEY REFERENCES surveys_registry(id) ON DELETE CASCADE,
+            theme_name      TEXT,
+            theme_color     TEXT,
+            theme_secondary TEXT,
+            theme_rgb       TEXT,
+            theme_gradient  TEXT,
+            theme_glow      TEXT,
+            theme_icon      TEXT,
+            category_icon   TEXT,
+            category_badge  TEXT
+          );
+
+          -- ── 3. Konfigurasi pengumpulan data per survei ────────────────────
+          CREATE TABLE IF NOT EXISTS survey_collection_config (
+            survey_id          TEXT PRIMARY KEY REFERENCES surveys_registry(id) ON DELETE CASCADE,
+            unit_name          TEXT DEFAULT 'dokumen',
+            route_prefix       TEXT,
+            show_usaha_columns INTEGER DEFAULT 0,
+            show_muatan_usaha  INTEGER DEFAULT 0,
+            enabled_pages      TEXT DEFAULT '[]'
+          );
+
+          CREATE INDEX IF NOT EXISTS idx_surveys_registry_active ON surveys_registry(is_active, sort_order);
+        `);
+
+        // ── 4. Seed data dari surveys.json ───────────────────────────────────
+        const surveysJson = require('./config/surveys.json');
+
+        const insRegistry = dbConn.prepare(`
+          INSERT OR IGNORE INTO surveys_registry
+            (id, slug, name, short_name, tagline, category, category_label, coverage_desc, sort_order)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        const insTheme = dbConn.prepare(`
+          INSERT OR IGNORE INTO survey_themes
+            (survey_id, theme_name, theme_color, theme_secondary, theme_rgb, theme_gradient, theme_glow, theme_icon, category_icon, category_badge)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        const insConfig = dbConn.prepare(`
+          INSERT OR IGNORE INTO survey_collection_config
+            (survey_id, unit_name, route_prefix, show_usaha_columns, show_muatan_usaha, enabled_pages)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `);
+
+        const seedAll = dbConn.transaction((entries) => {
+          entries.forEach(([key, cfg], idx) => {
+            insRegistry.run(
+              key,
+              key.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+              cfg.name || key,
+              cfg.shortName || null,
+              cfg.tagline || null,
+              cfg.category || (key.startsWith('se') ? 'sensus' : 'survei'),
+              cfg.categoryLabel || null,
+              cfg.coverageDesc || null,
+              idx
+            );
+
+            insTheme.run(
+              key,
+              cfg.themePack || cfg.theme || null,
+              cfg.themeColor || null,
+              cfg.themeSecondary || null,
+              cfg.themeRgb || null,
+              cfg.themeGradient || null,
+              cfg.themeGlow || null,
+              cfg.themeIcon || null,
+              cfg.categoryIcon || null,
+              cfg.categoryBadge || null
+            );
+
+            insConfig.run(
+              key,
+              cfg.unitName || 'dokumen',
+              key === 'se2026' ? '/' : `/${key}/`,
+              cfg.showUsahaColumns ? 1 : 0,
+              cfg.showMuatanUsaha ? 1 : 0,
+              JSON.stringify(cfg.enabledPages || [])
+            );
+          });
+        });
+
+        try {
+          seedAll(Object.entries(surveysJson));
+        } catch (seedErr) {
+          logger.error('surveys_registry seed error (non-fatal):', seedErr.message);
+        }
+      }
     }
   ];
 
@@ -924,7 +1157,7 @@ function getPclStats(uploadId, settings = getSettings(), surveyId = 'se2026') {
 
 // Tren harian
 function getTrenHarian() {
-  const rows = getDb().prepare(`
+  return getDb().prepare(`
     SELECT 
       u.id,
       u.tanggal,
@@ -945,6 +1178,7 @@ function getTrenHarian() {
       SELECT MAX(id) AS id, tanggal, MAX(filename) AS filename
       FROM uploads
       WHERE total_subsls_terisi > 0
+        AND (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%')
       GROUP BY tanggal
     ) u
     LEFT JOIN summary_cache s ON s.upload_id = u.id
@@ -952,29 +1186,6 @@ function getTrenHarian() {
     GROUP BY u.tanggal
     ORDER BY u.tanggal ASC
   `).all();
-
-  const db = getDb();
-  const prevUploadStmt = db.prepare(`
-    SELECT u.id 
-    FROM uploads u 
-    WHERE u.total_subsls_terisi > 0 AND u.tanggal < ? 
-    ORDER BY u.tanggal DESC, u.id DESC LIMIT 1
-  `);
-
-  rows.forEach(r => {
-    const prev = prevUploadStmt.get(r.tanggal);
-    if (prev) {
-      const prevSum = db.prepare(`
-        SELECT SUM(COALESCE(submitted_total, 0) + COALESCE(approved_total, 0) + COALESCE(rejected_total, 0)) AS total 
-        FROM summary_cache WHERE upload_id = ?
-      `).get(prev.id);
-      r.prev_realisasi = prevSum ? (prevSum.total || 0) : 0;
-    } else {
-      r.prev_realisasi = 0;
-    }
-  });
-
-  return rows;
 }
 
 
@@ -2231,6 +2442,221 @@ function resyncPetugasEmailsToMaster() {
   });
 }
 
+/**
+ * Atomic Inter-Process Lock menggunakan SQLite (ACID compliant across multiple Passenger/Node processes)
+ */
+function initProcessLockTable(dbConn) {
+  dbConn.exec(`
+    CREATE TABLE IF NOT EXISTS process_locks (
+      lock_name TEXT PRIMARY KEY,
+      owner_pid INTEGER NOT NULL,
+      heartbeat INTEGER NOT NULL,
+      hostname TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+}
+
+function acquireProcessLock(lockName, ownerPid, ttlMs = 20000) {
+  try {
+    const dbConn = getDb('se2026');
+    initProcessLockTable(dbConn);
+    const now = Date.now();
+
+    const tx = dbConn.transaction(() => {
+      const row = dbConn.prepare('SELECT owner_pid, heartbeat FROM process_locks WHERE lock_name = ?').get(lockName);
+      if (row) {
+        const isAlive = (now - row.heartbeat) < ttlMs;
+        if (isAlive && row.owner_pid !== ownerPid) {
+          return { acquired: false, masterPid: row.owner_pid };
+        }
+      }
+      dbConn.prepare(`
+        INSERT INTO process_locks (lock_name, owner_pid, heartbeat, hostname)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(lock_name) DO UPDATE SET
+          owner_pid = excluded.owner_pid,
+          heartbeat = excluded.heartbeat,
+          hostname = excluded.hostname
+      `).run(lockName, ownerPid, now, require('os').hostname());
+      return { acquired: true, masterPid: ownerPid };
+    });
+
+    return tx();
+  } catch (e) {
+    logger.error('acquireProcessLock error:', e.message);
+    return { acquired: true, masterPid: ownerPid };
+  }
+}
+
+function renewProcessLock(lockName, ownerPid) {
+  try {
+    const dbConn = getDb('se2026');
+    dbConn.prepare('UPDATE process_locks SET heartbeat = ? WHERE lock_name = ? AND owner_pid = ?')
+      .run(Date.now(), lockName, ownerPid);
+  } catch (_) {}
+}
+
+function releaseProcessLock(lockName, ownerPid) {
+  try {
+    const dbConn = getDb('se2026');
+    dbConn.prepare('DELETE FROM process_locks WHERE lock_name = ? AND owner_pid = ?')
+      .run(lockName, ownerPid);
+  } catch (_) {}
+}
+
+function getProcessLock(lockName) {
+  try {
+    const dbConn = getDb('se2026');
+    initProcessLockTable(dbConn);
+    return dbConn.prepare('SELECT * FROM process_locks WHERE lock_name = ?').get(lockName);
+  } catch (_) {
+    return null;
+  }
+}
+
+function getRefKecamatan() {
+  try {
+    return getDb().prepare('SELECT * FROM ref_kecamatan ORDER BY kode_kec ASC').all();
+  } catch (_) {
+    return [];
+  }
+}
+
+function getRefDesa(kodeKec) {
+  try {
+    if (kodeKec) {
+      return getDb().prepare('SELECT * FROM ref_desa WHERE kode_kec = ? ORDER BY kode_desa ASC').all(kodeKec);
+    }
+    return getDb().prepare('SELECT * FROM ref_desa ORDER BY kode_desa ASC').all();
+  } catch (_) {
+    return [];
+  }
+}
+
+function getRefPetugas() {
+  try {
+    return getDb().prepare('SELECT * FROM ref_petugas ORDER BY nama_lengkap ASC').all();
+  } catch (_) {
+    return [];
+  }
+}
+
+function initWhatsappStateTable(dbConn) {
+  dbConn.exec(`
+    CREATE TABLE IF NOT EXISTS whatsapp_state (
+      key TEXT PRIMARY KEY,
+      value TEXT,
+      updated_at INTEGER
+    );
+  `);
+}
+
+function saveWhatsappState(status, qr, userObj) {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappStateTable(dbConn);
+    const now = Date.now();
+    const userVal = userObj ? JSON.stringify(userObj) : null;
+    
+    dbConn.prepare(`
+      INSERT INTO whatsapp_state (key, value, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    `).run('client_status', status, now);
+
+    dbConn.prepare(`
+      INSERT INTO whatsapp_state (key, value, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    `).run('qr_code', qr || '', now);
+
+    dbConn.prepare(`
+      INSERT INTO whatsapp_state (key, value, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    `).run('user_info', userVal, now);
+  } catch (e) {
+    logger.error('saveWhatsappState error: ' + e.message);
+  }
+}
+
+function getWhatsappState() {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappStateTable(dbConn);
+    
+    const statusRow = dbConn.prepare('SELECT value, updated_at FROM whatsapp_state WHERE key = ?').get('client_status');
+    const qrRow = dbConn.prepare('SELECT value FROM whatsapp_state WHERE key = ?').get('qr_code');
+    const userRow = dbConn.prepare('SELECT value FROM whatsapp_state WHERE key = ?').get('user_info');
+    
+    const now = Date.now();
+    if (!statusRow || (now - statusRow.updated_at) > 35000) {
+      return {
+        status: 'DISCONNECTED',
+        qrCode: '',
+        user: null
+      };
+    }
+    
+    let user = null;
+    if (userRow && userRow.value) {
+      try {
+        const u = JSON.parse(userRow.value);
+        user = {
+          name: u.pushname || u.name,
+          number: u.wid ? (u.wid.user || u.wid) : u.number
+        };
+      } catch (_) {}
+    }
+    
+    return {
+      status: statusRow.value,
+      qrCode: qrRow ? qrRow.value : '',
+      user: user
+    };
+  } catch (e) {
+    return {
+      status: 'DISCONNECTED',
+      qrCode: '',
+      user: null
+    };
+  }
+}
+
+function savePendingCommand(command) {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappStateTable(dbConn);
+    dbConn.prepare(`
+      INSERT INTO whatsapp_state (key, value, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    `).run('pending_command', command, Date.now());
+  } catch (e) {
+    logger.error('savePendingCommand error: ' + e.message);
+  }
+}
+
+function getPendingCommand() {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappStateTable(dbConn);
+    const row = dbConn.prepare('SELECT value, updated_at FROM whatsapp_state WHERE key = ?').get('pending_command');
+    if (row && row.value && (Date.now() - row.updated_at) < 15000) {
+      return row.value;
+    }
+  } catch (_) {}
+  return null;
+}
+
+function clearPendingCommand() {
+  try {
+    const dbConn = getDb('se2026');
+    dbConn.prepare('DELETE FROM whatsapp_state WHERE key = ?').run('pending_command');
+  } catch (_) {}
+}
+
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -2244,5 +2670,8 @@ module.exports = {
   logVisit, getVisitorStats,
   getPetugasEmails, searchPetugasEmails, getPetugasEmailByNama, getPetugasEmailBySobatId,
   getPetugasEmailById, insertPetugasEmail, updatePetugasEmail, deletePetugasEmail, resyncPetugasEmailsToMaster,
-  reloadDbConnection, closeDbConnection, getMasterTableSql
+  getRefKecamatan, getRefDesa, getRefPetugas,
+  reloadDbConnection, closeDbConnection, getMasterTableSql,
+  acquireProcessLock, renewProcessLock, releaseProcessLock, getProcessLock,
+  saveWhatsappState, getWhatsappState, savePendingCommand, getPendingCommand, clearPendingCommand
 };

@@ -93,7 +93,8 @@ app.use(express.json());
 try {
   const whatsappService = require('./services/whatsappService');
   whatsappService.initialize();
-  logger.info('🚀 [Startup Top-Level] WhatsApp Service initialized background task.');
+  whatsappService.startSupervisor();
+  logger.info('🚀 [Startup Top-Level] WhatsApp Service & Watchdog Supervisor 24/7 initialized.');
 } catch (err) {
   logger.error('❌ Gagal menginisialisasi WhatsApp Service pada top-level startup:', err);
 }

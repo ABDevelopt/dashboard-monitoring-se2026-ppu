@@ -139,76 +139,13 @@
   </div>
 
   <div class="card mt-4">
-    <div class="card-header">
-      <div class="card-title">
-        <span><i class="bi bi-folder-symlink"></i> Impor File dari Folder Workspace</span>
-      </div>
-      <span class="badge badge-gray"><%= workspaceFiles.length %> File</span>
-    </div>
-    <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; padding: 0 4px;">
-      Daftar file Excel/CSV (.xlsx/.xls/.csv) yang terdeteksi langsung di dalam folder root workspace aplikasi server. Anda dapat langsung memproses file tanpa perlu menguploadnya secara manual melalui browser.
-    </p>
-
-    <% if (workspaceFiles && workspaceFiles.length > 0) { %>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 40px;" class="text-center">No</th>
-              <th>Nama File</th>
-              <th>Ukuran</th>
-              <th>Terakhir Diubah</th>
-              <th style="width: 150px;">Tanggal Data</th>
-              <th style="width: 280px;" class="text-center">Aksi Impor Langsung</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% workspaceFiles.forEach((file, index) => { %>
-              <% 
-                let detected = new Date().toISOString().slice(0, 10);
-                const ymd = file.filename.match(/(?<!\d)(20\d{2})[-/._]?(0[1-9]|1[0-2])[-/._]?(0[1-9]|[12]\d|3[01])(?!\d)/);
-                if (ymd) {
-                  detected = `${ymd[1]}-${ymd[2]}-${ymd[3]}`;
-                } else {
-                  const dmy = file.filename.match(/(?<!\d)(0[1-9]|[12]\d|3[01])[-/._]?(0[1-9]|1[0-2])[-/._]?(20\d{2})(?!\d)/);
-                  if (dmy) {
-                    detected = `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
-                  }
-                }
-              %>
-              <tr>
-                <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
-                <td class="td-primary" style="font-weight: 500; word-break: break-all;"><%= file.filename %></td>
-                <td><%= (file.size / 1024 / 1024).toFixed(2) %> MB</td>
-                <td style="font-size: 11px; color: var(--text-secondary);"><%= formatWitaShort(file.mtime) %> WITA</td>
-                <td>
-                  <input type="date" id="date-<%= index %>" value="<%= detected %>" style="width: 100%; padding: 4px 6px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary);">
-                </td>
-                <td class="text-center" style="display: flex; gap: 6px; justify-content: center; align-items: center; border: none;">
-                  <button onclick="submitLocalImport('<%= file.filename %>', 'date-<%= index %>', 'excel')" class="btn btn-secondary btn-xs" title="Impor sebagai File Progres Utama"><i class="bi bi-play-fill text-cyan"></i> Progres Utama</button>
-                  <button onclick="submitLocalImport('<%= file.filename %>', 'date-<%= index %>', 'status')" class="btn btn-secondary btn-xs" title="Impor sebagai File Status FASIH" style="color: var(--accent-purple); border-color: rgba(139, 92, 246, 0.3);"><i class="bi bi-phone-fill text-purple"></i> Status FASIH</button>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
-    <% } else { %>
-      <div class="empty-state" style="padding: 20px;">
-        <div class="empty-state-icon" style="font-size: 32px; margin-bottom: 8px;"><i class="bi bi-folder-x"></i></div>
-        <div class="empty-state-text" style="font-size: 12px; color: var(--text-muted);">Tidak ditemukan file Excel (.xlsx/.xls) di folder root workspace.</div>
-      </div>
-    <% } %>
-  </div>
-
-  <div class="card mt-4">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
       <div class="card-title">
         <span><i class="bi bi-clock-history"></i> Riwayat Upload & Histori Data</span>
       </div>
       <div style="display: flex; gap: 8px; align-items: center;">
         <% if (uploads && uploads.length > 0) { %>
-          <% const latestUpload = uploads[uploads.length - 1]; %>
+          <% const latestUpload = uploads[0]; %>
           <form action="<%= navPrefix %>/admin/upload/delete/<%= latestUpload.id %>" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan/rollback upload terakhir (<%= latestUpload.filename || latestUpload.status_filename || 'ID: ' + latestUpload.id %>)? Data progres pada tanggal <%= latestUpload.tanggal %> akan dihapus secara permanen.');" style="margin: 0;">
             <button type="submit" class="btn btn-danger btn-sm" style="background: var(--accent-red); border-color: var(--accent-red); color: white; display: flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 12px; font-weight: 600; border-radius: 6px; transition: var(--transition);">
               <i class="bi bi-arrow-counterclockwise"></i> Rollback ke Data Sebelumnya
@@ -219,9 +156,9 @@
       </div>
     </div>
 
-      <div class="search-wrap mb-4">
-        <input type="search" id="uploadsSearch" placeholder="Cari nama file/tanggal..." aria-label="Cari nama file atau tanggal upload" style="width: 100%; max-width: 280px;">
-      </div>
+    <div class="search-wrap mb-4">
+      <input type="search" id="uploadsSearch" placeholder="Cari nama file/tanggal..." aria-label="Cari nama file atau tanggal upload" style="width: 100%; max-width: 280px;">
+    </div>
 
     <% if (uploads && uploads.length > 0) { %>
       <div class="table-wrap">
@@ -234,14 +171,13 @@
               <th>Tanggal Data</th>
               <th class="text-right">SubSLS Terisi</th>
               <th class="hide-md">Waktu Upload</th>
-
               <th style="width: 140px;" class="text-center">Aksi</th>
             </tr>
           </thead>
           <tbody>
             <% uploads.forEach((u, index) => { %>
-              <tr>
-                <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);\"><%= index + 1 %></td>
+              <tr class="<%= index >= 5 ? 'upload-row-more' : '' %>" style="<%= index >= 5 ? 'display: none;' : '' %>">
+                <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                 <td class="td-code hide-md"><%= u.id %></td>
                 <td class="td-primary">
                   <div><%= u.filename || '(Hanya Status FASIH)' %></div>
@@ -264,7 +200,6 @@
                   <% } %>
                   <form action="<%= navPrefix %>/admin/upload/delete/<%= u.id %>" method="POST" onsubmit="return confirm('Yakin ingin menghapus data rekap ini?');" style="margin: 0;">
                     <button type="submit" class="btn btn-secondary text-red" style="padding: 4px 8px;" title="Hapus" aria-label="Hapus Rekap Progres ID <%= u.id %>"><i class="bi bi-trash"></i></button>
-
                   </form>
                 </td>
               </tr>
@@ -272,6 +207,15 @@
           </tbody>
         </table>
       </div>
+
+      <% if (uploads.length > 5) { %>
+        <div id="moreUploadsContainer" style="text-align: center; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border);">
+          <button type="button" id="btnToggleUploads" class="btn btn-secondary" style="font-size: 12.5px; font-weight: 600; padding: 7px 20px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s ease;">
+            <i class="bi bi-chevron-down" id="toggleUploadsIcon"></i>
+            <span id="toggleUploadsText">Lihat Selengkapnya (<%= uploads.length - 5 %> Upload Lainnya)</span>
+          </button>
+        </div>
+      <% } %>
     <% } else { %>
       <div class="empty-state">
         <div class="empty-state-icon"><i class="bi bi-folder-x"></i></div>
@@ -377,7 +321,58 @@
     initUploadZone('uploadZoneStatus', 'statusFile');
     initUploadZone('uploadZoneHonor', 'honorFile');
     makeTableSortable('uploadsTable');
-    makeTableSearchable('uploadsSearch', 'uploadsTable');
+
+    // Handle toggle "Lihat Selengkapnya" for Uploads History
+    const btnToggleUploads = document.getElementById('btnToggleUploads');
+    const uploadsSearch = document.getElementById('uploadsSearch');
+    let isUploadsExpanded = false;
+
+    if (btnToggleUploads) {
+      btnToggleUploads.addEventListener('click', function () {
+        isUploadsExpanded = !isUploadsExpanded;
+        const extraRows = document.querySelectorAll('.upload-row-more');
+        extraRows.forEach(row => {
+          row.style.display = isUploadsExpanded ? '' : 'none';
+        });
+
+        const icon = document.getElementById('toggleUploadsIcon');
+        const text = document.getElementById('toggleUploadsText');
+        if (icon && text) {
+          if (isUploadsExpanded) {
+            icon.className = 'bi bi-chevron-up';
+            text.textContent = 'Sembunyikan (Hanya Tampilkan 5 Terbaru)';
+          } else {
+            icon.className = 'bi bi-chevron-down';
+            text.textContent = 'Lihat Selengkapnya (<%= uploads ? Math.max(0, uploads.length - 5) : 0 %> Upload Lainnya)';
+          }
+        }
+      });
+    }
+
+    if (uploadsSearch) {
+      uploadsSearch.addEventListener('input', function () {
+        const query = this.value.trim().toLowerCase();
+        const moreContainer = document.getElementById('moreUploadsContainer');
+        const allRows = document.querySelectorAll('#uploadsTable tbody tr');
+
+        if (query) {
+          if (moreContainer) moreContainer.style.display = 'none';
+          allRows.forEach(row => {
+            const match = row.textContent.toLowerCase().includes(query);
+            row.style.display = match ? '' : 'none';
+          });
+        } else {
+          if (moreContainer) moreContainer.style.display = '';
+          allRows.forEach((row, idx) => {
+            if (idx < 5 || isUploadsExpanded) {
+              row.style.display = '';
+            } else {
+              row.style.display = 'none';
+            }
+          });
+        }
+      });
+    }
 
     const keluargaInput = document.getElementById('keluargaFile');
     const usahaInput = document.getElementById('usahaFile');
@@ -406,41 +401,4 @@
       }
     });
   });
-
-  function submitLocalImport(filename, dateInputId, type) {
-    const dateInput = document.getElementById(dateInputId);
-    if (!dateInput || !dateInput.value) {
-      alert('Silakan pilih tanggal data terlebih dahulu.');
-      return;
-    }
-
-    if (!confirm(`Konfirmasi impor file "${filename}" sebagai ${type === 'excel' ? 'File Progres Utama' : 'File Status FASIH'} untuk tanggal ${dateInput.value}?`)) {
-      return;
-    }
-
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '<%= navPrefix %>/admin/upload/import-local';
-
-    const fnField = document.createElement('input');
-    fnField.type = 'hidden';
-    fnField.name = 'filename';
-    fnField.value = filename;
-    form.appendChild(fnField);
-
-    const dateField = document.createElement('input');
-    dateField.type = 'hidden';
-    dateField.name = 'tanggal';
-    dateField.value = dateInput.value;
-    form.appendChild(dateField);
-
-    const typeField = document.createElement('input');
-    typeField.type = 'hidden';
-    typeField.name = 'type';
-    typeField.value = type;
-    form.appendChild(typeField);
-
-    document.body.appendChild(form);
-    form.submit();
-  }
 </script>

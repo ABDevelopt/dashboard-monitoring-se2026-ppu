@@ -2,7 +2,7 @@
   "name": "monitoring-se2026-ppu",
   "version": "2.3.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrate": "node migrate.js"

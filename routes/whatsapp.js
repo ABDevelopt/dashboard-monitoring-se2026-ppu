@@ -6,7 +6,13 @@ const { getSettings, updateSettings } = require('../database');
 // GET /admin/whatsapp - Halaman Utama Integrasi WhatsApp
 router.get('/', async (req, res) => {
   const settings = getSettings();
-  const waStatus = whatsappService.getStatus();
+  let waStatus = whatsappService.getStatus();
+
+  // Jika terputus, picu inisialisasi otomatis agar socket aktif (atau standby siap) dan QR terbit
+  if (waStatus.status === 'DISCONNECTED') {
+    whatsappService.initialize();
+    waStatus = whatsappService.getStatus();
+  }
 
   // Jika terhubung, ambil daftar grup
   let groups = [];
@@ -88,8 +94,12 @@ router.post('/test', async (req, res) => {
 
     if (latestUpload) {
       // Mengirimkan notifikasi dengan template kustom/bawaan menggunakan data real terakhir
-      await whatsappService.sendUpdateNotification(latestUpload.id, groupId);
-      req.flash('success', 'Pesan tes menggunakan template notifikasi kustom berhasil dikirim ke grup WhatsApp.');
+      const waRes = await whatsappService.sendUpdateNotification(latestUpload.id, groupId);
+      if (waRes && waRes.success) {
+        req.flash('success', `✅ Pesan tes menggunakan template notifikasi berhasil dikirim ke grup WhatsApp (${waRes.groupName || groupId})!`);
+      } else {
+        req.flash('error', `❌ Gagal mengirim notifikasi WhatsApp: ${waRes?.error || 'Terjadi kesalahan saat pengiriman'}`);
+      }
     } else {
       // Fallback jika database masih kosong
       const testMessage = `🧪 *TES INTEGRASI WHATSAPP SE2026 PPU*\n\n` +
@@ -97,10 +107,10 @@ router.post('/test', async (req, res) => {
                           `Status: *Koneksi Berhasil* 👍\n` +
                           `Waktu: *${new Date().toLocaleString('id-ID')}*`;
       await whatsappService.sendDirectMessage(groupId, testMessage);
-      req.flash('success', 'Pesan tes koneksi dasar berhasil dikirim (tidak ada data upload untuk simulasi template).');
+      req.flash('success', '✅ Pesan tes koneksi dasar berhasil dikirim ke grup WhatsApp (tidak ada data upload untuk simulasi template).');
     }
   } catch (err) {
-    req.flash('error', `Gagal mengirim pesan tes: ${err.message}`);
+    req.flash('error', `❌ Gagal mengirim pesan tes: ${err.message}`);
   }
 
   res.redirect('/admin/whatsapp');

@@ -26,7 +26,7 @@ const upload = multer({
 
 // GET: Upload page
 router.get('/', (req, res) => {
-  const uploads = getAllUploads();
+  const uploads = getAllUploads().sort((a, b) => (b.id - a.id) || b.tanggal.localeCompare(a.tanggal));
   
   // Scan workspace files per survey
   let workspaceFiles = [];
@@ -129,7 +129,7 @@ router.post('/', upload.fields([
   { name: 'keluargaFile', maxCount: 100 },
   { name: 'usahaFile', maxCount: 100 },
   { name: 'statusFile', maxCount: 100 }
-]), (req, res) => {
+]), async (req, res) => {
   const excelFiles = req.files && req.files['excelFile'] ? req.files['excelFile'] : [];
   const keluargaFiles = req.files && req.files['keluargaFile'] ? req.files['keluargaFile'] : [];
   const usahaFiles = req.files && req.files['usahaFile'] ? req.files['usahaFile'] : [];
@@ -238,9 +238,15 @@ router.post('/', upload.fields([
       if (result && result.uploadId) {
         try {
           const whatsappService = require('../services/whatsappService');
-          whatsappService.sendUpdateNotification(result.uploadId);
+          const waRes = await whatsappService.sendUpdateNotification(result.uploadId);
+          if (waRes && waRes.success) {
+            successMessages.push(`📱 <strong>Notifikasi WhatsApp:</strong> Berhasil dikirim ke grup <em>${waRes.groupName || 'WhatsApp'}</em>.`);
+          } else if (waRes && waRes.error) {
+            errors.push(`⚠️ <strong>Notifikasi WhatsApp Gagal:</strong> ${waRes.error}`);
+          }
         } catch (waErr) {
           console.error('Gagal mengirim notifikasi WhatsApp:', waErr);
+          errors.push(`⚠️ <strong>Notifikasi WhatsApp Gagal:</strong> ${waErr.message}`);
         }
       }
     } catch (err) {
@@ -263,10 +269,10 @@ router.post('/', upload.fields([
   }
 
   if (successMessages.length > 0) {
-    req.flash('success', `Berhasil memproses ${successMessages.length} upload data:<br>- ${successMessages.join('<br>- ')}`);
+    req.flash('success', `Berhasil memproses ${successMessages.length} item:<br>- ${successMessages.join('<br>- ')}`);
   }
   if (errors.length > 0) {
-    req.flash('error', `Gagal memproses beberapa file:<br>- ${errors.join('<br>- ')}`);
+    req.flash('error', `Pemberitahuan:<br>- ${errors.join('<br>- ')}`);
   }
 
   res.redirect('/admin/upload');
@@ -358,7 +364,7 @@ router.get('/download-status/:id', (req, res) => {
 });
 
 // POST: Import local workspace file
-router.post('/import-local', (req, res) => {
+router.post('/import-local', async (req, res) => {
   const { filename, tanggal, type } = req.body;
   if (!filename) {
     req.flash('error', 'Nama file tidak boleh kosong.');
@@ -403,16 +409,28 @@ router.post('/import-local', (req, res) => {
       result = parseAndSaveExcel(null, null, null, tanggal, destPath, filename, storedFilename);
     }
 
-    req.flash('success', `File local "${filename}" berhasil diimport sebagai ${type === 'excel' ? 'File Progres Utama' : 'File Status FASIH'} untuk tanggal ${tanggal} (SubSLS: ${result.uniqueSubsls})`);
+    let waSuccessMsg = '';
+    let waErrorMsg = '';
 
     // Kirim Notifikasi WhatsApp jika diaktifkan
     if (result && result.uploadId) {
       try {
         const whatsappService = require('../services/whatsappService');
-        whatsappService.sendUpdateNotification(result.uploadId);
+        const waRes = await whatsappService.sendUpdateNotification(result.uploadId);
+        if (waRes && waRes.success) {
+          waSuccessMsg = `<br>📱 <strong>Notifikasi WhatsApp:</strong> Berhasil dikirim ke grup <em>${waRes.groupName || 'WhatsApp'}</em>.`;
+        } else if (waRes && waRes.error) {
+          waErrorMsg = `<br>⚠️ <strong>Notifikasi WhatsApp Gagal:</strong> ${waRes.error}`;
+        }
       } catch (waErr) {
         console.error('Gagal mengirim notifikasi WhatsApp:', waErr);
+        waErrorMsg = `<br>⚠️ <strong>Notifikasi WhatsApp Gagal:</strong> ${waErr.message}`;
       }
+    }
+
+    req.flash('success', `File local "${filename}" berhasil diimport sebagai ${type === 'excel' ? 'File Progres Utama' : 'File Status FASIH'} untuk tanggal ${tanggal} (SubSLS: ${result.uniqueSubsls}).${waSuccessMsg}`);
+    if (waErrorMsg) {
+      req.flash('error', `Pemberitahuan:${waErrorMsg}`);
     }
   } catch (err) {
     console.error('Error importing local file:', err);

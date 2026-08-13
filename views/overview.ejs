@@ -246,6 +246,12 @@
         border: 1px solid var(--border);
         min-width: 32px;
       }
+
+      /* Viewport Lazy Load Optimization */
+      .lazy-section {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 380px;
+      }
       
       /* Tooltip Premium Styles */
       .help-tooltip-container {
@@ -873,9 +879,11 @@
               <div>
                 <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em;">
                   Analisis & Kekurangan Target Harian (Agregat Kabupaten)
-                </h4>
-                <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">
-                  Monitoring defisit laju pengumpulan dokumen FASIH tingkat kabupaten se-PPU
+                </h4>                <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <span>Monitoring defisit laju pengumpulan dokumen FASIH tingkat kabupaten se-PPU</span>
+                  <span class="badge badge-purple-subtle" style="font-size: 10.5px; padding: 2px 8px; font-weight: 700; border: 1px solid rgba(139, 92, 246, 0.3);">
+                    <i class="bi bi-clock-history" style="color: var(--accent-purple);"></i> Laju Update Terakhir: <strong>+<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %> dok</strong> (<%= (typeof latestUpdateSpeedPerPcl !== 'undefined' ? latestUpdateSpeedPerPcl : 0).toLocaleString('id-ID', {maximumFractionDigits: 1}) %> dok/PCL)
+                  </span>
                 </p>
               </div>
             </div>
@@ -886,7 +894,9 @@
                 <strong style="color: var(--text-primary); display: block; margin-bottom: 4px;">Panduan Analisis Target Harian Kabupaten:</strong>
                 Blok ini menyajikan analisis laju pengumpulan dokumen FASIH dalam skala agregat (total se-kabupaten per hari). 
                 <br><br>
-                <strong>Realisasi Laju:</strong> Kecepatan nyata pengisian dokumen per hari secara kumulatif kabupaten.
+                <strong>Laju Update Terakhir:</strong> Realisasi penambahan dokumen FASIH se-kabupaten pada pengunggahan data/hari paling baru (last update).
+                <br><br>
+                <strong>Realisasi Laju (Rata-Rata):</strong> Kecepatan nyata rata-rata pengisian dokumen per hari secara kumulatif kabupaten.
                 <br><br>
                 <strong>Target Normal:</strong> Rata-rata laju harian berdasarkan opsi yang aktif di menu Pengaturan (misal: total target dibagi total hari alokasi pendataan).
                 <br><br>
@@ -925,11 +935,16 @@
               <div class="target-harian-left-panel">
                 
                 <!-- Label Header & Angka Realisasi Nyata -->
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; flex-wrap: wrap; gap: 6px;">
                   <span style="color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.03em;">Realisasi Laju Pendataan Harian</span>
-                  <span style="color: <%= isOfftrackHarian ? 'var(--accent-cyan)' : 'var(--accent-green)' %>; font-size: 13px; font-weight: 800;">
-                    <%= currentSpeed.toLocaleString('id-ID', {maximumFractionDigits: 1}) %> <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
-                  </span>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="badge badge-purple" style="font-size: 10px; font-weight: 700; padding: 2px 7px;">
+                      Hari Terakhir: +<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %> dok
+                    </span>
+                    <span style="color: <%= isOfftrackHarian ? 'var(--accent-cyan)' : 'var(--accent-green)' %>; font-size: 13px; font-weight: 800;">
+                      <%= currentSpeed.toLocaleString('id-ID', {maximumFractionDigits: 1}) %> <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);">dok/hari (rata-rata)</span>
+                    </span>
+                  </div>
                 </div>
 
                 <!-- Progress Bar Container dengan Line-Marks (Target Normal, Target Aktual, Target Tetap) -->
@@ -964,39 +979,52 @@
 
                 </div>
 
-                <!-- Detail Legend (4 Kolom: Realisasi, Target Normal, Target Aktual, Target Tetap) -->
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 2px;">
-                  <!-- Realisasi Laju -->
-                  <div style="display: flex; flex-direction: column; gap: 2px;">
-                    <span style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Realisasi Laju</span>
+                <!-- Detail Legend (5 Kolom: Laju Terakhir, Realisasi Rata-rata, Target Normal, Target Aktual, Target Tetap) -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-top: 2px;">
+                  <!-- Laju Hari / Update Terakhir -->
+                  <div style="display: flex; flex-direction: column; gap: 2px; background: rgba(139, 92, 246, 0.08); padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.2);">
+                    <span style="font-size: 8.5px; font-weight: 800; color: var(--accent-purple); text-transform: uppercase;">Laju Terakhir</span>
+                    <span style="font-size: 13px; font-weight: 800; color: var(--accent-purple);">
+                      +<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %>
+                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);">dok</span>
+                    </span>
+                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;"><%= (typeof latestUpdateSpeedPerPcl !== 'undefined' ? latestUpdateSpeedPerPcl : 0).toLocaleString('id-ID', {maximumFractionDigits: 1}) %> dok/PCL</span>
+                  </div>
+                  <!-- Realisasi Rata-Rata -->
+                  <div style="display: flex; flex-direction: column; gap: 2px; padding: 6px 8px;">
+                    <span style="font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Laju Rata-Rata</span>
                     <span style="font-size: 13px; font-weight: 800; color: <%= isOfftrackHarian ? 'var(--accent-cyan)' : 'var(--accent-green)' %>;">
                       <%= currentSpeed.toLocaleString('id-ID', {maximumFractionDigits: 1}) %>
-                      <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
+                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
                     </span>
+                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Akumulatif</span>
                   </div>
                   <!-- Target Normal -->
-                  <div style="display: flex; flex-direction: column; gap: 2px;">
-                    <span style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Target Normal</span>
+                  <div style="display: flex; flex-direction: column; gap: 2px; padding: 6px 8px;">
+                    <span style="font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Target Normal</span>
                     <span style="font-size: 13px; font-weight: 800; color: #60a5fa;">
                       <%= Math.round(targetNormal).toLocaleString('id-ID') %>
-                      <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
+                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
                     </span>
+                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Standar Alokasi</span>
                   </div>
                   <!-- Target Aktual -->
-                  <div style="display: flex; flex-direction: column; gap: 2px;">
-                    <span style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Target Aktual</span>
+                  <div style="display: flex; flex-direction: column; gap: 2px; padding: 6px 8px;">
+                    <span style="font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Target Aktual</span>
                     <span style="font-size: 13px; font-weight: 800; color: var(--accent-purple);">
                       <%= reqSpeed.toLocaleString('id-ID', {maximumFractionDigits: 1}) %>
-                      <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
+                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
                     </span>
+                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Aman Deadline</span>
                   </div>
                   <!-- Target Tetap -->
-                  <div style="display: flex; flex-direction: column; gap: 2px;">
-                    <span style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Target Tetap</span>
+                  <div style="display: flex; flex-direction: column; gap: 2px; padding: 6px 8px;">
+                    <span style="font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Target Tetap</span>
                     <span style="font-size: 13px; font-weight: 800; color: #f59e0b;">
                       <%= Math.round(targetTetap).toLocaleString('id-ID') %>
-                      <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
+                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
                     </span>
+                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">13 dok × <%= totalPcl %> PCL</span>
                   </div>
                 </div>
 
@@ -1054,7 +1082,7 @@
 
       <!-- SEBARAN PERFORMA PENAMBAHAN DOKUMEN PETUGAS (TABEL) -->
       <% if (settings.overview_fasih === '1' && typeof distLast !== 'undefined' && distLast) { %>
-      <div class="card" style="margin: 0; position: relative; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px;">
+      <div class="card lazy-section" style="margin: 0; position: relative; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px;">
         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(34, 197, 94, 0.12); color: var(--accent-green); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">
@@ -1189,7 +1217,7 @@
 
       <!-- Progres Realisasi Pencacahan Muatan (Opsional) -->
       <% if (settings.overview_muatan === '1') { %>
-      <div class="card muatan-col" style="margin: 0; position: relative; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); padding: 24px;">
+      <div class="card muatan-col lazy-section" style="margin: 0; position: relative; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); padding: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px;">
           <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
             <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(6, 182, 212, 0.15); display: flex; align-items: center; justify-content: center; color: var(--accent-cyan); font-size: 20px; flex-shrink: 0;">
@@ -1355,7 +1383,7 @@
       
       <!-- HEATMAP AKTIVITAS HARIAN -->
       <% if (settings.overview_heatmap === '1') { %>
-      <div class="card" style="margin: 0;">
+      <div class="card lazy-section" id="heatmapCard" style="margin: 0;">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 16px 20px;">
           <div class="card-title" style="font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;"><i class="bi bi-grid-3x3-gap-fill text-cyan" style="font-size: 18px;"></i> Heatmap Aktivitas Harian</div>
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -1388,7 +1416,7 @@
 
       <!-- TREN HARIAN MUATAN -->
       <% if (settings.overview_tren_muatan === '1') { %>
-      <div class="card muatan-col" style="margin: 0;">
+      <div class="card muatan-col lazy-section" style="margin: 0;">
         <div class="card-header">
           <div class="card-title"><i class="bi bi-calendar3"></i> Tren Progres Pengumpulan Data (Muatan)</div>
         </div>
@@ -1400,7 +1428,7 @@
 
       <!-- TREN HARIAN FASIH -->
       <% if (settings.overview_tren_fasih === '1') { %>
-      <div class="card" style="margin: 0;">
+      <div class="card lazy-section" style="margin: 0;">
         <div class="card-header">
           <div class="card-title"><i class="bi bi-phone"></i> Tren Progres Status Dokumen FASIH</div>
         </div>
@@ -1409,7 +1437,7 @@
         </div>
       </div>
 
-      <div class="card" style="margin: 0;">
+      <div class="card lazy-section" style="margin: 0;">
         <div class="card-header">
           <div class="card-title"><i class="bi bi-bar-chart-steps"></i> Tren Penambahan Harian Status Dokumen FASIH</div>
         </div>
@@ -1424,7 +1452,7 @@
 
     <!-- BOTTOM ROW: KECAMATAN DETAILS -->
     <% if (settings.overview_kecamatan === '1') { %>
-    <div class="card mt-4">
+    <div class="card mt-4 lazy-section">
       <div class="card-header">
         <div class="card-title"><i class="bi bi-geo-alt"></i> Ringkasan Progres per Kecamatan</div>
         <a href="/kecamatan" class="btn btn-secondary btn-sm">Rincian Kecamatan <i class="bi bi-arrow-right-short"></i></a>
@@ -1518,7 +1546,7 @@
 
     <!-- DETAILS HOUSING / RUMAH -->
     <% if (settings.overview_bangunan === '1') { %>
-    <div class="card mt-4">
+    <div class="card mt-4 lazy-section">
       <div class="card-header">
         <div class="card-title"><i class="bi bi-house-door"></i> Klasifikasi Tipe Bangunan Tinggal</div>
       </div>
@@ -1528,7 +1556,7 @@
           <div class="bangunan-img-wrap">
             <picture style="display: block;">
               <source srcset="/images/bangunan_tunggal.webp" type="image/webp">
-              <img src="/images/bangunan_tunggal.png" alt="Rumah Tunggal" class="bangunan-img">
+              <img src="/images/bangunan_tunggal.png" alt="Rumah Tunggal" class="bangunan-img" loading="lazy">
             </picture>
           </div>
           <div class="bangunan-label">Rumah Tunggal</div>
@@ -1540,7 +1568,7 @@
           <div class="bangunan-img-wrap">
             <picture style="display: block;">
               <source srcset="/images/bangunan_deret.webp" type="image/webp">
-              <img src="/images/bangunan_deret.png" alt="Rumah Deret" class="bangunan-img">
+              <img src="/images/bangunan_deret.png" alt="Rumah Deret" class="bangunan-img" loading="lazy">
             </picture>
           </div>
           <div class="bangunan-label">Rumah Deret</div>
@@ -1552,7 +1580,7 @@
           <div class="bangunan-img-wrap">
             <picture style="display: block;">
               <source srcset="/images/bangunan_susun.webp" type="image/webp">
-              <img src="/images/bangunan_susun.png" alt="Rumah Susun" class="bangunan-img">
+              <img src="/images/bangunan_susun.png" alt="Rumah Susun" class="bangunan-img" loading="lazy">
             </picture>
           </div>
           <div class="bangunan-label">Rumah Susun</div>
@@ -1564,7 +1592,7 @@
           <div class="bangunan-img-wrap">
             <picture style="display: block;">
               <source srcset="/images/bangunan_apartemen.webp" type="image/webp">
-              <img src="/images/bangunan_apartemen.png" alt="Apartemen" class="bangunan-img">
+              <img src="/images/bangunan_apartemen.png" alt="Apartemen" class="bangunan-img" loading="lazy">
             </picture>
           </div>
           <div class="bangunan-label">Apartemen</div>
@@ -1576,7 +1604,7 @@
           <div class="bangunan-img-wrap">
             <picture style="display: block;">
               <source srcset="/images/bangunan_lainnya.webp" type="image/webp">
-              <img src="/images/bangunan_lainnya.png" alt="Lainnya" class="bangunan-img">
+              <img src="/images/bangunan_lainnya.png" alt="Lainnya" class="bangunan-img" loading="lazy">
             </picture>
           </div>
           <div class="bangunan-label">Lainnya</div>
@@ -1915,6 +1943,28 @@
     container.appendChild(columnsContainer);
   }
 
+  // === Generic Lazy Block Initializer via IntersectionObserver ===
+  // DOM / Widget berat hanya dihitung dan dibangun saat mendekati viewport
+  window.lazyInitBlock = function(selector, initFn, rootMargin = '250px') {
+    const el = typeof selector === 'string' ? document.querySelector(selector) : selector;
+    if (!el) return;
+    if ('IntersectionObserver' in window) {
+      const obs = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          obs.disconnect();
+          initFn(el);
+        }
+      }, { rootMargin });
+      obs.observe(el);
+    } else {
+      initFn(el);
+    }
+  };
+
+  function lazyInitBlock(selector, initFn, rootMargin) {
+    return window.lazyInitBlock(selector, initFn, rootMargin);
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     <% if (summary) { %>
       const rawTrenData = <%- tren %>;
@@ -1932,17 +1982,15 @@
       // Automatically render AI Smart Insights (deferred 1.2s to avoid blocking initial paint)
       setTimeout(() => loadAiInsights(false), 1200);
 
-      // Initialize Heatmap
+      // Initialize Heatmap (Lazy Viewport Load)
       <% if (settings.overview_heatmap === '1') { %>
       const heatmapSelect = document.getElementById('heatmapMetricSelect');
       if (heatmapSelect) {
-        const _doRenderHeatmap = () => renderHeatmap(rawTrenData, heatmapSelect.value);
-        // Defer heatmap build ke saat browser idle — hindari DOM thrashing saat initial load
-        'requestIdleCallback' in window
-          ? requestIdleCallback(_doRenderHeatmap, { timeout: 3000 })
-          : setTimeout(_doRenderHeatmap, 800);
-        heatmapSelect.addEventListener('change', () => {
+        lazyInitBlock('#heatmapGrid', () => {
           renderHeatmap(rawTrenData, heatmapSelect.value);
+          heatmapSelect.addEventListener('change', () => {
+            renderHeatmap(rawTrenData, heatmapSelect.value);
+          });
         });
       }
       <% } %>
@@ -2204,14 +2252,12 @@
         sportsDailyRateLabels.push(current.tanggal);
         const currentTotal = (current.submitted_total || 0) + (current.approved_total || 0) + (current.rejected_total || 0);
         let increment = 0;
-        if (i > 0) {
+        if (i === 0) {
+          increment = currentTotal;
+        } else {
           const prev = dailyTrenData[i - 1];
           const prevTotal = (prev.submitted_total || 0) + (prev.approved_total || 0) + (prev.rejected_total || 0);
           increment = Math.max(0, currentTotal - prevTotal);
-        } else if (current.prev_realisasi !== undefined && current.prev_realisasi !== null && current.prev_realisasi > 0) {
-          increment = Math.max(0, currentTotal - current.prev_realisasi);
-        } else {
-          increment = currentTotal;
         }
         const dailyRate = totalPclCount > 0 ? (increment / totalPclCount) : 0;
         sportsDailyRates.push(parseFloat(dailyRate.toFixed(2)));
@@ -2227,17 +2273,13 @@
         const current = dailyTrenData[i];
         countyIncrementLabels.push(current.tanggal);
         const currentTotal = (current.submitted_total || 0) + (current.approved_total || 0) + (current.rejected_total || 0);
-        let increment = 0;
-        if (i > 0) {
+        if (i === 0) {
+          countyIncrements.push(currentTotal);
+        } else {
           const prev = dailyTrenData[i - 1];
           const prevTotal = (prev.submitted_total || 0) + (prev.approved_total || 0) + (prev.rejected_total || 0);
-          increment = Math.max(0, currentTotal - prevTotal);
-        } else if (current.prev_realisasi !== undefined && current.prev_realisasi !== null && current.prev_realisasi > 0) {
-          increment = Math.max(0, currentTotal - current.prev_realisasi);
-        } else {
-          increment = currentTotal;
+          countyIncrements.push(Math.max(0, currentTotal - prevTotal));
         }
-        countyIncrements.push(increment);
       }
 
       lazyInitChart('dailyCountyIncrementChartCanvas', () =>
@@ -2508,8 +2550,8 @@
         }
       }
 
-      // Trigger initialization (deferred 600ms agar tidak berkompetisi dengan render awal)
-      setTimeout(() => initDistDateSelector(), 600);
+      // Trigger initialization lazily when table enters viewport
+      lazyInitBlock('#distTableContainer', () => initDistDateSelector());
 
       window.showPclDistributionModal = function(bucketId, label, color) {
         const modal = document.getElementById('pclDistModal');
