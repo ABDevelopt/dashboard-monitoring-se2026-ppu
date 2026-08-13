@@ -85,6 +85,12 @@ router.post('/test', async (req, res) => {
     return res.redirect('/admin/whatsapp');
   }
 
+  const waStatus = whatsappService.getStatus();
+  if (waStatus.status !== 'CONNECTED') {
+    req.flash('error', `❌ Bot WhatsApp belum terhubung (Status saat ini: ${waStatus.status}). Silakan scan QR Code terlebih dahulu sebelum mengirim pesan tes.`);
+    return res.redirect('/admin/whatsapp');
+  }
+
   try {
     const { getDb } = require('../database');
     const db = getDb();
