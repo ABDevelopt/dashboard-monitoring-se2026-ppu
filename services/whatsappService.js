@@ -92,21 +92,51 @@ let healthCheckInterval = null;
 let supervisorInterval = null;
 
 const authDir = path.join(__dirname, '../.wwebjs_auth/baileys-session');
+const lockFilePath = path.join(__dirname, '../.wwebjs_auth/wa_instance.lock');
 let lockHeartbeatInterval = null;
 
 /**
- * Memastikan hanya 1 proses Node.js yang memegang koneksi aktif ke WhatsApp via SQLite Mutex
+ * Memastikan hanya 1 proses Node.js yang memegang koneksi aktif ke WhatsApp via file lock
  */
 function acquireLock() {
   try {
-    const res = acquireProcessLock('whatsapp_master', process.pid, 25000);
-    if (res && res.acquired) {
-      startLockHeartbeat();
-      return true;
+    const now = Date.now();
+    if (fs.existsSync(lockFilePath)) {
+      const raw = fs.readFileSync(lockFilePath, 'utf8');
+      try {
+        const lockData = JSON.parse(raw);
+        const isAlive = (now - lockData.timestamp) < 15000;
+        
+        // Periksa apakah PID tersebut memang masih aktif di sistem
+        let processExists = true;
+        if (lockData.pid && lockData.pid !== process.pid) {
+          try {
+            process.kill(lockData.pid, 0);
+          } catch (err) {
+            if (err.code === 'ESRCH') {
+              processExists = false;
+            }
+          }
+        }
+
+        if (isAlive && lockData.pid !== process.pid && processExists) {
+          // Lock masih aktif dipegang oleh proses lain
+          return false;
+        }
+      } catch (_) {}
     }
-    return false;
-  } catch (e) {
+    
+    // Pastikan direktori folder lock ada
+    const parentDir = path.dirname(lockFilePath);
+    if (!fs.existsSync(parentDir)) {
+      fs.mkdirSync(parentDir, { recursive: true });
+    }
+    
+    fs.writeFileSync(lockFilePath, JSON.stringify({ pid: process.pid, timestamp: now }));
+    startLockHeartbeat();
     return true;
+  } catch (e) {
+    return true; // Fallback jika gagal baca/tulis lock
   }
 }
 
@@ -115,7 +145,10 @@ function startLockHeartbeat() {
   lockHeartbeatInterval = setInterval(async () => {
     try {
       if (sock || clientStatus === 'CONNECTED' || isInitializing || clientStatus === 'CONNECTING') {
-        renewProcessLock('whatsapp_master', process.pid);
+        // Tulis ulang lock data dengan timestamp terbaru ke file lock
+        try {
+          fs.writeFileSync(lockFilePath, JSON.stringify({ pid: process.pid, timestamp: Date.now() }));
+        } catch (_) {}
         
         // Sync state ke SQLite agar dibaca oleh Standby worker
         saveWhatsappState(clientStatus, qrCodeDataUri, userInfo);
@@ -149,7 +182,15 @@ function releaseLock() {
     lockHeartbeatInterval = null;
   }
   try {
-    releaseProcessLock('whatsapp_master', process.pid);
+    if (fs.existsSync(lockFilePath)) {
+      const raw = fs.readFileSync(lockFilePath, 'utf8');
+      try {
+        const lockData = JSON.parse(raw);
+        if (lockData.pid === process.pid) {
+          fs.unlinkSync(lockFilePath);
+        }
+      } catch (_) {}
+    }
   } catch (_) {}
 }
 
