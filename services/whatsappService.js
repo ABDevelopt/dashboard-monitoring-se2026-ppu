@@ -331,7 +331,7 @@ async function initialize() {
       auth: state,
       printQRInTerminal: false,
       logger: pino({ level: 'silent' }),
-      browser: ['Monitoring SE2026 PPU', 'Chrome', '124.0.0.0'],
+      browser: ['macOS', 'Chrome', '125.0.0.0'],
       connectTimeoutMs: 60000,
       defaultQueryTimeoutMs: 60000,
       keepAliveIntervalMs: 25000,
