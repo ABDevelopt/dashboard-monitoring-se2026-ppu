@@ -2657,6 +2657,65 @@ function clearPendingCommand() {
   } catch (_) {}
 }
 
+function initWhatsappOutboxTable(dbConn) {
+  dbConn.exec(`
+    CREATE TABLE IF NOT EXISTS whatsapp_outbox (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      chat_id TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'PENDING',
+      error TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER
+    );
+  `);
+}
+
+function queueWhatsappMessage(chatId, message) {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappOutboxTable(dbConn);
+    // Hapus log outbox yang berumur lebih dari 24 jam agar database tetap ringan
+    dbConn.prepare('DELETE FROM whatsapp_outbox WHERE created_at < ?').run(Date.now() - 24 * 60 * 60 * 1000);
+    
+    const info = dbConn.prepare(`
+      INSERT INTO whatsapp_outbox (chat_id, message, status, created_at)
+      VALUES (?, ?, 'PENDING', ?)
+    `).run(chatId, message, Date.now());
+    return info.lastInsertRowid;
+  } catch (e) {
+    logger.error('queueWhatsappMessage error: ' + e.message);
+    return null;
+  }
+}
+
+function getPendingWhatsappMessages() {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappOutboxTable(dbConn);
+    return dbConn.prepare("SELECT * FROM whatsapp_outbox WHERE status = 'PENDING' ORDER BY id ASC").all();
+  } catch (_) {
+    return [];
+  }
+}
+
+function updateWhatsappMessageStatus(id, status, error) {
+  try {
+    const dbConn = getDb('se2026');
+    dbConn.prepare('UPDATE whatsapp_outbox SET status = ?, error = ?, updated_at = ? WHERE id = ?')
+      .run(status, error || null, Date.now(), id);
+  } catch (_) {}
+}
+
+function checkQueuedMessageStatus(id) {
+  try {
+    const dbConn = getDb('se2026');
+    return dbConn.prepare('SELECT status, error FROM whatsapp_outbox WHERE id = ?').get(id);
+  } catch (_) {
+    return null;
+  }
+}
+
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -2673,5 +2732,6 @@ module.exports = {
   getRefKecamatan, getRefDesa, getRefPetugas,
   reloadDbConnection, closeDbConnection, getMasterTableSql,
   acquireProcessLock, renewProcessLock, releaseProcessLock, getProcessLock,
-  saveWhatsappState, getWhatsappState, savePendingCommand, getPendingCommand, clearPendingCommand
+  saveWhatsappState, getWhatsappState, savePendingCommand, getPendingCommand, clearPendingCommand,
+  queueWhatsappMessage, getPendingWhatsappMessages, updateWhatsappMessageStatus, checkQueuedMessageStatus
 };
