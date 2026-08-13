@@ -8,8 +8,8 @@ router.get('/', async (req, res) => {
   const settings = getSettings();
   let waStatus = whatsappService.getStatus();
 
-  // Jika terputus tapi ada sesi tersimpan di disk, picu inisialisasi otomatis
-  if (waStatus.status === 'DISCONNECTED' && whatsappService.hasValidSession()) {
+  // Jika terputus, picu inisialisasi otomatis agar siap pairing / terhubung
+  if (waStatus.status === 'DISCONNECTED') {
     whatsappService.initialize();
     waStatus = whatsappService.getStatus();
   }

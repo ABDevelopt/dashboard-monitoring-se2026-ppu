@@ -2457,7 +2457,17 @@ function initProcessLockTable(dbConn) {
   `);
 }
 
-function acquireProcessLock(lockName, ownerPid, ttlMs = 20000) {
+function isProcessAlive(pid) {
+  if (!pid || typeof pid !== 'number') return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+function acquireProcessLock(lockName, ownerPid, ttlMs = 12000, force = false) {
   try {
     const dbConn = getDb('se2026');
     initProcessLockTable(dbConn);
@@ -2465,9 +2475,10 @@ function acquireProcessLock(lockName, ownerPid, ttlMs = 20000) {
 
     const tx = dbConn.transaction(() => {
       const row = dbConn.prepare('SELECT owner_pid, heartbeat FROM process_locks WHERE lock_name = ?').get(lockName);
-      if (row) {
-        const isAlive = (now - row.heartbeat) < ttlMs;
-        if (isAlive && row.owner_pid !== ownerPid) {
+      if (row && !force) {
+        const processActuallyRunning = isProcessAlive(row.owner_pid);
+        const heartbeatFresh = (now - row.heartbeat) < ttlMs;
+        if (processActuallyRunning && heartbeatFresh && row.owner_pid !== ownerPid) {
           return { acquired: false, masterPid: row.owner_pid };
         }
       }

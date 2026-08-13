@@ -93,9 +93,9 @@ let lockHeartbeatInterval = null;
 /**
  * Memastikan hanya 1 proses Node.js yang memegang koneksi aktif ke WhatsApp via SQLite Mutex
  */
-function acquireLock() {
+function acquireLock(force = false) {
   try {
-    const res = acquireProcessLock('whatsapp_master', process.pid, 25000);
+    const res = acquireProcessLock('whatsapp_master', process.pid, 12000, force);
     if (res && res.acquired) {
       startLockHeartbeat();
       return true;
@@ -324,14 +324,14 @@ async function _closeSocket(isReconnecting = false) {
 /**
  * Inisialisasi WhatsApp Client menggunakan Baileys (WebSocket murni)
  */
-async function initialize() {
+async function initialize(forceTakeLock = false) {
   if (sock || isInitializing) {
     addWaLog('info', '[WA-Init] Socket sudah aktif atau dalam inisialisasi. Melewati panggilan duplikat.');
     return;
   }
 
   // Cek Inter-Process Lock sebelum membuka socket
-  if (!acquireLock()) {
+  if (!acquireLock(forceTakeLock)) {
     addWaLog('info', `[WA-Cluster] Proses (PID ${process.pid}) berstatus STANDBY. Koneksi WhatsApp aktif dikelola oleh proses Master.`);
     return;
   }
@@ -757,9 +757,9 @@ async function logout() {
   pushWhatsappCommand('logout');
 
   // Ambil alih lock untuk inisialisasi QR baru
-  acquireLock();
+  acquireLock(true);
   setTimeout(() => {
-    initialize();
+    initialize(true);
   }, 1000);
 }
 
@@ -792,11 +792,10 @@ async function forceReset(cleanSession = false) {
   pushWhatsappCommand('force_reset', { cleanSession });
 
   // Rebut status Master agar proses yang menangani request pengguna ini langsung memproduksi QR Code
-  releaseProcessLock('whatsapp_master', 0);
-  acquireLock();
+  acquireLock(true);
 
   setTimeout(() => {
-    initialize();
+    initialize(true);
   }, 500);
 }
 
