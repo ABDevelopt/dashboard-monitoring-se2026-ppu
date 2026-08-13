@@ -525,7 +525,27 @@ async function initialize() {
         const reason = lastDisconnect?.error?.message || String(statusCode || 'Unknown');
         addWaLog('warn', `[WA-Event] ⚠️ Koneksi terputus. StatusCode: ${statusCode}, Reason: ${reason}`);
 
+        const isAggregateError = reason.includes('AggregateError');
         const is408Error = statusCode === 408 || reason.includes('WebSocket Error') || statusCode === DisconnectReason.timedOut;
+
+        // IMMEDIATE HARD STOP untuk AggregateError — jaringan tidak bisa menjangkau server WhatsApp sama sekali.
+        // Jangan coba reconnect agresif, tunggu watchdog evaluasi setelah cooldown.
+        if (isAggregateError) {
+          globalNetworkErrorCount++;
+          addWaLog('warn', `[WA-AutoRecovery] AggregateError terdeteksi (WebSocket tidak bisa terhubung). Percobaan global #${globalNetworkErrorCount}. Cooldown sebelum retry...`);
+          await _closeSocket(false);
+          consecutive408Count = 0;
+          isInitializing = false;
+          clientStatus = 'DISCONNECTED';
+          // Gunakan exponential backoff yang panjang agar tidak membanjiri server
+          const aggregateCooldown = Math.min(10000 * globalNetworkErrorCount, 120000); // Max 2 menit
+          addWaLog('warn', `[WA-AutoRecovery] Menunggu ${Math.round(aggregateCooldown/1000)}s sebelum mencoba ulang...`);
+          setTimeout(() => {
+            initialize();
+          }, aggregateCooldown);
+          return;
+        }
+
         if (is408Error) {
           consecutive408Count++;
           globalNetworkErrorCount++;
@@ -566,7 +586,9 @@ async function initialize() {
         const isLoggedOut = statusCode === DisconnectReason.loggedOut;
         const isRestartRequired = statusCode === DisconnectReason.restartRequired || statusCode === 515;
         const isConflict = statusCode === DisconnectReason.connectionReplaced || statusCode === 440 || reason.includes('conflict');
-        const isQrTimeout = statusCode === DisconnectReason.timedOut || reason.includes('QR refs attempts ended');
+        // isQrTimeout hanya aktif jika reason spesifik menyebut QR, BUKAN setiap 408/timedOut
+        // (408 sudah ditangani oleh blok AggregateError / HARD STOP di atas)
+        const isQrTimeout = reason.includes('QR refs attempts ended') || reason.includes('QR refs');
 
         // Jika Conflict (440): Sesi sedang dipakai oleh proses Node.js lain atau di device/server lain
         if (isConflict) {
@@ -596,18 +618,18 @@ async function initialize() {
           return;
         }
 
-        // Jika QR Code timeout saat BELUM CONNECTED, otomatis regenerasi QR Code baru!
+        // Jika QR Code benar-benar timeout (dipindai tapi expired), regenerasi QR baru
         if (isQrTimeout && !hasValidSession()) {
           addWaLog('info', '[WA-Event] Batas waktu QR Code habis. Meng-generate QR Code baru...');
           await _closeSocket(false);
           cleanAuthDir();
           consecutive408Count = 0;
-          globalNetworkErrorCount = 0;
+          // JANGAN reset globalNetworkErrorCount di sini — agar HARD STOP bisa bekerja lintas siklus
           reconnectAttempt = 0;
           clientStatus = 'DISCONNECTED';
           setTimeout(() => {
             initialize();
-          }, 3000); // Tunggu 3 detik agar tidak langsung hit server
+          }, 3000);
           return;
         }
 
