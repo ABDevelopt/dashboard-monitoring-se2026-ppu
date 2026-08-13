@@ -4,7 +4,15 @@ const qrcode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
+const dns = require('dns');
 const logger = require('./logger');
+
+// Paksa semua DNS resolution di Node.js untuk selalu mengutamakan IPv4
+// Ini mengatasi AggregateError WebSocket di server Dewaweb yang tidak mendukung IPv6
+// Tanpa ini, Node.js mencoba koneksi ke semua IP (termasuk IPv6) secara paralel
+// dan semua gagal → AggregateError
+dns.setDefaultResultOrder('ipv4first');
+
 const { 
   getSettings, acquireProcessLock, renewProcessLock, releaseProcessLock,
   saveWhatsappState, getWhatsappState, savePendingCommand, getPendingCommand, clearPendingCommand,
@@ -14,7 +22,7 @@ const {
 const customAgent = new https.Agent({
   keepAlive: true,
   keepAliveMsecs: 10000,
-  family: 4 // Paksa koneksi IPv4 murni (Mencegah IPv6 DNS resolution delay/block di cPanel/Dewaweb)
+  family: 4 // Paksa koneksi IPv4 murni (lapisan kedua perlindungan selain dns.setDefaultResultOrder)
 });
 
 let sock = null;
