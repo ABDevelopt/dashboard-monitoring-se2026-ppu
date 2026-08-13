@@ -24,6 +24,8 @@ let userInfo = null;
 let isInitializing = false;
 let hasEverConnectedInSession = false;
 let consecutive408Count = 0;
+let globalNetworkErrorCount = 0;  // Hitung error 408 AggregateError lintas-sesi (reset hanya saat CONNECTED)
+const MAX_GLOBAL_NETWORK_ERRORS = 5; // Batas sebelum berhenti total & tunggu watchdog
 
 // Memory log buffer untuk WhatsApp (maksimal 100 baris log terbaru)
 const waLogs = [];
@@ -469,9 +471,10 @@ async function initialize() {
       }
 
       if (connection === 'open') {
-        // Reset backoff counter & tandai sudah pernah connect
+        // Reset semua counter saat berhasil terhubung
         reconnectAttempt = 0;
         consecutive408Count = 0;
+        globalNetworkErrorCount = 0;
         hasEverConnectedInSession = true;
 
         clientStatus = 'CONNECTED';
@@ -517,22 +520,38 @@ async function initialize() {
         const is408Error = statusCode === 408 || reason.includes('WebSocket Error') || statusCode === DisconnectReason.timedOut;
         if (is408Error) {
           consecutive408Count++;
-          addWaLog('warn', `[WA-AutoRecovery] Deteksi WebSocket Error 408/Timeout (Percobaan #${consecutive408Count})...`);
+          globalNetworkErrorCount++;
+          addWaLog('warn', `[WA-AutoRecovery] Deteksi WebSocket Error 408/Timeout (Percobaan #${consecutive408Count}, Global: #${globalNetworkErrorCount})...`);
         } else {
           consecutive408Count = 0;
         }
 
-        // AUTO-RECOVERY UNTUK LOOP 408: Jika 408 terjadi 3x berturut-turut pada sesi yang belum terverifikasi:
-        if (consecutive408Count >= 3 && !hasEverConnectedInSession) {
-          addWaLog('warn', '[WA-AutoRecovery] Sesi corrupt terdeteksi (3x WebSocket 408 error berturut-turut). Membersihkan sesi gantung otomatis & menerbitkan QR Code baru...');
+        // HARD STOP: Jika error jaringan terlalu banyak berturut-turut, kemungkinan besar server diblokir.
+        // Berhenti reconnect agresif dan biarkan watchdog yang evaluasi ulang setelah 60 detik.
+        if (globalNetworkErrorCount >= MAX_GLOBAL_NETWORK_ERRORS) {
+          addWaLog('warn', `[WA-AutoRecovery] Terlalu banyak error jaringan (${globalNetworkErrorCount}x). Menghentikan reconnect agresif. Watchdog akan coba ulang dalam ~60 detik...`);
+          await _closeSocket(false);
+          consecutive408Count = 0;
+          globalNetworkErrorCount = 0;
+          reconnectAttempt = 0;
+          clientStatus = 'DISCONNECTED';
+          // JANGAN cleanAuthDir() — sesi mungkin masih valid, hanya jaringan yang bermasalah
+          return;
+        }
+
+        // AUTO-RECOVERY UNTUK LOOP 408: Hanya bersihkan sesi jika belum pernah terhubung SAMA SEKALI
+        // dan bukan merupakan AggregateError murni jaringan
+        if (consecutive408Count >= 3 && !hasEverConnectedInSession && !reason.includes('AggregateError')) {
+          addWaLog('warn', '[WA-AutoRecovery] Sesi corrupt terdeteksi (3x 408 berturut-turut tanpa koneksi). Membersihkan sesi & menerbitkan QR Code baru...');
           await _closeSocket(false);
           cleanAuthDir();
           consecutive408Count = 0;
+          globalNetworkErrorCount = 0;
           reconnectAttempt = 0;
           clientStatus = 'DISCONNECTED';
           setTimeout(() => {
             initialize();
-          }, 1000);
+          }, 5000); // Tunggu 5 detik sebelum coba lagi
           return;
         }
 
@@ -574,11 +593,13 @@ async function initialize() {
           addWaLog('info', '[WA-Event] Batas waktu QR Code habis. Meng-generate QR Code baru...');
           await _closeSocket(false);
           cleanAuthDir();
+          consecutive408Count = 0;
+          globalNetworkErrorCount = 0;
           reconnectAttempt = 0;
           clientStatus = 'DISCONNECTED';
           setTimeout(() => {
             initialize();
-          }, 1500);
+          }, 3000); // Tunggu 3 detik agar tidak langsung hit server
           return;
         }
 
