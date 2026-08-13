@@ -2114,54 +2114,71 @@ body.has-expanded-card .page-content {
   body.page-map,
   body.page-map .main-wrapper {
     overflow: hidden !important;
+    height: 100vh !important;
   }
 
   body.page-map .page-content,
-  body.page-agent .page-content,
-  body.sidebar-collapsed.page-map .page-content,
-  body.sidebar-collapsed.page-agent .page-content {
+  body.sidebar-collapsed.page-map .page-content {
     max-width: 100% !important;
-    width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
-
-  body.page-map .page-content {
-    padding: 0 !important;
+    width: auto !important;
+    position: fixed !important;
+    top: var(--header-height, 60px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     margin: 0 !important;
-    height: calc(100vh - var(--header-height, 60px)) !important;
-    padding-top: var(--header-height, 60px) !important;
+    padding: 0 !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
+    z-index: 10;
+  }
+
+  @media (min-width: 769px) {
+    body.page-map:not(.sidebar-collapsed) .page-content {
+      left: var(--sidebar-width, 240px) !important;
+    }
   }
 
   body.has-breadcrumb.page-map .page-content {
-    padding-top: calc(var(--header-height, 60px) + 36px) !important;
-    height: calc(100vh - var(--header-height, 60px) - 36px) !important;
+    top: calc(var(--header-height, 60px) + 36px) !important;
   }
 
   @media (max-width: 768px) {
     body.page-map .page-content {
-      padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
-      height: calc(100vh - var(--header-height, 60px) - 68px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+      top: var(--header-height, 60px) !important;
+      bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+      left: 0 !important;
+      right: 0 !important;
+      height: auto !important;
+      padding: 0 !important;
     }
     body.has-breadcrumb.page-map .page-content {
-      padding-top: calc(var(--header-height, 60px) + env(safe-area-inset-top, 0px) + 32px) !important;
-      height: calc(100vh - var(--header-height, 60px) - 32px - 68px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+      top: calc(var(--header-height, 60px) + 32px) !important;
+      bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
     }
   }
 
   body.page-map #pjax-container,
-  body.page-map .fade-in {
+  body.page-map .fade-in,
+  body.page-map .gmaps-container-wrap,
+  body.page-map .map-canvas-container,
+  body.page-map #map {
     height: 100% !important;
     width: 100% !important;
+    min-height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
+  body.page-map .map-canvas-container {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
   body.page-map .gmaps-container-wrap {
-    height: 100% !important;
-    width: 100% !important;
     min-height: 0 !important;
     border-radius: 0 !important;
     border: none !important;
@@ -2645,7 +2662,7 @@ body.light-mode .logo-dark {
     color: var(--text-primary);
   }
   
-  .page-content {
+  body:not(.page-map):not(.page-agent) .page-content {
     padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
@@ -3472,12 +3489,12 @@ body.light-mode .skeleton-block {
     top: calc(var(--header-height) + env(safe-area-inset-top, 0px)) !important;
   }
 
-  .page-content {
+  body:not(.page-map):not(.page-agent) .page-content {
     padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px) + 12px) !important;
     padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important; /* prevent content overlap with bottom nav */
   }
 
-  body.has-breadcrumb .page-content {
+  body:not(.page-map):not(.page-agent).has-breadcrumb .page-content {
     padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px) + 32px + 12px) !important;
   }
 
@@ -4275,6 +4292,82 @@ body.page-agent.has-breadcrumb .page-content {
 
 body.page-agent .sidebar {
   height: 100vh !important;
+}
+
+/* Fullscreen Map View (High Specificity Bottom-of-File Override) */
+body.page-map,
+body.page-map .main-wrapper {
+  overflow: hidden !important;
+  height: 100vh !important;
+}
+
+body.page-map .page-content,
+body.sidebar-collapsed.page-map .page-content {
+  max-width: 100% !important;
+  width: auto !important;
+  position: fixed !important;
+  top: var(--header-height, 60px) !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  z-index: 10 !important;
+}
+
+@media (min-width: 769px) {
+  body.page-map:not(.sidebar-collapsed) .page-content {
+    left: var(--sidebar-width, 240px) !important;
+  }
+}
+
+body.has-breadcrumb.page-map .page-content {
+  top: calc(var(--header-height, 60px) + 36px) !important;
+}
+
+@media (max-width: 768px) {
+  body.page-map .page-content {
+    top: var(--header-height, 60px) !important;
+    bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  body.has-breadcrumb.page-map .page-content {
+    top: calc(var(--header-height, 60px) + 32px) !important;
+    bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+body.page-map #pjax-container,
+body.page-map .fade-in,
+body.page-map .gmaps-container-wrap,
+body.page-map .map-canvas-container,
+body.page-map #map {
+  height: 100% !important;
+  width: 100% !important;
+  min-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.page-map .map-canvas-container {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+}
+
+body.page-map .gmaps-container-wrap {
+  min-height: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* ==========================================================================

@@ -162,6 +162,13 @@ app.use((req, res, next) => {
   // Verifikasi token CSRF dari berbagai input sumber
   const reqToken = (req.body && req.body._csrf) || req.headers['x-csrf-token'] || req.query._csrf;
   if (!reqToken || reqToken !== req.session.csrfToken) {
+    const isAjaxOrJson = req.xhr || 
+                         (req.headers.accept && req.headers.accept.includes('json')) || 
+                         (contentType.includes('application/json')) ||
+                         req.path.includes('/chat');
+    if (isAjaxOrJson) {
+      return res.status(403).json({ error: 'Token CSRF tidak valid atau kedaluwarsa. Silakan muat ulang halaman.' });
+    }
     res.status(403);
     return res.render('error', {
       title: 'Akses Ditolak (CSRF)',

@@ -1798,7 +1798,12 @@
     try {
       const res = await fetch('/agent/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        },
         signal: controller.signal,
         body: JSON.stringify({
           message: text,
