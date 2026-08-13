@@ -167,12 +167,16 @@ async function runDiagnosis() {
     
     const { state, saveCreds } = await useMultiFileAuthState(tempAuthDir);
 
-    let version = [2, 3000, 1015901307];
+    let version = [2, 3000, 1043857760];
     try {
       const v = await fetchLatestBaileysVersion();
-      if (v?.version) version = v.version;
+      if (v?.version && Array.isArray(v.version) && v.version[2] >= 1043857760) {
+        version = v.version;
+      }
       console.log(`   -> Menggunakan Baileys Version: ${version.join('.')}`);
-    } catch (_) {}
+    } catch (_) {
+      console.log(`   -> Menggunakan Baileys Version (Fallback): ${version.join('.')}`);
+    }
 
     const customAgent = new https.Agent({ keepAlive: true, family: 4 });
 

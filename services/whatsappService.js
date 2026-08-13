@@ -333,16 +333,20 @@ async function initialize(forceTakeLock = false) {
 
     const { state, saveCreds } = await useMultiFileAuthState(authDir);
 
-    let version = [2, 3000, 1015901307];
+    let version = [2, 3000, 1043857760];
     try {
       const fetchVersionWithTimeout = Promise.race([
         fetchLatestBaileysVersion(),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Fetch Baileys version timeout (2s)')), 2000))
       ]);
       const fetchedVersion = await fetchVersionWithTimeout;
-      if (fetchedVersion && fetchedVersion.version) {
-        version = fetchedVersion.version;
-        addWaLog('info', `[WA-Init] Menggunakan versi Baileys fetched: ${version.join('.')}`);
+      if (fetchedVersion && fetchedVersion.version && Array.isArray(fetchedVersion.version)) {
+        if (fetchedVersion.version[2] >= 1043857760) {
+          version = fetchedVersion.version;
+          addWaLog('info', `[WA-Init] Menggunakan versi Baileys fetched: ${version.join('.')}`);
+        } else {
+          addWaLog('info', `[WA-Init] Versi fetched (${fetchedVersion.version.join('.')}) terdepresiasi. Menggunakan versi stabil: ${version.join('.')}`);
+        }
       }
     } catch (e) {
       addWaLog('info', `[WA-Init] Pengecekan versi Baileys skip/timeout. Menggunakan versi stabil: ${version.join('.')}`);
