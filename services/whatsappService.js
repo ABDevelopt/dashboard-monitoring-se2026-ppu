@@ -155,8 +155,14 @@ function releaseLock() {
 
 // Lepaskan lock saat proses node keluar
 process.on('exit', releaseLock);
-process.on('SIGINT', releaseLock);
-process.on('SIGTERM', releaseLock);
+process.on('SIGINT', () => {
+  releaseLock();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  releaseLock();
+  process.exit(0);
+});
 
 /**
  * Cek apakah direktori auth berisi file kredensial sesi yang valid (creds.json)

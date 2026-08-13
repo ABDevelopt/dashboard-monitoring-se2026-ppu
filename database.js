@@ -2468,7 +2468,19 @@ function acquireProcessLock(lockName, ownerPid, ttlMs = 20000) {
       if (row) {
         const isAlive = (now - row.heartbeat) < ttlMs;
         if (isAlive && row.owner_pid !== ownerPid) {
-          return { acquired: false, masterPid: row.owner_pid };
+          // Periksa apakah PID pemilik lock saat ini memang masih berjalan di OS
+          let processExists = true;
+          try {
+            process.kill(row.owner_pid, 0);
+          } catch (err) {
+            // ESRCH artinya proses sudah mati/tidak ada
+            if (err.code === 'ESRCH') {
+              processExists = false;
+            }
+          }
+          if (processExists) {
+            return { acquired: false, masterPid: row.owner_pid };
+          }
         }
       }
       dbConn.prepare(`
