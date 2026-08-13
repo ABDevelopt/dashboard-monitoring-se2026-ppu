@@ -2570,13 +2570,7 @@ function initWhatsappSharedTables(dbConn) {
       message TEXT,
       created_at INTEGER
     );
-    CREATE TABLE IF NOT EXISTS whatsapp_commands (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      command TEXT NOT NULL,
-      payload TEXT,
-      status TEXT DEFAULT 'PENDING',
-      created_at INTEGER
-    );
+    DROP TABLE IF EXISTS whatsapp_commands;
     CREATE TABLE IF NOT EXISTS whatsapp_outbox (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       chat_id TEXT NOT NULL,
@@ -2671,36 +2665,11 @@ function getWhatsappLogsDb(limit = 40) {
 }
 
 function pushWhatsappCommand(command, payload = null) {
-  try {
-    const dbConn = getDb('se2026');
-    initWhatsappSharedTables(dbConn);
-    const payloadStr = payload ? JSON.stringify(payload) : null;
-    dbConn.prepare(`
-      INSERT INTO whatsapp_commands (command, payload, status, created_at)
-      VALUES (?, ?, 'PENDING', ?)
-    `).run(command, payloadStr, Date.now());
-  } catch (_) {}
+  // No-op: Commands are handled directly in-process
 }
 
 function popPendingWhatsappCommands() {
-  try {
-    const dbConn = getDb('se2026');
-    initWhatsappSharedTables(dbConn);
-    const pending = dbConn.prepare(`
-      SELECT id, command, payload FROM whatsapp_commands WHERE status = 'PENDING' ORDER BY id ASC
-    `).all();
-    if (pending.length > 0) {
-      const ids = pending.map(p => p.id);
-      dbConn.prepare(`UPDATE whatsapp_commands SET status = 'PROCESSED' WHERE id IN (${ids.map(() => '?').join(',')})`).run(...ids);
-    }
-    return pending.map(p => ({
-      id: p.id,
-      command: p.command,
-      payload: p.payload ? JSON.parse(p.payload) : null
-    }));
-  } catch (_) {
-    return [];
-  }
+  return [];
 }
 
 function queueWhatsappMessage(chatId, message) {

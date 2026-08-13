@@ -33,8 +33,19 @@ try {
 const args = process.argv.slice(2);
 const isLiveMode = args.includes('--live') || args.includes('-l');
 const isResetMode = args.includes('--reset') || args.includes('-r');
+const isKillMode = args.includes('--kill') || args.includes('-k') || args.includes('--kill-zombies');
 
 async function runDiagnosis() {
+  if (isKillMode) {
+    console.log('💀 Mematikan semua proses Node.js lama yang menggantung...');
+    try {
+      const { execSync } = require('child_process');
+      execSync('pkill -9 -f "server.js" || true', { stdio: 'ignore' });
+      execSync('pkill -9 -f "monitoring.bpsppu.com" || true', { stdio: 'ignore' });
+      console.log('✓ Perintah pkill selesai dieksekusi.');
+    } catch (_) {}
+  }
+
   console.log('\n===============================================================');
   console.log('       🔍 DIAGNOSTIK INTEGRASI WHATSAPP SE2026 PPU             ');
   console.log('===============================================================');

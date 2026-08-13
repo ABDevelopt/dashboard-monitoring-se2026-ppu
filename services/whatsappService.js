@@ -484,9 +484,9 @@ async function initialize(forceTakeLock = false) {
           consecutive408Count = 0;
         }
 
-        // AUTO-RECOVERY UNTUK LOOP 408: Jika 408 terjadi 3x berturut-turut pada sesi yang belum terverifikasi:
-        if (consecutive408Count >= 3 && !hasEverConnectedInSession) {
-          addWaLog('warn', '[WA-AutoRecovery] Sesi corrupt terdeteksi (3x WebSocket 408 error berturut-turut). Membersihkan sesi gantung otomatis & menerbitkan QR Code baru...');
+        // AUTO-RECOVERY UNTUK LOOP 408: Hanya jika 408 terjadi 3x berturut-turut DAN belum ada creds tersimpan:
+        if (consecutive408Count >= 3 && !hasEverConnectedInSession && !hasValidSession()) {
+          addWaLog('warn', '[WA-AutoRecovery] Sesi gantung terdeteksi. Menerbitkan QR Code baru...');
           await _closeSocket(false);
           cleanAuthDir();
           consecutive408Count = 0;
@@ -534,11 +534,10 @@ async function initialize(forceTakeLock = false) {
           return;
         }
 
-        // Jika QR Code timeout saat BELUM CONNECTED, otomatis regenerasi QR Code baru!
+        // Jika QR Code timeout saat BELUM CONNECTED dan belum ada sesi di disk:
         if (isQrTimeout && !hasValidSession()) {
           addWaLog('info', '[WA-Event] Batas waktu QR Code habis. Meng-generate QR Code baru...');
           await _closeSocket(false);
-          cleanAuthDir();
           reconnectAttempt = 0;
           clientStatus = 'DISCONNECTED';
           setWhatsappState('status', 'DISCONNECTED');
