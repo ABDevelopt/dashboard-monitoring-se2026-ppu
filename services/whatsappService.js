@@ -968,18 +968,47 @@ function buildNotificationMessage(template, uploadData, summary, kecStats, pmlSt
 /**
  * Mengirim notifikasi update data ke grup WhatsApp
  */
-async function sendUpdateNotification(uploadData, summary, kecStats, pmlStats, pclStats) {
-  const settings = getSettings();
+async function sendUpdateNotification(uploadInput, targetGroupOverride = null, customSummary = null, customKecStats = null, customPmlStats = null, customPclStats = null) {
+  const db = require('../database');
+  let uploadData = uploadInput;
+  let summary = customSummary;
+  let kecStats = customKecStats;
+  let pmlStats = customPmlStats;
+  let pclStats = customPclStats;
+
+  if (typeof uploadInput === 'number' || typeof uploadInput === 'string') {
+    const uploadId = parseInt(uploadInput, 10);
+    uploadData = db.getDb().prepare('SELECT * FROM uploads WHERE id = ?').get(uploadId) || db.getLatestUpload();
+    if (!summary) summary = db.getOverviewSummary(uploadId);
+    if (!kecStats) kecStats = db.getKecamatanStats(uploadId);
+    if (!pmlStats) pmlStats = db.getPmlStats(uploadId);
+    if (!pclStats) pclStats = db.getPclStats(uploadId);
+  } else if (!uploadInput) {
+    uploadData = db.getLatestUpload();
+    if (uploadData) {
+      if (!summary) summary = db.getOverviewSummary(uploadData.id);
+      if (!kecStats) kecStats = db.getKecamatanStats(uploadData.id);
+      if (!pmlStats) pmlStats = db.getPmlStats(uploadData.id);
+      if (!pclStats) pclStats = db.getPclStats(uploadData.id);
+    }
+  }
+
+  const settings = db.getSettings();
   
-  if (settings.wa_notif_enabled !== '1') {
+  if (settings.wa_notif_enabled !== '1' && !targetGroupOverride) {
     addWaLog('info', '[WA-Notif] Notifikasi otomatis dinonaktifkan di pengaturan.');
     return { skipped: true, reason: 'Notifikasi otomatis dinonaktifkan di pengaturan.' };
   }
 
-  const targetGroup = settings.wa_target_group;
+  const targetGroup = (typeof targetGroupOverride === 'string' && targetGroupOverride.trim()) ? targetGroupOverride : settings.wa_target_group;
   if (!targetGroup) {
     addWaLog('warn', '[WA-Notif] Grup WhatsApp tujuan belum dipilih di pengaturan.');
     return { skipped: true, reason: 'Grup WhatsApp tujuan belum dipilih di pengaturan.' };
+  }
+
+  if (!uploadData) {
+    addWaLog('warn', '[WA-Notif] Data upload tidak ditemukan.');
+    return { skipped: true, reason: 'Data upload tidak ditemukan.' };
   }
 
   const defaultTemplate = `📊 *UPDATE MONITORING SE2026 PPU*
@@ -1018,6 +1047,7 @@ _Pesan otomatis Sistem Monitoring SE2026 BPS Kab. Penajam Paser Utara_`;
 module.exports = {
   initialize,
   startSupervisor,
+  hasValidSession,
   getStatus,
   getGroups,
   sendDirectMessage,
