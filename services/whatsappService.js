@@ -1,4 +1,4 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const qrcode = require('qrcode');
 const path = require('path');
@@ -343,14 +343,16 @@ async function initialize() {
       auth: state,
       printQRInTerminal: false,
       logger: pino({ level: 'silent' }),
-      browser: ['macOS', 'Chrome', '125.0.0.0'],
+      browser: Browsers.macOS('Desktop'),
       connectTimeoutMs: 60000,
       defaultQueryTimeoutMs: 60000,
       keepAliveIntervalMs: 25000,
       retryRequestDelayMs: 5000,
       maxRetries: 5,
       emitOwnEvents: false,
-      agent: customAgent,
+      wsOptions: {
+        agent: customAgent
+      },
       syncFullHistory: false,
       markOnlineOnConnect: false,
       getMessage: async (key) => {
