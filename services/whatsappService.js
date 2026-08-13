@@ -878,14 +878,114 @@ function formatIndonesianDate(dateStr) {
  * Membangun pesan notifikasi WhatsApp dari template dan data upload
  */
 function buildNotificationMessage(template, uploadData, summary, kecStats, pmlStats, pclStats, settings) {
+  const db = require('../database');
   const timeInfo = extractUploadDataTime(uploadData);
+  
+  // Waktu sekarang (WITA UTC+8)
+  const nowUtc = new Date();
+  const nowWita = new Date(nowUtc.getTime() + 8 * 60 * 60 * 1000);
+  const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  const tglSekarang = `${nowWita.getUTCDate()} ${monthNames[nowWita.getUTCMonth()]} ${nowWita.getUTCFullYear()}`;
+  const jamSekarang = `${String(nowWita.getUTCHours()).padStart(2, '0')}.${String(nowWita.getUTCMinutes()).padStart(2, '0')} WITA`;
+  const waktuUpdateSystem = `${dayNames[nowWita.getUTCDay()]}, ${tglSekarang} ${jamSekarang}`;
+
+  // Sesi upload (Pagi / Siang / Sore)
+  let uploadHour = 12;
+  const fn = uploadData.status_filename || uploadData.filename || '';
+  const matchFn = fn.match(/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
+  if (matchFn) {
+    uploadHour = parseInt(matchFn[4], 10);
+  }
+  const cutoff = parseInt(settings.whatsapp_session_cutoff_hour, 10) || 12;
+  const sesiUpload = uploadHour < cutoff ? 'Pagi' : 'Siang/Sore';
+
+  // Summary counts
   const totalApproved = summary ? (summary.approved_total || 0) : 0;
   const totalSubmitted = summary ? (summary.submitted_total || 0) : 0;
   const totalRejected = summary ? (summary.rejected_total || 0) : 0;
+  const totalDraft = summary ? (summary.draft_total || 0) : 0;
+  const totalOpen = summary ? (summary.open_total || 0) : 0;
   const totalFasih = summary ? (summary.target_fasih_total || 0) : 0;
-  const totalPcl = summary ? (summary.total_pcl || 0) : 0;
+  const totalPcl = summary ? (summary.total_pcl || 0) : (Array.isArray(pclStats) ? pclStats.length : 0);
+  const totalSubsls = summary ? (summary.total || summary.total_subsls || 0) : 0;
+
   const fasihReal = totalApproved + totalSubmitted + totalRejected;
   const fasihPct = totalFasih > 0 ? ((fasihReal / totalFasih) * 100).toFixed(1) : '0.0';
+
+  const totalMuatan = summary ? (summary.total_muatan || 0) : 0;
+  const realisasiMuatan = summary ? (summary.muatan_selesai || summary.realisasi_muatan || 0) : 0;
+  const persenMuatan = totalMuatan > 0 ? ((realisasiMuatan / totalMuatan) * 100).toFixed(1) : '0.0';
+
+  // Cari previous upload untuk menghitung DIFF
+  let prevUpload = null;
+  let prevSummary = null;
+  let prevPclStats = [];
+  try {
+    if (uploadData && uploadData.id) {
+      prevUpload = db.getDb().prepare(`SELECT * FROM uploads WHERE id < ? ORDER BY id DESC LIMIT 1`).get(uploadData.id);
+      if (prevUpload) {
+        prevSummary = db.getOverviewSummary(prevUpload.id, settings);
+        prevPclStats = db.getPclStats(prevUpload.id, settings);
+      }
+    }
+  } catch (_) {}
+
+  const prevTimeInfo = prevUpload ? extractUploadDataTime(prevUpload) : null;
+  const waktuUploadSebelumnya = prevTimeInfo ? prevTimeInfo.fullFormatted : '-';
+
+  const prevSubmitted = prevSummary ? (prevSummary.submitted_total || 0) : 0;
+  const prevApproved = prevSummary ? (prevSummary.approved_total || 0) : 0;
+  const prevRejected = prevSummary ? (prevSummary.rejected_total || 0) : 0;
+  const prevReal = prevSubmitted + prevApproved + prevRejected;
+
+  const diffSubmittedNum = totalSubmitted - prevSubmitted;
+  const diffApprovedNum = totalApproved - prevApproved;
+  const diffRejectedNum = totalRejected - prevRejected;
+  const diffTotalNum = fasihReal - prevReal;
+
+  const diffSubmitted = (diffSubmittedNum >= 0 ? '+' : '') + formatNumber(diffSubmittedNum);
+  const diffApproved = (diffApprovedNum >= 0 ? '+' : '') + formatNumber(diffApprovedNum);
+  const diffRejected = (diffRejectedNum >= 0 ? '+' : '') + formatNumber(diffRejectedNum);
+  const diffTotal = (diffTotalNum >= 0 ? '+' : '') + formatNumber(diffTotalNum);
+
+  // Per PCL diff map
+  const prevPclMap = new Map();
+  if (Array.isArray(prevPclStats)) {
+    prevPclStats.forEach(p => {
+      const key = p.email || p.pcl || p.sobat_id;
+      const real = (p.approved_total || p.approved || 0) + (p.submitted_total || p.submitted || 0);
+      if (key) prevPclMap.set(key, real);
+    });
+  }
+
+  let activeDiffPclCount = 0;
+  if (Array.isArray(pclStats)) {
+    pclStats.forEach(p => {
+      const key = p.email || p.pcl || p.sobat_id;
+      const curReal = (p.approved_total || p.approved || 0) + (p.submitted_total || p.submitted || 0);
+      const oldReal = key && prevPclMap.has(key) ? prevPclMap.get(key) : 0;
+      if (curReal > oldReal) {
+        activeDiffPclCount++;
+      }
+    });
+  }
+
+  const avgDiffAll = totalPcl > 0 ? (diffTotalNum / totalPcl).toFixed(1) : '0.0';
+  const avgDiffActive = activeDiffPclCount > 0 ? (diffTotalNum / activeDiffPclCount).toFixed(1) : '0.0';
+
+  // Sebaran performa PCL (Distribution Buckets)
+  let dist0 = 0, dist1_4 = 0, dist5_7 = 0, dist8_12 = 0, dist13Plus = 0;
+  if (Array.isArray(pclStats)) {
+    pclStats.forEach(p => {
+      const app = p.approved_total || p.approved || 0;
+      if (app === 0) dist0++;
+      else if (app >= 1 && app <= 4) dist1_4++;
+      else if (app >= 5 && app <= 7) dist5_7++;
+      else if (app >= 8 && app <= 12) dist8_12++;
+      else if (app >= 13) dist13Plus++;
+    });
+  }
 
   // Rincian per Kecamatan
   let rincianKecamatan = '';
@@ -906,10 +1006,10 @@ function buildNotificationMessage(template, uploadData, summary, kecStats, pmlSt
   // Top 5 PCL
   let topPclList = '';
   if (Array.isArray(pclStats) && pclStats.length > 0) {
-    const sortedPcl = [...pclStats].sort((a, b) => (b.approved || 0) - (a.approved || 0)).slice(0, 5);
+    const sortedPcl = [...pclStats].sort((a, b) => (b.approved_total || b.approved || 0) - (a.approved_total || a.approved || 0)).slice(0, 5);
     topPclList = sortedPcl.map((p, i) => {
       const badge = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-      return `${badge} *${p.nama_pcl || p.nama || '-'}*: ${formatNumber(p.approved || 0)} approved (${p.kecamatan || '-'})`;
+      return `${badge} *${p.pcl || p.nama_pcl || p.nama || '-'}*: ${formatNumber(p.approved_total || p.approved || 0)} approved (${p.kecamatan || '-'})`;
     }).join('\n');
   } else {
     topPclList = '_Data petugas belum tersedia_';
@@ -920,27 +1020,74 @@ function buildNotificationMessage(template, uploadData, summary, kecStats, pmlSt
   const targetDateFormatted = formatIndonesianDate(targetDateStr);
 
   const variables = {
+    // Waktu & Meta
+    '{waktu_pengambilan_data}': timeInfo.fullFormatted,
+    '{waktu_update_system}': waktuUpdateSystem,
+    '{tanggal_sekarang}': tglSekarang,
+    '{jam_sekarang}': jamSekarang,
+    '{sesi_upload}': sesiUpload,
+    '{waktu_upload_sebelumnya}': waktuUploadSebelumnya,
+    '{label_fasih}': 'Dokumen FASIH SE2026',
+    '{filename}': uploadData.filename || uploadData.status_filename || '-',
+    '{nama_file}': uploadData.filename || uploadData.status_filename || '-',
+    '{tanggal_data}': formatIndonesianDate(uploadData.tanggal),
     '{tanggal}': formatIndonesianDate(uploadData.tanggal),
     '{jam}': timeInfo.timeOnly,
     '{waktu_lengkap}': timeInfo.fullFormatted,
-    '{nama_file}': uploadData.filename || uploadData.status_filename || '-',
-    '{progres_fasih_pct}': `${fasihPct}%`,
-    '{total_approved}': formatNumber(totalApproved),
-    '{total_submitted}': formatNumber(totalSubmitted),
-    '{total_rejected}': formatNumber(totalRejected),
+    '{url_dashboard}': (settings && settings.app_url) ? settings.app_url : 'https://monitoring.bpsppu.com',
+    '{subsls_count}': formatNumber(totalSubsls),
+
+    // Realisasi & Target FASIH
+    '{realisasi_fasih}': formatNumber(fasihReal),
     '{total_realisasi_fasih}': formatNumber(fasihReal),
     '{target_fasih}': formatNumber(totalFasih),
+    '{persen_fasih}': `${fasihPct}%`,
+    '{progres_fasih_pct}': `${fasihPct}%`,
     '{sisa_fasih}': formatNumber(Math.max(0, totalFasih - fasihReal)),
+
+    // Muatan
+    '{realisasi_muatan}': formatNumber(realisasiMuatan),
+    '{target_muatan}': formatNumber(totalMuatan),
+    '{persen_muatan}': `${persenMuatan}%`,
+
+    // Breakdown Dokumen
+    '{open_total}': formatNumber(totalOpen),
+    '{draft_total}': formatNumber(totalDraft),
+    '{submitted_total}': formatNumber(totalSubmitted),
+    '{total_submitted}': formatNumber(totalSubmitted),
+    '{approved_total}': formatNumber(totalApproved),
+    '{total_approved}': formatNumber(totalApproved),
+    '{rejected_total}': formatNumber(totalRejected),
+    '{total_rejected}': formatNumber(totalRejected),
     '{total_pcl}': formatNumber(totalPcl),
     '{target_date}': targetDateFormatted,
+
+    // Diff / Penambahan Progres
+    '{diff_submitted}': diffSubmitted,
+    '{diff_approved}': diffApproved,
+    '{diff_rejected}': diffRejected,
+    '{diff_total}': diffTotal,
+    '{avg_diff_all}': avgDiffAll,
+    '{avg_diff_active}': avgDiffActive,
+    '{active_diff_pcl_count}': formatNumber(activeDiffPclCount),
+    '{deviasi_update}': diffTotal,
+    '{deviasi_kumulatif}': `${fasihPct}%`,
+
+    // Sebaran PCL
+    '{dist_0}': formatNumber(dist0),
+    '{dist_1_4}': formatNumber(dist1_4),
+    '{dist_5_7}': formatNumber(dist5_7),
+    '{dist_8_12}': formatNumber(dist8_12),
+    '{dist_13_plus}': formatNumber(dist13Plus),
+
+    // Rincian
     '{rincian_kecamatan}': rincianKecamatan,
-    '{top_pcl}': topPclList,
-    '{url_dashboard}': (settings && settings.app_url) ? settings.app_url : 'https://monitoring.bpsppu.com'
+    '{top_pcl}': topPclList
   };
 
   let message = template;
   for (const [placeholder, val] of Object.entries(variables)) {
-    message = message.split(placeholder).join(val);
+    message = message.split(placeholder).join(val !== undefined && val !== null ? String(val) : '-');
   }
 
   return message;
