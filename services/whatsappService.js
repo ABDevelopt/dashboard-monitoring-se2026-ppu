@@ -976,12 +976,18 @@ async function sendUpdateNotification(uploadInput, targetGroupOverride = null, c
 
   const settings = db.getSettings();
   
-  if (settings.wa_notif_enabled !== '1' && !targetGroupOverride) {
-    addWaLog('info', '[WA-Notif] Notifikasi otomatis dinonaktifkan di pengaturan.');
+  // Periksa apakah notifikasi WhatsApp diaktifkan
+  const isEnabled = settings.whatsapp_enabled === '1' || settings.wa_notif_enabled === '1';
+  if (!isEnabled && !targetGroupOverride) {
+    addWaLog('info', '[WA-Notif] Notifikasi otomatis dinonaktifkan di pengaturan (whatsapp_enabled = 0).');
     return { skipped: true, reason: 'Notifikasi otomatis dinonaktifkan di pengaturan.' };
   }
 
-  const targetGroup = (typeof targetGroupOverride === 'string' && targetGroupOverride.trim()) ? targetGroupOverride : settings.wa_target_group;
+  // Ambil ID grup tujuan
+  const targetGroup = (typeof targetGroupOverride === 'string' && targetGroupOverride.trim()) 
+    ? targetGroupOverride 
+    : (settings.whatsapp_group_id || settings.wa_target_group);
+
   if (!targetGroup) {
     addWaLog('warn', '[WA-Notif] Grup WhatsApp tujuan belum dipilih di pengaturan.');
     return { skipped: true, reason: 'Grup WhatsApp tujuan belum dipilih di pengaturan.' };
@@ -990,6 +996,22 @@ async function sendUpdateNotification(uploadInput, targetGroupOverride = null, c
   if (!uploadData) {
     addWaLog('warn', '[WA-Notif] Data upload tidak ditemukan.');
     return { skipped: true, reason: 'Data upload tidak ditemukan.' };
+  }
+
+  // Pilih template (Dukung Intraday Template jika diaktifkan & sebelum batas jam cutoff)
+  let chosenTemplate = settings.whatsapp_message_template || settings.wa_notif_template;
+  if (settings.whatsapp_intraday_enabled === '1' && settings.whatsapp_intraday_message_template) {
+    let uploadHour = 12;
+    const fn = uploadData.status_filename || uploadData.filename || '';
+    const match = fn.match(/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/);
+    if (match) {
+      uploadHour = parseInt(match[4], 10);
+    }
+    const cutoff = parseInt(settings.whatsapp_session_cutoff_hour, 10) || 12;
+    if (uploadHour < cutoff) {
+      chosenTemplate = settings.whatsapp_intraday_message_template;
+      addWaLog('info', `[WA-Notif] Menggunakan template intraday (Sesi Pagi, Jam upload: ${uploadHour}:00 < Cutoff: ${cutoff}:00).`);
+    }
   }
 
   const defaultTemplate = `📊 *UPDATE MONITORING SE2026 PPU*
@@ -1011,14 +1033,19 @@ async function sendUpdateNotification(uploadInput, targetGroupOverride = null, c
 🔗 Dashboard: {url_dashboard}
 _Pesan otomatis Sistem Monitoring SE2026 BPS Kab. Penajam Paser Utara_`;
 
-  const template = settings.wa_notif_template || defaultTemplate;
+  const template = chosenTemplate || defaultTemplate;
   const message = buildNotificationMessage(template, uploadData, summary, kecStats, pmlStats, pclStats, settings);
 
   try {
     addWaLog('info', `[WA-Notif] Mengirim notifikasi update data ke grup: ${targetGroup}...`);
     const res = await sendDirectMessage(targetGroup, message);
     addWaLog('success', '[WA-Notif] Notifikasi update data berhasil dikirim ke grup WhatsApp.');
-    return { success: true, groupId: targetGroup, messageId: res?.key?.id || 'sent' };
+    return { 
+      success: true, 
+      groupId: targetGroup, 
+      groupName: settings.whatsapp_group_name || 'Grup Notifikasi', 
+      messageId: res?.key?.id || 'sent' 
+    };
   } catch (err) {
     addWaLog('error', `[WA-Notif] Gagal mengirim notifikasi update data: ${err.message}`);
     return { error: err.message, groupId: targetGroup };
