@@ -1,28 +1,16 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const qrcode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
-const dns = require('dns');
 const logger = require('./logger');
-
-// Paksa semua DNS resolution di Node.js untuk selalu mengutamakan IPv4
-// Ini mengatasi AggregateError WebSocket di server Dewaweb yang tidak mendukung IPv6
-// Tanpa ini, Node.js mencoba koneksi ke semua IP (termasuk IPv6) secara paralel
-// dan semua gagal → AggregateError
-dns.setDefaultResultOrder('ipv4first');
-
-const { 
-  getSettings, acquireProcessLock, renewProcessLock, releaseProcessLock,
-  saveWhatsappState, getWhatsappState, savePendingCommand, getPendingCommand, clearPendingCommand,
-  queueWhatsappMessage, getPendingWhatsappMessages, updateWhatsappMessageStatus, checkQueuedMessageStatus
-} = require('../database');
+const { getSettings, acquireProcessLock, renewProcessLock, releaseProcessLock } = require('../database');
 
 const customAgent = new https.Agent({
   keepAlive: true,
   keepAliveMsecs: 10000,
-  family: 4 // Paksa koneksi IPv4 murni (lapisan kedua perlindungan selain dns.setDefaultResultOrder)
+  family: 4 // Paksa koneksi IPv4 murni (Mencegah IPv6 DNS resolution delay/block di cPanel/Dewaweb)
 });
 
 let sock = null;
@@ -32,8 +20,6 @@ let userInfo = null;
 let isInitializing = false;
 let hasEverConnectedInSession = false;
 let consecutive408Count = 0;
-let globalNetworkErrorCount = 0;  // Hitung error 408 AggregateError lintas-sesi (reset hanya saat CONNECTED)
-const MAX_GLOBAL_NETWORK_ERRORS = 5; // Batas sebelum berhenti total & tunggu watchdog
 
 // Memory log buffer untuk WhatsApp (maksimal 100 baris log terbaru)
 const waLogs = [];
@@ -63,18 +49,6 @@ function addWaLog(type, message) {
     waLogs.shift();
   }
 
-  // Persist logs ke SQLite jika proses ini aktif/Master agar dibaca semua worker
-  if (sock || clientStatus === 'CONNECTED' || isInitializing || clientStatus === 'CONNECTING') {
-    try {
-      const dbConn = require('../database').getDb('se2026');
-      dbConn.prepare(`
-        INSERT INTO whatsapp_state (key, value, updated_at)
-        VALUES (?, ?, ?)
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
-      `).run('wa_logs', JSON.stringify(waLogs.slice(-40)), Date.now());
-    } catch (_) {}
-  }
-
   // Kirim juga ke logger utama server
   if (type === 'error') logger.error(`[WA-Service] ${message}`);
   else if (type === 'warn') logger.warn(`[WA-Service] ${message}`);
@@ -82,13 +56,6 @@ function addWaLog(type, message) {
 }
 
 function getLogs() {
-  try {
-    const dbConn = require('../database').getDb('se2026');
-    const row = dbConn.prepare("SELECT value FROM whatsapp_state WHERE key = 'wa_logs'").get();
-    if (row && row.value) {
-      return JSON.parse(row.value);
-    }
-  } catch (_) {}
   return [...waLogs];
 }
 
@@ -102,88 +69,33 @@ let healthCheckInterval = null;
 let supervisorInterval = null;
 
 const authDir = path.join(__dirname, '../.wwebjs_auth/baileys-session');
-const lockFilePath = path.join(__dirname, '../.wwebjs_auth/wa_instance.lock');
 let lockHeartbeatInterval = null;
 
 /**
- * Memastikan hanya 1 proses Node.js yang memegang koneksi aktif ke WhatsApp via file lock
+ * Memastikan hanya 1 proses Node.js yang memegang koneksi aktif ke WhatsApp via SQLite Mutex
  */
 function acquireLock() {
   try {
-    const now = Date.now();
-    if (fs.existsSync(lockFilePath)) {
-      const raw = fs.readFileSync(lockFilePath, 'utf8');
-      try {
-        const lockData = JSON.parse(raw);
-        const isAlive = (now - lockData.timestamp) < 15000;
-        
-        // Periksa apakah PID tersebut memang masih aktif di sistem
-        let processExists = true;
-        if (lockData.pid && lockData.pid !== process.pid) {
-          try {
-            process.kill(lockData.pid, 0);
-          } catch (err) {
-            if (err.code === 'ESRCH') {
-              processExists = false;
-            }
-          }
-        }
-
-        if (isAlive && lockData.pid !== process.pid && processExists) {
-          // Lock masih aktif dipegang oleh proses lain
-          return false;
-        }
-      } catch (_) {}
+    const res = acquireProcessLock('whatsapp_master', process.pid, 25000);
+    if (res && res.acquired) {
+      startLockHeartbeat();
+      return true;
     }
-    
-    // Pastikan direktori folder lock ada
-    const parentDir = path.dirname(lockFilePath);
-    if (!fs.existsSync(parentDir)) {
-      fs.mkdirSync(parentDir, { recursive: true });
-    }
-    
-    fs.writeFileSync(lockFilePath, JSON.stringify({ pid: process.pid, timestamp: now }));
-    startLockHeartbeat();
-    return true;
+    return false;
   } catch (e) {
-    return true; // Fallback jika gagal baca/tulis lock
+    return true;
   }
 }
 
 function startLockHeartbeat() {
   if (lockHeartbeatInterval) return;
-  lockHeartbeatInterval = setInterval(async () => {
+  lockHeartbeatInterval = setInterval(() => {
     try {
-      if (sock || clientStatus === 'CONNECTED' || isInitializing || clientStatus === 'CONNECTING') {
-        // Tulis ulang lock data dengan timestamp terbaru ke file lock
-        try {
-          fs.writeFileSync(lockFilePath, JSON.stringify({ pid: process.pid, timestamp: Date.now() }));
-        } catch (_) {}
-        
-        // Sync state ke SQLite agar dibaca oleh Standby worker
-        saveWhatsappState(clientStatus, qrCodeDataUri, userInfo);
-
-        // Periksa apakah ada perintah tertunda dari proses Standby
-        const cmd = getPendingCommand();
-        if (cmd) {
-          addWaLog('info', `[WA-IPC] Menjalankan perintah IPC dari proses Standby: ${cmd.toUpperCase()}`);
-          clearPendingCommand();
-          if (cmd === 'logout') {
-            await logout();
-          } else if (cmd === 'reconnect') {
-            await forceReset(false);
-          } else if (cmd === 'force_reset') {
-            await forceReset(true);
-          }
-        }
-
-        // Proses antrean pesan keluar (outbox) jika terhubung
-        if (sock && clientStatus === 'CONNECTED') {
-          await processWhatsappOutbox();
-        }
+      if (sock || clientStatus === 'CONNECTED' || isInitializing) {
+        renewProcessLock('whatsapp_master', process.pid);
       }
     } catch (_) {}
-  }, 3000); // 3 detik agar pengiriman outbox responsif
+  }, 5000);
 }
 
 function releaseLock() {
@@ -192,28 +104,14 @@ function releaseLock() {
     lockHeartbeatInterval = null;
   }
   try {
-    if (fs.existsSync(lockFilePath)) {
-      const raw = fs.readFileSync(lockFilePath, 'utf8');
-      try {
-        const lockData = JSON.parse(raw);
-        if (lockData.pid === process.pid) {
-          fs.unlinkSync(lockFilePath);
-        }
-      } catch (_) {}
-    }
+    releaseProcessLock('whatsapp_master', process.pid);
   } catch (_) {}
 }
 
 // Lepaskan lock saat proses node keluar
 process.on('exit', releaseLock);
-process.on('SIGINT', () => {
-  releaseLock();
-  process.exit(0);
-});
-process.on('SIGTERM', () => {
-  releaseLock();
-  process.exit(0);
-});
+process.on('SIGINT', releaseLock);
+process.on('SIGTERM', releaseLock);
 
 /**
  * Cek apakah direktori auth berisi file kredensial sesi yang valid (creds.json)
@@ -394,16 +292,14 @@ async function initialize() {
       auth: state,
       printQRInTerminal: false,
       logger: pino({ level: 'silent' }),
-      browser: Browsers.macOS('Desktop'),
+      browser: ['Monitoring SE2026 PPU', 'Chrome', '124.0.0.0'],
       connectTimeoutMs: 60000,
       defaultQueryTimeoutMs: 60000,
       keepAliveIntervalMs: 25000,
       retryRequestDelayMs: 5000,
       maxRetries: 5,
       emitOwnEvents: false,
-      wsOptions: {
-        agent: customAgent
-      },
+      agent: customAgent,
       syncFullHistory: false,
       markOnlineOnConnect: false,
       getMessage: async (key) => {
@@ -479,10 +375,9 @@ async function initialize() {
       }
 
       if (connection === 'open') {
-        // Reset semua counter saat berhasil terhubung
+        // Reset backoff counter & tandai sudah pernah connect
         reconnectAttempt = 0;
         consecutive408Count = 0;
-        globalNetworkErrorCount = 0;
         hasEverConnectedInSession = true;
 
         clientStatus = 'CONNECTED';
@@ -498,24 +393,6 @@ async function initialize() {
         };
         addWaLog('success', `[WA-Event] 🟢 WhatsApp Terhubung & Aktif! User: ${pushName} (${phoneNumber})`);
 
-        // Simpan langsung status CONNECTED ke SQLite agar dibaca instan oleh worker Standby
-        saveWhatsappState(clientStatus, qrCodeDataUri, userInfo);
-
-        // Ambil dan cache daftar grup ke SQLite setelah sinkronisasi internal Baileys selesai
-        setTimeout(async () => {
-          try {
-            const grps = await getGroups();
-            if (grps && grps.length > 0) {
-              const dbConn = require('../database').getDb('se2026');
-              dbConn.prepare(`
-                INSERT INTO whatsapp_state (key, value, updated_at)
-                VALUES (?, ?, ?)
-                ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
-              `).run('wa_groups', JSON.stringify(grps), Date.now());
-            }
-          } catch (_) {}
-        }, 2000);
-
         // Mulai heartbeat health check
         startHealthCheck();
       }
@@ -525,70 +402,32 @@ async function initialize() {
         const reason = lastDisconnect?.error?.message || String(statusCode || 'Unknown');
         addWaLog('warn', `[WA-Event] ⚠️ Koneksi terputus. StatusCode: ${statusCode}, Reason: ${reason}`);
 
-        const isAggregateError = reason.includes('AggregateError');
         const is408Error = statusCode === 408 || reason.includes('WebSocket Error') || statusCode === DisconnectReason.timedOut;
-
-        // IMMEDIATE HARD STOP untuk AggregateError — jaringan tidak bisa menjangkau server WhatsApp sama sekali.
-        // Jangan coba reconnect agresif, tunggu watchdog evaluasi setelah cooldown.
-        if (isAggregateError) {
-          globalNetworkErrorCount++;
-          addWaLog('warn', `[WA-AutoRecovery] AggregateError terdeteksi (WebSocket tidak bisa terhubung). Percobaan global #${globalNetworkErrorCount}. Cooldown sebelum retry...`);
-          await _closeSocket(false);
-          consecutive408Count = 0;
-          isInitializing = false;
-          clientStatus = 'DISCONNECTED';
-          // Gunakan exponential backoff yang panjang agar tidak membanjiri server
-          const aggregateCooldown = Math.min(10000 * globalNetworkErrorCount, 120000); // Max 2 menit
-          addWaLog('warn', `[WA-AutoRecovery] Menunggu ${Math.round(aggregateCooldown/1000)}s sebelum mencoba ulang...`);
-          setTimeout(() => {
-            initialize();
-          }, aggregateCooldown);
-          return;
-        }
-
         if (is408Error) {
           consecutive408Count++;
-          globalNetworkErrorCount++;
-          addWaLog('warn', `[WA-AutoRecovery] Deteksi WebSocket Error 408/Timeout (Percobaan #${consecutive408Count}, Global: #${globalNetworkErrorCount})...`);
+          addWaLog('warn', `[WA-AutoRecovery] Deteksi WebSocket Error 408/Timeout (Percobaan #${consecutive408Count})...`);
         } else {
           consecutive408Count = 0;
         }
 
-        // HARD STOP: Jika error jaringan terlalu banyak berturut-turut, kemungkinan besar server diblokir.
-        // Berhenti reconnect agresif dan biarkan watchdog yang evaluasi ulang setelah 60 detik.
-        if (globalNetworkErrorCount >= MAX_GLOBAL_NETWORK_ERRORS) {
-          addWaLog('warn', `[WA-AutoRecovery] Terlalu banyak error jaringan (${globalNetworkErrorCount}x). Menghentikan reconnect agresif. Watchdog akan coba ulang dalam ~60 detik...`);
-          await _closeSocket(false);
-          consecutive408Count = 0;
-          globalNetworkErrorCount = 0;
-          reconnectAttempt = 0;
-          clientStatus = 'DISCONNECTED';
-          // JANGAN cleanAuthDir() — sesi mungkin masih valid, hanya jaringan yang bermasalah
-          return;
-        }
-
-        // AUTO-RECOVERY UNTUK LOOP 408: Hanya bersihkan sesi jika belum pernah terhubung SAMA SEKALI
-        // dan bukan merupakan AggregateError murni jaringan
-        if (consecutive408Count >= 3 && !hasEverConnectedInSession && !reason.includes('AggregateError')) {
-          addWaLog('warn', '[WA-AutoRecovery] Sesi corrupt terdeteksi (3x 408 berturut-turut tanpa koneksi). Membersihkan sesi & menerbitkan QR Code baru...');
+        // AUTO-RECOVERY UNTUK LOOP 408: Jika 408 terjadi 3x berturut-turut pada sesi yang belum terverifikasi:
+        if (consecutive408Count >= 3 && !hasEverConnectedInSession) {
+          addWaLog('warn', '[WA-AutoRecovery] Sesi corrupt terdeteksi (3x WebSocket 408 error berturut-turut). Membersihkan sesi gantung otomatis & menerbitkan QR Code baru...');
           await _closeSocket(false);
           cleanAuthDir();
           consecutive408Count = 0;
-          globalNetworkErrorCount = 0;
           reconnectAttempt = 0;
           clientStatus = 'DISCONNECTED';
           setTimeout(() => {
             initialize();
-          }, 5000); // Tunggu 5 detik sebelum coba lagi
+          }, 1000);
           return;
         }
 
         const isLoggedOut = statusCode === DisconnectReason.loggedOut;
         const isRestartRequired = statusCode === DisconnectReason.restartRequired || statusCode === 515;
         const isConflict = statusCode === DisconnectReason.connectionReplaced || statusCode === 440 || reason.includes('conflict');
-        // isQrTimeout hanya aktif jika reason spesifik menyebut QR, BUKAN setiap 408/timedOut
-        // (408 sudah ditangani oleh blok AggregateError / HARD STOP di atas)
-        const isQrTimeout = reason.includes('QR refs attempts ended') || reason.includes('QR refs');
+        const isQrTimeout = statusCode === DisconnectReason.timedOut || reason.includes('QR refs attempts ended');
 
         // Jika Conflict (440): Sesi sedang dipakai oleh proses Node.js lain atau di device/server lain
         if (isConflict) {
@@ -618,18 +457,16 @@ async function initialize() {
           return;
         }
 
-        // Jika QR Code benar-benar timeout (dipindai tapi expired), regenerasi QR baru
+        // Jika QR Code timeout saat BELUM CONNECTED, otomatis regenerasi QR Code baru!
         if (isQrTimeout && !hasValidSession()) {
           addWaLog('info', '[WA-Event] Batas waktu QR Code habis. Meng-generate QR Code baru...');
           await _closeSocket(false);
           cleanAuthDir();
-          consecutive408Count = 0;
-          // JANGAN reset globalNetworkErrorCount di sini — agar HARD STOP bisa bekerja lintas siklus
           reconnectAttempt = 0;
           clientStatus = 'DISCONNECTED';
           setTimeout(() => {
             initialize();
-          }, 3000);
+          }, 1500);
           return;
         }
 
@@ -682,23 +519,6 @@ async function initialize() {
  * Mendapatkan status koneksi saat ini
  */
 function getStatus() {
-  try {
-    const state = getWhatsappState();
-    // Gunakan state ter-sinkronisasi dari SQLite jika terupdate kurang dari 35s lalu
-    if (state && state.status) {
-      let eff = state.status;
-      if (eff === 'DISCONNECTED' && hasValidSession()) {
-        eff = 'CONNECTING';
-      }
-      return {
-        status: eff,
-        qrCode: state.qrCode,
-        user: state.user,
-        logs: getLogs().slice(-20)
-      };
-    }
-  } catch (_) {}
-
   let effectiveStatus = clientStatus;
   if (clientStatus === 'DISCONNECTED' && hasValidSession()) {
     effectiveStatus = 'CONNECTING';
@@ -711,7 +531,7 @@ function getStatus() {
       name: userInfo.pushname,
       number: userInfo.wid.user
     } : null,
-    logs: getLogs().slice(-20) // 20 log terbaru
+    logs: waLogs.slice(-20) // 20 log terbaru
   };
 }
 
@@ -719,119 +539,65 @@ function getStatus() {
  * Mengambil daftar grup WhatsApp yang diikuti
  */
 async function getGroups() {
-  // Jika Master, fetch langsung dari socket
-  if (sock && clientStatus === 'CONNECTED') {
-    try {
-      const fetchWithTimeout = Promise.race([
-        sock.groupFetchAllParticipating(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timed Out (5s)')), 5000))
-      ]);
-      const groups = await fetchWithTimeout;
-      if (groups) {
-        return Object.values(groups).map(group => ({
-          id: group.id,
-          name: group.subject || 'Grup Tanpa Nama'
-        }));
-      }
-    } catch (err) {
-      const errMsg = err && (err.message || String(err));
-      addWaLog('warn', `WhatsApp getGroups fetch langsung: ${errMsg}`);
-    }
+  if (clientStatus !== 'CONNECTED' || !sock) {
+    return [];
   }
-
-  // Fallback ke SQLite cache agar standby worker bisa membaca daftar grup
   try {
-    const dbConn = require('../database').getDb('se2026');
-    const row = dbConn.prepare("SELECT value FROM whatsapp_state WHERE key = 'wa_groups'").get();
-    if (row && row.value) {
-      return JSON.parse(row.value);
-    }
-  } catch (_) {}
+    const fetchWithTimeout = Promise.race([
+      sock.groupFetchAllParticipating(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Timed Out (5s)')), 5000))
+    ]);
+    const groups = await fetchWithTimeout;
+    if (!groups) return [];
 
-  return [];
+    return Object.values(groups).map(group => ({
+      id: group.id,
+      name: group.subject || 'Grup Tanpa Nama'
+    }));
+  } catch (err) {
+    const errMsg = err && (err.message || String(err));
+    addWaLog('warn', `WhatsApp getGroups: ${errMsg}`);
+    return [];
+  }
 }
 
 /**
- * Memproses antrean pesan (outbox) dari database SQLite (Dipanggil eksklusif oleh proses Master)
- */
-async function processWhatsappOutbox() {
-  if (!sock || clientStatus !== 'CONNECTED') return;
-
-  try {
-    const pendingMsgs = getPendingWhatsappMessages();
-    if (!pendingMsgs || pendingMsgs.length === 0) return;
-
-    for (const msg of pendingMsgs) {
-      try {
-        let formattedJid = msg.chat_id.trim();
-        if (!formattedJid.includes('@')) {
-          formattedJid = formattedJid + '@g.us';
-        }
-        await sock.sendMessage(formattedJid, { text: msg.message });
-        updateWhatsappMessageStatus(msg.id, 'SENT');
-        addWaLog('success', `[WA-Outbox] Pesan ID ${msg.id} berhasil dikirim oleh Master.`);
-      } catch (err) {
-        addWaLog('error', `[WA-Outbox] Gagal mengirim pesan ID ${msg.id}: ${err.message}`);
-        updateWhatsappMessageStatus(msg.id, 'FAILED', err.message);
-      }
-    }
-  } catch (_) {}
-}
-
-/**
- * Mengirim pesan langsung ke chat/grup ID tertentu (Mendukung Multi-process / Standby worker)
+ * Mengirim pesan langsung ke chat/grup ID tertentu
  */
 async function sendDirectMessage(chatId, message) {
-  // Jika proses ini adalah Master dan terhubung, kirim langsung
-  if (sock && clientStatus === 'CONNECTED') {
-    try {
-      let formattedJid = chatId.trim();
-      if (!formattedJid.includes('@')) {
-        formattedJid = formattedJid + '@g.us';
-      }
-      const response = await sock.sendMessage(formattedJid, { text: message });
-      addWaLog('success', `[WA-Message] Pesan berhasil dikirim langsung ke: ${chatId}`);
-      return response;
-    } catch (err) {
-      addWaLog('error', `[WA-Message] Gagal mengirim pesan langsung ke ${chatId}: ${err.message}`);
-      throw err;
-    }
-  }
-
-  // Jika proses ini adalah Standby (tidak memiliki socket aktif), antrekan ke Outbox SQLite
-  addWaLog('info', `[WA-Outbox] Mengantrekan pesan ke ${chatId} via SQLite Outbox...`);
-  const queueId = queueWhatsappMessage(chatId, message);
-  if (!queueId) {
-    throw new Error('Gagal menyimpan pesan ke database outbox');
-  }
-
-  // Polling status pengiriman dari SQLite selama maksimal 12 detik
-  const startTime = Date.now();
-  while (Date.now() - startTime < 12000) {
-    await new Promise(r => setTimeout(r, 500));
-    const msgState = checkQueuedMessageStatus(queueId);
-    if (msgState) {
-      if (msgState.status === 'SENT') {
-        return { success: true };
-      } else if (msgState.status === 'FAILED') {
-        throw new Error(msgState.error || 'Pengiriman gagal di proses Master');
+  if (clientStatus !== 'CONNECTED' || !sock) {
+    if (hasValidSession()) {
+      addWaLog('warn', '[WA-Message] Sesi tersimpan terdeteksi tapi belum terhubung. Menunggu koneksi aktif (hingga 8 detik)...');
+      initialize();
+      const startTime = Date.now();
+      while ((clientStatus !== 'CONNECTED' || !sock) && Date.now() - startTime < 8000) {
+        await new Promise(r => setTimeout(r, 500));
       }
     }
   }
 
-  throw new Error('Batas waktu tunggu pengiriman pesan habis (Master sedang tidak aktif atau sibuk)');
+  if (clientStatus !== 'CONNECTED' || !sock) {
+    addWaLog('error', 'Gagal mengirim pesan: WhatsApp client belum terhubung.');
+    throw new Error('WhatsApp client is not connected');
+  }
+  try {
+    let formattedJid = chatId.trim();
+    if (!formattedJid.includes('@')) {
+      formattedJid = formattedJid + '@g.us';
+    }
+    const response = await sock.sendMessage(formattedJid, { text: message });
+    addWaLog('success', `[WA-Message] Pesan berhasil dikirim ke: ${chatId}`);
+    return response;
+  } catch (err) {
+    addWaLog('error', `[WA-Message] Gagal mengirim pesan ke ${chatId}: ${err.message}`);
+    throw err;
+  }
 }
 
 /**
  * Keluar (Logout) penuh — hapus sesi, minta scan QR ulang
  */
 async function logout() {
-  if (!lockHeartbeatInterval) {
-    addWaLog('info', '[WA-IPC] Mengirim perintah LOGOUT ke proses Master via SQLite...');
-    savePendingCommand('logout');
-    return;
-  }
-
   addWaLog('warn', '[WA-Logout] Logout penuh dipicu. Membersihkan sesi & meminta QR baru...');
   stopHealthCheck();
 
@@ -868,13 +634,6 @@ async function logout() {
  * @param {boolean} cleanSession Jika true, hapus file sesi temporary/corrupt untuk memaksa penerbitan QR Code baru dari awal
  */
 async function forceReset(cleanSession = false) {
-  if (!lockHeartbeatInterval) {
-    const cmd = cleanSession ? 'force_reset' : 'reconnect';
-    addWaLog('info', `[WA-IPC] Mengirim perintah ${cmd.toUpperCase()} ke proses Master via SQLite...`);
-    savePendingCommand(cmd);
-    return;
-  }
-
   addWaLog('info', `[WA-Reset] Force reset koneksi dipicu (cleanSession: ${cleanSession})...`);
 
   // Stop socket aktif
