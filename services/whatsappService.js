@@ -199,29 +199,12 @@ function startHealthCheck() {
 }
 
 /**
- * Loop tugas pemrosesan antrean outbox dan perintah IPC (hanya aktif di Master process)
+ * Loop tugas pemrosesan antrean outbox (hanya aktif di Master process)
  */
 function startMasterTaskLoop() {
   if (masterTaskInterval) return;
   masterTaskInterval = setInterval(async () => {
-    // 1. Proses perintah IPC dari Standby Worker (misal: force_reset, logout)
-    try {
-      const commands = popPendingWhatsappCommands();
-      for (const cmd of commands) {
-        if (cmd.command === 'force_reset') {
-          addWaLog('info', `[WA-IPC] Memproses perintah FORCE_RESET dari Standby Worker...`);
-          await forceReset(cmd.payload?.cleanSession);
-        } else if (cmd.command === 'logout') {
-          addWaLog('info', `[WA-IPC] Memproses perintah LOGOUT dari Standby Worker...`);
-          await logout();
-        } else if (cmd.command === 'reconnect') {
-          await _closeSocket(true);
-          initialize();
-        }
-      }
-    } catch (_) {}
-
-    // 2. Proses antrean pesan keluar (Outbox) jika Master sedang CONNECTED
+    // Proses antrean pesan keluar (Outbox) jika Master sedang CONNECTED
     if (sock && clientStatus === 'CONNECTED') {
       try {
         const pendingMsgs = getPendingWhatsappMessages();
@@ -754,7 +737,6 @@ async function logout() {
 
   // Hapus sesi agar pengguna perlu scan QR ulang
   cleanAuthDir();
-  pushWhatsappCommand('logout');
 
   // Ambil alih lock untuk inisialisasi QR baru
   acquireLock(true);
@@ -787,9 +769,6 @@ async function forceReset(cleanSession = false) {
 
   clientStatus = 'CONNECTING';
   setWhatsappState('status', 'CONNECTING');
-
-  // Beritahu proses Master lain via IPC command jika ada
-  pushWhatsappCommand('force_reset', { cleanSession });
 
   // Rebut status Master agar proses yang menangani request pengguna ini langsung memproduksi QR Code
   acquireLock(true);
