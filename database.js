@@ -2542,6 +2542,202 @@ function getRefPetugas() {
   }
 }
 
+/**
+ * Shared WhatsApp State, Logs, Commands, & Outbox Tables across Passenger Workers
+ */
+function initWhatsappSharedTables(dbConn) {
+  dbConn.exec(`
+    CREATE TABLE IF NOT EXISTS whatsapp_state (
+      key TEXT PRIMARY KEY,
+      value TEXT,
+      updated_at INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS whatsapp_logs (
+      id TEXT PRIMARY KEY,
+      timestamp TEXT,
+      type TEXT,
+      message TEXT,
+      created_at INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS whatsapp_commands (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      command TEXT NOT NULL,
+      payload TEXT,
+      status TEXT DEFAULT 'PENDING',
+      created_at INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS whatsapp_outbox (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      chat_id TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT DEFAULT 'PENDING',
+      error TEXT,
+      created_at INTEGER,
+      updated_at INTEGER
+    );
+  `);
+}
+
+function setWhatsappState(key, value) {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappSharedTables(dbConn);
+    const valStr = typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value || '');
+    dbConn.prepare(`
+      INSERT INTO whatsapp_state (key, value, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(key) DO UPDATE SET
+        value = excluded.value,
+        updated_at = excluded.updated_at
+    `).run(key, valStr, Date.now());
+  } catch (_) {}
+}
+
+function getWhatsappState(key) {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappSharedTables(dbConn);
+    const row = dbConn.prepare('SELECT value, updated_at FROM whatsapp_state WHERE key = ?').get(key);
+    if (!row) return null;
+    try {
+      return JSON.parse(row.value);
+    } catch (_) {
+      return row.value;
+    }
+  } catch (_) {
+    return null;
+  }
+}
+
+function getAllWhatsappState() {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappSharedTables(dbConn);
+    const rows = dbConn.prepare('SELECT key, value, updated_at FROM whatsapp_state').all();
+    const state = {};
+    rows.forEach(r => {
+      try {
+        state[r.key] = JSON.parse(r.value);
+      } catch (_) {
+        state[r.key] = r.value;
+      }
+    });
+    return state;
+  } catch (_) {
+    return {};
+  }
+}
+
+function saveWhatsappLogDb(logEntry) {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappSharedTables(dbConn);
+    dbConn.prepare(`
+      INSERT OR REPLACE INTO whatsapp_logs (id, timestamp, type, message, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(logEntry.id, logEntry.timestamp, logEntry.type, logEntry.message, Date.now());
+
+    // Prune logs keeping only latest 100
+    dbConn.prepare(`
+      DELETE FROM whatsapp_logs WHERE id NOT IN (
+        SELECT id FROM whatsapp_logs ORDER BY created_at DESC LIMIT 100
+      )
+    `).run();
+  } catch (_) {}
+}
+
+function getWhatsappLogsDb(limit = 40) {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappSharedTables(dbConn);
+    const rows = dbConn.prepare(`
+      SELECT id, timestamp, type, message FROM whatsapp_logs ORDER BY created_at ASC LIMIT ?
+    `).all(limit);
+    return rows;
+  } catch (_) {
+    return [];
+  }
+}
+
+function pushWhatsappCommand(command, payload = null) {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappSharedTables(dbConn);
+    const payloadStr = payload ? JSON.stringify(payload) : null;
+    dbConn.prepare(`
+      INSERT INTO whatsapp_commands (command, payload, status, created_at)
+      VALUES (?, ?, 'PENDING', ?)
+    `).run(command, payloadStr, Date.now());
+  } catch (_) {}
+}
+
+function popPendingWhatsappCommands() {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappSharedTables(dbConn);
+    const pending = dbConn.prepare(`
+      SELECT id, command, payload FROM whatsapp_commands WHERE status = 'PENDING' ORDER BY id ASC
+    `).all();
+    if (pending.length > 0) {
+      const ids = pending.map(p => p.id);
+      dbConn.prepare(`UPDATE whatsapp_commands SET status = 'PROCESSED' WHERE id IN (${ids.map(() => '?').join(',')})`).run(...ids);
+    }
+    return pending.map(p => ({
+      id: p.id,
+      command: p.command,
+      payload: p.payload ? JSON.parse(p.payload) : null
+    }));
+  } catch (_) {
+    return [];
+  }
+}
+
+function queueWhatsappMessage(chatId, message) {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappSharedTables(dbConn);
+    const info = dbConn.prepare(`
+      INSERT INTO whatsapp_outbox (chat_id, message, status, created_at, updated_at)
+      VALUES (?, ?, 'PENDING', ?, ?)
+    `).run(chatId, message, Date.now(), Date.now());
+    return info.lastInsertRowid;
+  } catch (_) {
+    return null;
+  }
+}
+
+function getPendingWhatsappMessages() {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappSharedTables(dbConn);
+    return dbConn.prepare(`
+      SELECT id, chat_id, message FROM whatsapp_outbox WHERE status = 'PENDING' ORDER BY id ASC LIMIT 10
+    `).all();
+  } catch (_) {
+    return [];
+  }
+}
+
+function updateWhatsappMessageStatus(id, status, error = null) {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappSharedTables(dbConn);
+    dbConn.prepare(`
+      UPDATE whatsapp_outbox SET status = ?, error = ?, updated_at = ? WHERE id = ?
+    `).run(status, error, Date.now(), id);
+  } catch (_) {}
+}
+
+function checkQueuedMessageStatus(id) {
+  try {
+    const dbConn = getDb('se2026');
+    initWhatsappSharedTables(dbConn);
+    return dbConn.prepare(`SELECT status, error FROM whatsapp_outbox WHERE id = ?`).get(id);
+  } catch (_) {
+    return null;
+  }
+}
+
 module.exports = {
   getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -2557,5 +2753,9 @@ module.exports = {
   getPetugasEmailById, insertPetugasEmail, updatePetugasEmail, deletePetugasEmail, resyncPetugasEmailsToMaster,
   getRefKecamatan, getRefDesa, getRefPetugas,
   reloadDbConnection, closeDbConnection, getMasterTableSql,
-  acquireProcessLock, renewProcessLock, releaseProcessLock, getProcessLock
+  acquireProcessLock, renewProcessLock, releaseProcessLock, getProcessLock,
+  setWhatsappState, getWhatsappState, getAllWhatsappState,
+  saveWhatsappLogDb, getWhatsappLogsDb,
+  pushWhatsappCommand, popPendingWhatsappCommands,
+  queueWhatsappMessage, getPendingWhatsappMessages, updateWhatsappMessageStatus, checkQueuedMessageStatus
 };
