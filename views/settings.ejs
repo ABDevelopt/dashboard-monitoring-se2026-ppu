@@ -1,4 +1,7 @@
 <div class="fade-in">
+<%
+  const isSakernas = (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) || (typeof activeSurvey !== 'undefined' && activeSurvey.startsWith('sakernas'));
+%>
   <style>
     /* Premium switch styling */
     .settings-grid {
@@ -217,19 +220,12 @@
     }
   </style>
 
-  <!-- HERO TITLE -->
-  <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb),0.12) 0%, rgba(var(--accent-rgb),0.03) 100%); border: 1px solid rgba(var(--accent-rgb),0.2); border-radius: 16px; padding: 32px 28px; margin-bottom: 24px; position: relative; overflow: hidden;">
-    <div style="position: absolute; right: -20px; top: -20px; font-size: 120px; opacity: 0.04; line-height: 1; pointer-events: none;">
-      <i class="bi bi-sliders"></i>
-    </div>
-    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-      <div style="width: 56px; height: 56px; border-radius: 14px; background: rgba(var(--accent-rgb),0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-        <i class="bi bi-sliders" style="font-size: 26px; color: var(--accent-blue);"></i>
-      </div>
-      <div>
-        <h1 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px 0;">Pengaturan Tampilan</h1>
-        <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Atur visibilitas halaman navigasi, widget overview, dan formula target realisasi</p>
-      </div>
+  <!-- BREADCRUMBS & NAVIGATION -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <a href="<%= navPrefix %>/admin" class="btn btn-secondary" style="padding: 8px 14px; font-size: 12.5px; border-radius: 8px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+        <i class="bi bi-arrow-left"></i> Kembali ke Menu Admin
+      </a>
     </div>
   </div>
 
@@ -442,6 +438,7 @@
 
 
 
+        <% if (!isSakernas) { %>
         <!-- GROUP 2: VISIBILITAS DATA GLOBAL -->
         <div class="settings-group">
           <div class="settings-group-title">
@@ -463,6 +460,7 @@
             </label>
           </div>
         </div>
+        <% } %>
 
         <!-- GROUP: INTEGRASI GOOGLE SPREADSHEET ANOMALI -->
         <div class="settings-group">
@@ -506,6 +504,7 @@
           </div>
         </div>
 
+        <% if (!isSakernas) { %>
         <!-- GROUP 2C: METODE TARGET MUATAN -->
         <div class="settings-group">
           <div class="settings-group-title">
@@ -529,6 +528,7 @@
             </label>
           </div>
         </div>
+        <% } %>
 
         <!-- GROUP 2D: PARAMETER TARGET & SPEEDOMETER -->
         <div class="settings-group">
@@ -682,6 +682,7 @@
             </label>
           </div>
 
+          <% if (!isSakernas) { %>
           <!-- Card Progres Realisasi Pencacahan Muatan -->
           <div class="switch-item">
             <div class="switch-info">
@@ -711,6 +712,7 @@
               <span class="toggle-slider"></span>
             </label>
           </div>
+          <% } %>
 
           <!-- Tren Harian FASIH -->
           <div class="switch-item">
