@@ -227,6 +227,7 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
     meninggal: findCol(headers, ['meninggal', 'kk_meninggal', 'kk meninggal', 'keluarga_meninggal']),
     tidak_eligible: findCol(headers, ['tidak_eligible', 'kk_tidak_eligible', 'kk tidak eligible', 'keluarga_tidak_eligible', 'tidak eligible']),
     tidak_dapat_ditemui: findCol(headers, ['tidak_dapat_ditemui', 'kk_tidak_dapat_ditemui', 'kk tidak dapat ditemui', 'keluarga_tidak_dapat_ditemui', 'tidak dapat ditemui']),
+    keluarga_khusus: findCol(headers, ['keluarga khusus', 'keluarga_khusus', 'kk_khusus', 'khusus']),
     rumah_tunggal: findCol(headers, ['rumah_tunggal', 'rumah tunggal', 'tunggal']),
     rumah_deret: findCol(headers, ['rumah_deret', 'rumah deret', 'deret']),
     rumah_susun: findCol(headers, ['rumah_susun', 'rumah susun', 'susun']),
@@ -267,6 +268,7 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
       meninggal: toInt(row[colIdx.meninggal]),
       tidak_eligible: toInt(row[colIdx.tidak_eligible]),
       tidak_dapat_ditemui: toInt(row[colIdx.tidak_dapat_ditemui]),
+      keluarga_khusus: toInt(row[colIdx.keluarga_khusus]),
       rumah_tunggal: toInt(row[colIdx.rumah_tunggal]),
       rumah_deret: toInt(row[colIdx.rumah_deret]),
       rumah_susun: toInt(row[colIdx.rumah_susun]),
@@ -282,8 +284,8 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
        usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
        tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
        rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
-       draft, open, submitted_by_pcl, approved, rejected, target_upload)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       draft, open, submitted_by_pcl, approved, rejected, target_upload, keluarga_khusus, sls_selesai)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const getPrevStatus = db.prepare(`
@@ -293,14 +295,15 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
       COALESCE(submitted_by_pcl, 0) AS submitted_by_pcl, 
       COALESCE(approved, 0) AS approved, 
       COALESCE(rejected, 0) AS rejected,
-      COALESCE(target_upload, 0) AS target_upload
+      COALESCE(target_upload, 0) AS target_upload,
+      COALESCE(sls_selesai, 0) AS sls_selesai
     FROM progres 
     WHERE upload_id = ? AND kode = ?
   `);
 
   const doInsert = db.transaction((uploadId, prevUploadId, rows) => {
     for (const r of rows) {
-      let draft = 0, openVal = 0, submitted = 0, approved = 0, rejected = 0, targetUpload = 0;
+      let draft = 0, openVal = 0, submitted = 0, approved = 0, rejected = 0, targetUpload = 0, slsSelesai = 0;
       if (prevUploadId) {
         const prev = getPrevStatus.get(prevUploadId, r.kode);
         if (prev) {
@@ -310,6 +313,7 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
           approved = prev.approved;
           rejected = prev.rejected;
           targetUpload = prev.target_upload;
+          slsSelesai = prev.sls_selesai;
         }
       }
       insertProgres.run(
@@ -317,7 +321,7 @@ function parseAndSaveExcel(filePath, originalFilename, storedFilename, tanggal, 
         r.usaha_tidak_ditemukan, r.usaha_ditemukan, r.usaha_baru, r.usaha_tutup, r.usaha_ganda,
         r.tidak_ditemukan, r.ditemukan, r.keluarga_baru, r.meninggal, r.tidak_eligible, r.tidak_dapat_ditemui,
         r.rumah_tunggal, r.rumah_deret, r.rumah_susun, r.apartemen, r.lainnya,
-        draft, openVal, submitted, approved, rejected, targetUpload
+        draft, openVal, submitted, approved, rejected, targetUpload, r.keluarga_khusus, slsSelesai
       );
     }
   });
@@ -448,9 +452,43 @@ function findStatusColumnIndexes(headers) {
   };
 }
 
+// Parser khusus untuk file Export Monitoring SLS dari FASIH
+// Format: Kode | Sub-SLS | Target SLS | Jumlah SLS Selesai | Persentase SLS Selesai
+function parseAndSaveMonitoringSls(rows, headerIdx, headers, db, uploadId) {
+  const kodeColIdx = headers.findIndex(h => h.includes('kode') || h === '(1)');
+  const selesaiColIdx = headers.findIndex(h => h.includes('jumlah sls selesai') || h.includes('jumlah sub-sls selesai'));
+  if (kodeColIdx === -1 || selesaiColIdx === -1) {
+    throw new Error('Format Monitoring SLS tidak valid: kolom Kode atau Jumlah SLS Selesai tidak ditemukan.');
+  }
+
+  // Reset semua sls_selesai ke 0 untuk upload ini terlebih dahulu
+  db.prepare('UPDATE progres SET sls_selesai = 0 WHERE upload_id = ?').run(uploadId);
+
+  const insertIgnore = db.prepare('INSERT OR IGNORE INTO progres (upload_id, kode) VALUES (?, ?)');
+  const updateSelesai = db.prepare('UPDATE progres SET sls_selesai = ? WHERE upload_id = ? AND kode = ?');
+
+  const tx = db.transaction(() => {
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const row = rows[i];
+      let kode = String(row[kodeColIdx] || '').trim();
+      if (kode.endsWith('.0')) kode = kode.slice(0, -2);
+      // Hanya proses kode level SubSLS (16 karakter)
+      if (!kode || kode.length !== 16 || kode.startsWith('(')) continue;
+
+      const jumlahSelesai = parseInt(row[selesaiColIdx] || 0, 10);
+      const slsSelesai = jumlahSelesai >= 1 ? 1 : 0;
+
+      insertIgnore.run(uploadId, kode);
+      updateSelesai.run(slsSelesai, uploadId, kode);
+    }
+  });
+
+  tx();
+}
+
 // Parse file status dan update ke DB
-function parseAndSaveStatusExcel(filePath, uploadId) {
-  const db = getDb();
+function parseAndSaveStatusExcel(filePath, uploadId, surveyId = 'se2026') {
+  const db = getDb(surveyId);
   const wb = XLSX.readFile(filePath, { raw: true });
   const ws = findDataSheet(wb);
   if (!ws) throw new Error('Sheet dalam file rekap status tidak ditemukan.');
@@ -458,7 +496,16 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: 0 });
   if (rows.length < 2) return;
 
-  const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
+  const headerIdx = findHeaderRowIndex(rows);
+  const headers = rows[headerIdx].map(h => String(h || '').toLowerCase().trim());
+
+  // Deteksi format Export Monitoring SLS (dari FASIH Monitoring)
+  // Kolom: Kode | Sub-SLS | Target SLS | Jumlah SLS Selesai | Persentase SLS Selesai
+  const isMonitoringSlsFormat = headers.some(h => h.includes('jumlah sls selesai') || h.includes('jumlah sub-sls selesai'));
+  if (isMonitoringSlsFormat) {
+    return parseAndSaveMonitoringSls(rows, headerIdx, headers, db, uploadId);
+  }
+
   const colIdx = findStatusColumnIndexes(headers);
 
   // Pre-fetch master data
@@ -502,36 +549,88 @@ function parseAndSaveStatusExcel(filePath, uploadId) {
     return rawKode;
   };
 
+  // Find previous upload that has status data
+  const currentUpload = db.prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
+  const tanggal = currentUpload ? currentUpload.tanggal : new Date().toISOString().slice(0, 10);
+
+  const prevStatusRow = db.prepare(`
+    SELECT u.id FROM uploads u
+    JOIN progres p ON u.id = p.upload_id
+    WHERE u.tanggal <= ? AND u.id != ?
+    GROUP BY u.id
+    HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
+    ORDER BY u.tanggal DESC, u.id DESC LIMIT 1
+  `).get(tanggal, uploadId);
+  const prevStatusId = prevStatusRow ? prevStatusRow.id : null;
+
+  const getPrevStatusRecord = db.prepare('SELECT * FROM progres WHERE upload_id = ? AND kode = ?');
+
   const insertStmt = db.prepare(`
     INSERT OR IGNORE INTO progres (upload_id, kode) VALUES (?, ?)
   `);
 
   const updateStmt = db.prepare(`
     UPDATE progres 
-    SET draft = ?, open = ?, submitted_by_pcl = ?, approved = ?, rejected = ?, target_upload = ?
+    SET draft = ?, open = ?, submitted_by_pcl = ?, approved = ?, rejected = ?, target_upload = ?, sls_selesai = ?
     WHERE upload_id = ? AND kode = ?
   `);
 
   const updateTx = db.transaction((list) => {
-    for (let i = 1; i < list.length; i++) {
+    for (let i = headerIdx + 1; i < list.length; i++) {
       const row = list[i];
       const kode = resolveKode(row, i);
       if (!kode || kode.length < 10) continue;
 
-      const draft = colIdx.draftIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
-      const submitted = colIdx.submittedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
-      const approved = colIdx.approvedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
-      const rejected = colIdx.rejectedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
-      const targetUpload = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 0;
+      let prevDraft = 0, prevOpen = 0, prevSubmitted = 0, prevApproved = 0, prevRejected = 0, prevTarget = 0;
+      if (prevStatusId) {
+        const prevS = getPrevStatusRecord.get(prevStatusId, kode);
+        if (prevS) {
+          prevDraft = prevS.draft || 0;
+          prevOpen = prevS.open || 0;
+          prevSubmitted = prevS.submitted_by_pcl || 0;
+          prevApproved = prevS.approved || 0;
+          prevRejected = prevS.rejected || 0;
+          prevTarget = prevS.target_upload || 0;
+        }
+      }
 
-      let openVal = colIdx.openIdxs ? colIdx.openIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0) : 0;
-      if (openVal === 0 && targetUpload > 0) {
-        openVal = Math.max(0, targetUpload - (draft + submitted + approved + rejected));
+      let draft = 0, submitted = 0, approved = 0, rejected = 0, targetUpload = 0, openVal = 0, slsSelesai = 0;
+
+      if (colIdx.isSimplifiedStatus) {
+        // SLS status file upload: preserve previous FASIH status columns
+        draft = prevDraft;
+        submitted = prevSubmitted;
+        approved = prevApproved;
+        rejected = prevRejected;
+        targetUpload = prevTarget;
+        openVal = prevOpen;
+
+        // Compute sls_selesai from excel column or preserved document counts
+        const approvedFromExcel = colIdx.approvedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
+        const targetFromExcel = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 1;
+        const isSelesaiExcel = (approvedFromExcel >= targetFromExcel || approvedFromExcel > 0);
+        const isSelesaiPreserved = (submitted + approved + rejected >= targetUpload && targetUpload > 0);
+        slsSelesai = (isSelesaiExcel || isSelesaiPreserved) ? 1 : 0;
+      } else {
+        // Regular FASIH status file upload
+        draft = colIdx.draftIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
+        submitted = colIdx.submittedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
+        approved = colIdx.approvedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
+        rejected = colIdx.rejectedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
+        targetUpload = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 0;
+
+        openVal = colIdx.openIdxs ? colIdx.openIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0) : 0;
+        if (openVal === 0 && targetUpload > 0) {
+          openVal = Math.max(0, targetUpload - (draft + submitted + approved + rejected));
+        }
+
+        // SLS selesai is computed from FASIH completion
+        slsSelesai = (submitted + approved + rejected >= targetUpload && targetUpload > 0) ? 1 : 0;
       }
 
       // Pastikan baris progres ada untuk upload ini sebelum update status
       insertStmt.run(uploadId, kode);
-      updateStmt.run(draft, openVal, submitted, approved, rejected, targetUpload, uploadId, kode);
+      updateStmt.run(draft, openVal, submitted, approved, rejected, targetUpload, slsSelesai, uploadId, kode);
     }
   });
 
@@ -631,13 +730,13 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
       usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
       tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
       rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
-      draft, open, submitted_by_pcl, approved, rejected, target_upload, sls_selesai
+      draft, open, submitted_by_pcl, approved, rejected, target_upload, keluarga_khusus, sls_selesai
     ) VALUES (
       ?, ?,
       ?, ?, ?, ?, ?,
       ?, ?, ?, ?, ?, ?,
       0, 0, 0, 0, 0,
-      ?, ?, ?, ?, ?, ?, ?
+      ?, ?, ?, ?, ?, ?, ?, ?
     )
   `);
 
@@ -688,10 +787,12 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
         targetUpload = prevTarget;
         openVal = prevOpen;
 
-        // Compute sls_selesai from excel column
+        // Compute sls_selesai from excel column or preserved document counts
         const approvedFromExcel = colIdx.approvedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
         const targetFromExcel = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 1;
-        slsSelesai = (approvedFromExcel >= targetFromExcel || approvedFromExcel > 0) ? 1 : 0;
+        const isSelesaiExcel = (approvedFromExcel >= targetFromExcel || approvedFromExcel > 0);
+        const isSelesaiPreserved = (submitted + approved + rejected >= targetUpload && targetUpload > 0);
+        slsSelesai = (isSelesaiExcel || isSelesaiPreserved) ? 1 : 0;
       } else {
         // Regular FASIH status file upload
         draft = colIdx.draftIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
@@ -726,7 +827,7 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
         insertSubslsMaster.run(kode, rowKec, rowDesa, kode, rowKorlap, rowPml, rowPcl, targetUpload);
       }
 
-      let uTd = 0, uDit = 0, uBaru = 0, uTut = 0, uGan = 0, kTd = 0, kDit = 0, kBaru = 0, kMeng = 0, kTe = 0, kTdd = 0;
+      let uTd = 0, uDit = 0, uBaru = 0, uTut = 0, uGan = 0, kTd = 0, kDit = 0, kBaru = 0, kMeng = 0, kTe = 0, kTdd = 0, kKhus = 0;
       if (prevMuatanId) {
         const prevM = getPrevMuatanRecord.get(prevMuatanId, kode);
         if (prevM) {
@@ -741,6 +842,7 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
           kMeng = prevM.meninggal || 0;
           kTe = prevM.tidak_eligible || 0;
           kTdd = prevM.tidak_dapat_ditemui || 0;
+          kKhus = prevM.keluarga_khusus || 0;
         }
       }
 
@@ -748,7 +850,7 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
         uploadId, kode,
         uTd, uDit, uBaru, uTut, uGan,
         kTd, kDit, kBaru, kMeng, kTe, kTdd,
-        draft, openVal, submitted, approved, rejected, targetUpload, slsSelesai
+        draft, openVal, submitted, approved, rejected, targetUpload, kKhus, slsSelesai
       );
 
       updateStmt.run(draft, openVal, submitted, approved, rejected, targetUpload, slsSelesai, uploadId, kode);
@@ -976,6 +1078,7 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
         const teIdx = findCol(headers, ['tidak eligible', 'tidak_eligible', 'kk_tidak_eligible']);
         const tddIdx = findCol(headers, ['tidak dapat ditemui', 'tidak_dapat_ditemui', 'kk_tidak_dapat_ditemui']);
         const tdIdx = findCol(headers, ['tidak ditemukan', 'tidak_ditemukan', 'kk_tidak_ditemukan']);
+        const kkKhususIdx = findCol(headers, ['keluarga khusus', 'keluarga_khusus', 'kk_khusus', 'khusus']);
         
         if (kodeIdx !== -1) {
           for (let i = headerIdx + 1; i < rows.length; i++) {
@@ -994,6 +1097,7 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
             mergedData[kode].tidak_eligible = teIdx !== -1 ? toInt(row[teIdx]) : 0;
             mergedData[kode].tidak_dapat_ditemui = tddIdx !== -1 ? toInt(row[tddIdx]) : 0;
             mergedData[kode].tidak_ditemukan = tdIdx !== -1 ? toInt(row[tdIdx]) : 0;
+            mergedData[kode].keluarga_khusus = kkKhususIdx !== -1 ? toInt(row[kkKhususIdx]) : 0;
           }
         }
       }
@@ -1110,8 +1214,8 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
        usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
        tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
        rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
-       draft, open, submitted_by_pcl, approved, rejected, target_upload, sls_selesai)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       draft, open, submitted_by_pcl, approved, rejected, target_upload, keluarga_khusus, sls_selesai)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   
   const getPrevStatus = db.prepare(`
@@ -1148,7 +1252,7 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
         r.usaha_tidak_ditemukan, r.usaha_ditemukan, r.usaha_baru, r.usaha_tutup, r.usaha_ganda,
         r.tidak_ditemukan, r.ditemukan, r.keluarga_baru, r.meninggal, r.tidak_eligible, r.tidak_dapat_ditemui,
         0, 0, 0, 0, 0,
-        draft, openVal, submitted, approved, rejected, targetUpload, slsSelesai
+        draft, openVal, submitted, approved, rejected, targetUpload, r.keluarga_khusus, slsSelesai
       );
     }
   })();
@@ -1181,7 +1285,8 @@ function createEmptyProgresRecord() {
     keluarga_baru: 0,
     meninggal: 0,
     tidak_eligible: 0,
-    tidak_dapat_ditemui: 0
+    tidak_dapat_ditemui: 0,
+    keluarga_khusus: 0
   };
 }
 

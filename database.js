@@ -182,6 +182,8 @@ function runMigrations(dbConn, surveyId = 'se2026') {
             submitted_by_pcl INTEGER DEFAULT 0,
             approved INTEGER DEFAULT 0,
             rejected INTEGER DEFAULT 0,
+            sls_selesai INTEGER DEFAULT 0,
+            keluarga_khusus INTEGER DEFAULT 0,
             UNIQUE(upload_id, kode)
           );
 
@@ -228,6 +230,7 @@ function runMigrations(dbConn, surveyId = 'se2026') {
             rumah_susun INTEGER DEFAULT 0,
             apartemen INTEGER DEFAULT 0,
             lainnya INTEGER DEFAULT 0,
+            keluarga_khusus_total INTEGER DEFAULT 0,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (upload_id, pcl, desa)
           );
@@ -825,6 +828,17 @@ function runMigrations(dbConn, surveyId = 'se2026') {
           `);
         } catch (_) {}
       }
+    },
+    {
+      version: '20260817020000_add_keluarga_khusus',
+      up: (dbConn) => {
+        try {
+          dbConn.prepare('ALTER TABLE progres ADD COLUMN keluarga_khusus INTEGER DEFAULT 0').run();
+        } catch (_) {}
+        try {
+          dbConn.prepare('ALTER TABLE summary_cache ADD COLUMN keluarga_khusus_total INTEGER DEFAULT 0').run();
+        } catch (_) {}
+      }
     }
   ];
 
@@ -958,7 +972,7 @@ function getTargetFormula(mode, progresAlias = 'p', masterAlias = 'm') {
 
 function getRealizationFormula(mode, progresAlias = 'p') {
   if (mode === 'honor' || mode === 'prelist') {
-    return `(COALESCE(${progresAlias}.ditemukan, 0) + COALESCE(${progresAlias}.keluarga_baru, 0) + COALESCE(${progresAlias}.tidak_ditemukan, 0) + COALESCE(${progresAlias}.meninggal, 0) + COALESCE(${progresAlias}.tidak_eligible, 0) + COALESCE(${progresAlias}.tidak_dapat_ditemui, 0) + COALESCE(${progresAlias}.usaha_ditemukan, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.usaha_tidak_ditemukan, 0) + COALESCE(${progresAlias}.usaha_tutup, 0) + COALESCE(${progresAlias}.usaha_ganda, 0))`;
+    return `(COALESCE(${progresAlias}.ditemukan, 0) + COALESCE(${progresAlias}.keluarga_baru, 0) + COALESCE(${progresAlias}.tidak_ditemukan, 0) + COALESCE(${progresAlias}.meninggal, 0) + COALESCE(${progresAlias}.tidak_eligible, 0) + COALESCE(${progresAlias}.tidak_dapat_ditemui, 0) + COALESCE(${progresAlias}.keluarga_khusus, 0) + COALESCE(${progresAlias}.usaha_ditemukan, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.usaha_tidak_ditemukan, 0) + COALESCE(${progresAlias}.usaha_tutup, 0) + COALESCE(${progresAlias}.usaha_ganda, 0))`;
   }
   return `(COALESCE(${progresAlias}.usaha_ditemukan, 0) + COALESCE(${progresAlias}.usaha_baru, 0) + COALESCE(${progresAlias}.ditemukan, 0) + COALESCE(${progresAlias}.keluarga_baru, 0))`;
 }
@@ -972,7 +986,7 @@ function getUsahaTotalFormula(mode, progresAlias = 'p') {
 
 function getKeluargaTotalFormula(mode, progresAlias = 'p') {
   if (mode === 'honor' || mode === 'prelist') {
-    return `(COALESCE(${progresAlias}.ditemukan, 0) + COALESCE(${progresAlias}.keluarga_baru, 0) + COALESCE(${progresAlias}.tidak_ditemukan, 0) + COALESCE(${progresAlias}.meninggal, 0) + COALESCE(${progresAlias}.tidak_eligible, 0) + COALESCE(${progresAlias}.tidak_dapat_ditemui, 0))`;
+    return `(COALESCE(${progresAlias}.ditemukan, 0) + COALESCE(${progresAlias}.keluarga_baru, 0) + COALESCE(${progresAlias}.tidak_ditemukan, 0) + COALESCE(${progresAlias}.meninggal, 0) + COALESCE(${progresAlias}.tidak_eligible, 0) + COALESCE(${progresAlias}.tidak_dapat_ditemui, 0) + COALESCE(${progresAlias}.keluarga_khusus, 0))`;
   }
   return `(COALESCE(${progresAlias}.ditemukan, 0) + COALESCE(${progresAlias}.keluarga_baru, 0))`;
 }
@@ -1259,6 +1273,9 @@ function getOverviewSummary(uploadId, settings = getSettings(), surveyId = 'se20
       SUM(COALESCE(p.usaha_tutup, 0)) AS usaha_tutup,
       SUM(COALESCE(p.meninggal, 0)) AS meninggal,
       SUM(COALESCE(p.usaha_ganda, 0)) AS usaha_ganda,
+      SUM(COALESCE(p.tidak_eligible, 0)) AS tidak_eligible,
+      SUM(COALESCE(p.tidak_dapat_ditemui, 0)) AS tidak_dapat_ditemui,
+      SUM(COALESCE(p.keluarga_khusus, 0)) AS keluarga_khusus,
       SUM(COALESCE(p.rumah_tunggal, 0)) AS rumah_tunggal,
       SUM(COALESCE(p.rumah_deret, 0)) AS rumah_deret,
       SUM(COALESCE(p.rumah_susun, 0)) AS rumah_susun,
@@ -2030,7 +2047,7 @@ function rebuildSummaryCache(uploadId, surveyId) {
       target_static_total, target_upload_total, target_honor_total,
       usaha_ditemukan, usaha_baru, ditemukan, keluarga_baru,
       usaha_tidak_ditemukan, tidak_ditemukan, usaha_tutup, meninggal, usaha_ganda,
-      rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya
+      rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya, keluarga_khusus_total
     )
     SELECT 
       ? as upload_id,
@@ -2067,7 +2084,8 @@ function rebuildSummaryCache(uploadId, surveyId) {
       SUM(COALESCE(p.rumah_deret, 0)) AS rumah_deret,
       SUM(COALESCE(p.rumah_susun, 0)) AS rumah_susun,
       SUM(COALESCE(p.apartemen, 0)) AS apartemen,
-      SUM(COALESCE(p.lainnya, 0)) AS lainnya
+      SUM(COALESCE(p.lainnya, 0)) AS lainnya,
+      SUM(COALESCE(p.keluarga_khusus, 0)) AS keluarga_khusus_total
     FROM progres p
     LEFT JOIN ${masterTable} m ON p.kode = m.kode
     WHERE p.upload_id = ?

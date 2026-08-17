@@ -1080,6 +1080,7 @@ function buildNotificationMessage(template, uploadData, summary, kecStats, pmlSt
     '{keluarga_meninggal}': formatNumber(summary ? summary.meninggal : 0),
     '{keluarga_tidak_eligible}': formatNumber(summary ? summary.tidak_eligible : 0),
     '{keluarga_tidak_dapat_ditemui}': formatNumber(summary ? summary.tidak_dapat_ditemui : 0),
+    '{keluarga_khusus}': formatNumber(summary ? summary.keluarga_khusus : 0),
     '{keluarga_total}': formatNumber(summary ? summary.keluarga_total : 0),
 
     '{usaha_ditemukan}': formatNumber(summary ? summary.usaha_ditemukan : 0),
@@ -1245,6 +1246,7 @@ Berkas muatan lapangan (Keluarga/Usaha) telah berhasil diperbarui.
 • Meninggal: *{keluarga_meninggal}*
 • Tidak Eligible: *{keluarga_tidak_eligible}*
 • Tidak Dapat Ditemui: *{keluarga_tidak_dapat_ditemui}*
+• Keluarga Khusus: *{keluarga_khusus}*
 • Tidak Ditemukan: *{keluarga_tidak_ditemukan}*
 • Total Keluarga Terdata: *{keluarga_total}*
 

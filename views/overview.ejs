@@ -1383,6 +1383,33 @@
                   <div style="font-size: 13px; font-weight: 800; color: var(--text-primary);"><%= (summary.keluarga_tidak_ditemukan || 0).toLocaleString('id-ID') %></div>
                 </div>
 
+                <!-- Keluarga Khusus -->
+                <div style="background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                  <div>
+                    <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">KK KHUSUS</div>
+                    <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Keluarga khusus</div>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-green);"><%= (summary.keluarga_khusus || 0).toLocaleString('id-ID') %></div>
+                </div>
+
+                <!-- Tidak Eligible -->
+                <div style="background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                  <div>
+                    <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">TDK ELIGIBLE</div>
+                    <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Ineligible</div>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-red);"><%= (summary.tidak_eligible || 0).toLocaleString('id-ID') %></div>
+                </div>
+
+                <!-- Tidak Dapat Ditemui -->
+                <div style="background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: var(--radius-sm); padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                  <div>
+                    <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">TDK DITEMUI</div>
+                    <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Sampai akhir</div>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-yellow);"><%= (summary.tidak_dapat_ditemui || 0).toLocaleString('id-ID') %></div>
+                </div>
+
               </div>
             </div>
 

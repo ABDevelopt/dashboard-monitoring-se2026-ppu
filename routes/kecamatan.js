@@ -20,7 +20,7 @@ router.get('/', (req, res) => {
       const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
       const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
       const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
-      const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 1 ELSE 0 END`;
+      const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
 
       desaStats = attachProgressPercentages(db.prepare(`
         SELECT 

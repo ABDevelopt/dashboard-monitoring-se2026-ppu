@@ -203,7 +203,7 @@ router.get('/', (req, res) => {
         SELECT 
           COALESCE(p.pcl_name, m.pcl) AS pcl, m.pml, m.korlap, m.kecamatan,
           COUNT(DISTINCT p.kode) AS total_subsls,
-          SUM(CASE WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 1 ELSE 0 END) AS selesai,
+          SUM(COALESCE(p.sls_selesai, 0)) AS selesai,
           SUM(${targetMuatanFormula}) AS total_muatan,
           SUM(${realFormula}) AS muatan_selesai,
           SUM(${usahaTotalFormula}) AS usaha_total,

@@ -122,8 +122,8 @@ const uploadId = res.locals.uploadId;
       cond.push('(m.pcl = ? OR p.pcl_name = ? OR p.pcl_email = ?)');
       params.push(filterPcl, filterPcl, filterPcl);
     }
-    if (filterStatus === 'selesai') cond.push(`p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula})`);
-    if (filterStatus === 'belum') cond.push(`(p.kode IS NULL OR (${targetFormula}) = 0 OR (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) < (${targetFormula}))`);
+    if (filterStatus === 'selesai') cond.push(`p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 1`);
+    if (filterStatus === 'belum') cond.push(`(p.kode IS NULL OR COALESCE(p.sls_selesai, 0) = 0)`);
 
     const where = cond.length ? 'AND ' + cond.join(' AND ') : '';
 
@@ -146,7 +146,7 @@ const uploadId = res.locals.uploadId;
         ${targetFormula} AS target_fasih,
         COALESCE(m.target_fasih, 0) AS target_static,
         COALESCE(p.target_upload, 0) AS target_upload,
-        CASE WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 1 ELSE 0 END AS sudah_diisi,
+        COALESCE(p.sls_selesai, 0) AS sudah_diisi,
         COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
         COALESCE(p.usaha_ditemukan, 0) AS usaha_ditemukan,
         COALESCE(p.usaha_baru, 0) AS usaha_baru,
