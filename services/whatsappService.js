@@ -1271,14 +1271,14 @@ Pembaruan berkas status penyelesaian SLS telah selesai diproses.
 🔗 Akses Peta Sebaran SLS: {url_dashboard}/map
 _Pesan otomatis Sistem Monitoring SE2026 BPS Kab. Penajam Paser Utara_`;
 
-  let defaultTemplate = defaultFasihTemplate;
+  let template = '';
   if (isSlsUpload) {
-    defaultTemplate = defaultSlsTemplate;
+    template = settings.whatsapp_sls_message_template || defaultSlsTemplate;
   } else if (isMuatanUpload) {
-    defaultTemplate = defaultMuatanTemplate;
+    template = settings.whatsapp_muatan_message_template || defaultMuatanTemplate;
+  } else {
+    template = chosenTemplate || defaultFasihTemplate;
   }
-
-  const template = chosenTemplate || defaultTemplate;
   const message = buildNotificationMessage(template, uploadData, summary, kecStats, pmlStats, pclStats, settings);
 
   try {
