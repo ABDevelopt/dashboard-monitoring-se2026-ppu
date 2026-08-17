@@ -418,8 +418,10 @@ function findStatusColumnIndexes(headers) {
   const missingCols = [];
   if (kodeIdx === -1 && (desaIdx === -1 || slsIdx === -1)) missingCols.push('level_6_full_code / kode subsls');
   
+  const isMonitoringSls = headers.some(h => h.includes('jumlah sls selesai') || h.includes('jumlah sub-sls selesai'));
+  
   // If we found 'selesai' column, we can bypass draft/submitted/rejected checks
-  const isSimplifiedStatus = approvedIdxs.some(idx => headers[idx].includes('selesai'));
+  const isSimplifiedStatus = approvedIdxs.some(idx => headers[idx].includes('selesai')) || isMonitoringSls;
   
   if (!isSimplifiedStatus) {
     if (draftIdxs.length === 0) missingCols.push('draft');
@@ -427,7 +429,8 @@ function findStatusColumnIndexes(headers) {
     if (approvedIdxs.length === 0) missingCols.push('approved');
     if (rejectedIdxs.length === 0) missingCols.push('rejected / reject');
   } else {
-    if (approvedIdxs.length === 0) missingCols.push('approved / selesai');
+    // If it's monitoring SLS format, we don't even need approved column from approvedIdxs
+    if (!isMonitoringSls && approvedIdxs.length === 0) missingCols.push('approved / selesai');
   }
 
   if (missingCols.length > 0) {
@@ -436,6 +439,7 @@ function findStatusColumnIndexes(headers) {
 
   return {
     isSimplifiedStatus,
+    isMonitoringSls,
     kode: kodeIdx,
     draftIdxs: draftIdxs,
     openIdxs: openIdxs,
@@ -452,40 +456,6 @@ function findStatusColumnIndexes(headers) {
   };
 }
 
-// Parser khusus untuk file Export Monitoring SLS dari FASIH
-// Format: Kode | Sub-SLS | Target SLS | Jumlah SLS Selesai | Persentase SLS Selesai
-function parseAndSaveMonitoringSls(rows, headerIdx, headers, db, uploadId) {
-  const kodeColIdx = headers.findIndex(h => h.includes('kode') || h === '(1)');
-  const selesaiColIdx = headers.findIndex(h => h.includes('jumlah sls selesai') || h.includes('jumlah sub-sls selesai'));
-  if (kodeColIdx === -1 || selesaiColIdx === -1) {
-    throw new Error('Format Monitoring SLS tidak valid: kolom Kode atau Jumlah SLS Selesai tidak ditemukan.');
-  }
-
-  // Reset semua sls_selesai ke 0 untuk upload ini terlebih dahulu
-  db.prepare('UPDATE progres SET sls_selesai = 0 WHERE upload_id = ?').run(uploadId);
-
-  const insertIgnore = db.prepare('INSERT OR IGNORE INTO progres (upload_id, kode) VALUES (?, ?)');
-  const updateSelesai = db.prepare('UPDATE progres SET sls_selesai = ? WHERE upload_id = ? AND kode = ?');
-
-  const tx = db.transaction(() => {
-    for (let i = headerIdx + 1; i < rows.length; i++) {
-      const row = rows[i];
-      let kode = String(row[kodeColIdx] || '').trim();
-      if (kode.endsWith('.0')) kode = kode.slice(0, -2);
-      // Hanya proses kode level SubSLS (16 karakter)
-      if (!kode || kode.length !== 16 || kode.startsWith('(')) continue;
-
-      const jumlahSelesai = parseInt(row[selesaiColIdx] || 0, 10);
-      const slsSelesai = jumlahSelesai >= 1 ? 1 : 0;
-
-      insertIgnore.run(uploadId, kode);
-      updateSelesai.run(slsSelesai, uploadId, kode);
-    }
-  });
-
-  tx();
-}
-
 // Parse file status dan update ke DB
 function parseAndSaveStatusExcel(filePath, uploadId, surveyId = 'se2026') {
   const db = getDb(surveyId);
@@ -498,14 +468,6 @@ function parseAndSaveStatusExcel(filePath, uploadId, surveyId = 'se2026') {
 
   const headerIdx = findHeaderRowIndex(rows);
   const headers = rows[headerIdx].map(h => String(h || '').toLowerCase().trim());
-
-  // Deteksi format Export Monitoring SLS (dari FASIH Monitoring)
-  // Kolom: Kode | Sub-SLS | Target SLS | Jumlah SLS Selesai | Persentase SLS Selesai
-  const isMonitoringSlsFormat = headers.some(h => h.includes('jumlah sls selesai') || h.includes('jumlah sub-sls selesai'));
-  if (isMonitoringSlsFormat) {
-    return parseAndSaveMonitoringSls(rows, headerIdx, headers, db, uploadId);
-  }
-
   const colIdx = findStatusColumnIndexes(headers);
 
   // Pre-fetch master data
@@ -596,7 +558,20 @@ function parseAndSaveStatusExcel(filePath, uploadId, surveyId = 'se2026') {
 
       let draft = 0, submitted = 0, approved = 0, rejected = 0, targetUpload = 0, openVal = 0, slsSelesai = 0;
 
-      if (colIdx.isSimplifiedStatus) {
+      if (colIdx.isMonitoringSls) {
+        // SLS monitoring file upload: preserve previous FASIH status columns
+        draft = prevDraft;
+        submitted = prevSubmitted;
+        approved = prevApproved;
+        rejected = prevRejected;
+        targetUpload = prevTarget;
+        openVal = prevOpen;
+
+        // Compute sls_selesai strictly from "Jumlah SLS Selesai" column
+        const selesaiColIdx = headers.findIndex(h => h.includes('jumlah sls selesai') || h.includes('jumlah sub-sls selesai'));
+        const jumlahSelesai = parseInt(row[selesaiColIdx] || 0, 10);
+        slsSelesai = (jumlahSelesai >= 1 && kode.length === 16) ? 1 : 0;
+      } else if (colIdx.isSimplifiedStatus) {
         // SLS status file upload: preserve previous FASIH status columns
         draft = prevDraft;
         submitted = prevSubmitted;
@@ -778,7 +753,20 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
 
       let draft = 0, submitted = 0, approved = 0, rejected = 0, targetUpload = 0, openVal = 0, slsSelesai = 0;
 
-      if (colIdx.isSimplifiedStatus) {
+      if (colIdx.isMonitoringSls) {
+        // SLS monitoring file upload: preserve previous FASIH status columns
+        draft = prevDraft;
+        submitted = prevSubmitted;
+        approved = prevApproved;
+        rejected = prevRejected;
+        targetUpload = prevTarget;
+        openVal = prevOpen;
+
+        // Compute sls_selesai strictly from "Jumlah SLS Selesai" column
+        const selesaiColIdx = headers.findIndex(h => h.includes('jumlah sls selesai') || h.includes('jumlah sub-sls selesai'));
+        const jumlahSelesai = parseInt(row[selesaiColIdx] || 0, 10);
+        slsSelesai = (jumlahSelesai >= 1 && kode.length === 16) ? 1 : 0;
+      } else if (colIdx.isSimplifiedStatus) {
         // SLS status file upload: preserve previous FASIH status columns
         draft = prevDraft;
         submitted = prevSubmitted;
