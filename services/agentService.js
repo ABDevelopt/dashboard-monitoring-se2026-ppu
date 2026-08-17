@@ -2,6 +2,7 @@ const { getDb, getSettings, getLatestUpload, getOverviewSummary, getKecamatanSta
 const { getFirestore, isFirebaseActive } = require('./firebaseService');
 const { dbSchemaDescription } = require('./dbSchema');
 const { QUERY_HINTS } = require('./queryHints');
+const { buildLiveContext } = require('./ai/contextBuilder');
 const { Worker } = require('worker_threads');
 const path = require('path');
 const { spawn } = require('child_process');
@@ -186,7 +187,8 @@ const hintsText = Object.entries(QUERY_HINTS)
   .map(([key, h]) => `- **${key}**: ${h.description}\n  SQL:\n  \`\`\`sql\n  ${h.sql.trim()}\n  \`\`\``)
   .join('\n');
 
-const SYSTEM_INSTRUCTION = dbSchemaDescription + `
+// SYSTEM_INSTRUCTION statis (fallback jika liveCtx tidak tersedia)
+const SYSTEM_INSTRUCTION_STATIC = dbSchemaDescription + `
 
 ## Strategi Pengambilan Data — WAJIB DIIKUTI
 
@@ -231,6 +233,21 @@ Untuk mempermudah pembacaan data, Anda harus memformat jawaban Anda dengan stand
 - Jangan gunakan run_read_only_query untuk pertanyaan yang bisa dijawab fetch_page_data
 - Jangan membuat estimasi atau mengarang angka jika tool gagal
 `;
+
+/**
+ * Membangun system instruction lengkap dengan live context diinjeksikan di awal.
+ * Dipanggil sekali per request dari streamMessageToAgent / sendMessageToAgent.
+ * @param {string} [liveCtx=''] - Hasil dari buildLiveContext()
+ * @returns {string}
+ */
+function buildSystemInstruction(liveCtx = '') {
+  return dbSchemaDescription + liveCtx + SYSTEM_INSTRUCTION_STATIC.slice(dbSchemaDescription.length);
+}
+
+// Alias backward-compat: dipakai oleh streamSimulation dan fungsi lain yang tidak butuh live context
+const SYSTEM_INSTRUCTION = SYSTEM_INSTRUCTION_STATIC;
+
+
 
 const TOOL_DECLARATION = {
   name: "run_read_only_query",
@@ -1261,18 +1278,20 @@ function getApiKeyForProvider(provider, settings) {
   return key && key.trim() ? key.trim() : null;
 }
 
-async function executeSingleProviderCall(provider, model, userMessage, chatHistory, settings, signal, customApiKey) {
+async function executeSingleProviderCall(provider, model, userMessage, chatHistory, settings, signal, customApiKey, systemInstruction = SYSTEM_INSTRUCTION) {
   const task = provider === 'openai'
-    ? sendMessageToOpenAI(userMessage, chatHistory, settings, model, signal)
+    ? sendMessageToOpenAI(userMessage, chatHistory, settings, model, signal, systemInstruction)
     : provider === 'openrouter'
-    ? sendMessageToOpenRouter(userMessage, chatHistory, settings, model, signal)
-    : sendMessageToGemini(userMessage, chatHistory, settings, model, signal, customApiKey);
+    ? sendMessageToOpenRouter(userMessage, chatHistory, settings, model, signal, systemInstruction)
+    : sendMessageToGemini(userMessage, chatHistory, settings, model, signal, customApiKey, systemInstruction);
 
   return await timeoutPromise(task, AGENT_API_TIMEOUT_MS, `${provider} request timed out.`);
 }
 
 async function sendMessageToAgent(userMessage, chatHistory = [], options = {}) {
   const settings = getSettings();
+  const liveCtx = buildLiveContext('se2026');
+  const dynInstruction = buildSystemInstruction(liveCtx);
   const initialSelection = resolveAgentSelection(settings, options);
   
   const tries = [{ provider: initialSelection.provider, model: initialSelection.model }];
@@ -1361,7 +1380,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}) {
         const serverController = registerActiveRequest('gemini');
         try {
           result = await executeSingleProviderCall(
-            'gemini', current.model, userMessage, chatHistory, settings, serverController.signal, activeKey
+            'gemini', current.model, userMessage, chatHistory, settings, serverController.signal, activeKey, dynInstruction
           );
           
           if (i > 0 || kIdx > 0) {
@@ -1400,7 +1419,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}) {
       
       try {
         const result = await executeSingleProviderCall(
-          current.provider, current.model, userMessage, chatHistory, settings, serverController.signal
+          current.provider, current.model, userMessage, chatHistory, settings, serverController.signal, null, dynInstruction
         );
         
         if (i > 0) {
@@ -1436,7 +1455,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}) {
 //  ROOT CAUSE #4 — functionCalls() bisa throw jika response finish_reason
 //  bukan STOP (misalnya SAFETY atau MAX_TOKENS). Perlu dicek sebelum akses.
 // ─────────────────────────────────────────────────────────────────────────
-async function sendMessageToGemini(userMessage, chatHistory, settings, selectedModel, abortSignal, customApiKey) {
+async function sendMessageToGemini(userMessage, chatHistory, settings, selectedModel, abortSignal, customApiKey, systemInstruction = SYSTEM_INSTRUCTION) {
   try {
     const { GoogleGenerativeAI } = require("@google/generative-ai");
     const apiKey = customApiKey || settings.gemini_api_key;
@@ -1447,7 +1466,7 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
 
     const model = genAI.getGenerativeModel({
       model: geminiModel,
-      systemInstruction: SYSTEM_INSTRUCTION,
+      systemInstruction: systemInstruction,
       tools: [{
         functionDeclarations: [
           {
@@ -1574,7 +1593,7 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
 // ─────────────────────────────────────────────
 //  OPENAI
 // ─────────────────────────────────────────────
-async function sendMessageToOpenAI(userMessage, chatHistory, settings, selectedModel, abortSignal) {
+async function sendMessageToOpenAI(userMessage, chatHistory, settings, selectedModel, abortSignal, systemInstruction = SYSTEM_INSTRUCTION) {
   const apiKey = settings.openai_api_key;
   const model  = selectedModel || settings.openai_model || OPENAI_DEFAULT_MODEL;
   const input  = [
@@ -1593,7 +1612,7 @@ async function sendMessageToOpenAI(userMessage, chatHistory, settings, selectedM
     if (abortSignal?.aborted) throw new Error('Request dibatalkan sebelum dikirim ke OpenAI.');
 
     log.debug('OpenAI request pertama…');
-    let response = await createOpenAIResponse(apiKey, { model, instructions: SYSTEM_INSTRUCTION, input, tools, tool_choice: 'auto' });
+    let response = await createOpenAIResponse(apiKey, { model, instructions: systemInstruction, input, tools, tool_choice: 'auto' });
 
     let loopCount   = 0;
     const MAX_LOOPS = 5;
@@ -1615,7 +1634,7 @@ async function sendMessageToOpenAI(userMessage, chatHistory, settings, selectedM
       }));
 
       response = await createOpenAIResponse(apiKey, {
-        model, instructions: SYSTEM_INSTRUCTION,
+        model, instructions: systemInstruction,
         previous_response_id: response.id,
         input: outputs, tools, tool_choice: 'auto'
       });
@@ -1666,12 +1685,12 @@ function extractOpenAIText(response) {
   return parts.join('\n').trim() || 'Model tidak mengembalikan teks jawaban.';
 }
 
-async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selectedModel, abortSignal) {
+async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selectedModel, abortSignal, systemInstruction = SYSTEM_INSTRUCTION) {
   const apiKey = settings.openrouter_api_key;
   const model = selectedModel || settings.openrouter_model || OPENROUTER_DEFAULT_MODEL;
 
   const messages = [
-    { role: 'system', content: SYSTEM_INSTRUCTION },
+    { role: 'system', content: systemInstruction },
     ...chatHistory.slice(-10).map(msg => ({
       role: msg.role === 'user' ? 'user' : 'assistant',
       content: msg.content
@@ -2035,7 +2054,7 @@ function sanitizeJSONString(str) {
 //  STREAMING IMPLEMENTATIONS (SSE-READY)
 // ─────────────────────────────────────────────────────────────────────────
 
-async function streamMessageToGemini(userMessage, chatHistory, settings, selectedModel, abortSignal, customApiKey, onEvent) {
+async function streamMessageToGemini(userMessage, chatHistory, settings, selectedModel, abortSignal, customApiKey, onEvent, systemInstruction = SYSTEM_INSTRUCTION) {
   try {
     const { GoogleGenerativeAI } = require("@google/generative-ai");
     const apiKey = customApiKey || settings.gemini_api_key;
@@ -2046,7 +2065,7 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
 
     const model = genAI.getGenerativeModel({
       model: geminiModel,
-      systemInstruction: SYSTEM_INSTRUCTION,
+      systemInstruction: systemInstruction,
       tools: [{
         functionDeclarations: [
           {
@@ -2185,12 +2204,12 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
   }
 }
 
-async function streamMessageToOpenRouter(userMessage, chatHistory, settings, selectedModel, abortSignal, onEvent) {
+async function streamMessageToOpenRouter(userMessage, chatHistory, settings, selectedModel, abortSignal, onEvent, systemInstruction = SYSTEM_INSTRUCTION) {
   const apiKey = settings.openrouter_api_key;
   const model = selectedModel || settings.openrouter_model || OPENROUTER_DEFAULT_MODEL;
 
   const messages = [
-    { role: 'system', content: SYSTEM_INSTRUCTION },
+    { role: 'system', content: systemInstruction },
     ...chatHistory.slice(-10).map(msg => ({
       role: msg.role === 'user' ? 'user' : 'assistant',
       content: msg.content
@@ -2364,12 +2383,12 @@ async function streamMessageToOpenRouter(userMessage, chatHistory, settings, sel
   return { role: 'model', content: fullAccumulatedText, isSimulation: false };
 }
 
-async function streamMessageToOpenAI(userMessage, chatHistory, settings, selectedModel, abortSignal, onEvent) {
+async function streamMessageToOpenAI(userMessage, chatHistory, settings, selectedModel, abortSignal, onEvent, systemInstruction = SYSTEM_INSTRUCTION) {
   const apiKey = settings.openai_api_key;
   const model = selectedModel || settings.openai_model || OPENAI_DEFAULT_MODEL;
 
   const messages = [
-    { role: 'system', content: SYSTEM_INSTRUCTION },
+    { role: 'system', content: systemInstruction },
     ...chatHistory.slice(-10).map(msg => ({
       role: msg.role === 'user' ? 'user' : 'assistant',
       content: msg.content
@@ -2528,6 +2547,8 @@ async function streamSimulation(userMessage, chatHistory, onEvent, abortSignal) 
 
 async function streamMessageToAgent(userMessage, chatHistory = [], options = {}, onEvent = () => {}, abortSignal = null) {
   const settings = getSettings();
+  const liveCtx = buildLiveContext('se2026');
+  const dynInstruction = buildSystemInstruction(liveCtx);
   const initialSelection = resolveAgentSelection(settings, options);
 
   const tries = [{ provider: initialSelection.provider, model: initialSelection.model }];
@@ -2588,7 +2609,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
         const activeKey = keysToTry[kIdx];
         try {
           const result = await streamMessageToGemini(
-            userMessage, chatHistory, settings, current.model, abortSignal, activeKey, onEvent
+            userMessage, chatHistory, settings, current.model, abortSignal, activeKey, onEvent, dynInstruction
           );
           onEvent('done', { reply: result.content, isSimulation: false, role: 'model', model: current.model });
           return result;
@@ -2605,7 +2626,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
 
       try {
         const result = await streamMessageToOpenRouter(
-          userMessage, chatHistory, settings, current.model, abortSignal, onEvent
+          userMessage, chatHistory, settings, current.model, abortSignal, onEvent, dynInstruction
         );
         onEvent('done', { reply: result.content, isSimulation: false, role: 'model', model: current.model });
         return result;
@@ -2620,7 +2641,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
 
       try {
         const result = await streamMessageToOpenAI(
-          userMessage, chatHistory, settings, current.model, abortSignal, onEvent
+          userMessage, chatHistory, settings, current.model, abortSignal, onEvent, dynInstruction
         );
         onEvent('done', { reply: result.content, isSimulation: false, role: 'model', model: current.model });
         return result;
