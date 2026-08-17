@@ -60,17 +60,18 @@ app.use((req, res, next) => {
     "frame-ancestors 'self';"
   );
   
-  // Anti-clickjacking
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  
-  // Strict-Transport-Security (HSTS)
+  res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  
-  // Prevent MIME-sniffing
   res.setHeader('X-Content-Type-Options', 'nosniff');
   
   // Referrer Policy
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  // Prevent browser & proxy caching for dynamic routes (EJS views and API endpoints)
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   
   next();
 });
