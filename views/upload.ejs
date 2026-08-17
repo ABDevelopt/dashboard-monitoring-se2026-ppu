@@ -197,23 +197,23 @@
                 <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                 <td class="td-code hide-md"><%= u.id %></td>
                 <td class="td-primary">
-                  <div><%= u.filename || '(Hanya Status FASIH)' %></div>
-                  <% if (u.status_filename) { %>
-                    <div style="font-size: 11px; color: var(--accent-purple); margin-top: 4px; font-weight: 500;">
-                      <i class="bi bi-phone"></i> Status: <%= u.status_filename %>
-                    </div>
+                  <% if (uploadType === 'muatan') { %>
+                    <div><i class="bi bi-file-earmark-excel text-cyan" style="margin-right: 4px;"></i> <%= u.filename %></div>
+                  <% } else if (uploadType === 'fasih') { %>
+                    <div><i class="bi bi-file-earmark-code text-purple" style="margin-right: 4px;"></i> <%= u.status_filename %></div>
+                  <% } else if (uploadType === 'sls') { %>
+                    <div><i class="bi bi-check2-square text-green" style="margin-right: 4px;"></i> <%= u.status_filename %></div>
                   <% } %>
                 </td>
                 <td><span class="badge badge-gray"><%= u.tanggal %></span></td>
                 <td class="text-right fw-bold td-primary"><%= u.total_subsls_terisi.toLocaleString('id-ID') %></td>
                 <td class="hide-md"><%= formatWitaShort(u.created_at) %> WITA</td>
-
+ 
                 <td class="text-center" style="display: flex; gap: 4px; justify-content: center; align-items: center;">
-                  <% if (u.stored_filename) { %>
+                  <% if (uploadType === 'muatan' && u.stored_filename) { %>
                     <a href="<%= navPrefix %>/admin/upload/download/<%= u.id %>" download class="btn btn-secondary" style="padding: 4px 8px;" title="Download File Excel Progres" aria-label="Unduh Excel Progres <%= u.filename %>"><i class="bi bi-download"></i></a>
-                  <% } %>
-                  <% if (u.status_filename) { %>
-                    <a href="<%= navPrefix %>/admin/upload/download-status/<%= u.id %>" download class="btn btn-secondary" style="padding: 4px 8px; color: var(--accent-purple); border-color: rgba(139, 92, 246, 0.3);" title="Download File Status FASIH" aria-label="Unduh Status FASIH <%= u.status_filename %>"><i class="bi bi-phone"></i> <i class="bi bi-download"></i></a>
+                  <% } else if ((uploadType === 'fasih' || uploadType === 'sls') && u.status_filename) { %>
+                    <a href="<%= navPrefix %>/admin/upload/download-status/<%= u.id %>" download class="btn btn-secondary" style="padding: 4px 8px; color: var(--accent-purple); border-color: rgba(139, 92, 246, 0.3);" title="Download File Status" aria-label="Unduh File Status <%= u.status_filename %>"><i class="bi bi-download"></i></a>
                   <% } %>
                   <form action="<%= navPrefix %>/admin/upload/delete/<%= u.id %>" method="POST" onsubmit="return confirm('Yakin ingin menghapus data rekap ini?');" style="margin: 0;">
                     <button type="submit" class="btn btn-secondary text-red" style="padding: 4px 8px;" title="Hapus" aria-label="Hapus Rekap Progres ID <%= u.id %>"><i class="bi bi-trash"></i></button>
