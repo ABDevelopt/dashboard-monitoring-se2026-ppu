@@ -108,17 +108,29 @@ function loadMasterFromJson(jsonPath) {
 
 function findCol(headers, aliases) {
   if (!headers || !Array.isArray(headers)) return -1;
-  for (const alias of aliases) {
-    const idx = headers.indexOf(alias);
+  
+  // Clean all headers (lowercase, trim, replace spaces/hyphens with underscores)
+  const cleanHeaders = headers.map(h => 
+    String(h || '').toLowerCase().trim().replace(/[\s\-]+/g, '_')
+  );
+  
+  // Clean all aliases in the same way
+  const cleanAliases = aliases.map(a => 
+    String(a || '').toLowerCase().trim().replace(/[\s\-]+/g, '_')
+  );
+  
+  // 1. Exact match of cleaned values in priority order of aliases
+  for (const alias of cleanAliases) {
+    const idx = cleanHeaders.indexOf(alias);
     if (idx !== -1) return idx;
   }
-  for (const alias of aliases) {
-    const idx = headers.findIndex(h => {
-      const cleanH = String(h || '').toLowerCase().trim();
-      return cleanH === alias || cleanH.includes(alias);
-    });
+  
+  // 2. Substring match fallback
+  for (const alias of cleanAliases) {
+    const idx = cleanHeaders.findIndex(h => h.includes(alias));
     if (idx !== -1) return idx;
   }
+  
   return -1;
 }
 
