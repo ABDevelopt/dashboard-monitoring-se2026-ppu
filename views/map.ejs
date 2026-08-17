@@ -725,7 +725,8 @@
 
           <div id="legendSls" style="display: none;">
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Legenda Progres SubSLS:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>Selesai</strong> (Telah Dilaporkan Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>Selesai</strong> (Dinyatakan Selesai Resmi)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #1e40af;"></div><span><strong>Memenuhi Target</strong> (100% Progres)</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #2563eb;"></div><span><strong>75% - 99%</strong> Progres FASIH/Muatan</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #3b82f6;"></div><span><strong>50% - 74%</strong> Progres FASIH/Muatan</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #60a5fa;"></div><span><strong>25% - 49%</strong> Progres FASIH/Muatan</span></div>
@@ -1426,7 +1427,9 @@
               let statusBadge = '<span class="badge badge-gray" style="font-size: 8px; padding: 1px 5px;">Belum Mulai</span>';
               if (item.sudah_diisi === 'sedang_didata') {
                 statusBadge = '<span class="badge badge-orange" style="font-size: 8px; padding: 1px 5px;">Sedang Didata</span>';
-              } else if (item.sudah_diisi === 'memenuhi_target' || item.selesai === 1 || item.sudah_diisi === 'melebihi_target') {
+              } else if (item.sudah_diisi === 'memenuhi_target') {
+                statusBadge = '<span class="badge badge-purple" style="font-size: 8px; padding: 1px 5px;">Memenuhi Target</span>';
+              } else if (item.sudah_diisi === 'selesai' || item.selesai === 1) {
                 statusBadge = '<span class="badge badge-green" style="font-size: 8px; padding: 1px 5px;">Selesai</span>';
               }
 

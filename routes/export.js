@@ -117,8 +117,10 @@ router.get('/data', (req, res) => {
       if (status === 'belum_mulai') {
         cond.push('(p.kode IS NULL OR (COALESCE(p.sls_selesai, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
       } else if (status === 'sedang_didata') {
-        cond.push('(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0))');
-      } else if (status === 'memenuhi_target' || status === 'melebihi_target') {
+        cond.push(`(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0) AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) < (${targetFormula}))`);
+      } else if (status === 'memenuhi_target') {
+        cond.push(`(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}))`);
+      } else if (status === 'selesai') {
         cond.push('(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 1)');
       }
     }

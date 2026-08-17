@@ -47,8 +47,10 @@ router.get('/', (req, res) => {
     if (filterStatus === 'belum_mulai') {
       cond.push('(p.kode IS NULL OR (COALESCE(p.sls_selesai, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
     } else if (filterStatus === 'sedang_didata') {
-      cond.push('(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0))');
-    } else if (filterStatus === 'memenuhi_target' || filterStatus === 'melebihi_target') {
+      cond.push(`(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0) AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) < (${targetFormula}))`);
+    } else if (filterStatus === 'memenuhi_target') {
+      cond.push(`(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}))`);
+    } else if (filterStatus === 'selesai') {
       cond.push('(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 1)');
     }
 
@@ -61,20 +63,18 @@ router.get('/', (req, res) => {
       WHERE 1=1 ${where}
     `).get(...params).n;
 
-    const limit = isAll ? (total || 1341) : Math.min(2000, Math.max(1, parseInt(limitQuery, 10) || 100));
-    const offset = (page - 1) * limit;
+    let limitClause = '';
+    let queryParams = [...params];
+    if (!isAll) {
+      const offset = (page - 1) * 50;
+      limitClause = 'LIMIT ? OFFSET ?';
+      queryParams.push(50, offset);
+    }
 
     const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
     const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
     const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
     const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
-
-    let limitClause = '';
-    let queryParams = [...params];
-    if (!isAll) {
-      limitClause = ' LIMIT ? OFFSET ?';
-      queryParams.push(limit, offset);
-    }
 
     data = attachProgressPercentages(db.prepare(`
       SELECT 
@@ -89,7 +89,8 @@ router.get('/', (req, res) => {
         COALESCE(m.target_fasih, 0) AS target_static,
         COALESCE(p.target_upload, 0) AS target_upload,
         CASE 
-          WHEN COALESCE(p.sls_selesai, 0) = 1 THEN 'memenuhi_target'
+          WHEN COALESCE(p.sls_selesai, 0) = 1 THEN 'selesai'
+          WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 'memenuhi_target'
           WHEN p.kode IS NOT NULL AND (
             COALESCE(p.draft, 0) > 0 OR 
             COALESCE(p.submitted_by_pcl, 0) > 0 OR 
@@ -144,7 +145,8 @@ router.get('/', (req, res) => {
           COALESCE(m.target_fasih, 0) AS target_static,
           COALESCE(p.target_upload, 0) AS target_upload,
           CASE 
-            WHEN COALESCE(p.sls_selesai, 0) = 1 THEN 'memenuhi_target'
+            WHEN COALESCE(p.sls_selesai, 0) = 1 THEN 'selesai'
+            WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 'memenuhi_target'
             WHEN p.kode IS NOT NULL AND (
               COALESCE(p.draft, 0) > 0 OR 
               COALESCE(p.submitted_by_pcl, 0) > 0 OR 
@@ -317,8 +319,10 @@ router.get('/export', (req, res) => {
   if (filterStatus === 'belum_mulai') {
     cond.push('(p.kode IS NULL OR (COALESCE(p.sls_selesai, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
   } else if (filterStatus === 'sedang_didata') {
-    cond.push('(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0))');
-  } else if (filterStatus === 'memenuhi_target' || filterStatus === 'melebihi_target') {
+    cond.push(`(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0) AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) < (${targetFormula}))`);
+  } else if (filterStatus === 'memenuhi_target') {
+    cond.push(`(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}))`);
+  } else if (filterStatus === 'selesai') {
     cond.push('(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 1)');
   }
 

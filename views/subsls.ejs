@@ -80,13 +80,14 @@
           <div>
             <label id="statusLabel" for="filterStatus" class="ui-label">
               Status Progres
-              <span title="Kriteria Status:&#10;- Belum Mulai: belum mulai mengisi dokumen&#10;- Sedang Didata: sedang dalam proses pengisian dokumen&#10;- Selesai: SLS/Sub-SLS dinyatakan selesai dari berkas status" style="cursor: help; margin-left: 4px;"><i class="bi bi-info-circle"></i></span>
+              <span title="Kriteria Status:&#10;- Belum Mulai: belum mulai mengisi dokumen&#10;- Sedang Didata: sedang dalam proses pengisian dokumen&#10;- Memenuhi Target: progres dokumen >= target, belum dinyatakan selesai resmi&#10;- Selesai: SLS/Sub-SLS dinyatakan selesai resmi dari berkas status BPS" style="cursor: help; margin-left: 4px;"><i class="bi bi-info-circle"></i></span>
             </label>
             <select id="filterStatus" name="status" class="w-full">
               <option value="">-- Semua Status --</option>
               <option value="belum_mulai" <%= filterStatus === 'belum_mulai' ? 'selected' : '' %>>Belum Mulai</option>
               <option value="sedang_didata" <%= filterStatus === 'sedang_didata' ? 'selected' : '' %>>Sedang Didata</option>
-              <option value="memenuhi_target" <%= filterStatus === 'memenuhi_target' ? 'selected' : '' %>>Selesai</option>
+              <option value="memenuhi_target" <%= filterStatus === 'memenuhi_target' ? 'selected' : '' %>>Memenuhi Target</option>
+              <option value="selesai" <%= filterStatus === 'selesai' ? 'selected' : '' %>>Selesai</option>
             </select>
           </div>
 
@@ -224,8 +225,12 @@
                         <span class="badge badge-gray">Belum Mulai</span>
                       <% } else if (row.sudah_diisi === 'sedang_didata') { %>
                         <span class="badge badge-orange">Sedang Didata</span>
-                      <% } else { %>
+                      <% } else if (row.sudah_diisi === 'memenuhi_target') { %>
+                        <span class="badge badge-purple">Memenuhi Target</span>
+                      <% } else if (row.sudah_diisi === 'selesai') { %>
                         <span class="badge badge-green">Selesai</span>
+                      <% } else { %>
+                        <span class="badge badge-gray">-</span>
                       <% } %>
                     </td>
 
