@@ -1282,6 +1282,8 @@ _Pesan otomatis Sistem Monitoring SE2026 BPS Kab. Penajam Paser Utara_`;
   const message = buildNotificationMessage(template, uploadData, summary, kecStats, pmlStats, pclStats, settings);
 
   try {
+    addWaLog('info', `[WA-Notif] Mengirim notifikasi update data ke grup: ${targetGroup}...`);
+    const res = await sendDirectMessage(targetGroup, message);
     addWaLog('success', '[WA-Notif] Notifikasi update data berhasil dikirim ke grup WhatsApp.');
     return { 
       success: true, 
