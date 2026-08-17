@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- PANANYO TAKA — MINIMALIST RADAR & FIELD CLIPBOARD EMBLEM (TRANSPARENT BACKGROUND) -->
+  <defs>
+    <linearGradient id="radOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F97316" />
+      <stop offset="100%" stop-color="#EA580C" />
+    </linearGradient>
+    <linearGradient id="radBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+    <linearGradient id="radGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Outer Concentric Telemetry Radar Arcs -->
+  <path d="M96 256 C96 167.63 167.63 96 256 96 C344.37 96 416 167.63 416 256" 
+        stroke="url(#radBlue)" stroke-width="20" stroke-linecap="round" fill="none" opacity="0.35" stroke-dasharray="16 16" />
+  <path d="M140 256 C140 191.93 191.93 140 256 140 C320.07 140 372 191.93 372 256" 
+        stroke="url(#radBlue)" stroke-width="24" stroke-linecap="round" fill="none" opacity="0.75" />
+
+  <!-- 2. Minimalist Survey Clipboard (Pananyo Frame) -->
+  <rect x="160" y="190" width="192" height="230" rx="28" stroke="url(#radBlue)" stroke-width="28" fill="none" />
+  <path d="M210 190 V174 C210 162.95 218.95 154 230 154 H282 C293.05 154 302 162.95 302 174 V190" 
+        stroke="url(#radBlue)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <circle cx="256" cy="172" r="8" fill="#FACC15" />
+
+  <!-- 3. Tri-Bar Statistical Growth Pillars (Inside Clipboard) -->
+  <rect x="204" y="320" width="22" height="64" rx="11" fill="url(#radGreen)" />
+  <rect x="245" y="280" width="22" height="104" rx="11" fill="url(#radGreen)" />
+  <rect x="286" y="240" width="22" height="144" rx="11" fill="url(#radOrange)" />
+
+  <!-- 4. Dynamic Checkmark Across the Center -->
+  <path d="M168 290 L234 356 L356 220" 
+        stroke="url(#radOrange)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+</svg>

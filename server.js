@@ -251,6 +251,7 @@ app.use((req, res, next) => {
   res.locals.success = req.flash('success');
   res.locals.error = req.flash('error');
   res.locals.activePage = ''; // default value
+  res.locals.surveyLogoSrc = '/logo-mark.png';
   res.locals.appVersion = APP_VERSION;
   res.locals.packageVersion = require('./package.json').version;
   res.locals.sentryDsn = process.env.SENTRY_DSN || '';
@@ -376,7 +377,10 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   try {
     const surveysConfig = require("./config/surveys.json");
-    const parts = req.path.split("/");
+    const queryIdx = req.url.indexOf('?');
+    const rawPath = queryIdx !== -1 ? req.url.substring(0, queryIdx) : req.url;
+    const rawSearch = queryIdx !== -1 ? req.url.substring(queryIdx) : '';
+    const parts = rawPath.split("/");
     const firstPart = parts[1];
     
     let matchedSurvey = null;
@@ -386,7 +390,8 @@ app.use((req, res, next) => {
       res.locals.surveyConfig = matchedSurvey;
       res.locals.routePrefix = "/" + firstPart;
       res.locals.navPrefix = "/" + firstPart;
-      req.url = "/" + parts.slice(2).join("/");
+      const strippedPath = "/" + parts.slice(2).join("/");
+      req.url = strippedPath + rawSearch;
     } else {
       matchedSurvey = surveysConfig["se2026"];
       res.locals.activeSurvey = "se2026";
@@ -394,12 +399,71 @@ app.use((req, res, next) => {
       res.locals.routePrefix = "";
       res.locals.navPrefix = "";
     }
+    const isSe2026 = matchedSurvey.id === 'se2026';
     res.locals.customStyles = `
       :root {
         --accent-primary: ${matchedSurvey.themeColor};
         --accent-rgb: ${matchedSurvey.themeRgb};
         --accent-orange: ${matchedSurvey.themeColor};
+        --accent-blue: ${matchedSurvey.themeColor};
+        --accent-cyan: ${matchedSurvey.themeSecondary || matchedSurvey.themeColor};
+        --survey-primary: ${matchedSurvey.themeColor};
+        --survey-secondary: ${matchedSurvey.themeSecondary || matchedSurvey.themeColor};
+        --survey-rgb: ${matchedSurvey.themeRgb};
+        --survey-gradient: ${matchedSurvey.themeGradient || `linear-gradient(135deg, ${matchedSurvey.themeColor} 0%, ${matchedSurvey.themeSecondary || matchedSurvey.themeColor} 100%)`};
+        --survey-glow: ${matchedSurvey.themeGlow || `0 16px 36px -8px rgba(${matchedSurvey.themeRgb}, 0.35)`};
       }
+      ${!isSe2026 ? `
+      /* Theme Isolation: Strip all orange buttons, badges, highlights & accents on non-SE2026 surveys */
+      .btn-primary, .btn-submit, .btn-action-primary,
+      .login-submit-btn, .btn-theme-orange, .btn-theme-cyan, .btn-theme-purple {
+        background: var(--survey-gradient) !important;
+        border-color: var(--accent-primary) !important;
+        color: #ffffff !important;
+        box-shadow: var(--survey-glow) !important;
+      }
+      .btn-primary:hover, .btn-submit:hover, .btn-action-primary:hover,
+      .login-submit-btn:hover {
+        filter: brightness(1.12) !important;
+        transform: translateY(-1px) !important;
+      }
+      .nav-item.active, .sidebar-nav .nav-link.active, .bottom-nav-item.active {
+        color: var(--accent-primary) !important;
+        background: rgba(var(--accent-rgb), 0.1) !important;
+        border-left-color: var(--accent-primary) !important;
+      }
+      .nav-item.active i, .sidebar-nav .nav-link.active i, .bottom-nav-item.active i,
+      .topbar-action-btn:hover i, .text-orange, .status-open-text, .warning-stat.text-orange {
+        color: var(--accent-primary) !important;
+      }
+      .badge-orange, .badge-primary {
+        background: rgba(var(--accent-rgb), 0.14) !important;
+        color: var(--accent-primary) !important;
+        border: 1px solid rgba(var(--accent-rgb), 0.3) !important;
+      }
+      .topbar-badge, #notificationBellBadge {
+        background: var(--accent-primary) !important;
+        color: #ffffff !important;
+      }
+      .stat-card.orange::before, .stat-card.blue::before,
+      .progress-bar.orange, .progress-bar {
+        background: var(--survey-gradient) !important;
+      }
+      .status-open-bg, .bg-orange-soft {
+        background-color: rgba(var(--accent-rgb), 0.07) !important;
+        border-color: rgba(var(--accent-rgb), 0.2) !important;
+      }
+      .border-hover-orange:hover, .border-hover-orange-light:hover {
+        border-color: var(--accent-primary) !important;
+      }
+      .bg-gradient-orange-dark, .bg-gradient-orange-red {
+        background: var(--survey-gradient) !important;
+      }
+      /* Hide SE2026 specific decorative ornaments and logos */
+      .se2026-only, .se2026-ornament, .se2026-logo {
+        display: none !important;
+      }
+      ` : ''}
     `;
     
     // Override/update active upload info and settings for this request
@@ -410,11 +474,32 @@ app.use((req, res, next) => {
     res.locals.latestUploadsDetailed = getLatestUploadsDetailed(res.locals.activeSurvey);
     res.locals.settings = getSettings(res.locals.activeSurvey);
     
-    // Override res.redirect to automatically prepend routePrefix for admin URLs
+    let logoSrc = '/images/logo-pananyo-taka-flow.svg';
+    if (res.locals.activeSurvey === 'sakernas-pemutakhiran') {
+      logoSrc = '/images/logo-sakernas-pemutakhiran.svg';
+    } else if (res.locals.activeSurvey === 'sakernas-pendataan') {
+      logoSrc = '/images/logo-sakernas-pendataan.svg';
+    } else if (res.locals.activeSurvey && res.locals.activeSurvey.startsWith('sakernas')) {
+      logoSrc = '/images/logo-sakernas-mark.svg';
+    } else if (res.locals.activeSurvey === 'se2026') {
+      logoSrc = '/logo-mark.png';
+    }
+    res.locals.surveyLogoSrc = logoSrc;
+    
+    // Override res.redirect to automatically prepend navPrefix for internal redirect URLs
     const originalRedirect = res.redirect;
     res.redirect = function(url) {
-      if (typeof url === 'string' && url.startsWith('/admin') && res.locals.routePrefix) {
-        return originalRedirect.call(this, res.locals.routePrefix + url);
+      if (typeof url === 'string' && res.locals.navPrefix) {
+        if (url.startsWith('/') && 
+            !url.startsWith('//') && 
+            !url.startsWith(res.locals.navPrefix) && 
+            !url.startsWith('/surveys') && 
+            !url.startsWith('/login') && 
+            !url.startsWith('/logout') && 
+            !url.startsWith('/api') &&
+            !url.startsWith('/health')) {
+          return originalRedirect.call(this, res.locals.navPrefix + (url === '/' ? '' : url));
+        }
       }
       return originalRedirect.call(this, url);
     };

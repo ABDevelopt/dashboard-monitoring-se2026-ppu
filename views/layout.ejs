@@ -3,6 +3,15 @@
   var routePrefix = (typeof locals !== 'undefined' && typeof locals.routePrefix !== 'undefined') ? locals.routePrefix : (typeof routePrefix !== 'undefined' ? routePrefix : '');
   var activeSurvey = (typeof locals !== 'undefined' && typeof locals.activeSurvey !== 'undefined') ? locals.activeSurvey : (typeof activeSurvey !== 'undefined' ? activeSurvey : 'se2026');
   var surveyConfig = (typeof locals !== 'undefined' && typeof locals.surveyConfig !== 'undefined') ? locals.surveyConfig : (typeof surveyConfig !== 'undefined' ? surveyConfig : { id: 'se2026', name: 'Sensus Ekonomi 2026', shortName: 'SE2026 PPU', theme: 'orange', themeColor: '#f97316', showUsahaColumns: true });
+
+  var surveyLogoSrc = '/images/logo-pananyo-taka-flow.svg';
+  if (activeSurvey === 'sakernas-pemutakhiran') {
+    surveyLogoSrc = '/images/logo-sakernas-pemutakhiran.svg';
+  } else if (activeSurvey === 'sakernas-pendataan') {
+    surveyLogoSrc = '/images/logo-sakernas-pendataan.svg';
+  } else if (activeSurvey && activeSurvey.startsWith('sakernas')) {
+    surveyLogoSrc = '/images/logo-sakernas-mark.svg';
+  }
 %>
 <!DOCTYPE html>
 <html lang="id">
@@ -12,14 +21,19 @@
   <title><%= typeof title !== 'undefined' ? title + ' — ' : '' %>Dashboard <%= surveyConfig.shortName %></title>
   <meta name="description" content="Dashboard Monitoring <%= surveyConfig.name %> Kabupaten Penajam Paser Utara">
   <meta name="csrf-token" content="<%= csrfToken %>">
+  <% if (activeSurvey === 'se2026') { %>
   <link rel="icon" type="image/png" href="/logo-mark.png">
+  <link rel="apple-touch-icon" href="/logo-mark.png">
+  <% } else { %>
+  <link rel="icon" type="image/svg+xml" href="<%= surveyLogoSrc %>">
+  <link rel="apple-touch-icon" href="<%= surveyLogoSrc %>">
+  <% } %>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#f97316">
+  <meta name="theme-color" content="<%= (typeof surveyConfig !== 'undefined' && surveyConfig.themeColor) ? surveyConfig.themeColor : '#f97316' %>">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="<%= surveyConfig.shortName %>">
-  <link rel="apple-touch-icon" href="/logo-mark.png">
   <% if (typeof activePage === 'undefined') { activePage = ''; } %>
   <% if (typeof appVersion === 'undefined') { appVersion = ''; } %>
   <% if (typeof settings === 'undefined') { settings = {}; } %>
@@ -27,10 +41,12 @@
   <% if (typeof isAdmin === 'undefined') { isAdmin = false; } %>
   <% if (typeof success === 'undefined') { success = []; } %>
   <% if (typeof error === 'undefined') { error = []; } %>
-  <% if (activePage === 'admin') { %>
-    <link rel="preload" href="/logo-vertical-dark.png" as="image" fetchpriority="high">
-  <% } else { %>
-    <link rel="preload" href="/logo-horizontal-dark.png" as="image" fetchpriority="high">
+  <% if (activeSurvey === 'se2026') { %>
+    <% if (activePage === 'admin') { %>
+      <link rel="preload" href="/logo-vertical-dark.png" as="image" fetchpriority="high">
+    <% } else { %>
+      <link rel="preload" href="/logo-horizontal-dark.png" as="image" fetchpriority="high">
+    <% } %>
   <% } %>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -57,7 +73,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin=""></script>
   <style>
     <%- typeof customStyles !== 'undefined' ? customStyles : '' %>
-    <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') { %>
+    <% const hideMuatanGlobal = (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') || (typeof isSakernas !== 'undefined' && isSakernas) || (typeof activeSurvey !== 'undefined' && activeSurvey.startsWith('sakernas')); %>
+    <% if (hideMuatanGlobal) { %>
       .muatan-col { display: none !important; }
     <% } %>
     @media (max-width: 992px) {
@@ -65,8 +82,10 @@
     }
   </style>
 </head>
-<body class="<%= (typeof activePage !== 'undefined' && activePage === 'login') ? 'page-login' : '' %> <%= (typeof activePage !== 'undefined' && activePage === 'agent') ? 'page-agent' : '' %> <%= (typeof activePage !== 'undefined' && activePage === 'map') ? 'page-map' : '' %>">
+<body class="survey-theme-<%= (typeof surveyConfig !== 'undefined' ? (surveyConfig.theme || surveyConfig.id) : 'orange') %> <%= (typeof activePage !== 'undefined' && activePage === 'login') ? 'page-login' : '' %> <%= (typeof activePage !== 'undefined' && activePage === 'agent') ? 'page-agent' : '' %> <%= (typeof activePage !== 'undefined' && activePage === 'map') ? 'page-map' : '' %>">
 <script>
+  window.navPrefix = '<%= typeof navPrefix !== "undefined" ? navPrefix : "" %>';
+  window.activeSurveyId = '<%= typeof activeSurvey !== "undefined" ? activeSurvey : (typeof surveyConfig !== "undefined" ? surveyConfig.id : "se2026") %>';
   // Apply saved theme immediately to prevent flashing
   if (localStorage.getItem('theme') === 'light') {
     document.body.classList.add('light-mode');
@@ -177,12 +196,10 @@
     <img src="/logo-vertical.png" alt="Logo SE2026" class="logo-light" width="140" height="90" loading="eager" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
     <img src="/logo-vertical-dark.png" alt="Logo SE2026" class="logo-dark" width="140" height="90" fetchpriority="high" loading="eager" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
     <% } else { %>
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 8px; margin-bottom: 8px; background: rgba(var(--accent-rgb), 0.08); border: 1px solid rgba(var(--accent-rgb), 0.25); border-radius: 12px; width: 100%; text-align: center;">
-      <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--accent-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 6px; box-shadow: 0 4px 10px rgba(var(--accent-rgb), 0.3);">
-        <i class="bi bi-bar-chart-fill"></i>
-      </div>
-      <div style="font-size: 13px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.2px; line-height: 1.2;"><%= surveyConfig.shortName %></div>
-      <div style="font-size: 10px; font-weight: 600; color: var(--accent-primary); margin-top: 2px;">BPS PPU</div>
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 0; margin-bottom: 8px; width: 100%; text-align: center;">
+      <img src="<%= surveyLogoSrc %>" alt="Logo <%= surveyConfig.shortName %>" width="56" height="56" style="width: 56px; height: 56px; object-fit: contain; margin-bottom: 8px; filter: drop-shadow(0 4px 12px rgba(var(--accent-rgb), 0.25));">
+      <div style="font-size: 13.5px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.2px; line-height: 1.2;"><%= surveyConfig.shortName %></div>
+      <div style="font-size: 10.5px; font-weight: 600; color: var(--accent-primary); margin-top: 2px;">BPS PPU</div>
     </div>
     <% } %>
     <% if (typeof surveyConfig !== 'undefined' && surveyConfig.id !== 'se2026') { %>
@@ -194,7 +211,8 @@
     <% } %>
   </div>
 
-  <div class="sidebar-upload-info" style="margin: 4px 16px 12px; padding: 10px; background: rgba(var(--accent-rgb), 0.03); border: 1px solid var(--border); border-radius: 8px; font-size: 10px; display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && (latestUploadsDetailed.muatan || latestUploadsDetailed.fasih)) ? 'flex' : 'none' %>; flex-direction: column; gap: 6px;">
+  <div class="sidebar-upload-info" style="margin: 4px 16px 12px; padding: 10px; background: rgba(var(--accent-rgb), 0.03); border: 1px solid var(--border); border-radius: 8px; font-size: 10px; display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && ((!hideMuatanGlobal && latestUploadsDetailed.muatan) || latestUploadsDetailed.fasih)) ? 'flex' : 'none' %>; flex-direction: column; gap: 6px;">
+    <% if (!hideMuatanGlobal) { %>
     <div id="sidebarMuatanInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'flex' : 'none' %>; flex-direction: column; gap: 2px;">
       <span style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; display: flex; align-items: center; gap: 4px;">
         <i class="bi bi-box-seam" style="color: var(--accent-cyan);"></i> Update Muatan
@@ -203,7 +221,8 @@
         <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.created_at) ? formatWita(latestUploadsDetailed.muatan.created_at) : '' %>
       </span>
     </div>
-    <div id="sidebarFasihInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.fasih) ? 'flex' : 'none' %>; flex-direction: column; gap: 2px; <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px;' : '' %>">
+    <% } %>
+    <div id="sidebarFasihInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.fasih) ? 'flex' : 'none' %>; flex-direction: column; gap: 2px; <%= (!hideMuatanGlobal && typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px;' : '' %>">
       <span style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; display: flex; align-items: center; gap: 4px;">
         <i class="bi bi-phone" style="color: var(--accent-purple);"></i> Update FASIH
       </span>
@@ -272,7 +291,7 @@
         <% } %>
         <% if (settings.page_pcl === '1') { %>
         <a href="<%= navPrefix %>/pcl" class="nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-person-gear"></i></span> PCL
+          <span class="nav-icon"><i class="bi bi-person-gear"></i></span> <%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'PPL' : 'PCL' %>
         </a>
         <% } %>
       </div>
@@ -280,18 +299,23 @@
     <% } %>
 
     <!-- Section 2: Evaluasi & Kualitas -->
-    <% if (typeof settings !== 'undefined' && (settings.page_earlywarning === '1' || settings.page_deteksianomali === '1')) { %>
+    <% 
+      const isSakernasLayout = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
+      const showAnomali = !isSakernasLayout && typeof settings !== 'undefined' && settings.page_deteksianomali === '1';
+      const showEarlyWarning = typeof settings !== 'undefined' && settings.page_earlywarning === '1';
+    %>
+    <% if (showEarlyWarning || showAnomali) { %>
     <div class="nav-section-wrapper" data-section="evaluasi">
       <div class="nav-section-header">
         <span>Evaluasi &amp; Kualitas</span>
       </div>
       <div class="nav-section-content">
-        <% if (settings.page_earlywarning === '1') { %>
+        <% if (showEarlyWarning) { %>
         <a href="<%= navPrefix %>/early-warning" class="nav-item <%= activePage === 'earlywarning' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-exclamation-octagon"></i></span> Early Warning
         </a>
         <% } %>
-        <% if (settings.page_deteksianomali === '1') { %>
+        <% if (showAnomali) { %>
         <a href="<%= navPrefix %>/deteksi-anomali" class="nav-item <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-shield-exclamation"></i></span> Anomali
         </a>
@@ -352,22 +376,6 @@
     </div>
     <% } %>
 
-    <!-- Section: Pendataan Khusus -->
-    <div class="nav-section-wrapper" data-section="khusus">
-      <div class="nav-section-header">
-        <span>Pendataan Khusus</span>
-      </div>
-      <div class="nav-section-content">
-        <% if (typeof surveyConfig !== 'undefined' && surveyConfig.id === 'se2026') { %>
-        <a href="/kipp" class="nav-item <%= activePage === 'kipp' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-building"></i></span> Pendataan Wilayah KIPP
-        </a>
-        <% } %>
-        <a href="<%= navPrefix %>/pbi" class="nav-item <%= activePage === 'pbi' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-heart-pulse"></i></span> Pendataan PBI
-        </a>
-      </div>
-    </div>
 
 
 
@@ -395,8 +403,14 @@
         <a href="<%= navPrefix %>/admin" class="nav-item <%= activePage === 'admin-menu' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-grid-fill"></i></span> Menu Utama Admin
         </a>
-        <a href="<%= navPrefix %>/admin/upload" class="nav-item <%= activePage === 'upload' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-upload"></i></span> Upload Data
+        <a href="<%= navPrefix %>/admin/upload/muatan" class="nav-item <%= activePage === 'upload-muatan' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-people-fill text-cyan"></i></span> 1. Progres Muatan
+        </a>
+        <a href="<%= navPrefix %>/admin/upload/fasih" class="nav-item <%= activePage === 'upload-fasih' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-file-earmark-code-fill text-purple"></i></span> 2. Status FASIH
+        </a>
+        <a href="<%= navPrefix %>/admin/upload/sls" class="nav-item <%= activePage === 'upload-sls' ? 'active' : '' %>">
+          <span class="nav-icon"><i class="bi bi-check2-square text-green"></i></span> 3. Status SLS Selesai
         </a>
         <a href="<%= navPrefix %>/admin/master" class="nav-item <%= activePage === 'master' ? 'active' : '' %>">
           <span class="nav-icon"><i class="bi bi-database-fill-gear"></i></span> Kelola Master Data
@@ -459,7 +473,7 @@
     <i class="bi bi-house-door"></i>
     <span>Home</span>
   </a>
-  <button id="bottomNavWilayahBtn" class="bottom-nav-item <%= ['kecamatan', 'subsls', 'map', 'kipp', 'pbi'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Wilayah">
+  <button id="bottomNavWilayahBtn" class="bottom-nav-item <%= ['kecamatan', 'subsls', 'map'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Wilayah">
     <i class="bi bi-geo-alt"></i>
     <span>Wilayah</span>
   </button>
@@ -491,9 +505,7 @@
       <img src="/logo-horizontal-dark.png" alt="Logo SE2026" class="logo-dark topbar-logo" width="110" height="30" fetchpriority="high" loading="eager">
       <% } else { %>
       <div style="display: inline-flex; align-items: center; gap: 8px;">
-        <span style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background: var(--accent-primary); color: #fff; font-size: 13px;">
-          <i class="bi bi-bar-chart-fill"></i>
-        </span>
+        <img src="<%= surveyLogoSrc %>" alt="Logo <%= surveyConfig.shortName %>" width="28" height="28" style="object-fit: contain;">
         <span style="font-size: 14px; font-weight: 800; color: var(--text-primary);"><%= surveyConfig.shortName %></span>
       </div>
       <% } %>

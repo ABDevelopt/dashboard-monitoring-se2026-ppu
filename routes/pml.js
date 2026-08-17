@@ -53,8 +53,8 @@ function formatDateShort(dateStr) {
 }
 
 // Helper to compile report data for both HTML, Excel, and PDF
-function getReportData(selectedUploadIds, filterPml) {
-  const db = getDb();
+function getReportData(selectedUploadIds, filterPml, surveyId = 'se2026') {
+  const db = getDb(surveyId);
   
   // 1. Get the list of selected uploads
   let uploads = [];
@@ -105,7 +105,7 @@ function getReportData(selectedUploadIds, filterPml) {
   }
 
   // Get target_fasih_mode setting to determine formula
-  const settings = getSettings();
+  const settings = getSettings(surveyId);
   const targetFormula = getTargetFormula(settings.target_fasih_mode);
 
   // Query progress for each PCL on each selected upload_id
@@ -181,13 +181,15 @@ function getReportData(selectedUploadIds, filterPml) {
 
 // GET: PML List and drilldown details (standard page)
 router.get('/', (req, res) => {
-const uploadId = res.locals.uploadId;
+  const uploadId = res.locals.uploadId;
+  const surveyId = res.locals.activeSurvey || 'se2026';
+  const db = getDb(surveyId);
   let pmlStats = [];
   let detailPcl = [];
   const filterPml = req.query.pml || '';
 
   if (uploadId) {
-    pmlStats = getPmlStats(uploadId, res.locals.settings);
+    pmlStats = getPmlStats(uploadId, res.locals.settings, surveyId);
 
     if (filterPml) {
       const settings = res.locals.settings;
@@ -197,7 +199,7 @@ const uploadId = res.locals.uploadId;
       const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
       const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
-      detailPcl = attachProgressPercentages(getDb().prepare(`
+      detailPcl = attachProgressPercentages(db.prepare(`
         SELECT 
           COALESCE(p.pcl_name, m.pcl) AS pcl, m.pml, m.korlap, m.kecamatan,
           COUNT(DISTINCT p.kode) AS total_subsls,
@@ -216,16 +218,16 @@ const uploadId = res.locals.uploadId;
           CASE WHEN SUM(${targetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${targetFormula}), 2) ELSE 0.0 END AS pct
         FROM progres p
         LEFT JOIN subsls_master m ON p.kode = m.kode
-        WHERE p.upload_id = ? AND m.pml = ?
+        WHERE p.upload_id = ? AND UPPER(TRIM(m.pml)) = UPPER(TRIM(?))
         GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), m.kecamatan
         ORDER BY selesai ASC
-      `).all(uploadId, filterPml));
+      `).all(uploadId, filterPml), settings);
     }
   }
 
   let pmlHistory = [];
   if (uploadId && filterPml) {
-    pmlHistory = getDb().prepare(`
+    pmlHistory = db.prepare(`
       SELECT 
         u.tanggal,
         SUM(c.draft_total) AS draft_total,
@@ -238,13 +240,13 @@ const uploadId = res.locals.uploadId;
       JOIN (
         SELECT MAX(id) AS id, tanggal FROM uploads GROUP BY tanggal
       ) u ON c.upload_id = u.id
-      WHERE UPPER(c.pml) = ?
+      WHERE UPPER(TRIM(c.pml)) = UPPER(TRIM(?))
       GROUP BY u.tanggal
       ORDER BY u.tanggal ASC
-    `).all(filterPml.toUpperCase());
+    `).all(filterPml);
   }
 
-  const selectedPmlStats = filterPml ? pmlStats.find(p => p.pml.toUpperCase() === filterPml.toUpperCase()) : null;
+  const selectedPmlStats = filterPml ? pmlStats.find(p => p.pml && p.pml.toUpperCase().trim() === filterPml.toUpperCase().trim()) : null;
 
   res.render('pml', {
     title: 'Per PML',
@@ -260,6 +262,7 @@ const uploadId = res.locals.uploadId;
 // GET: PML Printable Report Generator Page
 router.get('/laporan', (req, res) => {
   const filterPml = req.query.pml || '';
+  const surveyId = res.locals.activeSurvey || 'se2026';
   
   // Normalize uploadIds from query
   let selectedUploadIds = [];
@@ -271,14 +274,14 @@ router.get('/laporan', (req, res) => {
     }
   }
 
-  const allUploads = getAllUploads().sort((a, b) => b.tanggal.localeCompare(a.tanggal)); // descending for selection list
+  const allUploads = getAllUploads(surveyId).sort((a, b) => b.tanggal.localeCompare(a.tanggal)); // descending for selection list
 
   // Default to pre-selecting the last 6 uploads if none specified
   if (selectedUploadIds.length === 0 && allUploads.length > 0) {
     selectedUploadIds = allUploads.slice(0, 6).map(u => u.id).reverse(); // chronological order
   }
 
-  const { uploads, groupedData, pmlList } = getReportData(selectedUploadIds, filterPml);
+  const { uploads, groupedData, pmlList } = getReportData(selectedUploadIds, filterPml, surveyId);
 
   res.render('pml_laporan', {
     layout: false, // Don't use standard dashboard sidebar layout
@@ -296,13 +299,14 @@ router.get('/laporan', (req, res) => {
 // GET: PML Report Download PDF (Server-side generated with heatmap)
 router.get('/laporan/pdf', async (req, res) => {
   const filterPml = req.query.pml || '';
+  const surveyId = res.locals.activeSurvey || 'se2026';
   
   let selectedUploadIds = [];
   if (req.query.uploadIds) {
     selectedUploadIds = String(req.query.uploadIds).split(',').map(Number).filter(Boolean);
   }
 
-  const { uploads, groupedData } = getReportData(selectedUploadIds, filterPml);
+  const { uploads, groupedData } = getReportData(selectedUploadIds, filterPml, surveyId);
 
   if (uploads.length === 0) {
     return res.status(400).send('Tidak ada data progres untuk dibuat PDF.');
@@ -400,13 +404,14 @@ router.get('/laporan/pdf', async (req, res) => {
 // GET: PML Report Download Excel
 router.get('/laporan/excel', (req, res) => {
   const filterPml = req.query.pml || '';
+  const surveyId = res.locals.activeSurvey || 'se2026';
   
   let selectedUploadIds = [];
   if (req.query.uploadIds) {
     selectedUploadIds = String(req.query.uploadIds).split(',').map(Number).filter(Boolean);
   }
 
-  const { uploads, groupedData } = getReportData(selectedUploadIds, filterPml);
+  const { uploads, groupedData } = getReportData(selectedUploadIds, filterPml, surveyId);
 
   // Build Excel Headers
   const headers = ['No', 'Nama Petugas PCL', 'PML', 'Wilayah Kerja Desa'];

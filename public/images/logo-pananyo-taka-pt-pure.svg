@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- PANANYO TAKA — ULTRA CLEAN DUAL-LETTER 'P' & 'T' FLAT EMBLEM (TRANSPARENT BACKGROUND) -->
+  <defs>
+    <linearGradient id="pGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F97316" />
+      <stop offset="100%" stop-color="#EA580C" />
+    </linearGradient>
+    <linearGradient id="tGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+    <linearGradient id="barGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. HURUF 'P' (PANANYO - WARNA ORANYE) -->
+  <!-- Batang P -->
+  <rect x="90" y="100" width="48" height="312" rx="24" fill="url(#pGrad)" />
+  <!-- Lingkaran Kepala P -->
+  <path d="M114 124 H216 C262 124 298 160 298 206 C298 252 262 288 216 288 H114" 
+        stroke="url(#pGrad)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+  <!-- 2. HURUF 'T' (TAKA - WARNA BIRU CYAN) -->
+  <!-- Atap Horizontal T -->
+  <rect x="230" y="100" width="200" height="48" rx="24" fill="url(#tGrad)" />
+  <!-- Tiang Pusat Vertikal T -->
+  <rect x="306" y="100" width="48" height="312" rx="24" fill="url(#tGrad)" />
+
+  <!-- 3. GRAFIK BATANG STATISTIK BERSILANG MINIMALIS (3 PILAR DATA) -->
+  <rect x="160" y="330" width="32" height="82" rx="16" fill="url(#barGrad)" />
+  <rect x="210" y="270" width="32" height="142" rx="16" fill="url(#barGrad)" />
+  <rect x="374" y="210" width="32" height="202" rx="16" fill="#FACC15" />
+</svg>

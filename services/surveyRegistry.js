@@ -87,7 +87,9 @@ function getAllSurveysFromDb() {
     // Konversi ke format yang identik dengan surveys.json
     const result = {};
     rows.forEach(row => {
+      const jsonCfg = getJsonFallback()[row.id] || {};
       result[row.id] = {
+        ...jsonCfg,
         id: row.id,
         name: row.name,
         shortName: row.short_name,
@@ -98,7 +100,15 @@ function getAllSurveysFromDb() {
         categoryIcon: row.category_icon,
         coverageDesc: row.coverage_desc,
         themePack: row.theme_name,
-        theme: row.theme_name,
+        theme: (function() {
+          if (jsonCfg && jsonCfg.theme) return jsonCfg.theme;
+          const tn = (row.theme_name || '').toLowerCase();
+          if (tn.includes('emerald')) return 'emerald';
+          if (tn.includes('sapphire') || tn.includes('blue')) return 'blue';
+          if (tn.includes('cyan')) return 'cyan';
+          if (tn.includes('purple')) return 'purple';
+          return 'orange';
+        })(),
         themeColor: row.theme_color,
         themeSecondary: row.theme_secondary,
         themeRgb: row.theme_rgb,
@@ -108,7 +118,10 @@ function getAllSurveysFromDb() {
         unitName: row.unit_name,
         showUsahaColumns: row.show_usaha_columns === 1,
         showMuatanUsaha: row.show_muatan_usaha === 1,
-        enabledPages: row.enabled_pages ? JSON.parse(row.enabled_pages) : [],
+        officerRole: jsonCfg.officerRole || (row.id.startsWith('sakernas') ? 'PPL' : 'PCL'),
+        officerFullRole: jsonCfg.officerFullRole || (row.id.startsWith('sakernas') ? 'Petugas Pendataan Lapangan' : 'Petugas Cacah Lapangan'),
+        hasKorlap: jsonCfg.hasKorlap !== undefined ? jsonCfg.hasKorlap : !row.id.startsWith('sakernas'),
+        enabledPages: row.enabled_pages ? JSON.parse(row.enabled_pages) : (jsonCfg.enabledPages || []),
       };
     });
 

@@ -361,6 +361,126 @@
       opacity: 0.8;
     }
     
+    /* ── Streaming Cursor & Caret ── */
+    .streaming-cursor {
+      display: inline-block;
+      width: 2.5px;
+      height: 1.2em;
+      background: var(--accent-cyan, #06b6d4);
+      vertical-align: -0.18em;
+      margin-left: 2px;
+      animation: streamBlink 0.8s infinite;
+      border-radius: 1px;
+      box-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+    }
+
+    @keyframes streamBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* ── Live Thinking & Tool Step Elements ── */
+    .agent-thinking-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 13px;
+      border-radius: 999px;
+      background: rgba(6, 182, 212, 0.08);
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--accent-cyan, #06b6d4);
+      margin-bottom: 6px;
+      transition: all 0.25s ease;
+      user-select: none;
+    }
+
+    .agent-thinking-card.is-streaming {
+      display: none;
+    }
+
+    .agent-pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #06b6d4;
+      box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7);
+      animation: agentPulse 1.4s infinite cubic-bezier(0.45, 0, 0.55, 1);
+    }
+
+    @keyframes agentPulse {
+      0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(6, 182, 212, 0); }
+      100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+    }
+
+    .agent-steps-container {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 4px 0 8px 0;
+    }
+
+    .agent-step-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      padding: 3px 9px;
+      border-radius: 6px;
+      width: fit-content;
+      animation: fadeInStep 0.2s ease;
+    }
+
+    .agent-step-badge.done {
+      border-color: rgba(34, 197, 94, 0.3);
+      background: rgba(34, 197, 94, 0.05);
+      color: var(--text-primary);
+    }
+
+    .agent-step-badge.active {
+      border-color: rgba(6, 182, 212, 0.4);
+      background: rgba(6, 182, 212, 0.08);
+      color: var(--accent-cyan);
+    }
+
+    @keyframes fadeInStep {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .gemini-stop-btn {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    }
+
+    .gemini-stop-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.6);
+    }
+
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
     .message-bubble p {
       margin: 6px 0;
     }
@@ -1108,13 +1228,13 @@
           <div class="gemini-card" onclick="sendQuickPrompt('Bagaimana ringkasan progres <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'SE2026') %> Kabupaten Penajam Paser Utara saat ini?')">
             <div class="gemini-card-icon blue"><i class="bi bi-bar-chart-line-fill"></i></div>
             <div class="gemini-card-title">Ringkasan Progres <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'SE2026') %></div>
-            <div class="gemini-card-desc">Cek capaian realisasi muatan &amp; FASIH per kecamatan secara otomatis</div>
+            <div class="gemini-card-desc"><%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'Cek capaian realisasi dokumen FASIH per kecamatan secara otomatis' : 'Cek capaian realisasi muatan & FASIH per kecamatan secara otomatis' %></div>
           </div>
 
-          <div class="gemini-card" onclick="sendQuickPrompt('Identifikasi PCL dan PML dengan performa terendah atau membutuhkan evaluasi')">
+          <div class="gemini-card" onclick="sendQuickPrompt('Identifikasi <%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith(\'sakernas\')) ? \'PPL\' : \'PCL\' %> dan PML dengan performa terendah atau membutuhkan evaluasi')">
             <div class="gemini-card-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div>
             <div class="gemini-card-title">Evaluasi Kinerja Petugas</div>
-            <div class="gemini-card-desc">Temukan PCL/PML dengan tingkat reject tinggi atau progres terlambat</div>
+            <div class="gemini-card-desc">Temukan <%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'PPL/PML' : 'PCL/PML' %> dengan tingkat reject tinggi atau progres terlambat</div>
           </div>
 
           <div class="gemini-card" onclick="sendQuickPrompt('Tampilkan deteksi anomali data, petugas tidak aktif, dan potensi data ganda')">
@@ -1126,7 +1246,7 @@
           <div class="gemini-card" onclick="sendQuickPrompt('Berapa rincian target prelist SLS dan realisasi per kecamatan?')">
             <div class="gemini-card-icon green"><i class="bi bi-geo-alt-fill"></i></div>
             <div class="gemini-card-title">Analisis Drilldown Wilayah</div>
-            <div class="gemini-card-desc">Bandingkan statistik SLS dan muatan antar 4 kecamatan di PPU</div>
+            <div class="gemini-card-desc"><%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'Bandingkan statistik SLS dan progres FASIH antar kecamatan di PPU' : 'Bandingkan statistik SLS dan muatan antar 4 kecamatan di PPU' %></div>
           </div>
         </div>
       </div>
@@ -1135,7 +1255,10 @@
     <div class="chat-footer-wrapper">
       <form id="chatForm" class="gemini-input-bar" onsubmit="handleChatSubmit(event)">
         <textarea id="chatInput" class="gemini-input" rows="1" placeholder="Tanyakan sesuatu pada Pananyo Taka..." required autocomplete="off"></textarea>
-        <button type="submit" class="gemini-send-btn" title="Kirim Pesan">
+        <button type="button" id="chatStopBtn" class="gemini-stop-btn" title="Hentikan Jawaban (Esc)" style="display: none;" onclick="stopCurrentGeneration()">
+          <i class="bi bi-stop-fill" style="font-size: 15px;"></i>
+        </button>
+        <button type="submit" id="chatSendBtn" class="gemini-send-btn" title="Kirim Pesan">
           <i class="bi bi-send-fill" style="font-size: 15px;"></i>
         </button>
       </form>
@@ -1671,136 +1794,205 @@
     });
   }
 
-  function showTypingLoader() {
+  let activeAbortController = null;
+
+  function stopCurrentGeneration() {
+    if (activeAbortController) {
+      activeAbortController.abort();
+      activeAbortController = null;
+    }
+  }
+  window.stopCurrentGeneration = stopCurrentGeneration;
+
+  function createStreamingAgentMessage() {
     const container = document.getElementById('chatMessages');
-    const loaderDiv = document.createElement('div');
-    loaderDiv.className = 'message agent temp-loader';
+    const hero = document.getElementById('geminiWelcomeHero');
+    if (hero) hero.style.display = 'none';
+
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'message agent';
     
     const bodyDiv = document.createElement('div');
     bodyDiv.className = 'message-body';
     
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.innerHTML = '<i class="bi bi-robot"></i>';
+    bodyDiv.appendChild(avatar);
+
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
-    bubble.innerHTML = `
-      <div class="typing-loader-container" style="display: flex; flex-direction: column; gap: 8px;">
-        <div style="display: flex; align-items: center; gap: 12px; padding: 4px 0;">
-          <div class="typing-loader" style="flex-shrink: 0;">
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-          </div>
-          <span class="typing-loader-text" style="font-size: 11.5px; font-weight: 600; color: var(--accent-cyan); display: flex; align-items: center; gap: 6px;">
-            <i class="bi bi-robot" style="font-size: 13px;"></i> Pananyo Taka berpikir...
-          </span>
-        </div>
-      </div>
+    
+    const statusCard = document.createElement('div');
+    statusCard.className = 'agent-thinking-card';
+    statusCard.innerHTML = `
+      <span class="agent-pulse-dot"></span>
+      <span class="agent-thinking-text">Pananyo Taka sedang berpikir...</span>
     `;
+    bubble.appendChild(statusCard);
+
+    const stepsContainer = document.createElement('div');
+    stepsContainer.className = 'agent-steps-container';
+    bubble.appendChild(stepsContainer);
+
+    const streamContentEl = document.createElement('div');
+    streamContentEl.className = 'agent-stream-content';
+    bubble.appendChild(streamContentEl);
+
+    const cursorEl = document.createElement('span');
+    cursorEl.className = 'streaming-cursor';
+    bubble.appendChild(cursorEl);
+
     bodyDiv.appendChild(bubble);
-    loaderDiv.appendChild(bodyDiv);
-    container.appendChild(loaderDiv);
+    msgDiv.appendChild(bodyDiv);
+    container.appendChild(msgDiv);
     container.scrollTop = container.scrollHeight;
 
-    const timers = [];
-    const steps = [
-      { delay: 3000, text: '⚙️ Menghubungkan ke basis data SQLite...' },
-      { delay: 8000, text: '📊 Mengambil data progres kabupaten...' },
-      { delay: 15000, text: '🧠 Melakukan penalaran & perbandingan data...' },
-      { delay: 25000, text: '📋 Memeriksa target alokasi & realisasi...' },
-      { delay: 35000, text: '🔍 Mencari potensi anomali & kualitas data...' },
-      { delay: 50000, text: '✍️ Memformat tabel laporan akhir...' }
-    ];
-    
-    steps.forEach(step => {
-      const t = setTimeout(() => {
-        const textEl = loaderDiv.querySelector('.agent-step-text');
-        if (textEl) {
-          textEl.style.opacity = '0';
-          setTimeout(() => {
-            textEl.textContent = step.text;
-            textEl.style.opacity = '1';
-          }, 300);
+    let accumulatedText = '';
+    const activeStepBadges = {};
+
+    return {
+      element: msgDiv,
+      bubble,
+      updateStatus(text) {
+        const textEl = statusCard.querySelector('.agent-thinking-text');
+        if (textEl && text) {
+          textEl.textContent = text;
         }
-      }, step.delay);
-      timers.push(t);
-    });
+      },
+      addStep(tool, message) {
+        statusCard.style.display = 'inline-flex';
+        this.updateStatus(message || `Menjalankan: ${tool}`);
+        const badge = document.createElement('div');
+        badge.className = 'agent-step-badge active';
+        badge.innerHTML = `<i class="bi bi-arrow-repeat spin"></i> <span>${escapeHtml(message || tool)}</span>`;
+        stepsContainer.appendChild(badge);
+        activeStepBadges[tool] = badge;
+        container.scrollTop = container.scrollHeight;
+      },
+      completeStep(tool, message) {
+        const badge = activeStepBadges[tool];
+        if (badge) {
+          badge.className = 'agent-step-badge done';
+          badge.innerHTML = `<i class="bi bi-check-circle-fill text-success" style="color: #22c55e;"></i> <span>${escapeHtml(message || tool)}</span>`;
+        }
+        container.scrollTop = container.scrollHeight;
+      },
+      appendChunk(chunk) {
+        if (!accumulatedText && chunk) {
+          statusCard.classList.add('is-streaming');
+        }
+        accumulatedText += chunk;
+        streamContentEl.innerHTML = renderMarkdown(accumulatedText);
+        
+        // Auto scroll if user is near the bottom
+        const isNearBottom = container.scrollHeight - container.clientHeight - container.scrollTop < 140;
+        if (isNearBottom) {
+          container.scrollTop = container.scrollHeight;
+        }
+      },
+      getText() {
+        return accumulatedText;
+      },
+      finalize(finalText, isSimulation = false) {
+        const textToRender = finalText || accumulatedText || 'Tidak ada respons yang diterima.';
+        accumulatedText = textToRender;
+        if (cursorEl.parentElement) cursorEl.remove();
+        if (statusCard.parentElement) statusCard.remove();
 
-    loaderDiv.cleanup = () => {
-      timers.forEach(t => clearTimeout(t));
-    };
-    
-    return loaderDiv;
-  }
+        streamContentEl.innerHTML = renderMarkdown(textToRender);
 
-  function removeLoader(loader) {
-    if (loader) {
-      if (typeof loader.cleanup === 'function') {
-        try { loader.cleanup(); } catch (e) {}
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'agent-message-actions';
+        actionsDiv.innerHTML = `
+          <button type="button" class="chat-action-icon-btn" onclick="window.copyChatMessage(this)" title="Salin Jawaban">
+            <i class="bi bi-copy"></i>
+          </button>
+        `;
+        msgDiv.appendChild(actionsDiv);
+        container.scrollTop = container.scrollHeight;
+      },
+      showError(errorMsg) {
+        if (cursorEl.parentElement) cursorEl.remove();
+        if (statusCard.parentElement) statusCard.remove();
+        streamContentEl.innerHTML = `<div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> <strong>Kesalahan:</strong> ${escapeHtml(errorMsg)}</div>`;
+        container.scrollTop = container.scrollHeight;
+      },
+      abortNotice() {
+        if (cursorEl.parentElement) cursorEl.remove();
+        if (statusCard.parentElement) statusCard.remove();
+        if (accumulatedText.trim()) {
+          streamContentEl.innerHTML = renderMarkdown(accumulatedText) + 
+            `<div class="text-muted" style="font-size: 11px; margin-top: 6px; font-style: italic; color: var(--text-muted);"><i class="bi bi-stop-circle"></i> Jawaban dihentikan.</div>`;
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'agent-message-actions';
+          actionsDiv.innerHTML = `
+            <button type="button" class="chat-action-icon-btn" onclick="window.copyChatMessage(this)" title="Salin Jawaban">
+              <i class="bi bi-copy"></i>
+            </button>
+          `;
+          msgDiv.appendChild(actionsDiv);
+        } else {
+          streamContentEl.innerHTML = `<div class="alert alert-info"><i class="bi bi-info-circle"></i> Permintaan dihentikan oleh pengguna.</div>`;
+        }
+        container.scrollTop = container.scrollHeight;
       }
-      if (loader.parentElement) loader.remove();
-    }
+    };
   }
 
-  // FIX #1 + #4 — handleChatSubmit dengan _isProcessing guard yang benar
-  // Semua state (input, button, flag) dikelola lewat setUIBusy/setUIFree
-  // untuk memastikan tidak ada celah double-request.
+  // Set UI Busy / Free with stop button toggle
   function setUIBusy(input, submitBtn) {
     _isProcessing = true;
     input.disabled = true;
-    submitBtn.disabled = true;
-    // Disable semua quick-prompt buttons juga
+    if (submitBtn) submitBtn.style.display = 'none';
+    const stopBtn = document.getElementById('chatStopBtn');
+    if (stopBtn) stopBtn.style.display = 'inline-flex';
     document.querySelectorAll('.prompt-btn').forEach(btn => btn.disabled = true);
   }
 
   function setUIFree(input, submitBtn) {
     _isProcessing = false;
     input.disabled = false;
-    submitBtn.disabled = false;
+    const stopBtn = document.getElementById('chatStopBtn');
+    if (stopBtn) stopBtn.style.display = 'none';
+    if (submitBtn) submitBtn.style.display = 'inline-flex';
     document.querySelectorAll('.prompt-btn').forEach(btn => btn.disabled = false);
     input.focus();
   }
 
   async function handleChatSubmit(e) {
     e.preventDefault();
-
-    // FIX #1 — Guard: tolak submit jika masih ada request aktif
     if (_isProcessing) return;
 
     const input = document.getElementById('chatInput');
-    const submitBtn = document.querySelector('#chatForm button[type="submit"]');
+    const submitBtn = document.getElementById('chatSendBtn') || document.querySelector('#chatForm button[type="submit"]');
     const text = input.value.trim();
     if (!text) return;
 
-    // Kunci UI segera sebelum operasi async apapun
     setUIBusy(input, submitBtn);
 
     appendMessage('user', text);
     chatHistory.push({ role: 'user', content: text });
     saveChatHistory();
     input.value = '';
+    input.style.height = 'auto';
 
-    const loader = showTypingLoader();
+    const streamingMsg = createStreamingAgentMessage();
     startAgentWaitIndicator();
 
-    // FIX #2 — Timeout browser 60 000 ms (lebih lama dari server outer total tries worst-case 54 000 ms)
-    // agar server selalu selesai (atau timeout) lebih dulu, mencegah write ke koneksi mati.
     const controller = new AbortController();
-    let timeoutFired = false;
+    activeAbortController = controller;
 
     const browserTimeout = setTimeout(() => {
-      timeoutFired = true;
       controller.abort();
-      removeLoader(loader);
-      appendMessage('agent', `<div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> <strong>Permintaan terlalu lama.</strong> Server sedang sibuk atau jaringan lambat. Coba lagi atau gunakan pertanyaan yang lebih spesifik.</div>`, true);
-      clearAgentWaitIndicator();
-      setUIFree(input, submitBtn);
-    }, 60000);
+    }, 120000);
 
     try {
-      const res = await fetch('/agent/chat', {
+      const res = await fetch('/agent/chat/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          'Accept': 'text/event-stream',
           'X-Requested-With': 'XMLHttpRequest',
           'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         },
@@ -1813,62 +2005,93 @@
         })
       });
 
-      clearTimeout(browserTimeout);
-
-      // Jika timeout sudah tembak duluan, hentikan — UI sudah di-free oleh timeout handler
-      if (timeoutFired) return;
-
-      removeLoader(loader);
-
-      let data;
-      try {
-        data = await res.json();
-      } catch (jsonErr) {
-        throw new Error('Respons server tidak valid.');
+      if (!res.ok) {
+        let errBody;
+        try {
+          errBody = await res.json();
+        } catch (_) {}
+        throw new Error(errBody?.error || `HTTP error ${res.status}`);
       }
 
-      if (!res.ok || data.error) {
-        throw new Error(data.error || 'Gagal memproses pesan.');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      let currentEvent = 'message';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // Keep incomplete line
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          if (trimmed.startsWith('event:')) {
+            currentEvent = trimmed.slice(6).trim();
+          } else if (trimmed.startsWith('data:')) {
+            const rawData = trimmed.slice(5).trim();
+            try {
+              const data = JSON.parse(rawData);
+              
+              if (currentEvent === 'status') {
+                streamingMsg.updateStatus(data.text);
+              } else if (currentEvent === 'tool_start') {
+                streamingMsg.addStep(data.tool, data.message);
+              } else if (currentEvent === 'tool_end') {
+                streamingMsg.completeStep(data.tool, data.message);
+              } else if (currentEvent === 'chunk') {
+                streamingMsg.appendChunk(data.text || '');
+              } else if (currentEvent === 'done') {
+                streamingMsg.finalize(data.reply || streamingMsg.getText(), data.isSimulation);
+                const finalContent = streamingMsg.getText();
+                const isErrorReply = finalContent.includes('Model tidak mengembalikan teks') || 
+                                     finalContent.includes('API Provider Error') || 
+                                     finalContent.includes('Kesalahan:') || 
+                                     finalContent.includes('dibatalkan');
+                if (!isErrorReply && finalContent.trim()) {
+                  chatHistory.push({ role: 'model', content: finalContent });
+                  saveChatHistory();
+                }
+              } else if (currentEvent === 'error') {
+                streamingMsg.showError(data.error || 'Terjadi kesalahan pada AI.');
+              }
+            } catch (jsonErr) {
+              console.warn('[AGENT:STREAM] Parse error:', jsonErr, rawData);
+            }
+          }
+        }
       }
 
-      const reply = data.reply || 'Maaf, tidak ada jawaban dari agent.';
-
-      // FIX #5 — Gunakan appendMessageAsync agar render tidak blokir UI thread
-      await appendMessageAsync('agent', reply);
-      
-      // Do not save technical error messages to chat history to prevent polluting AI context
-      const isErrorReply = reply.includes('Model tidak mengembalikan teks') || 
-                           reply.includes('API Provider Error') || 
-                           reply.includes('Kesalahan:') || 
-                           reply.includes('dibatalkan');
-      if (!isErrorReply) {
-        chatHistory.push({ role: 'model', content: reply });
-        saveChatHistory();
+      // If finished stream without explicit done event
+      if (!streamingMsg.element.querySelector('.agent-message-actions')) {
+        streamingMsg.finalize(streamingMsg.getText());
+        const finalContent = streamingMsg.getText();
+        if (finalContent.trim()) {
+          chatHistory.push({ role: 'model', content: finalContent });
+          saveChatHistory();
+        }
       }
 
     } catch (err) {
-      clearTimeout(browserTimeout);
-      if (timeoutFired) return; // Sudah ditangani oleh timeout handler
-
-      removeLoader(loader);
-
       if (err.name === 'AbortError') {
-        // AbortError karena timeout sudah ditangani di atas — ini tidak seharusnya tercapai
-        appendMessage('agent', `<div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> <strong>Permintaan dibatalkan karena waktu tunggu habis.</strong> Silakan coba lagi.</div>`, true);
+        streamingMsg.abortNotice();
+        const partial = streamingMsg.getText();
+        if (partial.trim()) {
+          chatHistory.push({ role: 'model', content: partial });
+          saveChatHistory();
+        }
       } else {
-        appendMessage('agent', `<div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> <strong>Kesalahan:</strong> ${escapeHtml(err.message)}</div>`, true);
+        streamingMsg.showError(err.message || 'Gagal menghubungi server.');
       }
     } finally {
       clearTimeout(browserTimeout);
-      // Hapus loader jika masih ada — bisa terjadi jika exception terlempar sebelum loader.remove() di try
-      removeLoader(loader);
+      activeAbortController = null;
       clearAgentWaitIndicator();
-      // Bebaskan UI: panggil setUIFree SELALU kecuali timeout handler sudah menanganinya.
-      // timeoutFired diset true HANYA di dalam setTimeout callback, jadi jika kita tiba
-      // di sini karena alasan lain (error, success), _isProcessing masih true dan perlu dibebaskan.
-      if (!timeoutFired) {
-        setUIFree(input, submitBtn);
-      }
+      setUIFree(input, submitBtn);
     }
   }
 
@@ -1882,10 +2105,8 @@
     }
   }
 
-  // FIX #3 — sendQuickPrompt: cek _isProcessing sebelum dispatch
-  // dispatchEvent melewati attribute `disabled` pada elemen, jadi butuh guard manual ini.
   function sendQuickPrompt(promptText) {
-    if (_isProcessing) return; // Tolak jika sedang ada request aktif
+    if (_isProcessing) return;
     const input = document.getElementById('chatInput');
     if (!input || input.disabled) return;
     input.value = promptText;
@@ -1929,6 +2150,12 @@
         chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
       });
     }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && _isProcessing) {
+        stopCurrentGeneration();
+      }
+    });
   });
 
   // Expose functions globally to HTML handlers

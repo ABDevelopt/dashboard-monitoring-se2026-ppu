@@ -45,6 +45,36 @@ body.survey-theme-sakernas-pendataan,
   --survey-badge-border: rgba(139, 92, 246, 0.35);
 }
 
+/* ── 4. SENSUS EKONOMI THEME OPTION A (EMERALD PROSPERITY & GOLD GROWTH) ── */
+body.survey-theme-emerald,
+.survey-card.theme-emerald {
+  --survey-primary: #10b981;
+  --survey-primary-hover: #059669;
+  --survey-secondary: #f59e0b;
+  --survey-rgb: 16, 185, 129;
+  --survey-gradient: linear-gradient(135deg, #10b981 0%, #059669 50%, #f59e0b 100%);
+  --survey-glow: 0 16px 36px -8px rgba(16, 185, 129, 0.35);
+  --survey-border-subtle: rgba(16, 185, 129, 0.3);
+  --survey-badge-bg: rgba(16, 185, 129, 0.12);
+  --survey-badge-border: rgba(16, 185, 129, 0.35);
+}
+
+/* ── 5. SENSUS EKONOMI THEME OPTION B (SAPPHIRE ENTERPRISE & COBALT FLOW) ── */
+body.survey-theme-blue,
+body.survey-theme-sapphire,
+.survey-card.theme-blue,
+.survey-card.theme-sapphire {
+  --survey-primary: #2563eb;
+  --survey-primary-hover: #1d4ed8;
+  --survey-secondary: #38bdf8;
+  --survey-rgb: 37, 99, 235;
+  --survey-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #38bdf8 100%);
+  --survey-glow: 0 16px 36px -8px rgba(37, 99, 235, 0.35);
+  --survey-border-subtle: rgba(37, 99, 235, 0.3);
+  --survey-badge-bg: rgba(37, 99, 235, 0.12);
+  --survey-badge-border: rgba(37, 99, 235, 0.35);
+}
+
 /* ── THEME PACK BUTTONS ── */
 .btn-survey-cta {
   display: flex;
@@ -94,4 +124,104 @@ body.survey-theme-sakernas-pendataan,
 .btn-survey-cta.theme-purple {
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6366f1 100%);
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35);
+}
+
+.btn-survey-cta.theme-emerald {
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #f59e0b 100%);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+}
+
+.btn-survey-cta.theme-blue,
+.btn-survey-cta.theme-sapphire {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #38bdf8 100%);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35);
+}
+
+/* =========================================================================
+   PURE THEME ISOLATION ENGINE: ZERO ORANGE ACCENTS ON NON-SE2026 SURVEYS
+   ========================================================================= */
+body:not(.survey-theme-se2026):not(.survey-theme-orange) {
+  --accent-blue: var(--survey-primary);
+  --accent-orange: var(--survey-primary);
+  --accent-cyan: var(--survey-secondary);
+  --accent-rgb: var(--survey-rgb);
+}
+
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .btn-primary,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .btn-submit,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .btn-action-primary,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .login-submit-btn {
+  background: var(--survey-gradient) !important;
+  border-color: var(--survey-primary) !important;
+  color: #ffffff !important;
+  box-shadow: var(--survey-glow) !important;
+}
+
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .btn-primary:hover,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .btn-submit:hover,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .btn-action-primary:hover,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .login-submit-btn:hover {
+  background: var(--survey-primary-hover, var(--survey-primary)) !important;
+  filter: brightness(1.12) !important;
+}
+
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .nav-item.active,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .sidebar-nav .nav-link.active,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .bottom-nav-item.active {
+  color: var(--survey-primary) !important;
+  background: rgba(var(--survey-rgb), 0.1) !important;
+  border-left-color: var(--survey-primary) !important;
+}
+
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .nav-item.active i,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .sidebar-nav .nav-link.active i,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .bottom-nav-item.active i,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .topbar-action-btn:hover i,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .text-orange,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .status-open-text,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .warning-stat.text-orange {
+  color: var(--survey-primary) !important;
+}
+
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .badge-orange,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .badge-primary {
+  background: var(--survey-badge-bg) !important;
+  color: var(--survey-primary) !important;
+  border: 1px solid var(--survey-badge-border) !important;
+}
+
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .topbar-badge,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) #notificationBellBadge {
+  background: var(--survey-primary) !important;
+  color: #ffffff !important;
+}
+
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .stat-card.orange::before,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .stat-card.blue::before,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .progress-bar.orange,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .progress-bar:not(.green):not(.yellow):not(.red):not(.purple):not(.blue):not(.cyan) {
+  background: var(--survey-gradient) !important;
+}
+
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .status-open-bg,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .bg-orange-soft {
+  background-color: rgba(var(--survey-rgb), 0.07) !important;
+  border-color: rgba(var(--survey-rgb), 0.2) !important;
+}
+
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .border-hover-orange:hover,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .border-hover-orange-light:hover {
+  border-color: var(--survey-primary) !important;
+}
+
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .bg-gradient-orange-dark,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .bg-gradient-orange-red {
+  background: var(--survey-gradient) !important;
+}
+
+/* Hide SE2026 specific decorative ornaments and logos */
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .se2026-only,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .se2026-ornament,
+body:not(.survey-theme-se2026):not(.survey-theme-orange) .se2026-logo {
+  display: none !important;
 }

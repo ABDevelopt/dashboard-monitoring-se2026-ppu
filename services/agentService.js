@@ -2031,4 +2031,602 @@ function sanitizeJSONString(str) {
   return cleaned;
 }
 
-module.exports = { sendMessageToAgent, fetchPageData };
+// ─────────────────────────────────────────────────────────────────────────
+//  STREAMING IMPLEMENTATIONS (SSE-READY)
+// ─────────────────────────────────────────────────────────────────────────
+
+async function streamMessageToGemini(userMessage, chatHistory, settings, selectedModel, abortSignal, customApiKey, onEvent) {
+  try {
+    const { GoogleGenerativeAI } = require("@google/generative-ai");
+    const apiKey = customApiKey || settings.gemini_api_key;
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const geminiModel = LEGACY_GEMINI_MODELS.has(selectedModel) ? GEMINI_DEFAULT_MODEL : (selectedModel || GEMINI_DEFAULT_MODEL);
+
+    log.debug('[STREAM:GEMINI] Model:', geminiModel);
+
+    const model = genAI.getGenerativeModel({
+      model: geminiModel,
+      systemInstruction: SYSTEM_INSTRUCTION,
+      tools: [{
+        functionDeclarations: [
+          {
+            name: TOOL_DECLARATION.name,
+            description: TOOL_DECLARATION.description,
+            parameters: {
+              type: "OBJECT",
+              properties: { query: { type: "STRING", description: TOOL_DECLARATION.parameters.properties.query.description } },
+              required: ["query"]
+            }
+          },
+          {
+            name: PAGE_DATA_TOOL_DECLARATION.name,
+            description: PAGE_DATA_TOOL_DECLARATION.description,
+            parameters: {
+              type: "OBJECT",
+              properties: {
+                route: { type: "STRING", description: PAGE_DATA_TOOL_DECLARATION.parameters.properties.route.description },
+                queryParams: { type: "OBJECT", description: PAGE_DATA_TOOL_DECLARATION.parameters.properties.queryParams.description }
+              },
+              required: ["route"]
+            }
+          }
+        ]
+      }]
+    });
+
+    const formattedHistory = chatHistory.slice(-10).map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }]
+    }));
+
+    if (formattedHistory.length > 0 && formattedHistory[0].role === 'model') {
+      formattedHistory.shift();
+    }
+
+    const chat = model.startChat({ history: formattedHistory });
+
+    let currentPayload = userMessage;
+    let loopCount = 0;
+    const MAX_LOOPS = 5;
+    let fullAccumulatedText = '';
+
+    while (loopCount < MAX_LOOPS) {
+      if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
+
+      onEvent('status', {
+        text: loopCount === 0 ? 'Menghubungkan ke Pananyo Taka AI...' : 'Menganalisis hasil data...',
+        step: 'model_call'
+      });
+
+      const streamResult = await chat.sendMessageStream(currentPayload);
+      let functionCallsInTurn = [];
+
+      for await (const chunk of streamResult.stream) {
+        if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
+
+        let fcs = null;
+        try {
+          fcs = chunk.functionCalls();
+        } catch (_) {}
+
+        if (fcs && fcs.length > 0) {
+          functionCallsInTurn.push(...fcs);
+        }
+
+        let chunkText = '';
+        try {
+          chunkText = chunk.text();
+        } catch (_) {}
+
+        if (chunkText) {
+          fullAccumulatedText += chunkText;
+          onEvent('chunk', { text: chunkText });
+        }
+      }
+
+      if (functionCallsInTurn.length === 0) {
+        if (!fullAccumulatedText) {
+          try {
+            const resp = await streamResult.response;
+            const t = resp.text();
+            if (t) {
+              fullAccumulatedText = t;
+              onEvent('chunk', { text: t });
+            }
+          } catch (_) {}
+        }
+        break;
+      }
+
+      loopCount++;
+      log.info(`[STREAM:GEMINI] Tool-call loop ${loopCount}/${MAX_LOOPS}: ${functionCallsInTurn.map(f => f.name).join(', ')}`);
+
+      for (const fc of functionCallsInTurn) {
+        const toolMsg = fc.name === 'fetch_page_data'
+          ? `📊 Membaca data ${fc.args?.route || 'halaman'}...`
+          : `⚙️ Menjalankan kueri database...`;
+        onEvent('tool_start', { tool: fc.name, args: fc.args, message: toolMsg });
+      }
+
+      const toolResponses = await Promise.all(
+        functionCallsInTurn.map(async (fc) => {
+          const result = await runToolCall({ name: fc.name, args: fc.args });
+          const rowInfo = result.rowCount !== undefined ? ` (${result.rowCount} baris)` : '';
+          onEvent('tool_end', { tool: fc.name, message: `✅ Selesai mengambil data${rowInfo}` });
+          return { functionResponse: { name: fc.name, response: result } };
+        })
+      );
+
+      onEvent('status', { text: '✍️ Merumuskan jawaban...', step: 'writing' });
+      currentPayload = toolResponses;
+    }
+
+    if (!fullAccumulatedText.trim()) {
+      fullAccumulatedText = 'Model tidak mengembalikan teks jawaban.';
+      onEvent('chunk', { text: fullAccumulatedText });
+    }
+
+    return { role: 'model', content: fullAccumulatedText, isSimulation: false };
+
+  } catch (error) {
+    log.error('streamMessageToGemini error:', error.message);
+    throw error;
+  }
+}
+
+async function streamMessageToOpenRouter(userMessage, chatHistory, settings, selectedModel, abortSignal, onEvent) {
+  const apiKey = settings.openrouter_api_key;
+  const model = selectedModel || settings.openrouter_model || OPENROUTER_DEFAULT_MODEL;
+
+  const messages = [
+    { role: 'system', content: SYSTEM_INSTRUCTION },
+    ...chatHistory.slice(-10).map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'assistant',
+      content: msg.content
+    })),
+    { role: 'user', content: userMessage }
+  ];
+
+  const modelSupportsTool = !model.includes(':free');
+  const tools = modelSupportsTool ? [
+    {
+      type: 'function',
+      function: {
+        name: TOOL_DECLARATION.name,
+        description: TOOL_DECLARATION.description,
+        parameters: TOOL_DECLARATION.parameters
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: PAGE_DATA_TOOL_DECLARATION.name,
+        description: PAGE_DATA_TOOL_DECLARATION.description,
+        parameters: PAGE_DATA_TOOL_DECLARATION.parameters
+      }
+    }
+  ] : undefined;
+
+  onEvent('status', { text: `Menghubungkan ke OpenRouter (${model})...`, step: 'model_call' });
+
+  let loopCount = 0;
+  const MAX_LOOPS = 5;
+  let fullAccumulatedText = '';
+
+  while (loopCount < MAX_LOOPS) {
+    if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
+
+    const payload = { model, messages, stream: true };
+    if (tools) payload.tools = tools;
+
+    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'http://localhost:3000',
+        'X-Title': 'Survey Monitoring BPS PPU',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload),
+      signal: abortSignal
+    });
+
+    if (!resp.ok) {
+      const errJson = await resp.json().catch(() => ({}));
+      throw new Error(`[HTTP ${resp.status}] ${errJson?.error?.message || resp.statusText}`);
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let toolCallsMap = {};
+    let turnText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data:')) continue;
+        const dataStr = trimmed.slice(5).trim();
+        if (dataStr === '[DONE]') continue;
+
+        try {
+          const json = JSON.parse(dataStr);
+          const choice = json.choices?.[0];
+          if (!choice) continue;
+
+          const delta = choice.delta;
+          if (delta?.content) {
+            turnText += delta.content;
+            fullAccumulatedText += delta.content;
+            onEvent('chunk', { text: delta.content });
+          }
+
+          if (delta?.tool_calls) {
+            for (const tc of delta.tool_calls) {
+              const idx = tc.index ?? 0;
+              if (!toolCallsMap[idx]) {
+                toolCallsMap[idx] = { id: tc.id || `tc_${idx}`, name: '', arguments: '' };
+              }
+              if (tc.id) toolCallsMap[idx].id = tc.id;
+              if (tc.function?.name) toolCallsMap[idx].name += tc.function.name;
+              if (tc.function?.arguments) toolCallsMap[idx].arguments += tc.function.arguments;
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    const toolCallsList = Object.values(toolCallsMap).filter(t => t.name);
+    if (toolCallsList.length === 0) {
+      // Check if text JSON fallback tool calling is present
+      if (turnText) {
+        const jsonStrings = extractJSONObjects(turnText);
+        const parsedTextTools = [];
+        for (const jsonStr of jsonStrings) {
+          try {
+            const parsed = JSON.parse(sanitizeJSONString(jsonStr));
+            let toolName = parsed.tool || parsed.name || parsed.function || parsed.action;
+            if (!toolName) {
+              if (parsed.route || parsed.endpoint || parsed.page) toolName = 'fetch_page_data';
+              else if (parsed.query || parsed.sql) toolName = 'run_read_only_query';
+            }
+            if (toolName === 'run_read_only_query' || toolName === 'fetch_page_data') {
+              let args = {};
+              if (toolName === 'run_read_only_query') args = { query: parsed.query || parsed.sql || '' };
+              else if (toolName === 'fetch_page_data') args = { route: parsed.route || '', queryParams: parsed.queryParams || {} };
+              parsedTextTools.push({ name: toolName, args });
+            }
+          } catch (_) {}
+        }
+        if (parsedTextTools.length > 0) {
+          loopCount++;
+          messages.push({ role: 'assistant', content: turnText });
+          const results = [];
+          for (const t of parsedTextTools) {
+            onEvent('tool_start', { tool: t.name, args: t.args, message: `📊 Membaca data ${t.args?.route || 'query'}...` });
+            const result = await runToolCall(t);
+            onEvent('tool_end', { tool: t.name, message: `✅ Selesai membaca data` });
+            results.push({ tool: t, result });
+          }
+          const summary = results.map(r => `[SISTEM] Hasil eksekusi tool ${r.tool.name}:\n${JSON.stringify(r.result)}`).join('\n\n');
+          messages.push({ role: 'user', content: summary });
+          continue;
+        }
+      }
+      break;
+    }
+
+    loopCount++;
+    messages.push({
+      role: 'assistant',
+      content: turnText || null,
+      tool_calls: toolCallsList.map(t => ({
+        id: t.id,
+        type: 'function',
+        function: { name: t.name, arguments: t.arguments }
+      }))
+    });
+
+    for (const t of toolCallsList) {
+      let args = {};
+      try { args = JSON.parse(t.arguments || '{}'); } catch (_) {}
+      const desc = t.name === 'fetch_page_data' ? `📊 Membaca data ${args.route || ''}...` : '⚙️ Menjalankan kueri...';
+      onEvent('tool_start', { tool: t.name, args, message: desc });
+      const result = await runToolCall({ name: t.name, args });
+      onEvent('tool_end', { tool: t.name, message: '✅ Selesai membaca data' });
+      messages.push({
+        role: 'tool',
+        tool_call_id: t.id,
+        name: t.name,
+        content: JSON.stringify(result)
+      });
+    }
+  }
+
+  return { role: 'model', content: fullAccumulatedText, isSimulation: false };
+}
+
+async function streamMessageToOpenAI(userMessage, chatHistory, settings, selectedModel, abortSignal, onEvent) {
+  const apiKey = settings.openai_api_key;
+  const model = selectedModel || settings.openai_model || OPENAI_DEFAULT_MODEL;
+
+  const messages = [
+    { role: 'system', content: SYSTEM_INSTRUCTION },
+    ...chatHistory.slice(-10).map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'assistant',
+      content: msg.content
+    })),
+    { role: 'user', content: userMessage }
+  ];
+
+  const tools = [
+    {
+      type: 'function',
+      function: {
+        name: TOOL_DECLARATION.name,
+        description: TOOL_DECLARATION.description,
+        parameters: TOOL_DECLARATION.parameters
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: PAGE_DATA_TOOL_DECLARATION.name,
+        description: PAGE_DATA_TOOL_DECLARATION.description,
+        parameters: PAGE_DATA_TOOL_DECLARATION.parameters
+      }
+    }
+  ];
+
+  onEvent('status', { text: `Menghubungkan ke OpenAI (${model})...`, step: 'model_call' });
+
+  let loopCount = 0;
+  const MAX_LOOPS = 5;
+  let fullAccumulatedText = '';
+
+  while (loopCount < MAX_LOOPS) {
+    if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
+
+    const payload = { model, messages, tools, tool_choice: 'auto', stream: true };
+
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload),
+      signal: abortSignal
+    });
+
+    if (!resp.ok) {
+      const errJson = await resp.json().catch(() => ({}));
+      throw new Error(`[HTTP ${resp.status}] ${errJson?.error?.message || resp.statusText}`);
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let toolCallsMap = {};
+    let turnText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data:')) continue;
+        const dataStr = trimmed.slice(5).trim();
+        if (dataStr === '[DONE]') continue;
+
+        try {
+          const json = JSON.parse(dataStr);
+          const choice = json.choices?.[0];
+          if (!choice) continue;
+
+          const delta = choice.delta;
+          if (delta?.content) {
+            turnText += delta.content;
+            fullAccumulatedText += delta.content;
+            onEvent('chunk', { text: delta.content });
+          }
+
+          if (delta?.tool_calls) {
+            for (const tc of delta.tool_calls) {
+              const idx = tc.index ?? 0;
+              if (!toolCallsMap[idx]) {
+                toolCallsMap[idx] = { id: tc.id || `tc_${idx}`, name: '', arguments: '' };
+              }
+              if (tc.id) toolCallsMap[idx].id = tc.id;
+              if (tc.function?.name) toolCallsMap[idx].name += tc.function.name;
+              if (tc.function?.arguments) toolCallsMap[idx].arguments += tc.function.arguments;
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    const toolCallsList = Object.values(toolCallsMap).filter(t => t.name);
+    if (toolCallsList.length === 0) break;
+
+    loopCount++;
+    messages.push({
+      role: 'assistant',
+      content: turnText || null,
+      tool_calls: toolCallsList.map(t => ({
+        id: t.id,
+        type: 'function',
+        function: { name: t.name, arguments: t.arguments }
+      }))
+    });
+
+    for (const t of toolCallsList) {
+      let args = {};
+      try { args = JSON.parse(t.arguments || '{}'); } catch (_) {}
+      const desc = t.name === 'fetch_page_data' ? `📊 Membaca data ${args.route || ''}...` : '⚙️ Menjalankan kueri...';
+      onEvent('tool_start', { tool: t.name, args, message: desc });
+      const result = await runToolCall({ name: t.name, args });
+      onEvent('tool_end', { tool: t.name, message: '✅ Selesai membaca data' });
+      messages.push({
+        role: 'tool',
+        tool_call_id: t.id,
+        name: t.name,
+        content: JSON.stringify(result)
+      });
+    }
+  }
+
+  return { role: 'model', content: fullAccumulatedText, isSimulation: false };
+}
+
+async function streamSimulation(userMessage, chatHistory, onEvent, abortSignal) {
+  onEvent('status', { text: '⚙️ Menghubungkan ke basis data lokal...', step: 'simulation_query' });
+  await new Promise(r => setTimeout(r, 150));
+
+  const simResult = runSimulation(userMessage, chatHistory);
+  const text = simResult.content || '';
+
+  onEvent('status', { text: '✍️ Merumuskan jawaban...', step: 'streaming' });
+
+  const words = text.split(/(\s+)/);
+  let batch = '';
+  for (let i = 0; i < words.length; i++) {
+    if (abortSignal?.aborted) break;
+    batch += words[i];
+    if (batch.length >= 10 || i === words.length - 1) {
+      onEvent('chunk', { text: batch });
+      batch = '';
+      await new Promise(r => setTimeout(r, 20));
+    }
+  }
+
+  return { role: 'model', content: text, isSimulation: true };
+}
+
+async function streamMessageToAgent(userMessage, chatHistory = [], options = {}, onEvent = () => {}, abortSignal = null) {
+  const settings = getSettings();
+  const initialSelection = resolveAgentSelection(settings, options);
+
+  const tries = [{ provider: initialSelection.provider, model: initialSelection.model }];
+
+  if (settings.chatbot_smart_switch === '1') {
+    if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
+      const listStr = settings.openrouter_models_list || 'meta-llama/llama-3.3-70b-instruct:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
+      for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+        if (tries.length >= MAX_SWITCH_TRIES) break;
+        if (m.includes(':free')) tries.push({ provider: 'openrouter', model: m });
+      }
+    }
+    if (settings.gemini_api_key && settings.gemini_api_key.trim() && tries.length < MAX_SWITCH_TRIES) {
+      const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.1-flash-lite, gemini-3.5-flash, gemini-2.5-pro';
+      for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+        if (tries.length >= MAX_SWITCH_TRIES) break;
+        tries.push({ provider: 'gemini', model: m });
+      }
+    }
+    if (settings.openai_api_key && settings.openai_api_key.trim() && tries.length < MAX_SWITCH_TRIES) {
+      const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
+      for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+        if (tries.length >= MAX_SWITCH_TRIES) break;
+        tries.push({ provider: 'openai', model: m });
+      }
+    }
+  }
+
+  const uniqueTries = [];
+  const seen = new Set();
+  for (const t of tries) {
+    const key = `${t.provider}:${t.model}`;
+    if (!seen.has(key)) { seen.add(key); uniqueTries.push(t); }
+  }
+
+  let lastError = null;
+
+  for (let i = 0; i < uniqueTries.length; i++) {
+    if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
+    const current = uniqueTries[i];
+
+    if (i > 0) {
+      onEvent('status', { text: `Mengalihkan ke ${current.provider} (${current.model})...`, step: 'smart_switch' });
+    }
+
+    if (current.provider === 'gemini') {
+      let keysToTry = [settings.gemini_api_key];
+      try {
+        const backups = JSON.parse(settings.gemini_backup_api_keys || '[]');
+        if (Array.isArray(backups)) keysToTry = keysToTry.concat(backups);
+      } catch (_) {}
+      keysToTry = keysToTry.map(k => k ? k.trim() : '').filter(Boolean);
+      keysToTry = [...new Set(keysToTry)];
+
+      if (keysToTry.length === 0) continue;
+
+      for (let kIdx = 0; kIdx < keysToTry.length; kIdx++) {
+        const activeKey = keysToTry[kIdx];
+        try {
+          const result = await streamMessageToGemini(
+            userMessage, chatHistory, settings, current.model, abortSignal, activeKey, onEvent
+          );
+          onEvent('done', { reply: result.content, isSimulation: false, role: 'model', model: current.model });
+          return result;
+        } catch (err) {
+          lastError = err;
+          log.error(`[STREAM:GEMINI] Key #${kIdx} gagal:`, err.message);
+        }
+      }
+
+      if (settings.chatbot_smart_switch !== '1') break;
+    } else if (current.provider === 'openrouter') {
+      const apiKey = settings.openrouter_api_key;
+      if (!apiKey || !apiKey.trim()) continue;
+
+      try {
+        const result = await streamMessageToOpenRouter(
+          userMessage, chatHistory, settings, current.model, abortSignal, onEvent
+        );
+        onEvent('done', { reply: result.content, isSimulation: false, role: 'model', model: current.model });
+        return result;
+      } catch (err) {
+        lastError = err;
+        log.error(`[STREAM:OPENROUTER] ${current.model} gagal:`, err.message);
+        if (settings.chatbot_smart_switch !== '1') break;
+      }
+    } else if (current.provider === 'openai') {
+      const apiKey = settings.openai_api_key;
+      if (!apiKey || !apiKey.trim()) continue;
+
+      try {
+        const result = await streamMessageToOpenAI(
+          userMessage, chatHistory, settings, current.model, abortSignal, onEvent
+        );
+        onEvent('done', { reply: result.content, isSimulation: false, role: 'model', model: current.model });
+        return result;
+      } catch (err) {
+        lastError = err;
+        log.error(`[STREAM:OPENAI] ${current.model} gagal:`, err.message);
+        if (settings.chatbot_smart_switch !== '1') break;
+      }
+    }
+  }
+
+  log.info('[STREAM] Semua provider gagal, fallback ke streamSimulation...');
+  const sim = await streamSimulation(userMessage, chatHistory, onEvent, abortSignal);
+  const errMsg = lastError ? lastError.message : 'API key tidak terkonfigurasi';
+  sim.content = `⚠️ **AI Provider Error:** ${errMsg}\n\n*Fallback ke simulasi lokal:*\n\n` + sim.content;
+  onEvent('done', { reply: sim.content, isSimulation: true, role: 'model' });
+  return sim;
+}
+
+module.exports = { sendMessageToAgent, streamMessageToAgent, fetchPageData };

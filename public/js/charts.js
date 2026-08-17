@@ -3,8 +3,13 @@
 // ===== THEME COLORS HELPER =====
 function getThemeColors() {
   const isLight = document.body.classList.contains('light-mode');
+  const style = typeof window !== 'undefined' ? getComputedStyle(document.documentElement) : null;
+  const primary = (style && style.getPropertyValue('--accent-primary').trim()) || (isLight ? '#c2410c' : '#f97316');
+  const rgb = (style && style.getPropertyValue('--accent-rgb').trim()) || (isLight ? '194, 65, 12' : '249, 115, 22');
   return {
     isLight,
+    primary,
+    rgb,
     text: isLight ? '#5a524e' : '#94a3b8',
     title: isLight ? '#2d2724' : '#f1f5f9',
     grid: isLight ? 'rgba(45, 39, 36, 0.05)' : 'rgba(255, 255, 255, 0.04)',
@@ -186,17 +191,18 @@ function pct(done, total) {
 }
 
 // ===== DONUT CHART =====
-function createDonutChart(canvasId, done, total, color = '#c2410c') {
+function createDonutChart(canvasId, done, total, color = null) {
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
   const theme = getThemeColors();
+  const primaryColor = color || theme.primary;
   const remaining = total - done;
   const chart = new Chart(ctx, {
     type: 'doughnut',
     data: {
       datasets: [{
         data: [done, remaining],
-        backgroundColor: [color, theme.isLight ? 'rgba(45, 39, 36, 0.04)' : 'rgba(255, 255, 255, 0.05)'],
+        backgroundColor: [primaryColor, theme.isLight ? 'rgba(45, 39, 36, 0.04)' : 'rgba(255, 255, 255, 0.05)'],
         borderWidth: 0,
         hoverOffset: 4
       }]
@@ -225,7 +231,7 @@ function createBarChart(canvasId, labels, dataSelesai, dataTotal, title = '') {
         {
           label: 'Selesai',
           data: dataSelesai,
-          backgroundColor: 'rgba(194, 65, 12, 0.8)',
+          backgroundColor: `rgba(${theme.rgb}, 0.85)`,
           borderRadius: 6,
           borderSkipped: false,
         },
@@ -1239,7 +1245,8 @@ function createIntradayCandlestickChart(canvasId, intradayData) {
 }
 
 // ===== SPEEDOMETER GAUGE CHART (PREMIUM DESIGN) =====
-function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl = 13, currentSpeedTotal = null, targetSpeedTotal = null) {
+// ===== SPEEDOMETER GAUGE CHART (PREMIUM DESIGN) =====
+function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl = null, currentSpeedTotal = null, targetSpeedTotal = null) {
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
 
@@ -1248,9 +1255,17 @@ function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl 
     existingChart.destroy();
   }
 
+  const isSurvey = (typeof window !== 'undefined' && window.activeSurveyId && window.activeSurveyId !== 'se2026');
+  const defaultTarget = isSurvey ? 2 : 13;
+  const baseMax = isSurvey ? 10 : 20;
+
   const val = Math.max(0, parseFloat(currentSpeedPerPcl) || 0);
-  const targetVal = parseFloat(targetSpeedPerPcl) || 13;
-  const maxVal = Math.max(20, Math.ceil(targetVal * 1.5), Math.ceil(val * 1.25));
+  const targetVal = (targetSpeedPerPcl !== null && targetSpeedPerPcl !== undefined && !isNaN(parseFloat(targetSpeedPerPcl))) 
+    ? Math.max(0.01, parseFloat(targetSpeedPerPcl)) 
+    : defaultTarget;
+  
+  // Batas atas grafik: 10 untuk survei (Sakernas, dll.), 20 untuk sensus (SE2026)
+  const maxVal = Math.max(baseMax, Math.ceil(targetVal * 1.25), Math.ceil(val * 1.2));
 
   const z1End = targetVal * 0.6;
   const z2End = targetVal;
@@ -1258,6 +1273,19 @@ function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl 
   const z1Val = z1End;
   const z2Val = Math.max(0, z2End - z1End);
   const z3Val = Math.max(0, maxVal - z2End);
+
+  // Helper format desimal angka target yang rapi (tanpa trailing .0)
+  const formatTargetNum = (num) => {
+    if (!Number.isFinite(num)) return '0';
+    if (num % 1 === 0) return num.toFixed(0);
+    if (num < 1) return parseFloat(num.toFixed(2)).toString();
+    return parseFloat(num.toFixed(1)).toString();
+  };
+
+  const targetFormatted = formatTargetNum(targetVal);
+  const z1EndFormatted = formatTargetNum(z1End);
+  const z2EndFormatted = formatTargetNum(z2End);
+  const officerUnit = (typeof window !== 'undefined' && window.activeSurveyId && window.activeSurveyId.startsWith('sakernas')) ? 'PPL' : 'PCL';
 
   const theme = getThemeColors();
 
@@ -1292,6 +1320,14 @@ function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl 
 
       const curTheme = getThemeColors();
 
+      // Dynamic scale factors based on gauge radius for perfect crispness on mobile & desktop
+      const valFontSize = Math.max(13, Math.min(22, Math.round(outerRadius * 0.26)));
+      const unitFontSize = Math.max(9, Math.min(12, Math.round(outerRadius * 0.13)));
+      const tagFontSize = Math.max(8, Math.min(11, Math.round(outerRadius * 0.12)));
+      const tickFontSize = Math.max(8, Math.min(10, Math.round(outerRadius * 0.11)));
+      const pivotRadius = Math.max(4, Math.min(8, Math.round(outerRadius * 0.08)));
+      const needleWidth = Math.max(2, Math.min(4, Math.round(outerRadius * 0.04)));
+
       chartCtx.save();
 
       // 0. Instrument Track Ring lines
@@ -1314,116 +1350,117 @@ function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl 
         chartCtx.stroke();
       }
 
-      // 1. Target Line & Pin at targetVal (13) with glow effect
-      const targetPct = Math.min(targetVal / maxVal, 1.0);
+      // 1. Target Line & Pin at targetVal with glow effect
+      const targetPct = Math.min(Math.max(targetVal / maxVal, 0), 1.0);
       const targetAngle = Math.PI + targetPct * Math.PI;
 
-      const targetInnerRadius = Math.max(0, innerRadius - 4);
+      const targetInnerRadius = Math.max(0, innerRadius - 3);
       const tInnerX = cx + targetInnerRadius * Math.cos(targetAngle);
       const tInnerY = cy + targetInnerRadius * Math.sin(targetAngle);
-      const tOuterX = cx + (outerRadius + 10) * Math.cos(targetAngle);
-      const tOuterY = cy + (outerRadius + 10) * Math.sin(targetAngle);
+      const tOuterX = cx + (outerRadius + 8) * Math.cos(targetAngle);
+      const tOuterY = cy + (outerRadius + 8) * Math.sin(targetAngle);
 
       chartCtx.save();
       chartCtx.shadowColor = 'rgba(139, 92, 246, 0.6)';
-      chartCtx.shadowBlur = 8;
+      chartCtx.shadowBlur = 6;
 
       chartCtx.beginPath();
       chartCtx.moveTo(tInnerX, tInnerY);
       chartCtx.lineTo(tOuterX, tOuterY);
-      chartCtx.lineWidth = 3.5;
+      chartCtx.lineWidth = Math.max(2, needleWidth);
       chartCtx.strokeStyle = '#8b5cf6';
       chartCtx.stroke();
 
       // Target pin dot
       chartCtx.fillStyle = '#8b5cf6';
       chartCtx.beginPath();
-      chartCtx.arc(tOuterX, tOuterY, 4.5, 0, 2 * Math.PI);
+      chartCtx.arc(tOuterX, tOuterY, Math.max(3, pivotRadius * 0.6), 0, 2 * Math.PI);
       chartCtx.fill();
       chartCtx.restore();
 
       // Target label badge flag
-      const tagX = cx + (outerRadius + 26) * Math.cos(targetAngle);
-      const tagY = cy + (outerRadius + 24) * Math.sin(targetAngle);
+      const tagX = cx + (outerRadius + Math.max(16, outerRadius * 0.22)) * Math.cos(targetAngle);
+      const tagY = cy + (outerRadius + Math.max(16, outerRadius * 0.20)) * Math.sin(targetAngle);
       
       chartCtx.save();
       chartCtx.textAlign = 'center';
       chartCtx.textBaseline = 'middle';
-      chartCtx.font = 'bold 11px Inter, sans-serif';
+      chartCtx.font = `bold ${tagFontSize}px Inter, sans-serif`;
       chartCtx.fillStyle = '#8b5cf6';
-      chartCtx.fillText(`Target: ${targetVal}`, tagX, tagY);
+      chartCtx.fillText(`Target: ${targetFormatted}`, tagX, tagY);
       chartCtx.restore();
 
       // 2. Needle Pointer with drop shadow
       const valPct = Math.min(Math.max(val, 0) / maxVal, 1.0);
       const needleAngle = Math.PI + valPct * Math.PI;
-      const needleLen = innerRadius * 0.8;
+      const needleLen = innerRadius * 0.82;
 
       const nx = cx + needleLen * Math.cos(needleAngle);
       const ny = cy + needleLen * Math.sin(needleAngle);
 
       chartCtx.save();
       chartCtx.shadowColor = curTheme.isLight ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.6)';
-      chartCtx.shadowBlur = 6;
+      chartCtx.shadowBlur = 5;
       chartCtx.shadowOffsetY = 2;
 
       // Needle stroke
       chartCtx.beginPath();
       chartCtx.moveTo(cx, cy);
       chartCtx.lineTo(nx, ny);
-      chartCtx.lineWidth = 4;
+      chartCtx.lineWidth = needleWidth;
       chartCtx.strokeStyle = curTheme.isLight ? '#0f172a' : '#f8fafc';
       chartCtx.lineCap = 'round';
       chartCtx.stroke();
 
       // Pivot outer circle
       chartCtx.beginPath();
-      chartCtx.arc(cx, cy, 8, 0, 2 * Math.PI);
+      chartCtx.arc(cx, cy, pivotRadius, 0, 2 * Math.PI);
       chartCtx.fillStyle = curTheme.isLight ? '#0f172a' : '#ffffff';
       chartCtx.fill();
-      chartCtx.lineWidth = 2.5;
+      chartCtx.lineWidth = 2;
       chartCtx.strokeStyle = '#8b5cf6';
       chartCtx.stroke();
 
       // Pivot inner dot
       chartCtx.beginPath();
-      chartCtx.arc(cx, cy, 3, 0, 2 * Math.PI);
+      chartCtx.arc(cx, cy, Math.max(2, pivotRadius * 0.4), 0, 2 * Math.PI);
       chartCtx.fillStyle = '#8b5cf6';
       chartCtx.fill();
       chartCtx.restore();
 
-      // 3. Scale Ticks (0, z1End, maxVal)
+      // 3. Scale Ticks (0, Target / Intermediate, Max)
       const ticks = [
         { v: 0, label: '0' },
-        { v: Math.round(z1End), label: `${Math.round(z1End)}` },
+        { v: targetVal, label: targetFormatted },
         { v: maxVal, label: `${maxVal}` }
       ];
       ticks.forEach(tk => {
-        const pct = tk.v / maxVal;
+        const pct = Math.min(1.0, Math.max(0, tk.v / maxVal));
         const ang = Math.PI + pct * Math.PI;
-        const tx = cx + (outerRadius + 14) * Math.cos(ang);
-        const ty = cy + (outerRadius + 14) * Math.sin(ang);
+        const tx = cx + (outerRadius + Math.max(10, outerRadius * 0.13)) * Math.cos(ang);
+        const ty = cy + (outerRadius + Math.max(10, outerRadius * 0.13)) * Math.sin(ang);
         chartCtx.fillStyle = curTheme.text;
-        chartCtx.font = '600 10px Inter, sans-serif';
+        chartCtx.font = `600 ${tickFontSize}px Inter, sans-serif`;
         chartCtx.textAlign = 'center';
         chartCtx.textBaseline = 'middle';
         chartCtx.fillText(tk.label, tx, ty);
       });
 
-      // 4. Center Digital Speed Display
+      // 4. Center Digital Speed Display (Scaled gracefully)
       chartCtx.save();
       chartCtx.textAlign = 'center';
       chartCtx.textBaseline = 'top';
 
       // Value text
       chartCtx.fillStyle = curTheme.title;
-      chartCtx.font = '800 22px Inter, sans-serif';
-      chartCtx.fillText(val.toFixed(2), cx, cy + 10);
+      chartCtx.font = `800 ${valFontSize}px Inter, sans-serif`;
+      const valY = cy + Math.max(4, Math.round(outerRadius * 0.08));
+      chartCtx.fillText(val.toFixed(2), cx, valY);
 
       // Unit label
       chartCtx.fillStyle = curTheme.text;
-      chartCtx.font = '600 12px Inter, sans-serif';
-      chartCtx.fillText('dok / PCL / hari', cx, cy + 36);
+      chartCtx.font = `600 ${unitFontSize}px Inter, sans-serif`;
+      chartCtx.fillText(`dok / ${officerUnit} / hari`, cx, valY + valFontSize + 2);
 
       chartCtx.restore();
     }
@@ -1433,9 +1470,9 @@ function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl 
     type: 'doughnut',
     data: {
       labels: [
-        `Lambat (< ${Math.round(z1End)} dok/hari)`,
-        `Perlu Akselerasi (${Math.round(z1End)}-${Math.round(z2End)} dok/hari)`,
-        `Optimal (≥ ${Math.round(z2End)} dok/hari)`
+        `Lambat (< ${z1EndFormatted} dok/hari)`,
+        `Perlu Akselerasi (${z1EndFormatted}-${z2EndFormatted} dok/hari)`,
+        `Optimal (≥ ${z2EndFormatted} dok/hari)`
       ],
       datasets: [{
         data: [z1Val, z2Val, z3Val],
@@ -1446,9 +1483,9 @@ function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl 
         ],
         borderWidth: 0,
         borderRadius: [
-          { outerStart: 10, innerStart: 10, outerEnd: 0, innerEnd: 0 },
+          { outerStart: 8, innerStart: 8, outerEnd: 0, innerEnd: 0 },
           0,
-          { outerStart: 0, innerStart: 0, outerEnd: 10, innerEnd: 10 }
+          { outerStart: 0, innerStart: 0, outerEnd: 8, innerEnd: 8 }
         ],
         spacing: 0,
         hoverOffset: 4
@@ -1462,10 +1499,10 @@ function createSpeedometerChart(canvasId, currentSpeedPerPcl, targetSpeedPerPcl 
       maintainAspectRatio: false,
       layout: {
         padding: {
-          top: 45,
-          bottom: 65,
-          left: 25,
-          right: 25
+          top: 32,
+          bottom: 50,
+          left: 20,
+          right: 20
         }
       },
       plugins: {
@@ -1510,6 +1547,9 @@ function createSportsDailyRateLineChart(canvasId, labels, data, targetVal = 13) 
   const theme = getThemeColors();
   const c2d = ctx.getContext('2d');
   
+  const officerUnit = (typeof window !== 'undefined' && window.activeSurveyId && window.activeSurveyId.startsWith('sakernas')) ? 'PPL' : 'PCL';
+  const targetLabel = (targetVal % 1 === 0) ? targetVal.toFixed(0) : parseFloat(targetVal.toFixed(1)).toString();
+
   // Neon gradient for line fill (sports dashboard acceleration vibe)
   const gradFill = c2d.createLinearGradient(0, 0, 0, 140);
   gradFill.addColorStop(0, 'rgba(239, 68, 68, 0.35)'); // neon red
@@ -1522,7 +1562,7 @@ function createSportsDailyRateLineChart(canvasId, labels, data, targetVal = 13) 
       labels: labels,
       datasets: [
         {
-          label: 'Laju Harian (dok/PCL/hari)',
+          label: `Laju Harian (dok/${officerUnit}/hari)`,
           data: data,
           borderColor: '#ff3344', // Tachometer redline neon red
           borderWidth: 2.5,
@@ -1538,7 +1578,7 @@ function createSportsDailyRateLineChart(canvasId, labels, data, targetVal = 13) 
           shadowBlur: 8
         },
         {
-          label: 'Target Tetap (13 dok/hari)',
+          label: `Target Standar (${targetLabel} dok/${officerUnit}/hari)`,
           data: Array(labels.length).fill(targetVal),
           borderColor: '#10b981', // Neon green zone
           borderWidth: 1.5,

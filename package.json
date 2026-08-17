@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "migrate": "node migrate.js"
+    "migrate": "node migrate.js",
+    "convert:mermaid": "python scripts/convert_mermaid_to_png.py",
+    "export:antigravity": "node scripts/export_antigravity_mermaid_exact.js"
   },
   "keywords": [],
   "author": "",

@@ -3,13 +3,15 @@ const router = express.Router();
 const { getDb, getSettings, getTargetFormula } = require('../database');
 
 router.get('/', (req, res) => {
-const uploadId = res.locals.uploadId;
+  const uploadId = res.locals.uploadId;
+  const surveyId = res.locals.activeSurvey || 'se2026';
+  const db = getDb(surveyId);
   const filterKec = req.query.kec || '';
   const filterKorlap = req.query.korlap || '';
   const filterPml = req.query.pml || '';
 
   // Get recent 5 distinct upload dates for daily progress tracking (hanya upload riil pengguna)
-  const recentUploads = getDb().prepare(`
+  const recentUploads = db.prepare(`
     SELECT id, tanggal 
     FROM (
       SELECT MAX(id) AS id, tanggal 
@@ -24,9 +26,9 @@ const uploadId = res.locals.uploadId;
 
   // Attach weather details and session_count to each upload day
   recentUploads.forEach(u => {
-    const weather = getDb().prepare('SELECT temp, code, humidity FROM weather_history WHERE tanggal = ?').get(u.tanggal);
+    const weather = db.prepare('SELECT temp, code, humidity FROM weather_history WHERE tanggal = ?').get(u.tanggal);
     u.weather = weather || null;
-    const countStmt = getDb().prepare(`
+    const countStmt = db.prepare(`
       SELECT COUNT(*) AS cnt 
       FROM uploads 
       WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%')
@@ -44,7 +46,7 @@ const uploadId = res.locals.uploadId;
     const settings = res.locals.settings;
 
     // Check if there is a previous upload before the first of the 5 recent uploads (hanya upload riil pengguna)
-    const prevUploadOfFirst = getDb().prepare(`
+    const prevUploadOfFirst = db.prepare(`
       SELECT MAX(id) AS id, tanggal 
       FROM uploads 
       WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%')
@@ -78,17 +80,7 @@ const uploadId = res.locals.uploadId;
           CASE WHEN p${i}.upload_id IS NOT NULL 
           THEN ${targetFormula}
           ELSE COALESCE(m.target_fasih, 0) END
-        ) AS target_${i},
-        SUM(
-          CASE WHEN p${i}.upload_id IS NOT NULL 
-          THEN COALESCE(m.target_fasih, 0)
-          ELSE COALESCE(m.target_fasih, 0) END
-        ) AS target_static_${i},
-        SUM(
-          CASE WHEN p${i}.upload_id IS NOT NULL 
-          THEN COALESCE(p${i}.target_upload, 0)
-          ELSE 0 END
-        ) AS target_upload_${i}
+        ) AS target_${i}
       `);
       joinParts.push(`
         LEFT JOIN progres p${i} ON m.kode = p${i}.kode AND p${i}.upload_id = ?
@@ -96,28 +88,39 @@ const uploadId = res.locals.uploadId;
       queryParams.push(u.id);
     });
 
-    let where = "WHERE m.pcl IS NOT NULL AND m.pcl != ''";
+    let whereConditions = [];
+    if (filterKec) {
+      whereConditions.push('m.kecamatan = ?');
+      queryParams.push(filterKec);
+    }
+    if (filterKorlap) {
+      whereConditions.push('m.korlap = ?');
+      queryParams.push(filterKorlap);
+    }
+    if (filterPml) {
+      whereConditions.push('m.pml = ?');
+      queryParams.push(filterPml);
+    }
 
-    if (filterKec) { where += ' AND m.kecamatan = ?'; queryParams.push(filterKec); }
-    if (filterKorlap) { where += ' AND m.korlap = ?'; queryParams.push(filterKorlap); }
-    if (filterPml) { where += ' AND m.pml = ?'; queryParams.push(filterPml); }
+    const whereClause = whereConditions.length > 0 ? 'WHERE ' + whereConditions.join(' AND ') : '';
 
-    const harianStatsQuery = `
+    const query = `
       SELECT 
-        m.pcl AS nama_petugas,
-        m.pml AS nama_pml,
-        m.kecamatan AS kecamatan,
+        COALESCE(p${recentUploads.length - 1}.pcl_name, m.pcl) AS pcl,
+        m.pml,
+        m.korlap,
+        GROUP_CONCAT(DISTINCT m.kecamatan) AS wilayah_kerja,
         GROUP_CONCAT(DISTINCT m.desa) AS desa,
-        GROUP_CONCAT(DISTINCT m.nama_sls) AS wilayah_kerja,
-        ${selectParts.join(',\n')}
+        COUNT(DISTINCT m.kode) AS total_subsls,
+        ${selectParts.join(', ')}
       FROM subsls_master m
       ${joinParts.join('\n')}
-      ${where}
-      GROUP BY m.pcl, m.pml, m.kecamatan
-      ORDER BY m.pcl ASC
+      ${whereClause}
+      GROUP BY COALESCE(p${recentUploads.length - 1}.pcl_name, m.pcl), m.pml, m.korlap
+      ORDER BY pcl ASC
     `;
 
-    harianStats = getDb().prepare(harianStatsQuery).all(...queryParams);
+    harianStats = db.prepare(query).all(...queryParams);
     
     // Format list fields with space padding and calculate daily document additions
     harianStats.forEach(row => {
@@ -142,9 +145,9 @@ const uploadId = res.locals.uploadId;
   }
 
   // Dropdown filter lists
-  const kecList = getDb().prepare('SELECT DISTINCT kecamatan FROM subsls_master ORDER BY kecamatan').all();
-  const korlapList = getDb().prepare('SELECT DISTINCT korlap FROM subsls_master ORDER BY korlap').all();
-  const pmlList = getDb().prepare('SELECT DISTINCT pml FROM subsls_master ORDER BY pml').all();
+  const kecList = db.prepare('SELECT DISTINCT kecamatan FROM subsls_master ORDER BY kecamatan').all();
+  const korlapList = db.prepare('SELECT DISTINCT korlap FROM subsls_master ORDER BY korlap').all();
+  const pmlList = db.prepare('SELECT DISTINCT pml FROM subsls_master ORDER BY pml').all();
 
   res.render('harian', {
     title: 'Progres Harian Petugas',

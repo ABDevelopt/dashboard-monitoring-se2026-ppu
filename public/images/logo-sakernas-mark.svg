@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- SAKERNAS — SURVEI ANGKATAN KERJA NASIONAL (FLUID RIBBON MONOGRAM S-K-DATA) -->
+  <defs>
+    <!-- Gradien Ketenagakerjaan & Pertumbuhan Ekonomi (Emerald, Sapphire, & Gold) -->
+    <linearGradient id="sakTopGrad" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="30%" stop-color="#06B6D4" />
+      <stop offset="70%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="sakSpineGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="50%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#1D4ED8" />
+    </linearGradient>
+    <linearGradient id="sakBottomGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="40%" stop-color="#10B981" />
+      <stop offset="80%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#FACC15" />
+    </linearGradient>
+  </defs>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       1. TIANG VERTIKAL UTAMA (PILAR ANGKATAN KERJA — SISI KIRI)
+       Tiang lurus kokoh setebal 46px (Y:110 sampai Y:400)
+       ══════════════════════════════════════════════════════════════════ -->
+  <rect x="75" y="110" width="46" height="290" rx="23" fill="url(#sakSpineGrad)" />
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       2. ALUR HURUF 'S' KETENAGAKERJAAN (TOP LOOP & CENTRAL DIAGONAL)
+       Meluncur dari kanan atas (X:415, Y:133) melengkung membentuk kepala S,
+       lalu menyeberang diagonal ke pinggang tengah (X:315, Y:260)
+       ══════════════════════════════════════════════════════════════════ -->
+  <path d="M415 133 H200 C155 133 125 163 125 197 C125 231 155 260 200 260 H315 C360 260 390 290 390 324 C390 358 360 387 315 387 H125" 
+        stroke="url(#sakTopGrad)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       3. SAYAP CENTANG DATA PROGRESIF & PERTUMBUHAN KETENAGAKERJAAN (SURGE)
+       Dari dasar S (X:315, Y:387) melesat naik 45° menuju simpul emas di (X:435, Y:205)
+       ══════════════════════════════════════════════════════════════════ -->
+  <path d="M315 387 L435 205" 
+        stroke="url(#sakBottomGrad)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       4. JEMBATAN KETENAGAKERJAAN (LABOR PRODUCTIVITY BRIDGE)
+       Menyambungkan pilar kiri ke pinggang tengah huruf S
+       ══════════════════════════════════════════════════════════════════ -->
+  <path d="M98 260 H200" 
+        stroke="#2563EB" stroke-width="46" stroke-linecap="round" />
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       5. SIMPUL EMAS KEMAKMURAN / APEX LABOR PRODUCTIVITY NODE
+       ══════════════════════════════════════════════════════════════════ -->
+  <circle cx="435" cy="205" r="20" fill="#FACC15" />
+</svg>

@@ -14,10 +14,10 @@
     <div class="card">
       <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
         <div class="card-title"><i class="bi bi-search"></i> Filter Pencarian Progres Harian</div>
-        <a href="/harian" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
+        <a href="<%= navPrefix %>/harian" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
       </div>
       
-      <form action="/harian" method="GET" id="filterForm">
+      <form action="<%= navPrefix %>/harian" method="GET" id="filterForm">
         <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           
           <div>
@@ -151,7 +151,7 @@
               <% harianStats.forEach((row, idx) => { %>
                 <tr>
                   <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= idx + 1 %></td>
-                  <td class="td-primary"><a href="/pcl?pcl=<%= encodeURIComponent(row.nama_petugas) %>"><%= row.nama_petugas %></a></td>
+                  <td class="td-primary"><a href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(row.nama_petugas) %>"><%= row.nama_petugas %></a></td>
                   <td><%= row.nama_pml %></td>
                   <td><%= row.kecamatan %></td>
                   <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<%= row.desa %>">
@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
       
-      const resetBtn = container.querySelector('a[href="/harian"]');
+      const resetBtn = container.querySelector('a[href*="/harian"]');
       if (resetBtn) {
         resetBtn.addEventListener('click', (e) => {
           e.preventDefault();
@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function fetchAndReplace(queryString) {
-    const url = '/harian' + (queryString ? (queryString.startsWith('?') ? queryString : '?' + queryString) : '');
+    const url = '<%= navPrefix %>/harian' + (queryString ? (queryString.startsWith('?') ? queryString : '?' + queryString) : '');
     const ajaxContainer = document.getElementById('ajax-container');
     ajaxContainer.style.opacity = '0.5';
     ajaxContainer.style.pointerEvents = 'none';

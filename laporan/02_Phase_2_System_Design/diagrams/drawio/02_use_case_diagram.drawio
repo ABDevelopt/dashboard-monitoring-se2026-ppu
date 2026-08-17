@@ -1,0 +1,100 @@
+<mxfile host="Electron" agent="Mozilla/5.0" version="22.1.2" type="device">
+  <diagram id="use-case-diagram" name="Use Case Diagram">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0" background="#0B132B">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- System Boundary -->
+        <mxCell id="SYS_BND" value="SISTEM PANANYO TAKA — Dasbor Pemantauan BPS PPU" vertex="1" parent="1">
+          <mxGeometry x="400" y="80" width="1000" height="1040" as="geometry" />
+          <mxCell style="fillColor=none;strokeColor=#0284C7;dashed=1;fontColor=#F8FAFC;fontSize=13;verticalAlign=top;spacingTop=20;fontStyle=1" />
+        </mxCell>
+
+        <!-- Actors -->
+        <mxCell id="A1" value="🌐 Publik / Tamu&amp;#xa;(Tanpa Login)" vertex="1" parent="1">
+          <mxGeometry x="80" y="400" width="140" height="60" as="geometry" />
+          <mxCell style="fillColor=#0F172A;strokeColor=#CBD5E1;fontColor=#F8FAFC;fontSize=10;rounded=1;fontStyle=1" />
+        </mxCell>
+        <mxCell id="A2" value="📋 PCL, PML&amp;#xa;&amp;amp; Korlap" vertex="1" parent="1">
+          <mxGeometry x="80" y="600" width="140" height="60" as="geometry" />
+          <mxCell style="fillColor=#0F172A;strokeColor=#CBD5E1;fontColor=#F8FAFC;fontSize=10;rounded=1;fontStyle=1" />
+        </mxCell>
+        <mxCell id="A3" value="👔 Pimpinan&amp;#xa;BPS PPU" vertex="1" parent="1">
+          <mxGeometry x="1580" y="400" width="140" height="60" as="geometry" />
+          <mxCell style="fillColor=#0F172A;strokeColor=#CBD5E1;fontColor=#F8FAFC;fontSize=10;rounded=1;fontStyle=1" />
+        </mxCell>
+        <mxCell id="A4" value="⚙️ Administrator&amp;#xa;TI BPS" vertex="1" parent="1">
+          <mxGeometry x="1580" y="700" width="140" height="60" as="geometry" />
+          <mxCell style="fillColor=#0F172A;strokeColor=#CBD5E1;fontColor=#F8FAFC;fontSize=10;rounded=1;fontStyle=1" />
+        </mxCell>
+
+        <!-- Use Cases -->
+        <mxCell id="UC1" value="UC-01: Akses Portal Induk&amp;#xa;&amp;amp; Executive Overview" vertex="1" parent="1">
+          <mxGeometry x="520" y="120" width="280" height="80" as="geometry" />
+          <mxCell style="ellipse;fillColor=#1E293B;strokeColor=#0284C7;fontColor=#F8FAFC;fontSize=10;fontStyle=1" />
+        </mxCell>
+        <mxCell id="UC2" value="UC-02: Pemantauan Peta&amp;#xa;GIS Progres Wilayah" vertex="1" parent="1">
+          <mxGeometry x="520" y="240" width="280" height="80" as="geometry" />
+          <mxCell style="ellipse;fillColor=#1E293B;strokeColor=#0284C7;fontColor=#F8FAFC;fontSize=10;fontStyle=1" />
+        </mxCell>
+        <mxCell id="UC3" value="UC-03: Drilldown Kinerja&amp;#xa;Petugas (Korlap/PML/PCL)" vertex="1" parent="1">
+          <mxGeometry x="520" y="360" width="280" height="80" as="geometry" />
+          <mxCell style="ellipse;fillColor=#1E293B;strokeColor=#0284C7;fontColor=#F8FAFC;fontSize=10;fontStyle=1" />
+        </mxCell>
+        <mxCell id="UC4" value="UC-04: Deteksi Dini EWS&amp;#xa;Kinerja Rendah" vertex="1" parent="1">
+          <mxGeometry x="520" y="480" width="280" height="80" as="geometry" />
+          <mxCell style="ellipse;fillColor=#1E293B;strokeColor=#0284C7;fontColor=#F8FAFC;fontSize=10;fontStyle=1" />
+        </mxCell>
+        <mxCell id="UC5" value="UC-05: Audit Anomali &amp;amp;&amp;#xa;Sinkronisasi Sheets" vertex="1" parent="1">
+          <mxGeometry x="520" y="600" width="280" height="80" as="geometry" />
+          <mxCell style="ellipse;fillColor=#1E293B;strokeColor=#0284C7;fontColor=#F8FAFC;fontSize=10;fontStyle=1" />
+        </mxCell>
+        <mxCell id="UC6" value="UC-06: Konsultasi AI&amp;#xa;Chatbot KIPP [requireLogin]" vertex="1" parent="1">
+          <mxGeometry x="900" y="360" width="280" height="80" as="geometry" />
+          <mxCell style="ellipse;fillColor=#1E293B;strokeColor=#0284C7;fontColor=#F8FAFC;fontSize=10;fontStyle=1" />
+        </mxCell>
+        <mxCell id="UC7" value="UC-07: Unggah Excel FASIH&amp;#xa;&amp;amp; Sinkronisasi DB [requireAdmin]" vertex="1" parent="1">
+          <mxGeometry x="900" y="500" width="280" height="80" as="geometry" />
+          <mxCell style="ellipse;fillColor=#1E293B;strokeColor=#0284C7;fontColor=#F8FAFC;fontSize=10;fontStyle=1" />
+        </mxCell>
+        <mxCell id="UC8" value="UC-08: Pengelolaan Konfigurasi&amp;#xa;&amp;amp; Backup Database [requireAdmin]" vertex="1" parent="1">
+          <mxGeometry x="900" y="640" width="280" height="80" as="geometry" />
+          <mxCell style="ellipse;fillColor=#1E293B;strokeColor=#0284C7;fontColor=#F8FAFC;fontSize=10;fontStyle=1" />
+        </mxCell>
+
+        <!-- Edges A1 -->
+        <mxCell id="e_a1_uc1" edge="1" parent="1" source="A1" target="UC1"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a1_uc2" edge="1" parent="1" source="A1" target="UC2"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a1_uc3" edge="1" parent="1" source="A1" target="UC3"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a1_uc4" edge="1" parent="1" source="A1" target="UC4"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a1_uc5" edge="1" parent="1" source="A1" target="UC5"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+
+        <!-- Edges A2 -->
+        <mxCell id="e_a2_uc1" edge="1" parent="1" source="A2" target="UC1"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a2_uc2" edge="1" parent="1" source="A2" target="UC2"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a2_uc3" edge="1" parent="1" source="A2" target="UC3"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a2_uc4" edge="1" parent="1" source="A2" target="UC4"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+
+        <!-- Edges A3 -->
+        <mxCell id="e_a3_uc1" edge="1" parent="1" source="A3" target="UC1"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a3_uc2" edge="1" parent="1" source="A3" target="UC2"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a3_uc3" edge="1" parent="1" source="A3" target="UC3"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a3_uc4" edge="1" parent="1" source="A3" target="UC4"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a3_uc5" edge="1" parent="1" source="A3" target="UC5"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a3_uc6" edge="1" parent="1" source="A3" target="UC6"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+
+        <!-- Edges A4 -->
+        <mxCell id="e_a4_uc1" edge="1" parent="1" source="A4" target="UC1"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a4_uc2" edge="1" parent="1" source="A4" target="UC2"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a4_uc3" edge="1" parent="1" source="A4" target="UC3"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a4_uc4" edge="1" parent="1" source="A4" target="UC4"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a4_uc5" edge="1" parent="1" source="A4" target="UC5"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a4_uc6" edge="1" parent="1" source="A4" target="UC6"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a4_uc7" edge="1" parent="1" source="A4" target="UC7"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+        <mxCell id="e_a4_uc8" edge="1" parent="1" source="A4" target="UC8"><mxGeometry relative="1" as="geometry" /><mxCell style="endArrow=none;strokeColor=#94A3B8;" /></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

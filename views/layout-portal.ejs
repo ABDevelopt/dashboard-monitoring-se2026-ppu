@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= typeof title !== 'undefined' ? title : 'Portal Pananyo Taka — BPS Kab. Penajam Paser Utara' %></title>
-  <meta name="description" content="Portal Induk Pemantauan Sensus & Survei Terpadu BPS Kabupaten Penajam Paser Utara">
-  <link rel="icon" type="image/png" href="/logo-mark.png">
+  <link rel="icon" type="image/svg+xml" href="/images/logo-pananyo-taka-flow.svg">
+  <link rel="apple-touch-icon" href="/images/logo-pananyo-taka-flow.svg">
   <meta name="theme-color" content="#0b0f19">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -121,6 +121,49 @@
       min-height: 100vh;
     }
 
+    /* ── FLOATING LOGO BRAND (POJOK KIRI ATAS SEJAJAR TOMBOL THEME) ── */
+    .portal-floating-brand {
+      position: fixed;
+      top: 18px;
+      left: 22px;
+      z-index: 1000;
+      height: 42px;
+      padding: 0 14px 0 8px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-portal-card);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1.5px solid var(--border-portal);
+      color: var(--text-portal-1);
+      text-decoration: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .portal-floating-brand:hover {
+      border-color: var(--accent-orange, #f97316);
+      transform: scale(1.04);
+      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.15);
+    }
+
+    .portal-floating-brand img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 6px rgba(249, 115, 22, 0.3));
+    }
+
+    .portal-floating-brand-text {
+      font-family: var(--font-display, inherit);
+      font-weight: 800;
+      font-size: 13.5px;
+      letter-spacing: 0.02em;
+      color: var(--text-portal-1);
+    }
+
     /* ── FLOATING THEME TOGGLE BUTTON (TANPA PORTAL-NAV) ── */
     .portal-floating-theme-btn {
       position: fixed;
@@ -182,6 +225,9 @@
     }
 
     @media (max-width: 768px) {
+      .portal-floating-brand { top: 12px; left: 14px; height: 38px; padding: 0 8px; width: 38px; justify-content: center; border-radius: 12px; }
+      .portal-floating-brand-text { display: none; }
+      .portal-floating-brand img { width: 22px; height: 22px; }
       .portal-floating-theme-btn { top: 12px; right: 14px; width: 38px; height: 38px; }
       .portal-main-content { padding: 16px 12px 48px; }
       .portal-foot { padding: 16px; flex-direction: column; text-align: center; }
@@ -192,7 +238,13 @@
 
   <div class="portal-ambient"></div>
 
-  <!-- Floating Theme Button -->
+  <!-- Floating Brand Logo (Top-Left Corner, Sejajar Tombol Theme) -->
+  <a href="/surveys" class="portal-floating-brand" title="Portal Pananyo Taka — BPS Kab. Penajam Paser Utara" aria-label="Logo Portal Pananyo Taka">
+    <img src="/images/logo-pananyo-taka-flow.svg" alt="Logo Pananyo Taka">
+    <span class="portal-floating-brand-text">Pananyo Taka</span>
+  </a>
+
+  <!-- Floating Theme Button (Top-Right Corner) -->
   <button type="button" class="portal-floating-theme-btn" id="themeToggleBtn" title="Ganti Mode Gelap / Terang" aria-label="Ganti Mode Tema">
     <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
   </button>
@@ -206,7 +258,7 @@
     <!-- Footer -->
     <footer class="portal-foot">
       <div class="portal-foot-brand">
-        <i class="bi bi-building-check" style="font-size: 15px; color: var(--accent-orange);"></i>
+        <img src="/images/logo-pananyo-taka-flow.svg" alt="Logo Pananyo Taka" width="22" height="22" style="object-fit: contain; vertical-align: middle; filter: drop-shadow(0 2px 6px rgba(249, 115, 22, 0.25));">
         <span>Badan Pusat Statistik Kabupaten Penajam Paser Utara &bull; Jl. Propinsi Km. 9, Nipah-Nipah</span>
       </div>
       <div>

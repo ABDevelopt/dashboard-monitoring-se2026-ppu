@@ -1,4 +1,7 @@
 <%
+  const isSakernas = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
+  const officerLabel = isSakernas ? 'PPL' : 'PCL';
+
   let activeTargetPct = 25;
   let targetMonthName = '30 Juni';
   const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
@@ -24,7 +27,7 @@
         <div class="card-header flex-between" style="gap: 8px;">
           <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-clipboard2-data"></i> Progres Kinerja per PML (Pengawas) <span class="badge badge-blue"><%= pmlStats.length %> PML</span></div>
           <div class="card-actions flex-start" style="gap: 6px;">
-            <a href="/pml/laporan" class="btn btn-primary btn-xs" style="text-decoration: none;" title="Pembuat Laporan (PDF/Excel)"><i class="bi bi-file-earmark-pdf"></i><span class="btn-text-desktop"> Pembuat Laporan (PDF/Excel)</span></a>
+            <a href="<%= navPrefix %>/pml/laporan" class="btn btn-primary btn-xs" style="text-decoration: none;" title="Pembuat Laporan (PDF/Excel)"><i class="bi bi-file-earmark-pdf"></i><span class="btn-text-desktop"> Pembuat Laporan (PDF/Excel)</span></a>
           </div>
         </div>
 
@@ -42,8 +45,10 @@
                   <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">FASIH %</th>
                   <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">Verifikasi %</th>
                   <th rowspan="2" class="text-right bg-cyan-soft muatan-col" style="min-width: 140px;">Muatan %</th>
+                  <% if (!isSakernas) { %>
                   <th rowspan="2" class="hide-md">Korlap</th>
-                  <th rowspan="2" class="text-right">Jumlah PCL</th>
+                  <% } %>
+                  <th rowspan="2" class="text-right">Jumlah <%= officerLabel %></th>
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
                   <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
                   <th colspan="2" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
@@ -75,7 +80,7 @@
                   <tr class="<%= filterPml === p.pml ? 'active' : '' %>" style="<%= filterPml === p.pml ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                     <td class="td-primary">
-                      <a href="/pml?pml=<%= encodeURIComponent(p.pml) %>" style="color: inherit; text-decoration: none; display: inline-block;">
+                      <a href="<%= navPrefix %>/pml?pml=<%= encodeURIComponent(p.pml) %>" style="color: inherit; text-decoration: none; display: inline-block;">
                         <i class="bi bi-clipboard2-data"></i> <%= p.pml %>
                       </a>
                       <% if (kippPmls.includes(p.pml.toUpperCase())) { %>
@@ -127,8 +132,10 @@
                         <div class="progress-bar <%= muatanW >= 100 ? 'green' : (muatanW < 40 ? 'red' : 'blue') %>" data-width="<%= muatanW %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
+                    <% if (!isSakernas) { %>
                     <td class="hide-md"><%= p.korlap %></td>
-                    <td class="text-right hide-sm" data-sort="<%= p.jumlah_pcl %>"><%= p.jumlah_pcl %> PCL</td>
+                    <% } %>
+                    <td class="text-right hide-sm" data-sort="<%= p.jumlah_pcl %>"><%= p.jumlah_pcl %> <%= officerLabel %></td>
                     <!-- <td class="text-right hide-sm" data-sort="<%= p.total_subsls %>"><%= p.total_subsls %></td> -->
                     <!-- <td class="text-right fw-bold" data-sort="<%= p.selesai %>" style="<%= p.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= p.selesai %></td> -->
                     <td class="text-right bg-yellow-soft hide-sm status-draft-text" data-sort="<%= p.draft_total %>"><%= (p.draft_total || 0).toLocaleString('id-ID') %></td>
@@ -153,19 +160,21 @@
         <% if (filterPml) { %>
           <div class="card" id="pmlDetailCard" style="margin-bottom: 0; position: sticky; top: 80px;">
             <div class="card-header flex-between" style="gap: 8px;">
-              <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-people"></i> Anggota Tim PCL: <mark class="highlight-name"><%= filterPml %></mark></div>
+              <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-people"></i> Anggota Tim <%= officerLabel %>: <mark class="highlight-name"><%= filterPml %></mark></div>
               <div class="card-actions flex-start" style="gap: 6px; margin-left: auto;">
                 <button onclick="window.shareElementAsImage('pmlDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
                 <button onclick="window.copyElementAsImage('pmlDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
-                <a href="/pml" class="btn btn-secondary btn-xs btn-close-detail" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
+                <a href="<%= navPrefix %>/pml" class="btn btn-secondary btn-xs btn-close-detail" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
               </div>
             </div>
 
             <% if (detailPcl && detailPcl.length > 0) { %>
               <div class="mb-4">
+                <% if (!isSakernas) { %>
                 <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
                   Korlap Atasan: <strong><%= detailPcl[0].korlap %></strong>
                 </div>
+                <% } %>
                 <% 
                   let totalBeban = selectedPmlStats ? selectedPmlStats.total_muatan : 0;
                   let totalUsaha = selectedPmlStats ? (selectedPmlStats.muatan_selesai !== undefined ? selectedPmlStats.muatan_selesai : (selectedPmlStats.usaha_total + selectedPmlStats.keluarga_total)) : 0;
@@ -222,35 +231,67 @@
                     </div>
                   </div>
                 </div>
-
-                <!-- Daily Progress Chart (PML Team Trend) -->
-                <div style="margin-top: 18px; margin-bottom: 18px; border-top: 1px solid var(--border); padding-top: 14px; margin-left: -20px; margin-right: -20px;">
-                  <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; padding-left: 20px; padding-right: 20px;">
-                    <i class="bi bi-graph-up"></i> Tren Progres Harian Tim PML (FASIH)
+                
+                <!-- SUMMARY STATS CARD -->
+                <div class="summary-split" style="margin-top: 16px;">
+                  <div class="summary-item" style="display: flex; flex-direction: column; justify-content: space-between;">
+                    <div class="summary-item-label"><i class="bi bi-file-earmark-check"></i> FASIH</div>
+                    <div class="summary-item-value" style="color: var(--accent-purple);"><%= totalFasihPct %>%</div>
+                    <div class="summary-item-sub"><%= totalFasihDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %></div>
                   </div>
-                  <div style="height: 180px; position: relative; width: 100%; padding-left: 10px; padding-right: 10px;">
-                    <canvas id="pmlHistoryChartCanvas"></canvas>
+                  <% if (settings.show_progres_muatan === '1') { %>
+                  <div class="summary-item" style="display: flex; flex-direction: column; justify-content: space-between;">
+                    <div class="summary-item-label"><i class="bi bi-box-seam"></i> Muatan</div>
+                    <div class="summary-item-value" style="color: var(--accent-cyan);"><%= totalPct %>%</div>
+                    <div class="summary-item-sub"><%= totalUsaha.toLocaleString('id-ID') %> / <%= totalBeban.toLocaleString('id-ID') %></div>
                   </div>
+                  <% } %>
+                  <div class="summary-item" style="display: flex; flex-direction: column; justify-content: space-between;">
+                    <div class="summary-item-label"><i class="bi bi-check2-circle"></i> Selesai (100%)</div>
+                    <div class="summary-item-value" style="color: var(--accent-green);"><%= selectedPmlStats ? selectedPmlStats.selesai : 0 %></div>
+                    <div class="summary-item-sub">SubSLS</div>
+                  </div>
+                  <% if (!isSakernas) { %>
+                  <div class="summary-item" style="display: flex; flex-direction: column; justify-content: space-between;">
+                    <div class="summary-item-label"><i class="bi bi-person-workspace"></i> Korlap</div>
+                    <div class="summary-item-value" style="font-size: 15px; word-break: break-word;"><%= selectedPmlStats && selectedPmlStats.korlap ? selectedPmlStats.korlap : '-' %></div>
+                    <div class="summary-item-sub">Wilayah Binaan</div>
+                  </div>
+                  <% } %>
                 </div>
 
-                <!-- JSON data script tag -->
-                <script id="pmlHistoryData" type="application/json">
-                  <%- JSON.stringify(pmlHistory) %>
-                </script>
-              </div>
+                <!-- PML HISTORICAL CHART ACCORDION -->
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px; overflow: hidden;">
+                  <div class="pml-chart-header flex-between" onclick="togglePmlChart()" style="padding: 8px 12px; cursor: pointer; background: rgba(0,0,0,0.1); user-select: none;">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                      <i class="bi bi-graph-up-arrow" style="color: var(--accent-cyan);"></i> Tren Kinerja Tim PML (Antar Waktu)
+                    </div>
+                    <i class="bi bi-chevron-down" id="pmlChartChevron" style="font-size: 11px; transition: transform 0.2s ease;"></i>
+                  </div>
+                  <div id="pmlChartBody" style="display: none; padding: 10px 4px 6px 4px;">
+                    <div style="height: 180px; position: relative; width: 100%; padding-left: 10px; padding-right: 10px;">
+                      <canvas id="pmlHistoryChartCanvas"></canvas>
+                    </div>
+                  </div>
 
-              <div class="search-wrap mb-4" style="max-width: 100%; margin-bottom: 12px;">
-                <input type="search" id="detailPclSearch" placeholder="Cari nama PCL dalam tim..." aria-label="Cari nama Pencacah PCL dalam tim">
-              </div>
+                  <!-- JSON data script tag -->
+                  <script id="pmlHistoryData" type="application/json">
+                    <%- JSON.stringify(pmlHistory) %>
+                  </script>
+                </div>
 
-              <div id="detailPclList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
-                <% detailPcl.forEach(item => { %>
-                  <div class="detail-item" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 4px; font-size: 11px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                      <div style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 75%;">
-                        <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: var(--accent-cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                          <i class="bi bi-person"></i> <%= item.pcl %>
-                        </a>
+                <div class="search-wrap mb-4" style="max-width: 100%; margin-bottom: 12px;">
+                  <input type="search" id="detailPclSearch" placeholder="Cari nama <%= officerLabel %> dalam tim..." aria-label="Cari nama <%= officerLabel %> dalam tim">
+                </div>
+
+                <div id="detailPclList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
+                  <% detailPcl.forEach(item => { %>
+                    <div class="detail-item" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 4px; font-size: 11px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                        <div style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 75%;">
+                          <a href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: var(--accent-cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                            <i class="bi bi-person"></i> <%= item.pcl %>
+                          </a>
                         <% if (kippPcls.includes(item.pcl.toUpperCase())) { %>
                           <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
                         <% } %>

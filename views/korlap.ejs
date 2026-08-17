@@ -72,7 +72,7 @@
                   <tr class="<%= filterKorlap === k.korlap ? 'active' : '' %>" style="<%= filterKorlap === k.korlap ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                     <td class="td-primary">
-                      <a href="/korlap?korlap=<%= encodeURIComponent(k.korlap) %>" style="color: inherit; text-decoration: none; display: inline-block;">
+                      <a href="<%= navPrefix %>/korlap?korlap=<%= encodeURIComponent(k.korlap) %>" style="color: inherit; text-decoration: none; display: inline-block;">
                         <i class="bi bi-person-workspace"></i> <%= k.korlap %>
                       </a>
                       <% if (kippKorlaps.includes(k.korlap.toUpperCase())) { %>
@@ -139,7 +139,7 @@
               <div class="card-actions flex-start" style="gap: 6px; margin-left: auto;">
                 <button onclick="window.shareElementAsImage('korlapDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
                 <button onclick="window.copyElementAsImage('korlapDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
-                <a href="/korlap" class="btn btn-secondary btn-xs btn-close-detail" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
+                <a href="<%= navPrefix %>/korlap" class="btn btn-secondary btn-xs btn-close-detail" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
               </div>
             </div>
 
@@ -196,7 +196,7 @@
               <div id="detailPmlList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
                 <% detailData.forEach(item => { %>
                   <% 
-                    let itemPct;
+                    let itemPct = '0.00';
                     if (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') {
                       let doneFasih = (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0);
                       let totalFasih = item.target_fasih_total || 0;
@@ -208,7 +208,7 @@
                   <div class="detail-item" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 4px; font-size: 11px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                       <div style="font-weight: 600; color: var(--text-primary);">
-                        <a href="/pml?pml=<%= encodeURIComponent(item.pml) %>" style="color: var(--accent-cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                        <a href="<%= navPrefix %>/pml?pml=<%= encodeURIComponent(item.pml) %>" style="color: var(--accent-cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                           <i class="bi bi-clipboard2-data"></i> <%= item.pml %>
                         </a>
                         <% if (kippPmls.includes(item.pml.toUpperCase())) { %>

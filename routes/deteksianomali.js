@@ -24,7 +24,12 @@ function getMasterFilterLists(surveyId = 'se2026') {
 }
 
 router.get('/', async (req, res) => {
-res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
+  const activeSurvey = res.locals.activeSurvey || "se2026";
+  if (activeSurvey.startsWith('sakernas')) {
+    return res.redirect(res.locals.navPrefix + '/');
+  }
+
+  res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
 
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const filterKec = req.query.kec || '';
@@ -54,7 +59,6 @@ res.setHeader('Cache-Control', 'private, no-cache, must-revalidate');
   }
 
   // Get filter lists with 30-minute memory caching
-  const activeSurvey = res.locals.activeSurvey || "se2026";
   const { kecList, korlapList } = getMasterFilterLists(activeSurvey);
 
   // Filter helper

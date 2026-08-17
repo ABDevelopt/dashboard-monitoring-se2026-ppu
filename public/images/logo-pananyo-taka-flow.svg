@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- PANANYO TAKA — PERFECTED FLUID FLOW (TIANG VERTIKAL P SANGAT JELAS & TEGAS) -->
+  <defs>
+    <!-- Gradien Aliran Spektrum Terpadu -->
+    <linearGradient id="flowStemP" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="60%" stop-color="#06B6D4" />
+      <stop offset="100%" stop-color="#38BDF8" />
+    </linearGradient>
+    <linearGradient id="flowTopGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="25%" stop-color="#F97316" />
+      <stop offset="55%" stop-color="#EA580C" />
+      <stop offset="80%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+    <linearGradient id="flowBottomGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="35%" stop-color="#1D4ED8" />
+      <stop offset="65%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#34D399" />
+    </linearGradient>
+  </defs>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       1. TIANG VERTIKAL UTAMA HURUF P (PANANYO — KIRI)
+       Tiang lurus utuh dari Y:110 sampai Y:400 (Sangat Jelas, Kokoh, & Tegas)
+       ══════════════════════════════════════════════════════════════════ -->
+  <rect x="75" y="110" width="46" height="290" rx="23" fill="url(#flowStemP)" />
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       2. LENGKUNGAN KEPALA P YANG MENYATU RAPAT KE TIANG P & MELUNCUR KE ATAP T
+       (Tertutup rapat dari tiang di X:98, Y:260 -> melengkung sempurna -> meluncur ke atap T di X:415)
+       ══════════════════════════════════════════════════════════════════ -->
+  <path d="M98 260 H195 C242 260 272 230 272 196 C272 162 242 133 195 133 H415" 
+        stroke="url(#flowTopGrad)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       3. TIANG PUSAT HURUF T YANG TERJUN KE BAWAH & MELLESAT MENJADI CENTANG
+       (Dari titik tengah atap T di X:315, Y:133 -> turun ke Y:345 -> melesat naik 45° ke X:435)
+       ══════════════════════════════════════════════════════════════════ -->
+  <path d="M315 133 V345 Q315 368 338 350 L 435 205" 
+        stroke="url(#flowBottomGrad)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       4. JEMBATAN ALIRAN DASAR (LOWER FLOW BRIDGE: P LOOP BASE -> T FOOT)
+       ══════════════════════════════════════════════════════════════════ -->
+  <path d="M195 275 L315 360" 
+        stroke="#10B981" stroke-width="44" stroke-linecap="round" />
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       5. SIMPUL EMAS DI PUNCAK CENTANG (APEX DATA VERIFIED NODE)
+       ══════════════════════════════════════════════════════════════════ -->
+  <circle cx="435" cy="205" r="20" fill="#FACC15" />
+</svg>

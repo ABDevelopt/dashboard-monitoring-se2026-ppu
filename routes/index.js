@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { getOverviewSummary, getKecamatanStats, getTrenHarian } = require('../database');
+const { getOverviewSummary, getKecamatanStats, getTrenHarian, getDb } = require('../database');
 
 router.get('/', (req, res) => {
-const uploadId = res.locals.uploadId;
+  const uploadId = res.locals.uploadId;
+  const surveyId = res.locals.activeSurvey || 'se2026';
+  const db = getDb(surveyId);
   let summary = null;
   let kecStats = [];
   let tren = [];
@@ -11,13 +13,11 @@ const uploadId = res.locals.uploadId;
   let pclDeltas = [];
 
   if (uploadId) {
-    summary = getOverviewSummary(uploadId, res.locals.settings);
-    kecStats = getKecamatanStats(uploadId, res.locals.settings);
-    tren = getTrenHarian();
+    summary = getOverviewSummary(uploadId, res.locals.settings, surveyId);
+    kecStats = getKecamatanStats(uploadId, res.locals.settings, surveyId);
+    tren = getTrenHarian(surveyId);
 
     // Hitung sebaran penambahan dokumen oleh petugas (Update Ini)
-    const { getDb } = require('../database');
-    const db = getDb();
     const currentUpload = db.prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
     const prevUpload = currentUpload ? db.prepare(`
       SELECT id 
@@ -98,8 +98,6 @@ const uploadId = res.locals.uploadId;
   let diffTotal = 0;
   let latestUpdateSpeedPerPcl = 0;
   if (uploadId) {
-    const { getDb } = require('../database');
-    const db = getDb();
     const currentUpload = db.prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
     const prevUpload = currentUpload ? db.prepare(`
       SELECT id 
@@ -112,7 +110,7 @@ const uploadId = res.locals.uploadId;
     `).get(currentUpload.tanggal) : null;
     
     if (prevUpload) {
-      const prevStats = getOverviewSummary(prevUpload.id, res.locals.settings);
+      const prevStats = getOverviewSummary(prevUpload.id, res.locals.settings, surveyId);
       const prevRealisasi = prevStats ? ((prevStats.submitted_total || 0) + (prevStats.approved_total || 0) + (prevStats.rejected_total || 0)) : 0;
       const currRealisasi = summary ? ((summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0)) : 0;
       diffTotal = Math.max(0, currRealisasi - prevRealisasi);

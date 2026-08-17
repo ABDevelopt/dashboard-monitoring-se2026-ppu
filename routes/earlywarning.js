@@ -3,7 +3,9 @@ const router = express.Router();
 const { getEarlyWarning, getDb } = require('../database');
 
 router.get('/', (req, res) => {
-const uploadId = res.locals.uploadId;
+  const uploadId = res.locals.uploadId;
+  const surveyId = res.locals.activeSurvey || 'se2026';
+  const db = getDb(surveyId);
   const filterKec = req.query.kec || '';
   const filterKorlap = req.query.korlap || '';
   const filterPml = req.query.pml || '';
@@ -11,13 +13,13 @@ const uploadId = res.locals.uploadId;
   let warning = { zeroPcl: [], slowPcl: [], zeroPml: [], stagnanPcl: [] };
 
   if (uploadId) {
-    warning = getEarlyWarning(uploadId, { kec: filterKec, korlap: filterKorlap, pml: filterPml });
+    warning = getEarlyWarning(uploadId, { kec: filterKec, korlap: filterKorlap, pml: filterPml }, res.locals.settings, surveyId);
   }
 
   // Get filter lists
-  const kecList = getDb().prepare('SELECT DISTINCT kecamatan FROM subsls_master ORDER BY kecamatan').all();
-  const korlapList = getDb().prepare('SELECT DISTINCT korlap FROM subsls_master ORDER BY korlap').all();
-  const pmlList = getDb().prepare('SELECT DISTINCT pml FROM subsls_master ORDER BY pml').all();
+  const kecList = db.prepare('SELECT DISTINCT kecamatan FROM subsls_master ORDER BY kecamatan').all();
+  const korlapList = db.prepare('SELECT DISTINCT korlap FROM subsls_master ORDER BY korlap').all();
+  const pmlList = db.prepare('SELECT DISTINCT pml FROM subsls_master ORDER BY pml').all();
 
   res.render('earlywarning', {
     title: 'Early Warning',

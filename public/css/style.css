@@ -4751,3 +4751,31 @@ body.light-mode .help-tooltip-box strong {
 .custom-toast-error .custom-toast-icon { color: var(--accent-red); }
 .custom-toast-info .custom-toast-icon { color: var(--accent-blue); }
 
+/* Speedometer Dual-Gauge Responsive Container */
+.speedometer-gauges-wrapper {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: var(--transition);
+}
+
+@media (max-width: 576px) {
+  .speedometer-gauges-wrapper {
+    flex-direction: column !important;
+    gap: 16px !important;
+    padding: 16px 8px !important;
+  }
+  .speedometer-gauge-col {
+    width: 100% !important;
+    max-width: 280px !important;
+  }
+  .speedometer-divider {
+    width: 80% !important;
+    height: 1px !important;
+    border-left: none !important;
+    border-top: 1px dashed var(--border) !important;
+    margin: 4px auto !important;
+  }
+}
+
+

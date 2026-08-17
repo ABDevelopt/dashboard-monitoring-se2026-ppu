@@ -204,10 +204,10 @@
     font-size: 13px;
     font-weight: 700;
     border-radius: 10px;
-    background: linear-gradient(135deg, var(--accent-blue, #f97316) 0%, var(--accent-orange, #c2410c) 100%);
+    background: var(--survey-gradient, linear-gradient(135deg, var(--accent-blue, #f97316) 0%, var(--accent-orange, #c2410c) 100%));
     border: none;
     color: #ffffff;
-    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
+    box-shadow: var(--survey-glow, 0 4px 14px rgba(249, 115, 22, 0.35));
     transition: all 0.25s ease;
     display: flex;
     align-items: center;
@@ -216,7 +216,7 @@
 
   .login-submit-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(249, 115, 22, 0.45);
+    filter: brightness(1.12);
   }
 
   .login-alt-btn {
@@ -250,12 +250,12 @@
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent-blue, #f97316) 0%, var(--accent-orange, #c2410c) 100%);
+    background: var(--survey-gradient, linear-gradient(135deg, var(--accent-blue, #f97316) 0%, var(--accent-orange, #c2410c) 100%));
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 12px auto;
-    box-shadow: 0 6px 18px rgba(249, 115, 22, 0.35);
+    box-shadow: var(--survey-glow, 0 6px 18px rgba(249, 115, 22, 0.35));
     border: 3px solid var(--border);
   }
 
@@ -327,9 +327,24 @@
 
     <!-- LEFT: Logo Column -->
     <div class="login-logo-col">
+      <% if (typeof activeSurvey !== 'undefined' && activeSurvey === 'se2026') { %>
       <img src="/logo-vertical.png"      alt="Logo SE2026" class="logo-light" loading="eager">
       <img src="/logo-vertical-dark.png" alt="Logo SE2026" class="logo-dark"  fetchpriority="high" loading="eager">
       <div class="login-logo-label">Monitoring SE2026<br>Penajam Paser Utara</div>
+      <% } else { %>
+      <%
+        let _lLogo = '/images/logo-pananyo-taka-flow.svg';
+        if (typeof activeSurvey !== 'undefined') {
+          if (activeSurvey === 'sakernas-pemutakhiran') _lLogo = '/images/logo-sakernas-pemutakhiran.svg';
+          else if (activeSurvey === 'sakernas-pendataan') _lLogo = '/images/logo-sakernas-pendataan.svg';
+          else if (activeSurvey.startsWith('sakernas')) _lLogo = '/images/logo-sakernas-mark.svg';
+        }
+      %>
+      <div style="margin-bottom: 10px; display: flex; align-items: center; justify-content: center;">
+        <img src="<%= _lLogo %>" alt="Logo <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'Survei') %>" width="64" height="64" style="object-fit: contain; filter: drop-shadow(0 4px 14px rgba(var(--accent-rgb), 0.35));">
+      </div>
+      <div class="login-logo-label">Monitoring <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'Survei') %><br>Penajam Paser Utara</div>
+      <% } %>
     </div>
 
     <!-- RIGHT: Form Column -->

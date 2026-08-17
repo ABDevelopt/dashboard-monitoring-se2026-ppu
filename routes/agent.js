@@ -1,6 +1,6 @@
 const express = require('express');
 const router  = express.Router();
-const { sendMessageToAgent } = require('../services/agentService');
+const { sendMessageToAgent, streamMessageToAgent } = require('../services/agentService');
 const { getSettings } = require('../database');
 
 // Auth Middleware for Agent chatbot (allows any authenticated accounts)
@@ -9,7 +9,7 @@ function requireLogin(req, res, next) {
     return next();
   }
   
-  if (req.xhr || (req.headers.accept && req.headers.accept.includes('json')) || req.path === '/chat') {
+  if (req.xhr || (req.headers.accept && req.headers.accept.includes('json')) || req.path === '/chat' || req.path === '/chat/stream') {
     return res.status(401).json({ error: 'Akses ditolak. Silakan login terlebih dahulu untuk mengakses Asisten AI.' });
   }
   
@@ -83,7 +83,75 @@ const settings = getSettings();
 });
 
 // ─────────────────────────────────────────────────────────────────
-//  POST /chat — endpoint utama AI agent
+//  POST /chat/stream — SSE Streaming endpoint
+// ─────────────────────────────────────────────────────────────────
+router.post('/chat/stream', async (req, res) => {
+  const { message, history, provider, model } = req.body;
+
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  if (typeof res.flushHeaders === 'function') res.flushHeaders();
+
+  const sendEvent = (event, data) => {
+    if (res.writableEnded) return;
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    if (typeof res.flush === 'function') res.flush();
+  };
+
+  if (!message || typeof message !== 'string' || !message.trim()) {
+    sendEvent('error', { error: 'Pesan tidak boleh kosong.' });
+    return res.end();
+  }
+
+  if (message.length > 2000) {
+    sendEvent('error', { error: 'Pesan terlalu panjang. Maksimum 2000 karakter.' });
+    return res.end();
+  }
+
+  const safeHistory = Array.isArray(history)
+    ? history
+        .filter(h => h && typeof h.role === 'string' && typeof h.content === 'string')
+        .slice(-20)
+    : [];
+
+  const ALLOWED_PROVIDERS = ['gemini', 'openai', 'openrouter'];
+  const safeProvider = ALLOWED_PROVIDERS.includes(provider) ? provider : undefined;
+
+  const controller = new AbortController();
+  req.on('close', () => {
+    controller.abort();
+  });
+
+  const startTime = Date.now();
+
+  try {
+    sendEvent('status', { text: 'Menyiapkan asisten...', step: 'init' });
+    await streamMessageToAgent(
+      message.trim(),
+      safeHistory,
+      { provider: safeProvider, model },
+      sendEvent,
+      controller.signal
+    );
+    const duration = Date.now() - startTime;
+    console.info(`[AGENT:STREAM] OK — ${safeProvider || 'auto'}/${model || 'default'} — ${duration}ms`);
+    res.end();
+  } catch (err) {
+    const duration = Date.now() - startTime;
+    const errMsg = err?.message || 'Unknown error';
+    console.error(`[AGENT:STREAM] ERROR — ${safeProvider || 'auto'} — ${duration}ms —`, errMsg);
+    
+    if (!res.writableEnded) {
+      sendEvent('error', { error: errMsg });
+      res.end();
+    }
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  POST /chat — endpoint fallback (non-streaming)
 // ─────────────────────────────────────────────────────────────────
 router.post('/chat', async (req, res) => {
   // ── Validasi input ───────────────────────────────────────────
@@ -137,8 +205,6 @@ router.post('/chat', async (req, res) => {
     const duration = Date.now() - startTime;
 
     // ── Klasifikasi error ─────────────────────────────────────
-    //  Jenis error menentukan status HTTP dan pesan ke client.
-    //  Di production semua detail internal disembunyikan.
     const isTimeout  = /timed out|timeout|abort/i.test(errMsg);
     const isApiAuth  = /api key|unauthorized|authentication|invalid_api_key/i.test(errMsg);
     const isRateLimit = /rate.?limit|quota|429/i.test(errMsg);

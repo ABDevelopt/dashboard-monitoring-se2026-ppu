@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- PANANYO TAKA — KONSEP 4: SMOOTH CONTINUOUS MONOLINE RIBBON (TRANSPARENT BACKGROUND) -->
+  <defs>
+    <linearGradient id="ribbonFlowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="25%" stop-color="#06B6D4" />
+      <stop offset="50%" stop-color="#F97316" />
+      <stop offset="75%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Tiang Vertikal P (Kiri) -->
+  <rect x="96" y="110" width="46" height="292" rx="23" fill="#0284C7" />
+
+  <!-- 2. Aliran Berkelanjutan: Loop P -> Atap T -> Tiang T (One Continuous Flowing Stroke) -->
+  <path d="M119 255 H200 C246 255 278 223 278 182 C278 141 246 110 200 110 H396 M306 110 V402" 
+        stroke="url(#ribbonFlowGrad)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+  <!-- 3. Titik Aksen Emas pada Ujung Kanan T (Golden Data Point) -->
+  <circle cx="396" cy="110" r="16" fill="#FACC15" />
+</svg>

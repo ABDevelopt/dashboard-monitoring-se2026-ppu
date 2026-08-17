@@ -11,9 +11,9 @@
     <div class="card" style="margin-bottom: 20px;">
       <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
         <div class="card-title"><i class="bi bi-search"></i> Filter Performa Petugas</div>
-        <a href="/performa" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset</a>
+        <a href="<%= navPrefix %>/performa" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset</a>
       </div>
-      <form action="/performa" method="GET" id="filterForm">
+      <form action="<%= navPrefix %>/performa" method="GET" id="filterForm">
         <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           <div>
             <label for="performaKec" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
@@ -147,7 +147,7 @@
                     <%= index + 1 %>
                   </td>
                   <td data-sort="<%= item.pcl %>" style="padding: 10px 8px; font-weight: 600; font-size: 13px;">
-                    <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="text-decoration: none; color: inherit; cursor: help;" title="<%= hoverNarrative %>">
+                    <a href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="text-decoration: none; color: inherit; cursor: help;" title="<%= hoverNarrative %>">
                       <%= item.pcl %> <i class="bi bi-info-circle text-muted" style="font-size: 10px; margin-left: 2px;"></i>
                     </a>
                     <% if (kippPcls.includes(item.pcl.toUpperCase())) { %>

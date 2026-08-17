@@ -1,4 +1,7 @@
 <%
+  const isSakernas = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
+  const officerLabel = isSakernas ? 'PPL' : 'PCL';
+
   let activeTargetPct = 25;
   let targetMonthName = '30 Juni';
   const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
@@ -11,8 +14,14 @@
   <% if (!summary) { %>
     <!-- EMPTY STATE -->
     <div class="card empty-state text-center" style="padding: 80px 20px;">
+      <% if (activeSurvey === 'se2026') { %>
       <img src="/logo-mark.png" alt="Emblem SE2026" class="logo-light" loading="eager" style="width: 80px; height: 80px; margin-bottom: 20px; opacity: 0.85; object-fit: contain;">
       <img src="/logo-mark-dark.png" alt="Emblem SE2026" class="logo-dark" fetchpriority="high" loading="eager" style="width: 80px; height: 80px; margin-bottom: 20px; opacity: 0.85; object-fit: contain;">
+      <% } else { %>
+      <div style="margin-bottom: 20px; display: inline-flex; align-items: center; justify-content: center;">
+        <img src="<%= (typeof surveyLogoSrc !== 'undefined' ? surveyLogoSrc : (activeSurvey === 'sakernas-pemutakhiran' ? '/images/logo-sakernas-pemutakhiran.svg' : (activeSurvey === 'sakernas-pendataan' ? '/images/logo-sakernas-pendataan.svg' : '/images/logo-pananyo-taka-flow.svg'))) %>" alt="Logo <%= surveyConfig.shortName %>" width="80" height="80" style="object-fit: contain; filter: drop-shadow(0 6px 16px rgba(var(--accent-rgb), 0.35));">
+      </div>
+      <% } %>
       <h2 class="empty-state-title" style="font-size: 22px; margin-bottom: 12px;">Selamat Datang di <%= surveyConfig.name %></h2>
       <p class="empty-state-text" style="font-size: 14px; max-width: 540px; margin: 0 auto 24px; color: var(--text-secondary);">
         Dashboard monitoring progres <%= surveyConfig.name %> belum terisi data. Silakan upload file status FASIH harian pertama Anda untuk memulai visualisasi monitoring.
@@ -495,7 +504,7 @@
       var targetNormalPerPcl = 0;
 
       if (settings.speedometer_calc_mode === 'pcl_speed') {
-        var targetSpeedPerPcl = parseFloat(settings.speedometer_target_speed_per_pcl || '13') || 13;
+        var targetSpeedPerPcl = parseFloat(settings.speedometer_target_speed_per_pcl || (isSakernas ? '2' : '13')) || (isSakernas ? 2 : 13);
         targetSpeedTotal = targetSpeedPerPcl * totalPcl;
         targetNormalPerPcl = targetSpeedPerPcl;
       } else {
@@ -503,7 +512,14 @@
         targetSpeedTotal = totalDays > 0 ? ((summary.target_fasih_total || 0) / totalDays) : 0;
         targetNormalPerPcl = totalPcl > 0 ? (targetSpeedTotal / totalPcl) : 0;
       }
-      var targetNormalPerPclText = targetNormalPerPcl.toFixed(1);
+      
+      const formatTargetDisplay = (num) => {
+        if (!Number.isFinite(num)) return '0';
+        if (num % 1 === 0) return num.toFixed(0);
+        if (num < 1) return parseFloat(num.toFixed(2)).toString();
+        return parseFloat(num.toFixed(1)).toString();
+      };
+      var targetNormalPerPclText = formatTargetDisplay(targetNormalPerPcl);
 
       // Hitung perkiraan selesai 40% dan 100%
       const target_40 = (summary.target_fasih_total || 0) * 0.4;
@@ -650,13 +666,13 @@
             </div>
             <% } %>
 
-            <!-- SUBMITTED BY PCL -->
+            <!-- SUBMITTED BY PCL / PPL -->
             <% if (settings.show_status_submitted === '1' || settings.show_status_submitted === undefined) { %>
             <div class="status-submit-bg rounded-sm py-2-5 px-3 d-flex flex-col gap-2">
               <div class="d-flex items-center justify-between gap-2 w-full">
                 <div>
                   <div class="fs-xxs text-muted fw-bold text-uppercase">SUBMITTED</div>
-                  <div class="fs-xs text-secondary" style="line-height: 1.2;">Oleh PCL</div>
+                  <div class="fs-xs text-secondary" style="line-height: 1.2;">Oleh <%= officerLabel %></div>
                 </div>
                 <div class="status-submit-text fs-md fw-extrabold text-right">
                   <%= (summary.submitted_total || 0).toLocaleString('id-ID') %>
@@ -725,7 +741,7 @@
                   Speedometer Pendataan
                 </h4>
                 <p class="m-0 mt-0-5 fs-sm text-muted">
-                  Realisasi vs Target Standar <strong id="speedometerTargetNormalField"><%= targetNormalPerPclText %> dok/PCL/hari</strong> (Laju Aman Tepat Waktu: <strong id="speedometerReqSpeedField"><%= reqSpeedPerPclText %> dok/PCL/hari</strong>)
+                  Realisasi vs Target Standar <strong id="speedometerTargetNormalField"><%= targetNormalPerPclText %> dok/<%= officerLabel %>/hari</strong> (Laju Aman Tepat Waktu: <strong id="speedometerReqSpeedField"><%= reqSpeedPerPclText %> dok/<%= officerLabel %>/hari</strong>)
                 </p>
               </div>
             </div>
@@ -751,9 +767,9 @@
                 <i class="bi bi-question-circle help-tooltip-icon"></i>
                 <div class="help-tooltip-box" style="right: 0; transform: translateX(0); margin-top: 8px; width: 280px; z-index: 1000;">
                   <strong class="text-primary d-block mb-1">Panduan Speedometer Pendataan:</strong>
-                  Speedometer mengukur kecepatan rata-rata harian pengumpulan berkas per petugas (PCL).
+                  Speedometer mengukur kecepatan rata-rata harian pengumpulan berkas per petugas (<%= officerLabel %>).
                   <br><br>
-                  <strong>Laju Akumulatif:</strong> Rata-rata harian sejak hari pertama pendataan hingga saat ini. Laju kerja dibandingkan dengan target standar (<strong><%= targetNormalPerPclText %> dok/hari/petugas</strong>).
+                  <strong>Laju Akumulatif:</strong> Rata-rata harian sejak hari pertama pendataan hingga saat ini. Laju kerja dibandingkan dengan target standar (<strong><%= targetNormalPerPclText %> dok/hari/<%= officerLabel %></strong>).
                   <br><br>
                   <strong>Laju Update Terakhir:</strong> Kecepatan harian yang dihasilkan khusus pada periode unggah data terakhir (seperti notifikasi WhatsApp).
                 </div>
@@ -764,21 +780,21 @@
           <!-- Main Grid: Speedometer Gauge (Left) & Speed KPI & Analysis (Right) -->
           <div class="d-grid grid-fit-300 gap-5 items-stretch mt-3">
             
-            <!-- Gauge Canvas Box (Dual Gauge Asymmetrical Layout - Forced Side-by-Side) -->
-            <div class="w-full bg-white-subtle border-default rounded-lg py-4 px-3" style="min-height: 235px; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px;">
+            <!-- Gauge Canvas Box (Dual Gauge Asymmetrical Layout) -->
+            <div class="w-full bg-white-subtle border-default rounded-lg py-4 px-3 speedometer-gauges-wrapper" style="min-height: 235px; display: flex; flex-direction: row; align-items: center; justify-content: space-evenly; gap: 8px;">
               <!-- Left Side: Accumulative Gauge (Smaller, Secondary Reference) -->
-              <div class="text-center d-flex flex-col items-center justify-center" style="flex: 0.8; min-width: 90px; width: 35%;">
-                <canvas id="speedometerChartCanvas" class="w-full" style="max-height: 135px;"></canvas>
+              <div class="text-center d-flex flex-col items-center justify-center speedometer-gauge-col" style="flex: 1; min-width: 100px; max-width: 200px;">
+                <canvas id="speedometerChartCanvas" class="w-full" style="max-height: 140px; min-height: 110px;"></canvas>
                 <div class="fs-sm fw-bold text-primary mt-1" style="white-space: nowrap;">Laju Akumulatif</div>
                 <div class="fs-caption text-muted" style="white-space: nowrap;">Rata-rata proyek</div>
               </div>
               
               <!-- Subtle vertical divider -->
-              <div style="border-left: 1px dashed var(--border); height: 130px; align-self: center; margin: 0 4px;"></div>
+              <div class="speedometer-divider" style="border-left: 1px dashed var(--border); height: 130px; align-self: center; margin: 0 4px;"></div>
               
               <!-- Right Side: Last Update Gauge (Larger, Primary) -->
-              <div class="text-center d-flex flex-col items-center justify-center" style="flex: 1.4; min-width: 130px; width: 60%;">
-                <canvas id="speedometerLastUpdateCanvas" class="w-full" style="max-height: 210px;"></canvas>
+              <div class="text-center d-flex flex-col items-center justify-center speedometer-gauge-col" style="flex: 1.3; min-width: 130px; max-width: 250px;">
+                <canvas id="speedometerLastUpdateCanvas" class="w-full" style="max-height: 190px; min-height: 130px;"></canvas>
                 <div class="fs-sm fw-bold text-primary mt-1" style="white-space: nowrap;">Laju Update Terakhir</div>
                 <div class="fs-caption text-muted" style="white-space: nowrap;">Realisasi update terakhir</div>
               </div>
@@ -805,7 +821,7 @@
                 <div class="bg-info-subtle border-info-subtle rounded-sm py-2 px-2-5 text-center">
                   <div class="fs-caption text-muted fw-medium">Kecepatan Ideal</div>
                   <div class="fs-caption fw-bold text-primary mt-1 d-flex items-center justify-center gap-1 flex-wrap">
-                    <i class="bi bi-lightning-charge-fill text-blue"></i><span id="speedometerIdealSpeedField"><%= reqSpeedPerPclText %> dok/PCL/hari</span>
+                    <i class="bi bi-lightning-charge-fill text-blue"></i><span id="speedometerIdealSpeedField"><%= reqSpeedPerPclText %> dok/<%= officerLabel %>/hari</span>
                   </div>
                 </div>
 
@@ -829,9 +845,9 @@
                 <% if (remainingFasih === 0) { %>
                   Pendataan secara global telah menyelesaikan seluruh target pengisian dokumen FASIH sebanyak <strong><%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></strong> dokumen. Kinerja luar biasa!
                 <% } else { %>
-                  Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak <%= formatIndonesianDate(settings.speedometer_start_date || '2026-06-15') %>). Sisa hari menuju deadline (<%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>): <strong><%= daysRemaining %> hari</strong>.<br>
+                  Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak <%= formatIndonesianDate(settings.speedometer_start_date || (isSakernas ? '2026-08-01' : '2026-06-15')) %>). Sisa hari menuju deadline (<%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>): <strong><%= daysRemaining %> hari</strong>.<br>
                   Sisa beban kerja: <strong><%= remainingFasih.toLocaleString('id-ID') %> dokumen</strong>. 
-                  Dengan kecepatan rata-rata harian (<strong><%= speedPerPclText %> dok/PCL/hari</strong> atau <strong><%= currentSpeedText %> dok/hari total</strong>), 
+                  Dengan kecepatan rata-rata harian (<strong><%= speedPerPclText %> dok/<%= officerLabel %>/hari</strong> atau <strong><%= currentSpeedText %> dok/hari total</strong>), 
                   <% if (currentSpeed === 0) { %>
                     pendataan belum merealisasikan dokumen FASIH sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.
                   <% } else { %>
@@ -841,7 +857,7 @@
                   <% if (isOfftrack) { %>
                     <div class="alert-danger-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
                       <i class="bi bi-exclamation-triangle-fill text-red fs-md mt-0-5"></i>
-                      <div><strong>Off-Track:</strong> Kecepatan saat ini (Laju Akumulatif <%= speedPerPclText %> dok/PCL/hari) di bawah target normal <%= targetNormalPerPclText %> dok/hari/petugas. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeedPerPclText %> dok/PCL/hari</strong> (atau <strong><%= reqSpeed.toFixed(2) %> dok/hari total</strong>) agar selesai sesuai target pada <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>.</div>
+                      <div><strong>Off-Track:</strong> Kecepatan saat ini (Laju Akumulatif <%= speedPerPclText %> dok/<%= officerLabel %>/hari) di bawah target normal <%= targetNormalPerPclText %> dok/hari/<%= officerLabel %>. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeedPerPclText %> dok/<%= officerLabel %>/hari</strong> (atau <strong><%= reqSpeed.toFixed(2) %> dok/hari total</strong>) agar selesai sesuai target pada <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>.</div>
                     </div>
                   <% } else { %>
                     <div class="alert-success-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
@@ -854,12 +870,11 @@
 
             </div>
           </div>
-
-          <!-- Daily Rate Line Chart Box (Sports Dashboard Style - Full Width Underneath) -->
+          <!-- Daily Rate Line Chart Box (Sports Dashboard Style - Full Width Underneath) -->
           <div class="w-full bg-white-subtle border-default rounded-lg p-4 mt-4" style="min-height: 220px; display: flex; flex-direction: column;">
             <div class="fs-xs fw-bold text-muted mb-2 text-uppercase d-flex items-center justify-between" style="letter-spacing: 0.05em;">
-              <span class="d-flex items-center gap-1"><i class="bi bi-speedometer text-red" style="font-size: 13px;"></i> Tren Laju Harian Petugas (dok/PCL/hari)</span>
-              <span class="badge badge-green-subtle" style="font-size: 9px; font-weight: 700;">Target Tetap: <%= settings.speedometer_target_speed_per_pcl || '13' %></span>
+              <span class="d-flex items-center gap-1"><i class="bi bi-speedometer text-red" style="font-size: 13px;"></i> Tren Laju Harian Petugas (dok/<%= officerLabel %>/hari)</span>
+              <span class="badge badge-green-subtle" style="font-size: 9px; font-weight: 700;">Target Standar: <%= targetNormalPerPclText %> dok/<%= officerLabel %>/hari</span>
             </div>
             <div style="flex: 1; min-height: 150px; position: relative;">
               <canvas id="dailyRateLineChartCanvas"></canvas>
@@ -879,10 +894,10 @@
               <div>
                 <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em;">
                   Analisis & Kekurangan Target Harian (Agregat Kabupaten)
-                </h4>                <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                </h4>                <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                   <span>Monitoring defisit laju pengumpulan dokumen FASIH tingkat kabupaten se-PPU</span>
                   <span class="badge badge-purple-subtle" style="font-size: 10.5px; padding: 2px 8px; font-weight: 700; border: 1px solid rgba(139, 92, 246, 0.3);">
-                    <i class="bi bi-clock-history" style="color: var(--accent-purple);"></i> Laju Update Terakhir: <strong>+<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %> dok</strong> (<%= (typeof latestUpdateSpeedPerPcl !== 'undefined' ? latestUpdateSpeedPerPcl : 0).toLocaleString('id-ID', {maximumFractionDigits: 1}) %> dok/PCL)
+                    <i class="bi bi-clock-history" style="color: var(--accent-purple);"></i> Laju Update Terakhir: <strong>+<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %> dok</strong> (<%= (typeof latestUpdateSpeedPerPcl !== 'undefined' ? latestUpdateSpeedPerPcl : 0).toLocaleString('id-ID', {maximumFractionDigits: 1}) %> dok/<%= officerLabel %>)
                   </span>
                 </p>
               </div>
@@ -902,7 +917,7 @@
                 <br><br>
                 <strong>Target Aktual (Laju Aman):</strong> Kecepatan minimal harian yang diperlukan untuk menyelesaikan sisa beban kerja tepat waktu sebelum deadline (menyesuaikan sisa beban dan hari tersisa).
                 <br><br>
-                <strong>Target Tetap:</strong> Standar rancangan kegiatan awal flat yaitu 13 dokumen per petugas (PCL) per hari secara kumulatif kabupaten (13 × <%= totalPcl %> PCL).
+                <strong>Target Tetap:</strong> Standar rancangan kegiatan awal flat yaitu <%= isSakernas ? '2' : '13' %> dokumen per petugas (<%= officerLabel %>) per hari secara kumulatif kabupaten (<%= isSakernas ? '2' : '13' %> × <%= totalPcl %> <%= officerLabel %>).
                 <br><br>
                 <strong>Defisit Laju:</strong> Angka kekurangan dokumen per hari terhadap target minimal agar pendataan tetap on-track.
               </div>
@@ -910,7 +925,8 @@
           </div>
             
             <% 
-              const targetTetap = 13 * totalPcl;
+              const defaultPerOfficer = isSakernas ? 2 : 13;
+              const targetTetap = defaultPerOfficer * totalPcl;
               const stdDeficit = Math.max(0, targetSpeedTotal - currentSpeed);
               const reqDeficit = Math.max(0, reqSpeed - currentSpeed);
               const isOfftrackHarian = stdDeficit > 0 || reqDeficit > 0;
@@ -988,7 +1004,7 @@
                       +<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %>
                       <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);">dok</span>
                     </span>
-                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;"><%= (typeof latestUpdateSpeedPerPcl !== 'undefined' ? latestUpdateSpeedPerPcl : 0).toLocaleString('id-ID', {maximumFractionDigits: 1}) %> dok/PCL</span>
+                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;"><%= (typeof latestUpdateSpeedPerPcl !== 'undefined' ? latestUpdateSpeedPerPcl : 0).toLocaleString('id-ID', {maximumFractionDigits: 1}) %> dok/<%= officerLabel %></span>
                   </div>
                   <!-- Realisasi Rata-Rata -->
                   <div style="display: flex; flex-direction: column; gap: 2px; padding: 6px 8px;">
@@ -1024,7 +1040,7 @@
                       <%= Math.round(targetTetap).toLocaleString('id-ID') %>
                       <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
                     </span>
-                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">13 dok × <%= totalPcl %> PCL</span>
+                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;"><%= isSakernas ? '2' : '13' %> dok × <%= totalPcl %> <%= officerLabel %></span>
                   </div>
                 </div>
 
@@ -1093,7 +1109,7 @@
                 Sebaran Penambahan Dokumen Petugas (<span id="distDateLabel">Update Ini</span>)
               </h4>
               <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">
-                Distribusi penambahan realisasi dokumen FASIH per petugas (PCL) pada tanggal <span id="distDateSub"><%= latestUpload ? formatIndonesianDate(latestUpload.tanggal) : 'sesi upload terbaru' %></span>
+                Distribusi penambahan realisasi dokumen FASIH per petugas (<%= officerLabel %>) pada tanggal <span id="distDateSub"><%= latestUpload ? formatIndonesianDate(latestUpload.tanggal) : 'sesi upload terbaru' %></span>
               </p>
             </div>
           </div>
@@ -1162,7 +1178,7 @@
             </tbody>
             <tfoot>
               <tr style="background: rgba(255, 255, 255, 0.01); font-weight: 700;">
-                <td style="padding: 12px; font-weight: 700; color: var(--text-primary);">Total Petugas (PCL)</td>
+                <td style="padding: 12px; font-weight: 700; color: var(--text-primary);">Total Petugas (<%= officerLabel %>)</td>
                 <td id="distTotalCount" style="padding: 12px; text-align: center; font-weight: 800; color: var(--text-primary); font-size: 13px;">
                   <%= totalDistPcl.toLocaleString('id-ID') %>
                 </td>
@@ -1201,7 +1217,7 @@
             <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
               <thead>
                 <tr style="border-bottom: 1px solid var(--border); background: rgba(255, 255, 255, 0.01); color: var(--text-muted); font-weight: 700; font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase;">
-                  <th style="padding: 10px 20px;">Nama Petugas (PCL)</th>
+                  <th style="padding: 10px 20px;">Nama Petugas (<%= officerLabel %>)</th>
                   <th style="padding: 10px 20px; text-align: right;">Penambahan</th>
                 </tr>
               </thead>
@@ -1215,8 +1231,8 @@
       </div>
       <% } %>
 
-      <!-- Progres Realisasi Pencacahan Muatan (Opsional) -->
-      <% if (settings.overview_muatan === '1') { %>
+      <% if (!isSakernas && settings.overview_muatan === '1' && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) { %>
+      <!-- Progres Realisasi Pencacahan Muatan (Opsional - Sensus Only) -->
       <div class="card muatan-col lazy-section" style="margin: 0; position: relative; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); padding: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px;">
           <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
@@ -1337,7 +1353,7 @@
                     <div style="font-size: 8px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">KK DITEMUKAN</div>
                     <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.2;">Total ditemukan</div>
                   </div>
-                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-purple);"><%= (summary.keluarga_total || 0).toLocaleString('id-ID') %></div>
+                  <div style="font-size: 13px; font-weight: 800; color: var(--accent-purple);"><%= (summary.keluarga_ditemukan || 0).toLocaleString('id-ID') %></div>
                 </div>
 
                 <!-- Keluarga Baru -->
@@ -1414,8 +1430,8 @@
       </div>
       <% } %>
 
+      <% if (!isSakernas && settings.overview_tren_muatan === '1' && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) { %>
       <!-- TREN HARIAN MUATAN -->
-      <% if (settings.overview_tren_muatan === '1') { %>
       <div class="card muatan-col lazy-section" style="margin: 0;">
         <div class="card-header">
           <div class="card-title"><i class="bi bi-calendar3"></i> Tren Progres Pengumpulan Data (Muatan)</div>
@@ -1455,7 +1471,7 @@
     <div class="card mt-4 lazy-section">
       <div class="card-header">
         <div class="card-title"><i class="bi bi-geo-alt"></i> Ringkasan Progres per Kecamatan</div>
-        <a href="/kecamatan" class="btn btn-secondary btn-sm">Rincian Kecamatan <i class="bi bi-arrow-right-short"></i></a>
+        <a href="<%= navPrefix %>/kecamatan" class="btn btn-secondary btn-sm">Rincian Kecamatan <i class="bi bi-arrow-right-short"></i></a>
       </div>
 
       <div class="search-wrap mb-4" style="margin-bottom: 16px;">
@@ -1492,7 +1508,7 @@
                 <% let muatanPct = k.muatan_pct_str; %>
                 <tr>
                   <td class="text-center td-index"><%= index + 1 %></td>
-                  <td class="td-primary" scope="row"><a href="/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" class="link-plain"><i class="bi bi-geo-alt"></i> <%= k.kecamatan %></a></td>
+                  <td class="td-primary" scope="row"><a href="<%= navPrefix %>/kecamatan?kec=<%= encodeURIComponent(k.kecamatan) %>" class="link-plain"><i class="bi bi-geo-alt"></i> <%= k.kecamatan %></a></td>
                   <td class="bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>" style="min-width: 160px; padding: 6px 10px; vertical-align: middle;">
                     <%
                       const fReal = (k.submitted_total || 0) + (k.approved_total || 0) + (k.rejected_total || 0);
@@ -1532,10 +1548,12 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 20px; width: 100%; margin-top: 16px;">
-          <div style="height: 280px; position: relative;">
+          <% if (!isSakernas && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) { %>
+          <div class="muatan-col" style="height: 280px; position: relative;">
             <canvas id="kecBarChartCanvas"></canvas>
           </div>
-          <div style="height: 280px; position: relative; border-top: 1px dashed var(--border); padding-top: 16px;">
+          <% } %>
+          <div style="height: 280px; position: relative; <%= (!isSakernas && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) ? 'border-top: 1px dashed var(--border); padding-top: 16px;' : '' %>">
             <canvas id="kecFasihBarChartCanvas"></canvas>
           </div>
         </div>
@@ -1544,8 +1562,8 @@
     </div>
     <% } %>
 
-    <!-- DETAILS HOUSING / RUMAH -->
-    <% if (settings.overview_bangunan === '1') { %>
+    <!-- DETAILS HOUSING / RUMAH (SENSUS ONLY) -->
+    <% if (!isSakernas && settings.overview_bangunan === '1') { %>
     <div class="card mt-4 lazy-section">
       <div class="card-header">
         <div class="card-title"><i class="bi bi-house-door"></i> Klasifikasi Tipe Bangunan Tinggal</div>
@@ -2071,15 +2089,25 @@
           targetNormalPerPcl = totalPcl > 0 ? (targetSpeedTotal / totalPcl) : 0;
         }
         
+        const formatTargetDisplayClient = (num) => {
+          if (!Number.isFinite(num)) return '0';
+          if (num % 1 === 0) return num.toFixed(0);
+          if (num < 1) return parseFloat(num.toFixed(2)).toString();
+          return parseFloat(num.toFixed(1)).toString();
+        };
+
+        const targetNormalFormatted = formatTargetDisplayClient(targetNormalPerPcl);
+        const officerLabelStr = (typeof window !== 'undefined' && window.activeSurveyId && window.activeSurveyId.startsWith('sakernas')) ? 'PPL' : 'PCL';
+
         // Re-create Speedometer Gauge (Accumulative & Last Update)
         createSpeedometerChart('speedometerChartCanvas', speedPerPcl, targetNormalPerPcl, currentSpeed, targetSpeedTotal);
         createSpeedometerChart('speedometerLastUpdateCanvas', latestUpdateSpeedPerPcl, targetNormalPerPcl, diffTotal, targetSpeedTotal);
         
         // Update header sub-text fields
         const normalSpeedEl = document.getElementById('speedometerTargetNormalField');
-        if (normalSpeedEl) normalSpeedEl.textContent = `${targetNormalPerPcl.toFixed(1)} dok/PCL/hari`;
+        if (normalSpeedEl) normalSpeedEl.textContent = `${targetNormalFormatted} dok/${officerLabelStr}/hari`;
         const reqSpeedEl = document.getElementById('speedometerReqSpeedField');
-        if (reqSpeedEl) reqSpeedEl.textContent = `${reqSpeedPerPcl.toFixed(2)} dok/PCL/hari`;
+        if (reqSpeedEl) reqSpeedEl.textContent = `${reqSpeedPerPcl.toFixed(2)} dok/${officerLabelStr}/hari`;
         
         // Update Status Badge
         const statusField = document.getElementById('speedometerStatusField');
@@ -2096,7 +2124,7 @@
         // Update Kecepatan Ideal Card
         const idealSpeedField = document.getElementById('speedometerIdealSpeedField');
         if (idealSpeedField) {
-          idealSpeedField.textContent = `${reqSpeedPerPcl.toFixed(2)} dok/PCL/hari`;
+          idealSpeedField.textContent = `${reqSpeedPerPcl.toFixed(2)} dok/${officerLabelStr}/hari`;
         }
         
         // Update Est. Selesai 100% Card
@@ -2121,7 +2149,7 @@
           } else {
             let inner = `Hari berjalan pendataan: <strong>${diffDays} hari</strong> (sejak ${clientFormatIndonesianDate(sensorStartDateStr)}). Sisa hari menuju deadline (${clientFormatIndonesianDate(sensorDeadlineDateStr)}): <strong>${daysRemaining} hari</strong>.<br>
             Sisa beban kerja: <strong>${remainingFasih.toLocaleString('id-ID')} dokumen</strong>. 
-            Dengan kecepatan rata-rata harian (<strong>${speedPerPcl.toFixed(2)} dok/PCL/hari</strong> atau <strong>${currentSpeed.toFixed(2)} dok/hari total</strong>), `;
+            Dengan kecepatan rata-rata harian (<strong>${speedPerPcl.toFixed(2)} dok/${officerLabelStr}/hari</strong> atau <strong>${currentSpeed.toFixed(2)} dok/hari total</strong>), `;
             
             if (currentSpeed === 0) {
               inner += `pendataan belum merealisasikan dokumen FASIH sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.`;
@@ -2132,7 +2160,7 @@
             if (isOfftrack) {
               inner += `<div class="alert-danger-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
                 <i class="bi bi-exclamation-triangle-fill text-red fs-md mt-0-5"></i>
-                <div><strong>Off-Track:</strong> Kecepatan saat ini (Laju Akumulatif ${speedPerPcl.toFixed(2)} dok/PCL/hari) di bawah target normal ${targetNormalPerPcl.toFixed(1)} dok/hari/petugas. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong>${reqSpeedPerPcl.toFixed(2)} dok/PCL/hari</strong> (atau <strong>${reqSpeed.toFixed(2)} dok/hari total</strong>) agar selesai sesuai target pada ${clientFormatIndonesianDate(sensorDeadlineDateStr)}.</div>
+                <div><strong>Off-Track:</strong> Kecepatan saat ini (Laju Akumulatif ${speedPerPcl.toFixed(2)} dok/${officerLabelStr}/hari) di bawah target normal ${targetNormalFormatted} dok/hari/${officerLabelStr}. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong>${reqSpeedPerPcl.toFixed(2)} dok/${officerLabelStr}/hari</strong> (atau <strong>${reqSpeed.toFixed(2)} dok/hari total</strong>) agar selesai sesuai target pada ${clientFormatIndonesianDate(sensorDeadlineDateStr)}.</div>
               </div>`;
             } else {
               inner += `<div class="alert-success-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
@@ -2176,27 +2204,6 @@
         }
       };
 
-      // Populate selector dropdown
-      const speedometerSelector = document.getElementById('speedometerDateSelector');
-      if (speedometerSelector) {
-        speedometerSelector.innerHTML = '';
-        // Sort descending for dropdown
-        const sortedDesc = [...dailyTrenData].sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
-        sortedDesc.forEach(item => {
-          const opt = document.createElement('option');
-          opt.value = item.tanggal;
-          opt.textContent = clientFormatIndonesianDate(item.tanggal);
-          speedometerSelector.appendChild(opt);
-        });
-        
-        // Select latest date by default
-        if (dailyTrenData.length > 0) {
-          const latestDate = dailyTrenData[dailyTrenData.length - 1].tanggal;
-          speedometerSelector.value = latestDate;
-          updateSpeedometersForDate(latestDate);
-        }
-      }
-
       // === Lazy Chart Initializer via IntersectionObserver ===
       // Chart hanya diinisialisasi saat canvas masuk viewport DAN Chart.js sudah siap
       window.onChartJsReady = function(fn) {
@@ -2214,6 +2221,29 @@
 
       function onChartJsReady(fn) {
         return window.onChartJsReady(fn);
+      }
+
+      // Populate selector dropdown
+      const speedometerSelector = document.getElementById('speedometerDateSelector');
+      if (speedometerSelector) {
+        speedometerSelector.innerHTML = '';
+        // Sort descending for dropdown
+        const sortedDesc = [...dailyTrenData].sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+        sortedDesc.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.tanggal;
+          opt.textContent = clientFormatIndonesianDate(item.tanggal);
+          speedometerSelector.appendChild(opt);
+        });
+        
+        // Select latest date by default
+        if (dailyTrenData.length > 0) {
+          const latestDate = dailyTrenData[dailyTrenData.length - 1].tanggal;
+          speedometerSelector.value = latestDate;
+          window.onChartJsReady(() => {
+            updateSpeedometersForDate(latestDate);
+          });
+        }
       }
 
       window.lazyInitChart = function(canvasId, initFn) {
@@ -2263,7 +2293,7 @@
         sportsDailyRates.push(parseFloat(dailyRate.toFixed(2)));
       }
       lazyInitChart('dailyRateLineChartCanvas', () => {
-        createSportsDailyRateLineChart('dailyRateLineChartCanvas', sportsDailyRateLabels, sportsDailyRates, <%= parseFloat(settings.speedometer_target_speed_per_pcl || '13') %>);
+        createSportsDailyRateLineChart('dailyRateLineChartCanvas', sportsDailyRateLabels, sportsDailyRates, <%= parseFloat(settings.speedometer_target_speed_per_pcl || (isSakernas ? '2' : '13')) %>);
       });
 
       // Hitung penambahan harian total FASIH (Submitted + Approved + Rejected)
@@ -2294,7 +2324,7 @@
       );
 
       // Initialize tren line chart
-      <% if (settings.overview_tren_muatan === '1') { %>
+      <% if (!isSakernas && settings.overview_tren_muatan === '1' && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) { %>
       lazyInitChart('trenChartCanvas', () => createTrenChart('trenChartCanvas', rawTrenData));
       <% } %>
 
@@ -2351,9 +2381,11 @@
         kecFasihTotal.push(<%= k.target_fasih_total || 0 %>);
       <% }) %>
 
+      <% if (!isSakernas && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) { %>
       lazyInitChart('kecBarChartCanvas', () =>
         createBarChart('kecBarChartCanvas', kecLabels, kecSelesai, kecTotal, 'Progres Per Kecamatan (Muatan)')
       );
+      <% } %>
       lazyInitChart('kecFasihBarChartCanvas', () =>
         createKecFasihBarChart('kecFasihBarChartCanvas', kecLabels, kecFasihSelesai, kecFasihTotal, 'Progres Per Kecamatan (FASIH)')
       );
@@ -2629,8 +2661,15 @@
             color = 'var(--accent-red)';
           }
 
+          const navPrefix = window.navPrefix || '';
+          const pclUrl = `${navPrefix}/pcl?pcl=${encodeURIComponent(item.pcl)}`;
           tr.innerHTML = `
-            <td style="padding: 10px 20px; font-weight: 600; color: var(--text-primary); text-align: left;">${item.pcl}</td>
+            <td style="padding: 10px 20px; font-weight: 600; color: var(--text-primary); text-align: left;">
+              <a href="${pclUrl}" style="color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="bi bi-person text-secondary" style="font-size: 13px;"></i>
+                <span>${item.pcl}</span>
+              </a>
+            </td>
             <td style="padding: 10px 20px; text-align: right; font-weight: 700; color: ${color};">${diffStr}</td>
           `;
           tbody.appendChild(tr);

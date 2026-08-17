@@ -3,13 +3,15 @@ const router = express.Router();
 const { getKorlapStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
 
 router.get('/', (req, res) => {
-const uploadId = res.locals.uploadId;
+  const uploadId = res.locals.uploadId;
+  const surveyId = res.locals.activeSurvey || 'se2026';
+  const db = getDb(surveyId);
   let korlapStats = [];
   let detailData = [];
   const filterKorlap = req.query.korlap || '';
 
   if (uploadId) {
-    korlapStats = getKorlapStats(uploadId, res.locals.settings);
+    korlapStats = getKorlapStats(uploadId, res.locals.settings, surveyId);
 
     if (filterKorlap) {
       const settings = res.locals.settings;
@@ -19,7 +21,7 @@ const uploadId = res.locals.uploadId;
       const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
       const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
-      detailData = attachProgressPercentages(getDb().prepare(`
+      detailData = attachProgressPercentages(db.prepare(`
         SELECT 
           m.pml, m.korlap,
           COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
@@ -38,14 +40,14 @@ const uploadId = res.locals.uploadId;
           SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
         FROM progres p
         LEFT JOIN subsls_master m ON p.kode = m.kode
-        WHERE p.upload_id = ? AND m.korlap = ?
+        WHERE p.upload_id = ? AND UPPER(TRIM(m.korlap)) = UPPER(TRIM(?))
         GROUP BY m.pml
         ORDER BY selesai ASC
       `).all(uploadId, filterKorlap));
     }
   }
 
-  const selectedKorlapStats = filterKorlap ? korlapStats.find(k => k.korlap.toUpperCase() === filterKorlap.toUpperCase()) : null;
+  const selectedKorlapStats = filterKorlap ? korlapStats.find(k => k.korlap && k.korlap.toUpperCase().trim() === filterKorlap.toUpperCase().trim()) : null;
 
   res.render('korlap', {
     title: 'Per Korlap',

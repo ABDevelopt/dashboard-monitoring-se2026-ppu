@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- PANANYO TAKA — KONSEP 1: ORIGAMI GEOMETRIC FOLD (TRANSPARENT BACKGROUND) -->
+  <defs>
+    <linearGradient id="foldOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FB923C" />
+      <stop offset="100%" stop-color="#EA580C" />
+    </linearGradient>
+    <linearGradient id="foldCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+    <linearGradient id="foldBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA" />
+      <stop offset="100%" stop-color="#1D4ED8" />
+    </linearGradient>
+    <linearGradient id="foldEmerald" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Tiang Vertikal P (Kiri) -->
+  <path d="M100 110 H154 V390 H100 Z" fill="url(#foldCyan)" rx="8" />
+
+  <!-- 2. Loop Kepala P (Bentuk Geometris Sudut Dinamis 45°) -->
+  <path d="M154 110 H260 C295 110 320 135 320 170 C320 205 295 230 260 230 H154 Z" fill="url(#foldOrange)" />
+  <!-- Lubang Dalam P (Negative Space) -->
+  <path d="M154 154 H250 C262 154 274 162 274 170 C274 178 262 186 250 186 H154 Z" fill="#080C14" opacity="0.1" />
+
+  <!-- 3. Atap Horizontal T (Menyilang Elegan di Sisi Kanan) -->
+  <path d="M220 110 H412 V156 H220 Z" fill="url(#foldBlue)" rx="6" />
+
+  <!-- 4. Tiang Pusat Vertikal T (Menembus ke Bawah) -->
+  <path d="M290 156 H342 V390 H290 Z" fill="url(#foldBlue)" rx="6" />
+
+  <!-- 5. Lapisan Aksentuasi Data Hijau Zamrud (Fold Accent di Sudut Bawah) -->
+  <polygon points="100,390 154,336 154,390" fill="url(#foldEmerald)" />
+</svg>

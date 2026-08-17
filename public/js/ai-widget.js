@@ -229,6 +229,9 @@
       <div class="ai-widget-footer">
         <div class="ai-widget-input-wrap">
           <textarea id="ai-widget-input" class="ai-widget-textarea" placeholder="Tanyakan sesuatu tentang SE2026..." rows="1"></textarea>
+          <button id="ai-widget-stop" class="ai-widget-stop-btn" title="Hentikan Jawaban" style="display: none;">
+            <i class="bi bi-stop-fill"></i>
+          </button>
           <button id="ai-widget-send" class="ai-widget-send-btn" title="Kirim Pesan (Enter)">
             <i class="bi bi-send-fill"></i>
           </button>
@@ -423,7 +426,119 @@
     return div.innerHTML.replace(/\n/g, '<br>');
   }
 
-  // Show Typing Indicator
+  let activeWidgetAbortController = null;
+
+  function stopWidgetGeneration() {
+    if (activeWidgetAbortController) {
+      activeWidgetAbortController.abort();
+      activeWidgetAbortController = null;
+    }
+  }
+
+  function createWidgetStreamingMessage() {
+    const body = document.getElementById('ai-widget-body');
+    if (!body) return null;
+
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'ai-msg ai-msg-assistant';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'ai-msg-bubble';
+
+    const thinkingPill = document.createElement('div');
+    thinkingPill.className = 'ai-widget-thinking-pill';
+    thinkingPill.innerHTML = `
+      <span class="ai-widget-pulse-dot"></span>
+      <span class="ai-widget-thinking-text">Berpikir...</span>
+    `;
+    bubble.appendChild(thinkingPill);
+
+    const stepsContainer = document.createElement('div');
+    stepsContainer.className = 'ai-widget-steps-container';
+    bubble.appendChild(stepsContainer);
+
+    const contentEl = document.createElement('div');
+    contentEl.className = 'ai-widget-stream-content';
+    bubble.appendChild(contentEl);
+
+    const cursorEl = document.createElement('span');
+    cursorEl.className = 'ai-streaming-cursor';
+    bubble.appendChild(cursorEl);
+
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'ai-msg-time';
+    timeSpan.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    msgDiv.appendChild(bubble);
+    msgDiv.appendChild(timeSpan);
+    body.appendChild(msgDiv);
+    body.scrollTop = body.scrollHeight;
+
+    let accumulatedText = '';
+    const stepItems = {};
+
+    return {
+      element: msgDiv,
+      updateStatus(text) {
+        const textEl = thinkingPill.querySelector('.ai-widget-thinking-text');
+        if (textEl && text) textEl.textContent = text;
+      },
+      addStep(tool, message) {
+        thinkingPill.style.display = 'inline-flex';
+        this.updateStatus(message || tool);
+        const item = document.createElement('div');
+        item.className = 'ai-widget-step-item';
+        item.innerHTML = `<i class="bi bi-arrow-repeat spin"></i> <span>${escapeHtml(message || tool)}</span>`;
+        stepsContainer.appendChild(item);
+        stepItems[tool] = item;
+        body.scrollTop = body.scrollHeight;
+      },
+      completeStep(tool, message) {
+        const item = stepItems[tool];
+        if (item) {
+          item.innerHTML = `<i class="bi bi-check-circle-fill text-success" style="color: #22c55e;"></i> <span>${escapeHtml(message || tool)}</span>`;
+        }
+        body.scrollTop = body.scrollHeight;
+      },
+      appendChunk(chunk) {
+        if (!accumulatedText && chunk) {
+          thinkingPill.style.display = 'none';
+        }
+        accumulatedText += chunk;
+        contentEl.innerHTML = renderMarkdown(accumulatedText);
+        body.scrollTop = body.scrollHeight;
+      },
+      getText() {
+        return accumulatedText;
+      },
+      finalize(finalText) {
+        const textToRender = finalText || accumulatedText || 'Tidak ada tanggapan.';
+        accumulatedText = textToRender;
+        if (cursorEl.parentElement) cursorEl.remove();
+        if (thinkingPill.parentElement) thinkingPill.remove();
+        contentEl.innerHTML = renderMarkdown(textToRender);
+        body.scrollTop = body.scrollHeight;
+      },
+      showError(errText) {
+        if (cursorEl.parentElement) cursorEl.remove();
+        if (thinkingPill.parentElement) thinkingPill.remove();
+        contentEl.innerHTML = `⚠️ ${escapeHtml(errText)}`;
+        body.scrollTop = body.scrollHeight;
+      },
+      abortNotice() {
+        if (cursorEl.parentElement) cursorEl.remove();
+        if (thinkingPill.parentElement) thinkingPill.remove();
+        if (accumulatedText.trim()) {
+          contentEl.innerHTML = renderMarkdown(accumulatedText) + `<div style="font-size: 10px; color: var(--text-muted); font-style: italic; margin-top: 4px;"><i class="bi bi-stop-circle"></i> Dihentikan</div>`;
+        } else {
+          contentEl.innerHTML = `<em>Permintaan dihentikan oleh pengguna.</em>`;
+        }
+        body.scrollTop = body.scrollHeight;
+      }
+    };
+  }
+
+  // Show Typing Indicator (legacy fallback)
   function showTypingIndicator() {
     const body = document.getElementById('ai-widget-body');
     if (!body || document.getElementById('ai-widget-typing')) return;
@@ -494,12 +609,13 @@
     }
   }
 
-  // Send Query to /agent/chat
+  // Send Query to /agent/chat/stream with SSE
   async function handleSendMessage(customMessage = null) {
     if (isSending) return;
 
     const input = document.getElementById('ai-widget-input');
     const sendBtn = document.getElementById('ai-widget-send');
+    const stopBtn = document.getElementById('ai-widget-stop');
     const message = (customMessage || (input ? input.value : '')).trim();
 
     if (!message) return;
@@ -510,15 +626,14 @@
     }
 
     isSending = true;
-    if (sendBtn) sendBtn.disabled = true;
+    if (sendBtn) sendBtn.style.display = 'none';
+    if (stopBtn) stopBtn.style.display = 'inline-flex';
+    if (input) input.disabled = true;
 
     // Render User Message
     appendMessage('user', message);
     chatHistory.push({ role: 'user', content: message });
     saveLocalStorageHistory();
-
-    // Show Typing Indicator
-    showTypingIndicator();
 
     // Context hint for system
     const pageContext = getPageContextName();
@@ -527,15 +642,20 @@
     // Selected AI Model & Provider
     const aiInfo = getSelectedAI();
 
+    const streamMsg = createWidgetStreamingMessage();
+    const controller = new AbortController();
+    activeWidgetAbortController = controller;
+
     try {
-      const response = await fetch('/agent/chat', {
+      const response = await fetch('/agent/chat/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          'Accept': 'text/event-stream',
           'X-Requested-With': 'XMLHttpRequest',
           'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         },
+        signal: controller.signal,
         body: JSON.stringify({
           message: contextPrompt,
           history: chatHistory.slice(-MAX_HISTORY),
@@ -544,31 +664,94 @@
         })
       });
 
-      removeTypingIndicator();
-
       if (response.status === 401) {
-        appendMessage('assistant', '⚠️ *Akses ditolak.* Sesi Anda telah berakhir. Silakan login kembali untuk menggunakan Asisten AI.');
+        streamMsg.showError('Akses ditolak. Sesi Anda telah berakhir. Silakan login kembali.');
         return;
       }
 
-      const data = await response.json();
+      if (!response.ok) {
+        let errData;
+        try { errData = await response.json(); } catch (_) {}
+        throw new Error(errData?.error || `HTTP ${response.status}`);
+      }
 
-      if (!response.ok || data.error) {
-        appendMessage('assistant', `⚠️ ${data.error || 'Terjadi kesalahan saat memproses pertanyaan.'}`);
-      } else {
-        const replyText = data.reply || 'Maaf, tidak ada tanggapan.';
-        appendMessage('assistant', replyText);
-        chatHistory.push({ role: 'assistant', content: replyText });
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      let currentEvent = 'message';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+
+          if (trimmed.startsWith('event:')) {
+            currentEvent = trimmed.slice(6).trim();
+          } else if (trimmed.startsWith('data:')) {
+            const rawData = trimmed.slice(5).trim();
+            try {
+              const data = JSON.parse(rawData);
+              if (currentEvent === 'status') {
+                streamMsg.updateStatus(data.text);
+              } else if (currentEvent === 'tool_start') {
+                streamMsg.addStep(data.tool, data.message);
+              } else if (currentEvent === 'tool_end') {
+                streamMsg.completeStep(data.tool, data.message);
+              } else if (currentEvent === 'chunk') {
+                streamMsg.appendChunk(data.text || '');
+              } else if (currentEvent === 'done') {
+                streamMsg.finalize(data.reply || streamMsg.getText());
+                const finalReply = streamMsg.getText();
+                if (finalReply.trim()) {
+                  chatHistory.push({ role: 'assistant', content: finalReply });
+                  saveLocalStorageHistory();
+                }
+              } else if (currentEvent === 'error') {
+                streamMsg.showError(data.error || 'Terjadi kesalahan AI.');
+              }
+            } catch (err) {
+              console.warn('[AI-WIDGET:STREAM] Parse error:', err);
+            }
+          }
+        }
+      }
+
+      // If finished stream without explicit done event
+      const finalReply = streamMsg.getText();
+      if (finalReply.trim() && chatHistory[chatHistory.length - 1]?.role !== 'assistant') {
+        streamMsg.finalize(finalReply);
+        chatHistory.push({ role: 'assistant', content: finalReply });
         saveLocalStorageHistory();
       }
 
     } catch (err) {
-      removeTypingIndicator();
-      console.error('[AI-WIDGET] Fetch error:', err);
-      appendMessage('assistant', '⚠️ Gagal terhubung ke server AI. Pastikan koneksi jaringan Anda stabil.');
+      if (err.name === 'AbortError') {
+        streamMsg.abortNotice();
+        const partial = streamMsg.getText();
+        if (partial.trim()) {
+          chatHistory.push({ role: 'assistant', content: partial });
+          saveLocalStorageHistory();
+        }
+      } else {
+        console.error('[AI-WIDGET] Stream error:', err);
+        streamMsg.showError('Gagal terhubung ke server AI. Pastikan koneksi stabil.');
+      }
     } finally {
       isSending = false;
-      if (sendBtn) sendBtn.disabled = false;
+      activeWidgetAbortController = null;
+      if (stopBtn) stopBtn.style.display = 'none';
+      if (sendBtn) sendBtn.style.display = 'inline-flex';
+      if (input) {
+        input.disabled = false;
+        input.focus();
+      }
       const body = document.getElementById('ai-widget-body');
       if (body) body.scrollTop = body.scrollHeight;
     }
@@ -643,6 +826,8 @@
     }
 
     if (sendBtn) sendBtn.addEventListener('click', () => handleSendMessage());
+    const stopBtn = document.getElementById('ai-widget-stop');
+    if (stopBtn) stopBtn.addEventListener('click', () => stopWidgetGeneration());
 
     if (input) {
       // Auto resize textarea
@@ -660,12 +845,14 @@
       });
     }
 
-
-    // Keyboard Shortcut (Alt + A)
+    // Keyboard Shortcut (Alt + A) & Escape to stop
     document.addEventListener('keydown', function (e) {
       if (e.altKey && (e.key === 'a' || e.key === 'A')) {
         e.preventDefault();
         toggleWidget();
+      }
+      if (e.key === 'Escape' && isSending) {
+        stopWidgetGeneration();
       }
     });
 

@@ -12,10 +12,10 @@
     <div class="card" style="margin-bottom: 20px;">
       <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
         <div class="card-title"><i class="bi bi-search"></i> Filter Pencarian Performa Terbaik</div>
-        <a href="/leaderboard" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
+        <a href="<%= navPrefix %>/leaderboard" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
       </div>
       
-      <form action="/leaderboard" method="GET" id="filterForm">
+      <form action="<%= navPrefix %>/leaderboard" method="GET" id="filterForm">
         <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           
           <div>
@@ -94,7 +94,7 @@
                   <div class="warning-icon" style="font-size: 26px; color: <%= medalColor %>;"><%- medalIcon %></div>
                   <div class="warning-body" style="width: 100%;">
                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                      <span class="warning-name">Rank <%= index + 1 %>: <a href="/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: inherit; text-decoration: none;"><%= item.pcl %></a></span>
+                      <span class="warning-name">Rank <%= index + 1 %>: <a href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: inherit; text-decoration: none;"><%= item.pcl %></a></span>
                       <span class="badge badge-green" style="background: rgba(124, 58, 237, 0.15); color: var(--accent-purple); border: 1px solid rgba(124, 58, 237, 0.25);"><%= ((item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0)).toLocaleString('id-ID') %> / <%= (item.target_fasih_total || 0).toLocaleString('id-ID') %> FASIH</span>
                     </div>
                     <div class="warning-meta">

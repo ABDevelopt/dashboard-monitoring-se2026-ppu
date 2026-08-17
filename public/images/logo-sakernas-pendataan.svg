@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- SAKERNAS PENDATAAN — SAPPHIRE & COBALT FLOW THEME (TRANSPARENT BACKGROUND) -->
+  <defs>
+    <linearGradient id="sakPenTop" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="35%" stop-color="#0284C7" />
+      <stop offset="70%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#1D4ED8" />
+    </linearGradient>
+    <linearGradient id="sakPenSpine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#1E40AF" />
+    </linearGradient>
+    <linearGradient id="sakPenBottom" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="40%" stop-color="#0284C7" />
+      <stop offset="75%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#FACC15" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Tiang Vertikal Kiri (Pilar Pendataan) -->
+  <rect x="75" y="110" width="46" height="290" rx="23" fill="url(#sakPenSpine)" />
+
+  <!-- 2. Alur Huruf 'S' Pendataan (Sapphire Enterprise) -->
+  <path d="M415 133 H200 C155 133 125 163 125 197 C125 231 155 260 200 260 H315 C360 260 390 290 390 324 C390 358 360 387 315 387 H125" 
+        stroke="url(#sakPenTop)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+  <!-- 3. Sayap Centang Data Melesat 45° -->
+  <path d="M315 387 L435 205" 
+        stroke="url(#sakPenBottom)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+  <!-- 4. Jembatan Tengah -->
+  <path d="M98 260 H200" 
+        stroke="#2563EB" stroke-width="46" stroke-linecap="round" />
+
+  <!-- 5. Simpul Emas Kemakmuran -->
+  <circle cx="435" cy="205" r="20" fill="#FACC15" />
+</svg>

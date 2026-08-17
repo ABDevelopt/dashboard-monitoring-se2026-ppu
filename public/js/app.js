@@ -250,6 +250,11 @@ function updateTime() {
     const path   = url.pathname.replace(/\/$/, '') || '/';
     const params = url.searchParams;
 
+    const prefix = window.navPrefix || '';
+    const normalizedPath = (prefix && path.startsWith(prefix)) 
+      ? (path.slice(prefix.length).replace(/\/$/, '') || '/') 
+      : path;
+
     // Map URL paths → { label, icon, href }
     const PAGE_MAP = {
       '/':                  { label: 'Overview',          icon: 'bi-house-door-fill' },
@@ -282,7 +287,7 @@ function updateTime() {
     };
 
     // On root Overview page and AI agent page, hide breadcrumb (not needed)
-    if (path === '/' || path === '/agent') {
+    if (normalizedPath === '/' || normalizedPath === '/agent') {
       bar.classList.add('hidden');
       list.innerHTML = '';
       document.body.classList.remove('has-breadcrumb');
@@ -293,11 +298,11 @@ function updateTime() {
     const crumbs = [];
 
     // Always start with Home
-    crumbs.push({ label: 'Home', icon: 'bi-house-door', href: '/' });
+    crumbs.push({ label: 'Home', icon: 'bi-house-door', href: prefix + '/' });
 
     // Resolve the current page info
-    const pageInfo = PAGE_MAP[path] || { label: decodeURIComponent(path.replace(/^\//, '').replace(/-/g, ' ')).replace(/\b\w/g, c => c.toUpperCase()), icon: 'bi-file-earmark' };
-    const pageHref = path;
+    const pageInfo = PAGE_MAP[normalizedPath] || { label: decodeURIComponent(normalizedPath.replace(/^\//, '').replace(/-/g, ' ')).replace(/\b\w/g, c => c.toUpperCase()), icon: 'bi-file-earmark' };
+    const pageHref = prefix + (normalizedPath === '/' ? '' : normalizedPath);
 
     // Check for drill-down filter params that indicate sub-level navigation
     const filterKec    = params.get('kec');
@@ -836,7 +841,8 @@ function updateTime() {
       </div>
     `;
 
-    fetch(`/api/search-global?q=${encodeURIComponent(query)}`)
+    const activeSurvey = window.activeSurveyId || '';
+    fetch(`/api/search-global?q=${encodeURIComponent(query)}&survey=${encodeURIComponent(activeSurvey)}`)
       .then(res => res.json())
       .then(data => {
         let html = '';
@@ -2616,31 +2622,36 @@ function updateTime() {
 
     function updateBottomNavActiveState(targetPath) {
       if (!targetPath) return;
-      const homeBtn = document.querySelector('.bottom-nav-item[href="/"]');
+      const prefix = window.navPrefix || '';
+      const normalizedPath = (prefix && targetPath.startsWith(prefix)) 
+        ? (targetPath.slice(prefix.length).replace(/\/$/, '') || '/') 
+        : targetPath;
+
+      const homeBtn = document.querySelector('.bottom-nav-item[href="' + (prefix || '') + '/"]') || document.querySelector('.bottom-nav-item[href="/"]');
       const wilayahBtn = document.getElementById('bottomNavWilayahBtn');
       const petugasBtn = document.getElementById('bottomNavPetugasBtn');
-      const agentBtn = document.querySelector('.bottom-nav-item[href="/agent"]');
+      const agentBtn = document.querySelector('.bottom-nav-item[href*="/agent"]');
 
       const wilayahPaths = ['/kecamatan', '/subsls', '/map', '/kipp', '/pbi'];
       const petugasPaths = ['/pcl', '/pml', '/korlap', '/performa', '/leaderboard', '/performa-terendah'];
 
       if (homeBtn) {
-        if (targetPath === '/' || targetPath === '') homeBtn.classList.add('active');
+        if (normalizedPath === '/' || normalizedPath === '') homeBtn.classList.add('active');
         else homeBtn.classList.remove('active');
       }
 
       if (agentBtn) {
-        if (targetPath === '/agent') agentBtn.classList.add('active');
+        if (normalizedPath === '/agent') agentBtn.classList.add('active');
         else agentBtn.classList.remove('active');
       }
 
       if (wilayahBtn) {
-        if (wilayahPaths.includes(targetPath)) wilayahBtn.classList.add('active');
+        if (wilayahPaths.includes(normalizedPath)) wilayahBtn.classList.add('active');
         else wilayahBtn.classList.remove('active');
       }
 
       if (petugasBtn) {
-        if (petugasPaths.includes(targetPath)) petugasBtn.classList.add('active');
+        if (petugasPaths.includes(normalizedPath)) petugasBtn.classList.add('active');
         else petugasBtn.classList.remove('active');
       }
 
@@ -2649,7 +2660,7 @@ function updateTime() {
         const itemHref = item.getAttribute('href');
         if (itemHref) {
           const itemPath = new URL(itemHref, window.location.origin).pathname;
-          if (itemPath === targetPath || (targetPath === '/' && itemPath === '/')) {
+          if (itemPath === targetPath || (targetPath === '/' && itemPath === '/') || (normalizedPath === '/' && (itemPath === '/' || itemPath === (prefix + '/')))) {
             item.classList.add('active');
           } else {
             item.classList.remove('active');
@@ -2796,7 +2807,7 @@ function updateTime() {
             'Content-Type': 'application/json',
             'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ ...payload, surveyId: window.activeSurveyId || undefined })
         });
         const result = await response.json();
         if (result.success) {

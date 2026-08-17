@@ -32,9 +32,14 @@ Direktori ini memuat seluruh diagram teknis arsitektur perangkat lunak untuk sis
 - **File:** `05_system_architecture_diagram.png`
 - **Deskripsi:** Memodelkan arsitektur 3 lapisan sistem (*Presentation Layer*, *Application & Logic Layer*, dan *Data & Persistence Layer*).
 
-### 6. Activity Diagram Monitoring & Quality Control
+### 6. Activity Diagram Monitoring, Verifikasi FASIH & Diseminasi Pananyo Taka
 - **File:** `06_activity_diagram_monitoring.png`
-- **Deskripsi:** Memodelkan alur kerja pengawasan kualitas lapangan (*swimlanes*: PCL -> PML -> Korlap/Admin TI -> Sistem Pananyo Taka).
+- **Deskripsi:** Memodelkan alur kerja sistemik 5 jalur (*swimlanes*):
+  1. **Pencacah (PCL):** Melakukan pendataan lapangan, input data CAPI (status lokal `[DRAFT]`), dan melakukan `Submit` dokumen ke Server FASIH.
+  2. **Server FASIH BPS:** Menerima kiriman data (status berubah `[SUBMITTED]`) dan mengelola 5 status progres utama: `[OPEN]`, `[DRAFT]`, `[SUBMITTED]`, `[APPROVED]`, dan `[REJECTED]`.
+  3. **Pengawas Lapangan (PML):** Memeriksa dokumen `[SUBMITTED]` di Server FASIH. Jika data valid $\rightarrow$ `[APPROVED]`; jika ada anomali $\rightarrow$ `[REJECTED]` disertai catatan perbaikan yang dikembalikan ke PCL.
+  4. **Admin Web Monitoring (Tim TI BPS PPU):** Mengunduh/ekspor berkas rekapitulasi data progres harian (`.xlsx` FASIH) dan mengunggahnya ke Dasbor Pananyo Taka.
+  5. **Sistem Dasbor Pananyo Taka:** Memvalidasi skema, parsing data ke basis data SQLite (WAL Mode), memperbarui cache agregasi, serta merender visualisasi real-time (Speedometer, GIS Map, Tren Chart, Early Warning System, AI KIPP) untuk Pimpinan BPS, Korlap, PML, dan PCL.
 
 ### 7. Sequence Diagram Retrieval-Augmented Generation (AI RAG)
 - **File:** `07_sequence_diagram_rag_ai.png`

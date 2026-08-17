@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 210" fill="none">
+  <!-- PANANYO TAKA — HORIZONTAL LOCKUP (LIGHT THEME, TRANSPARENT BACKGROUND, NO SATKER TEXT) -->
+  <defs>
+    <linearGradient id="lhFlowStemP" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="60%" stop-color="#06B6D4" />
+      <stop offset="100%" stop-color="#38BDF8" />
+    </linearGradient>
+    <linearGradient id="lhFlowTopGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="25%" stop-color="#F97316" />
+      <stop offset="55%" stop-color="#EA580C" />
+      <stop offset="80%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+    <linearGradient id="lhFlowBottomGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="35%" stop-color="#1D4ED8" />
+      <stop offset="65%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#34D399" />
+    </linearGradient>
+  </defs>
+
+  <!-- ── EMBLEM KIRI: PERFECTED FLUID FLOW (X: 30, Y: 12, SCALE: 0.36) ── -->
+  <g transform="translate(30, 12) scale(0.36)">
+    <!-- Tiang Vertikal P (Kokoh & Utuh) -->
+    <rect x="75" y="110" width="46" height="290" rx="23" fill="url(#lhFlowStemP)" />
+    <!-- Loop Kepala P ke Atap T -->
+    <path d="M98 260 H195 C242 260 272 230 272 196 C272 162 242 133 195 133 H415" 
+          stroke="url(#lhFlowTopGrad)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <!-- Tiang T ke Centang -->
+    <path d="M315 133 V345 Q315 368 338 350 L435 205" 
+          stroke="url(#lhFlowBottomGrad)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <!-- Jembatan Aliran Bawah -->
+    <path d="M195 275 L315 360" stroke="#10B981" stroke-width="44" stroke-linecap="round" />
+    <!-- Simpul Emas -->
+    <circle cx="435" cy="205" r="20" fill="#FACC15" />
+  </g>
+
+  <!-- ── TIPOGRAFI KANAN: BERSIH & SEIMBANG (TANPA TEKS SATKER) ── -->
+  <!-- Judul Utama: PANANYO TAKA -->
+  <text x="220" y="100" font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" font-size="54" font-weight="900" letter-spacing="0.03em" fill="#0F172A">
+    PANANYO <tspan fill="#F97316">TAKA</tspan>
+  </text>
+
+  <!-- Subjudul: PORTAL MONITORING SENSUS & SURVEI -->
+  <text x="224" y="142" font-family="'Inter', -apple-system, sans-serif" font-size="16" font-weight="700" letter-spacing="0.14em" fill="#64748B">
+    PORTAL MONITORING SENSUS &amp; SURVEI
+  </text>
+</svg>

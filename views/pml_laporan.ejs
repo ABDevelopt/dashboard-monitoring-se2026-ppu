@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Laporan Progres Pendataan Petugas PCL - Monitoring SE2026 PPU</title>
+  <title>Laporan Progres Pendataan Petugas PCL - Monitoring <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'SE2026 PPU') %></title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- CSS Styles -->
@@ -311,7 +311,7 @@
     <div class="control-panel-title">
       <i class="bi bi-file-earmark-pdf"></i> Pembuat Laporan Kinerja PML
     </div>
-    <form action="/pml/laporan" method="GET" id="filterForm">
+    <form action="<%= navPrefix %>/pml/laporan" method="GET" id="filterForm">
       <div class="form-row">
         
         <!-- PML Filter -->
@@ -344,7 +344,7 @@
           <button type="submit" class="btn btn-primary"><i class="bi bi-arrow-clockwise"></i> Perbarui</button>
           <button type="button" class="btn btn-success" onclick="downloadPDF()"><i class="bi bi-file-earmark-pdf"></i> Unduh PDF</button>
           <button type="button" class="btn btn-secondary" onclick="downloadExcel()"><i class="bi bi-file-earmark-excel"></i> Unduh Excel</button>
-          <a href="/pml" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
+          <a href="<%= navPrefix %>/pml" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
         </div>
 
       </div>
@@ -437,7 +437,7 @@
       const checkedBoxes = document.querySelectorAll('input[name="uploadIds"]:checked');
       const uploadIds = Array.from(checkedBoxes).map(cb => cb.value).join(',');
       
-      let url = `/pml/laporan/pdf?pml=${encodeURIComponent(pml)}`;
+      let url = `<%= navPrefix %>/pml/laporan/pdf?pml=${encodeURIComponent(pml)}`;
       if (uploadIds) {
         url += `&uploadIds=${uploadIds}`;
       }
@@ -451,7 +451,7 @@
       const checkedBoxes = document.querySelectorAll('input[name="uploadIds"]:checked');
       const uploadIds = Array.from(checkedBoxes).map(cb => cb.value).join(',');
       
-      let url = `/pml/laporan/excel?pml=${encodeURIComponent(pml)}`;
+      let url = `<%= navPrefix %>/pml/laporan/excel?pml=${encodeURIComponent(pml)}`;
       if (uploadIds) {
         url += `&uploadIds=${uploadIds}`;
       }

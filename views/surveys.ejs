@@ -102,7 +102,7 @@
     height: 0;
   }
 
-  /* Giant Volumetric Cone Sweeping Across the Entire Screen */
+  /* Giant Volumetric Cone Sweeping Across the Entire Screen with Rounded Semicircle Apex */
   .giant-spotlight-beam {
     position: absolute;
     top: 0;
@@ -110,12 +110,37 @@
     width: 260vw;
     height: 240vh;
     background: var(--spotlight-giant-gradient);
-    clip-path: polygon(48.5% 0%, 51.5% 0%, 100% 100%, 0% 100%);
+    clip-path: polygon(
+      0% 100%,
+      47.2% 50px,
+      47.8% 32px,
+      48.5% 18px,
+      49.2% 7px,
+      50.0% 0%,
+      50.8% 7px,
+      51.5% 18px,
+      52.2% 32px,
+      52.8% 50px,
+      100% 100%
+    );
     transform-origin: 50% 0%;
-    filter: blur(20px);
+    filter: blur(18px);
     opacity: 0;
     animation: towerApexSweepAll 2.0s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     will-change: transform, opacity;
+  }
+
+  .giant-spotlight-beam::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 60px;
+    border-radius: 60px 60px 0 0;
+    background: var(--spotlight-giant-gradient);
+    filter: blur(6px);
   }
 
   /* Optical Beacon Flare at the Tower Apex Pivot Point */
@@ -274,6 +299,25 @@
       0 2px 12px rgba(255, 255, 255, 0.9),
       0 1px 3px rgba(0, 0, 0, 0.15);
     -webkit-text-stroke: 0.5px rgba(234, 88, 12, 0.2);
+  }
+
+  .hero-portal-brand-emblem {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 8px 24px rgba(249, 115, 22, 0.35));
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .hero-portal-brand-emblem:hover {
+    transform: scale(1.06);
+  }
+
+  .hero-portal-brand-img {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
   }
 
   .hero-sub-wrap {
@@ -548,6 +592,19 @@
     background: linear-gradient(135deg, #8b5cf6, #6d28d9);
     color: #ffffff !important;
     box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+  }
+
+  .btn-theme-emerald {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+  }
+
+  .btn-theme-blue,
+  .btn-theme-sapphire {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
   }
 
 

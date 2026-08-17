@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- PANANYO TAKA — KONSEP 3: ARCHITECTURAL HEXAGON GATEWAY (TRANSPARENT BACKGROUND) -->
+  <defs>
+    <linearGradient id="hexOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FB923C" />
+      <stop offset="100%" stop-color="#EA580C" />
+    </linearGradient>
+    <linearGradient id="hexCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+    <linearGradient id="hexEmerald" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Bingkai Heksagon Presisi (Sisi Sudut Membulat) -->
+  <path d="M256 36 L436 140 V348 L256 452 L76 348 V140 Z" 
+        stroke="url(#hexCyan)" stroke-width="18" stroke-linejoin="round" stroke-linecap="round" fill="none" opacity="0.3" />
+
+  <!-- 2. HURUF P (Sisi Kiri Heksagon) -->
+  <!-- Tiang P -->
+  <rect x="130" y="136" width="40" height="240" rx="20" fill="url(#hexOrange)" />
+  <!-- Kepala Loop P -->
+  <path d="M150 156 H228 C264 156 290 182 290 216 C290 250 264 276 228 276 H150" 
+        stroke="url(#hexOrange)" stroke-width="40" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+  <!-- 3. HURUF T (Sisi Kanan Heksagon) -->
+  <!-- Atap T -->
+  <rect x="236" y="136" width="160" height="40" rx="20" fill="url(#hexCyan)" />
+  <!-- Tiang T -->
+  <rect x="296" y="136" width="40" height="240" rx="20" fill="url(#hexCyan)" />
+
+  <!-- 4. Simpul Titik Satker Pusat (Center Nexus Node) -->
+  <circle cx="256" cy="452" r="16" fill="#FACC15" />
+  <circle cx="256" cy="36" r="16" fill="#10B981" />
+</svg>

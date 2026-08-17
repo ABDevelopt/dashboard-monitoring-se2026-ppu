@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- PANANYO TAKA — EMBLEM UTAMA: TIANG VERTIKAL P SANGAT JELAS & ALUR BERSAMBUNG -->
+  <defs>
+    <linearGradient id="flowStemP" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="60%" stop-color="#06B6D4" />
+      <stop offset="100%" stop-color="#38BDF8" />
+    </linearGradient>
+    <linearGradient id="flowTopGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="25%" stop-color="#F97316" />
+      <stop offset="55%" stop-color="#EA580C" />
+      <stop offset="80%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+    <linearGradient id="flowBottomGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="35%" stop-color="#1D4ED8" />
+      <stop offset="65%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#34D399" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Tiang Vertikal P (Utuh, Tegas, Lurus dari Y:110 ke Y:400) -->
+  <rect x="75" y="110" width="46" height="290" rx="23" fill="url(#flowStemP)" />
+
+  <!-- 2. Lengkungan Kepala P (Tertutup Rapat ke Tiang P & Menyambung ke Atap T) -->
+  <path d="M98 260 H195 C242 260 272 230 272 196 C272 162 242 133 195 133 H415" 
+        stroke="url(#flowTopGrad)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+  <!-- 3. Tiang Pusat T & Centang Naik 45° -->
+  <path d="M315 133 V345 Q315 368 338 350 L435 205" 
+        stroke="url(#flowBottomGrad)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+  <!-- 4. Jembatan Aliran Bawah (P Loop Base -> T Foot) -->
+  <path d="M195 275 L315 360" 
+        stroke="#10B981" stroke-width="44" stroke-linecap="round" />
+
+  <!-- 5. Simpul Emas di Puncak Centang -->
+  <circle cx="435" cy="205" r="20" fill="#FACC15" />
+</svg>

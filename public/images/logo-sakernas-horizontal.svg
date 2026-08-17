@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 210" fill="none">
+  <!-- SAKERNAS — HORIZONTAL LOCKUP (LIGHT THEME, TRANSPARENT BACKGROUND, NO SATKER TEXT) -->
+  <defs>
+    <linearGradient id="lhSakTop" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="30%" stop-color="#06B6D4" />
+      <stop offset="70%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="lhSakSpine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="50%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#1D4ED8" />
+    </linearGradient>
+    <linearGradient id="lhSakBottom" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="40%" stop-color="#10B981" />
+      <stop offset="80%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#FACC15" />
+    </linearGradient>
+  </defs>
+
+  <!-- ── EMBLEM KIRI: SAKERNAS FLUID RIBBON (X: 30, Y: 12, SCALE: 0.36) ── -->
+  <g transform="translate(30, 12) scale(0.36)">
+    <!-- Tiang Vertikal Kiri -->
+    <rect x="75" y="110" width="46" height="290" rx="23" fill="url(#lhSakSpine)" />
+    <!-- Alur Huruf S -->
+    <path d="M415 133 H200 C155 133 125 163 125 197 C125 231 155 260 200 260 H315 C360 260 390 290 390 324 C390 358 360 387 315 387 H125" 
+          stroke="url(#lhSakTop)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <!-- Centang Data Melesat -->
+    <path d="M315 387 L435 205" stroke="url(#lhSakBottom)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <!-- Jembatan Tengah -->
+    <path d="M98 260 H200" stroke="#2563EB" stroke-width="46" stroke-linecap="round" />
+    <!-- Simpul Emas -->
+    <circle cx="435" cy="205" r="20" fill="#FACC15" />
+  </g>
+
+  <!-- ── TIPOGRAFI KANAN: BERSIH & SEIMBANG (TANPA TEKS SATKER) ── -->
+  <!-- Judul Utama: SAKERNAS -->
+  <text x="220" y="100" font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" font-size="54" font-weight="900" letter-spacing="0.04em" fill="#0F172A">
+    SAKER<tspan fill="#10B981">NAS</tspan>
+  </text>
+
+  <!-- Subjudul: SURVEI ANGKATAN KERJA NASIONAL -->
+  <text x="224" y="142" font-family="'Inter', -apple-system, sans-serif" font-size="16" font-weight="700" letter-spacing="0.14em" fill="#64748B">
+    SURVEI ANGKATAN KERJA NASIONAL
+  </text>
+</svg>
