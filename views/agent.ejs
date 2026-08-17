@@ -1985,7 +1985,7 @@
 
     const browserTimeout = setTimeout(() => {
       controller.abort();
-    }, 120000);
+    }, 180000); // 3 menit — memberi ruang untuk SmartSwitch multi-provider fallback
 
     try {
       const res = await fetch('/agent/chat/stream', {

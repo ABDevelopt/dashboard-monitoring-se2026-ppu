@@ -2101,6 +2101,17 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
       const streamResult = await chat.sendMessageStream(currentPayload);
       let functionCallsInTurn = [];
 
+      // Guard: SDK v0.24.1 returns {stream: undefined} on HTTP errors (429, 403)
+      // instead of throwing. Detect this and surface the real error from .response.
+      if (!streamResult?.stream) {
+        try {
+          await streamResult.response; // This will throw the real API error
+        } catch (apiErr) {
+          throw apiErr; // Re-throw so SmartSwitch handles it
+        }
+        throw new Error('Gemini API tidak mengembalikan stream. Coba lagi.');
+      }
+
       for await (const chunk of streamResult.stream) {
         if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
 
@@ -2623,8 +2634,23 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
 
   log.info('[STREAM] Semua provider gagal, fallback ke streamSimulation...');
   const sim = await streamSimulation(userMessage, chatHistory, onEvent, abortSignal);
-  const errMsg = lastError ? lastError.message : 'API key tidak terkonfigurasi';
-  sim.content = `⚠️ **AI Provider Error:** ${errMsg}\n\n*Fallback ke simulasi lokal:*\n\n` + sim.content;
+
+  // Translate technical errors into user-friendly messages
+  let rawErr = lastError ? lastError.message : 'API key tidak terkonfigurasi';
+  let friendlyErr = rawErr;
+  if (rawErr.includes('429') || rawErr.includes('quota') || rawErr.toLowerCase().includes('rate limit')) {
+    friendlyErr = 'Kuota permintaan harian API Gemini habis (429 Too Many Requests). Coba lagi besok atau gunakan API Key lain.';
+  } else if (rawErr.includes('403') || rawErr.includes('leaked') || rawErr.includes('API key')) {
+    friendlyErr = 'API Key Gemini tidak valid atau telah dicabut (403 Forbidden). Periksa pengaturan API Key Anda.';
+  } else if (rawErr.includes('pipeThrough') || rawErr.includes('undefined')) {
+    friendlyErr = 'Terjadi kesalahan saat menerima streaming dari Gemini. Kemungkinan karena kuota habis atau jaringan tidak stabil.';
+  } else if (rawErr.includes('503') || rawErr.includes('Service Unavailable')) {
+    friendlyErr = 'Server Gemini sedang kelebihan beban (503). Coba lagi dalam beberapa saat.';
+  } else if (rawErr.includes('timed out') || rawErr.includes('timeout')) {
+    friendlyErr = 'Koneksi ke Gemini melebihi batas waktu. Coba lagi atau periksa koneksi internet Anda.';
+  }
+
+  sim.content = `⚠️ **AI Provider Error:** ${friendlyErr}\n\n*Fallback ke simulasi lokal:*\n\n` + sim.content;
   onEvent('done', { reply: sim.content, isSimulation: true, role: 'model' });
   return sim;
 }
