@@ -1,4 +1,7 @@
 <%
+  const isSakernas = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
+  const officerLabel = isSakernas ? 'PPL' : 'PCL';
+
   let activeSubslsStatusCols = 1;
   if (settings.show_status_open === '1' || settings.show_status_open === undefined) activeSubslsStatusCols++;
   if (settings.show_status_draft === '1' || settings.show_status_draft === undefined) activeSubslsStatusCols++;
@@ -12,7 +15,7 @@
     <div class="card empty-state">
       <div class="empty-state-icon"><i class="bi bi-geo-alt"></i></div>
       <div class="empty-state-title">Belum Ada Data Sub-SLS</div>
-      <div class="empty-state-text">Upload file Excel untuk mulai memantau progres pendataan per satuan lingkungan setempat (SLS) di seluruh wilayah.</div>
+      <div class="empty-state-text">Upload file data untuk mulai memantau progres pendataan per satuan lingkungan setempat (SLS) di seluruh wilayah.</div>
       <a href="<%= navPrefix %>/admin/upload" class="empty-state-action"><i class="bi bi-cloud-arrow-up-fill"></i> Upload Data Sekarang</a>
     </div>
   <% } else { %>
@@ -20,29 +23,14 @@
     
     <!-- FILTER BAR -->
     <div class="card">
-      <div class="card-header flex-between" style="margin-bottom: 8px; padding-bottom: 8px; gap: 8px;">
-        <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-search"></i> Filter Pencarian SubSLS</div>
-        <div class="card-actions flex-start" style="gap: 6px;">
-          <a href="<%= navPrefix %>/subsls" class="btn btn-secondary btn-xs" title="Reset Filter"><i class="bi bi-arrow-repeat"></i><span class="btn-text-desktop"> Reset Filter</span></a>
-        </div>
-      </div>
-      
-      <form action="<%= navPrefix %>/subsls" method="GET" id="filterForm">
-        <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
-          
-          <div>
-            <label for="filterSearch" class="ui-label">Pencarian (Kata Kunci)</label>
-            <div style="position: relative;">
-              <input type="search" id="filterSearch" name="q" value="<%= filterQ %>" placeholder="Cari SLS, Kode, PCL, PML..." class="w-full">
-            </div>
-          </div>
-
+      <form method="GET" action="<%= navPrefix %>/subsls" id="filterForm">
+        <div class="filter-grid">
           <div>
             <label for="filterKec" class="ui-label">Kecamatan</label>
-            <select id="filterKec" name="kec"  class="w-full">
+            <select id="filterKec" name="kec" onchange="this.form.submit()" class="w-full">
               <option value="">-- Semua Kecamatan --</option>
               <% kecList.forEach(k => { %>
-                <option value="<%= k.kecamatan %>" <%= filterKec === k.kecamatan ? 'selected' : '' %>><%= k.kecamatan %></option>
+                <option value="<%= k.kecamatan %>" <%= (filterKec && filterKec.toUpperCase() === k.kecamatan.toUpperCase()) ? 'selected' : '' %>><%= k.kecamatan %></option>
               <% }) %>
             </select>
           </div>
@@ -52,37 +40,39 @@
             <select id="filterDesa" name="desa"  class="w-full" <%= !filterKec ? 'disabled' : '' %>>
               <option value="">-- Semua Desa --</option>
               <% desaList.forEach(d => { %>
-                <option value="<%= d.desa %>" <%= filterDesa === d.desa ? 'selected' : '' %>><%= d.desa %></option>
+                <option value="<%= d.desa %>" <%= (filterDesa && filterDesa.toUpperCase() === d.desa.toUpperCase()) ? 'selected' : '' %>><%= d.desa %></option>
               <% }) %>
             </select>
           </div>
 
+          <% if (!isSakernas) { %>
           <div>
             <label for="filterKorlap" class="ui-label">Koordinator Lapangan</label>
             <select id="filterKorlap" name="korlap"  class="w-full">
               <option value="">-- Semua Korlap --</option>
               <% korlapList.forEach(k => { %>
-                <option value="<%= k.korlap %>" <%= filterKorlap === k.korlap ? 'selected' : '' %>><%= k.korlap %></option>
+                <option value="<%= k.korlap %>" <%= (filterKorlap && filterKorlap.toUpperCase() === k.korlap.toUpperCase()) ? 'selected' : '' %>><%= k.korlap %></option>
               <% }) %>
             </select>
           </div>
+          <% } %>
 
           <div>
             <label for="filterPml" class="ui-label">PML (Pengawas)</label>
             <select id="filterPml" name="pml"  class="w-full">
               <option value="">-- Semua PML --</option>
               <% pmlList.forEach(p => { %>
-                <option value="<%= p.pml %>" <%= filterPml === p.pml ? 'selected' : '' %>><%= p.pml %></option>
+                <option value="<%= p.pml %>" <%= (filterPml && filterPml.toUpperCase() === p.pml.toUpperCase()) ? 'selected' : '' %>><%= p.pml %></option>
               <% }) %>
             </select>
           </div>
 
           <div>
-            <label for="filterPcl" class="ui-label">PCL (Pencacah)</label>
+            <label for="filterPcl" class="ui-label"><%= officerLabel %> (<%= isSakernas ? 'Petugas Pendataan' : 'Pencacah' %>)</label>
             <select id="filterPcl" name="pcl"  class="w-full">
-              <option value="">-- Semua PCL --</option>
+              <option value="">-- Semua <%= officerLabel %> --</option>
               <% pclList.forEach(p => { %>
-                <option value="<%= p.pcl %>" <%= filterPcl === p.pcl ? 'selected' : '' %>><%= p.pcl %></option>
+                <option value="<%= p.pcl %>" <%= (filterPcl && filterPcl.toUpperCase() === p.pcl.toUpperCase()) ? 'selected' : '' %>><%= p.pcl %></option>
               <% }) %>
             </select>
           </div>
@@ -90,14 +80,13 @@
           <div>
             <label id="statusLabel" for="filterStatus" class="ui-label">
               Status Progres
-              <span title="Kriteria Status:&#10;- Belum Mulai: realisasi & aktivitas = 0&#10;- Sedang Didata: realisasi > 0 dan < target muatan&#10;- Memenuhi Target: realisasi = target muatan&#10;- Melebihi Target: realisasi > target muatan" style="cursor: help; margin-left: 4px;"><i class="bi bi-info-circle"></i></span>
+              <span title="Kriteria Status:&#10;- Belum Mulai: belum mulai mengisi dokumen&#10;- Sedang Didata: sedang dalam proses pengisian dokumen&#10;- Selesai: SLS/Sub-SLS dinyatakan selesai dari berkas status" style="cursor: help; margin-left: 4px;"><i class="bi bi-info-circle"></i></span>
             </label>
             <select id="filterStatus" name="status" class="w-full">
               <option value="">-- Semua Status --</option>
               <option value="belum_mulai" <%= filterStatus === 'belum_mulai' ? 'selected' : '' %>>Belum Mulai</option>
               <option value="sedang_didata" <%= filterStatus === 'sedang_didata' ? 'selected' : '' %>>Sedang Didata</option>
-              <option value="memenuhi_target" <%= filterStatus === 'memenuhi_target' ? 'selected' : '' %>>Memenuhi Target</option>
-              <option value="melebihi_target" <%= filterStatus === 'melebihi_target' ? 'selected' : '' %>>Melebihi Target</option>
+              <option value="memenuhi_target" <%= filterStatus === 'memenuhi_target' ? 'selected' : '' %>>Selesai</option>
             </select>
           </div>
 
@@ -121,7 +110,7 @@
             </span>
           </div>
           <div class="card-actions flex-start" style="gap: 6px;">
-            <a href="/subsls/export?<%= new URLSearchParams({ kec: filterKec, desa: filterDesa, korlap: filterKorlap, pml: filterPml, pcl: filterPcl, status: filterStatus, kode: filterKode, q: filterQ }).toString() %>" class="btn btn-xs" style="background: #22c55e; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Data SubSLS (CSV)"><i class="bi bi-file-earmark-excel"></i><span class="btn-text-desktop"> Export CSV</span></a>
+            <a href="<%= navPrefix %>/subsls/export?<%= new URLSearchParams({ kec: filterKec, desa: filterDesa, korlap: filterKorlap, pml: filterPml, pcl: filterPcl, status: filterStatus, kode: filterKode, q: filterQ }).toString() %>" class="btn btn-xs" style="background: #22c55e; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Data SubSLS (CSV)"><i class="bi bi-file-earmark-excel"></i><span class="btn-text-desktop"> Export CSV</span></a>
           </div>
         </div>
 
@@ -144,7 +133,7 @@
                   <th rowspan="2">Nama SLS</th>
 
                   <th rowspan="2">Wilayah</th>
-                  <th rowspan="2">Petugas (PCL/PML/Korlap)</th>
+                  <th rowspan="2">Petugas (<%= isSakernas ? 'PPL/PML' : 'PCL/PML/Korlap' %>)</th>
                   <th rowspan="2" class="text-center">Status</th>
                   <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 130px; white-space: nowrap;">FASIH %</th>
                   <th rowspan="2" class="text-center bg-cyan-soft muatan-col" style="min-width: 110px; white-space: nowrap;">Muatan %</th>
@@ -193,10 +182,10 @@
                     <td class="td-code hide-md"><%= row.kode %></td>
                     <td class="td-primary" style="font-weight: 600;">
                       <div style="display: inline-flex; align-items: center; gap: 6px; width: 100%;">
-                        <a href="/subsls?kode=<%= row.kode %>&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>&q=<%= encodeURIComponent(filterQ) %>" style="color: inherit; text-decoration: none; display: inline-block;">
+                        <a href="<%= navPrefix %>/subsls?kode=<%= row.kode %>&kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>&q=<%= encodeURIComponent(filterQ) %>" style="color: inherit; text-decoration: none; display: inline-block;">
                           <%= row.nama_sls %>
                         </a>
-                        <button class="pin-btn" data-type="sls" data-name="<%= row.nama_sls %> (<%= row.desa %>)" data-href="/subsls?kode=<%= row.kode %>" title="Sematkan SLS ke Favorit" style="font-size: 11px; padding: 2px;">
+                        <button class="pin-btn" data-type="sls" data-name="<%= row.nama_sls %> (<%= row.desa %>)" data-href="<%= navPrefix %>/subsls?kode=<%= row.kode %>" title="Sematkan SLS ke Favorit" style="font-size: 11px; padding: 2px;">
                           <i class="bi bi-star"></i>
                         </button>
                       </div>
@@ -208,7 +197,7 @@
                     <td>
                       <div style="font-weight: 500; font-size: 12px;" class="td-primary">
                         <% if (row.pcl) { %>
-                          <a href="/pcl?pcl=<%= encodeURIComponent(row.pcl) %>" style="color: inherit; text-decoration: none;"><%= row.pcl %></a>
+                          <a href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(row.pcl) %>" style="color: inherit; text-decoration: none;"><%= row.pcl %></a>
                           <% if (kippPcls.includes(row.pcl.toUpperCase())) { %>
                             <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
                           <% } %>
@@ -221,9 +210,11 @@
                         <% if (row.pml && kippPmls.includes(row.pml.toUpperCase())) { %>
                           <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 1px;">KIPP</span>
                         <% } %>
-                        Â· Krl: <%= row.korlap %>
+                        <% if (!isSakernas) { %>
+                        · Krl: <%= row.korlap %>
                         <% if (row.korlap && kippKorlaps.includes(row.korlap.toUpperCase())) { %>
                           <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 1px;">KIPP</span>
+                        <% } %>
                         <% } %>
                       </div>
 
@@ -233,10 +224,8 @@
                         <span class="badge badge-gray">Belum Mulai</span>
                       <% } else if (row.sudah_diisi === 'sedang_didata') { %>
                         <span class="badge badge-orange">Sedang Didata</span>
-                      <% } else if (row.sudah_diisi === 'memenuhi_target') { %>
-                        <span class="badge badge-green">Memenuhi Target</span>
                       <% } else { %>
-                        <span class="badge badge-purple">Melebihi Target</span>
+                        <span class="badge badge-green">Selesai</span>
                       <% } %>
                     </td>
 
@@ -358,7 +347,7 @@
               <div class="flex-start" style="gap: 6px; margin-left: auto;">
                 <button onclick="window.shareElementAsImage('subslsDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
                 <button onclick="window.copyElementAsImage('subslsDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
-                <a href="/subsls?kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="btn btn-secondary btn-xs" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
+                <a href="<%= navPrefix %>/subsls?kec=<%= filterKec %>&desa=<%= filterDesa %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>&pcl=<%= filterPcl %>&status=<%= filterStatus %>" class="btn btn-secondary btn-xs" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
               </div>
             </div>
 
@@ -377,31 +366,30 @@
               
               <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11px;">
                 <div class="flex-between" style="align-items: unset;">
-                  <span style="color: var(--text-muted);"><i class="bi bi-person-badge"></i> Pencacah (PCL)</span>
+                  <span style="color: var(--text-muted);"><i class="bi bi-person-badge"></i> <%= officerLabel %> (<%= isSakernas ? 'Petugas Pendataan' : 'Pencacah' %>)</span>
                   <strong style="color: var(--text-primary);"><%= selectedSubsls.pcl || '-' %></strong>
                 </div>
                 <div class="flex-between" style="align-items: unset;">
                   <span style="color: var(--text-muted);"><i class="bi bi-person-check"></i> Pengawas (PML)</span>
                   <strong style="color: var(--text-primary);"><%= selectedSubsls.pml || '-' %></strong>
                 </div>
+                <% if (!isSakernas) { %>
                 <div class="flex-between" style="align-items: unset;">
                   <span style="color: var(--text-muted);"><i class="bi bi-person-gear"></i> Korlap</span>
                   <strong style="color: var(--text-primary);"><%= selectedSubsls.korlap || '-' %></strong>
                 </div>
+                <% } %>
               </div>
             </div>
 
-            <!-- Status Badge -->
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
               <span style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">Status Progres SLS:</span>
               <% if (selectedSubsls.sudah_diisi === 'belum_mulai') { %>
                 <span class="badge badge-gray" style="padding: 4px 10px; font-size: 10px;">Belum Mulai</span>
               <% } else if (selectedSubsls.sudah_diisi === 'sedang_didata') { %>
                 <span class="badge badge-orange" style="padding: 4px 10px; font-size: 10px;">Sedang Didata</span>
-              <% } else if (selectedSubsls.sudah_diisi === 'memenuhi_target') { %>
-                <span class="badge badge-green" style="padding: 4px 10px; font-size: 10px;">Memenuhi Target</span>
               <% } else { %>
-                <span class="badge badge-purple" style="padding: 4px 10px; font-size: 10px;">Melebihi Target</span>
+                <span class="badge badge-green" style="padding: 4px 10px; font-size: 10px;">Selesai</span>
               <% } %>
             </div>
 
@@ -454,8 +442,9 @@
                 </div>
               </div>
 
-              <!-- MUATAN CARD -->
-              <div style="background: rgba(6,182,212,0.03); border: 1px solid rgba(6,182,212,0.15); border-radius: 12px; padding: 12px;">
+              <!-- MUATAN CARD (SENSUS ONLY) -->
+              <% if (!isSakernas && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) { %>
+              <div class="muatan-col" style="background: rgba(6,182,212,0.03); border: 1px solid rgba(6,182,212,0.15); border-radius: 12px; padding: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                   <span style="font-size: 11px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase;"><i class="bi bi-box-seam"></i> Progres Muatan</span>
                   <span style="font-size: 13px; font-weight: 700; color: <%= muatanColor %>;"><%= muatanPct %>%</span>
@@ -514,6 +503,7 @@
                   </div>
                 </div>
               </div>
+              <% } %>
             </div>
 
             <!-- Analisis Kecepatan & Estimasi Pendataan -->
@@ -688,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
       
-      const resetBtn = container.querySelector('a[href="/subsls"]');
+      const resetBtn = container.querySelector('a[href*="/subsls"]');
       if (resetBtn) {
         resetBtn.addEventListener('click', (e) => {
           e.preventDefault();
@@ -903,7 +893,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     currentFetchController = new AbortController();
 
-    const url = '/subsls' + (queryString ? (queryString.startsWith('?') ? queryString : '?' + queryString) : '');
+    const url = '<%= navPrefix %>/subsls' + (queryString ? (queryString.startsWith('?') ? queryString : '?' + queryString) : '');
     
     // Save active element focus and selection state
     const activeEl = document.activeElement;

@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { parseAndSaveExcel, parseAndSaveSeparateExports, parseAndSaveStatusExcelOnly } = require('../services/excelParser');
+const { parseAndSaveExcel, parseAndSaveSeparateExports, parseAndSaveStatusExcelOnly, parseAndSaveJsonStatusOnly } = require('../services/excelParser');
 const { getAllUploads, getDb, getSettings, rebuildAllSummaryCaches } = require('../database');
 
 const storage = multer.diskStorage({
@@ -18,20 +18,20 @@ const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (ext === '.xlsx' || ext === '.xls' || ext === '.csv') cb(null, true);
-    else cb(new Error('Hanya file Excel (.xlsx/.xls) atau CSV (.csv) yang diperbolehkan.'));
+    if (ext === '.xlsx' || ext === '.xls' || ext === '.csv' || ext === '.json') cb(null, true);
+    else cb(new Error('Hanya file Excel (.xlsx/.xls), CSV (.csv), atau JSON (.json) yang diperbolehkan.'));
   },
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
-// GET: Upload page
+// GET: Upload page redirect
 router.get('/', (req, res) => {
-  const uploads = getAllUploads().sort((a, b) => (b.id - a.id) || b.tanggal.localeCompare(a.tanggal));
-  
-  // Scan workspace files per survey
-  let workspaceFiles = [];
-  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  res.redirect(`${req.baseUrl || '/admin/upload'}/muatan`);
+});
 
+// Helper to scan files in workspace
+function scanWorkspace(activeSurvey) {
+  let workspaceFiles = [];
   try {
     const scanDir = (dir, prefix = '') => {
       if (!fs.existsSync(dir)) return [];
@@ -39,7 +39,7 @@ router.get('/', (req, res) => {
       return items
         .filter(item => {
           const ext = path.extname(item).toLowerCase();
-          return (ext === '.xlsx' || ext === '.xls' || ext === '.csv') && !item.startsWith('~');
+          return (ext === '.xlsx' || ext === '.xls' || ext === '.csv' || ext === '.json') && !item.startsWith('~');
         })
         .map(item => {
           const fullPath = path.join(dir, item);
@@ -68,10 +68,52 @@ router.get('/', (req, res) => {
   } catch (err) {
     console.error('Error scanning workspace files:', err);
   }
+  return workspaceFiles;
+}
+
+// GET: Upload Progres Muatan
+router.get('/muatan', (req, res) => {
+  const allUploads = getAllUploads().sort((a, b) => (b.id - a.id) || b.tanggal.localeCompare(a.tanggal));
+  const uploads = allUploads.filter(u => u.filename && u.filename.length > 0);
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const workspaceFiles = scanWorkspace(activeSurvey);
 
   res.render('upload', {
-    title: 'Upload Data',
-    activePage: 'upload',
+    title: 'Upload Progres Muatan',
+    activePage: 'upload-muatan',
+    uploadType: 'muatan',
+    uploads,
+    workspaceFiles
+  });
+});
+
+// GET: Upload Status FASIH
+router.get('/fasih', (req, res) => {
+  const allUploads = getAllUploads().sort((a, b) => (b.id - a.id) || b.tanggal.localeCompare(a.tanggal));
+  const uploads = allUploads.filter(u => u.status_filename && !u.status_filename.toLowerCase().includes('monitoring_sls'));
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const workspaceFiles = scanWorkspace(activeSurvey);
+
+  res.render('upload', {
+    title: 'Upload Status FASIH',
+    activePage: 'upload-fasih',
+    uploadType: 'fasih',
+    uploads,
+    workspaceFiles
+  });
+});
+
+// GET: Upload Status SLS Selesai
+router.get('/sls', (req, res) => {
+  const allUploads = getAllUploads().sort((a, b) => (b.id - a.id) || b.tanggal.localeCompare(a.tanggal));
+  const uploads = allUploads.filter(u => u.status_filename && u.status_filename.toLowerCase().includes('monitoring_sls'));
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const workspaceFiles = scanWorkspace(activeSurvey);
+
+  res.render('upload', {
+    title: 'Upload Status SLS Selesai',
+    activePage: 'upload-sls',
+    uploadType: 'sls',
     uploads,
     workspaceFiles
   });
@@ -123,21 +165,24 @@ function extractDateFromFilename(filename) {
   return null;
 }
 
-// POST: Process upload
-router.post('/', upload.fields([
-  { name: 'excelFile', maxCount: 100 },
-  { name: 'keluargaFile', maxCount: 100 },
-  { name: 'usahaFile', maxCount: 100 },
-  { name: 'statusFile', maxCount: 100 }
-]), async (req, res) => {
+// Shared helper for processing uploads
+async function handleUploadPost(req, res) {
   const excelFiles = req.files && req.files['excelFile'] ? req.files['excelFile'] : [];
   const keluargaFiles = req.files && req.files['keluargaFile'] ? req.files['keluargaFile'] : [];
   const usahaFiles = req.files && req.files['usahaFile'] ? req.files['usahaFile'] : [];
   const statusFiles = req.files && req.files['statusFile'] ? req.files['statusFile'] : [];
+  const slsFiles = req.files && req.files['slsFile'] ? req.files['slsFile'] : [];
 
-  if (excelFiles.length === 0 && keluargaFiles.length === 0 && usahaFiles.length === 0 && statusFiles.length === 0) {
+  if (excelFiles.length === 0 && keluargaFiles.length === 0 && usahaFiles.length === 0 && statusFiles.length === 0 && slsFiles.length === 0) {
     req.flash('error', 'Silakan pilih setidaknya satu file untuk diupload.');
-    return res.redirect('/admin/upload');
+    return res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
+  }
+
+  // Prepend monitoring_sls_ prefix to SLS status filename to keep database records properly grouped/identified
+  for (const f of slsFiles) {
+    if (!f.originalname.toLowerCase().includes('monitoring_sls')) {
+      f.originalname = 'monitoring_sls_' + f.originalname;
+    }
   }
 
   const defaultTanggal = req.body.tanggal || new Date().toISOString().slice(0, 10);
@@ -147,7 +192,7 @@ router.post('/', upload.fields([
 
   function addToGroup(date, type, file) {
     if (!groups[date]) {
-      groups[date] = { excelFile: null, keluargaFile: null, usahaFile: null, statusFile: null };
+      groups[date] = { excelFile: null, keluargaFile: null, usahaFile: null, statusFile: null, slsFile: null };
     }
     groups[date][type] = file;
   }
@@ -176,12 +221,16 @@ router.post('/', upload.fields([
     addToGroup(d, 'statusFile', f);
   }
 
+  // Process SLS files
+  for (const f of slsFiles) {
+    const d = extractDateFromFilename(f.originalname) || defaultTanggal;
+    addToGroup(d, 'slsFile', f);
+  }
+
   // Sort dates chronologically ascending
   const sortedDates = Object.keys(groups).sort();
   const successMessages = [];
   const errors = [];
-
-
 
   for (const date of sortedDates) {
     const g = groups[date];
@@ -189,12 +238,11 @@ router.post('/', upload.fields([
     const keluargaFile = g.keluargaFile;
     const usahaFile = g.usahaFile;
     const statusFile = g.statusFile;
+    const slsFile = g.slsFile;
 
     try {
       let result;
       let msg = `Tanggal ${date}: `;
-
-
 
       if (keluargaFile || usahaFile) {
         result = parseAndSaveSeparateExports(
@@ -203,34 +251,66 @@ router.post('/', upload.fields([
           keluargaFile ? keluargaFile.originalname : null,
           usahaFile ? usahaFile.originalname : null,
           date,
-          statusFile ? statusFile.path : null,
-          statusFile ? statusFile.originalname : null,
-          statusFile ? statusFile.filename : null
+          statusFile ? statusFile.path : (slsFile ? slsFile.path : null),
+          statusFile ? statusFile.originalname : (slsFile ? slsFile.originalname : null),
+          statusFile ? statusFile.filename : (slsFile ? slsFile.filename : null)
         );
         if (keluargaFile) msg += `Keluarga (${keluargaFile.originalname}) `;
         if (usahaFile) msg += `Usaha (${usahaFile.originalname}) `;
+        if (slsFile && !statusFile) msg += `Status SLS (${slsFile.originalname}) `;
       } else if (excelFile) {
-        result = parseAndSaveExcel(
-          excelFile.path, 
-          excelFile.originalname, 
-          excelFile.filename, 
-          date,
-          statusFile ? statusFile.path : null,
-          statusFile ? statusFile.originalname : null,
-          statusFile ? statusFile.filename : null
-        );
-        msg += `Progres (${excelFile.originalname}) `;
+        if (excelFile.originalname.toLowerCase().endsWith('.json')) {
+          result = parseAndSaveJsonStatusOnly(
+            excelFile.path, 
+            excelFile.originalname, 
+            excelFile.filename, 
+            date,
+            res.locals.activeSurvey || 'se2026'
+          );
+          msg += `Rekap Status JSON (${excelFile.originalname}) `;
+        } else {
+          result = parseAndSaveExcel(
+            excelFile.path, 
+            excelFile.originalname, 
+            excelFile.filename, 
+            date,
+            statusFile ? statusFile.path : (slsFile ? slsFile.path : null),
+            statusFile ? statusFile.originalname : (slsFile ? slsFile.originalname : null),
+            statusFile ? statusFile.filename : (slsFile ? slsFile.filename : null)
+          );
+          msg += `Progres (${excelFile.originalname}) `;
+          if (slsFile && !statusFile) msg += `Status SLS (${slsFile.originalname}) `;
+        }
       } else if (statusFile) {
+        if (statusFile.originalname.toLowerCase().endsWith('.json')) {
+          result = parseAndSaveJsonStatusOnly(
+            statusFile.path,
+            statusFile.originalname,
+            statusFile.filename,
+            date,
+            res.locals.activeSurvey || 'se2026'
+          );
+          msg += `Rekap Status JSON (${statusFile.originalname}) `;
+        } else {
+          result = parseAndSaveStatusExcelOnly(
+            statusFile.path,
+            statusFile.originalname,
+            statusFile.filename,
+            date,
+            res.locals.activeSurvey
+          );
+          msg += `Status FASIH (${statusFile.originalname}) `;
+        }
+      } else if (slsFile) {
         result = parseAndSaveStatusExcelOnly(
-          statusFile.path,
-          statusFile.originalname,
-          statusFile.filename,
+          slsFile.path,
+          slsFile.originalname,
+          slsFile.filename,
           date,
           res.locals.activeSurvey
         );
+        msg += `Status SLS Selesai (${slsFile.originalname}) `;
       }
-
-      if (statusFile) msg += `Status FASIH (${statusFile.originalname}) `;
       msg += `berhasil diproses (SubSLS: ${result ? result.uniqueSubsls : 0})`;
       successMessages.push(msg);
 
@@ -264,6 +344,9 @@ router.post('/', upload.fields([
       if (statusFile && fs.existsSync(statusFile.path)) {
         try { fs.unlinkSync(statusFile.path); } catch (e) {}
       }
+      if (slsFile && fs.existsSync(slsFile.path)) {
+        try { fs.unlinkSync(slsFile.path); } catch (e) {}
+      }
       errors.push(`Tanggal ${date} gagal: ${err.message}`);
     }
   }
@@ -275,8 +358,24 @@ router.post('/', upload.fields([
     req.flash('error', `Pemberitahuan:<br>- ${errors.join('<br>- ')}`);
   }
 
-  res.redirect('/admin/upload');
-});
+  res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
+}
+
+// POST Redirects and Specific Fields uploads
+router.post('/', (req, res) => res.redirect(`${req.baseUrl || '/admin/upload'}/muatan`));
+
+router.post('/muatan', upload.fields([
+  { name: 'keluargaFile', maxCount: 100 },
+  { name: 'usahaFile', maxCount: 100 }
+]), async (req, res) => handleUploadPost(req, res));
+
+router.post('/fasih', upload.fields([
+  { name: 'statusFile', maxCount: 100 }
+]), async (req, res) => handleUploadPost(req, res));
+
+router.post('/sls', upload.fields([
+  { name: 'slsFile', maxCount: 100 }
+]), async (req, res) => handleUploadPost(req, res));
 
 // DELETE: hapus upload
 router.post('/delete/:id', (req, res) => {
@@ -324,7 +423,7 @@ router.post('/delete/:id', (req, res) => {
   }
 
   req.flash('success', 'Upload berhasil dihapus. Semua data dan statistik telah otomatis dikembalikan ke file terakhir yang tersisa.');
-  res.redirect('/admin/upload');
+  res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
 });
 
 // GET: Download file
@@ -333,7 +432,7 @@ router.get('/download/:id', (req, res) => {
   const uploadRec = getDb().prepare('SELECT * FROM uploads WHERE id = ?').get(id);
   if (!uploadRec || !uploadRec.stored_filename) {
     req.flash('error', 'File fisik tidak ditemukan.');
-    return res.redirect('/admin/upload');
+    return res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
   }
 
   const filePath = path.join(__dirname, '../uploads', uploadRec.stored_filename);
@@ -341,7 +440,7 @@ router.get('/download/:id', (req, res) => {
     res.download(filePath, uploadRec.filename);
   } else {
     req.flash('error', 'File fisik tidak ditemukan di server.');
-    res.redirect('/admin/upload');
+    res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
   }
 });
 
@@ -351,7 +450,7 @@ router.get('/download-status/:id', (req, res) => {
   const uploadRec = getDb().prepare('SELECT * FROM uploads WHERE id = ?').get(id);
   if (!uploadRec || !uploadRec.stored_status_filename) {
     req.flash('error', 'File status tidak ditemukan untuk upload ini.');
-    return res.redirect('/admin/upload');
+    return res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
   }
 
   const filePath = path.join(__dirname, '../uploads', uploadRec.stored_status_filename);
@@ -359,7 +458,7 @@ router.get('/download-status/:id', (req, res) => {
     res.download(filePath, uploadRec.status_filename);
   } else {
     req.flash('error', 'File status fisik tidak ditemukan di server.');
-    res.redirect('/admin/upload');
+    res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
   }
 });
 
@@ -368,7 +467,7 @@ router.post('/import-local', async (req, res) => {
   const { filename, tanggal, type } = req.body;
   if (!filename) {
     req.flash('error', 'Nama file tidak boleh kosong.');
-    return res.redirect('/admin/upload');
+    return res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
   }
 
   const activeSurvey = res.locals.activeSurvey || 'se2026';
@@ -378,7 +477,7 @@ router.post('/import-local', async (req, res) => {
   }
   if (!fs.existsSync(sourcePath)) {
     req.flash('error', 'File tidak ditemukan di folder workspace.');
-    return res.redirect('/admin/upload');
+    return res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
   }
 
   // Generate stored filename to persist in uploads folder
@@ -440,14 +539,14 @@ router.post('/import-local', async (req, res) => {
     req.flash('error', `Gagal memproses file local: ${err.message}`);
   }
 
-  res.redirect('/admin/upload');
+  res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
 });
 
 // POST: Process upload target honor
 router.post('/honor', upload.single('honorFile'), (req, res) => {
   if (!req.file) {
     req.flash('error', 'Silakan pilih file Excel target honor untuk diupload.');
-    return res.redirect('/admin/upload');
+    return res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
   }
 
   const tempPath = req.file.path;
@@ -517,7 +616,7 @@ router.post('/honor', upload.single('honorFile'), (req, res) => {
     }
   }
 
-  res.redirect('/admin/upload');
+  res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
 });
 
 // POST: Process Google Spreadsheet URL sync
@@ -525,7 +624,7 @@ router.post('/google-sheets', async (req, res) => {
   const { sheetUrl, date, dataType } = req.body;
   if (!sheetUrl || !sheetUrl.trim()) {
     req.flash('error', 'URL Google Spreadsheet tidak boleh kosong.');
-    return res.redirect('/admin/upload');
+    return res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
   }
 
   const targetDate = date || new Date().toISOString().slice(0, 10);
@@ -582,7 +681,7 @@ router.post('/google-sheets', async (req, res) => {
     }
   }
 
-  res.redirect('/admin/upload');
+  res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
 });
 
 module.exports = router;

@@ -9,8 +9,12 @@
         <i class="bi bi-upload" style="font-size: 26px; color: var(--accent-blue);"></i>
       </div>
       <div>
-        <h1 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px 0;">Upload Data Sensus</h1>
-        <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Unggah berkas rekap kemajuan harian XLS dari program manajemen lapangan</p>
+        <h1 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 0 0 4px 0;">
+          <%= uploadType === 'muatan' ? 'Upload Progres Muatan' : (uploadType === 'fasih' ? 'Upload Status FASIH' : 'Upload Status SLS Selesai') %>
+        </h1>
+        <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">
+          <%= uploadType === 'muatan' ? 'Unggah berkas rekap kemajuan harian XLS Keluarga dan Usaha dari program manajemen lapangan' : (uploadType === 'fasih' ? 'Unggah berkas rekap status dokumen FASIH (Draft, Submitted, Approved, Rejected)' : 'Unggah berkas rekap status penyelesaian SLS/Sub-SLS selesai') %>
+        </p>
       </div>
     </div>
   </div>
@@ -18,11 +22,11 @@
   <div class="card">
     <div class="card-header">
       <div class="card-title">
-        <span><i class="bi bi-upload"></i> Upload File Rekap Baru</span>
+        <span><i class="bi bi-upload"></i> Upload File <%= uploadType === 'muatan' ? 'Progres Muatan' : (uploadType === 'fasih' ? 'Status FASIH' : 'Status SLS Selesai') %> Baru</span>
       </div>
     </div>
     
-    <form action="<%= navPrefix %>/admin/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
+    <form action="<%= navPrefix %>/admin/upload/<%= uploadType %>" method="POST" enctype="multipart/form-data" id="uploadForm">
       <div class="mb-4">
         <label for="tanggal" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-calendar3"></i> Tanggal Data Rekap</label>
         <input type="date" id="tanggal" name="tanggal" required style="width: 100%; max-width: 300px; padding: 10px; font-size: 13px;" value="<%= new Date().toISOString().slice(0, 10) %>">
@@ -30,37 +34,47 @@
       </div>
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 16px; margin-bottom: 20px;">
-        <div>
-          <label for="keluargaFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-people-fill text-cyan"></i> 1. File Progres Keluarga (Opsional)</label>
-          <div class="upload-zone" id="uploadZoneKeluarga" style="height: 140px; padding: 10px;">
-            <div class="upload-zone-icon" style="font-size: 24px; margin-bottom: 4px;"><i class="bi bi-cloud-arrow-up"></i></div>
-            <div class="upload-zone-title" style="font-size: 12px; font-weight: 600;">Progres Keluarga (Excel/CSV)</div>
-            <div class="upload-zone-sub" style="font-size: 10px;">atau seret ke sini (.xlsx, .xls, .csv)</div>
-            <input type="file" id="keluargaFile" name="keluargaFile" accept=".xlsx, .xls, .csv" style="display: none;">
+        <% if (uploadType === 'muatan') { %>
+          <div>
+            <label for="keluargaFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-people-fill text-cyan"></i> File Progres Keluarga (Opsional)</label>
+            <div class="upload-zone" id="uploadZoneKeluarga" style="height: 140px; padding: 10px;">
+              <div class="upload-zone-icon" style="font-size: 24px; margin-bottom: 4px;"><i class="bi bi-cloud-arrow-up"></i></div>
+              <div class="upload-zone-title" style="font-size: 12px; font-weight: 600;">Progres Keluarga (Excel/CSV)</div>
+              <div class="upload-zone-sub" style="font-size: 10px;">atau seret ke sini (.xlsx, .xls, .csv)</div>
+              <input type="file" id="keluargaFile" name="keluargaFile" accept=".xlsx, .xls, .csv" style="display: none;">
+            </div>
           </div>
-        </div>
 
-        <div>
-          <label for="usahaFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-briefcase-fill text-orange"></i> 2. File Progres Usaha (Opsional)</label>
-          <div class="upload-zone" id="uploadZoneUsaha" style="height: 140px; padding: 10px; border-color: rgba(249, 115, 22, 0.4);">
-            <div class="upload-zone-icon" style="font-size: 24px; margin-bottom: 4px; color: #f97316;"><i class="bi bi-cloud-arrow-up"></i></div>
-            <div class="upload-zone-title" style="font-size: 12px; font-weight: 600; color: #f97316;">Progres Usaha (Excel/CSV)</div>
-            <div class="upload-zone-sub" style="font-size: 10px;">atau seret ke sini (.xlsx, .xls, .csv)</div>
-            <input type="file" id="usahaFile" name="usahaFile" accept=".xlsx, .xls, .csv" style="display: none;">
+          <div>
+            <label for="usahaFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-briefcase-fill text-orange"></i> File Progres Usaha (Opsional)</label>
+            <div class="upload-zone" id="uploadZoneUsaha" style="height: 140px; padding: 10px; border-color: rgba(249, 115, 22, 0.4);">
+              <div class="upload-zone-icon" style="font-size: 24px; margin-bottom: 4px; color: #f97316;"><i class="bi bi-cloud-arrow-up"></i></div>
+              <div class="upload-zone-title" style="font-size: 12px; font-weight: 600; color: #f97316;">Progres Usaha (Excel/CSV)</div>
+              <div class="upload-zone-sub" style="font-size: 10px;">atau seret ke sini (.xlsx, .xls, .csv)</div>
+              <input type="file" id="usahaFile" name="usahaFile" accept=".xlsx, .xls, .csv" style="display: none;">
+            </div>
           </div>
-        </div>
-
-        <div>
-          <label for="statusFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-file-earmark-excel-fill text-purple"></i> 3. File Status FASIH (Opsional)</label>
-          <div class="upload-zone" id="uploadZoneStatus" style="height: 140px; padding: 10px; border-color: rgba(139, 92, 246, 0.4);">
-            <div class="upload-zone-icon" style="font-size: 24px; margin-bottom: 4px; color: var(--accent-purple);"><i class="bi bi-cloud-arrow-up"></i></div>
-            <div class="upload-zone-title" style="font-size: 12px; font-weight: 600; color: var(--accent-purple);">Status FASIH (Excel/CSV)</div>
-            <div class="upload-zone-sub" style="font-size: 10px;">atau seret ke sini (.xlsx, .xls, .csv)</div>
-            <input type="file" id="statusFile" name="statusFile" accept=".xlsx, .xls, .csv" style="display: none;">
+        <% } else if (uploadType === 'fasih') { %>
+          <div>
+            <label for="statusFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-file-earmark-code-fill text-purple"></i> File Status FASIH / Rekap Petugas</label>
+            <div class="upload-zone" id="uploadZoneStatus" style="height: 140px; padding: 10px; border-color: rgba(139, 92, 246, 0.4);">
+              <div class="upload-zone-icon" style="font-size: 24px; margin-bottom: 4px; color: var(--accent-purple);"><i class="bi bi-cloud-arrow-up"></i></div>
+              <div class="upload-zone-title" style="font-size: 12px; font-weight: 600; color: var(--accent-purple);">Status FASIH (Excel/CSV/JSON)</div>
+              <div class="upload-zone-sub" style="font-size: 10px;">atau seret ke sini (.xlsx, .xls, .csv, .json)</div>
+              <input type="file" id="statusFile" name="statusFile" accept=".xlsx, .xls, .csv, .json" required style="display: none;">
+            </div>
           </div>
-        </div>
-
-
+        <% } else if (uploadType === 'sls') { %>
+          <div>
+            <label for="slsFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-check2-square text-green"></i> File Status SLS Selesai</label>
+            <div class="upload-zone" id="uploadZoneSls" style="height: 140px; padding: 10px; border-color: rgba(34, 197, 94, 0.4);">
+              <div class="upload-zone-icon" style="font-size: 24px; margin-bottom: 4px; color: var(--accent-green);"><i class="bi bi-cloud-arrow-up"></i></div>
+              <div class="upload-zone-title" style="font-size: 12px; font-weight: 600; color: var(--accent-green);">Status SLS Selesai (Excel)</div>
+              <div class="upload-zone-sub" style="font-size: 10px;">atau seret ke sini (.xlsx, .xls)</div>
+              <input type="file" id="slsFile" name="slsFile" accept=".xlsx, .xls" required style="display: none;">
+            </div>
+          </div>
+        <% } %>
       </div>
 
       <div style="display: flex; justify-content: flex-end;">
@@ -69,79 +83,82 @@
     </form>
   </div>
 
-  <!-- GOOGLE SPREADSHEET SYNC CARD -->
-  <div class="card mt-4">
-    <div class="card-header">
-      <div class="card-title">
-        <span><i class="bi bi-file-earmark-spreadsheet-fill text-cyan"></i> Sinkronisasi Langsung dari Google Spreadsheet</span>
+  <% if (uploadType === 'muatan') { %>
+    <!-- GOOGLE SPREADSHEET SYNC CARD -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <div class="card-title">
+          <span><i class="bi bi-file-earmark-spreadsheet-fill text-cyan"></i> Sinkronisasi Langsung dari Google Spreadsheet</span>
+        </div>
       </div>
-    </div>
-    
-    <form action="<%= navPrefix %>/admin/upload/google-sheets" method="POST" id="g-sheets-form">
-      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">
-        Masukkan URL Google Spreadsheet yang dipublikasikan (contoh: <code>/pubhtml</code> atau link ekspor CSV) untuk mengimpor data secara langsung tanpa perlu mengunduh file Excel secara manual.
-      </p>
       
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; margin-bottom: 16px;">
-        <div style="grid-column: span 2;">
-          <label for="sheetUrl" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-link-45deg"></i> URL Google Spreadsheet</label>
-          <input type="url" id="sheetUrl" name="sheetUrl" required placeholder="https://docs.google.com/spreadsheets/d/e/.../pubhtml" style="width: 100%; padding: 10px 12px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml">
+      <form action="<%= navPrefix %>/admin/upload/google-sheets" method="POST" id="g-sheets-form">
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;">
+          Masukkan URL Google Spreadsheet yang dipublikasikan (contoh: <code>/pubhtml</code> atau link ekspor CSV) untuk mengimpor data secara langsung tanpa perlu mengunduh file Excel secara manual.
+        </p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; margin-bottom: 16px;">
+          <div style="grid-column: span 2;">
+            <label for="sheetUrl" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-link-45deg"></i> URL Google Spreadsheet</label>
+            <input type="url" id="sheetUrl" name="sheetUrl" required placeholder="https://docs.google.com/spreadsheets/d/e/.../pubhtml" style="width: 100%; padding: 10px 12px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml">
+          </div>
+
+          <div>
+            <label for="gDate" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-calendar3"></i> Tanggal Data Rekap</label>
+            <input type="date" id="gDate" name="date" required style="width: 100%; padding: 10px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);" value="<%= new Date().toISOString().slice(0, 10) %>">
+          </div>
+
+          <div>
+            <label for="dataType" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-layers"></i> Tipe Data Spreadsheet</label>
+            <select id="dataType" name="dataType" style="width: 100%; padding: 10px 12px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
+              <option value="excel">Progres Sensus Rekap Utama (Pivot/SLS)</option>
+              <option value="keluarga">Progres Keluarga Only</option>
+              <option value="usaha">Progres Usaha Only</option>
+              <option value="status">Status FASIH Only</option>
+            </select>
+          </div>
         </div>
 
-        <div>
-          <label for="gDate" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-calendar3"></i> Tanggal Data Rekap</label>
-          <input type="date" id="gDate" name="date" required style="width: 100%; padding: 10px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);" value="<%= new Date().toISOString().slice(0, 10) %>">
+        <div style="display: flex; justify-content: flex-end;">
+          <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, var(--accent-cyan), #0284c7); border: none;"><i class="bi bi-arrow-repeat"></i> Sinkronkan Google Sheets</button>
         </div>
-
-        <div>
-          <label for="dataType" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-layers"></i> Tipe Data Spreadsheet</label>
-          <select id="dataType" name="dataType" style="width: 100%; padding: 10px 12px; font-size: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);">
-            <option value="excel">Progres Sensus Rekap Utama (Pivot/SLS)</option>
-            <option value="keluarga">Progres Keluarga Only</option>
-            <option value="usaha">Progres Usaha Only</option>
-            <option value="status">Status FASIH Only</option>
-          </select>
-        </div>
-      </div>
-
-      <div style="display: flex; justify-content: flex-end;">
-        <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, var(--accent-cyan), #0284c7); border: none;"><i class="bi bi-arrow-repeat"></i> Sinkronkan Google Sheets</button>
-      </div>
-    </form>
-  </div>
-
-  <div class="card mt-4">
-    <div class="card-header">
-      <div class="card-title">
-        <span><i class="bi bi-file-earmark-excel-fill text-success"></i> Upload File Target Honor</span>
-      </div>
+      </form>
     </div>
-    
-    <form action="<%= navPrefix %>/admin/upload/honor" method="POST" enctype="multipart/form-data" id="honorUploadForm">
-      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; padding: 0 4px;">
-        Upload file Excel <code>muatan_sls_pembayaran_honor.xlsx</code> untuk memperbarui target honor SLS. File ini akan diproses untuk memperbarui kolom <code>target_honor</code> di database.
-      </p>
-      
-      <div style="margin-bottom: 20px;">
-        <label for="honorFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-cloud-arrow-up-fill text-success"></i> File muatan_sls_pembayaran_honor.xlsx</label>
-        <div class="upload-zone" id="uploadZoneHonor" style="height: 150px; padding: 15px; border-color: rgba(34, 197, 94, 0.4);">
-          <div class="upload-zone-icon" style="font-size: 28px; margin-bottom: 6px; color: #22c55e;"><i class="bi bi-cloud-arrow-up"></i></div>
-          <div class="upload-zone-title" style="font-size: 13px; font-weight: 600; color: #22c55e;">Pilih File Excel Target Honor</div>
-          <div class="upload-zone-sub" style="font-size: 11px;">atau seret ke sini (.xlsx, .xls, .csv)</div>
-          <input type="file" id="honorFile" name="honorFile" accept=".xlsx, .xls, .csv" required style="display: none;">
+
+    <!-- TARGET HONOR CARD -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <div class="card-title">
+          <span><i class="bi bi-file-earmark-excel-fill text-success"></i> Upload File Target Honor</span>
         </div>
       </div>
+      
+      <form action="<%= navPrefix %>/admin/upload/honor" method="POST" enctype="multipart/form-data" id="honorUploadForm">
+        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; padding: 0 4px;">
+          Upload file Excel <code>muatan_sls_pembayaran_honor.xlsx</code> untuk memperbarui target honor SLS. File ini akan diproses untuk memperbarui kolom <code>target_honor</code> di database.
+        </p>
+        
+        <div style="margin-bottom: 20px;">
+          <label for="honorFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-cloud-arrow-up-fill text-success"></i> File muatan_sls_pembayaran_honor.xlsx</label>
+          <div class="upload-zone" id="uploadZoneHonor" style="height: 150px; padding: 15px; border-color: rgba(34, 197, 94, 0.4);">
+            <div class="upload-zone-icon" style="font-size: 28px; margin-bottom: 6px; color: #22c55e;"><i class="bi bi-cloud-arrow-up"></i></div>
+            <div class="upload-zone-title" style="font-size: 13px; font-weight: 600; color: #22c55e;">Pilih File Excel Target Honor</div>
+            <div class="upload-zone-sub" style="font-size: 11px;">atau seret ke sini (.xlsx, .xls, .csv)</div>
+            <input type="file" id="honorFile" name="honorFile" accept=".xlsx, .xls, .csv" required style="display: none;">
+          </div>
+        </div>
 
-      <div style="display: flex; justify-content: flex-end;">
-        <button type="submit" class="btn btn-primary" style="background: #22c55e; border-color: #22c55e;"><i class="bi bi-lightning-charge-fill"></i> Proses Target Honor</button>
-      </div>
-    </form>
-  </div>
+        <div style="display: flex; justify-content: flex-end;">
+          <button type="submit" class="btn btn-primary" style="background: #22c55e; border-color: #22c55e;"><i class="bi bi-lightning-charge-fill"></i> Proses Target Honor</button>
+        </div>
+      </form>
+    </div>
+  <% } %>
 
   <div class="card mt-4">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
       <div class="card-title">
-        <span><i class="bi bi-clock-history"></i> Riwayat Upload & Histori Data</span>
+        <span><i class="bi bi-clock-history"></i> Riwayat Upload & Histori <%= uploadType === 'muatan' ? 'Progres Muatan' : (uploadType === 'fasih' ? 'Status FASIH' : 'Status SLS') %></span>
       </div>
       <div style="display: flex; gap: 8px; align-items: center;">
         <% if (uploads && uploads.length > 0) { %>
@@ -319,6 +336,7 @@
     initUploadZone('uploadZoneKeluarga', 'keluargaFile');
     initUploadZone('uploadZoneUsaha', 'usahaFile');
     initUploadZone('uploadZoneStatus', 'statusFile');
+    initUploadZone('uploadZoneSls', 'slsFile');
     initUploadZone('uploadZoneHonor', 'honorFile');
     makeTableSortable('uploadsTable');
 
@@ -377,6 +395,7 @@
     const keluargaInput = document.getElementById('keluargaFile');
     const usahaInput = document.getElementById('usahaFile');
     const statusInput = document.getElementById('statusFile');
+    const slsInput = document.getElementById('slsFile');
     const tanggalInput = document.getElementById('tanggal');
 
     function handleFileSelect(file) {
@@ -390,14 +409,29 @@
     if (keluargaInput) keluargaInput.addEventListener('change', () => { if (keluargaInput.files[0]) handleFileSelect(keluargaInput.files[0]); });
     if (usahaInput) usahaInput.addEventListener('change', () => { if (usahaInput.files[0]) handleFileSelect(usahaInput.files[0]); });
     if (statusInput) statusInput.addEventListener('change', () => { if (statusInput.files[0]) handleFileSelect(statusInput.files[0]); });
+    if (slsInput) slsInput.addEventListener('change', () => { if (slsInput.files[0]) handleFileSelect(slsInput.files[0]); });
 
     document.getElementById('uploadForm').addEventListener('submit', (e) => {
-      const keluarga = document.getElementById('keluargaFile');
-      const usaha = document.getElementById('usahaFile');
-      const status = document.getElementById('statusFile');
-      if ((!keluarga || !keluarga.files[0]) && (!usaha || !usaha.files[0]) && (!status || !status.files[0])) {
-        e.preventDefault();
-        alert('Silakan pilih setidaknya satu file untuk diupload.');
+      const uploadType = '<%= uploadType %>';
+      if (uploadType === 'muatan') {
+        const keluarga = document.getElementById('keluargaFile');
+        const usaha = document.getElementById('usahaFile');
+        if ((!keluarga || !keluarga.files[0]) && (!usaha || !usaha.files[0])) {
+          e.preventDefault();
+          alert('Silakan pilih setidaknya satu file progres muatan (Keluarga atau Usaha) untuk diupload.');
+        }
+      } else if (uploadType === 'fasih') {
+        const status = document.getElementById('statusFile');
+        if (!status || !status.files[0]) {
+          e.preventDefault();
+          alert('Silakan pilih file status FASIH untuk diupload.');
+        }
+      } else if (uploadType === 'sls') {
+        const sls = document.getElementById('slsFile');
+        if (!sls || !sls.files[0]) {
+          e.preventDefault();
+          alert('Silakan pilih file status SLS Selesai untuk diupload.');
+        }
       }
     });
   });

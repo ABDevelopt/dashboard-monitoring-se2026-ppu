@@ -1,4 +1,7 @@
 <%
+  const isSakernas = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
+  const officerLabel = isSakernas ? 'PPL' : 'PCL';
+
   let activeTargetPct = 25;
   let targetMonthName = '30 Juni';
   const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
@@ -20,7 +23,7 @@
     <div class="card empty-state">
       <div class="empty-state-icon"><i class="bi bi-person-vcard"></i></div>
       <div class="empty-state-title">Belum Ada Data Petugas</div>
-      <div class="empty-state-text">Upload file Excel untuk mulai memantau performa dan progres setiap Petugas Cacah Lapangan (PCL).</div>
+      <div class="empty-state-text">Upload file data untuk mulai memantau performa dan progres setiap <%= isSakernas ? 'Petugas Pendataan Lapangan (PPL)' : 'Petugas Cacah Lapangan (PCL)' %>.</div>
       <a href="<%= navPrefix %>/admin/upload" class="empty-state-action"><i class="bi bi-cloud-arrow-up-fill"></i> Upload Data Sekarang</a>
     </div>
   <% } else { %>
@@ -61,15 +64,15 @@
       <!-- PCL LIST TABLE -->
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header flex-between" style="gap: 8px;">
-          <div class="card-title"><i class="bi bi-person-gear"></i> Progres Kinerja per PCL (Pencacah) <span class="badge badge-blue"><%= pclStats.length %> PCL</span></div>
+          <div class="card-title"><i class="bi bi-person-gear"></i> Progres Kinerja per <%= officerLabel %> (<%= isSakernas ? 'Petugas Pendataan' : 'Pencacah' %>) <span class="badge badge-blue"><%= pclStats.length %> <%= officerLabel %></span></div>
           <div class="card-actions flex-start" style="gap: 6px;">
-            <a href="/pcl/export-daily-assignments" class="btn btn-xs" style="background: #06b6d4; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Rekap Count Assignment Harian Seluruh Petugas"><i class="bi bi-calendar3-range"></i><span class="btn-text-desktop"> Export Assignment Harian</span></a>
-            <a href="/pcl/export-excel" class="btn btn-xs" style="background: #22c55e; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Progres Kinerja Terbaru"><i class="bi bi-file-earmark-excel"></i><span class="btn-text-desktop"> Export Excel Petugas</span></a>
+            <a href="<%= navPrefix %>/pcl/export-daily-assignments" class="btn btn-xs" style="background: #06b6d4; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Rekap Count Assignment Harian Seluruh Petugas"><i class="bi bi-calendar3-range"></i><span class="btn-text-desktop"> Export Assignment Harian</span></a>
+            <a href="<%= navPrefix %>/pcl/export-excel" class="btn btn-xs" style="background: #22c55e; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Progres Kinerja Terbaru"><i class="bi bi-file-earmark-excel"></i><span class="btn-text-desktop"> Export Excel Petugas</span></a>
           </div>
         </div>
 
         <div class="search-wrap mb-4">
-          <input type="search" id="pclSearch" placeholder="Cari nama PCL..." aria-label="Cari nama Pencacah PCL" style="width: 100%; max-width: 280px;">
+          <input type="search" id="pclSearch" placeholder="Cari nama <%= officerLabel %>..." aria-label="Cari nama <%= officerLabel %>" style="width: 100%; max-width: 280px;">
         </div>
 
         <% if (pclStats && pclStats.length > 0) { %>
@@ -78,11 +81,13 @@
               <thead class="hide-sm">
                 <tr>
                   <th rowspan="2" class="text-center th-no">No</th>
-                  <th rowspan="2">Nama PCL</th>
+                  <th rowspan="2">Nama <%= officerLabel %></th>
                   <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">FASIH %</th>
                   <th rowspan="2" class="text-right bg-cyan-soft muatan-col" style="min-width: 140px;">Muatan %</th>
                   <th rowspan="2" class="hide-md">PML</th>
+                  <% if (!isSakernas) { %>
                   <th rowspan="2" class="hide-md">Korlap</th>
+                  <% } %>
                   <th rowspan="2" class="hide-md">Kecamatan</th>
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
                   <th colspan="<%= activeStatusCols %>" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
@@ -124,7 +129,7 @@
               <thead class="show-sm-table-header">
                 <tr>
                   <th class="text-center th-no">No</th>
-                  <th>Nama PCL</th>
+                  <th>Nama <%= officerLabel %></th>
                   <!-- <th class="text-right">Selesai</th> -->
                   <th class="text-right bg-purple-soft" data-column-idx="2">FASIH %</th>
                   <th class="text-right bg-cyan-soft muatan-col" data-column-idx="3">Muatan %</th>
@@ -137,7 +142,7 @@
                   <tr class="<%= filterPcl === p.pcl ? 'active' : '' %>" style="<%= filterPcl === p.pcl ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="text-center td-index"><%= index + 1 %></td>
                     <td class="td-primary">
-                      <a href="/pcl?pcl=<%= encodeURIComponent(p.pcl) %>&kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="link-plain" style="display: inline-block;">
+                      <a href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(p.pcl) %>&kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="link-plain" style="display: inline-block;">
                         <i class="bi bi-person"></i> <%= p.pcl %>
                       </a>
                       <% if (kippPcls.includes(p.pcl.toUpperCase())) { %>
@@ -185,7 +190,7 @@
                     </td>
                     <td class="bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>" style="min-width: 160px; padding: 6px 10px;">
                       <%
-                        const muatanRealPcl = p.muatan_selesai || 0;
+                        const muatanRealPcl = p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total);
                         const muatanTgtPcl  = p.total_muatan || 0;
                         const muatanWPcl    = Math.min(parseFloat(muatanPct), 100);
                         const muatanColorPcl = muatanWPcl >= 100 ? 'var(--accent-green)' : (muatanWPcl < 40 ? 'var(--accent-red)' : 'var(--accent-cyan)');
@@ -204,12 +209,14 @@
                         <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 2px;">KIPP</span>
                       <% } %>
                     </td>
+                    <% if (!isSakernas) { %>
                     <td class="hide-md">
                       <%= p.korlap %>
                       <% if (p.korlap && kippKorlaps.includes(p.korlap.toUpperCase())) { %>
                         <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 2px;">KIPP</span>
                       <% } %>
                     </td>
+                    <% } %>
                     <td class="hide-md"><%= p.kecamatan %></td>
                     <!-- <td class="text-right hide-sm" data-sort="<%= p.total_subsls %>"><%= p.total_subsls %></td> -->
                     <!-- <td class="text-right fw-bold" data-sort="<%= p.selesai %>" style="<%= p.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= p.selesai %></td> -->
@@ -344,7 +351,7 @@
             <div class="card-header flex-between" style="gap: 8px;">
               <div class="card-title mb-0 flex-start" style="flex-wrap: wrap; gap: 4px;">
                 <i class="bi bi-search"></i> Rincian Tugas SLS: <mark class="highlight-name"><%= filterPcl %></mark>
-                <button class="pin-btn" data-type="pcl" data-name="<%= filterPcl %>" data-href="/pcl?pcl=<%= encodeURIComponent(filterPcl) %>" title="Sematkan Petugas ke Favorit">
+                <button class="pin-btn" data-type="pcl" data-name="<%= filterPcl %>" data-href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(filterPcl) %>" title="Sematkan Petugas ke Favorit">
                   <i class="bi bi-star"></i>
                 </button>
                 <% if (kippPcls.includes(filterPcl.toUpperCase())) { %>
@@ -354,15 +361,17 @@
               <div class="card-actions flex-start" style="gap: 6px; margin-left: auto;">
                 <button onclick="window.shareElementAsImage('pclDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
                 <button onclick="window.copyElementAsImage('pclDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
-                <a href="/pcl?kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="btn btn-secondary btn-xs btn-close-detail" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
+                <a href="<%= navPrefix %>/pcl?kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="btn btn-secondary btn-xs btn-close-detail" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
               </div>
             </div>
 
             <% if (detailSubsls && detailSubsls.length > 0) { %>
               <div class="mb-4">
                 <div class="text-base text-secondary mb-2">
-                  PML: <strong><%= detailSubsls[0].pml %></strong><% if (kippPmls.includes(detailSubsls[0].pml.toUpperCase())) { %> <span class="badge badge-orange badge-xs" style="vertical-align: middle;">KIPP</span><% } %> · 
-                  Korlap: <strong><%= detailSubsls[0].korlap %></strong><% if (kippKorlaps.includes(detailSubsls[0].korlap.toUpperCase())) { %> <span class="badge badge-orange badge-xs" style="vertical-align: middle;">KIPP</span><% } %>
+                  PML: <strong><%= detailSubsls[0].pml %></strong><% if (kippPmls.includes(detailSubsls[0].pml.toUpperCase())) { %> <span class="badge badge-orange badge-xs" style="vertical-align: middle;">KIPP</span><% } %>
+                  <% if (!isSakernas) { %>
+                   · Korlap: <strong><%= detailSubsls[0].korlap %></strong><% if (kippKorlaps.includes(detailSubsls[0].korlap.toUpperCase())) { %> <span class="badge badge-orange badge-xs" style="vertical-align: middle;">KIPP</span><% } %>
+                  <% } %>
                 </div>
                 <% 
                   let doneMuatan = selectedPclStats ? (selectedPclStats.muatan_selesai !== undefined ? selectedPclStats.muatan_selesai : (selectedPclStats.usaha_total + selectedPclStats.keluarga_total)) : 0;
@@ -532,64 +541,6 @@
                   </div>
                 </div>
 
-                <!-- Mini Grid Status Keberadaan Usaha -->
-                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 20px; margin-bottom: 8px; border-top: 1px solid var(--border); padding-top: 16px;">
-                  <i class="bi bi-shop"></i> Detail Temuan Keberadaan Usaha
-                </div>
-                <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; text-align: center;">
-                  <div class="fasih-grid-item" style="background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.2); padding: 6px 4px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 9px; color: var(--accent-green); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Ditemukan</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_ditemukan_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); padding: 6px 4px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 9px; color: var(--accent-blue); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Baru</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_baru_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); padding: 6px 4px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-red); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Tdk Ditemukan</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_tidak_ditemukan_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); padding: 6px 4px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 9px; color: var(--accent-yellow); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Tutup</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_tutup_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2); padding: 6px 4px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 9px; color: var(--accent-purple); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Ganda</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.usaha_ganda_total || 0 %></div>
-                  </div>
-                </div>
-
-                <!-- Mini Grid Status Keberadaan Keluarga -->
-                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 16px; margin-bottom: 8px;">
-                  <i class="bi bi-people-fill"></i> Detail Temuan Keberadaan Keluarga
-                </div>
-                <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; text-align: center;">
-                  <div class="fasih-grid-item" style="background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.2); padding: 6px 2px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-green); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Ditemukan</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_ditemukan_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); padding: 6px 2px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-blue); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Klg Baru</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_baru_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); padding: 6px 2px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-red); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Tdk Ditemukan</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_tidak_ditemukan_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); padding: 6px 2px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-yellow); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Meninggal</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_meninggal_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(156,163,175,0.06); border: 1px solid rgba(156,163,175,0.2); padding: 6px 2px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Tdk Eligible</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_tidak_eligible_total || 0 %></div>
-                  </div>
-                  <div class="fasih-grid-item" style="background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2); padding: 6px 2px; border-radius: 6px;">
-                    <div class="fasih-grid-item-label" style="font-size: 8px; color: var(--accent-purple); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Tdk Ditemui</div>
-                    <div class="fasih-grid-item-value" style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><%= selectedPclStats.keluarga_tidak_dapat_ditemui_total || 0 %></div>
-                  </div>
-                </div>
-
                 <!-- JSON data script tag -->
                 <script id="pclHistoryData" type="application/json">
                   <%- JSON.stringify(pclHistory) %>
@@ -612,10 +563,8 @@
                         <span class="badge badge-gray btn-xs" style="font-size: 8px; padding: 1px 4px;">Belum Mulai</span>
                       <% } else if (s.sudah_diisi === 'sedang_didata') { %>
                         <span class="badge badge-orange btn-xs" style="font-size: 8px; padding: 1px 4px;">Sedang Didata</span>
-                      <% } else if (s.sudah_diisi === 'memenuhi_target') { %>
-                        <span class="badge badge-green btn-xs" style="font-size: 8px; padding: 1px 4px;">Memenuhi Target</span>
                       <% } else { %>
-                        <span class="badge badge-purple btn-xs" style="font-size: 8px; padding: 1px 4px;">Melebihi Target</span>
+                        <span class="badge badge-green btn-xs" style="font-size: 8px; padding: 1px 4px;">Selesai</span>
                       <% } %>
                     </div>
                     
@@ -702,7 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
       
-      const resetBtn = container.querySelector('a[href="/pcl"]');
+      const resetBtn = container.querySelector('a[href*="/pcl"]');
       if (resetBtn) {
         resetBtn.addEventListener('click', (e) => {
           e.preventDefault();
@@ -921,7 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.detailHtmlCache) {
       for (let key in window.detailHtmlCache) delete window.detailHtmlCache[key];
     }
-    const url = '/pcl' + (queryString ? (queryString.startsWith('?') ? queryString : '?' + queryString) : '');
+    const url = '<%= navPrefix %>/pcl' + (queryString ? (queryString.startsWith('?') ? queryString : '?' + queryString) : '');
     const ajaxContainer = document.getElementById('ajax-container');
     ajaxContainer.style.opacity = '0.5';
     ajaxContainer.style.pointerEvents = 'none';

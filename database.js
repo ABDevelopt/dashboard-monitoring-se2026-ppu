@@ -40,13 +40,19 @@ function initUsers(dbConn) {
   stmt.run('korlap', hashPassword('korlapse2026'), 'korlap');
 }
 
+function resolveSurveyId(surveyId) {
+  if (surveyId && typeof surveyId === 'string' && surveyId !== 'se2026') return surveyId;
+  const store = surveyContext.getStore();
+  if (store && store.activeSurvey) return store.activeSurvey;
+  return surveyId || 'se2026';
+}
+
 function getUserByUsername(username) {
   return getDb().prepare('SELECT * FROM users WHERE username = ?').get(username);
 }
 
 function getDb(surveyId) {
-  const store = surveyContext.getStore();
-  const sId = surveyId || (store && store.activeSurvey) || 'se2026';
+  const sId = resolveSurveyId(surveyId);
   if (!dbs[sId]) {
     const dbName = `${sId}.db`;
     const dbPath = path.join(__dirname, 'data', dbName);
@@ -72,8 +78,7 @@ function getDb(surveyId) {
 }
 
 function reloadDbConnection(surveyId) {
-  const store = surveyContext.getStore();
-  const sId = surveyId || (store && store.activeSurvey) || 'se2026';
+  const sId = resolveSurveyId(surveyId);
   if (dbs[sId]) {
     try {
       dbs[sId].close();
@@ -84,8 +89,7 @@ function reloadDbConnection(surveyId) {
 }
 
 function closeDbConnection(surveyId) {
-  const store = surveyContext.getStore();
-  const sId = surveyId || (store && store.activeSurvey) || 'se2026';
+  const sId = resolveSurveyId(surveyId);
   if (dbs[sId]) {
     try {
       dbs[sId].close();
@@ -799,6 +803,14 @@ function runMigrations(dbConn, surveyId = 'se2026') {
           logger.error('surveys_registry seed error (non-fatal):', seedErr.message);
         }
       }
+    },
+    {
+      version: '20260817000000_add_sls_selesai',
+      up: (dbConn) => {
+        try {
+          dbConn.prepare('ALTER TABLE progres ADD COLUMN sls_selesai INTEGER DEFAULT 0').run();
+        } catch (_) {}
+      }
     }
   ];
 
@@ -957,19 +969,20 @@ function getAdaptiveMuatanFormula(mode, progresAlias = 'p', masterAlias = 'm') {
 
 
 // Ambil data progres gabungan dengan master untuk upload tertentu
-function getProgresWithMaster(uploadId, surveyId = 'se2026') {
-  const masterTable = getMasterTableSql(surveyId);
-  const settings = getSettings();
+function getProgresWithMaster(uploadId, surveyId) {
+  const sId = resolveSurveyId(surveyId);
+  const masterTable = getMasterTableSql(sId);
+  const settings = getSettings(sId);
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
-  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
+  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
 
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
   const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
   const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
-  return attachProgressPercentages(getDb().prepare(`
+  return attachProgressPercentages(getDb(sId).prepare(`
     SELECT 
       m.kode, m.kode_kec, m.kecamatan, m.desa, m.nama_sls,
       m.korlap, m.pml, m.pcl, m.target_fasih AS target_fasih_awal,
@@ -996,16 +1009,18 @@ function getProgresWithMaster(uploadId, surveyId = 'se2026') {
 }
 
 // Agregate per kecamatan
-function getKecamatanStats(uploadId, settings = getSettings(), surveyId = 'se2026') {
-  const masterTable = getMasterTableSql(surveyId);
-  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
-  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
-  const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
-  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
-  const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
-  const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+function getKecamatanStats(uploadId, settings, surveyId) {
+  const sId = resolveSurveyId(surveyId);
+  const masterTable = getMasterTableSql(sId);
+  const effSettings = settings || getSettings(sId);
+  const singleTargetFormula = getTargetFormula(effSettings.target_fasih_mode);
+  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+  const realFormula = getRealizationFormula(effSettings.target_muatan_mode, 'p');
+  const targetMuatanFormula = getAdaptiveMuatanFormula(effSettings.target_muatan_mode, 'p', 'm');
+  const usahaTotalFormula = getUsahaTotalFormula(effSettings.target_muatan_mode, 'p');
+  const keluargaTotalFormula = getKeluargaTotalFormula(effSettings.target_muatan_mode, 'p');
 
-  return attachProgressPercentages(getDb().prepare(`
+  return attachProgressPercentages(getDb(sId).prepare(`
     SELECT 
       m.kecamatan,
       COUNT(m.kode) AS total_subsls,
@@ -1028,20 +1043,22 @@ function getKecamatanStats(uploadId, settings = getSettings(), surveyId = 'se202
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     GROUP BY m.kecamatan
     ORDER BY m.kecamatan
-  `).all(uploadId), settings);
+  `).all(uploadId), effSettings);
 }
 
 // Agregate per korlap
-function getKorlapStats(uploadId, settings = getSettings(), surveyId = 'se2026') {
-  const masterTable = getMasterTableSql(surveyId);
-  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
-  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
-  const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
-  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
-  const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
-  const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+function getKorlapStats(uploadId, settings, surveyId) {
+  const sId = resolveSurveyId(surveyId);
+  const masterTable = getMasterTableSql(sId);
+  const effSettings = settings || getSettings(sId);
+  const singleTargetFormula = getTargetFormula(effSettings.target_fasih_mode);
+  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+  const realFormula = getRealizationFormula(effSettings.target_muatan_mode, 'p');
+  const targetMuatanFormula = getAdaptiveMuatanFormula(effSettings.target_muatan_mode, 'p', 'm');
+  const usahaTotalFormula = getUsahaTotalFormula(effSettings.target_muatan_mode, 'p');
+  const keluargaTotalFormula = getKeluargaTotalFormula(effSettings.target_muatan_mode, 'p');
 
-  return attachProgressPercentages(getDb().prepare(`
+  return attachProgressPercentages(getDb(sId).prepare(`
     SELECT 
       m.korlap,
       MAX(m.korlap_email) AS email,
@@ -1067,20 +1084,22 @@ function getKorlapStats(uploadId, settings = getSettings(), surveyId = 'se2026')
     WHERE p.upload_id = ? AND m.korlap IS NOT NULL
     GROUP BY m.korlap
     ORDER BY selesai ASC
-  `).all(uploadId), settings);
+  `).all(uploadId), effSettings);
 }
 
 // Agregate per PML
-function getPmlStats(uploadId, settings = getSettings(), surveyId = 'se2026') {
-  const masterTable = getMasterTableSql(surveyId);
-  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
-  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
-  const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
-  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
-  const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
-  const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+function getPmlStats(uploadId, settings, surveyId) {
+  const sId = resolveSurveyId(surveyId);
+  const masterTable = getMasterTableSql(sId);
+  const effSettings = settings || getSettings(sId);
+  const singleTargetFormula = getTargetFormula(effSettings.target_fasih_mode);
+  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+  const realFormula = getRealizationFormula(effSettings.target_muatan_mode, 'p');
+  const targetMuatanFormula = getAdaptiveMuatanFormula(effSettings.target_muatan_mode, 'p', 'm');
+  const usahaTotalFormula = getUsahaTotalFormula(effSettings.target_muatan_mode, 'p');
+  const keluargaTotalFormula = getKeluargaTotalFormula(effSettings.target_muatan_mode, 'p');
 
-  return attachProgressPercentages(getDb().prepare(`
+  return attachProgressPercentages(getDb(sId).prepare(`
     SELECT 
       m.pml,
       m.korlap,
@@ -1106,20 +1125,22 @@ function getPmlStats(uploadId, settings = getSettings(), surveyId = 'se2026') {
     WHERE p.upload_id = ? AND m.pml IS NOT NULL
     GROUP BY m.pml, m.korlap
     ORDER BY selesai ASC
-  `).all(uploadId), settings);
+  `).all(uploadId), effSettings);
 }
 
 // Agregate per PCL
-function getPclStats(uploadId, settings = getSettings(), surveyId = 'se2026') {
-  const masterTable = getMasterTableSql(surveyId);
-  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
-  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
-  const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
-  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
-  const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
-  const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+function getPclStats(uploadId, settings, surveyId) {
+  const sId = resolveSurveyId(surveyId);
+  const masterTable = getMasterTableSql(sId);
+  const effSettings = settings || getSettings(sId);
+  const singleTargetFormula = getTargetFormula(effSettings.target_fasih_mode);
+  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+  const realFormula = getRealizationFormula(effSettings.target_muatan_mode, 'p');
+  const targetMuatanFormula = getAdaptiveMuatanFormula(effSettings.target_muatan_mode, 'p', 'm');
+  const usahaTotalFormula = getUsahaTotalFormula(effSettings.target_muatan_mode, 'p');
+  const keluargaTotalFormula = getKeluargaTotalFormula(effSettings.target_muatan_mode, 'p');
 
-  return attachProgressPercentages(getDb().prepare(`
+  return attachProgressPercentages(getDb(sId).prepare(`
     SELECT 
       COALESCE(p.pcl_name, m.pcl) AS pcl,
       COALESCE(p.pcl_email, m.pcl_email) AS email,
@@ -1152,12 +1173,13 @@ function getPclStats(uploadId, settings = getSettings(), surveyId = 'se2026') {
     WHERE p.upload_id = ?
     GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), COALESCE(p.pcl_name, m.pcl)
     ORDER BY approved_total DESC
-  `).all(uploadId), settings);
+  `).all(uploadId), effSettings);
 }
 
 // Tren harian
-function getTrenHarian() {
-  return getDb().prepare(`
+function getTrenHarian(surveyId) {
+  const sId = resolveSurveyId(surveyId);
+  return getDb(sId).prepare(`
     SELECT 
       u.id,
       u.tanggal,
@@ -1191,19 +1213,20 @@ function getTrenHarian() {
 
 // Overview summary
 function getOverviewSummary(uploadId, settings = getSettings(), surveyId = 'se2026') {
+  const db = getDb(surveyId);
   const masterTable = getMasterTableSql(surveyId);
   if (!uploadId) return null;
-  const total = getDb().prepare(`SELECT COUNT(*) as n FROM ${masterTable}`).get().n;
-  const target_awal_total = getDb().prepare(`SELECT SUM(target_fasih) AS n FROM ${masterTable}`).get().n || 0;
+  const total = db.prepare(`SELECT COUNT(*) as n FROM ${masterTable}`).get().n;
+  const target_awal_total = db.prepare(`SELECT SUM(target_fasih) AS n FROM ${masterTable}`).get().n || 0;
 
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
-  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
+  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
   const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
   const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
-  const stats = getDb().prepare(`
+  const stats = db.prepare(`
     SELECT 
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
@@ -1243,10 +1266,10 @@ function getOverviewSummary(uploadId, settings = getSettings(), surveyId = 'se20
   const target_static_total = stats.target_static_total || 0;
   const target_upload_total = stats.target_upload_total || 0;
 
-  const total_pcl = getDb().prepare(`SELECT COUNT(DISTINCT pcl) AS n FROM ${masterTable} WHERE pcl IS NOT NULL AND pcl != ''`).get().n || 0;
-  const total_pml = getDb().prepare(`SELECT COUNT(DISTINCT pml) AS n FROM ${masterTable} WHERE pml IS NOT NULL AND pml != ''`).get().n || 0;
+  const total_pcl = db.prepare(`SELECT COUNT(DISTINCT pcl) AS n FROM ${masterTable} WHERE pcl IS NOT NULL AND pcl != ''`).get().n || 0;
+  const total_pml = db.prepare(`SELECT COUNT(DISTINCT pml) AS n FROM ${masterTable} WHERE pml IS NOT NULL AND pml != ''`).get().n || 0;
 
-  const active_pcl = getDb().prepare(`
+  const active_pcl = db.prepare(`
     SELECT COUNT(DISTINCT m.pcl) AS n 
     FROM ${masterTable} m 
     JOIN progres p ON m.kode = p.kode AND p.upload_id = ? 
@@ -1288,13 +1311,15 @@ function getOverviewSummary(uploadId, settings = getSettings(), surveyId = 'se20
 }
 
 // Early warning: PCL dengan 0 progres
-function getEarlyWarning(uploadId, filters = {}) {
-  const settings = getSettings();
+function getEarlyWarning(uploadId, filters = {}, settings = null, surveyId = 'se2026') {
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  const currentSettings = settings || getSettings(sId);
   // Hitung jumlah hari sensus berjalan (dari tanggal upload pertama ke upload saat ini)
-  const currentUpload = getDb().prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
+  const currentUpload = db.prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
   
   let diffDays = 1;
-  const startSensusDateStr = settings.speedometer_start_date || '2026-06-15';
+  const startSensusDateStr = currentSettings.speedometer_start_date || (sId === 'se2026' ? '2026-06-15' : '2026-08-01');
   if (currentUpload && startSensusDateStr) {
     const d1 = new Date(startSensusDateStr);
     const d2 = new Date(currentUpload.tanggal);
@@ -1302,9 +1327,9 @@ function getEarlyWarning(uploadId, filters = {}) {
     diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
   }
 
-  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
+  const singleTargetFormula = getTargetFormula(currentSettings.target_fasih_mode);
 
-  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
+  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
 
   let where = '';
   const paramsZeroPcl = [uploadId];
@@ -1330,12 +1355,12 @@ function getEarlyWarning(uploadId, filters = {}) {
     paramsZeroPml.push(filters.pml);
   }
 
-  const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
-  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+  const realFormula = getRealizationFormula(currentSettings.target_muatan_mode, 'p');
+  const targetMuatanFormula = getAdaptiveMuatanFormula(currentSettings.target_muatan_mode, 'p', 'm');
 
   const zeroPcl = [];
 
-  const slowPcl = getDb().prepare(`
+  const slowPcl = db.prepare(`
     SELECT 
       m.pcl, 
       MAX(m.pml) AS pml, 
@@ -1363,7 +1388,7 @@ function getEarlyWarning(uploadId, filters = {}) {
     ORDER BY rata_rata ASC
   `).all(...paramsSlowPcl);
 
-  const zeroPml = getDb().prepare(`
+  const zeroPml = db.prepare(`
     SELECT 
       m.pml, 
       MAX(m.korlap) AS korlap,
@@ -1396,7 +1421,7 @@ function getEarlyWarning(uploadId, filters = {}) {
     const oneDayAgoStr = oneDayAgo.toISOString().slice(0, 10);
 
     // Cari upload terbaru yang tanggalnya <= 1 hari sebelum upload saat ini
-    const prevUpload = getDb().prepare(
+    const prevUpload = db.prepare(
       `SELECT id, tanggal FROM uploads WHERE tanggal <= ? AND id != ? ORDER BY tanggal DESC LIMIT 1`
     ).get(oneDayAgoStr, uploadId);
 
@@ -1411,7 +1436,7 @@ function getEarlyWarning(uploadId, filters = {}) {
       if (filters.korlap) { stagnanWhere += ' AND m.korlap = ?'; stagnanParamsFilters.push(filters.korlap); }
       if (filters.pml) { stagnanWhere += ' AND m.pml = ?'; stagnanParamsFilters.push(filters.pml); }
 
-      stagnanPcl = getDb().prepare(`
+      stagnanPcl = db.prepare(`
         WITH cur_stats AS (
           SELECT 
             m.pcl,
@@ -1467,13 +1492,13 @@ function getEarlyWarning(uploadId, filters = {}) {
   if (currentUpload) {
     const currentDate = new Date(currentUpload.tanggal);
     const deadlineJuly15 = new Date('2026-07-15');
-    const deadlineAug31 = new Date(settings.speedometer_target_date || '2026-08-31');
+    const deadlineAug31 = new Date(currentSettings.speedometer_target_date || (sId === 'se2026' ? '2026-08-31' : '2026-08-31'));
 
     const daysToJuly15 = Math.max(0, Math.ceil((deadlineJuly15 - currentDate) / (1000 * 60 * 60 * 24)));
     const daysToAug31 = Math.max(0, Math.ceil((deadlineAug31 - currentDate) / (1000 * 60 * 60 * 24)));
 
     // Query stats for all PCLs
-    const allPcls = getDb().prepare(`
+    const allPcls = db.prepare(`
       SELECT 
         m.pcl, 
         MAX(m.pml) AS pml, 
@@ -1536,7 +1561,10 @@ function getEarlyWarning(uploadId, filters = {}) {
 }
 
 // Top performers
-function getTopPerformers(uploadId, filters = {}, settings = getSettings()) {
+function getTopPerformers(uploadId, filters = {}, settings = null, surveyId = 'se2026') {
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  const currentSettings = settings || getSettings(sId);
   let where = '';
   const params = [uploadId];
 
@@ -1558,15 +1586,15 @@ function getTopPerformers(uploadId, filters = {}, settings = getSettings()) {
     limit = -1; // SQLite uses -1 for no limit
   }
 
-  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
+  const singleTargetFormula = getTargetFormula(currentSettings.target_fasih_mode);
 
-  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
+  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
 
-  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
-  const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
-  const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+  const targetMuatanFormula = getAdaptiveMuatanFormula(currentSettings.target_muatan_mode, 'p', 'm');
+  const usahaTotalFormula = getUsahaTotalFormula(currentSettings.target_muatan_mode, 'p');
+  const keluargaTotalFormula = getKeluargaTotalFormula(currentSettings.target_muatan_mode, 'p');
 
-  const topPcl = getDb().prepare(`
+  const topPcl = db.prepare(`
     SELECT 
       m.pcl, 
       MAX(m.pml) AS pml, 
@@ -1593,7 +1621,7 @@ function getTopPerformers(uploadId, filters = {}, settings = getSettings()) {
     LIMIT ?
   `).all(...params, limit);
 
-  const topPml = getDb().prepare(`
+  const topPml = db.prepare(`
     SELECT 
       m.pml, 
       MAX(m.korlap) AS korlap,
@@ -1619,13 +1647,16 @@ function getTopPerformers(uploadId, filters = {}, settings = getSettings()) {
   `).all(...params, limit);
 
   return { 
-    topPcl: attachProgressPercentages(topPcl, settings), 
-    topPml: attachProgressPercentages(topPml, settings) 
+    topPcl: attachProgressPercentages(topPcl, currentSettings), 
+    topPml: attachProgressPercentages(topPml, currentSettings) 
   };
 }
 
 // Bottom performers
-function getBottomPerformers(uploadId, filters = {}, settings = getSettings()) {
+function getBottomPerformers(uploadId, filters = {}, settings = null, surveyId = 'se2026') {
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  const currentSettings = settings || getSettings(sId);
   let where = '';
   const params = [uploadId];
 
@@ -1647,15 +1678,15 @@ function getBottomPerformers(uploadId, filters = {}, settings = getSettings()) {
     limit = -1; // SQLite uses -1 for no limit
   }
 
-  const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
+  const singleTargetFormula = getTargetFormula(currentSettings.target_fasih_mode);
 
-  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
+  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
 
-  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
-  const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
-  const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+  const targetMuatanFormula = getAdaptiveMuatanFormula(currentSettings.target_muatan_mode, 'p', 'm');
+  const usahaTotalFormula = getUsahaTotalFormula(currentSettings.target_muatan_mode, 'p');
+  const keluargaTotalFormula = getKeluargaTotalFormula(currentSettings.target_muatan_mode, 'p');
 
-  const bottomPcl = getDb().prepare(`
+  const bottomPcl = db.prepare(`
     SELECT 
       m.pcl, 
       MAX(m.pml) AS pml, 
@@ -1682,7 +1713,7 @@ function getBottomPerformers(uploadId, filters = {}, settings = getSettings()) {
     LIMIT ?
   `).all(...params, limit);
 
-  const bottomPml = getDb().prepare(`
+  const bottomPml = db.prepare(`
     SELECT 
       m.pml, 
       MAX(m.korlap) AS korlap,
@@ -1708,8 +1739,8 @@ function getBottomPerformers(uploadId, filters = {}, settings = getSettings()) {
   `).all(...params, limit);
 
   return { 
-    bottomPcl: attachProgressPercentages(bottomPcl, settings), 
-    bottomPml: attachProgressPercentages(bottomPml, settings) 
+    bottomPcl: attachProgressPercentages(bottomPcl, currentSettings), 
+    bottomPml: attachProgressPercentages(bottomPml, currentSettings) 
   };
 }
 
@@ -1758,60 +1789,15 @@ function getAnomalyStats(uploadId, filters = {}) {
 }
 
 function initSettings(dbConn, surveyId = 'se2026') {
-  const isSe2026 = (surveyId === 'se2026' || !surveyId);
-  const surveysConfig = require('./config/surveys.json');
-  const surveyInfo = surveysConfig[surveyId] || { name: 'Monitoring Survei', shortName: 'Survei PPU' };
-  const sShort = surveyInfo.shortName || 'Survei PPU';
+  dbConn.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
+  `);
 
-  const waTemplate = isSe2026 
-    ? `*📢 UPDATE HARIAN SE2026 PPU*\r\n🗓️ {tanggal_sekarang} | ⏰ {jam_sekarang}\r\n\r\n*AKUMULASI PROGRES PENDATAAN*\r\n✅ Selesai (Subm/Appr/Rej): *{realisasi_fasih}* dokumen (*{persen_fasih}%*)\r\n   ├ 🟢 Approved: *{approved_total}* dokumen\r\n   ├ 📨 Submitted PCL: *{submitted_total}* dokumen\r\n   └ 🔴 Rejected: *{rejected_total}* dokumen\r\n🟠 Open (Belum Diisi): *{open_total}* dokumen\r\n🟡 Draft (Sedang Diisi): *{draft_total}* dokumen\r\n📋 Total Assignment FASIH: *{target_fasih}* dokumen\r\n\r\n*KINERJA REALISASI SEJAK UPLOAD SEBELUMNYA ({waktu_upload_sebelumnya})*\r\nDEADLINE: 17 AGUSTUS 2026\r\n📨 Realisasi Masuk: *{diff_total}* dokumen\r\n👤 Produktifitas petugas keseluruhan: *{avg_diff_all}* dokumen/petugas/hari\r\n📈 Deviasi vs Target Normal (2145): *{deviasi_update}* dokumen\r\n📉 Defisit Laju Kumulatif: *{deviasi_kumulatif}* dokumen/hari\r\n\r\n*SEBARAN PRODUKTIVITAS PETUGAS (SEJAK UPLOAD SEBELUMNYA)*\r\n🔴 0 dokumen: *{dist_0}* orang\r\n🟠 1–4 dokumen: *{dist_1_4}* orang\r\n🟡 5–7 dokumen: *{dist_5_7}* orang\r\n🔵 8–12 dokumen: *{dist_8_12}* orang\r\n🟢 ≥13 dokumen: *{dist_13_plus}* orang\r\n\r\n_Notifikasi otomatis [monitoring.bpsppu.com]_`
-    : `*📢 UPDATE HARIAN ${sShort.toUpperCase()}*\r\n🗓️ {tanggal_sekarang} | ⏰ {jam_sekarang}\r\n\r\n*AKUMULASI PROGRES PENDATAAN*\r\n✅ Selesai (Subm/Appr/Rej): *{realisasi_fasih}* dokumen (*{persen_fasih}%*)\r\n   ├ 🟢 Approved: *{approved_total}* dokumen\r\n   ├ 📨 Submitted PCL: *{submitted_total}* dokumen\r\n   └ 🔴 Rejected: *{rejected_total}* dokumen\r\n🟠 Open (Belum Diisi): *{open_total}* dokumen\r\n🟡 Draft (Sedang Diisi): *{draft_total}* dokumen\r\n📋 Total Assignment FASIH: *{target_fasih}* dokumen\r\n\r\n*KINERJA REALISASI SEJAK UPLOAD SEBELUMNYA ({waktu_upload_sebelumnya})*\r\n📨 Realisasi Masuk: *{diff_total}* dokumen\r\n👤 Produktifitas petugas keseluruhan: *{avg_diff_all}* dokumen/petugas/hari\r\n\r\n_Notifikasi otomatis [monitoring.bpsppu.com]_`;
-
-  const defaults = {
-    'page_map': '1',
-    'page_earlywarning': '1',
-    'page_deteksianomali': '1',
-    'page_leaderboard': '1',
-    'page_performatrendah': '1',
-    'page_performa': '1',
-    'page_kecamatan': '1',
-    'page_subsls': '1',
-    'page_korlap': '1',
-    'page_pml': '1',
-    'page_pcl': '1',
-    'page_export': '1',
-    'page_aiagent': '0',
-    'agent_provider': 'gemini',
-    'gemini_api_key': '',
-    'gemini_backup_api_keys': '[]',
-    'gemini_model': 'gemini-3.5-flash',
-    'gemini_models_list': 'gemini-3.5-flash, gemini-3.1-flash-lite, gemini-2.0-flash, gemini-2.5-pro',
-    'openai_api_key': '',
-    'openai_model': 'gpt-5.5',
-    'openai_models_list': 'gpt-5.5, gpt-4o',
-    'openrouter_api_key': '',
-    'openrouter_model': 'openrouter/free',
-    'openrouter_models_list': 'openrouter/free, openrouter/owl-alpha, meta-llama/llama-3.3-70b-instruct:free, nvidia/nemotron-3-ultra-550b-a55b:free',
-    'chatbot_smart_switch': '1',
-    'overview_fasih': '1',
-    'overview_muatan': '1',
-    'overview_tren_muatan': '1',
-    'overview_tren_fasih': '1',
-    'overview_heatmap': '1',
-    'overview_kecamatan': '1',
-    'overview_bangunan': '1',
-    'show_progres_muatan': '1',
-    'target_fasih_mode': 'static',
-    'target_muatan_mode': 'prelist',
-    'google_sheets_anomaly_url': isSe2026 ? 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml' : '',
-    'google_sheets_apps_script_url': isSe2026 ? 'https://script.google.com/macros/s/AKfycby3zpFtIN58xOf6GxnDqkl7gjwKX-oeUZwuAp93wL0OrejumH91ykBGa9XbsoMdhZQetA/exec' : '',
-    'whatsapp_message_template': waTemplate,
-    'speedometer_start_date': isSe2026 ? '2026-06-15' : new Date().toISOString().slice(0, 7) + '-01',
-    'speedometer_target_date': isSe2026 ? '2026-08-17' : new Date().toISOString().slice(0, 7) + '-28',
-    'whatsapp_enabled': '0',
-    'whatsapp_group_id': '',
-    'whatsapp_group_name': '',
-    'whatsapp_message_template': `*UPDATE HARIAN SE2026 PPU*
+  const isSe2026 = surveyId === 'se2026';
+  const waTemplate = isSe2026 ? `*UPDATE HARIAN SE2026 PPU*
 🗓️ {tanggal_sekarang} | ⏰ {jam_sekarang}
 
 *AKUMULASI PROGRES PENDATAAN*
@@ -1836,11 +1822,71 @@ function initSettings(dbConn, surveyId = 'se2026') {
 🔵 8–12 dokumen: *{dist_8_12}* orang
 🟢 ≥13 dokumen: *{dist_13_plus}* orang
 
-_Notifikasi otomatis [monitoring.bpsppu.com]_`,
-    'speedometer_start_date': '2026-06-15',
-    'speedometer_target_date': '2026-08-31',
-    'speedometer_target_speed_per_pcl': '13',
+_Notifikasi otomatis [monitoring.bpsppu.com]_` : `*UPDATE HARIAN SAKERNAS PPU*
+🗓️ {tanggal_sekarang} | ⏰ {jam_sekarang}
+
+*AKUMULASI PROGRES PENDATAAN*
+✅ Selesai: *{realisasi_fasih}* dokumen (*{persen_fasih}%*)
+   ├ 🟢 Approved: *{approved_total}* dokumen
+   ├ 📨 Submitted: *{submitted_total}* dokumen
+   └ 🔴 Rejected: *{rejected_total}* dokumen
+🟠 Open: *{open_total}* dokumen
+🟡 Draft: *{draft_total}* dokumen
+📋 Target: *{target_fasih}* dokumen
+
+*KINERJA REALISASI SEJAK UPLOAD SEBELUMNYA ({waktu_upload_sebelumnya})*
+📨 Realisasi Masuk: *{diff_total}* dokumen
+👤 Produktifitas petugas: *{avg_diff_all}* dokumen/petugas/hari
+
+_Notifikasi otomatis [monitoring.bpsppu.com]_`;
+
+  const defaults = {
+    'survey_title': isSe2026 ? 'Sensus Ekonomi 2026 PPU' : 'Sakernas Agustus 2026 PPU',
+    'page_map': '1',
+    'page_earlywarning': '1',
+    'page_deteksianomali': isSe2026 ? '1' : '0',
+    'page_leaderboard': '1',
+    'page_performatrendah': '1',
+    'page_performa': '1',
+    'page_kecamatan': '1',
+    'page_subsls': '1',
+    'page_korlap': isSe2026 ? '1' : '0',
+    'page_pml': '1',
+    'page_pcl': '1',
+    'page_export': '1',
+    'page_aiagent': '0',
+    'agent_provider': 'gemini',
+    'gemini_api_key': '',
+    'gemini_backup_api_keys': '[]',
+    'gemini_model': 'gemini-3.5-flash',
+    'gemini_models_list': 'gemini-3.5-flash, gemini-3.1-flash-lite, gemini-2.0-flash, gemini-2.5-pro',
+    'openai_api_key': '',
+    'openai_model': 'gpt-5.5',
+    'openai_models_list': 'gpt-5.5, gpt-4o',
+    'openrouter_api_key': '',
+    'openrouter_model': 'openrouter/free',
+    'openrouter_models_list': 'openrouter/free, openrouter/owl-alpha, meta-llama/llama-3.3-70b-instruct:free, nvidia/nemotron-3-ultra-550b-a55b:free',
+    'chatbot_smart_switch': '1',
+    'overview_fasih': '1',
+    'overview_muatan': isSe2026 ? '1' : '0',
+    'overview_tren_muatan': isSe2026 ? '1' : '0',
+    'overview_tren_fasih': '1',
+    'overview_heatmap': '1',
+    'overview_kecamatan': '1',
+    'overview_bangunan': isSe2026 ? '1' : '0',
+    'show_progres_muatan': isSe2026 ? '1' : '0',
+    'target_fasih_mode': 'static',
+    'target_muatan_mode': 'prelist',
+    'google_sheets_anomaly_url': isSe2026 ? 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml' : '',
+    'google_sheets_apps_script_url': isSe2026 ? 'https://script.google.com/macros/s/AKfycby3zpFtIN58xOf6GxnDqkl7gjwKX-oeUZwuAp93wL0OrejumH91ykBGa9XbsoMdhZQetA/exec' : '',
+    'whatsapp_message_template': waTemplate,
+    'speedometer_start_date': isSe2026 ? '2026-06-15' : '2026-08-01',
+    'speedometer_target_date': isSe2026 ? '2026-08-31' : '2026-08-31',
+    'speedometer_target_speed_per_pcl': isSe2026 ? '13' : '10',
     'speedometer_calc_mode': 'total_target',
+    'whatsapp_enabled': '0',
+    'whatsapp_group_id': '',
+    'whatsapp_group_name': '',
     'show_status_open': '1',
     'show_status_draft': '1',
     'show_status_submitted': '1',
@@ -1915,9 +1961,10 @@ function rebuildAllSummaryCaches() {
   }
 }
 
-function updateSettings(settingsObj) {
-  const db = getDb();
-  const currentSettings = getSettings();
+function updateSettings(settingsObj, surveyId) {
+  const activeSurveyId = resolveSurveyId(surveyId);
+  const db = getDb(activeSurveyId);
+  const currentSettings = getSettings(activeSurveyId);
   const update = db.prepare('UPDATE settings SET value = ? WHERE key = ?');
   for (const [k, v] of Object.entries(settingsObj)) {
     update.run(v, k);
@@ -1931,11 +1978,12 @@ function updateSettings(settingsObj) {
   
   if (settingsObj.target_muatan_mode !== undefined && currentSettings.target_muatan_mode !== settingsObj.target_muatan_mode) {
     needsRebuild = true;
+    const masterTable = getMasterTableSql(activeSurveyId);
     db.transaction(() => {
       if (settingsObj.target_muatan_mode === 'honor') {
-        db.prepare('UPDATE subsls_master SET muatan = COALESCE(target_honor, 0)').run();
+        db.prepare(`UPDATE ${masterTable} SET muatan = COALESCE(target_honor, 0)`).run();
       } else {
-        db.prepare('UPDATE subsls_master SET muatan = COALESCE(muatan_original, 0)').run();
+        db.prepare(`UPDATE ${masterTable} SET muatan = COALESCE(muatan_original, 0)`).run();
       }
     })();
   }
@@ -1950,10 +1998,10 @@ function rebuildSummaryCache(uploadId, surveyId) {
   db.prepare('DELETE FROM summary_cache WHERE upload_id = ?').run(uploadId);
   const masterTable = getMasterTableSql(surveyId);
 
-  const settings = getSettings();
+  const settings = getSettings(surveyId);
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
-  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
+  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
 
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
@@ -2719,7 +2767,7 @@ function checkQueuedMessageStatus(id) {
 }
 
 module.exports = {
-  getDb, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
+  getDb, resolveSurveyId, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
   getBottomPerformers, getAnomalyStats,

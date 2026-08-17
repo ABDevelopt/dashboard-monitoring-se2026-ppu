@@ -3,7 +3,9 @@ const router = express.Router();
 const { getPclStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
 
 router.get('/', (req, res) => {
-const uploadId = res.locals.uploadId;
+  const uploadId = res.locals.uploadId;
+  const surveyId = res.locals.activeSurvey || 'se2026';
+  const db = getDb(surveyId);
   let pclStats = [];
   let detailSubsls = [];
   const filterPcl = req.query.pcl || '';
@@ -26,7 +28,7 @@ const uploadId = res.locals.uploadId;
     const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
     const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
-    pclStats = attachProgressPercentages(getDb().prepare(`
+    pclStats = attachProgressPercentages(db.prepare(`
       SELECT 
         m.pcl, m.pml, m.korlap, m.kecamatan,
         COUNT(m.kode) AS total_subsls,
@@ -70,7 +72,7 @@ const uploadId = res.locals.uploadId;
       const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
       const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
-      detailSubsls = attachProgressPercentages(getDb().prepare(`
+      detailSubsls = attachProgressPercentages(db.prepare(`
         SELECT 
           p.kode, m.kecamatan, m.desa, m.nama_sls,
           m.korlap, m.pml, COALESCE(p.pcl_name, m.pcl) AS pcl, m.muatan,
@@ -83,54 +85,52 @@ const uploadId = res.locals.uploadId;
           COALESCE(m.target_fasih, 0) AS target_static,
           COALESCE(p.target_upload, 0) AS target_upload,
           CASE 
-            WHEN p.kode IS NULL OR (
-              (${realFormula}) = 0 AND 
-              COALESCE(p.draft, 0) = 0 AND 
-              COALESCE(p.submitted_by_pcl, 0) = 0 AND 
-              COALESCE(p.approved, 0) = 0 AND 
-              COALESCE(p.rejected, 0) = 0
-            ) THEN 'belum_mulai'
-            WHEN (${targetMuatanFormula}) > 0 AND (${realFormula}) < (${targetMuatanFormula}) THEN 'sedang_didata'
-            WHEN (${realFormula}) = (${targetMuatanFormula}) THEN 'memenuhi_target'
-            ELSE 'melebihi_target'
+            WHEN COALESCE(p.sls_selesai, 0) = 1 THEN 'memenuhi_target'
+            WHEN p.kode IS NOT NULL AND (
+              COALESCE(p.draft, 0) > 0 OR 
+              COALESCE(p.submitted_by_pcl, 0) > 0 OR 
+              COALESCE(p.approved, 0) > 0 OR 
+              COALESCE(p.rejected, 0) > 0
+            ) THEN 'sedang_didata'
+            ELSE 'belum_mulai'
           END AS sudah_diisi,
           ${usahaTotalFormula} AS usaha_total,
           ${keluargaTotalFormula} AS keluarga_total
         FROM subsls_master m
         LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-        WHERE m.pcl = ? OR p.pcl_name = ? OR p.pcl_email = ?
-        ORDER BY m.kecamatan, m.desa, m.kode
-      `).all(uploadId, filterPcl, filterPcl, filterPcl));
+        WHERE (UPPER(TRIM(COALESCE(NULLIF(p.pcl_name, ''), m.pcl))) = UPPER(TRIM(?)))
+        ORDER BY sudah_diisi ASC, m.kecamatan, m.desa, m.kode
+      `).all(uploadId, filterPcl), settings);
     }
   }
 
   // Hitung hari berjalan dari tanggal mulai pendataan & sisa hari menuju deadline
   const settings = res.locals.settings || {};
-  const START_DATE = new Date(settings.speedometer_start_date || '2026-06-15');
+  const START_DATE = new Date(settings.speedometer_start_date || (surveyId === 'se2026' ? '2026-06-15' : '2026-08-01'));
   let diffDays = 1;
   let daysRemaining = 0;
   if (uploadId) {
-    const currentUpload = getDb().prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
+    const currentUpload = db.prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
 
     if (currentUpload) {
       const d2 = new Date(currentUpload.tanggal);
       const diffTime = d2 - START_DATE;
       diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
 
-      const deadline = new Date(settings.speedometer_target_date || '2026-08-31');
+      const deadline = new Date(settings.speedometer_target_date || (surveyId === 'se2026' ? '2026-08-31' : '2026-08-31'));
       daysRemaining = Math.max(0, Math.ceil((deadline - d2) / (1000 * 60 * 60 * 24)));
     }
   }
 
   // Get filter lists
-  const kecList = getDb().prepare('SELECT DISTINCT kecamatan FROM subsls_master ORDER BY kecamatan').all();
-  const korlapList = getDb().prepare('SELECT DISTINCT korlap FROM subsls_master ORDER BY korlap').all();
-  const pmlList = getDb().prepare('SELECT DISTINCT pml FROM subsls_master ORDER BY pml').all();
+  const kecList = db.prepare('SELECT DISTINCT kecamatan FROM subsls_master ORDER BY kecamatan').all();
+  const korlapList = db.prepare('SELECT DISTINCT korlap FROM subsls_master ORDER BY korlap').all();
+  const pmlList = db.prepare('SELECT DISTINCT pml FROM subsls_master ORDER BY pml').all();
 
   // Get historical progress of selected PCL
   let pclHistory = [];
   if (uploadId && filterPcl) {
-    pclHistory = getDb().prepare(`
+    pclHistory = db.prepare(`
       SELECT 
         u.tanggal,
         SUM(c.draft_total) AS draft_total,
@@ -141,13 +141,13 @@ const uploadId = res.locals.uploadId;
         SUM(c.target_fasih_total) AS target_fasih_total
       FROM summary_cache c
       JOIN uploads u ON c.upload_id = u.id
-      WHERE c.pcl = ?
+      WHERE UPPER(TRIM(c.pcl)) = UPPER(TRIM(?))
       GROUP BY u.tanggal, u.id
       ORDER BY u.tanggal ASC
     `).all(filterPcl);
   }
 
-  const selectedPclStats = filterPcl ? pclStats.find(p => p.pcl.toUpperCase() === filterPcl.toUpperCase()) : null;
+  const selectedPclStats = filterPcl ? pclStats.find(p => p.pcl && p.pcl.toUpperCase().trim() === filterPcl.toUpperCase().trim()) : null;
 
   res.render('pcl', {
     title: 'Per PCL',

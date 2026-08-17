@@ -1073,6 +1073,27 @@ function buildNotificationMessage(template, uploadData, summary, kecStats, pmlSt
     '{target_muatan}': formatNumber(totalMuatan),
     '{persen_muatan}': `${persenMuatan}%`,
 
+    // Muatan Details (Keluarga & Usaha)
+    '{keluarga_ditemukan}': formatNumber(summary ? summary.keluarga_ditemukan : 0),
+    '{keluarga_baru}': formatNumber(summary ? summary.keluarga_baru : 0),
+    '{keluarga_tidak_ditemukan}': formatNumber(summary ? summary.keluarga_tidak_ditemukan : 0),
+    '{keluarga_meninggal}': formatNumber(summary ? summary.meninggal : 0),
+    '{keluarga_tidak_eligible}': formatNumber(summary ? summary.tidak_eligible : 0),
+    '{keluarga_tidak_dapat_ditemui}': formatNumber(summary ? summary.tidak_dapat_ditemui : 0),
+    '{keluarga_total}': formatNumber(summary ? summary.keluarga_total : 0),
+
+    '{usaha_ditemukan}': formatNumber(summary ? summary.usaha_ditemukan : 0),
+    '{usaha_baru}': formatNumber(summary ? summary.usaha_baru : 0),
+    '{usaha_tidak_ditemukan}': formatNumber(summary ? summary.usaha_tidak_ditemukan : 0),
+    '{usaha_tutup}': formatNumber(summary ? summary.usaha_tutup : 0),
+    '{usaha_ganda}': formatNumber(summary ? summary.usaha_ganda : 0),
+    '{usaha_total}': formatNumber(summary ? summary.usaha_total : 0),
+
+    // SLS Selesai
+    '{total_sls_selesai}': formatNumber(summary ? summary.selesai : 0),
+    '{total_sls}': formatNumber(summary ? summary.total : 0),
+    '{persen_sls_selesai}': `${summary && summary.total > 0 ? ((summary.selesai / summary.total) * 100).toFixed(1) : '0.0'}%`,
+
     // Breakdown Dokumen
     '{open_total}': formatNumber(totalOpen),
     '{draft_total}': formatNumber(totalDraft),
@@ -1185,8 +1206,16 @@ async function sendUpdateNotification(uploadInput, targetGroupOverride = null, c
     }
   }
 
-  const defaultTemplate = `📊 *UPDATE MONITORING SE2026 PPU*
+  const fnStatus = (uploadData.status_filename || '').toLowerCase();
+  const fnMain = (uploadData.filename || '').toLowerCase();
+  
+  const isSlsUpload = fnStatus.includes('monitoring_sls') || fnMain.includes('monitoring_sls');
+  const isMuatanUpload = fnMain.includes('keluarga') || fnMain.includes('usaha');
+
+  const defaultFasihTemplate = `📊 *UPDATE DOKUMEN FASIH - SE2026 PPU*
 🗓️ *{waktu_lengkap}*
+
+Pembaruan progres dokumen FASIH telah berhasil diproses.
 
 *Capaian Dokumen FASIH:*
 • Progress: *{progres_fasih_pct}* ({total_realisasi_fasih} / {target_fasih} dok)
@@ -1204,12 +1233,55 @@ async function sendUpdateNotification(uploadInput, targetGroupOverride = null, c
 🔗 Dashboard: {url_dashboard}
 _Pesan otomatis Sistem Monitoring SE2026 BPS Kab. Penajam Paser Utara_`;
 
+  const defaultMuatanTemplate = `📦 *UPDATE PROGRESS MUATAN LAPANGAN - SE2026 PPU*
+🗓️ *{waktu_lengkap}*
+
+Berkas muatan lapangan (Keluarga/Usaha) telah berhasil diperbarui.
+
+*Rincian Hasil Pencacahan Lapangan:*
+👨‍👩‍👧‍👦 *Muatan Keluarga:*
+• Keluarga Ditemukan: *{keluarga_ditemukan}*
+• Keluarga Baru: *{keluarga_baru}*
+• Meninggal: *{keluarga_meninggal}*
+• Tidak Eligible: *{keluarga_tidak_eligible}*
+• Tidak Dapat Ditemui: *{keluarga_tidak_dapat_ditemui}*
+• Tidak Ditemukan: *{keluarga_tidak_ditemukan}*
+• Total Keluarga Terdata: *{keluarga_total}*
+
+🏢 *Muatan Usaha:*
+• Usaha Ditemukan: *{usaha_ditemukan}*
+• Usaha Baru: *{usaha_baru}*
+• Usaha Tutup: *{usaha_tutup}*
+• Usaha Ganda: *{usaha_ganda}*
+• Usaha Tidak Ditemukan: *{usaha_tidak_ditemukan}*
+• Total Usaha Terdata: *{usaha_total}*
+
+🔗 Dashboard: {url_dashboard}
+_Pesan otomatis Sistem Monitoring SE2026 BPS Kab. Penajam Paser Utara_`;
+
+  const defaultSlsTemplate = `🔔 *UPDATE STATUS SELESAI SLS/SUB-SLS - SE2026 PPU*
+🗓️ *{waktu_lengkap}*
+
+Pembaruan berkas status penyelesaian SLS telah selesai diproses.
+
+*Statistik Penyelesaian SLS:*
+• SLS Selesai: *{total_sls_selesai}* / *{total_sls}* SLS (*{persen_sls_selesai}*)
+
+📍 Status penyelesaian di web telah diperbarui ke kategori *Selesai* (Hijau).
+🔗 Akses Peta Sebaran SLS: {url_dashboard}/map
+_Pesan otomatis Sistem Monitoring SE2026 BPS Kab. Penajam Paser Utara_`;
+
+  let defaultTemplate = defaultFasihTemplate;
+  if (isSlsUpload) {
+    defaultTemplate = defaultSlsTemplate;
+  } else if (isMuatanUpload) {
+    defaultTemplate = defaultMuatanTemplate;
+  }
+
   const template = chosenTemplate || defaultTemplate;
   const message = buildNotificationMessage(template, uploadData, summary, kecStats, pmlStats, pclStats, settings);
 
   try {
-    addWaLog('info', `[WA-Notif] Mengirim notifikasi update data ke grup: ${targetGroup}...`);
-    const res = await sendDirectMessage(targetGroup, message);
     addWaLog('success', '[WA-Notif] Notifikasi update data berhasil dikirim ke grup WhatsApp.');
     return { 
       success: true, 

@@ -104,24 +104,22 @@ router.get('/data', (req, res) => {
     let cond = ['1=1'];
     let params = [];
 
-    if (kec) { cond.push('m.kecamatan = ?'); params.push(kec); }
-    if (desa) { cond.push('m.desa = ?'); params.push(desa); }
-    if (korlap) { cond.push('m.korlap = ?'); params.push(korlap); }
-    if (pml) { cond.push('m.pml = ?'); params.push(pml); }
+    if (kec) { cond.push('UPPER(TRIM(m.kecamatan)) = UPPER(TRIM(?))'); params.push(kec); }
+    if (desa) { cond.push('UPPER(TRIM(m.desa)) = UPPER(TRIM(?))'); params.push(desa); }
+    if (korlap) { cond.push('UPPER(TRIM(m.korlap)) = UPPER(TRIM(?))'); params.push(korlap); }
+    if (pml) { cond.push('UPPER(TRIM(m.pml)) = UPPER(TRIM(?))'); params.push(pml); }
     if (pcl) {
-      cond.push('(m.pcl = ? OR p.pcl_name = ? OR p.pcl_email = ?)');
+      cond.push('(UPPER(TRIM(m.pcl)) = UPPER(TRIM(?)) OR UPPER(TRIM(p.pcl_name)) = UPPER(TRIM(?)) OR UPPER(TRIM(p.pcl_email)) = UPPER(TRIM(?)))');
       params.push(pcl, pcl, pcl);
     }
 
     if (status) {
       if (status === 'belum_mulai') {
-        cond.push('(p.kode IS NULL OR (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
+        cond.push('(p.kode IS NULL OR (COALESCE(p.sls_selesai, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
       } else if (status === 'sedang_didata') {
-        cond.push('(p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) > 0 OR COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0) AND m.muatan > 0 AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) < m.muatan)');
-      } else if (status === 'memenuhi_target') {
-        cond.push('(p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) = m.muatan AND NOT (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
-      } else if (status === 'melebihi_target') {
-        cond.push('(p.kode IS NOT NULL AND (COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0)) > m.muatan)');
+        cond.push('(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0))');
+      } else if (status === 'memenuhi_target' || status === 'melebihi_target') {
+        cond.push('(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 1)');
       }
     }
 
@@ -188,16 +186,14 @@ router.get('/data', (req, res) => {
       if (scope === 'all') {
         selectFields.push(`
           CASE 
-            WHEN p.kode IS NULL OR (
-              (${realFormula}) = 0 AND 
-              COALESCE(p.draft, 0) = 0 AND 
-              COALESCE(p.submitted_by_pcl, 0) = 0 AND 
-              COALESCE(p.approved, 0) = 0 AND 
-              COALESCE(p.rejected, 0) = 0
-            ) THEN 'Belum Mulai'
-            WHEN (${targetMuatanFormula}) > 0 AND (${realFormula}) < (${targetMuatanFormula}) THEN 'Sedang Didata'
-            WHEN (${realFormula}) = (${targetMuatanFormula}) THEN 'Memenuhi Target'
-            ELSE 'Melebihi Target'
+            WHEN COALESCE(p.sls_selesai, 0) = 1 THEN 'Selesai'
+            WHEN p.kode IS NOT NULL AND (
+              COALESCE(p.draft, 0) > 0 OR 
+              COALESCE(p.submitted_by_pcl, 0) > 0 OR 
+              COALESCE(p.approved, 0) > 0 OR 
+              COALESCE(p.rejected, 0) > 0
+            ) THEN 'Sedang Didata'
+            ELSE 'Belum Mulai'
           END AS "Status Progres"
         `);
       }

@@ -724,12 +724,12 @@
           </div>
 
           <div id="legendSls" style="display: none;">
-            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Gradasi Warna Primer Progres SubSLS:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #1e40af;"></div><span><strong>100%</strong> (Selesai Memenuhi Target)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #2563eb;"></div><span><strong>75% - 99%</strong> (Sangat Tinggi)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #3b82f6;"></div><span><strong>50% - 74%</strong> (Tinggi)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #60a5fa;"></div><span><strong>25% - 49%</strong> (Sedang)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #93c5fd;"></div><span><strong>1% - 24%</strong> (Awal Progres)</span></div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Legenda Progres SubSLS:</div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>Selesai</strong> (Telah Dilaporkan Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #2563eb;"></div><span><strong>75% - 99%</strong> Progres FASIH/Muatan</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #3b82f6;"></div><span><strong>50% - 74%</strong> Progres FASIH/Muatan</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #60a5fa;"></div><span><strong>25% - 49%</strong> Progres FASIH/Muatan</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #93c5fd;"></div><span><strong>1% - 24%</strong> Progres FASIH/Muatan</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #cbd5e1;"></div><span><strong>0%</strong> (Belum Ada Isian)</span></div>
           </div>
         </div>
@@ -1079,7 +1079,8 @@
           if (!stat) return '#cbd5e1'; // gray
           
           let pct = 0;
-          if (typeof settings !== 'undefined' && settings.show_progres_muatan === '1') {
+          const isSakernasMap = (typeof window !== 'undefined' && window.activeSurveyId && window.activeSurveyId.startsWith('sakernas'));
+          if (!isSakernasMap && typeof settings !== 'undefined' && settings.show_progres_muatan === '1') {
             pct = parseFloat(stat.muatan_pct_str || 0);
           } else {
             pct = parseFloat(stat.fasih_pct_str || 0);
@@ -1089,7 +1090,8 @@
             }
           }
 
-          if (pct >= 100) return '#1e40af'; // Deep Primary Blue (100% Selesai)
+          if (stat.selesai === 1) return '#10b981'; // Green (Selesai)
+          if (pct >= 100) return '#1e40af'; // Deep Primary Blue (100% Progres)
           if (pct >= 75) return '#2563eb';  // Primary Royal Blue (75-99%)
           if (pct >= 50) return '#3b82f6';  // Bright Blue (50-74%)
           if (pct >= 25) return '#60a5fa';  // Medium Blue (25-49%)
@@ -1368,7 +1370,7 @@
                 <i class="bi bi-search"></i> Zoom Wilayah Kecamatan
               </button>
               <div class="map-action-btn-group">
-                <a href="/kecamatan?kec=${encodeURIComponent(nmkec)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
+                <a href="<%= navPrefix %>/kecamatan?kec=${encodeURIComponent(nmkec)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
                   <i class="bi bi-diagram-3"></i> Halaman Drilldown Kec.
                 </a>
               </div>
@@ -1424,10 +1426,8 @@
               let statusBadge = '<span class="badge badge-gray" style="font-size: 8px; padding: 1px 5px;">Belum Mulai</span>';
               if (item.sudah_diisi === 'sedang_didata') {
                 statusBadge = '<span class="badge badge-orange" style="font-size: 8px; padding: 1px 5px;">Sedang Didata</span>';
-              } else if (item.sudah_diisi === 'memenuhi_target' || item.selesai === 1) {
-                statusBadge = '<span class="badge badge-green" style="font-size: 8px; padding: 1px 5px;">Memenuhi Target</span>';
-              } else if (item.sudah_diisi === 'melebihi_target') {
-                statusBadge = '<span class="badge badge-purple" style="font-size: 8px; padding: 1px 5px;">Melebihi Target</span>';
+              } else if (item.sudah_diisi === 'memenuhi_target' || item.selesai === 1 || item.sudah_diisi === 'melebihi_target') {
+                statusBadge = '<span class="badge badge-green" style="font-size: 8px; padding: 1px 5px;">Selesai</span>';
               }
 
               subslsListHtml += `
@@ -1451,7 +1451,7 @@
                     </div>
                   </div>
 
-                  ${(typeof settings !== 'undefined' && settings.show_progres_muatan === '1') ? `
+                  ${(!isSakernasMap && typeof settings !== 'undefined' && settings.show_progres_muatan === '1') ? `
                     <!-- Muatan Progress Track -->
                     <div style="margin-top: 4px;">
                       <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-secondary); margin-bottom: 2px;">
@@ -1538,10 +1538,10 @@
                 <i class="bi bi-search"></i> Zoom &amp; Tampilkan Batas SLS
               </button>
               <div class="map-action-btn-group">
-                <a href="/subsls?kec=${encodeURIComponent(properties.nmkec)}&desa=${encodeURIComponent(properties.nmdesa)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
+                <a href="<%= navPrefix %>/subsls?kec=${encodeURIComponent(properties.nmkec)}&desa=${encodeURIComponent(properties.nmdesa)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
                   <i class="bi bi-table"></i> Tabel SLS Desa
                 </a>
-                <a href="/kecamatan?kec=${encodeURIComponent(properties.nmkec)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
+                <a href="<%= navPrefix %>/kecamatan?kec=${encodeURIComponent(properties.nmkec)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
                   <i class="bi bi-diagram-3"></i> Detail Kec.
                 </a>
               </div>
@@ -1605,7 +1605,7 @@
                 </div>
               </div>
               <span class="badge ${isSelesai ? 'badge-green' : 'badge-red'}" style="font-size: 11px; padding: 4px 9px; flex-shrink: 0;">
-                ${isSelesai ? '<i class="bi bi-check-circle-fill"></i> Target Tercapai' : '<i class="bi bi-hourglass-split"></i> Belum Tercapai'}
+                ${isSelesai ? '<i class="bi bi-check-circle-fill"></i> Selesai' : '<i class="bi bi-hourglass-split"></i> Belum Selesai'}
               </span>
             </div>
 
@@ -1658,11 +1658,11 @@
             <!-- Action Navigation Links -->
             <div class="map-drawer-actions">
               <div class="map-action-btn-group" style="grid-template-columns: ${(pcl && pcl !== 'Belum Ditentukan') ? '1fr 1fr' : '1fr'};">
-                <a href="/subsls?search=${encodeURIComponent(properties.kode)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
+                <a href="<%= navPrefix %>/subsls?search=${encodeURIComponent(properties.kode)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
                   <i class="bi bi-table"></i> Tabel SLS (${properties.kode})
                 </a>
                 ${(pcl && pcl !== 'Belum Ditentukan') ? `
-                  <a href="/pcl?pcl=${encodeURIComponent(pcl)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
+                  <a href="<%= navPrefix %>/pcl?pcl=${encodeURIComponent(pcl)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
                     <i class="bi bi-person"></i> Detail PCL
                   </a>
                 ` : ''}
@@ -1698,7 +1698,7 @@
                         <tr><td class="label">Total SLS</td><td class="value">${stat ? stat.total_subsls : 0} SLS</td></tr>
                       </table>
                       <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
-                        <a href="/kecamatan?kec=${encodeURIComponent(feature.properties.nmkec)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
+                        <a href="<%= navPrefix %>/kecamatan?kec=${encodeURIComponent(feature.properties.nmkec)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
                           <i class="bi bi-diagram-3"></i> Drilldown Kec. ${feature.properties.nmkec}
                         </a>
                       </div>
@@ -1746,7 +1746,7 @@
                         <tr class="muatan-col"><td class="label">Progres Muatan</td><td class="value">${pct}%</td></tr>
                       </table>
                       <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
-                        <a href="/subsls?kec=${encodeURIComponent(feature.properties.nmkec)}&desa=${encodeURIComponent(feature.properties.nmdesa)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
+                        <a href="<%= navPrefix %>/subsls?kec=${encodeURIComponent(feature.properties.nmkec)}&desa=${encodeURIComponent(feature.properties.nmdesa)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
                           <i class="bi bi-arrow-right-circle"></i> Buka Drilldown Wilayah
                         </a>
                       </div>
@@ -1771,7 +1771,7 @@
                   showSlsDetails(feature.properties);
                   
                   const stat = slsStats.find(s => s.kode === feature.properties.kode);
-                  const status = stat && stat.selesai === 1 ? 'Target Tercapai' : 'Belum Tercapai';
+                  const status = stat && stat.selesai === 1 ? 'Selesai' : 'Belum Selesai';
                   const targetFasih = stat ? stat.target_fasih : 0;
                   const submitted = stat ? stat.submitted_by_pcl : 0;
                   const approved = stat ? stat.approved : 0;
@@ -1801,11 +1801,11 @@
 
                       <table class="info-table">
                         <tr><td class="label">PCL</td><td class="value">${stat ? stat.pcl : '-'}</td></tr>
-                        <tr><td class="label">Status Target</td><td class="value" style="color: ${status === 'Target Tercapai' ? 'var(--accent-green)' : 'var(--accent-red)'}">${status}</td></tr>
+                        <tr><td class="label">Status Target</td><td class="value" style="color: ${status === 'Selesai' ? 'var(--accent-green)' : 'var(--accent-red)'}">${status}</td></tr>
                         <tr class="muatan-col"><td class="label">Usaha Terdata</td><td class="value">${stat ? stat.usaha_total : 0}</td></tr>
                       </table>
                       <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
-                        <a href="/subsls?search=${encodeURIComponent(feature.properties.kode)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
+                        <a href="<%= navPrefix %>/subsls?search=${encodeURIComponent(feature.properties.kode)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
                           <i class="bi bi-arrow-right-circle"></i> Detail SubSLS (${feature.properties.kode})
                         </a>
                       </div>

@@ -1,3 +1,7 @@
+<%
+  const isSakernas = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
+  const officerLabel = isSakernas ? 'PPL' : 'PCL';
+%>
 <div class="fade-in">
   <!-- BREADCRUMBS & TITLE -->
   <div class="flex-between mb-5">
@@ -24,10 +28,15 @@
         <!-- FIRST ROW: Dataset & Formats -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
           <div>
-            <label for="exportDataset" class="ui-label-upper">Dataset</label>
-            <select id="exportDataset" class="w-full" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
-              <option value="subsls" selected>Sub-SLS (Tabel Progres Wilayah)</option>
-              <option value="petugas">Rekapitulasi Kinerja Petugas</option>
+            <label for="datasetSelect" class="ui-label">Sumber Dataset</label>
+            <select id="datasetSelect" class="w-full" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
+              <option value="subsls">Rincian Progres per Sub-SLS / Wilayah</option>
+              <option value="pcl">Progres &amp; Rekapitulasi <%= officerLabel %></option>
+              <option value="pml">Progres &amp; Rekapitulasi PML</option>
+              <% if (!isSakernas) { %>
+              <option value="korlap">Progres &amp; Rekapitulasi Korlap</option>
+              <% } %>
+              <option value="kecamatan">Rekapitulasi per Kecamatan</option>
             </select>
           </div>
 
@@ -39,10 +48,15 @@
           <div>
             <label for="exportScope" class="ui-label-upper">Skope / Cakupan Kolom</label>
             <select id="exportScope" class="w-full" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
+              <% if (!isSakernas) { %>
               <option value="all" selected>Muatan + FASIH (Semua Kolom)</option>
               <option value="assignment">Assignment FASIH (Tugas Petugas)</option>
               <option value="fasih">Hanya FASIH (Tanpa Muatan/Usaha/Keluarga)</option>
               <option value="muatan">Hanya Muatan (Tanpa Status Pengerjaan FASIH)</option>
+              <% } else { %>
+              <option value="fasih" selected>Rekap Progres FASIH (Semua Status)</option>
+              <option value="assignment">Assignment FASIH (Tugas Petugas)</option>
+              <% } %>
             </select>
           </div>
 
@@ -80,6 +94,7 @@
               </select>
             </div>
 
+            <% if (!isSakernas) { %>
             <div>
               <label for="filterKorlap" class="ui-label">Koordinator Lapangan</label>
               <select id="filterKorlap" class="w-full" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
@@ -89,6 +104,7 @@
                 <% }) %>
               </select>
             </div>
+            <% } %>
 
             <div>
               <label for="filterPml" class="ui-label">PML (Pengawas)</label>
@@ -101,9 +117,9 @@
             </div>
 
             <div>
-              <label for="filterPcl" class="ui-label">PCL (Pencacah)</label>
+              <label for="filterPcl" class="ui-label"><%= officerLabel %> (<%= isSakernas ? 'Petugas Pendataan' : 'Pencacah' %>)</label>
               <select id="filterPcl" class="w-full" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
-                <option value="">-- Semua PCL --</option>
+                <option value="">-- Semua <%= officerLabel %> --</option>
                 <% pclList.forEach(p => { %>
                   <option value="<%= p %>"><%= p %></option>
                 <% }) %>
@@ -116,8 +132,7 @@
                 <option value="">-- Semua Status --</option>
                 <option value="belum_mulai">Belum Mulai</option>
                 <option value="sedang_didata">Sedang Didata</option>
-                <option value="memenuhi_target">Memenuhi Target</option>
-                <option value="melebihi_target">Melebihi Target</option>
+                <option value="memenuhi_target">Selesai</option>
               </select>
             </div>
           </div>
@@ -244,7 +259,7 @@
       'Keluarga Meninggal': { type: 'Integer', desc: 'Jumlah keluarga pre-listed yang seluruh anggotanya dinyatakan sudah meninggal.', src: 'Upload File' },
       'Keluarga Tidak Eligible': { type: 'Integer', desc: 'Jumlah keluarga pre-listed yang tidak memenuhi kriteria pendataan.', src: 'Upload File' },
       'Keluarga Tidak Dapat Ditemui': { type: 'Integer', desc: 'Jumlah keluarga pre-listed yang tidak dapat ditemui setelah kunjungan berulang.', src: 'Upload File' },
-      'Status Progres': { type: 'String', desc: 'Kategori status penyelesaian SLS (Belum Mulai, Sedang Didata, Memenuhi Target, Melebihi Target).', src: 'Formulasi Sistem' }
+      'Status Progres': { type: 'String', desc: 'Kategori status penyelesaian SLS (Belum Mulai, Sedang Didata, Selesai).', src: 'Formulasi Sistem' }
     };
 
     // ----------------------------------------------------
@@ -311,6 +326,7 @@
     // ----------------------------------------------------
     const updateScopeOptions = () => {
       const dataset = exportDataset.value;
+      <% if (!isSakernas) { %>
       if (dataset === 'petugas') {
         exportScope.innerHTML = `
           <option value="all" selected>Metrik Lengkap (FASIH + Muatan)</option>
@@ -328,6 +344,20 @@
         `;
         filterStatus.parentElement.style.display = 'block';
       }
+      <% } else { %>
+      if (dataset === 'petugas') {
+        exportScope.innerHTML = `
+          <option value="fasih" selected>Hanya FASIH (Kinerja Dokumen)</option>
+        `;
+        filterStatus.parentElement.style.display = 'none';
+      } else {
+        exportScope.innerHTML = `
+          <option value="fasih" selected>Rekap Progres FASIH (Semua Status)</option>
+          <option value="assignment">Assignment FASIH (Tugas Petugas)</option>
+        `;
+        filterStatus.parentElement.style.display = 'block';
+      }
+      <% } %>
       renderMetadataKamus();
     };
 
@@ -487,8 +517,10 @@
             if (h === 'Status Progres') {
               let badgeColor = 'rgba(156, 163, 175, 0.15); color: #9ca3af;'; // Belum Mulai
               if (val === 'Sedang Didata') badgeColor = 'rgba(59, 130, 246, 0.15); color: var(--accent-blue);';
-              if (val === 'Memenuhi Target') badgeColor = 'rgba(16, 185, 129, 0.15); color: var(--accent-green);';
-              if (val === 'Melebihi Target') badgeColor = 'rgba(168, 85, 247, 0.15); color: var(--accent-purple);';
+              if (val === 'Selesai' || val === 'Memenuhi Target' || val === 'Melebihi Target') {
+                badgeColor = 'rgba(16, 185, 129, 0.15); color: var(--accent-green);';
+                val = 'Selesai';
+              }
               val = `<span class="badge" style="${badgeColor} font-size:10px; padding: 2px 8px; border-radius:12px;">${val}</span>`;
             }
 
@@ -677,7 +709,7 @@
         doc.setFont('Helvetica', 'bold');
         doc.setFontSize(14);
         doc.setTextColor(33, 43, 54);
-        doc.text('LAPORAN MONITORING PROGRES SE2026 PPU', docWidth / 2, 40, { align: 'center' });
+        doc.text('LAPORAN MONITORING PROGRES ' + (<%= JSON.stringify(typeof surveyConfig !== 'undefined' ? surveyConfig.shortName.toUpperCase() : 'SE2026 PPU') %>), docWidth / 2, 40, { align: 'center' });
         
         doc.setFont('Helvetica', 'normal');
         doc.setFontSize(9);

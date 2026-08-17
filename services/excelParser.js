@@ -383,7 +383,8 @@ function findStatusColumnIndexes(headers) {
   const kodeIdx = findIndex(['level_6_full_code', 'smallcode', 'kode subsls', 'idsubsls', 'kode', 'code']);
   const draftIdxs = findMultipleIndexes(['draft', 'revoked']);
   const openIdxs = findMultipleIndexes(['open', 'belum diisi', 'belum_diisi', 'unassigned', 'not_started', 'not started']);
-  const approvedIdxs = findMultipleIndexes(['approved', 'completed']);
+  const approvedIdxs = findMultipleIndexes(['approved', 'completed', 'selesai'])
+    .filter(idx => !headers[idx].includes('persentase') && !headers[idx].includes('percent') && !headers[idx].includes('%'));
   // Collect ALL 'rejected' / 'reject' columns (e.g. "REJECTED BY Pengawas", "REJECTED BY Admin Kabupaten", "Reject")
   const rejectedIdxs = findMultipleIndexes(['rejected', 'reject']);
 
@@ -400,16 +401,25 @@ function findStatusColumnIndexes(headers) {
 
   const missingCols = [];
   if (kodeIdx === -1 && (desaIdx === -1 || slsIdx === -1)) missingCols.push('level_6_full_code / kode subsls');
-  if (draftIdxs.length === 0) missingCols.push('draft');
-  if (submittedIdxs.length === 0) missingCols.push('submitted / submit');
-  if (approvedIdxs.length === 0) missingCols.push('approved');
-  if (rejectedIdxs.length === 0) missingCols.push('rejected / reject');
+  
+  // If we found 'selesai' column, we can bypass draft/submitted/rejected checks
+  const isSimplifiedStatus = approvedIdxs.some(idx => headers[idx].includes('selesai'));
+  
+  if (!isSimplifiedStatus) {
+    if (draftIdxs.length === 0) missingCols.push('draft');
+    if (submittedIdxs.length === 0) missingCols.push('submitted / submit');
+    if (approvedIdxs.length === 0) missingCols.push('approved');
+    if (rejectedIdxs.length === 0) missingCols.push('rejected / reject');
+  } else {
+    if (approvedIdxs.length === 0) missingCols.push('approved / selesai');
+  }
 
   if (missingCols.length > 0) {
     throw new Error(`Berkas Status tidak valid. Kolom wajib berikut tidak ditemukan: [${missingCols.join(', ')}]. Pastikan format kolom sesuai dengan template standard.`);
   }
 
   return {
+    isSimplifiedStatus,
     kode: kodeIdx,
     draftIdxs: draftIdxs,
     openIdxs: openIdxs,
@@ -525,7 +535,8 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: 0 });
   if (rows.length < 2) return { uploadId: null, uniqueSubsls: 0 };
 
-  const headers = rows[0].map(h => String(h || '').toLowerCase().trim());
+  const headerIdx = findHeaderRowIndex(rows);
+  const headers = rows[headerIdx].map(h => String(h || '').toLowerCase().trim());
   const colIdx = findStatusColumnIndexes(headers);
 
   // Pre-fetch master data (each survey database now has its own subsls_master)
@@ -588,7 +599,19 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   `).get(tanggal, uploadId);
   const prevMuatanId = prevMuatanRow ? prevMuatanRow.id : null;
 
+  // Find previous upload that has status data
+  const prevStatusRow = db.prepare(`
+    SELECT u.id FROM uploads u
+    JOIN progres p ON u.id = p.upload_id
+    WHERE u.tanggal <= ? AND u.id != ?
+    GROUP BY u.id
+    HAVING SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) > 0
+    ORDER BY u.tanggal DESC, u.id DESC LIMIT 1
+  `).get(tanggal, uploadId);
+  const prevStatusId = prevStatusRow ? prevStatusRow.id : null;
+
   const getPrevMuatanRecord = db.prepare('SELECT * FROM progres WHERE upload_id = ? AND kode = ?');
+  const getPrevStatusRecord = db.prepare('SELECT * FROM progres WHERE upload_id = ? AND kode = ?');
 
   const insertStmt = db.prepare(`
     INSERT OR REPLACE INTO progres (
@@ -596,23 +619,19 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
       usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
       tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
       rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
-      draft, open, submitted_by_pcl, approved, rejected, target_upload
+      draft, open, submitted_by_pcl, approved, rejected, target_upload, sls_selesai
     ) VALUES (
       ?, ?,
       ?, ?, ?, ?, ?,
       ?, ?, ?, ?, ?, ?,
       0, 0, 0, 0, 0,
-      ?, ?, ?, ?, ?, ?
+      ?, ?, ?, ?, ?, ?, ?
     )
-  `);
-
-  const getPrevRecord = db.prepare(`
-    SELECT * FROM progres WHERE upload_id = ? AND kode = ?
   `);
 
   const updateStmt = db.prepare(`
     UPDATE progres 
-    SET draft = ?, open = ?, submitted_by_pcl = ?, approved = ?, rejected = ?, target_upload = ?
+    SET draft = ?, open = ?, submitted_by_pcl = ?, approved = ?, rejected = ?, target_upload = ?, sls_selesai = ?
     WHERE upload_id = ? AND kode = ?
   `);
 
@@ -627,20 +646,55 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
 
   let processedCount = 0;
   const updateTx = db.transaction((list) => {
-    for (let i = 1; i < list.length; i++) {
+    for (let i = headerIdx + 1; i < list.length; i++) {
       const row = list[i];
       const kode = resolveKode(row, i);
-      if (!kode || kode.length < 10) continue;
+      if (!kode || (surveyId === 'se2026' ? kode.length !== 16 : kode.length < 10)) continue;
 
-      const draft = colIdx.draftIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
-      const submitted = colIdx.submittedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
-      const approved = colIdx.approvedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
-      const rejected = colIdx.rejectedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
-      const targetUpload = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 0;
+      // Get previous status values
+      let prevDraft = 0, prevOpen = 0, prevSubmitted = 0, prevApproved = 0, prevRejected = 0, prevTarget = 0;
+      if (prevStatusId) {
+        const prevS = getPrevStatusRecord.get(prevStatusId, kode);
+        if (prevS) {
+          prevDraft = prevS.draft || 0;
+          prevOpen = prevS.open || 0;
+          prevSubmitted = prevS.submitted_by_pcl || 0;
+          prevApproved = prevS.approved || 0;
+          prevRejected = prevS.rejected || 0;
+          prevTarget = prevS.target_upload || 0;
+        }
+      }
 
-      let openVal = colIdx.openIdxs ? colIdx.openIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0) : 0;
-      if (openVal === 0 && targetUpload > 0) {
-        openVal = Math.max(0, targetUpload - (draft + submitted + approved + rejected));
+      let draft = 0, submitted = 0, approved = 0, rejected = 0, targetUpload = 0, openVal = 0, slsSelesai = 0;
+
+      if (colIdx.isSimplifiedStatus) {
+        // SLS status file upload: preserve previous FASIH status columns
+        draft = prevDraft;
+        submitted = prevSubmitted;
+        approved = prevApproved;
+        rejected = prevRejected;
+        targetUpload = prevTarget;
+        openVal = prevOpen;
+
+        // Compute sls_selesai from excel column
+        const approvedFromExcel = colIdx.approvedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
+        const targetFromExcel = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 1;
+        slsSelesai = (approvedFromExcel >= targetFromExcel || approvedFromExcel > 0) ? 1 : 0;
+      } else {
+        // Regular FASIH status file upload
+        draft = colIdx.draftIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
+        submitted = colIdx.submittedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
+        approved = colIdx.approvedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
+        rejected = colIdx.rejectedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
+        targetUpload = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 0;
+
+        openVal = colIdx.openIdxs ? colIdx.openIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0) : 0;
+        if (openVal === 0 && targetUpload > 0) {
+          openVal = Math.max(0, targetUpload - (draft + submitted + approved + rejected));
+        }
+
+        // SLS selesai is computed from FASIH completion
+        slsSelesai = (submitted + approved + rejected >= targetUpload && targetUpload > 0) ? 1 : 0;
       }
 
       // Dynamically populate master data if not se2026
@@ -682,10 +736,10 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
         uploadId, kode,
         uTd, uDit, uBaru, uTut, uGan,
         kTd, kDit, kBaru, kMeng, kTe, kTdd,
-        draft, openVal, submitted, approved, rejected, targetUpload
+        draft, openVal, submitted, approved, rejected, targetUpload, slsSelesai
       );
 
-      updateStmt.run(draft, openVal, submitted, approved, rejected, targetUpload, uploadId, kode);
+      updateStmt.run(draft, openVal, submitted, approved, rejected, targetUpload, slsSelesai, uploadId, kode);
       processedCount++;
     }
   });
@@ -1044,8 +1098,8 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
        usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
        tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
        rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
-       draft, open, submitted_by_pcl, approved, rejected, target_upload)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       draft, open, submitted_by_pcl, approved, rejected, target_upload, sls_selesai)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   
   const getPrevStatus = db.prepare(`
@@ -1055,14 +1109,15 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
       COALESCE(submitted_by_pcl, 0) AS submitted_by_pcl, 
       COALESCE(approved, 0) AS approved, 
       COALESCE(rejected, 0) AS rejected,
-      COALESCE(target_upload, 0) AS target_upload
+      COALESCE(target_upload, 0) AS target_upload,
+      COALESCE(sls_selesai, 0) AS sls_selesai
     FROM progres 
     WHERE upload_id = ? AND kode = ?
   `);
   
   db.transaction(() => {
     for (const r of dataRows) {
-      let draft = 0, openVal = 0, submitted = 0, approved = 0, rejected = 0, targetUpload = 0;
+      let draft = 0, openVal = 0, submitted = 0, approved = 0, rejected = 0, targetUpload = 0, slsSelesai = 0;
       if (prevUploadId) {
         const prev = getPrevStatus.get(prevUploadId, r.kode);
         if (prev) {
@@ -1072,6 +1127,7 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
           approved = prev.approved;
           rejected = prev.rejected;
           targetUpload = prev.target_upload;
+          slsSelesai = prev.sls_selesai;
         }
       }
       
@@ -1080,7 +1136,7 @@ function parseAndSaveSeparateExports(keluargaPath, usahaPath, originalKeluargaNa
         r.usaha_tidak_ditemukan, r.usaha_ditemukan, r.usaha_baru, r.usaha_tutup, r.usaha_ganda,
         r.tidak_ditemukan, r.ditemukan, r.keluarga_baru, r.meninggal, r.tidak_eligible, r.tidak_dapat_ditemui,
         0, 0, 0, 0, 0,
-        draft, openVal, submitted, approved, rejected, targetUpload
+        draft, openVal, submitted, approved, rejected, targetUpload, slsSelesai
       );
     }
   })();
@@ -1114,6 +1170,300 @@ function createEmptyProgresRecord() {
     meninggal: 0,
     tidak_eligible: 0,
     tidak_dapat_ditemui: 0
+  };
+}
+
+/**
+ * Parser dan handler khusus untuk file JSON Rekap Petugas Wilayah (FASIH)
+ * Otomatis melakukan auto-seeding master wilayah & nama petugas dari referensi database.
+ */
+function parseAndSaveJsonStatusOnly(filePath, originalFilename, storedFilename, tanggal, surveyId = 'se2026') {
+  const { getDb } = require('../database');
+  const db = getDb(surveyId);
+  const masterDb = getDb('se2026'); // Reference database for PPU master wilayah hierarchy
+
+  // 1. Read and parse JSON content
+  const rawContent = fs.readFileSync(filePath, 'utf-8');
+  const jsonItems = JSON.parse(rawContent);
+  if (!Array.isArray(jsonItems) || jsonItems.length === 0) {
+    throw new Error('File JSON kosong atau format tidak sesuai.');
+  }
+
+  // 2. Load officer emails lookup from data/petugas_email.json (fallback to SQLite petugas_email)
+  const emailMap = {};
+  try {
+    const petugasJsonPath = path.join(__dirname, '../data/petugas_email.json');
+    if (fs.existsSync(petugasJsonPath)) {
+      const emailList = JSON.parse(fs.readFileSync(petugasJsonPath, 'utf-8'));
+      emailList.forEach(p => {
+        const em = (p.Email || '').trim().toLowerCase();
+        if (em) {
+          emailMap[em] = {
+            sobat_id: String(p['Sobat ID'] || p.sobat_id || '').trim(),
+            nama_lengkap: String(p['Nama Lengkap'] || p.nama_lengkap || '').trim(),
+            jenis_kelamin: String(p['Jenis Kelamin'] || p.jenis_kelamin || '').trim()
+          };
+        }
+      });
+    }
+  } catch (err) {
+    console.error('Error loading data/petugas_email.json:', err);
+  }
+
+  // Also check database petugas_email table
+  try {
+    const dbEmails = db.prepare('SELECT email, nama_lengkap, sobat_id, jenis_kelamin FROM petugas_email').all();
+    dbEmails.forEach(p => {
+      const em = (p.email || '').trim().toLowerCase();
+      if (em && !emailMap[em]) {
+        emailMap[em] = {
+          sobat_id: p.sobat_id,
+          nama_lengkap: p.nama_lengkap,
+          jenis_kelamin: p.jenis_kelamin
+        };
+      }
+    });
+  } catch (_) {}
+
+  // 3. Separate PML and PPL items
+  const pmlItems = jsonItems.filter(d => (d.role || '').toUpperCase() === 'PML');
+  const pplItems = jsonItems.filter(d => (d.role || '').toUpperCase() !== 'PML');
+
+  // Lookup wilayah hierarchy from se2026.db master if available
+  let getWilayahInfo = null;
+  try {
+    getWilayahInfo = masterDb.prepare('SELECT kecamatan, desa, nama_sls FROM subsls_master WHERE kode = ?');
+  } catch (_) {}
+
+  // 4. Process PML items first if present
+  const pmlMap = {};
+  pmlItems.forEach(item => {
+    const officerStr = item.officer || '';
+    const emailMatch = officerStr.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    if (!emailMatch) return;
+    const rawEmail = emailMatch[0].toLowerCase();
+    
+    let pmlName = '';
+    let sobatId = '';
+    if (emailMap[rawEmail]) {
+      pmlName = emailMap[rawEmail].nama_lengkap;
+      sobatId = emailMap[rawEmail].sobat_id;
+    } else {
+      let username = rawEmail.split('@')[0].replace('-pppk', '').replace(/^\d{4}\./, '');
+      if (rawEmail === 'zahrakhairunnisa@bps.go.id') {
+        pmlName = 'Zahra Khairunnisa';
+      } else {
+        pmlName = username.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      }
+    }
+
+    (item.regions || []).forEach(r => {
+      if (!r.code) return;
+      const kodeClean = r.code.padStart(16, '0');
+      pmlMap[kodeClean] = { pmlName, pmlEmail: rawEmail, sobatId };
+    });
+  });
+
+  // CASE A: File ONLY contains PML allocations (no PPL)
+  if (pmlItems.length > 0 && pplItems.length === 0) {
+    let updatedCount = 0;
+    db.transaction(() => {
+      for (const [kodeClean, pmlInfo] of Object.entries(pmlMap)) {
+        const existing = db.prepare('SELECT kode FROM subsls_master WHERE kode = ?').get(kodeClean);
+        if (existing) {
+          db.prepare('UPDATE subsls_master SET pml = ?, pml_email = ?, pml_sobat_id = ? WHERE kode = ?')
+            .run(pmlInfo.pmlName, pmlInfo.pmlEmail, pmlInfo.sobatId, kodeClean);
+          updatedCount++;
+        } else {
+          let kecName = 'Kecamatan Lain', desaName = 'Desa Lain', slsName = kodeClean;
+          if (getWilayahInfo) {
+            const wInfo = getWilayahInfo.get(kodeClean);
+            if (wInfo) {
+              kecName = wInfo.kecamatan || kecName;
+              desaName = wInfo.desa || desaName;
+              slsName = wInfo.nama_sls || slsName;
+            }
+          }
+          db.prepare(`
+            INSERT INTO subsls_master (kode, kecamatan, desa, nama_sls, korlap, pml, pml_email, pml_sobat_id, pcl, target_fasih)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(kodeClean, kecName, desaName, slsName, 'Lainnya', pmlInfo.pmlName, pmlInfo.pmlEmail, pmlInfo.sobatId, 'Belum Dialokasikan', 0);
+          updatedCount++;
+        }
+      }
+    })();
+
+    const latestUpload = db.prepare('SELECT id FROM uploads ORDER BY id DESC LIMIT 1').get();
+    if (latestUpload) {
+      const { rebuildSummaryCache } = require('../database');
+      rebuildSummaryCache(latestUpload.id, surveyId);
+    }
+
+    return {
+      uploadId: latestUpload ? latestUpload.id : null,
+      uniqueSubsls: updatedCount,
+      totalOfficers: pmlItems.length,
+      isPmlOnly: true
+    };
+  }
+
+  // CASE B: File contains PPL (and optionally PML)
+  // 5. Create upload record
+  const uploadResult = db.prepare(`
+    INSERT INTO uploads (filename, stored_filename, tanggal, total_subsls_terisi, status_filename, stored_status_filename)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run('', null, tanggal, 0, safeNullableStr(originalFilename), safeNullableStr(storedFilename));
+  const uploadId = uploadResult.lastInsertRowid;
+
+  // 6. Prepared statements for master and progres
+  const insertSubslsMaster = db.prepare(`
+    INSERT OR REPLACE INTO subsls_master (
+      kode, kecamatan, desa, nama_sls, korlap, pml, pml_email, pml_sobat_id, pcl, pcl_email, pcl_sobat_id, target_fasih
+    ) VALUES (
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+    )
+  `);
+
+  const insertProgresStmt = db.prepare(`
+    INSERT OR REPLACE INTO progres (
+      upload_id, kode, pcl_email, pcl_name, pcl_sobat_id,
+      draft, open, submitted_by_pcl, approved, rejected, target_upload,
+      usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
+      tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
+      rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya
+    ) VALUES (
+      ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?,
+      0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0
+    )
+  `);
+
+  let processedRegions = 0;
+  const uniqueEmailsSeen = new Set();
+  const uniqueCodesSeen = new Set();
+
+  db.transaction(() => {
+    pplItems.forEach(item => {
+      const officerStr = item.officer || '';
+      const emailMatch = officerStr.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      if (!emailMatch) return;
+      const rawEmail = emailMatch[0].toLowerCase();
+      uniqueEmailsSeen.add(rawEmail);
+
+      let namaLengkap = '';
+      let sobatId = '';
+      if (emailMap[rawEmail]) {
+        namaLengkap = emailMap[rawEmail].nama_lengkap;
+        sobatId = emailMap[rawEmail].sobat_id;
+      } else {
+        let username = rawEmail.split('@')[0].replace('-pppk', '').replace(/^\d{4}\./, '');
+        namaLengkap = username.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      }
+
+      const regions = item.regions || [];
+      regions.forEach(r => {
+        const rawKode = r.code || '';
+        if (!rawKode) return;
+        const kodeClean = rawKode.padStart(16, '0');
+        uniqueCodesSeen.add(kodeClean);
+
+        let openVal = 0, draftVal = 0, submittedVal = 0, approvedVal = 0, rejectedVal = 0;
+        const statuses = r.statuses || [];
+        statuses.forEach(st => {
+          const sName = (st.status || '').toUpperCase();
+          const cnt = parseInt(st.count || 0, 10);
+          if (isNaN(cnt)) return;
+
+          if (sName.includes('OPEN')) openVal += cnt;
+          else if (sName.includes('DRAFT')) draftVal += cnt;
+          else if (sName.includes('SUBMITTED') || sName.includes('SUBMIT')) submittedVal += cnt;
+          else if (sName.includes('APPROVED')) approvedVal += cnt;
+          else if (sName.includes('REJECTED') || sName.includes('REVOKED')) rejectedVal += cnt;
+        });
+
+        const targetVal = openVal + draftVal + submittedVal + approvedVal + rejectedVal;
+
+        // Wilayah resolution
+        let kecName = 'Kecamatan Lain';
+        let desaName = 'Desa Lain';
+        let slsName = kodeClean;
+
+        if (getWilayahInfo) {
+          const wInfo = getWilayahInfo.get(kodeClean);
+          if (wInfo) {
+            kecName = wInfo.kecamatan || kecName;
+            desaName = wInfo.desa || desaName;
+            slsName = wInfo.nama_sls || slsName;
+          }
+        }
+
+        // PML Resolution: priority: pmlMap in this file > existing subsls_master PML > default
+        const existingMaster = db.prepare('SELECT pml, pml_email, pml_sobat_id FROM subsls_master WHERE kode = ?').get(kodeClean);
+        let assignedPml = 'PML Belum Dialokasikan';
+        let assignedPmlEmail = null;
+        let assignedPmlSobatId = null;
+
+        if (pmlMap[kodeClean]) {
+          assignedPml = pmlMap[kodeClean].pmlName;
+          assignedPmlEmail = pmlMap[kodeClean].pmlEmail;
+          assignedPmlSobatId = pmlMap[kodeClean].sobatId;
+        } else if (existingMaster && existingMaster.pml && existingMaster.pml !== 'PML Belum Dialokasikan') {
+          assignedPml = existingMaster.pml;
+          assignedPmlEmail = existingMaster.pml_email;
+          assignedPmlSobatId = existingMaster.pml_sobat_id;
+        }
+
+        // Auto-seed / update subsls_master
+        insertSubslsMaster.run(
+          kodeClean,
+          kecName,
+          desaName,
+          slsName,
+          'Lainnya',                // Korlap
+          assignedPml,             // PML
+          assignedPmlEmail,
+          assignedPmlSobatId,
+          namaLengkap,             // PCL
+          rawEmail,
+          sobatId,
+          targetVal
+        );
+
+        // Insert into progres
+        insertProgresStmt.run(
+          uploadId,
+          kodeClean,
+          rawEmail,
+          namaLengkap,
+          sobatId,
+          draftVal,
+          openVal,
+          submittedVal,
+          approvedVal,
+          rejectedVal,
+          targetVal
+        );
+
+        processedRegions++;
+      });
+    });
+  })();
+
+  // Synchronize and rebuild summary cache
+  ensureAllSubslsInUpload(uploadId, surveyId);
+  const actualCount = db.prepare('SELECT COUNT(*) as n FROM progres WHERE upload_id = ?').get(uploadId).n;
+  db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(actualCount, uploadId);
+
+  const { rebuildSummaryCache } = require('../database');
+  rebuildSummaryCache(uploadId, surveyId);
+
+  return {
+    uploadId,
+    uniqueSubsls: uniqueCodesSeen.size,
+    totalOfficers: uniqueEmailsSeen.size,
+    processedRegions
   };
 }
 
@@ -1447,9 +1797,9 @@ function parseRekapPetugasWilayah(filePath) {
   };
 }
 
-function ensureAllSubslsInUpload(uploadId) {
+function ensureAllSubslsInUpload(uploadId, surveyId = 'se2026') {
   const { getDb } = require('../database');
-  const db = getDb();
+  const db = getDb(surveyId);
 
   const prevUploadRow = db.prepare(`
     SELECT u.id 
@@ -1477,13 +1827,13 @@ function ensureAllSubslsInUpload(uploadId) {
       usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
       tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
       rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya,
-      draft, open, submitted_by_pcl, approved, rejected, target_upload
+      draft, open, submitted_by_pcl, approved, rejected, target_upload, sls_selesai
     ) VALUES (
       ?, ?,
       ?, ?, ?, ?, ?,
       ?, ?, ?, ?, ?, ?,
       ?, ?, ?, ?, ?,
-      ?, ?, ?, ?, ?, ?
+      ?, ?, ?, ?, ?, ?, ?
     )
   `);
 
@@ -1516,7 +1866,8 @@ function ensureAllSubslsInUpload(uploadId) {
         prev ? prev.submitted_by_pcl : 0,
         prev ? prev.approved : 0,
         prev ? prev.rejected : 0,
-        prev ? (prev.target_upload || m.target_fasih) : m.target_fasih
+        prev ? (prev.target_upload || m.target_fasih) : m.target_fasih,
+        prev ? (prev.sls_selesai || 0) : 0
       );
     }
   })();
@@ -1540,9 +1891,9 @@ function resyncChronologicalData() {
   let lastKnownMuatanUploadId = null;
 
   for (const u of uploads) {
-    // 1. Cek keberadaan data status FASIH
+    // 1. Cek keberadaan data status FASIH / SLS Selesai
     const hasStatus = db.prepare(`
-      SELECT SUM(COALESCE(draft, 0) + COALESCE(submitted_by_pcl, 0) + COALESCE(approved, 0) + COALESCE(rejected, 0)) AS total
+      SELECT SUM(COALESCE(draft, 0) + COALESCE(submitted_by_pcl, 0) + COALESCE(approved, 0) + COALESCE(rejected, 0) + COALESCE(sls_selesai, 0)) AS total
       FROM progres WHERE upload_id = ?
     `).get(u.id);
 
@@ -1558,11 +1909,13 @@ function resyncChronologicalData() {
             submitted_by_pcl = (SELECT COALESCE(p2.submitted_by_pcl, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
             approved = (SELECT COALESCE(p2.approved, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
             rejected = (SELECT COALESCE(p2.rejected, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
-            target_upload = (SELECT COALESCE(p2.target_upload, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode)
+            target_upload = (SELECT COALESCE(p2.target_upload, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode),
+            sls_selesai = (SELECT COALESCE(p2.sls_selesai, 0) FROM progres p2 WHERE p2.upload_id = ? AND p2.kode = progres.kode)
           WHERE upload_id = ?
         `).run(
           lastKnownStatusUploadId, lastKnownStatusUploadId, lastKnownStatusUploadId, 
           lastKnownStatusUploadId, lastKnownStatusUploadId, lastKnownStatusUploadId, 
+          lastKnownStatusUploadId,
           u.id
         );
       })();
@@ -1615,6 +1968,7 @@ module.exports = {
   loadMasterFromExcel,
   parseAndSaveStatusExcel,
   parseAndSaveStatusExcelOnly,
+  parseAndSaveJsonStatusOnly,
   parseAndSaveSeparateExports,
   parseRekapPetugasWilayah,
   ensureAllSubslsInUpload,

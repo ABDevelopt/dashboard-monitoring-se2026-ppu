@@ -281,13 +281,12 @@ async function fetchFreshDataFromGoogleSheets(baseUrl) {
     latencyMs
   };
 
-  cache = {
-    data: result,
-    timestamp: Date.now(),
-    url: baseUrl
-  };
+  const surveyCache = getSurveyCache('se2026');
+  surveyCache.data = result;
+  surveyCache.timestamp = Date.now();
+  surveyCache.url = baseUrl;
 
-  saveDiskCache();
+  saveDiskCache('se2026');
   return result;
 }
 
@@ -308,8 +307,9 @@ async function triggerBackgroundRevalidation(baseUrl) {
 
 // Auto-refresh background timer every 10 minutes
 setInterval(() => {
-  if (cache.url) {
-    triggerBackgroundRevalidation(cache.url);
+  const surveyCache = getSurveyCache('se2026');
+  if (surveyCache && surveyCache.url) {
+    triggerBackgroundRevalidation(surveyCache.url);
   }
 }, 10 * 60 * 1000);
 

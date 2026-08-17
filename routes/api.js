@@ -21,12 +21,11 @@ router.get('/search', (req, res) => {
   if (!q || !uploadId) return res.json([]);
 
   const settings = res.locals.settings;
-  const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
-  const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+  const targetFormula = getTargetFormula(settings.target_fasih_mode);
 
   const results = getDb().prepare(`
     SELECT m.kode, m.kecamatan, m.desa, m.pcl, m.pml, m.korlap,
-           CASE WHEN p.kode IS NOT NULL AND (${targetMuatanFormula}) > 0 AND (${realFormula}) >= (${targetMuatanFormula}) THEN 1 ELSE 0 END AS sudah_diisi
+           COALESCE(p.sls_selesai, 0) AS sudah_diisi
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE m.kode LIKE ? OR m.desa LIKE ? OR m.pcl LIKE ?
@@ -54,7 +53,7 @@ router.get('/map-stats', (req, res) => {
   const settings = res.locals.settings;
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
-  const singleSelesaiFormula = `CASE WHEN p.kode IS NOT NULL AND (${singleTargetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${singleTargetFormula}) THEN 1 ELSE 0 END`;
+  const singleSelesaiFormula = 'COALESCE(p.sls_selesai, 0)';
 
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
@@ -221,7 +220,7 @@ router.get('/detail/pcl', (req, res) => {
       (${singleTargetFormula}) AS target_fasih,
       COALESCE(m.target_fasih, 0) AS target_static,
       COALESCE(p.target_upload, 0) AS target_upload,
-      CASE WHEN p.kode IS NOT NULL AND (${targetMuatanFormula}) > 0 AND (${realFormula}) >= (${targetMuatanFormula}) THEN 1 ELSE 0 END AS sudah_diisi,
+      COALESCE(p.sls_selesai, 0) AS sudah_diisi,
       (${usahaTotalFormula}) AS usaha_total,
       (${keluargaTotalFormula}) AS keluarga_total
     FROM subsls_master m
