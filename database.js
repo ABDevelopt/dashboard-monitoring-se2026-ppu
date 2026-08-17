@@ -1856,7 +1856,7 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`;
     'page_export': '1',
     'page_aiagent': '0',
     'agent_provider': 'gemini',
-    'gemini_api_key': '',
+    'gemini_api_key': 'AIzaSyDRAJX8-fQ7QH-DPcsALXYsj-FjnGY0JH8',
     'gemini_backup_api_keys': '[]',
     'gemini_model': 'gemini-3.5-flash',
     'gemini_models_list': 'gemini-3.5-flash, gemini-3.1-flash-lite, gemini-2.0-flash, gemini-2.5-pro',
