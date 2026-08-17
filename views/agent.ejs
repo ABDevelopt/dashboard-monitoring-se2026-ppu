@@ -1231,7 +1231,7 @@
             <div class="gemini-card-desc"><%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'Cek capaian realisasi dokumen FASIH per kecamatan secara otomatis' : 'Cek capaian realisasi muatan & FASIH per kecamatan secara otomatis' %></div>
           </div>
 
-          <div class="gemini-card" onclick="sendQuickPrompt('Identifikasi <%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith(\'sakernas\')) ? \'PPL\' : \'PCL\' %> dan PML dengan performa terendah atau membutuhkan evaluasi')">
+          <div class="gemini-card" onclick="sendQuickPrompt('Identifikasi <%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'PPL' : 'PCL' %> dan PML dengan performa terendah atau membutuhkan evaluasi')">
             <div class="gemini-card-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div>
             <div class="gemini-card-title">Evaluasi Kinerja Petugas</div>
             <div class="gemini-card-desc">Temukan <%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'PPL/PML' : 'PCL/PML' %> dengan tingkat reject tinggi atau progres terlambat</div>
