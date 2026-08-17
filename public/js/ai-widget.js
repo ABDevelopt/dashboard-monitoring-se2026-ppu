@@ -741,7 +741,23 @@
         }
       } else {
         console.error('[AI-WIDGET] Stream error:', err);
-        streamMsg.showError('Gagal terhubung ke server AI. Pastikan koneksi stabil.');
+        // Translate technical errors into user-friendly messages
+        const raw = err?.message || '';
+        let friendly = 'Gagal terhubung ke server AI. Pastikan koneksi stabil.';
+        if (raw.includes('429') || raw.includes('quota') || raw.toLowerCase().includes('rate limit')) {
+          friendly = 'Kuota harian API Gemini habis (429). Coba lagi besok atau ganti API Key.';
+        } else if (raw.includes('403') || raw.includes('leaked')) {
+          friendly = 'API Key Gemini tidak valid atau dicabut (403). Periksa pengaturan.';
+        } else if (raw.includes('503') || raw.includes('Service Unavailable')) {
+          friendly = 'Server Gemini sedang kelebihan beban (503). Coba lagi sebentar.';
+        } else if (raw.includes('pipeThrough') || raw.includes('Cannot read properties of undefined')) {
+          friendly = 'Terjadi error streaming AI (kemungkinan kuota habis). Coba lagi.';
+        } else if (raw.includes('timed out') || raw.includes('timeout')) {
+          friendly = 'Koneksi ke AI melebihi batas waktu. Periksa koneksi internet Anda.';
+        } else if (raw.includes('HTTP 4') || raw.includes('HTTP 5')) {
+          friendly = `Kesalahan server: ${raw}. Coba muat ulang halaman.`;
+        }
+        streamMsg.showError(friendly);
       }
     } finally {
       isSending = false;
