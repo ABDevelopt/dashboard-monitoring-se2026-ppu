@@ -128,12 +128,17 @@ router.post('/chat/stream', async (req, res) => {
 
   try {
     sendEvent('status', { text: 'Menyiapkan asisten...', step: 'init' });
+    
+    // Melewatkan req.session.user.id untuk memori session di SQLite
+    const userId = req.session?.user?.id || null;
+
     await streamMessageToAgent(
       message.trim(),
       safeHistory,
       { provider: safeProvider, model },
       sendEvent,
-      controller.signal
+      controller.signal,
+      userId
     );
     const duration = Date.now() - startTime;
     console.info(`[AGENT:STREAM] OK — ${safeProvider || 'auto'}/${model || 'default'} — ${duration}ms`);
@@ -154,37 +159,33 @@ router.post('/chat/stream', async (req, res) => {
 //  POST /chat — endpoint fallback (non-streaming)
 // ─────────────────────────────────────────────────────────────────
 router.post('/chat', async (req, res) => {
-  // ── Validasi input ───────────────────────────────────────────
   const { message, history, provider, model } = req.body;
 
   if (!message || typeof message !== 'string' || !message.trim()) {
     return res.status(400).json({ error: 'Pesan tidak boleh kosong.' });
   }
 
-  // Batasi panjang pesan agar tidak membebani context window / token API
   if (message.length > 2000) {
     return res.status(400).json({ error: 'Pesan terlalu panjang. Maksimum 2000 karakter.' });
   }
 
-  // Validasi history: harus array, masing-masing { role, content }
   const safeHistory = Array.isArray(history)
     ? history
         .filter(h => h && typeof h.role === 'string' && typeof h.content === 'string')
-        .slice(-20) // batas maksimum history yang dikirim client
+        .slice(-20)
     : [];
 
-  // Validasi provider & model (whitelist)
   const ALLOWED_PROVIDERS = ['gemini', 'openai', 'openrouter'];
   const safeProvider = ALLOWED_PROVIDERS.includes(provider) ? provider : undefined;
-
-  // ── Eksekusi ─────────────────────────────────────────────────
   const startTime = Date.now();
 
   try {
+    const userId = req.session?.user?.id || null;
     const result = await sendMessageToAgent(
       message.trim(),
       safeHistory,
-      { provider: safeProvider, model }
+      { provider: safeProvider, model },
+      userId
     );
 
     const duration = Date.now() - startTime;
@@ -194,7 +195,6 @@ router.post('/chat', async (req, res) => {
       reply       : result.content,
       isSimulation: result.isSimulation,
       role        : result.role,
-      // field debug — hanya tampil jika NODE_ENV !== 'production'
       ...(process.env.NODE_ENV !== 'production' && { _durationMs: duration })
     });
 
@@ -204,7 +204,6 @@ router.post('/chat', async (req, res) => {
     const errStack = errorObj.stack || '';
     const duration = Date.now() - startTime;
 
-    // ── Klasifikasi error ─────────────────────────────────────
     const isTimeout  = /timed out|timeout|abort/i.test(errMsg);
     const isApiAuth  = /api key|unauthorized|authentication|invalid_api_key/i.test(errMsg);
     const isRateLimit = /rate.?limit|quota|429/i.test(errMsg);
@@ -215,16 +214,13 @@ router.post('/chat', async (req, res) => {
       isTimeout ? '[TIMEOUT]' : isApiAuth ? '[AUTH]' : isRateLimit ? '[RATE_LIMIT]' : '[UNKNOWN]'
     );
 
-    // Stack trace hanya di log server, TIDAK dikirim ke client
     if (errStack) console.error('[AGENT:ROUTE] Stack:', errStack);
 
-    // Status HTTP yang tepat per jenis error
     const httpStatus = isTimeout   ? 504
                      : isApiAuth   ? 502
                      : isRateLimit ? 429
                      : 500;
 
-    // Pesan human-readable untuk ditampilkan di UI
     const userMessage = isTimeout
       ? 'Server AI tidak merespons dalam waktu yang ditentukan. Silakan coba lagi.'
       : isApiAuth
@@ -235,7 +231,6 @@ router.post('/chat', async (req, res) => {
 
     return res.status(httpStatus).json({
       error      : userMessage,
-      // Detail teknis hanya di non-production untuk memudahkan debug
       ...(process.env.NODE_ENV !== 'production' && {
         _debug: {
           originalMessage: errMsg,
@@ -245,6 +240,32 @@ router.post('/chat', async (req, res) => {
       })
     });
   }
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  GET /history — Ambil riwayat chat persisten dari SQLite
+// ─────────────────────────────────────────────────────────────────
+router.get('/history', (req, res) => {
+  const userId = req.session?.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: 'Sesi Anda tidak valid.' });
+  }
+  const memoryManager = require('../services/ai/memoryManager');
+  const history = memoryManager.getChatHistory(userId);
+  return res.json({ history });
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  DELETE /history — Bersihkan riwayat chat persisten
+// ─────────────────────────────────────────────────────────────────
+router.delete('/history', (req, res) => {
+  const userId = req.session?.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: 'Sesi Anda tidak valid.' });
+  }
+  const memoryManager = require('../services/ai/memoryManager');
+  memoryManager.clearChatHistory(userId);
+  return res.json({ success: true, message: 'Riwayat percakapan berhasil dibersihkan.' });
 });
 
 module.exports = router;

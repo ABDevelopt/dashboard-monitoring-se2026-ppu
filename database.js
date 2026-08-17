@@ -811,6 +811,20 @@ function runMigrations(dbConn, surveyId = 'se2026') {
           dbConn.prepare('ALTER TABLE progres ADD COLUMN sls_selesai INTEGER DEFAULT 0').run();
         } catch (_) {}
       }
+    },
+    {
+      version: '20260817010000_add_agent_sessions',
+      up: (dbConn) => {
+        try {
+          dbConn.exec(`
+            CREATE TABLE IF NOT EXISTS agent_sessions (
+              user_id INTEGER PRIMARY KEY,
+              history TEXT,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+          `);
+        } catch (_) {}
+      }
     }
   ];
 
