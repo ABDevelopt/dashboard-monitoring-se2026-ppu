@@ -1,4 +1,21 @@
+<%
+  const uploadType = activeTab || 'muatan';
+  const uploads = uploadType === 'muatan' ? muatanUploads : (uploadType === 'fasih' ? fasihUploads : slsUploads);
+%>
 <div class="fade-in">
+  <!-- TAB NAVIGATION -->
+  <div style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; flex-wrap: wrap;">
+    <a href="?tab=muatan" class="btn <%= uploadType === 'muatan' ? 'btn-primary' : 'btn-secondary' %>" style="border-radius: 24px; padding: 8px 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s;">
+      <i class="bi bi-people-fill <%= uploadType === 'muatan' ? '' : 'text-cyan' %>"></i> 1. Progres Muatan
+    </a>
+    <a href="?tab=fasih" class="btn <%= uploadType === 'fasih' ? 'btn-primary' : 'btn-secondary' %>" style="border-radius: 24px; padding: 8px 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s;">
+      <i class="bi bi-file-earmark-code-fill <%= uploadType === 'fasih' ? '' : 'text-purple' %>"></i> 2. Status FASIH
+    </a>
+    <a href="?tab=sls" class="btn <%= uploadType === 'sls' ? 'btn-primary' : 'btn-secondary' %>" style="border-radius: 24px; padding: 8px 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s;">
+      <i class="bi bi-check2-square <%= uploadType === 'sls' ? '' : 'text-green' %>"></i> 3. Status SLS Selesai
+    </a>
+  </div>
+
   <!-- HERO TITLE -->
   <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb),0.12) 0%, rgba(var(--accent-rgb),0.03) 100%); border: 1px solid rgba(var(--accent-rgb),0.2); border-radius: 16px; padding: 32px 28px; margin-bottom: 24px; position: relative; overflow: hidden;">
     <div style="position: absolute; right: -20px; top: -20px; font-size: 120px; opacity: 0.04; line-height: 1; pointer-events: none;">

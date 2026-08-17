@@ -24,9 +24,27 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
-// GET: Upload page redirect
+// GET: Unified Upload page with tabs
 router.get('/', (req, res) => {
-  res.redirect(`${req.baseUrl || '/admin/upload'}/muatan`);
+  const activeTab = req.query.tab || 'muatan';
+  const allUploads = getAllUploads().sort((a, b) => (b.id - a.id) || b.tanggal.localeCompare(a.tanggal));
+  
+  const muatanUploads = allUploads.filter(u => u.filename && u.filename.length > 0);
+  const fasihUploads = allUploads.filter(u => u.status_filename && !u.status_filename.toLowerCase().includes('monitoring_sls'));
+  const slsUploads = allUploads.filter(u => u.status_filename && u.status_filename.toLowerCase().includes('monitoring_sls'));
+
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const workspaceFiles = scanWorkspace(activeSurvey);
+
+  res.render('upload', {
+    title: 'Upload Data Sensus',
+    activePage: 'upload',
+    activeTab,
+    muatanUploads,
+    fasihUploads,
+    slsUploads,
+    workspaceFiles
+  });
 });
 
 // Helper to scan files in workspace
@@ -71,52 +89,17 @@ function scanWorkspace(activeSurvey) {
   return workspaceFiles;
 }
 
-// GET: Upload Progres Muatan
+// Redirect old routes for backwards compatibility
 router.get('/muatan', (req, res) => {
-  const allUploads = getAllUploads().sort((a, b) => (b.id - a.id) || b.tanggal.localeCompare(a.tanggal));
-  const uploads = allUploads.filter(u => u.filename && u.filename.length > 0);
-  const activeSurvey = res.locals.activeSurvey || 'se2026';
-  const workspaceFiles = scanWorkspace(activeSurvey);
-
-  res.render('upload', {
-    title: 'Upload Progres Muatan',
-    activePage: 'upload-muatan',
-    uploadType: 'muatan',
-    uploads,
-    workspaceFiles
-  });
+  res.redirect(`${req.baseUrl || '/admin/upload'}?tab=muatan`);
 });
 
-// GET: Upload Status FASIH
 router.get('/fasih', (req, res) => {
-  const allUploads = getAllUploads().sort((a, b) => (b.id - a.id) || b.tanggal.localeCompare(a.tanggal));
-  const uploads = allUploads.filter(u => u.status_filename && !u.status_filename.toLowerCase().includes('monitoring_sls'));
-  const activeSurvey = res.locals.activeSurvey || 'se2026';
-  const workspaceFiles = scanWorkspace(activeSurvey);
-
-  res.render('upload', {
-    title: 'Upload Status FASIH',
-    activePage: 'upload-fasih',
-    uploadType: 'fasih',
-    uploads,
-    workspaceFiles
-  });
+  res.redirect(`${req.baseUrl || '/admin/upload'}?tab=fasih`);
 });
 
-// GET: Upload Status SLS Selesai
 router.get('/sls', (req, res) => {
-  const allUploads = getAllUploads().sort((a, b) => (b.id - a.id) || b.tanggal.localeCompare(a.tanggal));
-  const uploads = allUploads.filter(u => u.status_filename && u.status_filename.toLowerCase().includes('monitoring_sls'));
-  const activeSurvey = res.locals.activeSurvey || 'se2026';
-  const workspaceFiles = scanWorkspace(activeSurvey);
-
-  res.render('upload', {
-    title: 'Upload Status SLS Selesai',
-    activePage: 'upload-sls',
-    uploadType: 'sls',
-    uploads,
-    workspaceFiles
-  });
+  res.redirect(`${req.baseUrl || '/admin/upload'}?tab=sls`);
 });
 
 function extractDateFromFilename(filename) {
