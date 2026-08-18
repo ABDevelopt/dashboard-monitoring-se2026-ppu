@@ -322,63 +322,12 @@
     });
 
     // ----------------------------------------------------
+    // ----------------------------------------------------
     // DATASET & SCOPE ADAPTABILITY
     // ----------------------------------------------------
-    const updateScopeOptions = () => {
-      const dataset = exportDataset.value;
-      <% if (!isSakernas) { %>
-      if (dataset === 'petugas') {
-        exportScope.innerHTML = `
-          <option value="all" selected>Metrik Lengkap (FASIH + Muatan)</option>
-          <option value="fasih">Hanya FASIH (Kinerja Dokumen)</option>
-          <option value="muatan">Hanya Muatan (Kinerja SLS Lapangan)</option>
-        `;
-        // Hide status progres SLS filter since it is only relevant for SLS
-        filterStatus.parentElement.style.display = 'none';
-      } else {
-        exportScope.innerHTML = `
-          <option value="all" selected>Muatan + FASIH (Semua Kolom)</option>
-          <option value="assignment">Assignment FASIH (Tugas Petugas)</option>
-          <option value="fasih">Hanya FASIH (Tanpa Muatan/Usaha/Keluarga)</option>
-          <option value="muatan">Hanya Muatan (Tanpa Status Pengerjaan FASIH)</option>
-        `;
-        filterStatus.parentElement.style.display = 'block';
-      }
-      <% } else { %>
-      if (dataset === 'petugas') {
-        exportScope.innerHTML = `
-          <option value="fasih" selected>Hanya FASIH (Kinerja Dokumen)</option>
-        `;
-        filterStatus.parentElement.style.display = 'none';
-      } else {
-        exportScope.innerHTML = `
-          <option value="fasih" selected>Rekap Progres FASIH (Semua Status)</option>
-          <option value="assignment">Assignment FASIH (Tugas Petugas)</option>
-        `;
-        filterStatus.parentElement.style.display = 'block';
-      }
-      <% } %>
-      renderMetadataKamus();
-    };
-
-    exportDataset.addEventListener('change', updateScopeOptions);
-    updateScopeOptions(); // Initialize on page load
-
-    // ----------------------------------------------------
-    // COLLAPSIBLE METADATA KAMUS
-    // ----------------------------------------------------
-    btnToggleKamus.addEventListener('click', () => {
-      const isHidden = kamusContainer.style.display === 'none';
-      if (isHidden) {
-        kamusContainer.style.display = 'block';
-        kamusChevron.style.transform = 'rotate(180deg)';
-      } else {
-        kamusContainer.style.display = 'none';
-        kamusChevron.style.transform = 'rotate(0deg)';
-      }
-    });
 
     // Render metadata dictionary rows based on active dataset & scope
+    // MUST be declared before updateScopeOptions which calls it
     const renderMetadataKamus = () => {
       const dataset = exportDataset.value;
       const scope = exportScope.value;
@@ -427,7 +376,61 @@
       metadataTableBody.innerHTML = html;
     };
 
-    updateScopeOptions(); // trigger initial run
+    const updateScopeOptions = () => {
+      const dataset = exportDataset.value;
+      <% if (!isSakernas) { %>
+      if (dataset === 'petugas') {
+        exportScope.innerHTML = `
+          <option value="all" selected>Metrik Lengkap (FASIH + Muatan)</option>
+          <option value="fasih">Hanya FASIH (Kinerja Dokumen)</option>
+          <option value="muatan">Hanya Muatan (Kinerja SLS Lapangan)</option>
+        `;
+        // Hide status progres SLS filter since it is only relevant for SLS
+        filterStatus.parentElement.style.display = 'none';
+      } else {
+        exportScope.innerHTML = `
+          <option value="all" selected>Muatan + FASIH (Semua Kolom)</option>
+          <option value="assignment">Assignment FASIH (Tugas Petugas)</option>
+          <option value="fasih">Hanya FASIH (Tanpa Muatan/Usaha/Keluarga)</option>
+          <option value="muatan">Hanya Muatan (Tanpa Status Pengerjaan FASIH)</option>
+        `;
+        filterStatus.parentElement.style.display = 'block';
+      }
+      <% } else { %>
+      if (dataset === 'petugas') {
+        exportScope.innerHTML = `
+          <option value="fasih" selected>Hanya FASIH (Kinerja Dokumen)</option>
+        `;
+        filterStatus.parentElement.style.display = 'none';
+      } else {
+        exportScope.innerHTML = `
+          <option value="fasih" selected>Rekap Progres FASIH (Semua Status)</option>
+          <option value="assignment">Assignment FASIH (Tugas Petugas)</option>
+        `;
+        filterStatus.parentElement.style.display = 'block';
+      }
+      <% } %>
+      renderMetadataKamus();
+    };
+
+    exportDataset.addEventListener('change', updateScopeOptions);
+
+    // ----------------------------------------------------
+    // COLLAPSIBLE METADATA KAMUS
+    // ----------------------------------------------------
+    btnToggleKamus.addEventListener('click', () => {
+      const isHidden = kamusContainer.style.display === 'none';
+      if (isHidden) {
+        kamusContainer.style.display = 'block';
+        kamusChevron.style.transform = 'rotate(180deg)';
+      } else {
+        kamusContainer.style.display = 'none';
+        kamusChevron.style.transform = 'rotate(0deg)';
+      }
+    });
+
+    updateScopeOptions(); // Initialize on page load
+
 
     // ----------------------------------------------------
     // PREVIEW AJAX LOADING
@@ -446,7 +449,7 @@
         dataset: exportDataset.value,
         kec: filterKec.value,
         desa: filterDesa.value,
-        korlap: filterKorlap.value,
+        korlap: filterKorlap?.value || '',
         pml: filterPml.value,
         pcl: filterPcl.value,
         status: filterStatus.value,
@@ -578,7 +581,7 @@
         dataset,
         kec: filterKec.value,
         desa: filterDesa.value,
-        korlap: filterKorlap.value,
+        korlap: filterKorlap?.value || '',
         pml: filterPml.value,
         pcl: filterPcl.value,
         status: filterStatus.value,
