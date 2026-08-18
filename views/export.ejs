@@ -710,7 +710,7 @@
         doc.setFont('Helvetica', 'bold');
         doc.setFontSize(14);
         doc.setTextColor(33, 43, 54);
-        doc.text('LAPORAN MONITORING PROGRES ' + (<%= JSON.stringify(typeof surveyConfig !== 'undefined' ? surveyConfig.shortName.toUpperCase() : 'SE2026 PPU') %>), docWidth / 2, 40, { align: 'center' });
+        doc.text('LAPORAN MONITORING PROGRES ' + (<%- JSON.stringify(typeof surveyConfig !== 'undefined' ? surveyConfig.shortName.toUpperCase() : 'SE2026 PPU') %>), docWidth / 2, 40, { align: 'center' });
         
         doc.setFont('Helvetica', 'normal');
         doc.setFontSize(9);
