@@ -306,7 +306,7 @@
       }
       
       try {
-        const res = await fetch(`/export/desa-list?kec=${encodeURIComponent(kecVal)}`);
+        const res = await fetch(`<%= navPrefix %>/export/desa-list?kec=${encodeURIComponent(kecVal)}`);
         const desaList = await res.json();
         
         let options = '<option value="">-- Semua Desa --</option>';
@@ -457,7 +457,7 @@
         const previewParams = new URLSearchParams(params);
         previewParams.set('limit', '10');
 
-        const previewRes = await fetch(`/export/data?${previewParams.toString()}`);
+        const previewRes = await fetch(`<%= navPrefix %>/export/data?${previewParams.toString()}`);
         const previewResult = await previewRes.json();
         
         if (window.Swal) window.Swal.close();
@@ -586,7 +586,7 @@
 
       try {
         // Fetch ALL rows for download
-        const res = await fetch(`/export/data?${params.toString()}`);
+        const res = await fetch(`<%= navPrefix %>/export/data?${params.toString()}`);
         const result = await res.json();
         
         if (window.Swal) window.Swal.close();

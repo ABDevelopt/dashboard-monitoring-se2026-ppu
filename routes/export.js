@@ -13,7 +13,8 @@ const {
 
 // GET /export - Halaman Utama Ekspor Terpadu
 router.get('/', (req, res) => {
-const settings = res.locals.settings || getSettings();
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const settings = res.locals.settings || getSettings(activeSurvey);
   if (settings.page_export === '0') {
     return res.status(403).render('error', {
       title: 'Fitur Dinonaktifkan',
@@ -23,8 +24,8 @@ const settings = res.locals.settings || getSettings();
   }
 
   try {
-    const db = getDb();
-    const uploads = getAllUploads().sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+    const db = getDb(activeSurvey);
+    const uploads = getAllUploads(activeSurvey).sort((a, b) => b.tanggal.localeCompare(a.tanggal));
     const kecList = db.prepare("SELECT DISTINCT kecamatan FROM subsls_master WHERE kecamatan IS NOT NULL AND kecamatan != '' ORDER BY kecamatan").all().map(r => r.kecamatan);
     const korlapList = db.prepare("SELECT DISTINCT korlap FROM subsls_master WHERE korlap IS NOT NULL AND korlap != '' ORDER BY korlap").all().map(r => r.korlap);
     const pmlList = db.prepare("SELECT DISTINCT pml FROM subsls_master WHERE pml IS NOT NULL AND pml != '' ORDER BY pml").all().map(r => r.pml);
@@ -54,10 +55,12 @@ router.get('/desa-list', (req, res) => {
   const kec = req.query.kec || '';
   if (!kec) return res.json([]);
   try {
-    const db = getDb();
+    const activeSurvey = res.locals.activeSurvey || 'se2026';
+    const db = getDb(activeSurvey);
     const desaList = db.prepare("SELECT DISTINCT desa FROM subsls_master WHERE kecamatan = ? AND desa IS NOT NULL AND desa != '' ORDER BY desa").all(kec).map(r => r.desa);
     res.json(desaList);
   } catch (err) {
+    console.error('Error fetching desa list:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -78,7 +81,8 @@ router.get('/data', (req, res) => {
   const limit = req.query.limit ? parseInt(req.query.limit) : null;
 
   try {
-    const db = getDb();
+    const activeSurvey = res.locals.activeSurvey || 'se2026';
+    const db = getDb(activeSurvey);
 
     if (selectedDate) {
       const upload = db.prepare('SELECT id FROM uploads WHERE tanggal <= ? ORDER BY tanggal DESC, id DESC LIMIT 1').get(selectedDate);
@@ -92,7 +96,7 @@ router.get('/data', (req, res) => {
       return res.status(400).json({ error: 'Upload ID atau tanggal wajib dipilih.' });
     }
 
-    const settings = getSettings();
+    const settings = getSettings(activeSurvey);
 
     const targetFormula = getTargetFormula(settings.target_fasih_mode);
     const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
