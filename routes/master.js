@@ -138,6 +138,33 @@ router.post('/reset', (req, res) => {
   }
 });
 
+// POST: Reset all sls_selesai status to 0 and rebuild cache
+router.post('/reset-sls-selesai', (req, res) => {
+  try {
+    const activeSurvey = res.locals.activeSurvey || 'se2026';
+    const db = getDb(activeSurvey);
+
+    // 1. Reset sls_selesai in progres table
+    const result = db.prepare('UPDATE progres SET sls_selesai = 0').run();
+
+    // 2. Fetch all uploads to rebuild cache
+    const uploads = db.prepare('SELECT id FROM uploads').all();
+
+    // 3. Rebuild summary cache for each upload
+    const { rebuildSummaryCache } = require('../database');
+    for (const u of uploads) {
+      rebuildSummaryCache(u.id, activeSurvey);
+    }
+
+    req.flash('success', `Berhasil mereset status selesai SLS pada ${result.changes} baris data progres sensus.`);
+    res.redirect('/admin/master');
+  } catch (err) {
+    console.error('Reset SLS selesai error:', err);
+    req.flash('error', `Gagal mereset status selesai SLS: ${err.message}`);
+    res.redirect('/admin/master');
+  }
+});
+
 // POST: Add new master SLS
 router.post('/add', (req, res) => {
   const { kode, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, target_fasih, kode_2025 } = req.body;

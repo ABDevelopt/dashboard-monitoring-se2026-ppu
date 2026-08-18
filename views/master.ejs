@@ -55,23 +55,37 @@
       </form>
     </div>
 
-    <!-- UTILITIES / RESTORE DEFAULT CARD -->
-    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+    <!-- UTILITIES / RESET & MAINTENANCE CARD -->
+    <div class="card" style="display: flex; flex-direction: column; gap: 20px;">
       <div>
-        <div class="card-header">
-          <div class="card-title"><i class="bi bi-arrow-counterclockwise"></i> Reset ke Master Data Default</div>
+        <div class="card-header" style="padding-bottom: 8px;">
+          <div class="card-title"><i class="bi bi-gear-wide-connected"></i> Reset &amp; Pemeliharaan Data</div>
         </div>
-        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5;">
-          <% if (activeSurvey === 'se2026') { %>Gunakan tombol di bawah ini untuk mengembalikan tabel master data ke versi bawaan yang dimuat dari file `kelompok_populasi_pml_pcl_korlap_muatan.json`.<% } else { %>Gunakan tombol di bawah ini untuk mengosongkan/mereset seluruh master data survei ini.<% } %>
-        </p>
-        <div class="alert alert-error" style="background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: var(--accent-red); margin-bottom: 20px;">
-          <i class="bi bi-exclamation-triangle-fill"></i>
-          <span style="font-size: 11px; line-height: 1.3;">Aksi ini akan menghapus seluruh data master saat ini dan menggantinya dengan data default.</span>
+        
+        <!-- Section 1: Reset Master -->
+        <div style="margin-bottom: 16px;">
+          <h4 style="font-size: 13px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary);">Reset Master Data</h4>
+          <p style="font-size: 11.5px; color: var(--text-secondary); margin: 0 0 10px 0; line-height: 1.4;">
+            <% if (activeSurvey === 'se2026') { %>Kembalikan tabel master data ke versi bawaan JSON. Seluruh perubahan manual akan terhapus.<% } else { %>Kosongkan/reset seluruh master data survei ini.<% } %>
+          </p>
+          <form action="<%= navPrefix %>/admin/master/reset" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mengembalikan master data ke versi bawaan JSON? Seluruh perubahan manual akan terhapus.');">
+            <button type="submit" class="btn btn-danger btn-xs" style="width: 100%; justify-content: center; font-size: 11.5px; padding: 6px 12px;"><i class="bi bi-trash3-fill"></i> Reset ke Master Bawaan (JSON)</button>
+          </form>
+        </div>
+        
+        <hr style="border: 0; border-top: 1px dashed var(--border); margin: 16px 0;">
+        
+        <!-- Section 2: Reset SLS Selesai -->
+        <div>
+          <h4 style="font-size: 13px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary);">Reset Status Selesai SLS</h4>
+          <p style="font-size: 11.5px; color: var(--text-secondary); margin: 0 0 10px 0; line-height: 1.4;">
+            Kosongkan status selesai (hijau) di database progres menjadi belum selesai. Berguna sebelum mengimpor ulang berkas status BPS.
+          </p>
+          <form action="<%= navPrefix %>/admin/master/reset-sls-selesai" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mereset seluruh status selesai SLS/SubSLS menjadi belum selesai?');">
+            <button type="submit" class="btn btn-danger btn-xs" style="width: 100%; justify-content: center; font-size: 11.5px; padding: 6px 12px; background: #e11d48; border-color: #e11d48;"><i class="bi bi-arrow-counterclockwise"></i> Reset Semua Status Selesai SLS</button>
+          </form>
         </div>
       </div>
-      <form action="<%= navPrefix %>/admin/master/reset" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mengembalikan master data ke versi bawaan JSON? Seluruh perubahan manual akan terhapus.');">
-        <button type="submit" class="btn btn-danger" style="width: 100%; justify-content: center;"><i class="bi bi-trash3-fill"></i> Reset ke Master Bawaan (JSON)</button>
-      </form>
     </div>
 
     <!-- RENAME OFFICERS CARD -->
