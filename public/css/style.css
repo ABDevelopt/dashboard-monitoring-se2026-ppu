@@ -3470,6 +3470,24 @@ body.light-mode .skeleton-block {
     padding: 2px !important;
   }
 
+  /* Mobile Menu Auth Items Styling */
+  .nav-item-logout {
+    border-color: rgba(239, 68, 68, 0.35) !important;
+    background: rgba(239, 68, 68, 0.08) !important;
+    color: var(--accent-red, #ef4444) !important;
+  }
+  .nav-item-logout .nav-icon {
+    color: var(--accent-red, #ef4444) !important;
+  }
+  .nav-item-login {
+    border-color: rgba(59, 130, 246, 0.35) !important;
+    background: rgba(59, 130, 246, 0.08) !important;
+    color: var(--accent-blue, #3b82f6) !important;
+  }
+  .nav-item-login .nav-icon {
+    color: var(--accent-blue, #3b82f6) !important;
+  }
+
   /* High performance overlay without heavy backdrop-filter blur on mobile */
   .sidebar-overlay {
     z-index: 1040 !important;

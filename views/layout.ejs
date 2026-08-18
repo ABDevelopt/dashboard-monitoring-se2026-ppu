@@ -446,6 +446,24 @@
       </div>
     </div>
 
+    <!-- Akun & Sesi / Login - Logout -->
+    <div class="nav-section-wrapper" data-section="akun">
+      <div class="nav-section-header">
+        <span>Sesi &amp; Autentikasi</span>
+      </div>
+      <div class="nav-section-content">
+        <% if ((typeof user !== 'undefined' && user) || (typeof isAdmin !== 'undefined' && isAdmin)) { %>
+        <a href="/logout" class="nav-item nav-item-auth nav-item-logout <%= activePage === 'logout' ? 'active' : '' %>" title="Logout Sesi (<%= (typeof user !== 'undefined' && user) ? user.username : 'Admin' %>)">
+          <span class="nav-icon"><i class="bi bi-box-arrow-right text-red"></i></span> Logout
+        </a>
+        <% } else { %>
+        <a href="/login" class="nav-item nav-item-auth nav-item-login <%= activePage === 'login' ? 'active' : '' %>" title="Login Ke Sistem">
+          <span class="nav-icon"><i class="bi bi-box-arrow-in-right text-blue"></i></span> Login
+        </a>
+        <% } %>
+      </div>
+    </div>
+
   </nav>
 
   <div class="sidebar-footer" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
@@ -454,8 +472,8 @@
       <span style="color: var(--text-muted)">© BPS Penajam Paser Utara</span>
     </div>
     <div>
-      <% if (typeof user !== 'undefined' && user) { %>
-        <a href="/logout" class="btn btn-secondary btn-xs" title="Logout (<%= user.username %>)" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); text-decoration: none; color: var(--accent-red); font-weight: 600;">
+      <% if ((typeof user !== 'undefined' && user) || (typeof isAdmin !== 'undefined' && isAdmin)) { %>
+        <a href="/logout" class="btn btn-secondary btn-xs" title="Logout (<%= (typeof user !== 'undefined' && user) ? user.username : 'Admin' %>)" style="padding: 4px 8px; font-size: 11px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); text-decoration: none; color: var(--accent-red); font-weight: 600;">
           <i class="bi bi-box-arrow-right"></i> Logout
         </a>
       <% } else { %>
