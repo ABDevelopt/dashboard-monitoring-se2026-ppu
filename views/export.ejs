@@ -28,8 +28,8 @@
         <!-- FIRST ROW: Dataset & Formats -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
           <div>
-            <label for="datasetSelect" class="ui-label">Sumber Dataset</label>
-            <select id="datasetSelect" class="w-full" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
+            <label for="exportDataset" class="ui-label">Sumber Dataset</label>
+            <select id="exportDataset" class="w-full" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
               <option value="subsls">Rincian Progres per Sub-SLS / Wilayah</option>
               <option value="pcl">Progres &amp; Rekapitulasi <%= officerLabel %></option>
               <option value="pml">Progres &amp; Rekapitulasi PML</option>
@@ -306,7 +306,7 @@
       }
       
       try {
-        const res = await fetch(`/export/desa-list?kec=${encodeURIComponent(kecVal)}`);
+        const res = await fetch(`<%= navPrefix %>/export/desa-list?kec=${encodeURIComponent(kecVal)}`);
         const desaList = await res.json();
         
         let options = '<option value="">-- Semua Desa --</option>';
@@ -362,6 +362,7 @@
     };
 
     exportDataset.addEventListener('change', updateScopeOptions);
+    updateScopeOptions(); // Initialize on page load
 
     // ----------------------------------------------------
     // COLLAPSIBLE METADATA KAMUS
@@ -457,7 +458,7 @@
         const previewParams = new URLSearchParams(params);
         previewParams.set('limit', '10');
 
-        const previewRes = await fetch(`/export/data?${previewParams.toString()}`);
+        const previewRes = await fetch(`<%= navPrefix %>/export/data?${previewParams.toString()}`);
         const previewResult = await previewRes.json();
         
         if (window.Swal) window.Swal.close();
@@ -586,7 +587,7 @@
 
       try {
         // Fetch ALL rows for download
-        const res = await fetch(`/export/data?${params.toString()}`);
+        const res = await fetch(`<%= navPrefix %>/export/data?${params.toString()}`);
         const result = await res.json();
         
         if (window.Swal) window.Swal.close();
@@ -709,7 +710,7 @@
         doc.setFont('Helvetica', 'bold');
         doc.setFontSize(14);
         doc.setTextColor(33, 43, 54);
-        doc.text('LAPORAN MONITORING PROGRES ' + (<%= JSON.stringify(typeof surveyConfig !== 'undefined' ? surveyConfig.shortName.toUpperCase() : 'SE2026 PPU') %>), docWidth / 2, 40, { align: 'center' });
+        doc.text('LAPORAN MONITORING PROGRES ' + (<%- JSON.stringify(typeof surveyConfig !== 'undefined' ? surveyConfig.shortName.toUpperCase() : 'SE2026 PPU') %>), docWidth / 2, 40, { align: 'center' });
         
         doc.setFont('Helvetica', 'normal');
         doc.setFontSize(9);

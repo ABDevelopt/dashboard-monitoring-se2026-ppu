@@ -1979,7 +1979,7 @@ function rebuildAllSummaryCaches() {
       const uploads = db.prepare('SELECT id FROM uploads').all();
       uploads.forEach(u => {
         if (typeof ensureAllSubslsInUpload === 'function') {
-          try { ensureAllSubslsInUpload(u.id); } catch (_) {}
+          try { ensureAllSubslsInUpload(u.id, surveyId); } catch (_) {}
         }
         rebuildSummaryCache(u.id, surveyId);
       });
