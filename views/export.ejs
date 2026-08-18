@@ -28,8 +28,8 @@
         <!-- FIRST ROW: Dataset & Formats -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
           <div>
-            <label for="datasetSelect" class="ui-label">Sumber Dataset</label>
-            <select id="datasetSelect" class="w-full" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
+            <label for="exportDataset" class="ui-label">Sumber Dataset</label>
+            <select id="exportDataset" class="w-full" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
               <option value="subsls">Rincian Progres per Sub-SLS / Wilayah</option>
               <option value="pcl">Progres &amp; Rekapitulasi <%= officerLabel %></option>
               <option value="pml">Progres &amp; Rekapitulasi PML</option>
@@ -362,6 +362,7 @@
     };
 
     exportDataset.addEventListener('change', updateScopeOptions);
+    updateScopeOptions(); // Initialize on page load
 
     // ----------------------------------------------------
     // COLLAPSIBLE METADATA KAMUS
