@@ -18,8 +18,8 @@ const safeNullableStr = (val) => {
 
 
 // Load master data dari JSON (dijalankan sekali saat startup)
-function loadMasterFromJson(jsonPath) {
-  const db = getDb();
+function loadMasterFromJson(jsonPath, surveyId = 'se2026') {
+  const db = getDb(surveyId);
   const raw = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
 
   const insert = db.prepare(`
