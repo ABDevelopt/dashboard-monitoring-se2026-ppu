@@ -245,7 +245,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
 
   if (settings.chatbot_smart_switch === '1') {
     if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
-      const listStr = settings.openrouter_models_list || 'meta-llama/llama-3.3-70b-instruct:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
+      const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
       for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
         if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
         if (m.includes(':free')) tries.push({ provider: 'openrouter', model: m });
@@ -370,7 +370,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
 
   if (settings.chatbot_smart_switch === '1') {
     if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
-      const listStr = settings.openrouter_models_list || 'meta-llama/llama-3.3-70b-instruct:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
+      const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
       for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
         if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
         if (m.includes(':free')) tries.push({ provider: 'openrouter', model: m });

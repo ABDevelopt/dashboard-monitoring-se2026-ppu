@@ -2017,6 +2017,7 @@
       const decoder = new TextDecoder('utf-8');
       let buffer = '';
       let currentEvent = 'message';
+      let hasReceivedError = false;
 
       while (true) {
         const { value, done } = await reader.read();
@@ -2057,6 +2058,7 @@
                   saveChatHistory();
                 }
               } else if (currentEvent === 'error') {
+                hasReceivedError = true;
                 streamingMsg.showError(data.error || 'Terjadi kesalahan pada AI.');
               }
             } catch (jsonErr) {
@@ -2066,11 +2068,11 @@
         }
       }
 
-      // If finished stream without explicit done event
-      if (!streamingMsg.element.querySelector('.agent-message-actions')) {
+      // If finished stream without explicit done event or error
+      if (!hasReceivedError && !streamingMsg.element.querySelector('.agent-message-actions')) {
         streamingMsg.finalize(streamingMsg.getText());
         const finalContent = streamingMsg.getText();
-        if (finalContent.trim()) {
+        if (finalContent.trim() && !finalContent.includes('Tidak ada respons yang diterima.')) {
           chatHistory.push({ role: 'model', content: finalContent });
           saveChatHistory();
         }

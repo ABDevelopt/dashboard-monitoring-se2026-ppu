@@ -679,6 +679,7 @@
       const decoder = new TextDecoder('utf-8');
       let buffer = '';
       let currentEvent = 'message';
+      let hasReceivedError = false;
 
       while (true) {
         const { value, done } = await reader.read();
@@ -714,6 +715,7 @@
                   saveLocalStorageHistory();
                 }
               } else if (currentEvent === 'error') {
+                hasReceivedError = true;
                 streamMsg.showError(data.error || 'Terjadi kesalahan AI.');
               }
             } catch (err) {
@@ -723,9 +725,9 @@
         }
       }
 
-      // If finished stream without explicit done event
+      // If finished stream without explicit done event or error
       const finalReply = streamMsg.getText();
-      if (finalReply.trim() && chatHistory[chatHistory.length - 1]?.role !== 'assistant') {
+      if (!hasReceivedError && finalReply.trim() && chatHistory[chatHistory.length - 1]?.role !== 'assistant') {
         streamMsg.finalize(finalReply);
         chatHistory.push({ role: 'assistant', content: finalReply });
         saveLocalStorageHistory();

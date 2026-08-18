@@ -44,7 +44,7 @@ function validateSql(sql) {
 }
 
 function injectLimit(sql, limit = QUERY_DEFAULT_LIMIT) {
-  if (/\blimit\s+\d+/i.test(sql)) return sql;
+  if (/\blimit\b/i.test(sql)) return sql;
   return `${sql.trimEnd().replace(/;+$/, '')} LIMIT ${limit}`;
 }
 
@@ -305,8 +305,165 @@ async function runToolCall(toolCall) {
   }
 }
 
+function formatToolRowsToMarkdown(toolName, args, rows) {
+  if (!rows || !Array.isArray(rows) || rows.length === 0) {
+    return `🤖 **Hasil Pencarian Data**\n\nTidak ditemukan data untuk parameter tersebut.`;
+  }
+
+  const colMap = {
+    pcl: 'Nama PCL',
+    pml: 'PML Pengawas',
+    korlap: 'Korlap',
+    kecamatan: 'Kecamatan',
+    desa: 'Desa',
+    nama_sls: 'Nama SLS',
+    kode: 'Kode SLS',
+    realisasi_fasih: 'Realisasi FASIH',
+    target_fasih: 'Target FASIH',
+    draft: 'Draft',
+    submitted: 'Submitted',
+    approved: 'Approved',
+    rejected: 'Rejected',
+    pct_fasih: '% FASIH',
+    pct_muatan: '% Muatan',
+    muatan_selesai: 'Realisasi Muatan',
+    target_muatan: 'Target Muatan',
+    total_muatan: 'Target Muatan',
+    usaha_ganda: 'Usaha Ganda',
+    total_sls: 'Total SLS',
+    start_date: 'Tanggal Mulai',
+    end_date: 'Tanggal Selesai',
+    elapsed_days: 'Durasi Lapangan (Hari)',
+    total_realisasi_fasih: 'Total Realisasi FASIH',
+    jumlah_pcl_aktif: 'Jumlah PCL Aktif',
+    jumlah_pcl_punya_target: 'PCL Ber-target',
+    avg_daily_per_pcl: 'Rata-Rata Progres Harian (Dok/PCL/Hari)',
+    avg_daily: 'Rata-Rata Harian'
+  };
+
+  const keys = Object.keys(rows[0]);
+  const headers = keys.map(k => {
+    const lk = k.toLowerCase();
+    return colMap[lk] || colMap[k] || k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  });
+
+  let markdown = `Berikut ringkasan data hasil analisis:\n\n`;
+
+  if (rows.length === 1 && keys.length <= 8) {
+    const row = rows[0];
+    markdown += `📊 **Indikator Kinerja Utama:**\n`;
+    keys.forEach(k => {
+      const label = colMap[k.toLowerCase()] || k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      let val = row[k];
+      if (val === null || val === undefined) val = '-';
+      else if (typeof val === 'number') val = val.toLocaleString('id-ID');
+      markdown += `- **${label}:** ${val}\n`;
+    });
+    markdown += `\n`;
+  }
+
+  markdown += `| # | ${headers.join(' | ')} |\n`;
+  markdown += `| :---: | ${keys.map(() => ':---').join(' | ')} |\n`;
+
+  rows.forEach((r, idx) => {
+    const rowVals = keys.map(k => {
+      let val = r[k];
+      if (val === null || val === undefined) return '-';
+      if (typeof k === 'string' && (k.toLowerCase().startsWith('pct_') || k.toLowerCase().includes('percent'))) return `**${val}%**`;
+      if (typeof val === 'number') return val.toLocaleString('id-ID');
+      return String(val);
+    });
+    markdown += `| ${idx + 1} | ${rowVals.join(' | ')} |\n`;
+  });
+
+  const avgKey = keys.find(k => k.toLowerCase().includes('avg'));
+  if (avgKey) {
+    const avgVal = rows[0][avgKey];
+    if (avgVal) {
+      markdown += `\n📌 **Rekomendasi / Analisis:** Rata-rata pencapaian PCL sebesar **${avgVal} dokumen per hari per petugas**. Tingkatkan pengawasan lapangan untuk wilayah dengan progres di bawah rata-rata.`;
+    }
+  }
+
+  return markdown;
+}
+
+function formatQueryHintToMarkdown(queryName, params, rows) {
+  if (!rows || rows.length === 0) {
+    return `🤖 **Hasil Pencarian Data**\n\nTidak ditemukan data untuk parameter: \`${JSON.stringify(params || {})}\`.`;
+  }
+
+  return formatToolRowsToMarkdown(queryName, params, rows);
+}
+
+function processJsonQueryResponse(text) {
+  if (typeof text !== 'string' || !text.trim()) return text;
+
+  const trimmed = text.trim();
+  let jsonObj = null;
+
+  try {
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      jsonObj = JSON.parse(trimmed);
+    } else {
+      const match = trimmed.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || trimmed.match(/(\{[\s\S]*?"query_name"[\s\S]*?\})/);
+      if (match && match[1]) {
+        jsonObj = JSON.parse(match[1]);
+      }
+    }
+  } catch (_) {}
+
+  if (!jsonObj || typeof jsonObj !== 'object') return text;
+
+  const queryName = jsonObj.query_name || jsonObj.queryName;
+  const toolName = jsonObj.tool || jsonObj.name;
+  const rawParams = jsonObj.params || jsonObj.args || {};
+
+  const { QUERY_HINTS } = require('../queryHints');
+
+  if (queryName && QUERY_HINTS[queryName]) {
+    try {
+      const hint = QUERY_HINTS[queryName];
+      const latestUpload = getLatestUpload();
+      const db = getDb();
+
+      const params = {
+        uploadId: rawParams.uploadId || (latestUpload ? latestUpload.id : 1),
+        kecamatan: rawParams.kecamatan || null,
+        desa: rawParams.desa || null,
+        pml: rawParams.pml || null,
+        pcl: rawParams.pcl || null,
+        korlap: rawParams.korlap || null,
+        kode: rawParams.kode || null,
+        nama_sls: rawParams.nama_sls ? `%${rawParams.nama_sls}%` : null,
+        limit: rawParams.limit || 20
+      };
+
+      const stmt = db.prepare(hint.sql);
+      const rows = stmt.all(params);
+      return formatQueryHintToMarkdown(queryName, rawParams, rows);
+    } catch (err) {
+      console.error(`[TOOL_REGISTRY] Error processing query hint '${queryName}':`, err.message);
+    }
+  } else if (toolName === 'query_data' || toolName === 'run_read_only_query') {
+    try {
+      const query = rawParams.query || jsonObj.query;
+      if (query) {
+        const db = getDb();
+        const rows = db.prepare(validateSql(query)).all(rawParams.params || {});
+        return formatQueryHintToMarkdown('custom_query', rawParams, rows);
+      }
+    } catch (err) {
+      console.error(`[TOOL_REGISTRY] Error executing json query_data:`, err.message);
+    }
+  }
+
+  return text;
+}
+
 module.exports = {
   TOOL_SCHEMAS,
   runToolCall,
-  fetchPageDataCompat
+  fetchPageDataCompat,
+  processJsonQueryResponse,
+  formatToolRowsToMarkdown
 };
