@@ -132,7 +132,7 @@
                 <th class="text-center" style="width: 40px;">No</th>
                 <th>Nama Petugas</th>
                 <th>Nama PML</th>
-                <th>Kecamatan</th>
+                <th>Korlap</th>
                 <th>Desa</th>
                 <th>Wilayah Kerja SLS</th>
                 <% recentUploads.forEach(u => { %>
@@ -151,9 +151,9 @@
               <% harianStats.forEach((row, idx) => { %>
                 <tr>
                   <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= idx + 1 %></td>
-                  <td class="td-primary"><a href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(row.nama_petugas) %>"><%= row.nama_petugas %></a></td>
-                  <td><%= row.nama_pml %></td>
-                  <td><%= row.kecamatan %></td>
+                  <td class="td-primary"><a href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(row.pcl) %>"><%= row.pcl %></a></td>
+                  <td><%= row.pml %></td>
+                  <td><%= row.korlap %></td>
                   <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<%= row.desa %>">
                     <%= row.desa %>
                   </td>
