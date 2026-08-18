@@ -26,6 +26,7 @@ router.get('/', (req, res) => {
   try {
     const db = getDb(activeSurvey);
     const uploads = getAllUploads(activeSurvey).sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+    const latestUpload = uploads[0] || null;
     const kecList = db.prepare("SELECT DISTINCT kecamatan FROM subsls_master WHERE kecamatan IS NOT NULL AND kecamatan != '' ORDER BY kecamatan").all().map(r => r.kecamatan);
     const korlapList = db.prepare("SELECT DISTINCT korlap FROM subsls_master WHERE korlap IS NOT NULL AND korlap != '' ORDER BY korlap").all().map(r => r.korlap);
     const pmlList = db.prepare("SELECT DISTINCT pml FROM subsls_master WHERE pml IS NOT NULL AND pml != '' ORDER BY pml").all().map(r => r.pml);
@@ -35,6 +36,7 @@ router.get('/', (req, res) => {
       title: 'Ekspor Data Terpadu',
       activePage: 'export',
       uploads,
+      latestUpload,
       kecList,
       korlapList,
       pmlList,
