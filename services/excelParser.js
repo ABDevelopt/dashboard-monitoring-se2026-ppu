@@ -543,7 +543,7 @@ function parseAndSaveStatusExcel(filePath, uploadId, surveyId = 'se2026') {
       const kode = resolveKode(row, i);
       if (!kode || kode.length < 10) continue;
 
-      let prevDraft = 0, prevOpen = 0, prevSubmitted = 0, prevApproved = 0, prevRejected = 0, prevTarget = 0;
+      let prevDraft = 0, prevOpen = 0, prevSubmitted = 0, prevApproved = 0, prevRejected = 0, prevTarget = 0, prevSelesai = 0;
       if (prevStatusId) {
         const prevS = getPrevStatusRecord.get(prevStatusId, kode);
         if (prevS) {
@@ -553,6 +553,7 @@ function parseAndSaveStatusExcel(filePath, uploadId, surveyId = 'se2026') {
           prevApproved = prevS.approved || 0;
           prevRejected = prevS.rejected || 0;
           prevTarget = prevS.target_upload || 0;
+          prevSelesai = prevS.sls_selesai || 0;
         }
       }
 
@@ -585,7 +586,7 @@ function parseAndSaveStatusExcel(filePath, uploadId, surveyId = 'se2026') {
         const targetFromExcel = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 1;
         const isSelesaiExcel = (approvedFromExcel >= targetFromExcel || approvedFromExcel > 0);
         const isSelesaiPreserved = (submitted + approved + rejected >= targetUpload && targetUpload > 0);
-        slsSelesai = (isSelesaiExcel || isSelesaiPreserved) ? 1 : 0;
+        slsSelesai = (isSelesaiExcel || isSelesaiPreserved || prevSelesai === 1) ? 1 : 0;
       } else {
         // Regular FASIH status file upload
         draft = colIdx.draftIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
@@ -601,6 +602,7 @@ function parseAndSaveStatusExcel(filePath, uploadId, surveyId = 'se2026') {
 
         // SLS selesai is computed from FASIH completion
         slsSelesai = (submitted + approved + rejected >= targetUpload && targetUpload > 0) ? 1 : 0;
+        if (prevSelesai === 1) slsSelesai = 1;
       }
 
       // Pastikan baris progres ada untuk upload ini sebelum update status
@@ -738,7 +740,7 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
       if (!kode || (surveyId === 'se2026' ? kode.length !== 16 : kode.length < 10)) continue;
 
       // Get previous status values
-      let prevDraft = 0, prevOpen = 0, prevSubmitted = 0, prevApproved = 0, prevRejected = 0, prevTarget = 0;
+      let prevDraft = 0, prevOpen = 0, prevSubmitted = 0, prevApproved = 0, prevRejected = 0, prevTarget = 0, prevSelesai = 0;
       if (prevStatusId) {
         const prevS = getPrevStatusRecord.get(prevStatusId, kode);
         if (prevS) {
@@ -748,6 +750,7 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
           prevApproved = prevS.approved || 0;
           prevRejected = prevS.rejected || 0;
           prevTarget = prevS.target_upload || 0;
+          prevSelesai = prevS.sls_selesai || 0;
         }
       }
 
@@ -780,7 +783,7 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
         const targetFromExcel = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 1;
         const isSelesaiExcel = (approvedFromExcel >= targetFromExcel || approvedFromExcel > 0);
         const isSelesaiPreserved = (submitted + approved + rejected >= targetUpload && targetUpload > 0);
-        slsSelesai = (isSelesaiExcel || isSelesaiPreserved) ? 1 : 0;
+        slsSelesai = (isSelesaiExcel || isSelesaiPreserved || prevSelesai === 1) ? 1 : 0;
       } else {
         // Regular FASIH status file upload
         draft = colIdx.draftIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
@@ -796,6 +799,7 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
 
         // SLS selesai is computed from FASIH completion
         slsSelesai = (submitted + approved + rejected >= targetUpload && targetUpload > 0) ? 1 : 0;
+        if (prevSelesai === 1) slsSelesai = 1;
       }
 
       // Dynamically populate master data if not se2026
