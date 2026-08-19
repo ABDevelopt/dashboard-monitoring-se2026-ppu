@@ -153,4 +153,69 @@ router.post('/chatbot', (req, res) => {
   res.redirect('/admin/settings/chatbot');
 });
 
+// ─────────────────────────────────────────────
+// MAINTENANCE: Reset SLS Selesai dari Excel BPS
+// ─────────────────────────────────────────────
+router.post('/reset-sls-selesai', (req, res) => {
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  try {
+    const { getDb } = require('../database');
+    const { parseAndSaveStatusExcelOnly } = require('../services/excelParser');
+    const path = require('path');
+    const fs = require('fs');
+    const db = getDb(activeSurvey);
+
+    // 1. Cari file monitoring SLS BPS yang tersimpan (berdasarkan nama file)
+    const monitoringUpload = db.prepare(`
+      SELECT id, tanggal, status_filename, stored_status_filename
+      FROM uploads
+      WHERE (
+        status_filename LIKE '%Monitoring_SLS%'
+        OR status_filename LIKE '%monitoring_sls%'
+        OR status_filename LIKE '%Monitoring SLS%'
+        OR status_filename LIKE '%Export_Monitoring%'
+      )
+      AND stored_status_filename IS NOT NULL
+      AND stored_status_filename != ''
+      ORDER BY id DESC
+      LIMIT 1
+    `).get();
+
+    if (!monitoringUpload) {
+      req.flash('error', 'Tidak ditemukan file upload Excel Monitoring SLS BPS. Silakan upload terlebih dahulu melalui halaman Upload.');
+      return res.redirect('/admin/settings');
+    }
+
+    const filePath = path.join(__dirname, '../uploads', monitoringUpload.stored_status_filename);
+    if (!fs.existsSync(filePath)) {
+      req.flash('error', `File monitoring SLS tidak ditemukan di server: ${monitoringUpload.stored_status_filename}. Silakan upload ulang.`);
+      return res.redirect('/admin/settings');
+    }
+
+    // 2. Reset semua sls_selesai = 0
+    const beforeCount = db.prepare('SELECT COUNT(*) as c FROM progres WHERE sls_selesai = 1').get().c;
+    db.prepare('UPDATE progres SET sls_selesai = 0').run();
+
+    // 3. Reimport sls_selesai dari file BPS (proses ulang semua upload_id)
+    //    parseAndSaveStatusExcelOnly akan update semua upload_id yang ada di DB
+    parseAndSaveStatusExcelOnly(
+      filePath,
+      monitoringUpload.status_filename,
+      monitoringUpload.stored_status_filename,
+      monitoringUpload.tanggal,
+      activeSurvey
+    );
+
+    const afterCount = db.prepare('SELECT COUNT(*) as c FROM progres WHERE sls_selesai = 1').get().c;
+    const uniqueKodes = db.prepare("SELECT COUNT(DISTINCT kode) as c FROM progres WHERE sls_selesai = 1").get().c;
+
+    req.flash('success', `✅ Reset SLS Selesai berhasil. Sebelum: ${beforeCount} baris → Sesudah: ${afterCount} baris (${uniqueKodes} Sub-SLS unik selesai berdasarkan Excel BPS: ${monitoringUpload.status_filename})`);
+    console.log(`[MAINTENANCE] reset-sls-selesai: ${beforeCount} → ${afterCount} rows, file: ${monitoringUpload.status_filename}`);
+  } catch (err) {
+    console.error('[MAINTENANCE] reset-sls-selesai error:', err);
+    req.flash('error', `Gagal reset SLS Selesai: ${err.message}`);
+  }
+  res.redirect('/admin/settings');
+});
+
 module.exports = router;
