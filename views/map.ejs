@@ -137,27 +137,117 @@
     color: var(--accent-blue);
   }
 
+  .gmaps-filter-wrapper {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    border-radius: 99px;
+  }
+
   .gmaps-filter-row {
     display: flex;
     align-items: center;
     gap: 6px;
     overflow-x: auto;
     scrollbar-width: none;
+    -ms-overflow-style: none;
     padding-bottom: 2px;
+    padding-right: 28px;
+    cursor: grab;
+    user-select: none;
+    width: 100%;
+    white-space: nowrap;
   }
 
   .gmaps-filter-row::-webkit-scrollbar {
     display: none;
   }
 
+  .gmaps-filter-row.is-dragging {
+    cursor: grabbing !important;
+    user-select: none !important;
+  }
+
+  .gmaps-filter-row.is-dragging * {
+    cursor: grabbing !important;
+    user-select: none !important;
+  }
+
   .gmaps-select-pill {
-    background: var(--bg-secondary);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: var(--bg-secondary);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
     border: 1px solid var(--border);
     color: var(--text-primary);
     font-size: 12px;
+    font-weight: 500;
     border-radius: 99px;
-    padding: 4px 11px;
+    padding: 4px 28px 4px 12px;
     cursor: pointer;
+    height: 29px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    white-space: nowrap;
+    flex-shrink: 0;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  body.light-mode .gmaps-select-pill {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+
+  .gmaps-select-pill:hover, .gmaps-select-pill:focus {
+    border-color: var(--accent-blue);
+  }
+
+  /* Filter Row Scroll Right Indicator Hint */
+  .gmaps-filter-scroll-hint {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 2px;
+    width: 36px;
+    background: linear-gradient(to right, rgba(var(--bg-card-rgb, 24, 24, 30), 0) 0%, rgba(var(--bg-card-rgb, 24, 24, 30), 0.96) 60%);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 6px;
+    color: var(--accent-blue);
+    font-size: 14px;
+    cursor: pointer;
+    transition: opacity 0.25s ease;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 5;
+    border-top-right-radius: 99px;
+    border-bottom-right-radius: 99px;
+  }
+
+  body.light-mode .gmaps-filter-scroll-hint {
+    background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.98) 60%);
+  }
+
+  .gmaps-filter-scroll-hint.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .gmaps-filter-scroll-hint i {
+    animation: hintBounceRight 1.5s infinite ease-in-out;
+  }
+
+  @keyframes hintBounceRight {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(3px); }
   }
 
   .gmaps-pill-group {
@@ -621,28 +711,34 @@
         </button>
       </div>
       
-      <div class="gmaps-filter-row">
-        <select id="kecFilter" class="gmaps-select-pill">
-          <option value="">-- Semua Kecamatan --</option>
-          <option value="BABULU">Kec. Babulu</option>
-          <option value="WARU">Kec. Waru</option>
-          <option value="PENAJAM">Kec. Penajam</option>
-          <option value="SEPAKU">Kec. Sepaku</option>
-        </select>
-        
-        <div class="gmaps-pill-group">
-          <button id="btnLayerKec" class="gmaps-pill-btn"><i class="bi bi-diagram-3"></i> Kecamatan</button>
-          <button id="btnLayerDesa" class="gmaps-pill-btn active"><i class="bi bi-geo"></i> Desa</button>
-          <button id="btnLayerSls" class="gmaps-pill-btn"><i class="bi bi-pin-map"></i> SLS</button>
+      <div class="gmaps-filter-wrapper">
+        <div class="gmaps-filter-row" id="gmapsFilterRow">
+          <select id="kecFilter" class="gmaps-select-pill">
+            <option value="">-- Semua Kecamatan --</option>
+            <option value="BABULU">Kec. Babulu</option>
+            <option value="WARU">Kec. Waru</option>
+            <option value="PENAJAM">Kec. Penajam</option>
+            <option value="SEPAKU">Kec. Sepaku</option>
+          </select>
+          
+          <div class="gmaps-pill-group">
+            <button id="btnLayerKec" class="gmaps-pill-btn"><i class="bi bi-diagram-3"></i> Kecamatan</button>
+            <button id="btnLayerDesa" class="gmaps-pill-btn active"><i class="bi bi-geo"></i> Desa</button>
+            <button id="btnLayerSls" class="gmaps-pill-btn"><i class="bi bi-pin-map"></i> SLS</button>
+          </div>
+
+          <div class="gmaps-pill-group">
+            <button id="btnBasemapDefault" class="gmaps-pill-btn active"><i class="bi bi-map"></i> Vektor</button>
+            <button id="btnBasemapSatellite" class="gmaps-pill-btn"><i class="bi bi-globe-americas"></i> Satelit</button>
+          </div>
+
+          <div class="gmaps-pill-group">
+            <button id="btnOutlineOnly" class="gmaps-pill-btn" title="Tampilkan Garis Batas Wilayah Saja (Tanpa Warna Isi)"><i class="bi bi-bounding-box-circles"></i> Garis Batas Saja</button>
+          </div>
         </div>
 
-        <div class="gmaps-pill-group">
-          <button id="btnBasemapDefault" class="gmaps-pill-btn active"><i class="bi bi-map"></i> Vektor</button>
-          <button id="btnBasemapSatellite" class="gmaps-pill-btn"><i class="bi bi-globe-americas"></i> Satelit</button>
-        </div>
-
-        <div class="gmaps-pill-group">
-          <button id="btnOutlineOnly" class="gmaps-pill-btn" title="Tampilkan Garis Batas Wilayah Saja (Tanpa Warna Isi)"><i class="bi bi-bounding-box-circles"></i> Garis Batas Saja</button>
+        <div class="gmaps-filter-scroll-hint" id="gmapsScrollHintRight" title="Geser ke kanan untuk opsi lainnya">
+          <i class="bi bi-chevron-right"></i>
         </div>
       </div>
     </div>
@@ -2109,6 +2205,83 @@
 
         // Initialize map & load data!
         bootstrap();
+
+        // Filter Drag-to-Scroll & Visual Scroll Indicator Setup
+        const filterRow = document.getElementById('gmapsFilterRow');
+        const scrollHintRight = document.getElementById('gmapsScrollHintRight');
+
+        function checkFilterScrollIndicator() {
+          if (!filterRow || !scrollHintRight) return;
+          const maxScrollLeft = filterRow.scrollWidth - filterRow.clientWidth;
+          const canScrollRight = maxScrollLeft - filterRow.scrollLeft > 6;
+
+          if (canScrollRight) {
+            scrollHintRight.classList.add('visible');
+          } else {
+            scrollHintRight.classList.remove('visible');
+          }
+        }
+
+        if (filterRow) {
+          checkFilterScrollIndicator();
+          filterRow.addEventListener('scroll', checkFilterScrollIndicator, { passive: true });
+          window.addEventListener('resize', checkFilterScrollIndicator, { passive: true });
+          setTimeout(checkFilterScrollIndicator, 300);
+
+          if (scrollHintRight) {
+            scrollHintRight.addEventListener('click', () => {
+              filterRow.scrollBy({ left: 140, behavior: 'smooth' });
+            });
+          }
+
+          let isDown = false;
+          let startX = 0;
+          let startScrollLeft = 0;
+          let hasDragged = false;
+
+          filterRow.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            isDown = true;
+            hasDragged = false;
+            startX = e.pageX - filterRow.offsetLeft;
+            startScrollLeft = filterRow.scrollLeft;
+          });
+
+          filterRow.addEventListener('mouseleave', () => {
+            if (!isDown) return;
+            isDown = false;
+            filterRow.classList.remove('is-dragging');
+          });
+
+          filterRow.addEventListener('mouseup', () => {
+            if (!isDown) return;
+            isDown = false;
+            filterRow.classList.remove('is-dragging');
+            setTimeout(() => { hasDragged = false; }, 50);
+          });
+
+          filterRow.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            const currentX = e.pageX - filterRow.offsetLeft;
+            const distance = currentX - startX;
+
+            if (Math.abs(distance) > 5) {
+              if (!hasDragged) {
+                hasDragged = true;
+                filterRow.classList.add('is-dragging');
+              }
+              e.preventDefault();
+              filterRow.scrollLeft = startScrollLeft - distance * 1.4;
+            }
+          });
+
+          filterRow.addEventListener('click', (e) => {
+            if (hasDragged) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }, true);
+        }
       }
 
       if (document.readyState === 'complete' || document.readyState === 'interactive') {
