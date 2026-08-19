@@ -581,12 +581,8 @@ function parseAndSaveStatusExcel(filePath, uploadId, surveyId = 'se2026') {
         targetUpload = prevTarget;
         openVal = prevOpen;
 
-        // Compute sls_selesai from excel column or preserved document counts
-        const approvedFromExcel = colIdx.approvedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
-        const targetFromExcel = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 1;
-        const isSelesaiExcel = (approvedFromExcel >= targetFromExcel || approvedFromExcel > 0);
-        const isSelesaiPreserved = (submitted + approved + rejected >= targetUpload && targetUpload > 0);
-        slsSelesai = (isSelesaiExcel || isSelesaiPreserved || prevSelesai === 1) ? 1 : 0;
+        // SLS selesai hanya dari upload Excel BPS Monitoring — simplified status HANYA carry-forward
+        slsSelesai = prevSelesai;
       } else {
         // Regular FASIH status file upload
         draft = colIdx.draftIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
@@ -600,9 +596,8 @@ function parseAndSaveStatusExcel(filePath, uploadId, surveyId = 'se2026') {
           openVal = Math.max(0, targetUpload - (draft + submitted + approved + rejected));
         }
 
-        // SLS selesai is computed from FASIH completion
-        slsSelesai = (submitted + approved + rejected >= targetUpload && targetUpload > 0) ? 1 : 0;
-        if (prevSelesai === 1) slsSelesai = 1;
+        // SLS selesai hanya dari upload Excel BPS Monitoring — FASIH upload HANYA carry-forward
+        slsSelesai = prevSelesai;
       }
 
       // Pastikan baris progres ada untuk upload ini sebelum update status
@@ -778,12 +773,8 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
         targetUpload = prevTarget;
         openVal = prevOpen;
 
-        // Compute sls_selesai from excel column or preserved document counts
-        const approvedFromExcel = colIdx.approvedIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
-        const targetFromExcel = colIdx.total !== -1 ? toInt(row[colIdx.total]) : 1;
-        const isSelesaiExcel = (approvedFromExcel >= targetFromExcel || approvedFromExcel > 0);
-        const isSelesaiPreserved = (submitted + approved + rejected >= targetUpload && targetUpload > 0);
-        slsSelesai = (isSelesaiExcel || isSelesaiPreserved || prevSelesai === 1) ? 1 : 0;
+        // SLS selesai hanya dari upload Excel BPS Monitoring — simplified status HANYA carry-forward
+        slsSelesai = prevSelesai;
       } else {
         // Regular FASIH status file upload
         draft = colIdx.draftIdxs.reduce((sum, idx) => sum + toInt(row[idx]), 0);
@@ -797,9 +788,8 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
           openVal = Math.max(0, targetUpload - (draft + submitted + approved + rejected));
         }
 
-        // SLS selesai is computed from FASIH completion
-        slsSelesai = (submitted + approved + rejected >= targetUpload && targetUpload > 0) ? 1 : 0;
-        if (prevSelesai === 1) slsSelesai = 1;
+        // SLS selesai hanya dari upload Excel BPS Monitoring — FASIH upload HANYA carry-forward
+        slsSelesai = prevSelesai;
       }
 
       // Dynamically populate master data if not se2026
