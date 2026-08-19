@@ -1889,8 +1889,8 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`;
     'agent_provider': 'gemini',
     'gemini_api_key': '',
     'gemini_backup_api_keys': '[]',
-    'gemini_model': 'gemini-3.5-flash',
-    'gemini_models_list': 'gemini-3.5-flash, gemini-3.1-flash-lite, gemini-2.0-flash, gemini-2.5-pro',
+    'gemini_model': 'gemini-2.5-flash',
+    'gemini_models_list': 'gemini-2.5-flash, gemini-3.1-flash-lite, gemini-2.0-flash, gemini-2.5-pro',
     'openai_api_key': '',
     'openai_model': 'gpt-5.5',
     'openai_models_list': 'gpt-5.5, gpt-4o',
@@ -1963,6 +1963,9 @@ function getSettings(surveyId) {
   });
   if (settings.target_fasih_mode === 'dynamic') {
     settings.target_fasih_mode = 'static';
+  }
+  if (!settings.gemini_model || settings.gemini_model === 'gemini-3.5-flash') {
+    settings.gemini_model = 'gemini-2.5-flash';
   }
   return settings;
 }

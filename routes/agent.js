@@ -120,8 +120,10 @@ router.post('/chat/stream', async (req, res) => {
   const safeProvider = ALLOWED_PROVIDERS.includes(provider) ? provider : undefined;
 
   const controller = new AbortController();
-  req.on('close', () => {
-    controller.abort();
+  res.on('close', () => {
+    if (!res.writableEnded) {
+      controller.abort();
+    }
   });
 
   const startTime = Date.now();

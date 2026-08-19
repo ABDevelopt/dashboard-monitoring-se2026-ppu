@@ -65,7 +65,7 @@ function abortAllActive() {
 
 function getAllowedModels(provider, settings) {
   if (provider === 'openrouter') {
-    const listStr = settings.openrouter_models_list || 'meta-llama/llama-3.3-70b-instruct:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
+    const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
     const models = listStr.split(',').map(m => m.trim()).filter(Boolean);
     if (settings.openrouter_model) models.push(settings.openrouter_model);
     return Array.from(new Set(models));
@@ -101,7 +101,7 @@ function resolveAgentSelection(settings, options = {}) {
 // ─────────────────────────────────────────────
 //  INDIVIDUAL LLM CALLERS (from agentService)
 // ─────────────────────────────────────────────
-const { runToolCall, TOOL_SCHEMAS } = require('./toolRegistry');
+const { runToolCall, TOOL_SCHEMAS, processJsonQueryResponse } = require('./toolRegistry');
 
 async function sendMessageToGemini(userMessage, chatHistory, settings, selectedModel, abortSignal, customApiKey, systemInstruction) {
   try {
@@ -182,6 +182,7 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
       finalText = 'Model tidak mengembalikan teks.';
     }
 
+    finalText = processJsonQueryResponse(finalText);
     return { role: 'model', content: finalText, isSimulation: false };
 
   } catch (error) {
@@ -295,7 +296,12 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
 
     if (!fullAccumulatedText.trim()) {
       fullAccumulatedText = 'Model tidak mengembalikan teks jawaban.';
-      onEvent('chunk', { text: fullAccumulatedText });
+    }
+
+    const processedText = processJsonQueryResponse(fullAccumulatedText);
+    if (processedText !== fullAccumulatedText) {
+      onEvent('chunk', { text: processedText });
+      fullAccumulatedText = processedText;
     }
 
     return { role: 'model', content: fullAccumulatedText, isSimulation: false };
@@ -369,7 +375,8 @@ async function sendMessageToOpenAI(userMessage, chatHistory, settings, selectedM
       });
     }
 
-    return { role: 'model', content: extractOpenAIText(response), isSimulation: false };
+    const text = processJsonQueryResponse(extractOpenAIText(response));
+    return { role: 'model', content: text, isSimulation: false };
   } catch (error) {
     log.error('sendMessageToOpenAI error:', error.message);
     throw error;
@@ -377,7 +384,6 @@ async function sendMessageToOpenAI(userMessage, chatHistory, settings, selectedM
 }
 
 async function streamMessageToOpenAI(userMessage, chatHistory, settings, selectedModel, abortSignal, onEvent, systemInstruction) {
-  // Streaming implementation for OpenAI is typically stubbed back to sendMessageToOpenAI with chunks
   onEvent('status', { text: 'Menghubungkan ke OpenAI...', step: 'model_call' });
   const result = await sendMessageToOpenAI(userMessage, chatHistory, settings, selectedModel, abortSignal, systemInstruction);
   onEvent('chunk', { text: result.content });
@@ -394,27 +400,97 @@ async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selec
     { role: 'user', content: userMessage }
   ];
 
-  const modelSupportsTool = !model.includes(':free');
-  const tools = modelSupportsTool ? Object.values(TOOL_SCHEMAS).map(t => ({ type: 'function', function: t })) : undefined;
+  const tools = Object.values(TOOL_SCHEMAS).map(t => ({ type: 'function', function: t }));
 
   try {
-    const payload = { model, messages };
-    if (tools) payload.tools = tools;
+    let loopCount = 0;
+    const MAX_LOOPS = 5;
+    let finalContent = '';
+    let includeTools = true;
+    let lastBackupOutput = '';
 
-    const resp = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
+    while (loopCount < MAX_LOOPS) {
+      if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
 
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data?.error?.message || `HTTP ${resp.status}`);
+      const payload = { model, messages };
+      if (includeTools) payload.tools = tools;
 
-    const reply = data.choices?.[0]?.message?.content || 'Model tidak mengembalikan teks.';
-    return { role: 'model', content: reply, isSimulation: false };
+      let resp = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      let data = await resp.json();
+
+      if (!resp.ok && includeTools && data?.error?.message && (data.error.message.includes('tools') || data.error.message.includes('function') || data.error.message.includes('support'))) {
+        log.warn(`[OPENROUTER] Model '${model}' does not support tools parameter. Retrying without tools...`);
+        includeTools = false;
+        delete payload.tools;
+        resp = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        data = await resp.json();
+      }
+
+      if (!resp.ok) throw new Error(data?.error?.message || `HTTP ${resp.status}`);
+
+      const choiceMessage = data.choices?.[0]?.message;
+      if (!choiceMessage) throw new Error('OpenRouter tidak mengembalikan pesan.');
+
+      const toolCalls = choiceMessage.tool_calls || [];
+      if (toolCalls.length === 0) {
+        finalContent = choiceMessage.content || '';
+        break;
+      }
+
+      loopCount++;
+      log.info(`[OPENROUTER] Executing tool call loop ${loopCount}/${MAX_LOOPS}: ${toolCalls.map(t => t.function?.name).join(', ')}`);
+
+      messages.push(choiceMessage);
+
+      let backupFormattedOutput = '';
+      for (const tc of toolCalls) {
+        let args = {};
+        try { args = JSON.parse(tc.function.arguments || '{}'); } catch (_) {}
+        const res = await runToolCall({ name: tc.function.name, args });
+
+        if (res && res.status === 'success' && Array.isArray(res.data) && res.data.length > 0) {
+          const { formatToolRowsToMarkdown } = require('./toolRegistry');
+          backupFormattedOutput += formatToolRowsToMarkdown(tc.function.name, args, res.data) + '\n\n';
+        }
+
+        messages.push({
+          role: 'tool',
+          tool_call_id: tc.id || tc.function.name,
+          content: JSON.stringify(res)
+        });
+      }
+
+      if (backupFormattedOutput && !lastBackupOutput) {
+        lastBackupOutput = backupFormattedOutput.trim();
+      }
+    }
+
+    if (!finalContent || !finalContent.trim() || finalContent === 'Model tidak mengembalikan teks.') {
+      if (lastBackupOutput) {
+        finalContent = lastBackupOutput;
+      } else {
+        finalContent = 'Model tidak mengembalikan teks.';
+      }
+    }
+
+    finalContent = processJsonQueryResponse(finalContent);
+    return { role: 'model', content: finalContent, isSimulation: false };
+
   } catch (err) {
     log.error('OpenRouter error:', err.message);
     throw err;
