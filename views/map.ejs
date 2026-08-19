@@ -998,6 +998,9 @@
         }
 
         // Data holders
+        const settings = (typeof globalSettings !== 'undefined' ? globalSettings : (typeof settings !== 'undefined' ? settings : {}));
+        const isSakernasMap = (typeof window !== 'undefined' && window.activeSurveyId && window.activeSurveyId.startsWith('sakernas'));
+
         let kecGeoJson = null;
         let desaGeoJson = null;
         let slsGeoJson = null;
@@ -1080,7 +1083,6 @@
           if (!stat) return '#cbd5e1'; // gray
           
           let pct = 0;
-          const isSakernasMap = (typeof window !== 'undefined' && window.activeSurveyId && window.activeSurveyId.startsWith('sakernas'));
           if (!isSakernasMap && typeof settings !== 'undefined' && settings.show_progres_muatan === '1') {
             pct = parseFloat(stat.muatan_pct_str || 0);
           } else {
@@ -1262,7 +1264,6 @@
         }
 
         function showKecDetails(nmkec) {
-          ensureGmapsDrawerOpen();
           const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === nmkec.toUpperCase());
           if (!stat) return;
 
@@ -1383,6 +1384,7 @@
 
         // Show details in Sidebar + Integrated Drilldown Links
         function showDesaDetails(properties) {
+          if (!properties) return;
           const stat = desaStats.find(s => s.iddesa === properties.iddesa);
           const total = stat ? stat.total_subsls : 0;
           const selesai = stat ? stat.selesai : 0;
@@ -1402,7 +1404,7 @@
           const isComplete = fasihPct >= 100;
 
           // Render SubSLS list for this Desa
-          const desaSubslsList = slsStats.filter(s => s.desa && properties.nmdesa && s.desa.toUpperCase() === properties.nmdesa.toUpperCase());
+          const desaSubslsList = slsStats.filter(s => s.desa && properties.nmdesa && String(s.desa).toUpperCase() === String(properties.nmdesa).toUpperCase());
           let subslsListHtml = '';
 
           if (desaSubslsList.length > 0) {
@@ -1579,6 +1581,7 @@
         }
 
         function showSlsDetails(properties) {
+          if (!properties) return;
           const stat = slsStats.find(s => s.kode === properties.kode);
           const isSelesai = stat ? stat.selesai === 1 : false;
           const muatan = stat ? stat.muatan : (properties.muatan || 0);
@@ -1707,7 +1710,7 @@
                       </div>
                     </div>
                   `;
-                  layer.bindPopup(popupHtml).openPopup();
+                  layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
                 }
               });
             }
@@ -1755,7 +1758,7 @@
                       </div>
                     </div>
                   `;
-                  layer.bindPopup(popupHtml).openPopup();
+                  layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
                 }
               });
             }
@@ -1814,7 +1817,7 @@
                       </div>
                     </div>
                   `;
-                  layer.bindPopup(popupHtml).openPopup();
+                  layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
                 }
               });
             }
