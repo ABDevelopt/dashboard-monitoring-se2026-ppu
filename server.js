@@ -731,12 +731,17 @@ function init() {
   };
 
   const localIp = getLocalIp();
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     logger.info(`🚀 Dashboard SE2026 PPU berjalan di:`);
     logger.info(`   - Local:   http://localhost:${PORT}`);
     logger.info(`   - Network: http://${localIp}:${PORT} (Akses via HP di Wi-Fi yang sama)`);
     logger.info(`📅 ${new Date().toLocaleString('id-ID')}`);
   });
+
+  // Konfigurasi timeout untuk mencegah pemutusan koneksi oleh reverse proxy hosting (Dewaweb/LiteSpeed/Nginx)
+  server.setTimeout(180000); // 3 menit timeout
+  server.keepAliveTimeout = 65000; // 65 detik (lebih tinggi dari keepalive proxy 60s)
+  server.headersTimeout = 66000;
 }
 
 init();

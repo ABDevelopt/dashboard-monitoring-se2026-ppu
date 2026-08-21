@@ -131,6 +131,21 @@ router.post('/chat/stream', async (req, res) => {
 
   const startTime = Date.now();
 
+  // Heartbeat keep-alive (setiap 5 detik kirim komentar SSE ': ping\n\n')
+  // untuk mencegah proxy LiteSpeed/Nginx/Cloudflare di Dewaweb memutus koneksi idle
+  const heartbeatTimer = setInterval(() => {
+    if (res.writableEnded) {
+      clearInterval(heartbeatTimer);
+      return;
+    }
+    try {
+      res.write(': ping\n\n');
+      if (typeof res.flush === 'function') res.flush();
+    } catch (_) {
+      clearInterval(heartbeatTimer);
+    }
+  }, 5000);
+
   try {
     sendEvent('status', { text: 'Menyiapkan asisten...', step: 'init' });
     
@@ -157,6 +172,8 @@ router.post('/chat/stream', async (req, res) => {
       sendEvent('error', { error: errMsg });
       res.end();
     }
+  } finally {
+    clearInterval(heartbeatTimer);
   }
 });
 
