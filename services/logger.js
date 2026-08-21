@@ -25,7 +25,7 @@ const consoleFormat = winston.format.combine(
 
 // Create the logger
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
+  level: process.env.LOG_LEVEL || 'debug',
   format: logFormat,
   transports: [
     // Write all logs with level 'error' and below to errors.log
@@ -35,9 +35,10 @@ const logger = winston.createLogger({
       maxsize: 5242880, // 5MB
       maxFiles: 5,
     }),
-    // Write all logs with level 'info' and below to combined.log
+    // Write all logs with level 'debug' and below to combined.log
     new winston.transports.File({
       filename: path.join(logDirectory, 'combined.log'),
+      level: 'debug',
       maxsize: 5242880, // 5MB
       maxFiles: 5,
     })

@@ -1,9 +1,13 @@
 'use strict';
 // ─────────────────────────────────────────────────────────────────────────────
 //  llmGateway.js
-//  Menyatukan API calls ke Gemini, OpenAI, OpenRouter serta manajemen kegagalan
-//  otomatis (SmartSwitch).
+//  Menyatukan API calls ke Gemini serta manajemen kegagalan otomatis (SmartSwitch).
 // ─────────────────────────────────────────────────────────────────────────────
+
+const dns = require('dns');
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 const { 
   GEMINI_DEFAULT_MODEL = 'gemini-3.5-flash'

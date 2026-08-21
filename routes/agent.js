@@ -54,9 +54,12 @@ router.post('/chat/stream', async (req, res) => {
   const { message, history, provider, model } = req.body;
 
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Cache-Control', 'no-cache, no-transform, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
+  res.setHeader('X-No-Buffer', '1');
   res.setHeader('Content-Encoding', 'none');
   if (typeof res.flushHeaders === 'function') res.flushHeaders();
   res.write(': ' + ' '.repeat(2048) + '\n\n');
@@ -241,16 +244,54 @@ router.get('/history', (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────
-//  DELETE /history — Bersihkan riwayat chat persisten
+//  GET /logs — Ambil log sistem chatbot terkini
 // ─────────────────────────────────────────────────────────────────
-router.delete('/history', (req, res) => {
-  const userId = req.session?.user?.id;
-  if (!userId) {
-    return res.status(401).json({ error: 'Sesi Anda tidak valid.' });
+router.get('/logs', (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const logFile = path.join(__dirname, '../logs/combined.log');
+    
+    if (!fs.existsSync(logFile)) {
+      return res.json({ success: true, logs: [] });
+    }
+
+    const content = fs.readFileSync(logFile, 'utf8');
+    const lines = content.trim().split('\n').filter(Boolean);
+    const lastLines = lines.slice(-300); // Ambil 300 baris log terakhir
+
+    const parsedLogs = lastLines.map(line => {
+      try {
+        return JSON.parse(line);
+      } catch (_) {
+        return { message: line, level: 'info', timestamp: new Date().toISOString() };
+      }
+    });
+
+    res.json({ success: true, logs: parsedLogs });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
-  const memoryManager = require('../services/ai/memoryManager');
-  memoryManager.clearChatHistory(userId);
-  return res.json({ success: true, message: 'Riwayat percakapan berhasil dibersihkan.' });
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  POST /logs/clear — Bersihkan file log sistem
+// ─────────────────────────────────────────────────────────────────
+router.post('/logs/clear', (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const logDir = path.join(__dirname, '../logs');
+    
+    ['combined.log', 'errors.log'].forEach(f => {
+      const p = path.join(logDir, f);
+      if (fs.existsSync(p)) fs.writeFileSync(p, '', 'utf8');
+    });
+
+    res.json({ success: true, message: 'Log sistem berhasil dibersihkan.' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 module.exports = router;

@@ -1471,9 +1471,14 @@
   window.lpRefresh = async function() {
     const navPrefix = window.navPrefix || '<%= typeof navPrefix !== "undefined" ? navPrefix : "" %>';
     try {
-      const res = await fetch(navPrefix + '/admin/settings/chatbot-logs', {
+      let res = await fetch(navPrefix + '/agent/logs', {
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
       });
+      if (!res.ok) {
+        res = await fetch(navPrefix + '/admin/settings/chatbot-logs', {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+      }
       const data = await res.json();
       if (data.success && Array.isArray(data.logs)) {
         _lpLogs = data.logs;
@@ -1581,10 +1586,16 @@
     const navPrefix = window.navPrefix || '<%= typeof navPrefix !== "undefined" ? navPrefix : "" %>';
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     try {
-      const res = await fetch(navPrefix + '/admin/settings/chatbot-logs/clear', {
+      let res = await fetch(navPrefix + '/agent/logs/clear', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
       });
+      if (!res.ok) {
+        res = await fetch(navPrefix + '/admin/settings/chatbot-logs/clear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
+        });
+      }
       const d = await res.json();
       if (d.success) {
         _lpLogs = [];
@@ -2360,14 +2371,21 @@
     const reqModel = document.getElementById('agentModel')?.value || '';
     const safePayloadHistory = chatHistory.slice(Math.max(0, chatHistory.length - 11), -1);
 
+    const navPrefix = window.navPrefix || '<%= typeof navPrefix !== "undefined" ? navPrefix : "" %>';
+    const streamUrl = (navPrefix ? navPrefix : '') + '/agent/chat/stream';
+    const normalUrl = (navPrefix ? navPrefix : '') + '/agent/chat';
+
     console.group('%c[PANANYO AI - STREAM START]%c ' + (text.length > 50 ? text.slice(0, 50) + '...' : text), 'background: #2563eb; color: #fff; padding: 2px 6px; border-radius: 3px; font-weight: bold;', 'color: inherit;');
     console.log('📝 Prompt:', text);
     console.log('🤖 Provider / Model:', reqProvider, '/', reqModel || 'default');
     console.log('📚 Riwayat yang dikirim (' + safePayloadHistory.length + ' pesan):', safePayloadHistory);
     console.log('⏱️ Waktu mulai:', new Date().toLocaleTimeString());
 
+    let chunkCount = 0;
+    let hasReceivedError = false;
+
     try {
-      const res = await fetch('/agent/chat/stream', {
+      const res = await fetch(streamUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2400,8 +2418,6 @@
       const decoder = new TextDecoder('utf-8');
       let buffer = '';
       let currentEvent = 'message';
-      let hasReceivedError = false;
-      let chunkCount = 0;
       let firstChunkTime = null;
 
       while (true) {
@@ -2495,6 +2511,45 @@
         } else if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
           chatHistory.pop();
           saveChatHistory();
+        }
+      } else if (chunkCount === 0 && !hasReceivedError) {
+        // Fallback ke endpoint reguler jika stream gagal terhubung (misal diblokir proxy web server)
+        console.warn('%c[AI STREAM FALLBACK]%c Mengalihkan ke mode reguler POST karena stream terganggu...', 'color: #f59e0b; font-weight: bold;', 'color: inherit;', err);
+        streamingMsg.updateStatus('Menganalisis data (mode langsung)...');
+        try {
+          const fbRes = await fetch(normalUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            signal: controller.signal,
+            body: JSON.stringify({
+              message: text,
+              history: safePayloadHistory,
+              provider: reqProvider,
+              model: reqModel
+            })
+          });
+          const fbData = await fbRes.json();
+          if (fbRes.ok && fbData.reply) {
+            console.log('%c[AI FALLBACK SUCCESS]%c Mendapat balasan dari server', 'color: #22c55e; font-weight: bold;', 'color: inherit;');
+            console.groupEnd();
+            streamingMsg.finalize(fbData.reply, fbData.isSimulation);
+            chatHistory.push({ role: 'model', content: fbData.reply });
+            saveChatHistory();
+            return;
+          }
+          throw new Error(fbData.error || `HTTP ${fbRes.status}`);
+        } catch (fbErr) {
+          console.error('%c[AI CONNECTION ERROR]%c ' + (fbErr.message || 'Gagal menghubungi server') + ' (' + totalDuration + 'ms)', 'background: #b91c1c; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold;', 'color: inherit;', fbErr);
+          console.groupEnd();
+          streamingMsg.showError(fbErr.message || 'Gagal menghubungi server.');
+          if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+            chatHistory.pop();
+            saveChatHistory();
+          }
         }
       } else {
         console.error('%c[AI CONNECTION ERROR]%c ' + (err.message || 'Gagal menghubungi server') + ' (' + totalDuration + 'ms)', 'background: #b91c1c; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold;', 'color: inherit;', err);
