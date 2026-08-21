@@ -118,7 +118,14 @@ function getOrderedEligibleKeys(settings = {}) {
   // Urutkan yang coolingDown berdasarkan waktu tunggu terpendek
   coolingDown.sort((a, b) => a.remainingCooldownSec - b.remainingCooldownSec);
 
-  return [...healthy, ...coolingDown];
+  const eligible = [...healthy, ...coolingDown];
+  // Jika seluruh kunci sempat tertandai invalid (misal akibat error format sebelumnya),
+  // tetap coba kembali seluruh kunci yang terdaftar daripada langsung gagal
+  if (eligible.length === 0 && all.length > 0) {
+    return all.map(item => ({ ...item, state: getKeyState(item.key), remainingCooldownSec: 0 }));
+  }
+
+  return eligible;
 }
 
 /**

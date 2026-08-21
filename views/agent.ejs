@@ -1224,7 +1224,7 @@
 
         <span id="agentStatus" class="status-badge ready" style="border-radius: 99px;"><span class="status-dot"></span><span class="status-text">Pananyo Taka Active</span></span>
         <input type="hidden" id="agentProvider" value="<%= typeof provider !== 'undefined' && provider ? provider : 'gemini' %>">
-        <input type="hidden" id="agentModel" value="<%= typeof model !== 'undefined' && model ? model : 'gemini-1.5-flash' %>">
+        <input type="hidden" id="agentModel" value="<%= typeof selectedGeminiModel !== 'undefined' && selectedGeminiModel ? selectedGeminiModel : (typeof model !== 'undefined' && model ? model : 'gemini-3.5-flash') %>">
       </div>
     </div>
     

@@ -318,7 +318,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
         const errMsg = err.message || '';
         if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
           keyPool.markRateLimited(kItem.key, 180, errMsg);
-        } else if (errMsg.includes('403') || errMsg.includes('400') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid')) {
+        } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid') || errMsg.toLowerCase().includes('api key not valid')) {
           keyPool.markInvalid(kItem.key, errMsg);
         }
       } finally {
@@ -433,7 +433,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
         const errMsg = err.message || '';
         if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
           keyPool.markRateLimited(kItem.key, 180, errMsg);
-        } else if (errMsg.includes('403') || errMsg.includes('400') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid')) {
+        } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid') || errMsg.toLowerCase().includes('api key not valid')) {
           keyPool.markInvalid(kItem.key, errMsg);
         }
       }

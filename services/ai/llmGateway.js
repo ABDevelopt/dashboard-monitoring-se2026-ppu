@@ -18,7 +18,15 @@ const AGENT_API_QUICK_RESPONSE_MS   = 20000;
 const AGENT_API_TOOLRESULT_MS       = 30000; 
 const MAX_SWITCH_TRIES              = 5;
 
-const LEGACY_GEMINI_MODELS = new Set([]);
+const LEGACY_GEMINI_MODELS = new Set([
+  'gemini-pro',
+  'gemini-1.0-pro',
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-flash-8b',
+  'gemini-3.5-flash-lite'
+]);
 const _activeControllers = new Map();
 
 // LOGGER — using Winston to ensure all AI logs are captured in log files
