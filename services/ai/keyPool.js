@@ -176,23 +176,18 @@ async function testSingleGeminiKey(key, model = 'gemini-3.5-flash') {
   const trimmed = key.trim();
   const startTime = Date.now();
 
-  // Validasi awal awalan API Key resmi Google AI Studio
-  const isStandardGeminiKey = trimmed.startsWith('AIzaSy');
-
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15000); // 15 detik timeout
+    const timer = setTimeout(() => controller.abort(), 10000); // 10 detik timeout
 
+    // Menggunakan endpoint GET /models untuk verifikasi otentikasi API Key secara cepat
+    // tanpa mengonsumsi kuota harian generateContent (20 RPD) pengguna.
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(trimmed)}`,
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(trimmed)}`,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: 'ping' }] }],
-          generationConfig: { maxOutputTokens: 5, temperature: 0.1 }
-        })
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal
       }
     );
 
@@ -200,12 +195,14 @@ async function testSingleGeminiKey(key, model = 'gemini-3.5-flash') {
     const latencyMs = Date.now() - startTime;
 
     if (response.ok) {
+      const data = await response.json().catch(() => ({}));
+      const modelsCount = Array.isArray(data.models) ? data.models.length : 0;
       markSuccess(trimmed);
       return {
         valid: true,
         status: 'healthy',
         statusCode: response.status,
-        message: 'Aktif & Siap Digunakan',
+        message: `Aktif & Terhubung ke Google API (${modelsCount} model tersedia)`,
         latencyMs
       };
     }
@@ -219,7 +216,7 @@ async function testSingleGeminiKey(key, model = 'gemini-3.5-flash') {
         valid: false,
         status: 'rate_limited',
         statusCode: 429,
-        message: 'Batas kuota harian terlampaui (429 Rate Limit)',
+        message: 'Batas kuota terlampaui (429 Rate Limit)',
         latencyMs,
         errorDetail: errMsg
       };
@@ -227,15 +224,11 @@ async function testSingleGeminiKey(key, model = 'gemini-3.5-flash') {
 
     if (response.status === 400 || response.status === 401 || response.status === 403) {
       markInvalid(trimmed, errMsg);
-      let customMsg = 'API Key tidak valid atau telah dicabut.';
-      if (!isStandardGeminiKey) {
-        customMsg = `Format Kunci Tidak Sesuai: Kunci diawali '${trimmed.slice(0, 6)}...'. API Key Google Gemini resmi selalu diawali dengan 'AIzaSy...'. Silakan buat key baru di https://aistudio.google.com/app/apikey`;
-      }
       return {
         valid: false,
         status: 'invalid',
         statusCode: response.status,
-        message: customMsg,
+        message: `API Key tidak valid atau telah dicabut (${response.status})`,
         latencyMs,
         errorDetail: errMsg
       };
@@ -255,7 +248,7 @@ async function testSingleGeminiKey(key, model = 'gemini-3.5-flash') {
     return {
       valid: false,
       status: 'network_error',
-      message: err.name === 'AbortError' ? 'Koneksi Timeout (>15s)' : `Koneksi gagal ke server Google: ${err.message}${causeMsg}`,
+      message: err.name === 'AbortError' ? 'Koneksi Timeout (>10s)' : `Koneksi gagal ke server Google: ${err.message}${causeMsg}`,
       latencyMs
     };
   }
