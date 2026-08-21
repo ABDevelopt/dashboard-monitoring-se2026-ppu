@@ -345,20 +345,36 @@
       font-weight: 700;
       color: var(--accent-blue);
     }
-    .message-bubble em {
-      font-style: italic;
-    }
-    
+    .message-bubble a.ai-chat-link,
     .message-bubble a {
-      color: var(--accent-blue);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      margin: 2px 3px;
+      background: rgba(var(--accent-rgb, 59, 130, 246), 0.12);
+      border: 1px solid rgba(var(--accent-rgb, 59, 130, 246), 0.3);
+      border-radius: 6px;
+      color: var(--accent-primary, #3b82f6);
       text-decoration: none;
-      font-weight: 500;
-      border-bottom: 1px solid rgba(var(--accent-rgb), 0.3);
-      transition: all 0.2s;
+      font-weight: 600;
+      font-size: 0.9em;
+      transition: all 0.2s ease;
+      vertical-align: middle;
     }
+    .message-bubble a.ai-chat-link:hover,
     .message-bubble a:hover {
-      border-bottom-color: var(--accent-blue);
-      opacity: 0.8;
+      background: var(--accent-primary, #3b82f6);
+      border-color: var(--accent-primary, #3b82f6);
+      color: #ffffff !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    .message-bubble a i {
+      transition: transform 0.2s ease;
+    }
+    .message-bubble a:hover i {
+      transform: translateX(2px);
     }
     
     /* ── Streaming Cursor & Caret ── */
@@ -1275,7 +1291,7 @@
     openrouter: <%- JSON.stringify(openrouterModels || []) %>
   };
   const selectedModels = {
-    gemini: <%- JSON.stringify(selectedGeminiModel || 'gemini-2.5-flash') %>,
+    gemini: <%- JSON.stringify(selectedGeminiModel || 'gemini-3.5-flash') %>,
     openai: <%- JSON.stringify(selectedOpenAIModel || 'gpt-5.5') %>,
     openrouter: <%- JSON.stringify(selectedOpenRouterModel || 'meta-llama/llama-3.3-70b-instruct:free') %>
   };
@@ -1338,11 +1354,20 @@
   }
 
   function formatInline(text) {
+    const navPrefix = '<%= typeof navPrefix !== "undefined" ? navPrefix : "" %>';
     return escapeHtml(text)
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
       .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, href) => {
+        let finalHref = href;
+        if (finalHref.startsWith('/') && !finalHref.startsWith('//') && navPrefix && !finalHref.startsWith(navPrefix + '/') && finalHref !== navPrefix) {
+          finalHref = navPrefix + (finalHref === '/' ? '' : finalHref);
+        }
+        const isInternal = finalHref.startsWith('/') || finalHref.startsWith('#');
+        const targetAttr = isInternal ? '' : ' target="_blank" rel="noopener"';
+        return `<a href="${finalHref}" class="ai-chat-link"${targetAttr}>${label} <i class="bi bi-arrow-right-short" style="font-size: 1.1em; margin-left: 1px;"></i></a>`;
+      })
       .replace(/&lt;br&gt;/g, '<br>');
   }
   
@@ -1904,8 +1929,12 @@
 
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'agent-message-actions';
+        actionsDiv.style.display = 'flex';
+        actionsDiv.style.alignItems = 'center';
+        actionsDiv.style.gap = '8px';
+        actionsDiv.style.marginTop = '8px';
         actionsDiv.innerHTML = `
-          <button type="button" class="chat-action-icon-btn" onclick="window.copyChatMessage(this)" title="Salin Jawaban">
+          <button type="button" class="chat-action-icon-btn" onclick="window.copyChatMessage(this)" title="Salin Jawaban" style="font-size: 13px;">
             <i class="bi bi-copy"></i>
           </button>
         `;
@@ -1915,7 +1944,7 @@
       showError(errorMsg) {
         if (cursorEl.parentElement) cursorEl.remove();
         if (statusCard.parentElement) statusCard.remove();
-        streamContentEl.innerHTML = `<div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> <strong>Kesalahan:</strong> ${escapeHtml(errorMsg)}</div>`;
+        streamContentEl.innerHTML = `<div class="alert alert-error" style="font-size: 13px; line-height: 1.5;"><i class="bi bi-exclamation-triangle"></i> <strong>Kesalahan:</strong> ${escapeHtml(errorMsg)}</div>`;
         container.scrollTop = container.scrollHeight;
       },
       abortNotice() {
@@ -1923,20 +1952,25 @@
         if (statusCard.parentElement) statusCard.remove();
         if (accumulatedText.trim()) {
           streamContentEl.innerHTML = renderMarkdown(accumulatedText) + 
-            `<div class="text-muted" style="font-size: 11px; margin-top: 6px; font-style: italic; color: var(--text-muted);"><i class="bi bi-stop-circle"></i> Jawaban dihentikan.</div>`;
+            `<div class="text-muted" style="font-size: 12px; margin-top: 6px; font-style: italic; color: var(--text-muted); line-height: 1.5;"><i class="bi bi-stop-circle"></i> Jawaban dihentikan.</div>`;
           const actionsDiv = document.createElement('div');
           actionsDiv.className = 'agent-message-actions';
+          actionsDiv.style.display = 'flex';
+          actionsDiv.style.alignItems = 'center';
+          actionsDiv.style.gap = '8px';
+          actionsDiv.style.marginTop = '8px';
           actionsDiv.innerHTML = `
-            <button type="button" class="chat-action-icon-btn" onclick="window.copyChatMessage(this)" title="Salin Jawaban">
+            <button type="button" class="chat-action-icon-btn" onclick="window.copyChatMessage(this)" title="Salin Jawaban" style="font-size: 13px;">
               <i class="bi bi-copy"></i>
             </button>
           `;
           msgDiv.appendChild(actionsDiv);
         } else {
-          streamContentEl.innerHTML = `<div class="alert alert-info"><i class="bi bi-info-circle"></i> Permintaan dihentikan oleh pengguna.</div>`;
+          streamContentEl.innerHTML = `<div class="alert alert-info" style="font-size: 13px; line-height: 1.5;"><i class="bi bi-info-circle"></i> Permintaan dihentikan oleh pengguna.</div>`;
         }
         container.scrollTop = container.scrollHeight;
       }
+
     };
   }
 
@@ -1970,6 +2004,11 @@
     if (!text) return;
 
     setUIBusy(input, submitBtn);
+
+    // Pastikan tidak ada pesan 'user' gantung dari turn sebelumnya yang gagal
+    while (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+      chatHistory.pop();
+    }
 
     appendMessage('user', text);
     chatHistory.push({ role: 'user', content: text });
@@ -2049,17 +2088,17 @@
               } else if (currentEvent === 'done') {
                 streamingMsg.finalize(data.reply || streamingMsg.getText(), data.isSimulation);
                 const finalContent = streamingMsg.getText();
-                const isErrorReply = finalContent.includes('Model tidak mengembalikan teks') || 
-                                     finalContent.includes('API Provider Error') || 
-                                     finalContent.includes('Kesalahan:') || 
-                                     finalContent.includes('dibatalkan');
-                if (!isErrorReply && finalContent.trim()) {
+                if (finalContent.trim()) {
                   chatHistory.push({ role: 'model', content: finalContent });
                   saveChatHistory();
                 }
               } else if (currentEvent === 'error') {
                 hasReceivedError = true;
                 streamingMsg.showError(data.error || 'Terjadi kesalahan pada AI.');
+                if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+                  chatHistory.pop();
+                  saveChatHistory();
+                }
               }
             } catch (jsonErr) {
               console.warn('[AGENT:STREAM] Parse error:', jsonErr, rawData);
@@ -2085,9 +2124,16 @@
         if (partial.trim()) {
           chatHistory.push({ role: 'model', content: partial });
           saveChatHistory();
+        } else if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+          chatHistory.pop();
+          saveChatHistory();
         }
       } else {
         streamingMsg.showError(err.message || 'Gagal menghubungi server.');
+        if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+          chatHistory.pop();
+          saveChatHistory();
+        }
       }
     } finally {
       clearTimeout(browserTimeout);

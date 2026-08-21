@@ -430,7 +430,7 @@ async function callGeminiDirect(prompt, settings = {}) {
     } catch (e) {}
   }
 
-  const modelName = settings.gemini_model || 'gemini-2.5-flash';
+  const modelName = settings.gemini_model || 'gemini-3.5-flash';
   const TIMEOUT_MS = 12000; // Increased to 12s for reliable hosting connection
 
   // Try Gemini keys

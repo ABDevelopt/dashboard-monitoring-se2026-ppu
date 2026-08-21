@@ -321,10 +321,6 @@
   margin: 0 0 6px 0;
 }
 
-.ai-msg-assistant .ai-msg-bubble p:last-child {
-  margin-bottom: 0;
-}
-
 .ai-msg-assistant .ai-msg-bubble code {
   background: rgba(0, 0, 0, 0.3);
   padding: 2px 6px;
@@ -332,6 +328,41 @@
   font-family: 'Consolas', 'Fira Code', monospace;
   font-size: 11px;
   color: var(--accent-cyan, #06b6d4);
+}
+
+.ai-msg-bubble a.ai-widget-link,
+.ai-msg-bubble a {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  margin: 2px 2px;
+  background: rgba(6, 182, 212, 0.12);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: 6px;
+  color: var(--accent-cyan, #06b6d4);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 11.5px;
+  transition: all 0.2s ease;
+  vertical-align: middle;
+}
+
+.ai-msg-bubble a.ai-widget-link:hover,
+.ai-msg-bubble a:hover {
+  background: var(--accent-cyan, #06b6d4);
+  border-color: var(--accent-cyan, #06b6d4);
+  color: #0f172a !important;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(6, 182, 212, 0.3);
+}
+
+.ai-msg-bubble a i {
+  transition: transform 0.2s ease;
+}
+
+.ai-msg-bubble a:hover i {
+  transform: translateX(2px);
 }
 
 .ai-msg-time {

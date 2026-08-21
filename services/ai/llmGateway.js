@@ -6,15 +6,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const { 
-  GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash',
+  GEMINI_DEFAULT_MODEL = 'gemini-3.5-flash',
   OPENAI_DEFAULT_MODEL = 'gpt-5.5',
   OPENROUTER_DEFAULT_MODEL = 'openrouter/free'
 } = process.env;
 
-const AGENT_API_TIMEOUT_MS          = 18000; 
-const AGENT_API_QUICK_RESPONSE_MS   = 14000; 
-const AGENT_API_TOOLRESULT_MS       = 16000; 
+const AGENT_API_TIMEOUT_MS          = 30000; 
+const AGENT_API_QUICK_RESPONSE_MS   = 20000; 
+const AGENT_API_TOOLRESULT_MS       = 30000; 
 const MAX_SWITCH_TRIES              = 5;
+
 
 const LEGACY_GEMINI_MODELS = new Set([]);
 const _activeControllers = new Map();
@@ -76,7 +77,7 @@ function getAllowedModels(provider, settings) {
     if (settings.openai_model) models.push(settings.openai_model);
     return Array.from(new Set(models));
   }
-  const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.1-flash-lite, gemini-3.5-flash, gemini-2.5-pro';
+  const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-3.1-flash-lite';
   const models = listStr.split(',').map(m => m.trim()).filter(Boolean);
   if (settings.gemini_model) models.push(settings.gemini_model);
   return Array.from(new Set(models));
@@ -103,6 +104,78 @@ function resolveAgentSelection(settings, options = {}) {
 // ─────────────────────────────────────────────
 const { runToolCall, TOOL_SCHEMAS, processJsonQueryResponse } = require('./toolRegistry');
 
+/**
+ * Format dan bersihkan riwayat obrolan secara ketat (strictly alternating user -> model).
+ * Membatasi hingga 6 pesan terakhir (3 pasang giliran) dan meringkas isi pesan masa lalu
+ * agar model 100% terfokus pada pesan terkini (recency focus).
+ */
+function formatGeminiHistory(chatHistory) {
+  if (!Array.isArray(chatHistory) || chatHistory.length === 0) return [];
+
+  const clean = [];
+  let expectedRole = 'user';
+
+  // Ambil maksimal 6 pesan terakhir (3 pasang dialog user-model)
+  const recent = chatHistory.slice(-6);
+
+  for (const msg of recent) {
+    if (!msg || typeof msg.content !== 'string' || !msg.content.trim()) continue;
+    const role = msg.role === 'user' ? 'user' : 'model';
+
+    if (role === expectedRole) {
+      // Ringkas respons model masa lalu jika terlalu panjang agar tidak mengalihkan perhatian model dari pertanyaan saat ini
+      let text = msg.content.trim();
+      if (role === 'model' && text.length > 500) {
+        text = text.slice(0, 500) + '...';
+      }
+      clean.push({
+        role,
+        parts: [{ text }]
+      });
+      expectedRole = role === 'user' ? 'model' : 'user';
+    }
+  }
+
+  // Riwayat untuk startChat HARUS diakhiri dengan turn 'model',
+  // sehingga pesan user saat ini (userMessage) menjadi giliran 'user' berikutnya secara alami.
+  if (clean.length > 0 && clean[clean.length - 1].role === 'user') {
+    clean.pop();
+  }
+
+  return clean;
+}
+
+/**
+ * Ekstraksi function calls dari respons Gemini secara andal
+ * baik via method response.functionCalls() maupun inspeksi langsung kandidat parts.
+ */
+function extractFunctionCalls(response) {
+  if (!response?.response) return [];
+  if (typeof response.response.functionCalls === 'function') {
+    try {
+      const fcs = response.response.functionCalls();
+      if (Array.isArray(fcs) && fcs.length > 0) return fcs;
+    } catch (_) {}
+  }
+  const parts = response.response.candidates?.[0]?.content?.parts || [];
+  return parts.filter(p => p && p.functionCall).map(p => p.functionCall);
+}
+
+/**
+ * Ekstraksi teks dari respons Gemini secara aman
+ */
+function extractResponseText(response) {
+  if (!response?.response) return '';
+  if (typeof response.response.text === 'function') {
+    try {
+      const t = response.response.text();
+      if (t && typeof t === 'string') return t;
+    } catch (_) {}
+  }
+  const parts = response.response.candidates?.[0]?.content?.parts || [];
+  return parts.filter(p => p && p.text).map(p => p.text).join('\n');
+}
+
 async function sendMessageToGemini(userMessage, chatHistory, settings, selectedModel, abortSignal, customApiKey, systemInstruction) {
   try {
     const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -118,15 +191,7 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
       tools: [{ functionDeclarations: Object.values(TOOL_SCHEMAS) }]
     });
 
-    const formattedHistory = chatHistory.slice(-10).map(msg => ({
-      role : msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }]
-    }));
-
-    if (formattedHistory.length > 0 && formattedHistory[0].role === 'model') {
-      formattedHistory.shift();
-    }
-
+    const formattedHistory = formatGeminiHistory(chatHistory);
     const chat = model.startChat({ history: formattedHistory });
 
     async function callGemini(payload, isToolResult = false) {
@@ -151,7 +216,7 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
         throw new Error(`Gemini dihentikan secara tidak wajar (Alasan: ${finishReason}).`);
       }
 
-      const functionCalls = response.response.functionCalls || [];
+      const functionCalls = extractFunctionCalls(response);
       if (functionCalls.length === 0) break;
 
       loopCount++;
@@ -167,23 +232,17 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
       response = await callGemini(toolResponses, true);
     }
 
-    let finalText = '';
-    try {
-      finalText = response.response.text();
-    } catch (_) {
-      finalText = response.response.candidates
-        ?.flatMap(c => c.content?.parts || [])
-        ?.map(p => p.text || '')
-        ?.join('\n')
-        ?.trim();
+    let rawText = extractResponseText(response);
+
+    if (!rawText.trim()) {
+      rawText = 'Data tidak ditemukan untuk kriteria pencarian tersebut.';
     }
 
-    if (!finalText || !finalText.trim()) {
-      finalText = 'Model tidak mengembalikan teks.';
-    }
-
-    finalText = processJsonQueryResponse(finalText);
-    return { role: 'model', content: finalText, isSimulation: false };
+    return {
+      role: 'model',
+      content: processJsonQueryResponse(rawText),
+      isSimulation: false
+    };
 
   } catch (error) {
     log.error('sendMessageToGemini error:', error.message);
@@ -206,21 +265,13 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
       tools: [{ functionDeclarations: Object.values(TOOL_SCHEMAS) }]
     });
 
-    const formattedHistory = chatHistory.slice(-10).map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }]
-    }));
-
-    if (formattedHistory.length > 0 && formattedHistory[0].role === 'model') {
-      formattedHistory.shift();
-    }
-
+    const formattedHistory = formatGeminiHistory(chatHistory);
     const chat = model.startChat({ history: formattedHistory });
 
     let currentPayload = userMessage;
     let loopCount = 0;
     const MAX_LOOPS = 5;
-    let fullAccumulatedText = '';
+    let response = null;
 
     while (loopCount < MAX_LOOPS) {
       if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
@@ -230,60 +281,33 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
         step: 'model_call'
       });
 
-      const streamResult = await chat.sendMessageStream(currentPayload);
-      let functionCallsInTurn = [];
+      const timeoutMs = loopCount > 0 ? AGENT_API_TOOLRESULT_MS : AGENT_API_QUICK_RESPONSE_MS;
+      response = await timeoutPromise(
+        chat.sendMessage(currentPayload),
+        timeoutMs,
+        `Gemini API timed out (${timeoutMs / 1000}s)`
+      );
 
-      if (!streamResult?.stream) {
-        try {
-          await streamResult.response;
-        } catch (apiErr) {
-          throw apiErr;
-        }
-        throw new Error('Gemini API tidak mengembalikan stream.');
+      const candidate = response.response.candidates?.[0];
+      const finishReason = candidate?.finishReason;
+      if (finishReason && finishReason !== 'STOP' && finishReason !== 'MAX_TOKENS') {
+        throw new Error(`Gemini dihentikan secara tidak wajar (Alasan: ${finishReason}).`);
       }
 
-      for await (const chunk of streamResult.stream) {
-        if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
-
-        let fcs = null;
-        try { fcs = chunk.functionCalls(); } catch (_) {}
-
-        if (fcs && fcs.length > 0) {
-          functionCallsInTurn.push(...fcs);
-        }
-
-        let chunkText = '';
-        try { chunkText = chunk.text(); } catch (_) {}
-
-        if (chunkText) {
-          fullAccumulatedText += chunkText;
-          onEvent('chunk', { text: chunkText });
-        }
-      }
-
-      if (functionCallsInTurn.length === 0) {
-        if (!fullAccumulatedText) {
-          try {
-            const resp = await streamResult.response;
-            const t = resp.text();
-            if (t) {
-              fullAccumulatedText = t;
-              onEvent('chunk', { text: t });
-            }
-          } catch (_) {}
-        }
+      const functionCalls = extractFunctionCalls(response);
+      if (functionCalls.length === 0) {
         break;
       }
 
       loopCount++;
-      log.info(`[STREAM:GEMINI] Tool-call loop ${loopCount}/${MAX_LOOPS}: ${functionCallsInTurn.map(f => f.name).join(', ')}`);
+      log.info(`[STREAM:GEMINI] Tool-call loop ${loopCount}/${MAX_LOOPS}: ${functionCalls.map(f => f.name).join(', ')}`);
 
-      for (const fc of functionCallsInTurn) {
+      for (const fc of functionCalls) {
         onEvent('tool_start', { tool: fc.name, args: fc.args, message: `⚙️ Menjalankan alat bantu ${fc.name}...` });
       }
 
       const toolResponses = await Promise.all(
-        functionCallsInTurn.map(async (fc) => {
+        functionCalls.map(async (fc) => {
           const result = await runToolCall({ name: fc.name, args: fc.args });
           onEvent('tool_end', { tool: fc.name, message: `✅ Selesai mengambil data` });
           return { functionResponse: { name: fc.name, response: result } };
@@ -294,17 +318,25 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
       currentPayload = toolResponses;
     }
 
-    if (!fullAccumulatedText.trim()) {
-      fullAccumulatedText = 'Model tidak mengembalikan teks jawaban.';
+    let rawText = extractResponseText(response);
+
+    if (!rawText.trim()) {
+      rawText = 'Data tidak ditemukan untuk kriteria pencarian tersebut.';
     }
 
-    const processedText = processJsonQueryResponse(fullAccumulatedText);
-    if (processedText !== fullAccumulatedText) {
-      onEvent('chunk', { text: processedText });
-      fullAccumulatedText = processedText;
+    const processedText = processJsonQueryResponse(rawText);
+
+    // Stream text progressively to frontend for smooth, instant typing effect
+    const words = processedText.split(' ');
+    const chunkSize = 4;
+    for (let i = 0; i < words.length; i += chunkSize) {
+      if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
+      const chunk = words.slice(i, i + chunkSize).join(' ') + (i + chunkSize < words.length ? ' ' : '');
+      onEvent('chunk', { text: chunk });
+      await new Promise(r => setTimeout(r, 12));
     }
 
-    return { role: 'model', content: fullAccumulatedText, isSimulation: false };
+    return { role: 'model', content: processedText, isSimulation: false };
 
   } catch (error) {
     log.error('streamMessageToGemini error:', error.message);
@@ -317,7 +349,7 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
 // ─────────────────────────────────────────────
 async function createOpenAIResponse(apiKey, payload) {
   const timeoutMs = payload.previous_response_id ? AGENT_API_TOOLRESULT_MS : AGENT_API_QUICK_RESPONSE_MS;
-  const response = await fetchWithTimeout('https://api.openai.com/v1/responses', {
+  const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
     method : 'POST',
     headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body   : JSON.stringify(payload)
@@ -331,52 +363,94 @@ async function createOpenAIResponse(apiKey, payload) {
 }
 
 function extractOpenAIText(response) {
-  if (response.output_text) return response.output_text;
-  const parts = [];
-  for (const item of response.output || []) {
-    if (item.type !== 'message') continue;
-    for (const c of item.content || []) {
-      if ((c.type === 'output_text' || c.type === 'text') && c.text) parts.push(c.text);
-    }
-  }
-  return parts.join('\n').trim() || 'Model tidak mengembalikan teks.';
+  if (response.choices?.[0]?.message?.content) return response.choices[0].message.content;
+  return 'Model tidak mengembalikan teks.';
 }
 
 async function sendMessageToOpenAI(userMessage, chatHistory, settings, selectedModel, abortSignal, systemInstruction) {
   const apiKey = settings.openai_api_key;
-  const model  = selectedModel || settings.openai_model || OPENAI_DEFAULT_MODEL;
-  const input  = [
-    ...chatHistory.slice(-10).map(msg => ({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content })),
+  const model = selectedModel || settings.openai_model || OPENAI_DEFAULT_MODEL;
+
+  const cleanHist = formatGeminiHistory(chatHistory);
+  const messages = [
+    { role: 'system', content: systemInstruction },
+    ...cleanHist.map(msg => ({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.parts[0].text })),
     { role: 'user', content: userMessage }
   ];
+
   const tools = Object.values(TOOL_SCHEMAS).map(t => ({ type: 'function', function: t }));
 
   try {
-    let response = await createOpenAIResponse(apiKey, { model, instructions: systemInstruction, input, tools, tool_choice: 'auto' });
     let loopCount = 0;
     const MAX_LOOPS = 5;
+    let finalContent = '';
+    let lastBackupOutput = '';
 
     while (loopCount < MAX_LOOPS) {
-      const functionCalls = (response.output || []).filter(item => item.type === 'function_call');
-      if (functionCalls.length === 0) break;
+      if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
+
+      const resp = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ model, messages, tools })
+      });
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `HTTP ${resp.status}`);
+      }
+
+      const data = await resp.json();
+      const choiceMessage = data.choices?.[0]?.message;
+      if (!choiceMessage) throw new Error('OpenAI tidak mengembalikan pesan.');
+
+      const toolCalls = choiceMessage.tool_calls || [];
+      if (toolCalls.length === 0) {
+        finalContent = choiceMessage.content || '';
+        break;
+      }
 
       loopCount++;
-      const outputs = await Promise.all(functionCalls.map(async call => {
-        let args = {};
-        try { args = JSON.parse(call.arguments || '{}'); } catch (_) {}
-        const result = await runToolCall({ name: call.name, args });
-        return { type: 'function_call_output', call_id: call.call_id, output: JSON.stringify(result) };
-      }));
+      log.info(`[OPENAI] Executing tool call loop ${loopCount}/${MAX_LOOPS}: ${toolCalls.map(t => t.function?.name).join(', ')}`);
 
-      response = await createOpenAIResponse(apiKey, {
-        model, instructions: systemInstruction,
-        previous_response_id: response.id,
-        input: outputs, tools, tool_choice: 'auto'
-      });
+      messages.push(choiceMessage);
+
+      let backupFormattedOutput = '';
+      for (const tc of toolCalls) {
+        let args = {};
+        try { args = JSON.parse(tc.function.arguments || '{}'); } catch (_) {}
+        const res = await runToolCall({ name: tc.function.name, args });
+
+        if (res && res.status === 'success' && Array.isArray(res.data) && res.data.length > 0) {
+          const { formatToolRowsToMarkdown } = require('./toolRegistry');
+          backupFormattedOutput += formatToolRowsToMarkdown(tc.function.name, args, res.data) + '\n\n';
+        }
+
+        messages.push({
+          role: 'tool',
+          tool_call_id: tc.id || tc.function.name,
+          content: JSON.stringify(res)
+        });
+      }
+
+      if (backupFormattedOutput && !lastBackupOutput) {
+        lastBackupOutput = backupFormattedOutput.trim();
+      }
     }
 
-    const text = processJsonQueryResponse(extractOpenAIText(response));
-    return { role: 'model', content: text, isSimulation: false };
+    if (!finalContent || !finalContent.trim() || finalContent === 'Model tidak mengembalikan teks.') {
+      if (lastBackupOutput) {
+        finalContent = lastBackupOutput;
+      } else {
+        finalContent = 'Model tidak mengembalikan teks.';
+      }
+    }
+
+    finalContent = processJsonQueryResponse(finalContent);
+    return { role: 'model', content: finalContent, isSimulation: false };
   } catch (error) {
     log.error('sendMessageToOpenAI error:', error.message);
     throw error;
@@ -384,7 +458,7 @@ async function sendMessageToOpenAI(userMessage, chatHistory, settings, selectedM
 }
 
 async function streamMessageToOpenAI(userMessage, chatHistory, settings, selectedModel, abortSignal, onEvent, systemInstruction) {
-  onEvent('status', { text: 'Menghubungkan ke OpenAI...', step: 'model_call' });
+  onEvent('status', { text: '🔍 Memproses analisis data...', step: 'model_call' });
   const result = await sendMessageToOpenAI(userMessage, chatHistory, settings, selectedModel, abortSignal, systemInstruction);
   onEvent('chunk', { text: result.content });
   return result;
@@ -394,9 +468,10 @@ async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selec
   const apiKey = settings.openrouter_api_key;
   const model = selectedModel || settings.openrouter_model || OPENROUTER_DEFAULT_MODEL;
 
+  const cleanHist = formatGeminiHistory(chatHistory);
   const messages = [
     { role: 'system', content: systemInstruction },
-    ...chatHistory.slice(-10).map(msg => ({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.content })),
+    ...cleanHist.map(msg => ({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.parts[0].text })),
     { role: 'user', content: userMessage }
   ];
 
@@ -498,7 +573,7 @@ async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selec
 }
 
 async function streamMessageToOpenRouter(userMessage, chatHistory, settings, selectedModel, abortSignal, onEvent, systemInstruction) {
-  onEvent('status', { text: 'Menghubungkan ke OpenRouter...', step: 'model_call' });
+  onEvent('status', { text: '🔍 Memproses analisis data...', step: 'model_call' });
   const result = await sendMessageToOpenRouter(userMessage, chatHistory, settings, selectedModel, abortSignal, systemInstruction);
   onEvent('chunk', { text: result.content });
   return result;

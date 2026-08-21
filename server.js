@@ -31,7 +31,8 @@ const express = require('express');
 const session = require('express-session');
 const flash = require('connect-flash');
 const { loadMasterFromJson } = require('./services/excelParser');
-const { getDb, getLatestUpload, getLatestUploadsDetailed, getSettings, updateSettings, getKippOfficers } = require('./database');
+const { getDb, getLatestUpload, getLatestUploadsDetailed, getSettings, getKippOfficers, runWalCheckpointAll } = require('./database');
+
 
 const app = express();
 const expressLayouts = require('express-ejs-layouts');
@@ -701,6 +702,20 @@ function init() {
   } catch (err) {
     logger.error('❌ Gagal menyinkronkan data ke Firebase pada startup:', err.message);
   }
+
+  // Jadwalkan WAL checkpoint otomatis setiap 6 jam.
+  // Setiap survei diperiksa secara independen — tidak ada ketergantungan cross-DB.
+  // PASSIVE checkpoint: tidak memblokir pembaca/penulis yang sedang aktif.
+  const WAL_CHECKPOINT_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 jam
+  setInterval(() => {
+    try {
+      runWalCheckpointAll();
+    } catch (e) {
+      logger.error('❌ Scheduled WAL checkpoint error:', e.message);
+    }
+  }, WAL_CHECKPOINT_INTERVAL_MS);
+  logger.info(`⏰ WAL checkpoint terjadwal setiap 6 jam (interval: ${WAL_CHECKPOINT_INTERVAL_MS}ms)`);
+
 
   const os = require('os');
   const getLocalIp = () => {

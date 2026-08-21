@@ -24,11 +24,13 @@ router.get('/', (req, res) => {
       console.error(`Error calculating summary for ${key}:`, err.message);
     }
 
-    const realisasi = summary 
+    // Hitung realisasi & target dari data upload nyata.
+    // Jika belum ada data upload, tampilkan 0 (bukan angka palsu/demo).
+    const realisasi = summary
       ? ((summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0))
-      : (key === 'sakernas-pemutakhiran' ? 42 : (key === 'sakernas-pendataan' ? 360 : 0));
-    const target = summary ? (summary.target_fasih_total || 0) : (key === 'sakernas-pemutakhiran' ? 42 : (key === 'sakernas-pendataan' ? 420 : 0));
-    const persen = target > 0 ? parseFloat(((realisasi / target) * 100).toFixed(1)) : (key === 'sakernas-pemutakhiran' ? 100.0 : (key === 'sakernas-pendataan' ? 85.7 : 0));
+      : 0;
+    const target = summary ? (summary.target_fasih_total || 0) : 0;
+    const persen = target > 0 ? parseFloat(((realisasi / target) * 100).toFixed(1)) : 0;
 
     if (latestUpload || realisasi > 0) {
       totalActiveSurveys++;

@@ -113,24 +113,6 @@
       transform: translateX(20px);
     }
     
-    /* Sticky Action Bar */
-    .sticky-action-bar {
-      position: sticky;
-      bottom: 20px;
-      background: rgba(30, 41, 59, 0.85); /* Semitransparent card color */
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 16px 24px;
-      margin-top: 30px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      z-index: 100;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
-    
     @media (max-width: 768px) {
       .settings-grid {
         grid-template-columns: 1fr !important;
@@ -151,11 +133,6 @@
         transform: none !important;
         box-shadow: 0 4px 14px rgba(13, 110, 253, 0.25) !important;
       }
-      .save-btn-container {
-        width: 100% !important;
-        margin-top: 16px !important;
-        padding-top: 16px !important;
-      }
       #agent_provider {
         min-width: 100% !important;
         width: 100% !important;
@@ -171,8 +148,6 @@
       </a>
     </div>
   </div>
-
-
 
   <div class="card-body">
     <form action="<%= navPrefix %>/admin/settings/chatbot" method="POST">
@@ -201,7 +176,7 @@
             <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
               <i class="bi bi-shuffle" style="color: var(--accent-blue);"></i> Fitur Smart Switch AI
             </div>
-            <p class="settings-hint" style="margin-top: 4px;">Saat model utama mengalami error kuota habis/rate-limit (HTTP 429/403/503), sistem akan otomatis beralih mencari model gratis alternatif dari daftar model tersimpan sebelum akhirnya menggunakan model berbayar (OpenAI) atau beralih ke Mode Simulasi.</p>
+            <p class="settings-hint" style="margin-top: 4px;">Saat model utama mengalami error kuota habis/rate-limit (HTTP 429/403/503), sistem akan otomatis beralih mencari key cadangan dan model gratis alternatif sebelum akhirnya beralih ke Mode Simulasi.</p>
           </div>
           <div style="margin-bottom: 0;">
             <label class="toggle-switch">
@@ -213,13 +188,19 @@
 
         <!-- CARD 2: GOOGLE GEMINI -->
         <div class="settings-group">
-          <div class="settings-group-title" style="border-bottom-color: rgba(13, 110, 253, 0.2);">
-            <i class="bi bi-google" style="color: #4285F4;"></i> Google Gemini
+          <div class="settings-group-title" style="border-bottom-color: rgba(13, 110, 253, 0.2); display: flex; justify-content: space-between; align-items: center;">
+            <span><i class="bi bi-google" style="color: #4285F4;"></i> Google Gemini</span>
+            <span class="badge" style="background: rgba(66, 133, 244, 0.15); color: #4285F4; font-size: 12px; padding: 4px 8px; border-radius: 6px;">Multi-Key &amp; Auto-Failover</span>
           </div>
+
           <div class="settings-field">
-            <label for="gemini_api_key">Gemini API Key Utama</label>
-            <input type="password" id="gemini_api_key" name="gemini_api_key" value="<%= settings.gemini_api_key || '' %>" autocomplete="off" placeholder="Masukkan Gemini API key">
+            <label for="gemini_api_key" style="font-size: 13px; font-weight: 600;">Gemini API Key Utama</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="password" id="gemini_api_key" name="gemini_api_key" value="<%= settings.gemini_api_key || '' %>" autocomplete="off" placeholder="Masukkan Gemini API key utama" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
+              <button type="button" class="btn btn-secondary btn-xs" onclick="togglePasswordVisibility('gemini_api_key', this)" style="padding: 10px 12px; height: 38px; border-radius: var(--radius-sm);" title="Lihat/Sembunyikan Key"><i class="bi bi-eye"></i></button>
+            </div>
           </div>
+
           <%
             let backupKeys = [];
             try {
@@ -233,35 +214,49 @@
             }
           %>
           <div class="settings-field">
-            <label>Gemini API Key Cadangan (Backup)</label>
+            <label style="font-size: 13px; font-weight: 600;">Gemini API Key Cadangan (Backup Pool)</label>
             <div id="gemini-backup-keys-container" style="display: flex; flex-direction: column; gap: 8px;">
               <% if (backupKeys.length === 0) { %>
                 <div class="backup-key-row" style="display: flex; gap: 8px; align-items: center;">
                   <input type="password" name="gemini_backup_keys" placeholder="Masukkan Backup API key" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
-                  <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;"><i class="bi bi-trash"></i></button>
+                  <button type="button" class="btn btn-secondary btn-xs" onclick="togglePasswordVisibilityInRow(this)" style="padding: 10px 12px; height: 38px; border-radius: var(--radius-sm);" title="Lihat/Sembunyikan Key"><i class="bi bi-eye"></i></button>
+                  <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;" title="Hapus Key"><i class="bi bi-trash"></i></button>
                 </div>
               <% } else { %>
                 <% backupKeys.forEach((key, idx) => { %>
                   <div class="backup-key-row" style="display: flex; gap: 8px; align-items: center; margin-top: <%= idx > 0 ? '8px' : '0' %>;">
                     <input type="password" name="gemini_backup_keys" value="<%= key %>" placeholder="Masukkan Backup API key" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
-                    <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;"><i class="bi bi-trash"></i></button>
+                    <button type="button" class="btn btn-secondary btn-xs" onclick="togglePasswordVisibilityInRow(this)" style="padding: 10px 12px; height: 38px; border-radius: var(--radius-sm);" title="Lihat/Sembunyikan Key"><i class="bi bi-eye"></i></button>
+                    <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;" title="Hapus Key"><i class="bi bi-trash"></i></button>
                   </div>
                 <% }) %>
               <% } %>
             </div>
-            <button type="button" class="btn btn-secondary btn-xs" onclick="addBackupKey()" style="font-size: 11px; padding: 6px 12px; margin-top: 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
-              <i class="bi bi-plus-lg"></i> Tambah Backup Key
-            </button>
-            <p class="settings-hint" style="margin-top: 6px;">Kunci cadangan akan digunakan secara bergilir jika API Key utama mengalami error atau tidak memberikan respons.</p>
+            
+            <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary btn-xs" onclick="addBackupKey()" style="font-size: 12px; padding: 7px 14px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="bi bi-plus-lg"></i> Tambah Key Cadangan
+              </button>
+              <button type="button" id="btn-test-gemini-keys" class="btn btn-outline-primary btn-xs" onclick="testGeminiKeys()" style="font-size: 12px; padding: 7px 14px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #4285F4; color: #4285F4; background: rgba(66, 133, 244, 0.08);">
+                <i class="bi bi-shield-check"></i> ⚡ Uji Seluruh Key Gemini
+              </button>
+            </div>
+            
+            <div id="gemini-test-results" style="display: none; margin-top: 12px; padding: 12px; border-radius: 8px; background: var(--bg-tertiary, #1f2430); border: 1px solid var(--border);"></div>
+
+            <p class="settings-hint" style="margin-top: 8px; font-size: 12px; line-height: 1.5;">
+              <i class="bi bi-info-circle"></i> <strong>Penting:</strong> Batas kuota gratis Google AI Studio (20 request/hari) dihitung <strong>per Google Cloud Project</strong>. Agar key cadangan memiliki kuota independen, buat API Key di <em>Project Google Cloud yang berbeda</em> atau gunakan <em>Akun Google yang berbeda</em>.
+            </p>
+          </div>
+
+          <div class="settings-field">
+            <label for="gemini_model" style="font-size: 13px; font-weight: 600;">Default Gemini Model</label>
+            <input type="text" id="gemini_model" name="gemini_model" value="<%= settings.gemini_model || 'gemini-3.5-flash' %>" placeholder="gemini-3.5-flash">
           </div>
           <div class="settings-field">
-            <label for="gemini_model">Default Gemini Model</label>
-            <input type="text" id="gemini_model" name="gemini_model" value="<%= settings.gemini_model || 'gemini-2.5-flash' %>" placeholder="gemini-2.5-flash">
-          </div>
-          <div class="settings-field">
-            <label for="gemini_models_list">Daftar Pilihan Model Gemini</label>
-            <textarea id="gemini_models_list" name="gemini_models_list" rows="3" placeholder="gemini-2.5-flash, gemini-2.5-flash-lite, gemini-3.5-flash"><%= settings.gemini_models_list || '' %></textarea>
-            <p class="settings-hint">Pisahkan nama model dengan tanda koma (,).</p>
+            <label for="gemini_models_list" style="font-size: 13px; font-weight: 600;">Daftar Pilihan Model Gemini</label>
+            <textarea id="gemini_models_list" name="gemini_models_list" rows="2" placeholder="gemini-3.5-flash, gemini-2.5-flash"><%= settings.gemini_models_list || '' %></textarea>
+            <p class="settings-hint" style="font-size: 12px;">Pisahkan nama model dengan tanda koma (,).</p>
           </div>
         </div>
 
@@ -271,37 +266,37 @@
             <i class="bi bi-lightning-charge-fill" style="color: #198754;"></i> OpenAI
           </div>
           <div class="settings-field">
-            <label for="openai_api_key">OpenAI API Key</label>
+            <label for="openai_api_key" style="font-size: 13px; font-weight: 600;">OpenAI API Key</label>
             <input type="password" id="openai_api_key" name="openai_api_key" value="<%= settings.openai_api_key || '' %>" autocomplete="off" placeholder="Masukkan OpenAI API key">
           </div>
           <div class="settings-field">
-            <label for="openai_model">Default OpenAI Model</label>
+            <label for="openai_model" style="font-size: 13px; font-weight: 600;">Default OpenAI Model</label>
             <input type="text" id="openai_model" name="openai_model" value="<%= settings.openai_model || 'gpt-5.5' %>" placeholder="gpt-5.5">
           </div>
           <div class="settings-field">
-            <label for="openai_models_list">Daftar Pilihan Model OpenAI</label>
-            <textarea id="openai_models_list" name="openai_models_list" rows="3" placeholder="gpt-5.5, gpt-4o"><%= settings.openai_models_list || '' %></textarea>
-            <p class="settings-hint">Pisahkan nama model dengan tanda koma (,).</p>
+            <label for="openai_models_list" style="font-size: 13px; font-weight: 600;">Daftar Pilihan Model OpenAI</label>
+            <textarea id="openai_models_list" name="openai_models_list" rows="2" placeholder="gpt-5.5, gpt-4o"><%= settings.openai_models_list || '' %></textarea>
+            <p class="settings-hint" style="font-size: 12px;">Pisahkan nama model dengan tanda koma (,).</p>
           </div>
         </div>
 
         <!-- CARD 4: OPENROUTER -->
         <div class="settings-group" style="grid-column: span 2;">
           <div class="settings-group-title" style="border-bottom-color: rgba(111, 66, 193, 0.2);">
-            <i class="bi bi-layers-half" style="color: #6f42c1;"></i> OpenRouter (Open-Source &amp; Kimi)
+            <i class="bi bi-layers-half" style="color: #6f42c1;"></i> OpenRouter (Open-Source Fallback)
           </div>
           <div class="settings-field" style="max-width: 600px;">
-            <label for="openrouter_api_key">OpenRouter API Key</label>
+            <label for="openrouter_api_key" style="font-size: 13px; font-weight: 600;">OpenRouter API Key</label>
             <input type="password" id="openrouter_api_key" name="openrouter_api_key" value="<%= settings.openrouter_api_key || '' %>" autocomplete="off" placeholder="Masukkan OpenRouter API key">
           </div>
           <div class="settings-field" style="max-width: 600px;">
-            <label for="openrouter_model">Default OpenRouter Model</label>
-            <input type="text" id="openrouter_model" name="openrouter_model" value="<%= settings.openrouter_model || 'meta-llama/llama-3.3-70b-instruct:free' %>" placeholder="meta-llama/llama-3.3-70b-instruct:free">
+            <label for="openrouter_model" style="font-size: 13px; font-weight: 600;">Default OpenRouter Model</label>
+            <input type="text" id="openrouter_model" name="openrouter_model" value="<%= settings.openrouter_model || 'nvidia/nemotron-3-ultra-550b-a55b:free' %>" placeholder="nvidia/nemotron-3-ultra-550b-a55b:free">
           </div>
-          <div class="settings-field">
-            <label for="openrouter_models_list">Daftar Pilihan Model OpenRouter (Termasuk Kimi)</label>
-            <textarea id="openrouter_models_list" name="openrouter_models_list" rows="4" placeholder="meta-llama/llama-3.3-70b-instruct:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free, moonshotai/moonshot-v1-8k"><%= settings.openrouter_models_list || '' %></textarea>
-            <p class="settings-hint">Pisahkan nama model dengan tanda koma (,). Gunakan format OpenRouter resmi (seperti `moonshotai/moonshot-v1-8k` untuk model Kimi).</p>
+          <div class="settings-field" style="max-width: 600px;">
+            <label for="openrouter_models_list" style="font-size: 13px; font-weight: 600;">Daftar Pilihan Model OpenRouter</label>
+            <textarea id="openrouter_models_list" name="openrouter_models_list" rows="3" placeholder="nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free"><%= settings.openrouter_models_list || '' %></textarea>
+            <p class="settings-hint" style="font-size: 12px;">Pisahkan nama model dengan tanda koma (,).</p>
           </div>
         </div>
 
@@ -316,6 +311,24 @@
   </div>
 
   <script>
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      btn.innerHTML = isPass ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+    }
+
+    function togglePasswordVisibilityInRow(btn) {
+      const row = btn.closest('.backup-key-row');
+      if (!row) return;
+      const input = row.querySelector('input');
+      if (!input) return;
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      btn.innerHTML = isPass ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+    }
+
     function addBackupKey() {
       const container = document.getElementById('gemini-backup-keys-container');
       const row = document.createElement('div');
@@ -326,7 +339,8 @@
       row.style.marginTop = '8px';
       row.innerHTML = `
         <input type="password" name="gemini_backup_keys" placeholder="Masukkan Backup API key" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
-        <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;"><i class="bi bi-trash"></i></button>
+        <button type="button" class="btn btn-secondary btn-xs" onclick="togglePasswordVisibilityInRow(this)" style="padding: 10px 12px; height: 38px; border-radius: var(--radius-sm);" title="Lihat/Sembunyikan Key"><i class="bi bi-eye"></i></button>
+        <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;" title="Hapus Key"><i class="bi bi-trash"></i></button>
       `;
       container.appendChild(row);
     }
@@ -337,8 +351,96 @@
       if (container.querySelectorAll('.backup-key-row').length > 1) {
         row.remove();
       } else {
-        // If it's the last one, just clear the input value instead of removing the row
         row.querySelector('input').value = '';
+      }
+    }
+
+    async function testGeminiKeys() {
+      const btn = document.getElementById('btn-test-gemini-keys');
+      const resultBox = document.getElementById('gemini-test-results');
+      if (!btn || !resultBox) return;
+
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menguji...';
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = '<div style="font-size: 13px; color: var(--text-secondary);"><i class="bi bi-arrow-repeat spin"></i> Sedang menguji kelayakan seluruh API key ke server Google Gemini...</div>';
+
+      const primaryKey = (document.getElementById('gemini_api_key')?.value || '').trim();
+      const backupInputs = Array.from(document.querySelectorAll('input[name="gemini_backup_keys"]'));
+      const backupKeys = backupInputs.map(i => i.value.trim()).filter(Boolean);
+      const model = (document.getElementById('gemini_model')?.value || 'gemini-3.5-flash').trim();
+
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+      const prefix = window.navPrefix || '<%= navPrefix %>';
+
+      try {
+        const response = await fetch(prefix + '/admin/settings/test-gemini-keys', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({
+            _csrf: csrfToken,
+            gemini_api_key: primaryKey,
+            gemini_backup_keys: backupKeys,
+            gemini_model: model
+          })
+        });
+
+        const resData = await response.json();
+        if (!resData.success || !resData.report) {
+          throw new Error(resData.error || 'Gagal menjalankan tes');
+        }
+
+        const report = resData.report;
+        if (report.total === 0) {
+          resultBox.innerHTML = '<div style="font-size: 13px; color: #ffc107;"><i class="bi bi-exclamation-triangle"></i> Belum ada API key Gemini yang diisi. Masukkan Key Utama atau Cadangan terlebih dahulu.</div>';
+          return;
+        }
+
+        let html = `<div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between;">
+          <span>Hasil Uji Kunci (${report.healthyCount}/${report.total} Sehat):</span>
+          <span style="font-size: 12px; font-weight: 400; color: var(--text-secondary);">Model: ${report.modelUsed}</span>
+        </div>`;
+
+        html += '<div style="display: flex; flex-direction: column; gap: 6px;">';
+        report.keys.forEach(k => {
+          let badge = '';
+          if (k.valid) {
+            badge = `<span style="background: rgba(25, 135, 84, 0.2); color: #198754; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">🟢 Aktif (${k.latencyMs}ms)</span>`;
+          } else if (k.statusCode === 429) {
+            badge = `<span style="background: rgba(255, 193, 7, 0.2); color: #ffc107; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">🟡 429 Rate Limit (Auto-Cooldown)</span>`;
+          } else {
+            badge = `<span style="background: rgba(220, 53, 69, 0.2); color: #dc3545; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">🔴 Invalid (${k.statusCode || 'Error'})</span>`;
+          }
+
+          html += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--bg-secondary); border-radius: 6px; font-size: 12px;">
+              <div>
+                <strong>${k.label}</strong> <code style="font-size: 11px; color: var(--text-secondary);">${k.maskedKey}</code>
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${k.message}</div>
+              </div>
+              <div>${badge}</div>
+            </div>
+          `;
+        });
+        html += '</div>';
+
+        if (report.advice) {
+          html += `<div style="margin-top: 10px; padding: 8px 12px; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 6px; font-size: 12px; line-height: 1.4; color: #ffc107;">
+            <i class="bi bi-info-circle-fill"></i> <strong>Saran:</strong> ${report.advice}
+          </div>`;
+        }
+
+        resultBox.innerHTML = html;
+      } catch (err) {
+        resultBox.innerHTML = `<div style="font-size: 13px; color: #dc3545;"><i class="bi bi-x-circle"></i> Terjadi kesalahan saat pengujian: ${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
       }
     }
   </script>

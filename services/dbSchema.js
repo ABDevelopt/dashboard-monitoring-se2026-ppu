@@ -15,7 +15,7 @@ You have read-only access to a SQLite database with the following schema:
    - created_at: DATETIME (Timestamp when the upload occurred)
 
 2. Table: subsls_master (Stores master list of all SubSLS / Satuan Lokal Setempat regions)
-   - kode: TEXT PRIMARY KEY (14-digit SubSLS unique code)
+   - kode: TEXT PRIMARY KEY (16-digit SubSLS unique code, e.g. '6409010001000100'. IMPORTANT: The column name is strictly 'kode', NOT 'kode_sls', NOT 'sls'! When querying by code or prefix, always use WHERE (m.kode = :kode OR m.kode LIKE :kode || '%'))
    - kode_kec: TEXT (3-digit Kecamatan code)
    - kecamatan: TEXT (Name of Kecamatan/District, e.g. 'Penajam', 'Waru', 'Babulu', 'Sepaku'. Title-cased. Use case-insensitive matching like LOWER(kecamatan) = LOWER('kecamatan_name'))
    - desa: TEXT (Name of Desa/Village, e.g. 'Gunung Makmur'. Title-cased. Use case-insensitive matching like LOWER(desa) = LOWER('desa_name'))
@@ -25,6 +25,7 @@ You have read-only access to a SQLite database with the following schema:
    - pcl: TEXT (Petugas Pencacah PCL name, title-cased)
    - muatan: INTEGER (The prelist target workload for usaha/businesses in this SLS)
    - target_fasih: INTEGER (Target count of family documents to be completed in FASIH app)
+
 
 3. Table: progres (Stores progress per SubSLS per officer per upload. CRITICAL RULE: A single SubSLS code can be worked on by multiple PCL officers simultaneously. Progress is saved per (upload_id, kode, pcl_email))
    - id: INTEGER PRIMARY KEY AUTOINCREMENT
@@ -94,13 +95,18 @@ Relationships & Calculations:
 - Performa Rendah indicators:
   * Zero progress PCLs: total progress (draft + submitted + approved + rejected) = 0 across all assigned SubSLS.
   * Slow progress PCLs: average daily progress (FASIH realisasi / elapsed days since start) < 5.0.
+- Daily Rate / Penambahan Harian Calculations:
+  * Rata-rata Penambahan Harian Per Petugas (Cumulative Daily Rate) = Total Realisasi FASIH pada upload terbaru / (SELECT COUNT(DISTINCT tanggal) FROM uploads WHERE filename IS NULL OR filename NOT LIKE '%Imputasi%').
+  * Penambahan Harian Riil (Delta Sesi/Hari Terakhir) = Realisasi FASIH upload sesi terbaru dikurangi Realisasi FASIH upload sesi hari sebelumnya.
 
 Guidelines for queries:
+- When asked about "rata-rata penambahan harian" or "penambahan harian terbanyak", you CAN and MUST calculate it via SQL query (using query_data or run_read_only_query) utilizing summary_cache and uploads tables! Refer to query hints rata_rata_harian_petugas or penambahan_harian_terakhir_petugas.
 - Always query the latest upload_id unless asked otherwise. To get the latest upload_id: (SELECT id FROM uploads ORDER BY id DESC LIMIT 1) or join with the latest upload.
 - Use the pre-computed summary_cache table whenever you need aggregated statistics (e.g. per PCL, PML, Korlap, or Kecamatan) to speed up execution.
 - Use case-insensitive matching where appropriate (e.g. UPPER(pcl) = UPPER('name') or using LIKE).
 - Ensure queries are valid SQLite queries and execute within a read-only sandboxed function.
 `;
+
 
 module.exports = {
   dbSchemaDescription

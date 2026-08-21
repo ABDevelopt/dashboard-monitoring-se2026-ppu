@@ -15,7 +15,21 @@ function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
-function getMasterTableSql(surveyId = 'se2026') {
+/**
+ * Mengembalikan nama tabel master SubSLS.
+ *
+ * CATATAN DESAIN: Parameter `surveyId` secara sengaja TIDAK digunakan untuk
+ * menentukan nama tabel. Semua survei menggunakan tabel bernama 'subsls_master'
+ * yang SAMA — isolasi data dilakukan di level FILE DATABASE (per-survei.db),
+ * bukan di level nama tabel. Ini adalah desain "one schema, isolated DB files".
+ *
+ * Parameter dipertahankan untuk backward compatibility dengan call sites yang
+ * sudah ada, namun tidak mengubah perilaku fungsi.
+ *
+ * @param {string} [surveyId] — Tidak dipakai (backward compat only)
+ * @returns {string} Nama tabel master: selalu 'subsls_master'
+ */
+function getMasterTableSql(surveyId) { // eslint-disable-line no-unused-vars
   return 'subsls_master';
 }
 
@@ -98,7 +112,107 @@ function closeDbConnection(surveyId) {
   }
 }
 
+// ─── SHARED MASTER DATABASE (data/shared.db) ──────────────────────────────────
+let _sharedDb = null;
+const SHARED_DB_PATH = path.join(__dirname, 'data', 'shared.db');
+
+function initSharedDb(dbConn) {
+  dbConn.exec(`
+    CREATE TABLE IF NOT EXISTS ref_kecamatan (
+      kode_kec TEXT PRIMARY KEY,
+      nama_kecamatan TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS ref_desa (
+      kode_desa TEXT PRIMARY KEY,
+      kode_kec TEXT NOT NULL REFERENCES ref_kecamatan(kode_kec),
+      nama_desa TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS ref_petugas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sobat_id TEXT UNIQUE,
+      nama_lengkap TEXT NOT NULL,
+      email TEXT UNIQUE,
+      jenis_kelamin TEXT,
+      kode_prov INTEGER DEFAULT 64,
+      kode_kab INTEGER DEFAULT 9,
+      nama_kab TEXT DEFAULT 'PENAJAM PASER UTARA',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_shared_ref_desa_kec ON ref_desa(kode_kec);
+    CREATE INDEX IF NOT EXISTS idx_shared_ref_petugas_email ON ref_petugas(email);
+    CREATE INDEX IF NOT EXISTS idx_shared_ref_petugas_nama ON ref_petugas(nama_lengkap);
+  `);
+
+  // Migrasikan petugas_email jika sebelumnya masih berupa tabel fisik menjadi SQL VIEW
+  try {
+    const isTable = dbConn.prepare("SELECT type FROM sqlite_master WHERE name='petugas_email'").get();
+    if (isTable && isTable.type === 'table') {
+      // Salin data unik ke ref_petugas terlebih dahulu jika ada
+      dbConn.exec(`
+        INSERT OR IGNORE INTO ref_petugas (sobat_id, nama_lengkap, email, jenis_kelamin)
+        SELECT sobat_id, nama_lengkap, email, jenis_kelamin FROM petugas_email;
+        DROP TABLE petugas_email;
+      `);
+    }
+    // Buat View petugas_email untuk 100% backward compatibility
+    dbConn.exec(`
+      DROP VIEW IF EXISTS petugas_email;
+      CREATE VIEW petugas_email AS
+      SELECT id, sobat_id, nama_lengkap, email, jenis_kelamin, created_at
+      FROM ref_petugas;
+    `);
+  } catch (_) {}
+
+  // Seed data awal ke shared.db dari se2026.db jika shared.db baru pertama kali dibuat
+  try {
+    const kecCount = dbConn.prepare('SELECT COUNT(*) as count FROM ref_kecamatan').get().count;
+    if (kecCount === 0) {
+      const seDbPath = path.join(__dirname, 'data', 'se2026.db');
+      if (fs.existsSync(seDbPath)) {
+        const seDb = new Database(seDbPath, { readonly: true });
+        const kecs = seDb.prepare('SELECT * FROM ref_kecamatan').all();
+        const desas = seDb.prepare('SELECT * FROM ref_desa').all();
+        const petugas = seDb.prepare('SELECT * FROM ref_petugas').all();
+        seDb.close();
+
+        const insKec = dbConn.prepare('INSERT OR IGNORE INTO ref_kecamatan (kode_kec, nama_kecamatan) VALUES (?, ?)');
+        kecs.forEach(k => insKec.run(k.kode_kec, k.nama_kecamatan));
+
+        const insDesa = dbConn.prepare('INSERT OR IGNORE INTO ref_desa (kode_desa, kode_kec, nama_desa) VALUES (?, ?, ?)');
+        desas.forEach(d => insDesa.run(d.kode_desa, d.kode_kec, d.nama_desa));
+
+        const insPetugas = dbConn.prepare('INSERT OR IGNORE INTO ref_petugas (id, sobat_id, nama_lengkap, email, jenis_kelamin, kode_prov, kode_kab, nama_kab) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        petugas.forEach(p => insPetugas.run(p.id, p.sobat_id, p.nama_lengkap, p.email, p.jenis_kelamin, p.kode_prov, p.kode_kab, p.nama_kab));
+      }
+    }
+  } catch (err) {
+    logger.error('Error seeding shared.db from existing databases:', err.message);
+  }
+}
+
+
+
+/**
+ * Mendapatkan koneksi ke Shared Master Database (data/shared.db).
+ * Digunakan untuk tabel referensi terpusat: ref_petugas, ref_kecamatan, ref_desa, petugas_email.
+ */
+function getSharedDb() {
+  if (!_sharedDb) {
+    fs.mkdirSync(path.dirname(SHARED_DB_PATH), { recursive: true });
+    _sharedDb = new Database(SHARED_DB_PATH, { timeout: 15000 });
+    _sharedDb.pragma('journal_mode = WAL');
+    _sharedDb.pragma('synchronous = NORMAL');
+    _sharedDb.pragma('foreign_keys = ON');
+    initSharedDb(_sharedDb);
+  }
+  return _sharedDb;
+}
+
 function runMigrations(dbConn, surveyId = 'se2026') {
+
   // Ensure migrations log table exists
   dbConn.exec(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -837,6 +951,272 @@ function runMigrations(dbConn, surveyId = 'se2026') {
         } catch (_) {}
         try {
           dbConn.prepare('ALTER TABLE summary_cache ADD COLUMN keluarga_khusus_total INTEGER DEFAULT 0').run();
+        } catch (_) {}
+      }
+    },
+    {
+      // ── MIGRASI 20260820 ────────────────────────────────────────────────────
+      // Tujuan: Memastikan setiap DB survei memiliki data surveys_registry
+      // hanya untuk survei ITU SENDIRI — tidak bergantung pada DB lain.
+      // Prinsip: setiap survei/sensus berdiri sendiri sebagai peers.
+      version: '20260820000000_self_contained_surveys_registry',
+      up: (dbConn) => {
+        // Pastikan tabel surveys_registry + relasi-nya ada di DB ini
+        try {
+          dbConn.exec(`
+            CREATE TABLE IF NOT EXISTS surveys_registry (
+              id            TEXT PRIMARY KEY,
+              slug          TEXT UNIQUE NOT NULL,
+              name          TEXT NOT NULL,
+              short_name    TEXT,
+              tagline       TEXT,
+              category      TEXT NOT NULL CHECK(category IN ('sensus','survei')),
+              category_label TEXT,
+              coverage_desc TEXT,
+              is_active     INTEGER DEFAULT 1,
+              sort_order    INTEGER DEFAULT 0,
+              created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS survey_themes (
+              survey_id       TEXT PRIMARY KEY REFERENCES surveys_registry(id) ON DELETE CASCADE,
+              theme_name      TEXT,
+              theme_color     TEXT,
+              theme_secondary TEXT,
+              theme_rgb       TEXT,
+              theme_gradient  TEXT,
+              theme_glow      TEXT,
+              theme_icon      TEXT,
+              category_icon   TEXT,
+              category_badge  TEXT
+            );
+            CREATE TABLE IF NOT EXISTS survey_collection_config (
+              survey_id          TEXT PRIMARY KEY REFERENCES surveys_registry(id) ON DELETE CASCADE,
+              unit_name          TEXT DEFAULT 'dokumen',
+              route_prefix       TEXT,
+              show_usaha_columns INTEGER DEFAULT 0,
+              show_muatan_usaha  INTEGER DEFAULT 0,
+              enabled_pages      TEXT DEFAULT '[]'
+            );
+            CREATE INDEX IF NOT EXISTS idx_surveys_registry_active ON surveys_registry(is_active, sort_order);
+          `);
+        } catch (_) {}
+
+        // Seed hanya data untuk survei ini sendiri dari surveys.json
+        try {
+          const surveysJson = require('./config/surveys.json');
+          const cfg = surveysJson[surveyId];
+          if (!cfg) return; // Survei ini tidak ada di JSON, skip
+
+          const insRegistry = dbConn.prepare(`
+            INSERT OR IGNORE INTO surveys_registry
+              (id, slug, name, short_name, tagline, category, category_label, coverage_desc, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `);
+          const insTheme = dbConn.prepare(`
+            INSERT OR IGNORE INTO survey_themes
+              (survey_id, theme_name, theme_color, theme_secondary, theme_rgb, theme_gradient, theme_glow, theme_icon, category_icon, category_badge)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `);
+          const insConfig = dbConn.prepare(`
+            INSERT OR IGNORE INTO survey_collection_config
+              (survey_id, unit_name, route_prefix, show_usaha_columns, show_muatan_usaha, enabled_pages)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `);
+
+          dbConn.transaction(() => {
+            // Tentukan sort_order berdasarkan posisi di JSON
+            const sortOrder = Object.keys(surveysJson).indexOf(surveyId);
+            insRegistry.run(
+              surveyId,
+              surveyId.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+              cfg.name || surveyId,
+              cfg.shortName || null,
+              cfg.tagline || null,
+              cfg.category || (surveyId.startsWith('se') ? 'sensus' : 'survei'),
+              cfg.categoryLabel || null,
+              cfg.coverageDesc || null,
+              sortOrder
+            );
+            insTheme.run(
+              surveyId,
+              cfg.themePack || cfg.theme || null,
+              cfg.themeColor || null,
+              cfg.themeSecondary || null,
+              cfg.themeRgb || null,
+              cfg.themeGradient || null,
+              cfg.themeGlow || null,
+              cfg.themeIcon || null,
+              cfg.categoryIcon || null,
+              cfg.categoryBadge || null
+            );
+            insConfig.run(
+              surveyId,
+              cfg.unitName || 'dokumen',
+              surveyId === 'se2026' ? '/' : `/${surveyId}/`,
+              cfg.showUsahaColumns ? 1 : 0,
+              cfg.showMuatanUsaha ? 1 : 0,
+              JSON.stringify(cfg.enabledPages || [])
+            );
+          })();
+        } catch (seedErr) {
+          logger.error(`surveys_registry self-seed error for ${surveyId} (non-fatal):`, seedErr.message);
+        }
+      }
+    },
+    {
+      // ── MIGRASI 20260820010000: SKEMA IDEAL RELASIONAL ──────────────────────
+      // Tujuan: Menerapkan skema relasional terpadu (Master Reference + Assignment)
+      // sesuai ERD ideal:
+      // 1. REF_PETUGAS ──(1:N)──> SURVEY_PETUGAS_ASSIGNMENT <──(1:N)── SURVEYS_REGISTRY
+      // 2. SUBSLS_MASTER ──(N:1)──> SURVEY_PETUGAS_ASSIGNMENT (pcl/pml/korlap)
+      // 3. SUBSLS_MASTER ──(N:1)──> REF_DESA ──(N:1)──> REF_KECAMATAN
+      version: '20260820010000_ideal_assignment_schema',
+      up: (dbConn) => {
+        // 1. Tabel Penugasan Petugas per Survei
+        dbConn.exec(`
+          CREATE TABLE IF NOT EXISTS survey_petugas_assignment (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            survey_id TEXT NOT NULL,
+            petugas_id INTEGER NOT NULL REFERENCES ref_petugas(id) ON DELETE CASCADE,
+            role TEXT NOT NULL CHECK(role IN ('pcl', 'pml', 'korlap', 'ppl')),
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(survey_id, petugas_id, role)
+          );
+          CREATE INDEX IF NOT EXISTS idx_spa_survey ON survey_petugas_assignment(survey_id);
+          CREATE INDEX IF NOT EXISTS idx_spa_petugas ON survey_petugas_assignment(petugas_id);
+          CREATE INDEX IF NOT EXISTS idx_spa_role ON survey_petugas_assignment(survey_id, role);
+        `);
+
+        // 2. Tambah kolom relasional di subsls_master (jika belum ada)
+        ['kode_desa', 'pcl_assignment_id', 'pml_assignment_id', 'korlap_assignment_id'].forEach(col => {
+          try {
+            const colType = col === 'kode_desa' ? 'TEXT' : 'INTEGER';
+            dbConn.prepare(`ALTER TABLE subsls_master ADD COLUMN ${col} ${colType}`).run();
+          } catch (_) {}
+        });
+
+        // 3. Link kode_desa ke ref_desa
+        try {
+          dbConn.exec(`
+            UPDATE subsls_master
+            SET kode_desa = SUBSTR(kode, 1, 10)
+            WHERE (kode_desa IS NULL OR kode_desa = '') AND kode IS NOT NULL AND LENGTH(kode) >= 10;
+          `);
+        } catch (_) {}
+
+        // 4. Pastikan ref_petugas terisi dari data subsls_master jika ada nama baru
+        try {
+          const roles = [
+            { col: 'pcl', emailCol: 'pcl_email', sobatCol: 'pcl_sobat_id' },
+            { col: 'pml', emailCol: 'pml_email', sobatCol: 'pml_sobat_id' },
+            { col: 'korlap', emailCol: 'korlap_email', sobatCol: 'korlap_sobat_id' }
+          ];
+
+          roles.forEach(({ col, emailCol, sobatCol }) => {
+            dbConn.exec(`
+              INSERT OR IGNORE INTO ref_petugas (sobat_id, nama_lengkap, email, kode_prov, kode_kab, nama_kab)
+              SELECT DISTINCT 
+                NULLIF(TRIM(${sobatCol}), ''), 
+                TRIM(${col}), 
+                NULLIF(TRIM(${emailCol}), ''), 
+                64, 9, 'PENAJAM PASER UTARA'
+              FROM subsls_master
+              WHERE ${col} IS NOT NULL AND TRIM(${col}) != '';
+            `);
+          });
+        } catch (_) {}
+
+        // 5. Backfill survey_petugas_assignment dari data subsls_master di DB ini
+        try {
+          const roles = ['pcl', 'pml', 'korlap'];
+          roles.forEach(r => {
+            dbConn.exec(`
+              INSERT OR IGNORE INTO survey_petugas_assignment (survey_id, petugas_id, role)
+              SELECT DISTINCT 
+                '${surveyId}' AS survey_id, 
+                p.id AS petugas_id, 
+                '${r}' AS role
+              FROM subsls_master s
+              JOIN ref_petugas p ON LOWER(TRIM(p.nama_lengkap)) = LOWER(TRIM(s.${r}))
+              WHERE s.${r} IS NOT NULL AND TRIM(s.${r}) != '';
+            `);
+          });
+        } catch (_) {}
+
+        // 6. Hubungkan assignment_id ke subsls_master
+        try {
+          dbConn.exec(`
+            UPDATE subsls_master
+            SET pcl_assignment_id = (
+              SELECT a.id FROM survey_petugas_assignment a
+              JOIN ref_petugas p ON a.petugas_id = p.id
+              WHERE a.survey_id = '${surveyId}' AND a.role = 'pcl' AND LOWER(TRIM(p.nama_lengkap)) = LOWER(TRIM(subsls_master.pcl))
+              LIMIT 1
+            )
+            WHERE pcl IS NOT NULL AND TRIM(pcl) != '';
+
+            UPDATE subsls_master
+            SET pml_assignment_id = (
+              SELECT a.id FROM survey_petugas_assignment a
+              JOIN ref_petugas p ON a.petugas_id = p.id
+              WHERE a.survey_id = '${surveyId}' AND a.role = 'pml' AND LOWER(TRIM(p.nama_lengkap)) = LOWER(TRIM(subsls_master.pml))
+              LIMIT 1
+            )
+            WHERE pml IS NOT NULL AND TRIM(pml) != '';
+
+            UPDATE subsls_master
+            SET korlap_assignment_id = (
+              SELECT a.id FROM survey_petugas_assignment a
+              JOIN ref_petugas p ON a.petugas_id = p.id
+              WHERE a.survey_id = '${surveyId}' AND a.role = 'korlap' AND LOWER(TRIM(p.nama_lengkap)) = LOWER(TRIM(subsls_master.korlap))
+              LIMIT 1
+            )
+            WHERE korlap IS NOT NULL AND TRIM(korlap) != '';
+          `);
+        } catch (_) {}
+
+        // 7. Update View v_subsls_detail untuk menggabungkan relasi ideal
+        try {
+          dbConn.exec(`
+            DROP VIEW IF EXISTS v_subsls_detail;
+            CREATE VIEW v_subsls_detail AS
+            SELECT 
+              s.kode,
+              COALESCE(s.kode_desa, d.kode_desa, SUBSTR(s.kode, 1, 10)) AS kode_desa,
+              COALESCE(d.kode_kec, s.kode_kec) AS kode_kec,
+              COALESCE(k.nama_kecamatan, s.kecamatan) AS kecamatan,
+              COALESCE(d.nama_desa, s.desa) AS desa,
+              s.nama_sls,
+              COALESCE(p_korlap.nama_lengkap, s.korlap) AS korlap,
+              COALESCE(p_pml.nama_lengkap, s.pml) AS pml,
+              COALESCE(p_pcl.nama_lengkap, s.pcl) AS pcl,
+              COALESCE(p_korlap.email, s.korlap_email) AS korlap_email,
+              COALESCE(p_pml.email, s.pml_email) AS pml_email,
+              COALESCE(p_pcl.email, s.pcl_email) AS pcl_email,
+              COALESCE(p_korlap.sobat_id, s.korlap_sobat_id) AS korlap_sobat_id,
+              COALESCE(p_pml.sobat_id, s.pml_sobat_id) AS pml_sobat_id,
+              COALESCE(p_pcl.sobat_id, s.pcl_sobat_id) AS pcl_sobat_id,
+              s.muatan,
+              s.target_fasih,
+              s.target_honor,
+              s.kode_2025,
+              s.pcl_assignment_id,
+              s.pml_assignment_id,
+              s.korlap_assignment_id,
+              a_pcl.petugas_id AS pcl_id,
+              a_pml.petugas_id AS pml_id,
+              a_korlap.petugas_id AS korlap_id
+            FROM subsls_master s
+            LEFT JOIN ref_desa d ON COALESCE(s.kode_desa, SUBSTR(s.kode, 1, 10)) = d.kode_desa
+            LEFT JOIN ref_kecamatan k ON d.kode_kec = k.kode_kec
+            LEFT JOIN survey_petugas_assignment a_korlap ON s.korlap_assignment_id = a_korlap.id
+            LEFT JOIN ref_petugas p_korlap ON a_korlap.petugas_id = p_korlap.id
+            LEFT JOIN survey_petugas_assignment a_pml ON s.pml_assignment_id = a_pml.id
+            LEFT JOIN ref_petugas p_pml ON a_pml.petugas_id = p_pml.id
+            LEFT JOIN survey_petugas_assignment a_pcl ON s.pcl_assignment_id = a_pcl.id
+            LEFT JOIN ref_petugas p_pcl ON a_pcl.petugas_id = p_pcl.id;
+          `);
         } catch (_) {}
       }
     }
@@ -1889,15 +2269,16 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`;
     'agent_provider': 'gemini',
     'gemini_api_key': '',
     'gemini_backup_api_keys': '[]',
-    'gemini_model': 'gemini-2.5-flash',
-    'gemini_models_list': 'gemini-2.5-flash, gemini-3.1-flash-lite, gemini-2.0-flash, gemini-2.5-pro',
+    'gemini_model': 'gemini-3.5-flash',
+    'gemini_models_list': 'gemini-3.5-flash, gemini-3.1-flash-lite',
     'openai_api_key': '',
     'openai_model': 'gpt-5.5',
     'openai_models_list': 'gpt-5.5, gpt-4o',
     'openrouter_api_key': '',
     'openrouter_model': 'openrouter/free',
-    'openrouter_models_list': 'openrouter/free, openrouter/owl-alpha, meta-llama/llama-3.3-70b-instruct:free, nvidia/nemotron-3-ultra-550b-a55b:free',
+    'openrouter_models_list': 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free',
     'chatbot_smart_switch': '1',
+
     'overview_fasih': '1',
     'overview_muatan': isSe2026 ? '1' : '0',
     'overview_tren_muatan': isSe2026 ? '1' : '0',
@@ -1950,8 +2331,8 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`;
   }
 
   const geminiModel = dbConn.prepare('SELECT value FROM settings WHERE key = ?').get('gemini_model');
-  if (geminiModel && geminiModel.value === 'gemini-1.5-flash') {
-    dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-2.5-flash', 'gemini_model');
+  if (geminiModel && (geminiModel.value === 'gemini-1.5-flash' || geminiModel.value === 'gemini-2.5-flash')) {
+    dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-3.5-flash', 'gemini_model');
   }
 }
 
@@ -1964,8 +2345,8 @@ function getSettings(surveyId) {
   if (settings.target_fasih_mode === 'dynamic') {
     settings.target_fasih_mode = 'static';
   }
-  if (!settings.gemini_model || settings.gemini_model === 'gemini-3.5-flash') {
-    settings.gemini_model = 'gemini-2.5-flash';
+  if (!settings.gemini_model) {
+    settings.gemini_model = 'gemini-3.5-flash';
   }
   return settings;
 }
@@ -2429,16 +2810,16 @@ function getVisitorStats() {
   }
 }
 
-// ===== PETUGAS EMAIL DATABASE HELPERS =====
+// ===== PETUGAS MASTER & EMAIL DATABASE HELPERS (Menggunakan ref_petugas di data/shared.db) =====
 function getPetugasEmails() {
-  return getDb().prepare('SELECT * FROM petugas_email ORDER BY nama_lengkap ASC').all();
+  return getSharedDb().prepare('SELECT * FROM ref_petugas ORDER BY nama_lengkap ASC').all();
 }
 
 function searchPetugasEmails(query) {
   if (!query) return getPetugasEmails();
   const q = `%${query.trim()}%`;
-  return getDb().prepare(`
-    SELECT * FROM petugas_email 
+  return getSharedDb().prepare(`
+    SELECT * FROM ref_petugas 
     WHERE nama_lengkap LIKE ? OR email LIKE ? OR sobat_id LIKE ?
     ORDER BY nama_lengkap ASC
   `).all(q, q, q);
@@ -2446,49 +2827,56 @@ function searchPetugasEmails(query) {
 
 function getPetugasEmailByNama(nama) {
   if (!nama) return null;
-  return getDb().prepare('SELECT * FROM petugas_email WHERE LOWER(nama_lengkap) = LOWER(?)').get(nama.trim());
+  return getSharedDb().prepare('SELECT * FROM ref_petugas WHERE LOWER(nama_lengkap) = LOWER(?)').get(nama.trim());
 }
 
 function getPetugasEmailBySobatId(sobatId) {
   if (!sobatId) return null;
-  return getDb().prepare('SELECT * FROM petugas_email WHERE sobat_id = ?').get(String(sobatId).trim());
+  return getSharedDb().prepare('SELECT * FROM ref_petugas WHERE sobat_id = ?').get(String(sobatId).trim());
 }
 
 function getPetugasEmailById(id) {
-  return getDb().prepare('SELECT * FROM petugas_email WHERE id = ?').get(id);
+  return getSharedDb().prepare('SELECT * FROM ref_petugas WHERE id = ?').get(id);
 }
 
 function insertPetugasEmail({ sobat_id, nama_lengkap, email, jenis_kelamin }) {
-  const stmt = getDb().prepare(`
-    INSERT INTO petugas_email (sobat_id, nama_lengkap, email, jenis_kelamin)
+  const dbShared = getSharedDb();
+  const stmt = dbShared.prepare(`
+    INSERT INTO ref_petugas (sobat_id, nama_lengkap, email, jenis_kelamin)
     VALUES (?, ?, ?, ?)
+    ON CONFLICT(email) DO UPDATE SET
+      sobat_id = COALESCE(excluded.sobat_id, ref_petugas.sobat_id),
+      nama_lengkap = excluded.nama_lengkap,
+      jenis_kelamin = COALESCE(excluded.jenis_kelamin, ref_petugas.jenis_kelamin)
   `);
-  const res = stmt.run(sobat_id || '', nama_lengkap.trim(), email.trim().toLowerCase(), jenis_kelamin || '');
+  const res = stmt.run(sobat_id || null, nama_lengkap.trim(), email.trim().toLowerCase(), jenis_kelamin || null);
   try { resyncPetugasEmailsToMaster(); } catch (_) {}
   return res.lastInsertRowid;
 }
 
 function updatePetugasEmail(id, { sobat_id, nama_lengkap, email, jenis_kelamin }) {
-  const stmt = getDb().prepare(`
-    UPDATE petugas_email 
+  const dbShared = getSharedDb();
+  const stmt = dbShared.prepare(`
+    UPDATE ref_petugas 
     SET sobat_id = ?, nama_lengkap = ?, email = ?, jenis_kelamin = ?
     WHERE id = ?
   `);
-  const res = stmt.run(sobat_id || '', nama_lengkap.trim(), email.trim().toLowerCase(), jenis_kelamin || '', id);
+  const res = stmt.run(sobat_id || null, nama_lengkap.trim(), email.trim().toLowerCase(), jenis_kelamin || null, id);
   try { resyncPetugasEmailsToMaster(); } catch (_) {}
   return res.changes;
 }
 
 function deletePetugasEmail(id) {
-  const stmt = getDb().prepare('DELETE FROM petugas_email WHERE id = ?');
+  const dbShared = getSharedDb();
+  const stmt = dbShared.prepare('DELETE FROM ref_petugas WHERE id = ?');
   const res = stmt.run(id);
   try { resyncPetugasEmailsToMaster(); } catch (_) {}
   return res.changes;
 }
 
 function resyncPetugasEmailsToMaster() {
-  const db = getDb();
-  const emails = db.prepare('SELECT nama_lengkap, email, sobat_id FROM petugas_email').all();
+  const dbShared = getSharedDb();
+  const emails = dbShared.prepare('SELECT id, nama_lengkap, email, sobat_id FROM ref_petugas').all();
   const cleanStr = (s) => (s ? s.toString().toLowerCase().replace(/[^a-z0-9]/g, '') : '');
   const emailMapExact = {};
   const emailMapClean = {};
@@ -2508,22 +2896,37 @@ function resyncPetugasEmailsToMaster() {
     { roleCol: 'korlap', emailCol: 'korlap_email', sobatCol: 'korlap_sobat_id' }
   ];
 
-  roles.forEach(({ roleCol, emailCol, sobatCol }) => {
-    const uniqueOfficers = db.prepare(`SELECT DISTINCT ${roleCol} FROM subsls_master WHERE ${roleCol} IS NOT NULL AND ${roleCol} != ''`).all();
-    uniqueOfficers.forEach(o => {
-      const name = o[roleCol] ? o[roleCol].trim() : '';
-      if (!name) return;
-      const ex = name.toLowerCase();
-      const cl = cleanStr(name);
+  // Sinkronkan ke SEMUA survei yang terdaftar di surveys.json
+  try {
+    const surveysJson = require('./config/surveys.json');
+    for (const sId of Object.keys(surveysJson)) {
+      try {
+        const dbSurvey = getDb(sId);
+        roles.forEach(({ roleCol, emailCol, sobatCol }) => {
+          const uniqueOfficers = dbSurvey.prepare(`SELECT DISTINCT ${roleCol} FROM subsls_master WHERE ${roleCol} IS NOT NULL AND ${roleCol} != ''`).all();
+          uniqueOfficers.forEach(o => {
+            const name = o[roleCol] ? o[roleCol].trim() : '';
+            if (!name) return;
+            const ex = name.toLowerCase();
+            const cl = cleanStr(name);
 
-      const target = emailMapExact[ex] || emailMapClean[cl];
-      if (target) {
-        db.prepare(`UPDATE subsls_master SET ${emailCol} = ?, ${sobatCol} = ? WHERE LOWER(TRIM(${roleCol})) = LOWER(TRIM(?))`)
-          .run(target.email, target.sobat_id, name);
+            const target = emailMapExact[ex] || emailMapClean[cl];
+            if (target) {
+              dbSurvey.prepare(`UPDATE subsls_master SET ${emailCol} = ?, ${sobatCol} = ? WHERE LOWER(TRIM(${roleCol})) = LOWER(TRIM(?))`)
+                .run(target.email, target.sobat_id, name);
+            }
+          });
+        });
+      } catch (errSurvey) {
+        logger.error(`Error resyncing to survey DB ${sId}:`, errSurvey.message);
       }
-    });
-  });
+    }
+  } catch (err) {
+    logger.error('Error in resyncPetugasEmailsToMaster:', err.message);
+  }
 }
+
+
 
 /**
  * Atomic Inter-Process Lock menggunakan SQLite (ACID compliant across multiple Passenger/Node processes)
@@ -2611,7 +3014,7 @@ function getProcessLock(lockName) {
 
 function getRefKecamatan() {
   try {
-    return getDb().prepare('SELECT * FROM ref_kecamatan ORDER BY kode_kec ASC').all();
+    return getSharedDb().prepare('SELECT * FROM ref_kecamatan ORDER BY kode_kec ASC').all();
   } catch (_) {
     return [];
   }
@@ -2620,9 +3023,9 @@ function getRefKecamatan() {
 function getRefDesa(kodeKec) {
   try {
     if (kodeKec) {
-      return getDb().prepare('SELECT * FROM ref_desa WHERE kode_kec = ? ORDER BY kode_desa ASC').all(kodeKec);
+      return getSharedDb().prepare('SELECT * FROM ref_desa WHERE kode_kec = ? ORDER BY kode_desa ASC').all(kodeKec);
     }
-    return getDb().prepare('SELECT * FROM ref_desa ORDER BY kode_desa ASC').all();
+    return getSharedDb().prepare('SELECT * FROM ref_desa ORDER BY kode_desa ASC').all();
   } catch (_) {
     return [];
   }
@@ -2630,11 +3033,121 @@ function getRefDesa(kodeKec) {
 
 function getRefPetugas() {
   try {
-    return getDb().prepare('SELECT * FROM ref_petugas ORDER BY nama_lengkap ASC').all();
+    return getSharedDb().prepare('SELECT * FROM ref_petugas ORDER BY nama_lengkap ASC').all();
   } catch (_) {
     return [];
   }
 }
+
+
+/**
+ * Mengambil daftar petugas yang ditugaskan pada survei tertentu
+ * secara relasional via tabel survey_petugas_assignment ⟷ ref_petugas.
+ * @param {string} surveyId
+ * @param {string} [role] - 'pcl', 'pml', 'korlap', 'ppl'
+ */
+function getSurveyPetugasAssignments(surveyId, role = null) {
+  try {
+    const sId = resolveSurveyId(surveyId);
+    const dbConn = getDb(sId);
+    let query = `
+      SELECT 
+        a.id AS assignment_id,
+        a.survey_id,
+        a.role,
+        a.created_at AS assigned_at,
+        p.id AS petugas_id,
+        p.sobat_id,
+        p.nama_lengkap,
+        p.email,
+        p.jenis_kelamin,
+        COUNT(s.kode) AS total_subsls_assigned
+      FROM survey_petugas_assignment a
+      JOIN ref_petugas p ON a.petugas_id = p.id
+      LEFT JOIN subsls_master s ON (
+        (a.role = 'pcl' AND s.pcl_assignment_id = a.id) OR
+        (a.role = 'pml' AND s.pml_assignment_id = a.id) OR
+        (a.role = 'korlap' AND s.korlap_assignment_id = a.id)
+      )
+      WHERE a.survey_id = ?
+    `;
+    const params = [sId];
+    if (role) {
+      query += ` AND a.role = ?`;
+      params.push(role);
+    }
+    query += ` GROUP BY a.id, a.survey_id, a.role, p.id ORDER BY p.nama_lengkap ASC`;
+    return dbConn.prepare(query).all(...params);
+  } catch (err) {
+    logger.error('Error fetching survey petugas assignments:', err);
+    return [];
+  }
+}
+
+/**
+ * Menugaskan petugas (dari master ref_petugas) ke suatu survei tertentu.
+ * @param {string} surveyId
+ * @param {number} petugasId
+ * @param {string} role
+ */
+function assignPetugasToSurvey(surveyId, petugasId, role) {
+  try {
+    const sId = resolveSurveyId(surveyId);
+    const dbConn = getDb(sId);
+    const stmt = dbConn.prepare(`
+      INSERT INTO survey_petugas_assignment (survey_id, petugas_id, role)
+      VALUES (?, ?, ?)
+      ON CONFLICT(survey_id, petugas_id, role) DO NOTHING
+    `);
+    const info = stmt.run(sId, petugasId, role);
+    if (info.changes > 0) return info.lastInsertRowid;
+    const existing = dbConn.prepare('SELECT id FROM survey_petugas_assignment WHERE survey_id = ? AND petugas_id = ? AND role = ?').get(sId, petugasId, role);
+    return existing ? existing.id : null;
+  } catch (err) {
+    logger.error('Error assigning petugas to survey:', err);
+    return null;
+  }
+}
+
+/**
+ * Mendapatkan ringkasan penugasan seorang petugas di seluruh survei yang aktif.
+ * Memungkinkan analisis lintas survei (e.g. beban kerja di SE2026 vs Sakernas).
+ * @param {number} petugasId
+ */
+function getPetugasCrossSurveyStats(petugasId) {
+  try {
+    const surveysJson = require('./config/surveys.json');
+    const results = [];
+    for (const sId of Object.keys(surveysJson)) {
+      const dbConn = getDb(sId);
+      const row = dbConn.prepare(`
+        SELECT 
+          a.survey_id,
+          a.role,
+          a.created_at AS assigned_at,
+          p.nama_lengkap,
+          p.email,
+          p.sobat_id,
+          COUNT(s.kode) AS total_subsls
+        FROM survey_petugas_assignment a
+        JOIN ref_petugas p ON a.petugas_id = p.id
+        LEFT JOIN subsls_master s ON (
+          (a.role = 'pcl' AND s.pcl_assignment_id = a.id) OR
+          (a.role = 'pml' AND s.pml_assignment_id = a.id) OR
+          (a.role = 'korlap' AND s.korlap_assignment_id = a.id)
+        )
+        WHERE a.petugas_id = ? AND a.survey_id = ?
+        GROUP BY a.id, a.survey_id, a.role
+      `).get(petugasId, sId);
+      if (row) results.push(row);
+    }
+    return results;
+  } catch (err) {
+    logger.error('Error getting cross survey stats for petugas:', err);
+    return [];
+  }
+}
+
 
 /**
  * Shared WhatsApp State, Logs, Commands, & Outbox Tables across Passenger Workers
@@ -2801,8 +3314,62 @@ function checkQueuedMessageStatus(id) {
   }
 }
 
+/**
+ * Jalankan WAL checkpoint pada satu DB survei.
+ * Checkpoint PASSIVE: tidak memblokir reader/writer, checkpoint sebanyak
+ * yang bisa dilakukan tanpa konflik.
+ * @param {string} surveyId
+ */
+function runWalCheckpoint(surveyId) {
+  try {
+    const dbConn = getDb(surveyId);
+    const result = dbConn.pragma('wal_checkpoint(PASSIVE)');
+    logger.info(`[WAL Checkpoint] ${surveyId}: ${JSON.stringify(result)}`);
+    return result;
+  } catch (err) {
+    logger.error(`[WAL Checkpoint] Gagal checkpoint ${surveyId}:`, err.message);
+    return null;
+  }
+}
+
+/**
+ * Jalankan WAL checkpoint pada SEMUA DB survei yang aktif (sudah diinisialisasi).
+ * Dipanggil secara terjadwal dari server.js setiap 6 jam.
+ * Setiap survei diperiksa secara independen — kegagalan satu tidak mempengaruhi lain.
+ */
+function runWalCheckpointAll() {
+  try {
+    // Checkpoint shared.db jika aktif
+    if (_sharedDb) {
+      try {
+        const res = _sharedDb.pragma('wal_checkpoint(PASSIVE)');
+        logger.info(`[WAL Checkpoint] shared.db: ${JSON.stringify(res)}`);
+      } catch (err) {
+        logger.error('[WAL Checkpoint] Gagal checkpoint shared.db:', err.message);
+      }
+    }
+
+    const surveysJson = require('./config/surveys.json');
+    const surveyIds = Object.keys(surveysJson);
+    logger.info(`[WAL Checkpoint] Memulai checkpoint untuk ${surveyIds.length} survei...`);
+
+    let checkpointCount = 0;
+    for (const sId of surveyIds) {
+      // Hanya checkpoint DB yang sudah diinisialisasi (ada di cache dbs)
+      if (dbs[sId]) {
+        runWalCheckpoint(sId);
+        checkpointCount++;
+      }
+    }
+
+    logger.info(`[WAL Checkpoint] Selesai. ${checkpointCount} DB diperiksa.`);
+  } catch (err) {
+    logger.error('[WAL Checkpoint] runWalCheckpointAll error:', err.message);
+  }
+}
+
 module.exports = {
-  getDb, resolveSurveyId, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
+  getDb, getSharedDb, resolveSurveyId, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
   getBottomPerformers, getAnomalyStats,
@@ -2815,10 +3382,15 @@ module.exports = {
   getPetugasEmails, searchPetugasEmails, getPetugasEmailByNama, getPetugasEmailBySobatId,
   getPetugasEmailById, insertPetugasEmail, updatePetugasEmail, deletePetugasEmail, resyncPetugasEmailsToMaster,
   getRefKecamatan, getRefDesa, getRefPetugas,
+  getSurveyPetugasAssignments, assignPetugasToSurvey, getPetugasCrossSurveyStats,
   reloadDbConnection, closeDbConnection, getMasterTableSql,
   acquireProcessLock, renewProcessLock, releaseProcessLock, getProcessLock,
   setWhatsappState, getWhatsappState, getAllWhatsappState,
   saveWhatsappLogDb, getWhatsappLogsDb,
   pushWhatsappCommand, popPendingWhatsappCommands,
-  queueWhatsappMessage, getPendingWhatsappMessages, updateWhatsappMessageStatus, checkQueuedMessageStatus
+  queueWhatsappMessage, getPendingWhatsappMessages, updateWhatsappMessageStatus, checkQueuedMessageStatus,
+  runWalCheckpoint, runWalCheckpointAll
 };
+
+
+

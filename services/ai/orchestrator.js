@@ -13,8 +13,12 @@ const contextBuilder = require('./contextBuilder');
 const memoryManager = require('./memoryManager');
 const toolRegistry = require('./toolRegistry');
 const llmGateway = require('./llmGateway');
+const fastPathHandler = require('./fastPathHandler');
+const keyPool = require('./keyPool');
 
 // LOGGER
+
+
 const LOG_LEVEL = process.env.AGENT_LOG_LEVEL || 'debug';
 const log = {
   debug : (...a) => ['debug'].includes(LOG_LEVEL) && console.debug('[ORCH:DBG]', ...a),
@@ -35,6 +39,11 @@ const hintsText = Object.entries(QUERY_HINTS)
 
 const SYSTEM_INSTRUCTION_STATIC = dbSchemaDescription + `
 
+## 🎯 ATURAN EMAS: FOKUS 100% PADA PERTANYAAN TERKINI (RECENCY FOCUS)
+1. **Jawab HANYA Pertanyaan Terakhir**: Tanggapi secara eksklusif pertanyaan yang diajukan pada pesan pengguna saat ini. JANGAN PERNAH menjawab atau mengulang topik pertanyaan dari riwayat sebelumnya kecuali pengguna secara eksplisit meminta ("lanjutkan yang tadi", "bagaimana dengan dia?", dsb).
+2. **Kesesuaian Pemanggilan Tool**: Saat memanggil tool/fungsi (\`get_summary\`, \`get_petugas\`, \`query_data\`), pastikan parameter dan kueri 100% relevan dengan entitas pertanyaan saat ini (misal: jika ditanya petugas, panggil data petugas; jika ditanya kecamatan, panggil data kecamatan).
+3. **Hindari Greeting Berulang**: Jika ini adalah giliran tanya-jawab lanjutan (bukan sapaan 'halo/hai' pertama), LANGSUNG berikan jawaban data, tabel, dan analisis tanpa kalimat perkenalan diri ulang.
+
 ## Strategi Pengambilan Data — WAJIB DIIKUTI
 
 ### PRIORITAS 1: Gunakan get_summary atau get_petugas
@@ -54,6 +63,19 @@ ${hintsText}
 2. **Gunakan Tabel Markdown**: Data angka wajib diformat sebagai tabel markdown premium.
 3. **Penyajian Rekomendasi/Analisis**: Bullet list dengan cetak tebal pada kata kunci.
 4. **Ringkasan Singkat**: Berikan pengantar 1-2 kalimat dan akhiri dengan saran solutif.
+5. **Tautan Navigasi Halaman (Action Links)**: Selalu sertakan 1-2 tautan Markdown relevan di akhir jawaban agar pengguna dapat langsung membuka dan mengeksplorasi data lengkap di halaman dashboard:
+   - Progres Kecamatan / Desa: \`[📊 Buka Halaman Progres Kecamatan](/kecamatan)\`
+   - Kinerja / Daftar Petugas PCL: \`[👥 Lihat Detail Monitoring PCL](/pcl)\`
+   - Kinerja / Daftar Pengawas PML: \`[📋 Lihat Detail Monitoring PML](/pml)\`
+   - Koordinator Lapangan: \`[👔 Buka Halaman Monitoring Korlap](/korlap)\`
+   - Wilayah SLS & SubSLS: \`[🗺️ Buka Daftar SLS & SubSLS](/subsls)\`
+   - Peta Sebaran Wilayah / Spasial: \`[📍 Buka Peta Sebaran Wilayah](/map)\`
+   - Peringkat Kinerja / Top Performa: \`[🏆 Buka Leaderboard Petugas](/leaderboard)\`
+   - Progres Lambat / Evaluasi: \`[⚠️ Buka Daftar Performa Terendah](/performa-terendah)\`
+   - Anomali Data Lapangan: \`[🔍 Buka Deteksi Anomali](/deteksi-anomali)\`
+   - Peringatan Dini Wilayah: \`[🚨 Buka Early Warning System](/early-warning)\`
+   - Unduh Rekap Data: \`[📥 Buka Halaman Unduh / Export](/export)\`
+   - Ringkasan Kabupaten: \`[🏠 Buka Ringkasan Beranda](/)\`
 `;
 
 function buildSystemInstruction(liveCtx = '') {
@@ -227,6 +249,19 @@ async function streamSimulation(userMessage, chatHistory, onEvent, abortSignal) 
 //  FACADE FUNCTIONS: BACA/TULIS MEMORY & API CALL
 // ─────────────────────────────────────────────
 async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, userId = null) {
+  // 0. FAST-PATH: Tangani prompt generik (sapaan, testing, ucapan terima kasih) secara instan (0ms latency, hemat kuota)
+  const fastPathText = fastPathHandler.getFastPathResponse(userMessage);
+  if (fastPathText) {
+    const result = { role: 'model', content: fastPathText, isSimulation: false, isFastPath: true };
+    if (userId) {
+      const saved = memoryManager.getChatHistory(userId);
+      const merged = (saved.length > 0 && chatHistory.length === 0) ? saved : chatHistory;
+      const updatedHistory = [...merged, { role: 'user', content: userMessage }, { role: 'model', content: fastPathText }];
+      memoryManager.saveChatHistory(userId, updatedHistory);
+    }
+    return result;
+  }
+
   const settings = getSettings();
   const liveCtx = contextBuilder.buildLiveContext('se2026');
   const dynInstruction = buildSystemInstruction(liveCtx);
@@ -244,25 +279,71 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
   const tries = [{ provider: initialSelection.provider, model: initialSelection.model }];
 
   if (settings.chatbot_smart_switch === '1') {
-    if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
-      const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
-      for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-        if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-        if (m.includes(':free')) tries.push({ provider: 'openrouter', model: m });
+    if (initialSelection.provider === 'gemini') {
+      if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
+        const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.5-flash';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          tries.push({ provider: 'gemini', model: m });
+        }
       }
-    }
-    if (settings.gemini_api_key && settings.gemini_api_key.trim() && tries.length < llmGateway.MAX_SWITCH_TRIES) {
-      const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.1-flash-lite, gemini-3.5-flash, gemini-2.5-pro';
-      for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-        if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-        tries.push({ provider: 'gemini', model: m });
+      if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
+        const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          if (m.includes(':free')) tries.push({ provider: 'openrouter', model: m });
+        }
       }
-    }
-    if (settings.openai_api_key && settings.openai_api_key.trim() && tries.length < llmGateway.MAX_SWITCH_TRIES) {
-      const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
-      for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-        if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-        tries.push({ provider: 'openai', model: m });
+      if (settings.openai_api_key && settings.openai_api_key.trim()) {
+        const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          tries.push({ provider: 'openai', model: m });
+        }
+      }
+    } else if (initialSelection.provider === 'openrouter') {
+      if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
+        const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          tries.push({ provider: 'openrouter', model: m });
+        }
+      }
+      if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
+        const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.5-flash';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          tries.push({ provider: 'gemini', model: m });
+        }
+      }
+      if (settings.openai_api_key && settings.openai_api_key.trim()) {
+        const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          tries.push({ provider: 'openai', model: m });
+        }
+      }
+    } else {
+      if (settings.openai_api_key && settings.openai_api_key.trim()) {
+        const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          tries.push({ provider: 'openai', model: m });
+        }
+      }
+      if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
+        const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.5-flash';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          tries.push({ provider: 'gemini', model: m });
+        }
+      }
+      if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
+        const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          if (m.includes(':free')) tries.push({ provider: 'openrouter', model: m });
+        }
       }
     }
   }
@@ -281,30 +362,30 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
     const current = uniqueTries[i];
 
     if (current.provider === 'gemini') {
-      let keysToTry = [settings.gemini_api_key];
-      try {
-        const backups = JSON.parse(settings.gemini_backup_api_keys || '[]');
-        if (Array.isArray(backups)) keysToTry = keysToTry.concat(backups);
-      } catch (_) {}
-      keysToTry = keysToTry.map(k => k ? k.trim() : '').filter(Boolean);
-      keysToTry = [...new Set(keysToTry)];
-
+      const keysToTry = keyPool.getOrderedEligibleKeys(settings);
       if (keysToTry.length === 0) continue;
 
       let success = false;
       for (let kIdx = 0; kIdx < keysToTry.length; kIdx++) {
-        const activeKey = keysToTry[kIdx];
+        const kItem = keysToTry[kIdx];
         llmGateway.abortAllActive();
         const serverController = llmGateway.registerActiveRequest('gemini');
 
         try {
           finalResult = await llmGateway.sendMessageToGemini(
-            userMessage, mergedHistory, settings, current.model, serverController.signal, activeKey, dynInstruction
+            userMessage, mergedHistory, settings, current.model, serverController.signal, kItem.key, dynInstruction
           );
+          keyPool.markSuccess(kItem.key);
           success = true;
           break;
         } catch (err) {
           lastError = err;
+          const errMsg = err.message || '';
+          if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
+            keyPool.markRateLimited(kItem.key, 180, errMsg);
+          } else if (errMsg.includes('403') || errMsg.includes('400') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid')) {
+            keyPool.markInvalid(kItem.key, errMsg);
+          }
         } finally {
           llmGateway.clearActiveRequest('gemini');
         }
@@ -353,6 +434,27 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
 }
 
 async function streamMessageToAgent(userMessage, chatHistory = [], options = {}, onEvent = () => {}, abortSignal = null, userId = null) {
+  // 0. FAST-PATH: Tangani prompt generik secara instan dengan respons secepat kilat (0ms TTFT)
+  const fastPathText = fastPathHandler.getFastPathResponse(userMessage);
+  if (fastPathText) {
+    onEvent('status', { text: 'Menghubungkan ke Pananyo Taka AI...', step: 'model_call' });
+    const words = fastPathText.split(' ');
+    for (let i = 0; i < words.length; i += 4) {
+      if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
+      const chunkText = words.slice(i, i + 4).join(' ') + (i + 4 < words.length ? ' ' : '');
+      onEvent('chunk', { text: chunkText });
+      await new Promise(r => setTimeout(r, 12));
+    }
+    const result = { role: 'model', content: fastPathText, isSimulation: false, isFastPath: true };
+    if (userId) {
+      const saved = memoryManager.getChatHistory(userId);
+      const merged = (saved.length > 0 && chatHistory.length === 0) ? saved : chatHistory;
+      const updatedHistory = [...merged, { role: 'user', content: userMessage }, { role: 'model', content: fastPathText }];
+      memoryManager.saveChatHistory(userId, updatedHistory);
+    }
+    return result;
+  }
+
   const settings = getSettings();
   const liveCtx = contextBuilder.buildLiveContext('se2026');
   const dynInstruction = buildSystemInstruction(liveCtx);
@@ -369,30 +471,77 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
   const tries = [{ provider: initialSelection.provider, model: initialSelection.model }];
 
   if (settings.chatbot_smart_switch === '1') {
-    if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
-      const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
-      for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-        if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-        if (m.includes(':free')) tries.push({ provider: 'openrouter', model: m });
+    if (initialSelection.provider === 'gemini') {
+      if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
+        const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.5-flash';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          tries.push({ provider: 'gemini', model: m });
+        }
       }
-    }
-    if (settings.gemini_api_key && settings.gemini_api_key.trim() && tries.length < llmGateway.MAX_SWITCH_TRIES) {
-      const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.1-flash-lite, gemini-3.5-flash, gemini-2.5-pro';
-      for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-        if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-        tries.push({ provider: 'gemini', model: m });
+      if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
+        const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          if (m.includes(':free')) tries.push({ provider: 'openrouter', model: m });
+        }
       }
-    }
-    if (settings.openai_api_key && settings.openai_api_key.trim() && tries.length < llmGateway.MAX_SWITCH_TRIES) {
-      const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
-      for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-        if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-        tries.push({ provider: 'openai', model: m });
+      if (settings.openai_api_key && settings.openai_api_key.trim()) {
+        const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          tries.push({ provider: 'openai', model: m });
+        }
+      }
+    } else if (initialSelection.provider === 'openrouter') {
+      if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
+        const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          tries.push({ provider: 'openrouter', model: m });
+        }
+      }
+      if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
+        const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.5-flash';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          tries.push({ provider: 'gemini', model: m });
+        }
+      }
+      if (settings.openai_api_key && settings.openai_api_key.trim()) {
+        const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          tries.push({ provider: 'openai', model: m });
+        }
+      }
+    } else {
+      if (settings.openai_api_key && settings.openai_api_key.trim()) {
+        const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          tries.push({ provider: 'openai', model: m });
+        }
+      }
+      if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
+        const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.5-flash';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          tries.push({ provider: 'gemini', model: m });
+        }
+      }
+      if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
+        const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
+        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+          if (m.includes(':free')) tries.push({ provider: 'openrouter', model: m });
+        }
       }
     }
   }
 
   const uniqueTries = [];
+
   const seen = new Set();
   for (const t of tries) {
     const key = `${t.provider}:${t.model}`;
@@ -407,35 +556,43 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
     const current = uniqueTries[i];
 
     if (i > 0) {
-      onEvent('status', { text: `Mengalihkan ke ${current.provider} (${current.model})...`, step: 'smart_switch' });
+      onEvent('status', { text: '⚡ Mengoptimalkan ke jalur AI alternatif...', step: 'smart_switch' });
     }
 
-    if (current.provider === 'gemini') {
-      let keysToTry = [settings.gemini_api_key];
-      try {
-        const backups = JSON.parse(settings.gemini_backup_api_keys || '[]');
-        if (Array.isArray(backups)) keysToTry = keysToTry.concat(backups);
-      } catch (_) {}
-      keysToTry = keysToTry.map(k => k ? k.trim() : '').filter(Boolean);
-      keysToTry = [...new Set(keysToTry)];
 
+    if (current.provider === 'gemini') {
+      const keysToTry = keyPool.getOrderedEligibleKeys(settings);
       if (keysToTry.length === 0) continue;
 
       let success = false;
       for (let kIdx = 0; kIdx < keysToTry.length; kIdx++) {
-        const activeKey = keysToTry[kIdx];
+        const kItem = keysToTry[kIdx];
+        if (kIdx > 0) {
+          onEvent('status', {
+            text: `🔑 Mengalihkan ke Gemini API Key ${kItem.label}...`,
+            step: 'key_switch'
+          });
+        }
         try {
           finalResult = await llmGateway.streamMessageToGemini(
-            userMessage, mergedHistory, settings, current.model, abortSignal, activeKey, onEvent, dynInstruction
+            userMessage, mergedHistory, settings, current.model, abortSignal, kItem.key, onEvent, dynInstruction
           );
+          keyPool.markSuccess(kItem.key);
           onEvent('done', { reply: finalResult.content, isSimulation: false, role: 'model', model: current.model });
           success = true;
           break;
         } catch (err) {
           lastError = err;
+          const errMsg = err.message || '';
+          if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
+            keyPool.markRateLimited(kItem.key, 180, errMsg);
+          } else if (errMsg.includes('403') || errMsg.includes('400') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid')) {
+            keyPool.markInvalid(kItem.key, errMsg);
+          }
         }
       }
       if (success) break;
+
     } else {
       const apiKey = settings[`${current.provider}_api_key`] || '';
       if (!apiKey || !apiKey.trim()) continue;

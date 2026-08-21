@@ -154,9 +154,41 @@ router.post('/chatbot', (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+// DIAGNOSTIK: Uji Validitas Semua Gemini API Keys
+// ─────────────────────────────────────────────
+router.post('/test-gemini-keys', async (req, res) => {
+  try {
+    const keyPool = require('../services/ai/keyPool');
+    const settings = getSettings();
+
+    // Jika form mengirimkan keys secara realtime dari input, gunakan nilai realtime tsb
+    const reqPrimary = req.body.gemini_api_key;
+    let reqBackups = req.body.gemini_backup_keys;
+
+    const testSettings = { ...settings };
+    if (typeof reqPrimary === 'string') {
+      testSettings.gemini_api_key = reqPrimary.trim();
+    }
+    if (reqBackups) {
+      if (!Array.isArray(reqBackups)) reqBackups = [reqBackups];
+      testSettings.gemini_backup_api_keys = JSON.stringify(reqBackups.map(k => k.trim()).filter(Boolean));
+    }
+    if (req.body.gemini_model) {
+      testSettings.gemini_model = req.body.gemini_model.trim();
+    }
+
+    const report = await keyPool.testAllGeminiKeys(testSettings);
+    res.json({ success: true, report });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────
 // MAINTENANCE: Reset SLS Selesai dari Excel BPS
 // ─────────────────────────────────────────────
 router.post('/reset-sls-selesai', (req, res) => {
+
   const activeSurvey = res.locals.activeSurvey || 'se2026';
   try {
     const { getDb } = require('../database');

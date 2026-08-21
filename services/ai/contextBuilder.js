@@ -99,10 +99,11 @@ function buildLiveContext(surveyId = 'se2026') {
     ).join('\n') || '  _Data tidak tersedia_';
 
     return `
-## Konteks Data Terkini — GUNAKAN INI SEBELUM MEMANGGIL TOOL
+## Konteks Data Ringkasan Terkini (Live Context)
 
-> Data berikut diambil langsung dari database pada saat pertanyaan diterima.
-> Untuk pertanyaan tentang angka-angka di bawah ini, jawab LANGSUNG dari konteks ini TANPA memanggil fetch_page_data atau run_read_only_query.
+> Data di bawah ini adalah snapshot ringkasan database saat ini.
+> Jika pertanyaan pengguna berkaitan langsung dengan metrik agregat di bawah, Anda dapat menggunakannya langsung.
+> Namun jika pertanyaan menanyakan analisis spesifik, peringkat lengkap, atau data petugas individual, jalankan fungsi tool yang sesuai.
 
 ### Upload Terakhir
 - **Tanggal**: ${upload.tanggal}
@@ -129,9 +130,6 @@ ${topKecText}
 
 ### Kecamatan Progres FASIH Terendah
 ${botKecText}
-
----
-Jika user bertanya detail lebih lanjut (misal: daftar PCL, detail per SubSLS, atau data kecamatan tertentu) yang TIDAK ada dalam konteks di atas, barulah gunakan fetch_page_data atau run_read_only_query.
 `;
   } catch (err) {
     // Jangan crash jika context gagal dibangun — cukup kembalikan string kosong

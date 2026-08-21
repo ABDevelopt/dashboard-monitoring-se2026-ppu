@@ -58,12 +58,12 @@
         if (parsed && parsed.model) return parsed;
       }
     } catch (e) {}
-    return { provider: 'gemini', model: 'gemini-2.5-flash' };
+    return { provider: 'gemini', model: 'gemini-3.5-flash' };
   }
 
   // Format model string for clean header display
   function formatModelDisplayName(provider, model) {
-    if (!model) return 'Gemini 2.5 Flash';
+    if (!model) return 'Gemini 3.5 Flash';
     
     let clean = model;
     if (clean.includes('/')) {
@@ -263,11 +263,22 @@
   }
 
   function formatInline(text) {
+    const navPrefix = window.location.pathname.split('/')[1] && ['sakernas-pemutakhiran', 'sakernas-pendataan'].includes(window.location.pathname.split('/')[1])
+      ? '/' + window.location.pathname.split('/')[1]
+      : '';
     return escapeHtml(text)
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
       .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, href) => {
+        let finalHref = href;
+        if (finalHref.startsWith('/') && !finalHref.startsWith('//') && navPrefix && !finalHref.startsWith(navPrefix + '/') && finalHref !== navPrefix) {
+          finalHref = navPrefix + (finalHref === '/' ? '' : finalHref);
+        }
+        const isInternal = finalHref.startsWith('/') || finalHref.startsWith('#');
+        const targetAttr = isInternal ? '' : ' target="_blank" rel="noopener"';
+        return `<a href="${finalHref}" class="ai-widget-link"${targetAttr}>${label} <i class="bi bi-arrow-right-short" style="font-size: 1.1em; margin-left: 1px;"></i></a>`;
+      })
       .replace(/&lt;br&gt;/g, '<br>');
   }
 
@@ -631,6 +642,10 @@
     if (input) input.disabled = true;
 
     // Render User Message
+    while (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+      chatHistory.pop();
+    }
+
     appendMessage('user', message);
     chatHistory.push({ role: 'user', content: message });
     saveLocalStorageHistory();
@@ -658,7 +673,7 @@
         signal: controller.signal,
         body: JSON.stringify({
           message: contextPrompt,
-          history: chatHistory.slice(-MAX_HISTORY),
+          history: chatHistory.slice(0, -1).slice(-MAX_HISTORY),
           provider: aiInfo.provider,
           model: aiInfo.model
         })
@@ -717,6 +732,10 @@
               } else if (currentEvent === 'error') {
                 hasReceivedError = true;
                 streamMsg.showError(data.error || 'Terjadi kesalahan AI.');
+                if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+                  chatHistory.pop();
+                  saveLocalStorageHistory();
+                }
               }
             } catch (err) {
               console.warn('[AI-WIDGET:STREAM] Parse error:', err);
@@ -740,8 +759,15 @@
         if (partial.trim()) {
           chatHistory.push({ role: 'assistant', content: partial });
           saveLocalStorageHistory();
+        } else if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+          chatHistory.pop();
+          saveLocalStorageHistory();
         }
       } else {
+        if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+          chatHistory.pop();
+          saveLocalStorageHistory();
+        }
         console.error('[AI-WIDGET] Stream error:', err);
         // Translate technical errors into user-friendly messages
         const raw = err?.message || '';

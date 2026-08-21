@@ -231,10 +231,12 @@ async function runToolCall(toolCall) {
           rowCount: total,
           returned: finalRows.length,
           truncated,
-          data: finalRows
+          data: finalRows,
+          message: total === 0 ? 'Tidak ada baris data yang cocok dengan kueri ini. Periksa filter kode (16 digit/LIKE) atau kondisi WHERE.' : undefined
         };
         break;
       }
+
 
       case 'get_summary': {
         const db = getDb();
