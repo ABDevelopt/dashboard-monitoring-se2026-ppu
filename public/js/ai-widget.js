@@ -51,7 +51,7 @@
 
   // Get active selected AI info from localStorage
   function getSelectedAI() {
-    const VALID_MODELS = ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3-flash-preview', 'gemini-2.5-flash'];
+    const VALID_MODELS = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'];
     try {
       const saved = localStorage.getItem(SELECTED_AI_KEY);
       if (saved) {
@@ -75,12 +75,11 @@
     clean = clean.replace(':free', '').replace('-instruct', '');
 
     const map = {
-      'gemini-3.7-flash': 'Gemini 3.7 Flash',
-      'gemini-3.6-flash': 'Gemini 3.6 Flash',
       'gemini-3.5-flash': 'Gemini 3.5 Flash',
       'gemini-3.5-flash-lite': 'Gemini 3.5 Flash-Lite',
+      'gemini-3.6-flash': 'Gemini 3.6 Flash',
+      'gemini-3.7-flash': 'Gemini 3.7 Flash',
       'gemini-3.1-flash-lite': 'Gemini 3.1 Flash-Lite',
-      'gemini-3-flash-preview': 'Gemini 3 Flash Preview',
       'gemini-2.5-flash': 'Gemini 2.5 Flash'
     };
 

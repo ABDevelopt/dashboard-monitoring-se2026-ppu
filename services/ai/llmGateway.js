@@ -25,7 +25,8 @@ const LEGACY_GEMINI_MODELS = new Set([
   'gemini-1.5-pro',
   'gemini-1.5-flash-latest',
   'gemini-1.5-flash-8b',
-  'gemini-2.0-flash'
+  'gemini-2.0-flash',
+  'gemini-3-flash-preview'
 ]);
 const _activeControllers = new Map();
 

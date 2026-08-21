@@ -2270,7 +2270,7 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`;
     'gemini_api_key': '',
     'gemini_backup_api_keys': '[]',
     'gemini_model': 'gemini-3.5-flash',
-    'gemini_models_list': 'gemini-3.5-flash, gemini-3.1-flash-lite',
+    'gemini_models_list': 'gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.6-flash, gemini-3.7-flash, gemini-3.1-flash-lite, gemini-2.5-flash',
     'openai_api_key': '',
     'openai_model': 'gpt-5.5',
     'openai_models_list': 'gpt-5.5, gpt-4o',
