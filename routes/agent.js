@@ -92,7 +92,10 @@ router.post('/chat/stream', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
+  res.setHeader('Content-Encoding', 'none');
   if (typeof res.flushHeaders === 'function') res.flushHeaders();
+  res.write(': ' + ' '.repeat(2048) + '\n\n');
+  if (typeof res.flush === 'function') res.flush();
 
   const sendEvent = (event, data) => {
     if (res.writableEnded) return;

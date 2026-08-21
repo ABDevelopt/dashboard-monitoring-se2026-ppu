@@ -204,7 +204,7 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
 
     let response = await callGemini(userMessage, false);
     let loopCount = 0;
-    const MAX_LOOPS = 5;
+    const MAX_LOOPS = 3;
 
     while (loopCount < MAX_LOOPS) {
       if (abortSignal?.aborted) throw new Error('Request dibatalkan saat loop tool-call.');
@@ -270,10 +270,10 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
 
     let currentPayload = userMessage;
     let loopCount = 0;
-    const MAX_LOOPS = 5;
+    const MAX_LOOPS = 3;
     let response = null;
 
-    while (loopCount < MAX_LOOPS) {
+    while (loopCount <= MAX_LOOPS) {
       if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
 
       onEvent('status', {
@@ -295,7 +295,7 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
       }
 
       const functionCalls = extractFunctionCalls(response);
-      if (functionCalls.length === 0) {
+      if (functionCalls.length === 0 || loopCount === MAX_LOOPS) {
         break;
       }
 
