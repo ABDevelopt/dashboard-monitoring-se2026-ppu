@@ -12,6 +12,7 @@
 // Memory cache status kesehatan kunci
 // Map<apiKey, { status: 'healthy'|'rate_limited'|'invalid', cooldownUntil: number, failCount: number, successCount: number, lastError: string }>
 const keyStateCache = new Map();
+const keyModelQuotaCache = new Map();
 
 /**
  * Masking API key untuk keamanan log/tampilan (e.g. AIzaSy...4x8d)
@@ -63,19 +64,28 @@ function getAllGeminiKeys(settings = {}) {
   });
 
   // 3. Env Fallback jika belum terdaftar
-  const envKey = (process.env.GEMINI_API_KEY || '').trim();
-  if (envKey && !seen.has(envKey)) {
-    keys.push({ key: envKey, label: 'Environment (ENV)', isPrimary: false, index: keys.length });
-    seen.add(envKey);
-  }
+  const envKeys = [
+    process.env.GEMINI_API_KEY,
+    process.env.GEMINI_API_KEY_BACKUP_1,
+    process.env.GEMINI_API_KEY_BACKUP_2,
+    process.env.GEMINI_API_KEY_BACKUP_3
+  ].filter(Boolean);
+
+  envKeys.forEach((envK, idx) => {
+    const trimmed = (envK || '').trim();
+    if (trimmed && !seen.has(trimmed)) {
+      keys.push({ key: trimmed, label: `Env Backup #${idx + 1}`, isPrimary: false, index: keys.length });
+      seen.add(trimmed);
+    }
+  });
 
   return keys;
 }
 
 /**
- * Mendapatkan status kesehatan kunci
+ * Mendapatkan status kesehatan kunci (Global & Per-Model)
  */
-function getKeyState(key) {
+function getKeyState(key, model = null) {
   const now = Date.now();
   let state = keyStateCache.get(key);
   if (!state) {
@@ -83,7 +93,21 @@ function getKeyState(key) {
     keyStateCache.set(key, state);
   }
 
-  // Jika cooldown sudah lewat, pulihkan kembali ke healthy
+  // Cek kuota spesifik per model jika model diberikan
+  if (model) {
+    const kmKey = `${key}:${model}`;
+    const mState = keyModelQuotaCache.get(kmKey);
+    if (mState && mState.status === 'rate_limited') {
+      if (now > mState.cooldownUntil) {
+        mState.status = 'healthy';
+        mState.lastError = '';
+      } else {
+        return mState;
+      }
+    }
+  }
+
+  // Jika cooldown global sudah lewat, pulihkan kembali ke healthy
   if (state.status === 'rate_limited' && now > state.cooldownUntil) {
     state.status = 'healthy';
     state.lastError = '';
@@ -93,10 +117,10 @@ function getKeyState(key) {
 }
 
 /**
- * Mendapatkan daftar Gemini Keys yang diurutkan berdasarkan kesehatan & kesiapan.
+ * Mendapatkan daftar Gemini Keys yang diurutkan berdasarkan kesehatan & kesiapan untuk model tertentu.
  * Kunci sehat didahulukan; kunci yang terkena 429 ditaruh di antrean belakang.
  */
-function getOrderedEligibleKeys(settings = {}) {
+function getOrderedEligibleKeys(settings = {}, model = null) {
   const all = getAllGeminiKeys(settings);
   const now = Date.now();
 
@@ -104,7 +128,7 @@ function getOrderedEligibleKeys(settings = {}) {
   const coolingDown = [];
 
   for (const item of all) {
-    const state = getKeyState(item.key);
+    const state = getKeyState(item.key, model);
     if (state.status === 'invalid') {
       continue; // Lewati kunci yang dicabut/invalid permanen
     }
@@ -119,25 +143,43 @@ function getOrderedEligibleKeys(settings = {}) {
   coolingDown.sort((a, b) => a.remainingCooldownSec - b.remainingCooldownSec);
 
   const eligible = [...healthy, ...coolingDown];
-  // Jika seluruh kunci sempat tertandai invalid (misal akibat error format sebelumnya),
-  // tetap coba kembali seluruh kunci yang terdaftar daripada langsung gagal
   if (eligible.length === 0 && all.length > 0) {
-    return all.map(item => ({ ...item, state: getKeyState(item.key), remainingCooldownSec: 0 }));
+    return all.map(item => ({ ...item, state: getKeyState(item.key, model), remainingCooldownSec: 0 }));
   }
 
   return eligible;
 }
 
 /**
- * Tandai API key sebagai Rate Limited (429 / Quota Exceeded)
+ * Tandai API key sebagai Rate Limited (429 / Quota Exceeded) per model atau global
  */
-function markRateLimited(key, delaySeconds = 180, errorMsg = '') {
+function markRateLimited(key, delaySeconds = 120, errorMsg = '', model = null) {
   if (!key) return;
+  const now = Date.now();
+  const cooldownUntil = now + (Math.max(delaySeconds, 30) * 1000);
+
+  if (model) {
+    const kmKey = `${key}:${model}`;
+    let mState = keyModelQuotaCache.get(kmKey);
+    if (!mState) {
+      mState = { status: 'rate_limited', cooldownUntil, failCount: 1, successCount: 0, lastError: errorMsg };
+      keyModelQuotaCache.set(kmKey, mState);
+    } else {
+      mState.status = 'rate_limited';
+      mState.cooldownUntil = cooldownUntil;
+      mState.failCount += 1;
+      mState.lastError = errorMsg;
+    }
+  }
+
   const state = getKeyState(key);
-  state.status = 'rate_limited';
-  state.cooldownUntil = Date.now() + (Math.max(delaySeconds, 60) * 1000);
+  // Hanya tandai global jika tidak ada model spesifik
+  if (!model) {
+    state.status = 'rate_limited';
+    state.cooldownUntil = cooldownUntil;
+  }
   state.failCount += 1;
-  state.lastError = errorMsg || '429 Too Many Requests (Quota Exceeded)';
+  state.lastError = errorMsg || '429 Too Many Requests';
   keyStateCache.set(key, state);
 }
 

@@ -100,7 +100,7 @@ function runSimulation(userMessage, chatHistory) {
   const uploadId = latestUpload.id;
 
   try {
-    if (lowerMsg.includes('terendah') || lowerMsg.includes('rendah') || lowerMsg.includes('buruk')) {
+    if (lowerMsg.includes('terendah') || lowerMsg.includes('rendah') || lowerMsg.includes('buruk') || lowerMsg.includes('beban') || lowerMsg.includes('bantu') || lowerMsg.includes('berat')) {
       let filterKec = '', kecLabel = 'Seluruh Wilayah';
       
       if      (lowerMsg.includes('sepaku'))   { filterKec = "AND LOWER(m.kecamatan) = 'sepaku'";  kecLabel = 'Kecamatan Sepaku'; }
@@ -117,14 +117,21 @@ function runSimulation(userMessage, chatHistory) {
         }
       }
 
+      const isHeavy = lowerMsg.includes('beban') || lowerMsg.includes('berat');
+      const orderBy = isHeavy
+        ? 'SUM(m.target_fasih) DESC, muatan_selesai ASC'
+        : 'muatan_selesai ASC, total_muatan DESC';
+
       const rows = db.prepare(`
         SELECT m.pcl, MAX(m.pml) AS pml, MAX(m.kecamatan) AS kecamatan,
           SUM(m.muatan) AS total_muatan,
-          SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0)+COALESCE(p.ditemukan+p.keluarga_baru,0)) AS muatan_selesai
+          SUM(m.target_fasih) AS target_fasih_total,
+          SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0)+COALESCE(p.ditemukan+p.keluarga_baru,0)) AS muatan_selesai,
+          SUM(COALESCE(p.submitted_by_pcl,0)+COALESCE(p.approved,0)+COALESCE(p.rejected,0)) AS realisasi_fasih
         FROM subsls_master m
         LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
         WHERE 1=1 ${filterKec} ${filterKorlap}
-        GROUP BY m.pcl ORDER BY muatan_selesai ASC, total_muatan DESC LIMIT 3
+        GROUP BY m.pcl ORDER BY ${orderBy} LIMIT 5
       `).all(uploadId);
 
       if (rows.length === 0) {
@@ -135,13 +142,13 @@ function runSimulation(userMessage, chatHistory) {
         };
       }
 
-      let content = `🤖 **Mode Simulasi**\n\nBerikut 3 PCL capaian terendah di **${kecLabel}** (upload *${latestUpload.tanggal}*):\n\n`;
-      content += `| Nama PCL | PML Pengawas | Kecamatan | Realisasi | Progres (%) |\n| :--- | :--- | :--- | :--- | :--- |\n`;
+      let content = `🤖 **Mode Analitik Offline (${kecLabel})**\n\nBerikut daftar PCL ${isHeavy ? 'dengan beban target tertinggi yang memerlukan pendampingan' : 'dengan progres terendah'} (upload *${latestUpload.tanggal}*):\n\n`;
+      content += `| Nama PCL | PML Pengawas | Kecamatan | Target FASIH | Realisasi | Capaian (%) |\n| :--- | :--- | :--- | :---: | :---: | :---: |\n`;
       rows.forEach(r => {
-        const pct = r.total_muatan > 0 ? ((r.muatan_selesai / r.total_muatan) * 100).toFixed(2) : '0.00';
-        content += `| ${r.pcl} | ${r.pml} | ${r.kecamatan} | ${r.muatan_selesai} / ${r.total_muatan} | **${pct}%** |\n`;
+        const pct = r.target_fasih_total > 0 ? ((r.realisasi_fasih / r.target_fasih_total) * 100).toFixed(2) : (r.total_muatan > 0 ? ((r.muatan_selesai / r.total_muatan) * 100).toFixed(2) : '0.00');
+        content += `| **${r.pcl}** | ${r.pml} | ${r.kecamatan} | ${r.target_fasih_total || r.total_muatan} | ${r.realisasi_fasih || r.muatan_selesai} | **${pct}%** |\n`;
       });
-      content += `\n**Rekomendasi:** PML disarankan mendampingi **${rows[0].pcl}** secara langsung.\n`;
+      content += `\n📌 **Rekomendasi:** Prioritaskan pendampingan lapangan langsung oleh PML terhadap **${rows[0].pcl}** untuk menyelesaikan target SLS yang tersisa.\n`;
       return { role: 'model', content, isSimulation: true };
     }
 
@@ -297,7 +304,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
 
   for (let i = 0; i < uniqueTries.length; i++) {
     const current = uniqueTries[i];
-    const keysToTry = keyPool.getOrderedEligibleKeys(settings);
+    const keysToTry = keyPool.getOrderedEligibleKeys(settings, current.model);
     if (keysToTry.length === 0) continue;
 
     log.info(`[ORCH] Mencoba Model '${current.model}' dengan ${keysToTry.length} API Key tersedia...`);
@@ -323,11 +330,11 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
         const errMsg = err.message || '';
         log.warn(`[ORCH] -> Gagal pada ${kItem.label} (${current.model}): ${errMsg}. Mengutamakan rotasi ke API Key berikutnya...`);
         if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
-          keyPool.markRateLimited(kItem.key, 180, errMsg);
+          keyPool.markRateLimited(kItem.key, 120, errMsg, current.model);
         } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid') || errMsg.toLowerCase().includes('api key not valid')) {
           keyPool.markInvalid(kItem.key, errMsg);
-        } else if (errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('timed out') || errMsg.includes('timeout') || errMsg.includes('fetch failed')) {
-          keyPool.markRateLimited(kItem.key, 30, errMsg);
+        } else if (errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('timed out') || errMsg.includes('timeout')) {
+          keyPool.markRateLimited(kItem.key, 15, errMsg, current.model);
         }
       } finally {
         llmGateway.clearActiveRequest('gemini');
@@ -416,7 +423,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
       onEvent('status', { text: `⚡ Mengalihkan ke model cadangan (${current.model})...`, step: 'smart_switch' });
     }
 
-    const keysToTry = keyPool.getOrderedEligibleKeys(settings);
+    const keysToTry = keyPool.getOrderedEligibleKeys(settings, current.model);
     if (keysToTry.length === 0) continue;
 
     log.info(`[ORCH:STREAM] Mencoba Model '${current.model}' dengan ${keysToTry.length} API Key...`);
@@ -445,11 +452,11 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
         const errMsg = err.message || '';
         log.warn(`[ORCH:STREAM] -> Gagal pada ${kItem.label} (${current.model}): ${errMsg}. Mengutamakan rotasi ke API Key berikutnya...`);
         if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
-          keyPool.markRateLimited(kItem.key, 180, errMsg);
+          keyPool.markRateLimited(kItem.key, 120, errMsg, current.model);
         } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid') || errMsg.toLowerCase().includes('api key not valid')) {
           keyPool.markInvalid(kItem.key, errMsg);
-        } else if (errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('timed out') || errMsg.includes('timeout') || errMsg.includes('fetch failed')) {
-          keyPool.markRateLimited(kItem.key, 30, errMsg);
+        } else if (errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('timed out') || errMsg.includes('timeout')) {
+          keyPool.markRateLimited(kItem.key, 15, errMsg, current.model);
         }
       }
     }
