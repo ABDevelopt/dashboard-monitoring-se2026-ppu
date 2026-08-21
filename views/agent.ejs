@@ -1630,6 +1630,21 @@
 
 <script>
 (function() {
+  const VALID_GEMINI_MODELS = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-pro', 'gemini-2.5-flash-lite'];
+  
+  // Sanitize localStorage selected AI model
+  try {
+    const rawSaved = localStorage.getItem('se2026_selected_ai');
+    if (rawSaved) {
+      const parsed = JSON.parse(rawSaved);
+      if (parsed && (!parsed.model || !VALID_GEMINI_MODELS.includes(parsed.model))) {
+        parsed.provider = 'gemini';
+        parsed.model = 'gemini-3.5-flash';
+        localStorage.setItem('se2026_selected_ai', JSON.stringify(parsed));
+      }
+    }
+  } catch (_) {}
+
   const chatHistory = [];
   const modelOptions = {
     gemini: <%- JSON.stringify(geminiModels || ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-pro']) %>
@@ -1917,6 +1932,7 @@
       if (!Array.isArray(parsed)) return;
 
       parsed.forEach(msg => {
+        if (!msg || typeof msg.content !== 'string' || !msg.content.trim()) return;
         chatHistory.push(msg);
         if (msg.role === 'user') {
           appendMessage('user', msg.content, false);
@@ -1924,6 +1940,17 @@
           appendMessage('agent', renderMarkdown(msg.content), true);
         }
       });
+
+      // Hide welcome hero if there are messages
+      if (chatHistory.length > 0) {
+        const hero = document.getElementById('geminiWelcomeHero');
+        if (hero) hero.style.display = 'none';
+      }
+
+      // Remove hanging user message from incomplete turns
+      while (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+        chatHistory.pop();
+      }
     } catch (e) {
       console.error('Failed to load chat history:', e);
     }
@@ -2367,8 +2394,12 @@
     }, 180000); // 3 menit — memberi ruang untuk SmartSwitch multi-provider fallback
 
     const startTime = Date.now();
-    const reqProvider = document.getElementById('agentProvider')?.value || 'gemini';
-    const reqModel = document.getElementById('agentModel')?.value || '';
+    const reqProvider = 'gemini';
+    const modelElem = document.getElementById('agentModel');
+    let reqModel = modelElem ? modelElem.value : '';
+    if (!reqModel || !VALID_GEMINI_MODELS.includes(reqModel)) {
+      reqModel = 'gemini-3.5-flash';
+    }
     const safePayloadHistory = chatHistory.slice(Math.max(0, chatHistory.length - 11), -1);
 
     const navPrefix = window.navPrefix || '<%= typeof navPrefix !== "undefined" ? navPrefix : "" %>';

@@ -87,8 +87,7 @@ router.post('/chat/stream', async (req, res) => {
         .slice(-20)
     : [];
 
-  const ALLOWED_PROVIDERS = ['gemini', 'openai', 'openrouter'];
-  const safeProvider = ALLOWED_PROVIDERS.includes(provider) ? provider : undefined;
+  const safeProvider = 'gemini';
 
   const controller = new AbortController();
   res.on('close', () => {

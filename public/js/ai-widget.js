@@ -51,11 +51,14 @@
 
   // Get active selected AI info from localStorage
   function getSelectedAI() {
+    const VALID_MODELS = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-pro', 'gemini-2.5-flash-lite'];
     try {
       const saved = localStorage.getItem(SELECTED_AI_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.model) return parsed;
+        if (parsed && parsed.model && VALID_MODELS.includes(parsed.model)) {
+          return { provider: 'gemini', model: parsed.model };
+        }
       }
     } catch (e) {}
     return { provider: 'gemini', model: 'gemini-3.5-flash' };
