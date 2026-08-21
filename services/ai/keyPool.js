@@ -161,97 +161,136 @@ function markSuccess(key) {
   keyStateCache.set(key, state);
 }
 
+const https = require('https');
+const dns = require('dns');
+const logger = require('../logger');
+
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
+
 /**
- * Menguji satu API Key secara langsung ke Google Gemini API
+ * Menguji satu API Key secara langsung ke Google Gemini API (dengan proteksi IPv4 dan timeout)
  */
-async function testSingleGeminiKey(key, model = 'gemini-3.5-flash') {
+function testSingleGeminiKey(key, model = 'gemini-3.5-flash') {
   if (!key || typeof key !== 'string') {
-    return {
+    return Promise.resolve({
       valid: false,
       status: 'invalid',
       message: 'API Key kosong atau format tidak valid'
-    };
+    });
   }
 
   const trimmed = key.trim();
+  const masked = maskKey(trimmed);
   const startTime = Date.now();
 
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10000); // 10 detik timeout
+  logger.info(`[KEY_POOL:DIAG] Memulai pengujian key ${masked} ke Google API (IPv4 mode)...`);
 
-    // Menggunakan endpoint GET /models untuk verifikasi otentikasi API Key secara cepat
-    // tanpa mengonsumsi kuota harian generateContent (20 RPD) pengguna.
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(trimmed)}`,
-      {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: controller.signal
+  return new Promise((resolve) => {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(trimmed)}`;
+    
+    const req = https.get(url, {
+      family: 4, // Paksa koneksi via IPv4 untuk mencegah ETIMEDOUT di shared hosting Dewaweb
+      timeout: 12000,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Monitoring-SE2026-PPU/2.5.0'
       }
-    );
+    }, (res) => {
+      let rawData = '';
+      res.on('data', chunk => rawData += chunk);
+      res.on('end', () => {
+        const latencyMs = Date.now() - startTime;
+        try {
+          const parsed = JSON.parse(rawData);
+          if (res.statusCode === 200) {
+            const modelsCount = Array.isArray(parsed.models) ? parsed.models.length : 0;
+            markSuccess(trimmed);
+            logger.info(`[KEY_POOL:DIAG] Key ${masked} SUKSES (200 OK, ${modelsCount} models, ${latencyMs}ms)`);
+            resolve({
+              valid: true,
+              status: 'healthy',
+              statusCode: 200,
+              message: `Aktif & Terhubung ke Google API (${modelsCount} model tersedia)`,
+              latencyMs
+            });
+          } else if (res.statusCode === 429) {
+            const errMsg = parsed.error?.message || 'Rate Limit';
+            markRateLimited(trimmed, 180, errMsg);
+            logger.warn(`[KEY_POOL:DIAG] Key ${masked} RATE LIMITED (429, ${latencyMs}ms): ${errMsg}`);
+            resolve({
+              valid: false,
+              status: 'rate_limited',
+              statusCode: 429,
+              message: 'Batas kuota terlampaui (429 Rate Limit)',
+              latencyMs,
+              errorDetail: errMsg
+            });
+          } else if (res.statusCode === 400 || res.statusCode === 401 || res.statusCode === 403) {
+            const errMsg = parsed.error?.message || `HTTP ${res.statusCode}`;
+            markInvalid(trimmed, errMsg);
+            logger.warn(`[KEY_POOL:DIAG] Key ${masked} INVALID (${res.statusCode}, ${latencyMs}ms): ${errMsg}`);
+            resolve({
+              valid: false,
+              status: 'invalid',
+              statusCode: res.statusCode,
+              message: `API Key tidak valid atau salah format (${res.statusCode})`,
+              latencyMs,
+              errorDetail: errMsg
+            });
+          } else {
+            const errMsg = parsed.error?.message || `HTTP ${res.statusCode}`;
+            logger.error(`[KEY_POOL:DIAG] Key ${masked} ERROR (${res.statusCode}, ${latencyMs}ms): ${errMsg}`);
+            resolve({
+              valid: false,
+              status: 'error',
+              statusCode: res.statusCode,
+              message: `Error (${res.statusCode}): ${errMsg}`,
+              latencyMs,
+              errorDetail: errMsg
+            });
+          }
+        } catch (parseErr) {
+          logger.error(`[KEY_POOL:DIAG] Key ${masked} PARSE ERROR: ${parseErr.message}`);
+          resolve({
+            valid: false,
+            status: 'error',
+            statusCode: res.statusCode,
+            message: `Gagal membaca respon server (${res.statusCode})`,
+            latencyMs,
+            errorDetail: rawData.slice(0, 150)
+          });
+        }
+      });
+    });
 
-    clearTimeout(timer);
-    const latencyMs = Date.now() - startTime;
-
-    if (response.ok) {
-      const data = await response.json().catch(() => ({}));
-      const modelsCount = Array.isArray(data.models) ? data.models.length : 0;
-      markSuccess(trimmed);
-      return {
-        valid: true,
-        status: 'healthy',
-        statusCode: response.status,
-        message: `Aktif & Terhubung ke Google API (${modelsCount} model tersedia)`,
-        latencyMs
-      };
-    }
-
-    const errJson = await response.json().catch(() => ({}));
-    const errMsg = errJson?.error?.message || response.statusText || `HTTP ${response.status}`;
-
-    if (response.status === 429) {
-      markRateLimited(trimmed, 180, errMsg);
-      return {
+    req.on('error', (err) => {
+      const latencyMs = Date.now() - startTime;
+      const codeStr = err.code ? ` (${err.code})` : '';
+      logger.error(`[KEY_POOL:DIAG] Key ${masked} NETWORK ERROR: ${err.message}${codeStr}`);
+      resolve({
         valid: false,
-        status: 'rate_limited',
-        statusCode: 429,
-        message: 'Batas kuota terlampaui (429 Rate Limit)',
+        status: 'network_error',
+        message: `Koneksi gagal ke server Google: ${err.message}${codeStr}`,
         latencyMs,
-        errorDetail: errMsg
-      };
-    }
+        errorDetail: err.stack || err.message
+      });
+    });
 
-    if (response.status === 400 || response.status === 401 || response.status === 403) {
-      markInvalid(trimmed, errMsg);
-      return {
+    req.on('timeout', () => {
+      const latencyMs = Date.now() - startTime;
+      req.destroy();
+      logger.error(`[KEY_POOL:DIAG] Key ${masked} TIMEOUT (>12s) via IPv4`);
+      resolve({
         valid: false,
-        status: 'invalid',
-        statusCode: response.status,
-        message: `API Key tidak valid atau telah dicabut (${response.status})`,
+        status: 'network_error',
+        message: 'Koneksi Timeout (>12s) ke generativelanguage.googleapis.com',
         latencyMs,
-        errorDetail: errMsg
-      };
-    }
-
-    return {
-      valid: false,
-      status: 'error',
-      statusCode: response.status,
-      message: `Error (${response.status}): ${errMsg}`,
-      latencyMs,
-      errorDetail: errMsg
-    };
-  } catch (err) {
-    const latencyMs = Date.now() - startTime;
-    const causeMsg = err.cause ? ` (${err.cause.code || err.cause.message || err.cause})` : '';
-    return {
-      valid: false,
-      status: 'network_error',
-      message: err.name === 'AbortError' ? 'Koneksi Timeout (>10s)' : `Koneksi gagal ke server Google: ${err.message}${causeMsg}`,
-      latencyMs
-    };
-  }
+        errorDetail: 'Socket connect timeout on port 443'
+      });
+    });
+  });
 }
 
 /**

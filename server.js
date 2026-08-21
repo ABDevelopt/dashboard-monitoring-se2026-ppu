@@ -1,3 +1,9 @@
+const dns = require('dns');
+// Paksa Node.js menggunakan IPv4 terlebih dahulu untuk mencegah ETIMEDOUT pada server hosting (Dewaweb/CloudLinux/cPanel) yang memblokir egress IPv6
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
+
 // Load environment variables from .env using absolute path
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
