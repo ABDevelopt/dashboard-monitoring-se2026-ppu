@@ -277,10 +277,10 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
 
   const tries = [{ provider: 'gemini', model: initialSelection.model }];
 
-  if (settings.chatbot_smart_switch === '1') {
+  if (settings.chatbot_smart_switch !== '0') {
     const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.6-flash, gemini-3.7-flash, gemini-3.1-flash-lite, gemini-2.5-flash';
     for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-      if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+      if (tries.length >= 8) break;
       tries.push({ provider: 'gemini', model: m });
     }
   }
@@ -326,7 +326,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
           keyPool.markRateLimited(kItem.key, 180, errMsg);
         } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid') || errMsg.toLowerCase().includes('api key not valid')) {
           keyPool.markInvalid(kItem.key, errMsg);
-        } else if (errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('timed out') || errMsg.includes('timeout')) {
+        } else if (errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('timed out') || errMsg.includes('timeout') || errMsg.includes('fetch failed')) {
           keyPool.markRateLimited(kItem.key, 30, errMsg);
         }
       } finally {
@@ -389,10 +389,10 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
 
   const tries = [{ provider: 'gemini', model: initialSelection.model }];
 
-  if (settings.chatbot_smart_switch === '1') {
+  if (settings.chatbot_smart_switch !== '0') {
     const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.6-flash, gemini-3.7-flash, gemini-3.1-flash-lite, gemini-2.5-flash';
     for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-      if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+      if (tries.length >= 8) break;
       tries.push({ provider: 'gemini', model: m });
     }
   }
@@ -448,7 +448,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
           keyPool.markRateLimited(kItem.key, 180, errMsg);
         } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid') || errMsg.toLowerCase().includes('api key not valid')) {
           keyPool.markInvalid(kItem.key, errMsg);
-        } else if (errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('timed out') || errMsg.includes('timeout')) {
+        } else if (errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('timed out') || errMsg.includes('timeout') || errMsg.includes('fetch failed')) {
           keyPool.markRateLimited(kItem.key, 30, errMsg);
         }
       }

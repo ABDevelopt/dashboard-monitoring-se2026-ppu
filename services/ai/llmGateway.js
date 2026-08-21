@@ -166,6 +166,29 @@ function extractResponseText(response) {
   return parts.filter(p => p && p.text).map(p => p.text).join('\n');
 }
 
+async function generateWithRetry(model, payload, timeoutMs, label = 'Gemini API call') {
+  let attempt = 0;
+  while (attempt < 2) {
+    attempt++;
+    try {
+      return await timeoutPromise(
+        model.generateContent(payload),
+        timeoutMs,
+        `${label} timed out (${timeoutMs / 1000}s)`
+      );
+    } catch (err) {
+      const errMsg = err.message || '';
+      const isTransient = errMsg.includes('fetch failed') || errMsg.includes('ECONNRESET') || errMsg.includes('ETIMEDOUT') || errMsg.includes('socket hang up') || errMsg.includes('EAI_AGAIN');
+      if (attempt === 1 && isTransient) {
+        log.warn(`[LLM_GW] Transient network hiccup (${errMsg}), retrying in 400ms (attempt ${attempt}/2)...`);
+        await new Promise(r => setTimeout(r, 400));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 async function sendMessageToGemini(userMessage, chatHistory, settings, selectedModel, abortSignal, customApiKey, systemInstruction) {
   try {
     const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -195,10 +218,11 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
       if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
       const timeoutMs = loopCount > 0 ? AGENT_API_TOOLRESULT_MS : AGENT_API_QUICK_RESPONSE_MS;
 
-      const resp = await timeoutPromise(
-        model.generateContent({ contents }),
+      const resp = await generateWithRetry(
+        model,
+        { contents },
         timeoutMs,
-        `Gemini API call timed out (${timeoutMs / 1000}s)`
+        `Gemini API call`
       );
 
       const candidate = resp.response.candidates?.[0];
@@ -293,10 +317,11 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
       });
 
       const timeoutMs = loopCount > 0 ? AGENT_API_TOOLRESULT_MS : AGENT_API_QUICK_RESPONSE_MS;
-      const resp = await timeoutPromise(
-        model.generateContent({ contents }),
+      const resp = await generateWithRetry(
+        model,
+        { contents },
         timeoutMs,
-        `Gemini API timed out (${timeoutMs / 1000}s)`
+        `Gemini API call`
       );
 
       const candidate = resp.response.candidates?.[0];
