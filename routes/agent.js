@@ -23,26 +23,10 @@ router.use(requireLogin);
 //  GET / — render halaman agent
 // ─────────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
-const settings = getSettings();
+  const settings = getSettings();
   const geminiEnabled = !!(settings.gemini_api_key && settings.gemini_api_key.trim());
-  const openaiEnabled = !!(settings.openai_api_key && settings.openai_api_key.trim());
-  const openrouterEnabled = !!(settings.openrouter_api_key && settings.openrouter_api_key.trim());
-
-  let provider = settings.agent_provider || 'gemini';
-  if (provider === 'openai' && !openaiEnabled) {
-    provider = openrouterEnabled ? 'openrouter' : 'gemini';
-  } else if (provider === 'openrouter' && !openrouterEnabled) {
-    provider = openaiEnabled ? 'openai' : 'gemini';
-  } else if (provider === 'gemini' && !geminiEnabled) {
-    provider = openrouterEnabled ? 'openrouter' : (openaiEnabled ? 'openai' : 'gemini');
-  }
-
-  const selectedKey = provider === 'openai'
-    ? settings.openai_api_key
-    : provider === 'openrouter'
-    ? settings.openrouter_api_key
-    : settings.gemini_api_key;
-  const hasKey = !!(selectedKey && selectedKey.trim());
+  const provider = 'gemini';
+  const hasKey = geminiEnabled;
 
   const geminiModels = settings.gemini_models_list
     ? settings.gemini_models_list.split(',').map(m => m.trim()).filter(Boolean)
@@ -51,34 +35,14 @@ const settings = getSettings();
     geminiModels.push(settings.gemini_model);
   }
 
-  const openaiModels = settings.openai_models_list
-    ? settings.openai_models_list.split(',').map(m => m.trim()).filter(Boolean)
-    : ['gpt-5.5'];
-  if (settings.openai_model && !openaiModels.includes(settings.openai_model)) {
-    openaiModels.push(settings.openai_model);
-  }
-
-  const openrouterModels = settings.openrouter_models_list
-    ? settings.openrouter_models_list.split(',').map(m => m.trim()).filter(Boolean)
-    : ['openrouter/free', 'openrouter/owl-alpha', 'meta-llama/llama-3.3-70b-instruct:free', 'nvidia/nemotron-3-ultra-550b-a55b:free'];
-  if (settings.openrouter_model && !openrouterModels.includes(settings.openrouter_model)) {
-    openrouterModels.push(settings.openrouter_model);
-  }
-
   res.render('agent', {
     title              : 'Asisten AI Chat',
     activePage         : 'agent',
     hasKey,
-    provider,
+    provider           : 'gemini',
     selectedGeminiModel: settings.gemini_model || 'gemini-3.5-flash',
-    selectedOpenAIModel: settings.openai_model || 'gpt-5.5',
-    selectedOpenRouterModel: settings.openrouter_model || 'openrouter/free',
     geminiModels,
-    openaiModels,
-    openrouterModels,
-    hasGeminiKey       : geminiEnabled,
-    hasOpenAIKey       : openaiEnabled,
-    hasOpenRouterKey   : openrouterEnabled
+    hasGeminiKey       : geminiEnabled
   });
 });
 
@@ -197,8 +161,8 @@ router.post('/chat', async (req, res) => {
         .slice(-20)
     : [];
 
-  const ALLOWED_PROVIDERS = ['gemini', 'openai', 'openrouter'];
-  const safeProvider = ALLOWED_PROVIDERS.includes(provider) ? provider : undefined;
+  const ALLOWED_PROVIDERS = ['gemini'];
+  const safeProvider = 'gemini';
   const startTime = Date.now();
 
   try {

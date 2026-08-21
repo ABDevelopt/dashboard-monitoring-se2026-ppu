@@ -320,7 +320,7 @@ async function testAllGeminiKeys(settings = {}) {
   if (allRateLimited) {
     advice = 'Semua API key mengalami batas kuota 429 secara bersamaan. Kemungkinan seluruh key dibuat di dalam Project Google Cloud yang sama. Untuk mendapatkan kuota cadangan yang independen, buat API Key di Project Google Cloud yang Baru atau gunakan Akun Google/Gmail yang berbeda di Google AI Studio.';
   } else if (results.length > 0 && healthyCount === 0) {
-    advice = 'Tidak ada API Key yang dapat digunakan saat ini. Silakan periksa kembali API Key atau tambahkan OpenRouter API Key sebagai cadangan otomatis.';
+    advice = 'Tidak ada API Key Gemini yang dapat digunakan saat ini. Silakan periksa kembali API Key atau tambahkan API Key Gemini baru sebagai cadangan.';
   }
 
   return {

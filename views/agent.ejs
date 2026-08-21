@@ -1286,14 +1286,10 @@
 (function() {
   const chatHistory = [];
   const modelOptions = {
-    gemini: <%- JSON.stringify(geminiModels || []) %>,
-    openai: <%- JSON.stringify(openaiModels || []) %>,
-    openrouter: <%- JSON.stringify(openrouterModels || []) %>
+    gemini: <%- JSON.stringify(geminiModels || ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-pro']) %>
   };
   const selectedModels = {
-    gemini: <%- JSON.stringify(selectedGeminiModel || 'gemini-3.5-flash') %>,
-    openai: <%- JSON.stringify(selectedOpenAIModel || 'gpt-5.5') %>,
-    openrouter: <%- JSON.stringify(selectedOpenRouterModel || 'meta-llama/llama-3.3-70b-instruct:free') %>
+    gemini: <%- JSON.stringify(selectedGeminiModel || 'gemini-3.5-flash') %>
   };
 
   // FIX #1 — Guard global: pastikan hanya ada SATU request aktif dalam satu waktu.
@@ -1502,9 +1498,7 @@
   }
 
   const providerKeyStatus = {
-    gemini: <%= hasGeminiKey ? 'true' : 'false' %>,
-    openai: <%= hasOpenAIKey ? 'true' : 'false' %>,
-    openrouter: <%= hasOpenRouterKey ? 'true' : 'false' %>
+    gemini: <%= hasGeminiKey ? 'true' : 'false' %>
   };
 
   let agentStatusTimer = null;

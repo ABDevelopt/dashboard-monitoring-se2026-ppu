@@ -6,16 +6,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const { 
-  GEMINI_DEFAULT_MODEL = 'gemini-3.5-flash',
-  OPENAI_DEFAULT_MODEL = 'gpt-5.5',
-  OPENROUTER_DEFAULT_MODEL = 'openrouter/free'
+  GEMINI_DEFAULT_MODEL = 'gemini-3.5-flash'
 } = process.env;
 
 const AGENT_API_TIMEOUT_MS          = 30000; 
 const AGENT_API_QUICK_RESPONSE_MS   = 20000; 
 const AGENT_API_TOOLRESULT_MS       = 30000; 
 const MAX_SWITCH_TRIES              = 5;
-
 
 const LEGACY_GEMINI_MODELS = new Set([]);
 const _activeControllers = new Map();
@@ -46,13 +43,13 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = AGENT_API_TIMEOUT
   }
 }
 
-function registerActiveRequest(provider) {
+function registerActiveRequest(provider = 'gemini') {
   const controller = new AbortController();
   _activeControllers.set(provider, controller);
   return controller;
 }
 
-function clearActiveRequest(provider) {
+function clearActiveRequest(provider = 'gemini') {
   _activeControllers.delete(provider);
 }
 
@@ -65,37 +62,18 @@ function abortAllActive() {
 }
 
 function getAllowedModels(provider, settings) {
-  if (provider === 'openrouter') {
-    const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
-    const models = listStr.split(',').map(m => m.trim()).filter(Boolean);
-    if (settings.openrouter_model) models.push(settings.openrouter_model);
-    return Array.from(new Set(models));
-  }
-  if (provider === 'openai') {
-    const listStr = settings.openai_models_list || 'gpt-5.5';
-    const models = listStr.split(',').map(m => m.trim()).filter(Boolean);
-    if (settings.openai_model) models.push(settings.openai_model);
-    return Array.from(new Set(models));
-  }
-  const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-3.1-flash-lite';
+  const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-2.5-flash, gemini-3.1-flash-lite, gemini-2.5-pro';
   const models = listStr.split(',').map(m => m.trim()).filter(Boolean);
   if (settings.gemini_model) models.push(settings.gemini_model);
   return Array.from(new Set(models));
 }
 
 function resolveAgentSelection(settings, options = {}) {
-  const selectedProvider = options.provider === 'openai' || options.provider === 'gemini' || options.provider === 'openrouter'
-    ? options.provider
-    : settings.agent_provider;
-  const provider = selectedProvider === 'openai' ? 'openai' : selectedProvider === 'openrouter' ? 'openrouter' : 'gemini';
-  const fallbackModel = provider === 'openai'
-    ? (settings.openai_model || OPENAI_DEFAULT_MODEL)
-    : provider === 'openrouter'
-    ? (settings.openrouter_model || OPENROUTER_DEFAULT_MODEL)
-    : (settings.gemini_model || GEMINI_DEFAULT_MODEL);
-  const allowedModels = getAllowedModels(provider, settings);
+  const provider = 'gemini';
+  const fallbackModel = settings.gemini_model || GEMINI_DEFAULT_MODEL;
+  const allowedModels = getAllowedModels('gemini', settings);
   let model = allowedModels.includes(options.model) ? options.model : fallbackModel;
-  if (provider === 'gemini' && LEGACY_GEMINI_MODELS.has(model)) model = GEMINI_DEFAULT_MODEL;
+  if (LEGACY_GEMINI_MODELS.has(model)) model = GEMINI_DEFAULT_MODEL;
   return { provider, model };
 }
 
@@ -345,241 +323,6 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
 }
 
 // ─────────────────────────────────────────────
-//  OPENAI & OPENROUTER STUBS (SIMPLIFIED BACKEND CALLERS)
-// ─────────────────────────────────────────────
-async function createOpenAIResponse(apiKey, payload) {
-  const timeoutMs = payload.previous_response_id ? AGENT_API_TOOLRESULT_MS : AGENT_API_QUICK_RESPONSE_MS;
-  const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-    method : 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body   : JSON.stringify(payload)
-  }, timeoutMs);
-
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data?.error?.message || `HTTP ${response.status}`);
-  }
-  return data;
-}
-
-function extractOpenAIText(response) {
-  if (response.choices?.[0]?.message?.content) return response.choices[0].message.content;
-  return 'Model tidak mengembalikan teks.';
-}
-
-async function sendMessageToOpenAI(userMessage, chatHistory, settings, selectedModel, abortSignal, systemInstruction) {
-  const apiKey = settings.openai_api_key;
-  const model = selectedModel || settings.openai_model || OPENAI_DEFAULT_MODEL;
-
-  const cleanHist = formatGeminiHistory(chatHistory);
-  const messages = [
-    { role: 'system', content: systemInstruction },
-    ...cleanHist.map(msg => ({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.parts[0].text })),
-    { role: 'user', content: userMessage }
-  ];
-
-  const tools = Object.values(TOOL_SCHEMAS).map(t => ({ type: 'function', function: t }));
-
-  try {
-    let loopCount = 0;
-    const MAX_LOOPS = 5;
-    let finalContent = '';
-    let lastBackupOutput = '';
-
-    while (loopCount < MAX_LOOPS) {
-      if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
-
-      const resp = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ model, messages, tools })
-      });
-
-      if (!resp.ok) {
-        const errData = await resp.json().catch(() => ({}));
-        throw new Error(errData.error?.message || `HTTP ${resp.status}`);
-      }
-
-      const data = await resp.json();
-      const choiceMessage = data.choices?.[0]?.message;
-      if (!choiceMessage) throw new Error('OpenAI tidak mengembalikan pesan.');
-
-      const toolCalls = choiceMessage.tool_calls || [];
-      if (toolCalls.length === 0) {
-        finalContent = choiceMessage.content || '';
-        break;
-      }
-
-      loopCount++;
-      log.info(`[OPENAI] Executing tool call loop ${loopCount}/${MAX_LOOPS}: ${toolCalls.map(t => t.function?.name).join(', ')}`);
-
-      messages.push(choiceMessage);
-
-      let backupFormattedOutput = '';
-      for (const tc of toolCalls) {
-        let args = {};
-        try { args = JSON.parse(tc.function.arguments || '{}'); } catch (_) {}
-        const res = await runToolCall({ name: tc.function.name, args });
-
-        if (res && res.status === 'success' && Array.isArray(res.data) && res.data.length > 0) {
-          const { formatToolRowsToMarkdown } = require('./toolRegistry');
-          backupFormattedOutput += formatToolRowsToMarkdown(tc.function.name, args, res.data) + '\n\n';
-        }
-
-        messages.push({
-          role: 'tool',
-          tool_call_id: tc.id || tc.function.name,
-          content: JSON.stringify(res)
-        });
-      }
-
-      if (backupFormattedOutput && !lastBackupOutput) {
-        lastBackupOutput = backupFormattedOutput.trim();
-      }
-    }
-
-    if (!finalContent || !finalContent.trim() || finalContent === 'Model tidak mengembalikan teks.') {
-      if (lastBackupOutput) {
-        finalContent = lastBackupOutput;
-      } else {
-        finalContent = 'Model tidak mengembalikan teks.';
-      }
-    }
-
-    finalContent = processJsonQueryResponse(finalContent);
-    return { role: 'model', content: finalContent, isSimulation: false };
-  } catch (error) {
-    log.error('sendMessageToOpenAI error:', error.message);
-    throw error;
-  }
-}
-
-async function streamMessageToOpenAI(userMessage, chatHistory, settings, selectedModel, abortSignal, onEvent, systemInstruction) {
-  onEvent('status', { text: '🔍 Memproses analisis data...', step: 'model_call' });
-  const result = await sendMessageToOpenAI(userMessage, chatHistory, settings, selectedModel, abortSignal, systemInstruction);
-  onEvent('chunk', { text: result.content });
-  return result;
-}
-
-async function sendMessageToOpenRouter(userMessage, chatHistory, settings, selectedModel, abortSignal, systemInstruction) {
-  const apiKey = settings.openrouter_api_key;
-  const model = selectedModel || settings.openrouter_model || OPENROUTER_DEFAULT_MODEL;
-
-  const cleanHist = formatGeminiHistory(chatHistory);
-  const messages = [
-    { role: 'system', content: systemInstruction },
-    ...cleanHist.map(msg => ({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.parts[0].text })),
-    { role: 'user', content: userMessage }
-  ];
-
-  const tools = Object.values(TOOL_SCHEMAS).map(t => ({ type: 'function', function: t }));
-
-  try {
-    let loopCount = 0;
-    const MAX_LOOPS = 5;
-    let finalContent = '';
-    let includeTools = true;
-    let lastBackupOutput = '';
-
-    while (loopCount < MAX_LOOPS) {
-      if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
-
-      const payload = { model, messages };
-      if (includeTools) payload.tools = tools;
-
-      let resp = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      let data = await resp.json();
-
-      if (!resp.ok && includeTools && data?.error?.message && (data.error.message.includes('tools') || data.error.message.includes('function') || data.error.message.includes('support'))) {
-        log.warn(`[OPENROUTER] Model '${model}' does not support tools parameter. Retrying without tools...`);
-        includeTools = false;
-        delete payload.tools;
-        resp = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
-        data = await resp.json();
-      }
-
-      if (!resp.ok) throw new Error(data?.error?.message || `HTTP ${resp.status}`);
-
-      const choiceMessage = data.choices?.[0]?.message;
-      if (!choiceMessage) throw new Error('OpenRouter tidak mengembalikan pesan.');
-
-      const toolCalls = choiceMessage.tool_calls || [];
-      if (toolCalls.length === 0) {
-        finalContent = choiceMessage.content || '';
-        break;
-      }
-
-      loopCount++;
-      log.info(`[OPENROUTER] Executing tool call loop ${loopCount}/${MAX_LOOPS}: ${toolCalls.map(t => t.function?.name).join(', ')}`);
-
-      messages.push(choiceMessage);
-
-      let backupFormattedOutput = '';
-      for (const tc of toolCalls) {
-        let args = {};
-        try { args = JSON.parse(tc.function.arguments || '{}'); } catch (_) {}
-        const res = await runToolCall({ name: tc.function.name, args });
-
-        if (res && res.status === 'success' && Array.isArray(res.data) && res.data.length > 0) {
-          const { formatToolRowsToMarkdown } = require('./toolRegistry');
-          backupFormattedOutput += formatToolRowsToMarkdown(tc.function.name, args, res.data) + '\n\n';
-        }
-
-        messages.push({
-          role: 'tool',
-          tool_call_id: tc.id || tc.function.name,
-          content: JSON.stringify(res)
-        });
-      }
-
-      if (backupFormattedOutput && !lastBackupOutput) {
-        lastBackupOutput = backupFormattedOutput.trim();
-      }
-    }
-
-    if (!finalContent || !finalContent.trim() || finalContent === 'Model tidak mengembalikan teks.') {
-      if (lastBackupOutput) {
-        finalContent = lastBackupOutput;
-      } else {
-        finalContent = 'Model tidak mengembalikan teks.';
-      }
-    }
-
-    finalContent = processJsonQueryResponse(finalContent);
-    return { role: 'model', content: finalContent, isSimulation: false };
-
-  } catch (err) {
-    log.error('OpenRouter error:', err.message);
-    throw err;
-  }
-}
-
-async function streamMessageToOpenRouter(userMessage, chatHistory, settings, selectedModel, abortSignal, onEvent, systemInstruction) {
-  onEvent('status', { text: '🔍 Memproses analisis data...', step: 'model_call' });
-  const result = await sendMessageToOpenRouter(userMessage, chatHistory, settings, selectedModel, abortSignal, systemInstruction);
-  onEvent('chunk', { text: result.content });
-  return result;
-}
-
-// ─────────────────────────────────────────────
 //  EXPORTS
 // ─────────────────────────────────────────────
 module.exports = {
@@ -591,9 +334,6 @@ module.exports = {
   resolveAgentSelection,
   sendMessageToGemini,
   streamMessageToGemini,
-  sendMessageToOpenAI,
-  streamMessageToOpenAI,
-  sendMessageToOpenRouter,
-  streamMessageToOpenRouter,
   MAX_SWITCH_TRIES
 };
+

@@ -65,10 +65,10 @@
       box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.15);
     }
     .settings-hint {
-      font-size: 11px;
+      font-size: 11.5px;
       color: var(--text-muted);
       margin-top: 4px;
-      line-height: 1.4;
+      line-height: 1.45;
     }
 
     /* Toggle switch design */
@@ -113,6 +113,31 @@
       transform: translateX(20px);
     }
     
+    @keyframes pulse-live {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .log-line {
+      padding: 3px 6px;
+      border-radius: 4px;
+      display: flex;
+      gap: 8px;
+      font-size: 11.5px;
+      line-height: 1.5;
+      transition: background 0.15s ease;
+    }
+    .log-line:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .log-line.log-info { color: #c9d1d9; }
+    .log-line.log-warn { color: #f1e05a; background: rgba(241, 224, 90, 0.05); }
+    .log-line.log-error { color: #f85149; background: rgba(248, 81, 73, 0.08); }
+    .log-badge-info { background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; }
+    .log-badge-warn { background: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; }
+    .log-badge-error { background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; }
+    .log-badge-ai { background: rgba(168, 85, 247, 0.15); color: #c084fc; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; }
+
     @media (max-width: 768px) {
       .settings-grid {
         grid-template-columns: 1fr !important;
@@ -133,10 +158,6 @@
         transform: none !important;
         box-shadow: 0 4px 14px rgba(13, 110, 253, 0.25) !important;
       }
-      #agent_provider {
-        min-width: 100% !important;
-        width: 100% !important;
-      }
     }
   </style>
 
@@ -151,32 +172,17 @@
 
   <div class="card-body">
     <form action="<%= navPrefix %>/admin/settings/chatbot" method="POST">
+      <input type="hidden" name="agent_provider" value="gemini">
+
       <div class="settings-grid">
         
-        <!-- CARD 1: GLOBAL CONFIG & PROVIDER -->
+        <!-- CARD 1: SMART SWITCH & FAILOVER -->
         <div class="settings-group" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;">
           <div style="flex: 1; min-width: 280px;">
-            <div class="settings-group-title" style="border: none; margin-bottom: 0; padding-bottom: 0;">
-              <i class="bi bi-cpu"></i> Provider Aktif Utama
-            </div>
-            <p class="settings-hint" style="margin-top: 4px;">Pilih provider AI utama yang diaktifkan secara bawaan saat membuka halaman chat.</p>
-          </div>
-          <div class="settings-field" style="margin-bottom: 0;">
-            <select id="agent_provider" name="agent_provider" style="min-width: 260px;">
-              <option value="gemini" <%= settings.agent_provider === 'gemini' ? 'selected' : '' %>>Google Gemini</option>
-              <option value="openai" <%= settings.agent_provider === 'openai' ? 'selected' : '' %>>OpenAI</option>
-              <option value="openrouter" <%= settings.agent_provider === 'openrouter' ? 'selected' : '' %>>OpenRouter (Model Open-Source)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- CARD 1B: SMART SWITCH CONFIG -->
-        <div class="settings-group" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; margin-top: -10px;">
-          <div style="flex: 1; min-width: 280px;">
             <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-              <i class="bi bi-shuffle" style="color: var(--accent-blue);"></i> Fitur Smart Switch AI
+              <i class="bi bi-shuffle" style="color: var(--accent-blue);"></i> Fitur Smart Switch &amp; Key Rotation
             </div>
-            <p class="settings-hint" style="margin-top: 4px;">Saat model utama mengalami error kuota habis/rate-limit (HTTP 429/403/503), sistem akan otomatis beralih mencari key cadangan dan model gratis alternatif sebelum akhirnya beralih ke Mode Simulasi.</p>
+            <p class="settings-hint" style="margin-top: 4px;">Saat API Key utama mengalami batas kuota (HTTP 429 Rate Limit) atau timeout, sistem secara otomatis beralih memanggil API Key cadangan dan model Gemini alternatif tanpa terhenti.</p>
           </div>
           <div style="margin-bottom: 0;">
             <label class="toggle-switch">
@@ -186,121 +192,93 @@
           </div>
         </div>
 
-        <!-- CARD 2: GOOGLE GEMINI -->
-        <div class="settings-group">
-          <div class="settings-group-title" style="border-bottom-color: rgba(13, 110, 253, 0.2); display: flex; justify-content: space-between; align-items: center;">
-            <span><i class="bi bi-google" style="color: #4285F4;"></i> Google Gemini</span>
-            <span class="badge" style="background: rgba(66, 133, 244, 0.15); color: #4285F4; font-size: 12px; padding: 4px 8px; border-radius: 6px;">Multi-Key &amp; Auto-Failover</span>
-          </div>
-
-          <div class="settings-field">
-            <label for="gemini_api_key" style="font-size: 13px; font-weight: 600;">Gemini API Key Utama</label>
-            <div style="display: flex; gap: 8px; align-items: center;">
-              <input type="password" id="gemini_api_key" name="gemini_api_key" value="<%= settings.gemini_api_key || '' %>" autocomplete="off" placeholder="Masukkan Gemini API key utama" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
-              <button type="button" class="btn btn-secondary btn-xs" onclick="togglePasswordVisibility('gemini_api_key', this)" style="padding: 10px 12px; height: 38px; border-radius: var(--radius-sm);" title="Lihat/Sembunyikan Key"><i class="bi bi-eye"></i></button>
+        <!-- CARD 2: GOOGLE GEMINI CONFIGURATION (FULL WIDTH) -->
+        <div class="settings-group" style="grid-column: 1 / -1;">
+          <div class="settings-group-title" style="border-bottom-color: rgba(66, 133, 244, 0.25); display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="bi bi-google" style="color: #4285F4;"></i>
+              <span>Google Gemini AI (Multi-Key Pool &amp; Auto-Failover)</span>
             </div>
+            <span class="badge" style="background: rgba(66, 133, 244, 0.15); color: #4285F4; font-size: 12px; padding: 4px 8px; border-radius: 6px;">Provider Tunggal Utama</span>
           </div>
 
-          <%
-            let backupKeys = [];
-            try {
-              if (settings.gemini_backup_api_keys) {
-                backupKeys = JSON.parse(settings.gemini_backup_api_keys);
-              }
-            } catch (e) {
-              if (settings.gemini_backup_api_keys) {
-                backupKeys = settings.gemini_backup_api_keys.split(',').map(k => k.trim());
-              }
-            }
-          %>
-          <div class="settings-field">
-            <label style="font-size: 13px; font-weight: 600;">Gemini API Key Cadangan (Backup Pool)</label>
-            <div id="gemini-backup-keys-container" style="display: flex; flex-direction: column; gap: 8px;">
-              <% if (backupKeys.length === 0) { %>
-                <div class="backup-key-row" style="display: flex; gap: 8px; align-items: center;">
-                  <input type="password" name="gemini_backup_keys" placeholder="Masukkan Backup API key" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
-                  <button type="button" class="btn btn-secondary btn-xs" onclick="togglePasswordVisibilityInRow(this)" style="padding: 10px 12px; height: 38px; border-radius: var(--radius-sm);" title="Lihat/Sembunyikan Key"><i class="bi bi-eye"></i></button>
-                  <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;" title="Hapus Key"><i class="bi bi-trash"></i></button>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 20px;">
+            <!-- Kolom Kiri: API Keys -->
+            <div>
+              <div class="settings-field">
+                <label for="gemini_api_key" style="font-size: 13px; font-weight: 600;">Gemini API Key Utama</label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <input type="password" id="gemini_api_key" name="gemini_api_key" value="<%= settings.gemini_api_key || '' %>" autocomplete="off" placeholder="Masukkan Gemini API key utama (AIzaSy... / AQ.Ab8...)" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
+                  <button type="button" class="btn btn-secondary btn-xs" onclick="togglePasswordVisibility('gemini_api_key', this)" style="padding: 10px 12px; height: 38px; border-radius: var(--radius-sm);" title="Lihat/Sembunyikan Key"><i class="bi bi-eye"></i></button>
                 </div>
-              <% } else { %>
-                <% backupKeys.forEach((key, idx) => { %>
-                  <div class="backup-key-row" style="display: flex; gap: 8px; align-items: center; margin-top: <%= idx > 0 ? '8px' : '0' %>;">
-                    <input type="password" name="gemini_backup_keys" value="<%= key %>" placeholder="Masukkan Backup API key" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
-                    <button type="button" class="btn btn-secondary btn-xs" onclick="togglePasswordVisibilityInRow(this)" style="padding: 10px 12px; height: 38px; border-radius: var(--radius-sm);" title="Lihat/Sembunyikan Key"><i class="bi bi-eye"></i></button>
-                    <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;" title="Hapus Key"><i class="bi bi-trash"></i></button>
-                  </div>
-                <% }) %>
-              <% } %>
+              </div>
+
+              <%
+                let backupKeys = [];
+                try {
+                  if (settings.gemini_backup_api_keys) {
+                    backupKeys = JSON.parse(settings.gemini_backup_api_keys);
+                  }
+                } catch (e) {
+                  if (settings.gemini_backup_api_keys) {
+                    backupKeys = settings.gemini_backup_api_keys.split(',').map(k => k.trim());
+                  }
+                }
+              %>
+              <div class="settings-field">
+                <label style="font-size: 13px; font-weight: 600;">Gemini API Key Cadangan (Backup Pool)</label>
+                <div id="gemini-backup-keys-container" style="display: flex; flex-direction: column; gap: 8px;">
+                  <% if (backupKeys.length === 0) { %>
+                    <div class="backup-key-row" style="display: flex; gap: 8px; align-items: center;">
+                      <input type="password" name="gemini_backup_keys" placeholder="Masukkan Backup API key" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
+                      <button type="button" class="btn btn-secondary btn-xs" onclick="togglePasswordVisibilityInRow(this)" style="padding: 10px 12px; height: 38px; border-radius: var(--radius-sm);" title="Lihat/Sembunyikan Key"><i class="bi bi-eye"></i></button>
+                      <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;" title="Hapus Key"><i class="bi bi-trash"></i></button>
+                    </div>
+                  <% } else { %>
+                    <% backupKeys.forEach((key, idx) => { %>
+                      <div class="backup-key-row" style="display: flex; gap: 8px; align-items: center; margin-top: <%= idx > 0 ? '8px' : '0' %>;">
+                        <input type="password" name="gemini_backup_keys" value="<%= key %>" placeholder="Masukkan Backup API key" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
+                        <button type="button" class="btn btn-secondary btn-xs" onclick="togglePasswordVisibilityInRow(this)" style="padding: 10px 12px; height: 38px; border-radius: var(--radius-sm);" title="Lihat/Sembunyikan Key"><i class="bi bi-eye"></i></button>
+                        <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;" title="Hapus Key"><i class="bi bi-trash"></i></button>
+                      </div>
+                    <% }) %>
+                  <% } %>
+                </div>
+                
+                <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary btn-xs" onclick="addBackupKey()" style="font-size: 12px; padding: 7px 14px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="bi bi-plus-lg"></i> Tambah Key Cadangan
+                  </button>
+                  <button type="button" id="btn-test-gemini-keys" class="btn btn-outline-primary btn-xs" onclick="testGeminiKeys()" style="font-size: 12px; padding: 7px 14px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #4285F4; color: #4285F4; background: rgba(66, 133, 244, 0.08);">
+                    <i class="bi bi-shield-check"></i> ⚡ Uji Seluruh Key Gemini
+                  </button>
+                </div>
+                
+                <div id="gemini-test-results" style="display: none; margin-top: 12px; padding: 12px; border-radius: 8px; background: var(--bg-tertiary, #1f2430); border: 1px solid var(--border);"></div>
+
+                <p class="settings-hint" style="margin-top: 8px;">
+                  <i class="bi bi-info-circle"></i> <strong>Tips Kuota:</strong> Kuota gratis Google AI Studio (20 RPD) dihitung <em>per Project Google Cloud</em>. Gunakan akun Google atau Project yang berbeda untuk setiap key cadangan.
+                </p>
+              </div>
             </div>
-            
-            <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
-              <button type="button" class="btn btn-secondary btn-xs" onclick="addBackupKey()" style="font-size: 12px; padding: 7px 14px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;">
-                <i class="bi bi-plus-lg"></i> Tambah Key Cadangan
-              </button>
-              <button type="button" id="btn-test-gemini-keys" class="btn btn-outline-primary btn-xs" onclick="testGeminiKeys()" style="font-size: 12px; padding: 7px 14px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #4285F4; color: #4285F4; background: rgba(66, 133, 244, 0.08);">
-                <i class="bi bi-shield-check"></i> ⚡ Uji Seluruh Key Gemini
-              </button>
+
+            <!-- Kolom Kanan: Model Selection -->
+            <div>
+              <div class="settings-field">
+                <label for="gemini_model" style="font-size: 13px; font-weight: 600;">Default Model Gemini</label>
+                <input type="text" id="gemini_model" name="gemini_model" value="<%= settings.gemini_model || 'gemini-3.5-flash' %>" placeholder="gemini-3.5-flash">
+                <p class="settings-hint">Rekomendasi: <code>gemini-3.5-flash</code> (generasi terbaru, cerdas, dan responsif).</p>
+              </div>
+              <div class="settings-field">
+                <label for="gemini_models_list" style="font-size: 13px; font-weight: 600;">Daftar Pilihan Model Gemini</label>
+                <textarea id="gemini_models_list" name="gemini_models_list" rows="3" placeholder="gemini-3.5-flash, gemini-2.5-flash, gemini-3.1-flash-lite, gemini-2.5-pro"><%= settings.gemini_models_list || 'gemini-3.5-flash, gemini-2.5-flash, gemini-3.1-flash-lite, gemini-2.5-pro' %></textarea>
+                <p class="settings-hint">Pisahkan nama model dengan tanda koma (,).</p>
+              </div>
             </div>
-            
-            <div id="gemini-test-results" style="display: none; margin-top: 12px; padding: 12px; border-radius: 8px; background: var(--bg-tertiary, #1f2430); border: 1px solid var(--border);"></div>
-
-            <p class="settings-hint" style="margin-top: 8px; font-size: 12px; line-height: 1.5;">
-              <i class="bi bi-info-circle"></i> <strong>Penting:</strong> Batas kuota gratis Google AI Studio (20 request/hari) dihitung <strong>per Google Cloud Project</strong>. Agar key cadangan memiliki kuota independen, buat API Key di <em>Project Google Cloud yang berbeda</em> atau gunakan <em>Akun Google yang berbeda</em>.
-            </p>
-          </div>
-
-          <div class="settings-field">
-            <label for="gemini_model" style="font-size: 13px; font-weight: 600;">Default Gemini Model</label>
-            <input type="text" id="gemini_model" name="gemini_model" value="<%= settings.gemini_model || 'gemini-3.5-flash' %>" placeholder="gemini-3.5-flash">
-          </div>
-          <div class="settings-field">
-            <label for="gemini_models_list" style="font-size: 13px; font-weight: 600;">Daftar Pilihan Model Gemini</label>
-            <textarea id="gemini_models_list" name="gemini_models_list" rows="2" placeholder="gemini-3.5-flash, gemini-2.5-flash"><%= settings.gemini_models_list || '' %></textarea>
-            <p class="settings-hint" style="font-size: 12px;">Pisahkan nama model dengan tanda koma (,).</p>
           </div>
         </div>
 
-        <!-- CARD 3: OPENAI -->
-        <div class="settings-group">
-          <div class="settings-group-title" style="border-bottom-color: rgba(25, 135, 84, 0.2);">
-            <i class="bi bi-lightning-charge-fill" style="color: #198754;"></i> OpenAI
-          </div>
-          <div class="settings-field">
-            <label for="openai_api_key" style="font-size: 13px; font-weight: 600;">OpenAI API Key</label>
-            <input type="password" id="openai_api_key" name="openai_api_key" value="<%= settings.openai_api_key || '' %>" autocomplete="off" placeholder="Masukkan OpenAI API key">
-          </div>
-          <div class="settings-field">
-            <label for="openai_model" style="font-size: 13px; font-weight: 600;">Default OpenAI Model</label>
-            <input type="text" id="openai_model" name="openai_model" value="<%= settings.openai_model || 'gpt-5.5' %>" placeholder="gpt-5.5">
-          </div>
-          <div class="settings-field">
-            <label for="openai_models_list" style="font-size: 13px; font-weight: 600;">Daftar Pilihan Model OpenAI</label>
-            <textarea id="openai_models_list" name="openai_models_list" rows="2" placeholder="gpt-5.5, gpt-4o"><%= settings.openai_models_list || '' %></textarea>
-            <p class="settings-hint" style="font-size: 12px;">Pisahkan nama model dengan tanda koma (,).</p>
-          </div>
-        </div>
-
-        <!-- CARD 4: OPENROUTER -->
-        <div class="settings-group" style="grid-column: span 2;">
-          <div class="settings-group-title" style="border-bottom-color: rgba(111, 66, 193, 0.2);">
-            <i class="bi bi-layers-half" style="color: #6f42c1;"></i> OpenRouter (Open-Source Fallback)
-          </div>
-          <div class="settings-field" style="max-width: 600px;">
-            <label for="openrouter_api_key" style="font-size: 13px; font-weight: 600;">OpenRouter API Key</label>
-            <input type="password" id="openrouter_api_key" name="openrouter_api_key" value="<%= settings.openrouter_api_key || '' %>" autocomplete="off" placeholder="Masukkan OpenRouter API key">
-          </div>
-          <div class="settings-field" style="max-width: 600px;">
-            <label for="openrouter_model" style="font-size: 13px; font-weight: 600;">Default OpenRouter Model</label>
-            <input type="text" id="openrouter_model" name="openrouter_model" value="<%= settings.openrouter_model || 'nvidia/nemotron-3-ultra-550b-a55b:free' %>" placeholder="nvidia/nemotron-3-ultra-550b-a55b:free">
-          </div>
-          <div class="settings-field" style="max-width: 600px;">
-            <label for="openrouter_models_list" style="font-size: 13px; font-weight: 600;">Daftar Pilihan Model OpenRouter</label>
-            <textarea id="openrouter_models_list" name="openrouter_models_list" rows="3" placeholder="nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free"><%= settings.openrouter_models_list || '' %></textarea>
-            <p class="settings-hint" style="font-size: 12px;">Pisahkan nama model dengan tanda koma (,).</p>
-          </div>
-        </div>
-
-        <!-- CARD 5: LIVE SYSTEM & CHATBOT LOG VIEWER -->
+        <!-- CARD 3: LIVE SYSTEM & CHATBOT LOG VIEWER -->
         <div class="settings-group" style="grid-column: span 2; margin-top: 10px;">
           <div class="settings-group-title" style="display: flex; justify-content: space-between; align-items: center; border-bottom-color: rgba(6, 182, 212, 0.25);">
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -314,33 +292,6 @@
               </span>
             </div>
           </div>
-
-          <style>
-            @keyframes pulse-live {
-              0% { opacity: 1; transform: scale(1); }
-              50% { opacity: 0.4; transform: scale(1.3); }
-              100% { opacity: 1; transform: scale(1); }
-            }
-            .log-line {
-              padding: 3px 6px;
-              border-radius: 4px;
-              display: flex;
-              gap: 8px;
-              font-size: 11.5px;
-              line-height: 1.5;
-              transition: background 0.15s ease;
-            }
-            .log-line:hover {
-              background: rgba(255, 255, 255, 0.05);
-            }
-            .log-line.log-info { color: #c9d1d9; }
-            .log-line.log-warn { color: #f1e05a; background: rgba(241, 224, 90, 0.05); }
-            .log-line.log-error { color: #f85149; background: rgba(248, 81, 73, 0.08); }
-            .log-badge-info { background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; }
-            .log-badge-warn { background: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; }
-            .log-badge-error { background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; }
-            .log-badge-ai { background: rgba(168, 85, 247, 0.15); color: #c084fc; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; }
-          </style>
 
           <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px;">
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -398,6 +349,148 @@
 
   <script>
     // ─────────────────────────────────────────────────────────────────
+    //  PASSWORD & BACKUP KEY MANAGERS
+    // ─────────────────────────────────────────────────────────────────
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      btn.innerHTML = isPass ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+    }
+
+    function togglePasswordVisibilityInRow(btn) {
+      const row = btn.closest('.backup-key-row');
+      if (!row) return;
+      const input = row.querySelector('input');
+      if (!input) return;
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      btn.innerHTML = isPass ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+    }
+
+    function addBackupKey() {
+      const container = document.getElementById('gemini-backup-keys-container');
+      if (!container) return;
+      const div = document.createElement('div');
+      div.className = 'backup-key-row';
+      div.style.cssText = 'display: flex; gap: 8px; align-items: center;';
+      div.innerHTML = `
+        <input type="password" name="gemini_backup_keys" placeholder="Masukkan Backup API key baru" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
+        <button type="button" class="btn btn-secondary btn-xs" onclick="togglePasswordVisibilityInRow(this)" style="padding: 10px 12px; height: 38px; border-radius: var(--radius-sm);" title="Lihat/Sembunyikan Key"><i class="bi bi-eye"></i></button>
+        <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;" title="Hapus Key"><i class="bi bi-trash"></i></button>
+      `;
+      container.appendChild(div);
+      const input = div.querySelector('input');
+      if (input) input.focus();
+    }
+    
+    function removeBackupKey(btn) {
+      const row = btn.closest('.backup-key-row');
+      if (!row) return;
+      const container = document.getElementById('gemini-backup-keys-container');
+      if (container && container.querySelectorAll('.backup-key-row').length === 1) {
+        const input = row.querySelector('input');
+        if (input) input.value = '';
+      } else {
+        row.remove();
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    //  TEST ALL GEMINI KEYS
+    // ─────────────────────────────────────────────────────────────────
+    async function testGeminiKeys() {
+      const btn = document.getElementById('btn-test-gemini-keys');
+      const resultBox = document.getElementById('gemini-test-results');
+      if (!btn || !resultBox) return;
+
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Menguji...';
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = '<div style="font-size: 13px; color: var(--text-secondary);"><i class="bi bi-arrow-repeat spin"></i> Menghubungkan dan menguji seluruh API Key ke Google Gemini API...</div>';
+
+      const primaryKey = (document.getElementById('gemini_api_key')?.value || '').trim();
+      const backupInputs = Array.from(document.querySelectorAll('input[name="gemini_backup_keys"]'));
+      const backupKeys = backupInputs.map(i => i.value.trim()).filter(Boolean);
+      const model = (document.getElementById('gemini_model')?.value || 'gemini-3.5-flash').trim();
+
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+      const prefix = window.navPrefix || '<%= navPrefix %>';
+
+      try {
+        const response = await fetch(prefix + '/admin/settings/test-gemini-keys', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({
+            _csrf: csrfToken,
+            gemini_api_key: primaryKey,
+            gemini_backup_keys: backupKeys,
+            gemini_model: model
+          })
+        });
+
+        const resData = await response.json();
+        if (!resData.success || !resData.report) {
+          throw new Error(resData.error || 'Gagal menjalankan tes');
+        }
+
+        const report = resData.report;
+        if (report.total === 0) {
+          resultBox.innerHTML = '<div style="font-size: 13px; color: #ffc107;"><i class="bi bi-exclamation-triangle"></i> Belum ada API key Gemini yang diisi. Masukkan Key Utama atau Cadangan terlebih dahulu.</div>';
+          return;
+        }
+
+        let html = `<div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between;">
+          <span>Hasil Uji Kunci (${report.healthyCount}/${report.total} Sehat):</span>
+          <span style="font-size: 12px; font-weight: 400; color: var(--text-secondary);">Model: ${report.modelUsed}</span>
+        </div>`;
+
+        html += '<div style="display: flex; flex-direction: column; gap: 6px;">';
+        report.keys.forEach(k => {
+          let badge = '';
+          if (k.valid) {
+            badge = `<span style="background: rgba(25, 135, 84, 0.2); color: #198754; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">🟢 Aktif (${k.latencyMs}ms)</span>`;
+          } else if (k.statusCode === 429) {
+            badge = `<span style="background: rgba(255, 193, 7, 0.2); color: #ffc107; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">🟡 429 Rate Limit (Auto-Cooldown)</span>`;
+          } else {
+            badge = `<span style="background: rgba(220, 53, 69, 0.2); color: #dc3545; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">🔴 Invalid (${k.statusCode || 'Error'})</span>`;
+          }
+
+          html += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--bg-secondary); border-radius: 6px; font-size: 12px;">
+              <div>
+                <strong>${k.label}</strong> <code style="font-size: 11px; color: var(--text-secondary);">${k.maskedKey}</code>
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${k.message}</div>
+              </div>
+              <div>${badge}</div>
+            </div>
+          `;
+        });
+        html += '</div>';
+
+        if (report.advice) {
+          html += `<div style="margin-top: 10px; padding: 8px 12px; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 6px; font-size: 12px; line-height: 1.4; color: #ffc107;">
+            <i class="bi bi-info-circle-fill"></i> <strong>Saran:</strong> ${report.advice}
+          </div>`;
+        }
+
+        resultBox.innerHTML = html;
+        fetchChatbotLogs(false);
+      } catch (err) {
+        resultBox.innerHTML = `<div style="font-size: 13px; color: #dc3545;"><i class="bi bi-x-circle"></i> Terjadi kesalahan saat pengujian: ${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
     //  LIVE SYSTEM & CHATBOT LOG VIEWER
     // ─────────────────────────────────────────────────────────────────
     let allLogs = [];
@@ -441,7 +534,7 @@
         if (filterLevel === 'ERROR' && lvl !== 'error' && lvl !== 'warn') return false;
         if (filterLevel === 'INFO' && lvl !== 'info') return false;
         if (filterLevel === 'AI') {
-          const isAi = msg.includes('[key_pool') || msg.includes('[llm_gw') || msg.includes('gemini') || msg.includes('agent') || msg.includes('smart_switch') || msg.includes('smartswitch') || msg.includes('openai') || msg.includes('openrouter') || msg.includes('tool_registry');
+          const isAi = msg.includes('[key_pool') || msg.includes('[llm_gw') || msg.includes('gemini') || msg.includes('agent') || msg.includes('smart_switch') || msg.includes('smartswitch') || msg.includes('tool_registry');
           if (!isAi) return false;
         }
 
@@ -463,7 +556,6 @@
         return;
       }
 
-      // Check if user is scrolled near bottom
       const isNearBottom = terminal.scrollHeight - terminal.clientHeight - terminal.scrollTop < 60;
 
       let html = '';
@@ -500,7 +592,6 @@
 
       terminal.innerHTML = html;
 
-      // Maintain auto-scroll to bottom if previously near bottom
       if (isNearBottom) {
         terminal.scrollTop = terminal.scrollHeight;
       }

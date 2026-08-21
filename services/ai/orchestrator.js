@@ -277,75 +277,13 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
     }
   }
 
-  const tries = [{ provider: initialSelection.provider, model: initialSelection.model }];
+  const tries = [{ provider: 'gemini', model: initialSelection.model }];
 
   if (settings.chatbot_smart_switch === '1') {
-    if (initialSelection.provider === 'gemini') {
-      if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
-        const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.5-flash';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          tries.push({ provider: 'gemini', model: m });
-        }
-      }
-      if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
-        const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          if (m.includes(':free')) tries.push({ provider: 'openrouter', model: m });
-        }
-      }
-      if (settings.openai_api_key && settings.openai_api_key.trim()) {
-        const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          tries.push({ provider: 'openai', model: m });
-        }
-      }
-    } else if (initialSelection.provider === 'openrouter') {
-      if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
-        const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          tries.push({ provider: 'openrouter', model: m });
-        }
-      }
-      if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
-        const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.5-flash';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          tries.push({ provider: 'gemini', model: m });
-        }
-      }
-      if (settings.openai_api_key && settings.openai_api_key.trim()) {
-        const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          tries.push({ provider: 'openai', model: m });
-        }
-      }
-    } else {
-      if (settings.openai_api_key && settings.openai_api_key.trim()) {
-        const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          tries.push({ provider: 'openai', model: m });
-        }
-      }
-      if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
-        const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.5-flash';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          tries.push({ provider: 'gemini', model: m });
-        }
-      }
-      if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
-        const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          if (m.includes(':free')) tries.push({ provider: 'openrouter', model: m });
-        }
-      }
+    const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-2.5-flash, gemini-3.1-flash-lite, gemini-2.5-pro';
+    for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+      if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+      tries.push({ provider: 'gemini', model: m });
     }
   }
 
@@ -361,61 +299,35 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
 
   for (let i = 0; i < uniqueTries.length; i++) {
     const current = uniqueTries[i];
+    const keysToTry = keyPool.getOrderedEligibleKeys(settings);
+    if (keysToTry.length === 0) continue;
 
-    if (current.provider === 'gemini') {
-      const keysToTry = keyPool.getOrderedEligibleKeys(settings);
-      if (keysToTry.length === 0) continue;
-
-      let success = false;
-      for (let kIdx = 0; kIdx < keysToTry.length; kIdx++) {
-        const kItem = keysToTry[kIdx];
-        llmGateway.abortAllActive();
-        const serverController = llmGateway.registerActiveRequest('gemini');
-
-        try {
-          finalResult = await llmGateway.sendMessageToGemini(
-            userMessage, mergedHistory, settings, current.model, serverController.signal, kItem.key, dynInstruction
-          );
-          keyPool.markSuccess(kItem.key);
-          success = true;
-          break;
-        } catch (err) {
-          lastError = err;
-          const errMsg = err.message || '';
-          if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
-            keyPool.markRateLimited(kItem.key, 180, errMsg);
-          } else if (errMsg.includes('403') || errMsg.includes('400') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid')) {
-            keyPool.markInvalid(kItem.key, errMsg);
-          }
-        } finally {
-          llmGateway.clearActiveRequest('gemini');
-        }
-      }
-      if (success) break;
-    } else {
-      const apiKey = settings[`${current.provider}_api_key`] || '';
-      if (!apiKey || !apiKey.trim()) continue;
-
+    let success = false;
+    for (let kIdx = 0; kIdx < keysToTry.length; kIdx++) {
+      const kItem = keysToTry[kIdx];
       llmGateway.abortAllActive();
-      const serverController = llmGateway.registerActiveRequest(current.provider);
+      const serverController = llmGateway.registerActiveRequest('gemini');
 
       try {
-        if (current.provider === 'openrouter') {
-          finalResult = await llmGateway.sendMessageToOpenRouter(
-            userMessage, mergedHistory, settings, current.model, serverController.signal, dynInstruction
-          );
-        } else {
-          finalResult = await llmGateway.sendMessageToOpenAI(
-            userMessage, mergedHistory, settings, current.model, serverController.signal, dynInstruction
-          );
-        }
+        finalResult = await llmGateway.sendMessageToGemini(
+          userMessage, mergedHistory, settings, current.model, serverController.signal, kItem.key, dynInstruction
+        );
+        keyPool.markSuccess(kItem.key);
+        success = true;
         break;
       } catch (err) {
         lastError = err;
+        const errMsg = err.message || '';
+        if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
+          keyPool.markRateLimited(kItem.key, 180, errMsg);
+        } else if (errMsg.includes('403') || errMsg.includes('400') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid')) {
+          keyPool.markInvalid(kItem.key, errMsg);
+        }
       } finally {
-        llmGateway.clearActiveRequest(current.provider);
+        llmGateway.clearActiveRequest('gemini');
       }
     }
+    if (success) break;
   }
 
   if (!finalResult) {
@@ -469,75 +381,13 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
     }
   }
 
-  const tries = [{ provider: initialSelection.provider, model: initialSelection.model }];
+  const tries = [{ provider: 'gemini', model: initialSelection.model }];
 
   if (settings.chatbot_smart_switch === '1') {
-    if (initialSelection.provider === 'gemini') {
-      if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
-        const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.5-flash';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          tries.push({ provider: 'gemini', model: m });
-        }
-      }
-      if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
-        const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          if (m.includes(':free')) tries.push({ provider: 'openrouter', model: m });
-        }
-      }
-      if (settings.openai_api_key && settings.openai_api_key.trim()) {
-        const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          tries.push({ provider: 'openai', model: m });
-        }
-      }
-    } else if (initialSelection.provider === 'openrouter') {
-      if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
-        const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          tries.push({ provider: 'openrouter', model: m });
-        }
-      }
-      if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
-        const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.5-flash';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          tries.push({ provider: 'gemini', model: m });
-        }
-      }
-      if (settings.openai_api_key && settings.openai_api_key.trim()) {
-        const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          tries.push({ provider: 'openai', model: m });
-        }
-      }
-    } else {
-      if (settings.openai_api_key && settings.openai_api_key.trim()) {
-        const listStr = settings.openai_models_list || 'gpt-5.5, gpt-4o';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          tries.push({ provider: 'openai', model: m });
-        }
-      }
-      if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
-        const listStr = settings.gemini_models_list || 'gemini-2.5-flash, gemini-3.5-flash';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          tries.push({ provider: 'gemini', model: m });
-        }
-      }
-      if (settings.openrouter_api_key && settings.openrouter_api_key.trim()) {
-        const listStr = settings.openrouter_models_list || 'nvidia/nemotron-3-ultra-550b-a55b:free, deepseek/deepseek-r1:free, qwen/qwen-2.5-coder-32b-instruct:free';
-        for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-          if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
-          if (m.includes(':free')) tries.push({ provider: 'openrouter', model: m });
-        }
-      }
+    const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-2.5-flash, gemini-3.1-flash-lite, gemini-2.5-pro';
+    for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
+      if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
+      tries.push({ provider: 'gemini', model: m });
     }
   }
 
@@ -560,60 +410,37 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
       onEvent('status', { text: '⚡ Mengoptimalkan ke jalur AI alternatif...', step: 'smart_switch' });
     }
 
+    const keysToTry = keyPool.getOrderedEligibleKeys(settings);
+    if (keysToTry.length === 0) continue;
 
-    if (current.provider === 'gemini') {
-      const keysToTry = keyPool.getOrderedEligibleKeys(settings);
-      if (keysToTry.length === 0) continue;
-
-      let success = false;
-      for (let kIdx = 0; kIdx < keysToTry.length; kIdx++) {
-        const kItem = keysToTry[kIdx];
-        if (kIdx > 0) {
-          onEvent('status', {
-            text: `🔑 Mengalihkan ke Gemini API Key ${kItem.label}...`,
-            step: 'key_switch'
-          });
-        }
-        try {
-          finalResult = await llmGateway.streamMessageToGemini(
-            userMessage, mergedHistory, settings, current.model, abortSignal, kItem.key, onEvent, dynInstruction
-          );
-          keyPool.markSuccess(kItem.key);
-          onEvent('done', { reply: finalResult.content, isSimulation: false, role: 'model', model: current.model });
-          success = true;
-          break;
-        } catch (err) {
-          lastError = err;
-          const errMsg = err.message || '';
-          if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
-            keyPool.markRateLimited(kItem.key, 180, errMsg);
-          } else if (errMsg.includes('403') || errMsg.includes('400') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid')) {
-            keyPool.markInvalid(kItem.key, errMsg);
-          }
-        }
+    let success = false;
+    for (let kIdx = 0; kIdx < keysToTry.length; kIdx++) {
+      const kItem = keysToTry[kIdx];
+      if (kIdx > 0) {
+        onEvent('status', {
+          text: `🔑 Mengalihkan ke Gemini API Key ${kItem.label}...`,
+          step: 'key_switch'
+        });
       }
-      if (success) break;
-
-    } else {
-      const apiKey = settings[`${current.provider}_api_key`] || '';
-      if (!apiKey || !apiKey.trim()) continue;
-
       try {
-        if (current.provider === 'openrouter') {
-          finalResult = await llmGateway.streamMessageToOpenRouter(
-            userMessage, mergedHistory, settings, current.model, abortSignal, onEvent, dynInstruction
-          );
-        } else {
-          finalResult = await llmGateway.streamMessageToOpenAI(
-            userMessage, mergedHistory, settings, current.model, abortSignal, onEvent, dynInstruction
-          );
-        }
+        finalResult = await llmGateway.streamMessageToGemini(
+          userMessage, mergedHistory, settings, current.model, abortSignal, kItem.key, onEvent, dynInstruction
+        );
+        keyPool.markSuccess(kItem.key);
         onEvent('done', { reply: finalResult.content, isSimulation: false, role: 'model', model: current.model });
+        success = true;
         break;
       } catch (err) {
         lastError = err;
+        const errMsg = err.message || '';
+        if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
+          keyPool.markRateLimited(kItem.key, 180, errMsg);
+        } else if (errMsg.includes('403') || errMsg.includes('400') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid')) {
+          keyPool.markInvalid(kItem.key, errMsg);
+        }
       }
     }
+    if (success) break;
   }
 
   if (!finalResult) {

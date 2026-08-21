@@ -36,12 +36,6 @@ const chatbotSettingKeys = [
   'gemini_api_key',
   'gemini_model',
   'gemini_models_list',
-  'openai_api_key',
-  'openai_model',
-  'openai_models_list',
-  'openrouter_api_key',
-  'openrouter_model',
-  'openrouter_models_list',
   'chatbot_smart_switch'
 ];
 

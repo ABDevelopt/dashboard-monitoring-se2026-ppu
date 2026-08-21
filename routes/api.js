@@ -504,73 +504,7 @@ async function callGeminiDirect(prompt, settings = {}) {
     }
   }
 
-  // Fallback 2: Try OpenRouter if configured
-  const openrouterKey = (settings.openrouter_api_key || process.env.OPENROUTER_API_KEY || '').trim();
-  if (openrouterKey) {
-    try {
-      const orModel = settings.openrouter_model || 'meta-llama/llama-3.3-70b-instruct:free';
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openrouterKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: orModel,
-          messages: [{ role: 'user', content: prompt }]
-        }),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return text;
-      }
-    } catch (orErr) {
-      console.warn(`[AI Insights] OpenRouter fallback failed: ${orErr.message}`);
-    }
-  }
-
-  // Fallback 3: Try OpenAI if configured
-  const openaiKey = (settings.openai_api_key || process.env.OPENAI_API_KEY || '').trim();
-  if (openaiKey) {
-    try {
-      const oaModel = settings.openai_model || 'gpt-4o-mini';
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-      const response = await fetch('https://api.openai.com/v1:chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: oaModel,
-          messages: [{ role: 'user', content: prompt }]
-        }),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return text;
-      }
-    } catch (oaErr) {
-      console.warn(`[AI Insights] OpenAI fallback failed: ${oaErr.message}`);
-    }
-  }
-
-  throw new Error('Tidak ada API Key yang valid (Gemini / OpenRouter / OpenAI) atau semua permintaan mengalami timeout / error.');
+  throw new Error('Tidak ada API Key Gemini yang valid atau semua permintaan mengalami timeout / rate limit.');
 }
 
 // Rule-based fallback summary insights generator (offline and quota-exhausted guard)
