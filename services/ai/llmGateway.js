@@ -170,47 +170,66 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
     });
 
     const formattedHistory = formatGeminiHistory(chatHistory);
-    const chat = model.startChat({ history: formattedHistory });
+    const contents = [
+      ...formattedHistory,
+      { role: 'user', parts: [{ text: userMessage }] }
+    ];
 
-    async function callGemini(payload, isToolResult = false) {
-      if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
-      const timeoutMs = isToolResult ? AGENT_API_TOOLRESULT_MS : AGENT_API_QUICK_RESPONSE_MS;
-      log.debug(`Gemini sendMessage… (timeout: ${timeoutMs / 1000}s)`);
-      const resp = await timeoutPromise(chat.sendMessage(payload), timeoutMs, `Gemini API call timed out (${timeoutMs / 1000}s)`);
-      return resp;
-    }
-
-    let response = await callGemini(userMessage, false);
     let loopCount = 0;
     const MAX_LOOPS = 3;
+    let finalCandidate = null;
 
     while (loopCount < MAX_LOOPS) {
-      if (abortSignal?.aborted) throw new Error('Request dibatalkan saat loop tool-call.');
+      if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
+      const timeoutMs = loopCount > 0 ? AGENT_API_TOOLRESULT_MS : AGENT_API_QUICK_RESPONSE_MS;
 
-      const candidate = response.response.candidates?.[0];
-      const finishReason = candidate?.finishReason;
+      const resp = await timeoutPromise(
+        model.generateContent({ contents }),
+        timeoutMs,
+        `Gemini API call timed out (${timeoutMs / 1000}s)`
+      );
 
-      if (finishReason && finishReason !== 'STOP' && finishReason !== 'MAX_TOKENS') {
-        throw new Error(`Gemini dihentikan secara tidak wajar (Alasan: ${finishReason}).`);
+      const candidate = resp.response.candidates?.[0];
+      if (!candidate?.content) throw new Error('Gemini tidak mengembalikan respons valid.');
+
+      finalCandidate = candidate;
+      const parts = candidate.content.parts || [];
+      const functionCalls = parts.filter(p => p.functionCall).map(p => p.functionCall);
+
+      if (functionCalls.length === 0) {
+        break;
       }
-
-      const functionCalls = extractFunctionCalls(response);
-      if (functionCalls.length === 0) break;
 
       loopCount++;
       log.info(`Gemini tool-call loop ${loopCount}/${MAX_LOOPS}: ${functionCalls.map(f => f.name).join(', ')}`);
+      contents.push(candidate.content);
 
       const toolResponses = await Promise.all(
         functionCalls.map(async (fc) => {
           const result = await runToolCall({ name: fc.name, args: fc.args });
-          return { functionResponse: { name: fc.name, response: result } };
+          return {
+            functionResponse: {
+              name: fc.name,
+              response: {
+                name: fc.name,
+                content: result
+              }
+            }
+          };
         })
       );
 
-      response = await callGemini(toolResponses, true);
+      // Google Gemini v1beta REST API mewajibkan role 'user' untuk functionResponse
+      contents.push({
+        role: 'user',
+        parts: toolResponses
+      });
     }
 
-    let rawText = extractResponseText(response);
+    let rawText = '';
+    if (finalCandidate?.content?.parts) {
+      rawText = finalCandidate.content.parts.filter(p => p.text).map(p => p.text).join('\n');
+    }
 
     if (!rawText.trim()) {
       rawText = 'Data tidak ditemukan untuk kriteria pencarian tersebut.';
@@ -244,12 +263,14 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
     });
 
     const formattedHistory = formatGeminiHistory(chatHistory);
-    const chat = model.startChat({ history: formattedHistory });
+    const contents = [
+      ...formattedHistory,
+      { role: 'user', parts: [{ text: userMessage }] }
+    ];
 
-    let currentPayload = userMessage;
     let loopCount = 0;
     const MAX_LOOPS = 3;
-    let response = null;
+    let finalCandidate = null;
 
     while (loopCount <= MAX_LOOPS) {
       if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
@@ -260,19 +281,19 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
       });
 
       const timeoutMs = loopCount > 0 ? AGENT_API_TOOLRESULT_MS : AGENT_API_QUICK_RESPONSE_MS;
-      response = await timeoutPromise(
-        chat.sendMessage(currentPayload),
+      const resp = await timeoutPromise(
+        model.generateContent({ contents }),
         timeoutMs,
         `Gemini API timed out (${timeoutMs / 1000}s)`
       );
 
-      const candidate = response.response.candidates?.[0];
-      const finishReason = candidate?.finishReason;
-      if (finishReason && finishReason !== 'STOP' && finishReason !== 'MAX_TOKENS') {
-        throw new Error(`Gemini dihentikan secara tidak wajar (Alasan: ${finishReason}).`);
-      }
+      const candidate = resp.response.candidates?.[0];
+      if (!candidate?.content) throw new Error('Gemini tidak mengembalikan respons valid.');
 
-      const functionCalls = extractFunctionCalls(response);
+      finalCandidate = candidate;
+      const parts = candidate.content.parts || [];
+      const functionCalls = parts.filter(p => p.functionCall).map(p => p.functionCall);
+
       if (functionCalls.length === 0 || loopCount === MAX_LOOPS) {
         break;
       }
@@ -284,19 +305,37 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
         onEvent('tool_start', { tool: fc.name, args: fc.args, message: `⚙️ Menjalankan alat bantu ${fc.name}...` });
       }
 
+      contents.push(candidate.content);
+
       const toolResponses = await Promise.all(
         functionCalls.map(async (fc) => {
           const result = await runToolCall({ name: fc.name, args: fc.args });
           onEvent('tool_end', { tool: fc.name, message: `✅ Selesai mengambil data` });
-          return { functionResponse: { name: fc.name, response: result } };
+          return {
+            functionResponse: {
+              name: fc.name,
+              response: {
+                name: fc.name,
+                content: result
+              }
+            }
+          };
         })
       );
 
       onEvent('status', { text: '✍️ Merumuskan jawaban...', step: 'writing' });
-      currentPayload = toolResponses;
+
+      // Google Gemini v1beta REST API mewajibkan role 'user' untuk functionResponse
+      contents.push({
+        role: 'user',
+        parts: toolResponses
+      });
     }
 
-    let rawText = extractResponseText(response);
+    let rawText = '';
+    if (finalCandidate?.content?.parts) {
+      rawText = finalCandidate.content.parts.filter(p => p.text).map(p => p.text).join('\n');
+    }
 
     if (!rawText.trim()) {
       rawText = 'Data tidak ditemukan untuk kriteria pencarian tersebut.';
