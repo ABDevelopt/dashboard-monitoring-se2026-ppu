@@ -419,6 +419,11 @@
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
       const prefix = window.navPrefix || '<%= navPrefix %>';
 
+      console.group('%c⚡ [GEMINI DIAGNOSTICS]%c Menguji seluruh Gemini API Keys...', 'background: #4285F4; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold;', 'color: inherit;');
+      console.log('📝 Model yang diuji:', model);
+      console.log('🔑 Key Utama:', primaryKey ? primaryKey.slice(0, 8) + '...' : '(Kosong)');
+      console.log('🗝️ Key Cadangan (' + backupKeys.length + ' key):', backupKeys.map(k => k.slice(0, 8) + '...'));
+
       try {
         const response = await fetch(prefix + '/admin/settings/test-gemini-keys', {
           method: 'POST',
@@ -435,12 +440,25 @@
           })
         });
 
+        console.log('📡 Response status:', response.status, response.statusText);
+
         const resData = await response.json();
         if (!resData.success || !resData.report) {
+          console.error('❌ Diagnostic error:', resData.error || 'Gagal menjalankan tes');
+          console.groupEnd();
           throw new Error(resData.error || 'Gagal menjalankan tes');
         }
 
         const report = resData.report;
+        console.log(`%c[GEMINI DIAGNOSTICS RESULT] ${report.healthyCount}/${report.total} API Key Sehat`, 'color: #22c55e; font-weight: bold; font-size: 13px;');
+        if (Array.isArray(report.keys) && report.keys.length > 0) {
+          console.table(report.keys);
+        }
+        if (report.advice) {
+          console.warn('💡 Saran Diagnostik:', report.advice);
+        }
+        console.groupEnd();
+
         if (report.total === 0) {
           resultBox.innerHTML = '<div style="font-size: 13px; color: #ffc107;"><i class="bi bi-exclamation-triangle"></i> Belum ada API key Gemini yang diisi. Masukkan Key Utama atau Cadangan terlebih dahulu.</div>';
           return;
@@ -483,6 +501,8 @@
         resultBox.innerHTML = html;
         fetchChatbotLogs(false);
       } catch (err) {
+        console.error('❌ Kesalahan saat pengujian:', err);
+        console.groupEnd();
         resultBox.innerHTML = `<div style="font-size: 13px; color: #dc3545;"><i class="bi bi-x-circle"></i> Terjadi kesalahan saat pengujian: ${err.message}</div>`;
       } finally {
         btn.disabled = false;
@@ -512,6 +532,7 @@
           renderLogs();
         }
       } catch (e) {
+        console.warn('[LIVE LOG VIEWER] Gagal mengambil log:', e.message);
         if (isManual) {
           terminal.innerHTML = `<div style="color: #f85149; padding: 20px; text-align: center;"><i class="bi bi-exclamation-triangle"></i> Gagal mengambil log: ${e.message}</div>`;
         }

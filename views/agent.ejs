@@ -2020,6 +2020,17 @@
       controller.abort();
     }, 180000); // 3 menit — memberi ruang untuk SmartSwitch multi-provider fallback
 
+    const startTime = Date.now();
+    const reqProvider = document.getElementById('agentProvider')?.value || 'gemini';
+    const reqModel = document.getElementById('agentModel')?.value || '';
+    const safePayloadHistory = chatHistory.slice(Math.max(0, chatHistory.length - 11), -1);
+
+    console.group('%c[PANANYO AI - STREAM START]%c ' + (text.length > 50 ? text.slice(0, 50) + '...' : text), 'background: #2563eb; color: #fff; padding: 2px 6px; border-radius: 3px; font-weight: bold;', 'color: inherit;');
+    console.log('📝 Prompt:', text);
+    console.log('🤖 Provider / Model:', reqProvider, '/', reqModel || 'default');
+    console.log('📚 Riwayat yang dikirim (' + safePayloadHistory.length + ' pesan):', safePayloadHistory);
+    console.log('⏱️ Waktu mulai:', new Date().toLocaleTimeString());
+
     try {
       const res = await fetch('/agent/chat/stream', {
         method: 'POST',
@@ -2032,18 +2043,22 @@
         signal: controller.signal,
         body: JSON.stringify({
           message: text,
-          history: chatHistory.slice(Math.max(0, chatHistory.length - 11), -1),
-          provider: document.getElementById('agentProvider')?.value || 'gemini',
-          model: document.getElementById('agentModel')?.value || ''
+          history: safePayloadHistory,
+          provider: reqProvider,
+          model: reqModel
         })
       });
+
+      console.log('📡 HTTP Response Status:', res.status, res.statusText);
 
       if (!res.ok) {
         let errBody;
         try {
           errBody = await res.json();
         } catch (_) {}
-        throw new Error(errBody?.error || `HTTP error ${res.status}`);
+        const errorMsg = errBody?.error || `HTTP ${res.status}: ${res.statusText}`;
+        console.error('❌ HTTP Error dari Server:', errorMsg, errBody);
+        throw new Error(errorMsg);
       }
 
       const reader = res.body.getReader();
@@ -2051,6 +2066,8 @@
       let buffer = '';
       let currentEvent = 'message';
       let hasReceivedError = false;
+      let chunkCount = 0;
+      let firstChunkTime = null;
 
       while (true) {
         const { value, done } = await reader.read();
@@ -2072,14 +2089,27 @@
               const data = JSON.parse(rawData);
               
               if (currentEvent === 'status') {
+                console.info('%c[AI STATUS]%c ' + data.text, 'color: #06b6d4; font-weight: bold;', 'color: inherit;', data);
                 streamingMsg.updateStatus(data.text);
               } else if (currentEvent === 'tool_start') {
+                console.group('%c[AI TOOL START]%c ' + (data.tool || 'Tool') + ' — ' + (data.message || ''), 'background: #8b5cf6; color: white; padding: 2px 6px; border-radius: 3px;', 'color: inherit;');
+                console.log('Tool parameters / message:', data);
                 streamingMsg.addStep(data.tool, data.message);
               } else if (currentEvent === 'tool_end') {
+                console.log('%c[AI TOOL END]%c Selesai: ' + (data.tool || '') + ' (' + (data.message || '') + ')', 'color: #10b981; font-weight: bold;', 'color: inherit;', data);
+                console.groupEnd();
                 streamingMsg.completeStep(data.tool, data.message);
               } else if (currentEvent === 'chunk') {
+                chunkCount++;
+                if (!firstChunkTime) {
+                  firstChunkTime = Date.now();
+                  console.log(`⚡ First Token TTFT: ${firstChunkTime - startTime}ms`);
+                }
                 streamingMsg.appendChunk(data.text || '');
               } else if (currentEvent === 'done') {
+                const totalDuration = Date.now() - startTime;
+                console.log('%c[AI DONE]%c Respons selesai dalam ' + totalDuration + 'ms (' + chunkCount + ' chunks)', 'background: #22c55e; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold;', 'color: inherit;', data);
+                console.groupEnd();
                 streamingMsg.finalize(data.reply || streamingMsg.getText(), data.isSimulation);
                 const finalContent = streamingMsg.getText();
                 if (finalContent.trim()) {
@@ -2088,6 +2118,9 @@
                 }
               } else if (currentEvent === 'error') {
                 hasReceivedError = true;
+                const totalDuration = Date.now() - startTime;
+                console.error('%c[AI ERROR]%c ' + (data.error || 'Terjadi kesalahan pada AI') + ' (' + totalDuration + 'ms)', 'background: #ef4444; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold;', 'color: inherit;', data);
+                console.groupEnd();
                 streamingMsg.showError(data.error || 'Terjadi kesalahan pada AI.');
                 if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
                   chatHistory.pop();
@@ -2103,6 +2136,9 @@
 
       // If finished stream without explicit done event or error
       if (!hasReceivedError && !streamingMsg.element.querySelector('.agent-message-actions')) {
+        const totalDuration = Date.now() - startTime;
+        console.log(`%c[AI STREAM COMPLETE]%c Stream reader selesai (${totalDuration}ms, ${chunkCount} chunks)`, 'color: #22c55e; font-weight: bold;', 'color: inherit;');
+        console.groupEnd();
         streamingMsg.finalize(streamingMsg.getText());
         const finalContent = streamingMsg.getText();
         if (finalContent.trim() && !finalContent.includes('Tidak ada respons yang diterima.')) {
@@ -2112,7 +2148,10 @@
       }
 
     } catch (err) {
+      const totalDuration = Date.now() - startTime;
       if (err.name === 'AbortError') {
+        console.warn('%c[AI ABORT]%c Permintaan dihentikan (' + totalDuration + 'ms)', 'color: #f59e0b; font-weight: bold;', 'color: inherit;', err);
+        console.groupEnd();
         streamingMsg.abortNotice();
         const partial = streamingMsg.getText();
         if (partial.trim()) {
@@ -2123,6 +2162,8 @@
           saveChatHistory();
         }
       } else {
+        console.error('%c[AI CONNECTION ERROR]%c ' + (err.message || 'Gagal menghubungi server') + ' (' + totalDuration + 'ms)', 'background: #b91c1c; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold;', 'color: inherit;', err);
+        console.groupEnd();
         streamingMsg.showError(err.message || 'Gagal menghubungi server.');
         if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
           chatHistory.pop();
