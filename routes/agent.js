@@ -256,14 +256,26 @@ router.get('/logs', (req, res) => {
     }
 
     const content = fs.readFileSync(logFile, 'utf8');
-    const lines = content.trim().split('\n').filter(Boolean);
-    const lastLines = lines.slice(-300); // Ambil 300 baris log terakhir
+    const lines = content.trim().split(/\r?\n/).filter(l => l && l.trim());
+    const lastLines = lines.slice(-400); // Ambil 400 baris log terakhir
 
     const parsedLogs = lastLines.map(line => {
+      const trimmed = line.trim();
       try {
-        return JSON.parse(line);
+        const obj = JSON.parse(trimmed);
+        return {
+          timestamp: obj.timestamp || '',
+          level: (obj.level || 'info').toLowerCase(),
+          message: typeof obj.message === 'string' ? obj.message : JSON.stringify(obj.message),
+          stack: obj.stack || null
+        };
       } catch (_) {
-        return { message: line, level: 'info', timestamp: new Date().toISOString() };
+        // Parse format teks biasa: [YYYY-MM-DD HH:mm:ss] level: message
+        const match = trimmed.match(/^\[(.*?)\]\s*([a-zA-Z]+):\s*(.*)$/);
+        if (match) {
+          return { timestamp: match[1], level: match[2].toLowerCase(), message: match[3], stack: null };
+        }
+        return { message: trimmed, level: 'info', timestamp: '', stack: null };
       }
     });
 

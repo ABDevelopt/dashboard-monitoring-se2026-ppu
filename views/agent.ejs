@@ -1420,8 +1420,8 @@
     </div>
     <div class="log-panel-actions">
       <select id="lpFilterLevel" onchange="lpRenderLogs()">
-        <option value="ALL">📋 Semua</option>
-        <option value="AI" selected>🤖 AI</option>
+        <option value="ALL" selected>📋 Semua Log</option>
+        <option value="AI">🤖 Khusus AI</option>
         <option value="ERROR">🚨 Error</option>
         <option value="INFO">ℹ️ Info</option>
       </select>
@@ -1483,14 +1483,16 @@
       if (data.success && Array.isArray(data.logs)) {
         _lpLogs = data.logs;
         lpRenderLogs();
+        console.log('📋 [LOG PANEL] Berhasil memuat ' + _lpLogs.length + ' entri log server.');
         // Error dot indicator
         const hasRecentError = _lpLogs.slice(-20).some(l => (l.level || '').toLowerCase() === 'error');
         const dot = document.getElementById('logErrorDot');
         if (dot) dot.style.display = hasRecentError ? 'block' : 'none';
       }
     } catch (e) {
+      console.error('❌ [LOG PANEL] Gagal mengambil log:', e);
       const terminal = document.getElementById('lpTerminal');
-      if (terminal) terminal.innerHTML = `<div style="color:#f85149; text-align:center; padding:20px;">Gagal mengambil log: ${e.message}</div>`;
+      if (terminal) terminal.innerHTML = `<div style="color:#f85149; text-align:center; padding:20px;"><i class="bi bi-exclamation-triangle"></i> Gagal mengambil log: ${e.message}</div>`;
     }
   };
 

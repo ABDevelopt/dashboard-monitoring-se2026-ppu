@@ -60,4 +60,6 @@ if (process.env.NODE_ENV !== 'production') {
   }));
 }
 
+logger.info('[SYSTEM] Winston Logger initialized successfully');
+
 module.exports = logger;
