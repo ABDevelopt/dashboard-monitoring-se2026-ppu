@@ -214,6 +214,7 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
     let loopCount = 0;
     const MAX_LOOPS = 3;
     let finalCandidate = null;
+    let lastExecutedToolResult = null;
 
     while (loopCount < MAX_LOOPS) {
       if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
@@ -244,6 +245,7 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
       const toolResponses = await Promise.all(
         functionCalls.map(async (fc) => {
           const result = await runToolCall({ name: fc.name, args: fc.args });
+          lastExecutedToolResult = { name: fc.name, args: fc.args, result };
           return {
             functionResponse: {
               name: fc.name,
@@ -266,6 +268,33 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
     let rawText = '';
     if (finalCandidate?.content?.parts) {
       rawText = finalCandidate.content.parts.filter(p => p.text).map(p => p.text).join('\n');
+    }
+
+    // Jika respons akhir masih berupa functionCall atau kosong, paksa satu kali inferensi teks tanpa tools
+    if (!rawText.trim() && lastExecutedToolResult) {
+      try {
+        const textModel = genAI.getGenerativeModel({
+          model: geminiModel,
+          systemInstruction: systemInstruction
+        });
+        const forceTextResp = await timeoutPromise(
+          textModel.generateContent({ contents }),
+          AGENT_API_TOOLRESULT_MS,
+          'Gemini force text timeout'
+        );
+        const forceCand = forceTextResp.response.candidates?.[0];
+        if (forceCand?.content?.parts) {
+          rawText = forceCand.content.parts.filter(p => p.text).map(p => p.text).join('\n');
+        }
+      } catch (err) {
+        log.warn('[LLM_GW] Force text generation fallback failed:', err.message);
+      }
+    }
+
+    // Jika tetap kosong namun ada baris data hasil tool kueri, format otomatis ke tabel Markdown
+    if (!rawText.trim() && lastExecutedToolResult?.result?.data) {
+      const { formatToolRowsToMarkdown } = require('./toolRegistry');
+      rawText = formatToolRowsToMarkdown(lastExecutedToolResult.name, lastExecutedToolResult.args, lastExecutedToolResult.result.data);
     }
 
     if (!rawText.trim()) {
@@ -308,6 +337,7 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
     let loopCount = 0;
     const MAX_LOOPS = 3;
     let finalCandidate = null;
+    let lastExecutedToolResult = null;
 
     while (loopCount <= MAX_LOOPS) {
       if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
@@ -348,6 +378,7 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
       const toolResponses = await Promise.all(
         functionCalls.map(async (fc) => {
           const result = await runToolCall({ name: fc.name, args: fc.args });
+          lastExecutedToolResult = { name: fc.name, args: fc.args, result };
           onEvent('tool_end', { tool: fc.name, message: `✅ Selesai mengambil data` });
           return {
             functionResponse: {
@@ -373,6 +404,33 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
     let rawText = '';
     if (finalCandidate?.content?.parts) {
       rawText = finalCandidate.content.parts.filter(p => p.text).map(p => p.text).join('\n');
+    }
+
+    // Jika respons akhir masih berupa functionCall atau kosong, paksa satu kali inferensi teks tanpa tools
+    if (!rawText.trim() && lastExecutedToolResult) {
+      try {
+        const textModel = genAI.getGenerativeModel({
+          model: geminiModel,
+          systemInstruction: systemInstruction
+        });
+        const forceTextResp = await timeoutPromise(
+          textModel.generateContent({ contents }),
+          AGENT_API_TOOLRESULT_MS,
+          'Gemini force text timeout'
+        );
+        const forceCand = forceTextResp.response.candidates?.[0];
+        if (forceCand?.content?.parts) {
+          rawText = forceCand.content.parts.filter(p => p.text).map(p => p.text).join('\n');
+        }
+      } catch (err) {
+        log.warn('[LLM_GW] Force text generation fallback failed:', err.message);
+      }
+    }
+
+    // Jika tetap kosong namun ada baris data hasil tool kueri, format otomatis ke tabel Markdown
+    if (!rawText.trim() && lastExecutedToolResult?.result?.data) {
+      const { formatToolRowsToMarkdown } = require('./toolRegistry');
+      rawText = formatToolRowsToMarkdown(lastExecutedToolResult.name, lastExecutedToolResult.args, lastExecutedToolResult.result.data);
     }
 
     if (!rawText.trim()) {
