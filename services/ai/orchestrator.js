@@ -300,26 +300,34 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
     const keysToTry = keyPool.getOrderedEligibleKeys(settings);
     if (keysToTry.length === 0) continue;
 
+    log.info(`[ORCH] Mencoba Model '${current.model}' dengan ${keysToTry.length} API Key tersedia...`);
+
     let success = false;
     for (let kIdx = 0; kIdx < keysToTry.length; kIdx++) {
       const kItem = keysToTry[kIdx];
       llmGateway.abortAllActive();
       const serverController = llmGateway.registerActiveRequest('gemini');
 
+      log.info(`[ORCH] -> Menjalankan ${kItem.label} (${keyPool.maskKey(kItem.key)}) pada model '${current.model}'...`);
+
       try {
         finalResult = await llmGateway.sendMessageToGemini(
           userMessage, mergedHistory, settings, current.model, serverController.signal, kItem.key, dynInstruction
         );
         keyPool.markSuccess(kItem.key);
+        log.info(`[ORCH] -> Sukses dengan ${kItem.label} pada model '${current.model}'`);
         success = true;
         break;
       } catch (err) {
         lastError = err;
         const errMsg = err.message || '';
+        log.warn(`[ORCH] -> Gagal pada ${kItem.label} (${current.model}): ${errMsg}. Mengutamakan rotasi ke API Key berikutnya...`);
         if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
           keyPool.markRateLimited(kItem.key, 180, errMsg);
         } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid') || errMsg.toLowerCase().includes('api key not valid')) {
           keyPool.markInvalid(kItem.key, errMsg);
+        } else if (errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('timed out') || errMsg.includes('timeout')) {
+          keyPool.markRateLimited(kItem.key, 30, errMsg);
         }
       } finally {
         llmGateway.clearActiveRequest('gemini');
@@ -405,36 +413,43 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
     const current = uniqueTries[i];
 
     if (i > 0) {
-      onEvent('status', { text: '⚡ Mengoptimalkan ke jalur AI alternatif...', step: 'smart_switch' });
+      onEvent('status', { text: `⚡ Mengalihkan ke model cadangan (${current.model})...`, step: 'smart_switch' });
     }
 
     const keysToTry = keyPool.getOrderedEligibleKeys(settings);
     if (keysToTry.length === 0) continue;
+
+    log.info(`[ORCH:STREAM] Mencoba Model '${current.model}' dengan ${keysToTry.length} API Key...`);
 
     let success = false;
     for (let kIdx = 0; kIdx < keysToTry.length; kIdx++) {
       const kItem = keysToTry[kIdx];
       if (kIdx > 0) {
         onEvent('status', {
-          text: `🔑 Mengalihkan ke Gemini API Key ${kItem.label}...`,
+          text: `🔑 Mengalihkan ke API Key ${kItem.label}...`,
           step: 'key_switch'
         });
       }
+      log.info(`[ORCH:STREAM] -> Menjalankan ${kItem.label} (${keyPool.maskKey(kItem.key)}) pada model '${current.model}'...`);
       try {
         finalResult = await llmGateway.streamMessageToGemini(
           userMessage, mergedHistory, settings, current.model, abortSignal, kItem.key, onEvent, dynInstruction
         );
         keyPool.markSuccess(kItem.key);
         onEvent('done', { reply: finalResult.content, isSimulation: false, role: 'model', model: current.model });
+        log.info(`[ORCH:STREAM] -> Sukses dengan ${kItem.label} pada model '${current.model}'`);
         success = true;
         break;
       } catch (err) {
         lastError = err;
         const errMsg = err.message || '';
+        log.warn(`[ORCH:STREAM] -> Gagal pada ${kItem.label} (${current.model}): ${errMsg}. Mengutamakan rotasi ke API Key berikutnya...`);
         if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
           keyPool.markRateLimited(kItem.key, 180, errMsg);
         } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid') || errMsg.toLowerCase().includes('api key not valid')) {
           keyPool.markInvalid(kItem.key, errMsg);
+        } else if (errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('timed out') || errMsg.includes('timeout')) {
+          keyPool.markRateLimited(kItem.key, 30, errMsg);
         }
       }
     }
