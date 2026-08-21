@@ -176,9 +176,12 @@ async function testSingleGeminiKey(key, model = 'gemini-3.5-flash') {
   const trimmed = key.trim();
   const startTime = Date.now();
 
+  // Validasi awal awalan API Key resmi Google AI Studio
+  const isStandardGeminiKey = trimmed.startsWith('AIzaSy');
+
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
+    const timer = setTimeout(() => controller.abort(), 15000); // 15 detik timeout
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(trimmed)}`,
@@ -222,13 +225,17 @@ async function testSingleGeminiKey(key, model = 'gemini-3.5-flash') {
       };
     }
 
-    if (response.status === 400 || response.status === 403) {
+    if (response.status === 400 || response.status === 401 || response.status === 403) {
       markInvalid(trimmed, errMsg);
+      let customMsg = 'API Key tidak valid atau telah dicabut.';
+      if (!isStandardGeminiKey) {
+        customMsg = `Format Kunci Tidak Sesuai: Kunci diawali '${trimmed.slice(0, 6)}...'. API Key Google Gemini resmi selalu diawali dengan 'AIzaSy...'. Silakan buat key baru di https://aistudio.google.com/app/apikey`;
+      }
       return {
         valid: false,
         status: 'invalid',
         statusCode: response.status,
-        message: 'API Key tidak valid atau telah dicabut (403)',
+        message: customMsg,
         latencyMs,
         errorDetail: errMsg
       };
@@ -244,10 +251,11 @@ async function testSingleGeminiKey(key, model = 'gemini-3.5-flash') {
     };
   } catch (err) {
     const latencyMs = Date.now() - startTime;
+    const causeMsg = err.cause ? ` (${err.cause.code || err.cause.message || err.cause})` : '';
     return {
       valid: false,
       status: 'network_error',
-      message: err.name === 'AbortError' ? 'Koneksi Timeout (>8s)' : `Koneksi gagal: ${err.message}`,
+      message: err.name === 'AbortError' ? 'Koneksi Timeout (>15s)' : `Koneksi gagal ke server Google: ${err.message}${causeMsg}`,
       latencyMs
     };
   }
