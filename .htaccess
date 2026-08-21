@@ -1,3 +1,11 @@
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/bpsppuco/monitoring.bpsppu.com"
+PassengerBaseURI "/"
+PassengerNodejs "/home/bpsppuco/nodevenv/monitoring.bpsppu.com/24/bin/node"
+PassengerAppType node
+PassengerStartupFile server.js
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+
 # ─────────────────────────────────────────────────────────────
 #  LiteSpeed & cPanel Proxy Optimization for Node.js Streaming
 # ─────────────────────────────────────────────────────────────
