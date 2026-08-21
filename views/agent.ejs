@@ -2572,24 +2572,26 @@
             saveChatHistory();
             return;
           }
-        let rawErr = (fbErr && fbErr.message) || 'Gagal menghubungi server.';
-        let friendly = rawErr;
-        if (rawErr.includes('429') || rawErr.includes('quota') || rawErr.toLowerCase().includes('rate limit')) {
-          friendly = 'Kuota harian API Gemini habis (429). Coba lagi besok atau gunakan API Key lain.';
-        } else if (rawErr.includes('403') || rawErr.includes('leaked')) {
-          friendly = 'API Key Gemini tidak valid atau dicabut (403). Periksa pengaturan.';
-        } else if (rawErr.includes('503') || rawErr.includes('high demand')) {
-          friendly = 'Server Gemini sedang sibuk / kelebihan beban (503). Silakan coba kirim ulang.';
-        } else if (rawErr.includes('timed out') || rawErr.includes('timeout')) {
-          friendly = 'Permintaan ke AI melebihi batas waktu (timeout). Silakan coba lagi.';
+          throw new Error(fbData.error || `HTTP ${fbRes.status}`);
+        } catch (fbErr) {
+          let rawErr = (fbErr && fbErr.message) || 'Gagal menghubungi server.';
+          let friendly = rawErr;
+          if (rawErr.includes('429') || rawErr.includes('quota') || rawErr.toLowerCase().includes('rate limit')) {
+            friendly = 'Kuota harian API Gemini habis (429). Coba lagi besok atau gunakan API Key lain.';
+          } else if (rawErr.includes('403') || rawErr.includes('leaked')) {
+            friendly = 'API Key Gemini tidak valid atau dicabut (403). Periksa pengaturan.';
+          } else if (rawErr.includes('503') || rawErr.includes('high demand')) {
+            friendly = 'Server Gemini sedang sibuk / kelebihan beban (503). Silakan coba kirim ulang.';
+          } else if (rawErr.includes('timed out') || rawErr.includes('timeout')) {
+            friendly = 'Permintaan ke AI melebihi batas waktu (timeout). Silakan coba lagi.';
+          }
+          streamingMsg.showError(friendly);
+          if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
+            chatHistory.pop();
+            saveChatHistory();
+          }
         }
-        streamingMsg.showError(friendly);
-        if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') {
-          chatHistory.pop();
-          saveChatHistory();
-        }
-      }
-    } else {
+      } else {
       console.error('%c[AI CONNECTION ERROR]%c ' + (err.message || 'Gagal menghubungi server') + ' (' + totalDuration + 'ms)', 'background: #b91c1c; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold;', 'color: inherit;', err);
       console.groupEnd();
       let rawErr = (err && err.message) || 'Gagal menghubungi server.';
