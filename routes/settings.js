@@ -185,6 +185,57 @@ router.post('/test-gemini-keys', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+// DIAGNOSTIK: Ambil Log Sistem Chatbot AI
+// ─────────────────────────────────────────────
+router.get('/chatbot-logs', (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const logFile = path.join(__dirname, '../logs/combined.log');
+    
+    if (!fs.existsSync(logFile)) {
+      return res.json({ success: true, logs: [] });
+    }
+
+    const content = fs.readFileSync(logFile, 'utf8');
+    const lines = content.trim().split('\n').filter(Boolean);
+    const lastLines = lines.slice(-250); // Ambil 250 baris log terakhir
+
+    const parsedLogs = lastLines.map(line => {
+      try {
+        return JSON.parse(line);
+      } catch (_) {
+        return { message: line, level: 'info', timestamp: new Date().toISOString() };
+      }
+    });
+
+    res.json({ success: true, logs: parsedLogs });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────
+// DIAGNOSTIK: Bersihkan File Log Sistem
+// ─────────────────────────────────────────────
+router.post('/chatbot-logs/clear', (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const logDir = path.join(__dirname, '../logs');
+    
+    ['combined.log', 'errors.log'].forEach(f => {
+      const p = path.join(logDir, f);
+      if (fs.existsSync(p)) fs.writeFileSync(p, '', 'utf8');
+    });
+
+    res.json({ success: true, message: 'Log sistem berhasil dibersihkan.' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────
 // MAINTENANCE: Reset SLS Selesai dari Excel BPS
 // ─────────────────────────────────────────────
 router.post('/reset-sls-selesai', (req, res) => {

@@ -300,6 +300,92 @@
           </div>
         </div>
 
+        <!-- CARD 5: LIVE SYSTEM & CHATBOT LOG VIEWER -->
+        <div class="settings-group" style="grid-column: span 2; margin-top: 10px;">
+          <div class="settings-group-title" style="display: flex; justify-content: space-between; align-items: center; border-bottom-color: rgba(6, 182, 212, 0.25);">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="bi bi-terminal-fill" style="color: #06b6d4;"></i>
+              <span>Log Sistem &amp; Diagnostik Chatbot AI (Live Browser)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="log-live-badge" class="badge" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; font-size: 11px; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                <span class="live-dot" style="display: inline-block; width: 6px; height: 6px; background: #22c55e; border-radius: 50%; animation: pulse-live 1.5s infinite;"></span>
+                <span>Auto-Refresh (3s)</span>
+              </span>
+            </div>
+          </div>
+
+          <style>
+            @keyframes pulse-live {
+              0% { opacity: 1; transform: scale(1); }
+              50% { opacity: 0.4; transform: scale(1.3); }
+              100% { opacity: 1; transform: scale(1); }
+            }
+            .log-line {
+              padding: 3px 6px;
+              border-radius: 4px;
+              display: flex;
+              gap: 8px;
+              font-size: 11.5px;
+              line-height: 1.5;
+              transition: background 0.15s ease;
+            }
+            .log-line:hover {
+              background: rgba(255, 255, 255, 0.05);
+            }
+            .log-line.log-info { color: #c9d1d9; }
+            .log-line.log-warn { color: #f1e05a; background: rgba(241, 224, 90, 0.05); }
+            .log-line.log-error { color: #f85149; background: rgba(248, 81, 73, 0.08); }
+            .log-badge-info { background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; }
+            .log-badge-warn { background: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; }
+            .log-badge-error { background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; }
+            .log-badge-ai { background: rgba(168, 85, 247, 0.15); color: #c084fc; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; }
+          </style>
+
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <!-- Filter Level -->
+              <select id="log-filter-level" onchange="renderLogs()" style="padding: 6px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer;">
+                <option value="ALL">📋 Semua Log</option>
+                <option value="AI" selected>🤖 Khusus AI, Gemini &amp; KeyPool</option>
+                <option value="ERROR">🚨 Hanya Error &amp; Warning</option>
+                <option value="INFO">ℹ️ Hanya Info</option>
+              </select>
+
+              <!-- Search Bar -->
+              <div style="position: relative;">
+                <input type="text" id="log-search" oninput="renderLogs()" placeholder="Cari teks/kode (e.g. 429, timeout, key)..." style="padding: 6px 12px 6px 30px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); width: 230px;">
+                <i class="bi bi-search" style="position: absolute; left: 10px; top: 8px; font-size: 11px; color: var(--text-secondary);"></i>
+              </div>
+
+              <span id="log-counter" style="font-size: 11px; color: var(--text-secondary);"></span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary btn-xs" onclick="fetchChatbotLogs(true)" style="font-size: 12px; padding: 6px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;" title="Segarkan Log Sekarang">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+              <button type="button" id="btn-toggle-autorefresh" class="btn btn-secondary btn-xs" onclick="toggleAutoRefresh()" style="font-size: 12px; padding: 6px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;" title="Jeda atau Lanjutkan Auto-Refresh">
+                <i class="bi bi-pause-fill"></i> Jeda
+              </button>
+              <button type="button" class="btn btn-secondary btn-xs" onclick="downloadLogsAsFile()" style="font-size: 12px; padding: 6px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;" title="Unduh File Log">
+                <i class="bi bi-download"></i> Unduh
+              </button>
+              <button type="button" class="btn btn-danger btn-xs" onclick="clearServerLogs()" style="font-size: 12px; padding: 6px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;" title="Bersihkan file log server">
+                <i class="bi bi-trash"></i> Bersihkan Log
+              </button>
+            </div>
+          </div>
+
+          <!-- Terminal Container -->
+          <div id="chatbot-terminal" style="background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 8px; padding: 12px; font-family: 'Consolas', 'Fira Code', monospace; font-size: 11.5px; line-height: 1.6; height: 380px; overflow-y: auto; box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);">
+            <div style="color: #8b949e; text-align: center; padding: 50px 0;">
+              <i class="bi bi-arrow-repeat spin" style="font-size: 18px;"></i>
+              <div style="margin-top: 8px;">Memuat log sistem &amp; diagnostik...</div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px;">
@@ -311,137 +397,200 @@
   </div>
 
   <script>
-    function togglePasswordVisibility(inputId, btn) {
-      const input = document.getElementById(inputId);
-      if (!input) return;
-      const isPass = input.type === 'password';
-      input.type = isPass ? 'text' : 'password';
-      btn.innerHTML = isPass ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
-    }
+    // ─────────────────────────────────────────────────────────────────
+    //  LIVE SYSTEM & CHATBOT LOG VIEWER
+    // ─────────────────────────────────────────────────────────────────
+    let allLogs = [];
+    let autoRefreshInterval = null;
+    let isAutoRefreshActive = true;
 
-    function togglePasswordVisibilityInRow(btn) {
-      const row = btn.closest('.backup-key-row');
-      if (!row) return;
-      const input = row.querySelector('input');
-      if (!input) return;
-      const isPass = input.type === 'password';
-      input.type = isPass ? 'text' : 'password';
-      btn.innerHTML = isPass ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
-    }
+    async function fetchChatbotLogs(isManual = false) {
+      const terminal = document.getElementById('chatbot-terminal');
+      if (!terminal) return;
 
-    function addBackupKey() {
-      const container = document.getElementById('gemini-backup-keys-container');
-      const row = document.createElement('div');
-      row.className = 'backup-key-row';
-      row.style.display = 'flex';
-      row.style.gap = '8px';
-      row.style.alignItems = 'center';
-      row.style.marginTop = '8px';
-      row.innerHTML = `
-        <input type="password" name="gemini_backup_keys" placeholder="Masukkan Backup API key" style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
-        <button type="button" class="btn btn-secondary btn-xs" onclick="togglePasswordVisibilityInRow(this)" style="padding: 10px 12px; height: 38px; border-radius: var(--radius-sm);" title="Lihat/Sembunyikan Key"><i class="bi bi-eye"></i></button>
-        <button type="button" class="btn btn-danger btn-xs remove-key-btn" onclick="removeBackupKey(this)" style="padding: 10px 14px; border-radius: var(--radius-sm); height: 38px; display: inline-flex; align-items: center; justify-content: center;" title="Hapus Key"><i class="bi bi-trash"></i></button>
-      `;
-      container.appendChild(row);
-    }
-    
-    function removeBackupKey(button) {
-      const row = button.closest('.backup-key-row');
-      const container = document.getElementById('gemini-backup-keys-container');
-      if (container.querySelectorAll('.backup-key-row').length > 1) {
-        row.remove();
-      } else {
-        row.querySelector('input').value = '';
+      const prefix = window.navPrefix || '<%= navPrefix %>';
+      try {
+        const res = await fetch(prefix + '/admin/settings/chatbot-logs', {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.logs)) {
+          allLogs = data.logs;
+          renderLogs();
+        }
+      } catch (e) {
+        if (isManual) {
+          terminal.innerHTML = `<div style="color: #f85149; padding: 20px; text-align: center;"><i class="bi bi-exclamation-triangle"></i> Gagal mengambil log: ${e.message}</div>`;
+        }
       }
     }
 
-    async function testGeminiKeys() {
-      const btn = document.getElementById('btn-test-gemini-keys');
-      const resultBox = document.getElementById('gemini-test-results');
-      if (!btn || !resultBox) return;
+    function renderLogs() {
+      const terminal = document.getElementById('chatbot-terminal');
+      const filterLevel = document.getElementById('log-filter-level')?.value || 'ALL';
+      const searchKeyword = (document.getElementById('log-search')?.value || '').toLowerCase().trim();
+      const counterEl = document.getElementById('log-counter');
+      if (!terminal) return;
 
-      const originalHtml = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menguji...';
-      resultBox.style.display = 'block';
-      resultBox.innerHTML = '<div style="font-size: 13px; color: var(--text-secondary);"><i class="bi bi-arrow-repeat spin"></i> Sedang menguji kelayakan seluruh API key ke server Google Gemini...</div>';
+      let filtered = allLogs.filter(item => {
+        const msg = String(item.message || item.msg || '').toLowerCase();
+        const lvl = String(item.level || 'info').toLowerCase();
+        const stack = String(item.stack || '').toLowerCase();
 
-      const primaryKey = (document.getElementById('gemini_api_key')?.value || '').trim();
-      const backupInputs = Array.from(document.querySelectorAll('input[name="gemini_backup_keys"]'));
-      const backupKeys = backupInputs.map(i => i.value.trim()).filter(Boolean);
-      const model = (document.getElementById('gemini_model')?.value || 'gemini-3.5-flash').trim();
+        // Level Filter
+        if (filterLevel === 'ERROR' && lvl !== 'error' && lvl !== 'warn') return false;
+        if (filterLevel === 'INFO' && lvl !== 'info') return false;
+        if (filterLevel === 'AI') {
+          const isAi = msg.includes('[key_pool') || msg.includes('[llm_gw') || msg.includes('gemini') || msg.includes('agent') || msg.includes('smart_switch') || msg.includes('smartswitch') || msg.includes('openai') || msg.includes('openrouter') || msg.includes('tool_registry');
+          if (!isAi) return false;
+        }
 
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        // Search Filter
+        if (searchKeyword) {
+          const combined = `${msg} ${lvl} ${stack} ${item.timestamp || ''}`.toLowerCase();
+          if (!combined.includes(searchKeyword)) return false;
+        }
+
+        return true;
+      });
+
+      if (counterEl) {
+        counterEl.textContent = `Menampilkan ${filtered.length} dari ${allLogs.length} baris log`;
+      }
+
+      if (filtered.length === 0) {
+        terminal.innerHTML = '<div style="color: #8b949e; text-align: center; padding: 40px 0;"><i class="bi bi-inbox"></i> Tidak ada entri log yang cocok dengan filter saat ini.</div>';
+        return;
+      }
+
+      // Check if user is scrolled near bottom
+      const isNearBottom = terminal.scrollHeight - terminal.clientHeight - terminal.scrollTop < 60;
+
+      let html = '';
+      filtered.forEach(item => {
+        const lvl = String(item.level || 'info').toLowerCase();
+        const time = item.timestamp || '';
+        let msg = escapeHtml(String(item.message || item.msg || ''));
+        const stack = item.stack ? `<div style="color: #f85149; font-size: 11px; margin-left: 20px; opacity: 0.85;">${escapeHtml(item.stack)}</div>` : '';
+
+        // Badge level
+        let lvlBadge = `<span class="log-badge-info">INFO</span>`;
+        if (lvl === 'warn') lvlBadge = `<span class="log-badge-warn">WARN</span>`;
+        if (lvl === 'error') lvlBadge = `<span class="log-badge-error">ERR</span>`;
+
+        // Highlight AI tags
+        msg = msg.replace(/(\[KEY_POOL:[^\]]+\])/gi, '<span class="log-badge-ai">$1</span>');
+        msg = msg.replace(/(\[LLM_GW:[^\]]+\])/gi, '<span class="log-badge-ai" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;">$1</span>');
+        msg = msg.replace(/(\[TOOL_REGISTRY\])/gi, '<span class="log-badge-ai" style="background: rgba(34, 197, 94, 0.15); color: #22c55e;">$1</span>');
+        msg = msg.replace(/(\[AGENT:STREAM\])/gi, '<span class="log-badge-ai" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">$1</span>');
+
+        // Status code highlight
+        msg = msg.replace(/\b(200 OK|200)\b/g, '<span style="color: #22c55e; font-weight: bold;">$1</span>');
+        msg = msg.replace(/\b(429|429 Rate Limit|Rate Limited)\b/gi, '<span style="color: #f59e0b; font-weight: bold;">$1</span>');
+        msg = msg.replace(/\b(503|500|401|403|ETIMEDOUT|ECONNREFUSED)\b/gi, '<span style="color: #ef4444; font-weight: bold;">$1</span>');
+
+        html += `
+          <div class="log-line log-${lvl}">
+            <span style="color: #8b949e; flex-shrink: 0;">[${time}]</span>
+            <span style="flex-shrink: 0;">${lvlBadge}</span>
+            <span style="flex: 1;">${msg}${stack}</span>
+          </div>
+        `;
+      });
+
+      terminal.innerHTML = html;
+
+      // Maintain auto-scroll to bottom if previously near bottom
+      if (isNearBottom) {
+        terminal.scrollTop = terminal.scrollHeight;
+      }
+    }
+
+    function toggleAutoRefresh() {
+      const btn = document.getElementById('btn-toggle-autorefresh');
+      const badge = document.getElementById('log-live-badge');
+      if (!btn || !badge) return;
+
+      isAutoRefreshActive = !isAutoRefreshActive;
+      if (isAutoRefreshActive) {
+        startAutoRefresh();
+        btn.innerHTML = '<i class="bi bi-pause-fill"></i> Jeda';
+        badge.innerHTML = '<span class="live-dot" style="display: inline-block; width: 6px; height: 6px; background: #22c55e; border-radius: 50%; animation: pulse-live 1.5s infinite;"></span><span>Auto-Refresh (3s)</span>';
+        badge.style.color = '#22c55e';
+        badge.style.background = 'rgba(34, 197, 94, 0.15)';
+      } else {
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        btn.innerHTML = '<i class="bi bi-play-fill"></i> Lanjutkan';
+        badge.innerHTML = '<i class="bi bi-pause"></i><span>Dijeda</span>';
+        badge.style.color = '#f59e0b';
+        badge.style.background = 'rgba(245, 158, 11, 0.15)';
+      }
+    }
+
+    function startAutoRefresh() {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+      autoRefreshInterval = setInterval(() => {
+        if (isAutoRefreshActive) fetchChatbotLogs(false);
+      }, 3500);
+    }
+
+    async function clearServerLogs() {
+      if (!confirm('Apakah Anda yakin ingin mengosongkan file log sistem di server?')) return;
       const prefix = window.navPrefix || '<%= navPrefix %>';
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
       try {
-        const response = await fetch(prefix + '/admin/settings/test-gemini-keys', {
+        const res = await fetch(prefix + '/admin/settings/chatbot-logs/clear', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'X-CSRF-Token': csrfToken,
             'X-Requested-With': 'XMLHttpRequest'
-          },
-          body: JSON.stringify({
-            _csrf: csrfToken,
-            gemini_api_key: primaryKey,
-            gemini_backup_keys: backupKeys,
-            gemini_model: model
-          })
-        });
-
-        const resData = await response.json();
-        if (!resData.success || !resData.report) {
-          throw new Error(resData.error || 'Gagal menjalankan tes');
-        }
-
-        const report = resData.report;
-        if (report.total === 0) {
-          resultBox.innerHTML = '<div style="font-size: 13px; color: #ffc107;"><i class="bi bi-exclamation-triangle"></i> Belum ada API key Gemini yang diisi. Masukkan Key Utama atau Cadangan terlebih dahulu.</div>';
-          return;
-        }
-
-        let html = `<div style="font-size: 13px; font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between;">
-          <span>Hasil Uji Kunci (${report.healthyCount}/${report.total} Sehat):</span>
-          <span style="font-size: 12px; font-weight: 400; color: var(--text-secondary);">Model: ${report.modelUsed}</span>
-        </div>`;
-
-        html += '<div style="display: flex; flex-direction: column; gap: 6px;">';
-        report.keys.forEach(k => {
-          let badge = '';
-          if (k.valid) {
-            badge = `<span style="background: rgba(25, 135, 84, 0.2); color: #198754; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">🟢 Aktif (${k.latencyMs}ms)</span>`;
-          } else if (k.statusCode === 429) {
-            badge = `<span style="background: rgba(255, 193, 7, 0.2); color: #ffc107; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">🟡 429 Rate Limit (Auto-Cooldown)</span>`;
-          } else {
-            badge = `<span style="background: rgba(220, 53, 69, 0.2); color: #dc3545; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">🔴 Invalid (${k.statusCode || 'Error'})</span>`;
           }
-
-          html += `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--bg-secondary); border-radius: 6px; font-size: 12px;">
-              <div>
-                <strong>${k.label}</strong> <code style="font-size: 11px; color: var(--text-secondary);">${k.maskedKey}</code>
-                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${k.message}</div>
-              </div>
-              <div>${badge}</div>
-            </div>
-          `;
         });
-        html += '</div>';
-
-        if (report.advice) {
-          html += `<div style="margin-top: 10px; padding: 8px 12px; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 6px; font-size: 12px; line-height: 1.4; color: #ffc107;">
-            <i class="bi bi-info-circle-fill"></i> <strong>Saran:</strong> ${report.advice}
-          </div>`;
+        const d = await res.json();
+        if (d.success) {
+          allLogs = [];
+          renderLogs();
+          alert('File log sistem berhasil dibersihkan.');
+        } else {
+          alert('Gagal membersihkan log: ' + (d.error || 'Unknown'));
         }
-
-        resultBox.innerHTML = html;
-      } catch (err) {
-        resultBox.innerHTML = `<div style="font-size: 13px; color: #dc3545;"><i class="bi bi-x-circle"></i> Terjadi kesalahan saat pengujian: ${err.message}</div>`;
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
+      } catch (e) {
+        alert('Gagal: ' + e.message);
       }
     }
+
+    function downloadLogsAsFile() {
+      if (allLogs.length === 0) {
+        alert('Tidak ada log untuk diunduh.');
+        return;
+      }
+      const rawLines = allLogs.map(l => `[${l.timestamp || ''}] [${(l.level || 'INFO').toUpperCase()}] ${l.message || ''}${l.stack ? '\n' + l.stack : ''}`).join('\n');
+      const blob = new Blob([rawLines], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `chatbot_system_logs_${new Date().toISOString().slice(0, 10)}.log`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function escapeHtml(text) {
+      return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initialize Log Viewer on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchChatbotLogs(false);
+      startAutoRefresh();
+    });
   </script>
 </div>
