@@ -278,7 +278,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
   const tries = [{ provider: 'gemini', model: initialSelection.model }];
 
   if (settings.chatbot_smart_switch === '1') {
-    const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-2.5-flash, gemini-3.1-flash-lite, gemini-2.5-pro';
+    const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.6-flash, gemini-3.7-flash, gemini-3.1-flash-lite, gemini-2.5-flash';
     for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
       if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
       tries.push({ provider: 'gemini', model: m });
@@ -390,7 +390,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
   const tries = [{ provider: 'gemini', model: initialSelection.model }];
 
   if (settings.chatbot_smart_switch === '1') {
-    const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-2.5-flash, gemini-3.1-flash-lite, gemini-2.5-pro';
+    const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.6-flash, gemini-3.7-flash, gemini-3.1-flash-lite, gemini-2.5-flash';
     for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
       if (tries.length >= llmGateway.MAX_SWITCH_TRIES) break;
       tries.push({ provider: 'gemini', model: m });
