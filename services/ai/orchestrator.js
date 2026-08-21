@@ -16,15 +16,13 @@ const llmGateway = require('./llmGateway');
 const fastPathHandler = require('./fastPathHandler');
 const keyPool = require('./keyPool');
 
-// LOGGER
-
-
-const LOG_LEVEL = process.env.AGENT_LOG_LEVEL || 'debug';
+// LOGGER — using Winston to ensure all AI logs are captured in log files
+const _winstonLogger = require('../logger');
 const log = {
-  debug : (...a) => ['debug'].includes(LOG_LEVEL) && console.debug('[ORCH:DBG]', ...a),
-  info  : (...a) => ['debug','info'].includes(LOG_LEVEL) && console.info ('[ORCH:INF]', ...a),
-  warn  : (...a) => ['debug','info','warn'].includes(LOG_LEVEL) && console.warn ('[ORCH:WRN]', ...a),
-  error : (...a) => ['debug','info','warn','error'].includes(LOG_LEVEL) && console.error('[ORCH:ERR]', ...a),
+  debug : (...a) => _winstonLogger.debug('[ORCH] ' + a.map(v => typeof v === 'object' ? JSON.stringify(v) : v).join(' ')),
+  info  : (...a) => _winstonLogger.info('[ORCH] '  + a.map(v => typeof v === 'object' ? JSON.stringify(v) : v).join(' ')),
+  warn  : (...a) => _winstonLogger.warn('[ORCH] '  + a.map(v => typeof v === 'object' ? JSON.stringify(v) : v).join(' ')),
+  error : (...a) => _winstonLogger.error('[ORCH] ' + a.map(v => typeof v === 'object' ? JSON.stringify(v) : v).join(' ')),
 };
 
 // ─────────────────────────────────────────────

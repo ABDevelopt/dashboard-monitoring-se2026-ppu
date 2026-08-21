@@ -6,6 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const { getDb } = require('../../database');
+const _logger = require('../logger');
 
 /**
  * Memuat riwayat obrolan untuk user tertentu.
@@ -21,7 +22,7 @@ function getChatHistory(userId) {
       return JSON.parse(row.history);
     }
   } catch (err) {
-    console.error(`[MemoryManager] Gagal mengambil riwayat chat untuk user ${userId}:`, err.message);
+    _logger.error(`[MemoryManager] Gagal mengambil riwayat chat untuk user ${userId}: ${err.message}`);
   }
   return [];
 }
@@ -44,7 +45,7 @@ function saveChatHistory(userId, history) {
       VALUES (?, ?, CURRENT_TIMESTAMP)
     `).run(userId, jsonStr);
   } catch (err) {
-    console.error(`[MemoryManager] Gagal menyimpan riwayat chat untuk user ${userId}:`, err.message);
+    _logger.error(`[MemoryManager] Gagal menyimpan riwayat chat untuk user ${userId}: ${err.message}`);
   }
 }
 
@@ -58,7 +59,7 @@ function clearChatHistory(userId) {
     const db = getDb('se2026');
     db.prepare('DELETE FROM agent_sessions WHERE user_id = ?').run(userId);
   } catch (err) {
-    console.error(`[MemoryManager] Gagal menghapus riwayat chat untuk user ${userId}:`, err.message);
+    _logger.error(`[MemoryManager] Gagal menghapus riwayat chat untuk user ${userId}: ${err.message}`);
   }
 }
 

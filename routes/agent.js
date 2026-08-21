@@ -2,6 +2,7 @@ const express = require('express');
 const router  = express.Router();
 const { sendMessageToAgent, streamMessageToAgent } = require('../services/agentService');
 const { getSettings } = require('../database');
+const logger = require('../services/logger');
 
 // Auth Middleware for Agent chatbot (allows any authenticated accounts)
 function requireLogin(req, res, next) {
@@ -125,12 +126,12 @@ router.post('/chat/stream', async (req, res) => {
       userId
     );
     const duration = Date.now() - startTime;
-    console.info(`[AGENT:STREAM] OK — ${safeProvider || 'auto'}/${model || 'default'} — ${duration}ms`);
+    logger.info(`[AGENT:STREAM] OK — ${safeProvider || 'auto'}/${model || 'default'} — ${duration}ms`);
     res.end();
   } catch (err) {
     const duration = Date.now() - startTime;
     const errMsg = err?.message || 'Unknown error';
-    console.error(`[AGENT:STREAM] ERROR — ${safeProvider || 'auto'} — ${duration}ms —`, errMsg);
+    logger.error(`[AGENT:STREAM] ERROR — ${safeProvider || 'auto'} — ${duration}ms — ${errMsg}`);
     
     if (!res.writableEnded) {
       sendEvent('error', { error: errMsg });
@@ -175,7 +176,7 @@ router.post('/chat', async (req, res) => {
     );
 
     const duration = Date.now() - startTime;
-    console.info(`[AGENT:ROUTE] OK — ${safeProvider || 'auto'}/${model || 'default'} — ${duration}ms — sim:${result.isSimulation}`);
+    logger.info(`[AGENT:ROUTE] OK — ${safeProvider || 'auto'}/${model || 'default'} — ${duration}ms — sim:${result.isSimulation}`);
 
     return res.json({
       reply       : result.content,
@@ -194,13 +195,11 @@ router.post('/chat', async (req, res) => {
     const isApiAuth  = /api key|unauthorized|authentication|invalid_api_key/i.test(errMsg);
     const isRateLimit = /rate.?limit|quota|429/i.test(errMsg);
 
-    console.error(
-      `[AGENT:ROUTE] ERROR — ${safeProvider || 'auto'} — ${duration}ms —`,
-      errMsg,
-      isTimeout ? '[TIMEOUT]' : isApiAuth ? '[AUTH]' : isRateLimit ? '[RATE_LIMIT]' : '[UNKNOWN]'
+    logger.error(
+      `[AGENT:ROUTE] ERROR — ${safeProvider || 'auto'} — ${duration}ms — ${errMsg} ${isTimeout ? '[TIMEOUT]' : isApiAuth ? '[AUTH]' : isRateLimit ? '[RATE_LIMIT]' : '[UNKNOWN]'}`
     );
 
-    if (errStack) console.error('[AGENT:ROUTE] Stack:', errStack);
+    if (errStack) logger.error('[AGENT:ROUTE] Stack: ' + errStack);
 
     const httpStatus = isTimeout   ? 504
                      : isApiAuth   ? 502

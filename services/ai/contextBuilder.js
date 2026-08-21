@@ -9,6 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const { getDb, getSettings, getLatestUpload, getOverviewSummary, getKecamatanStats, getAnomalyStats, getEarlyWarning } = require('../../database');
+const _logger = require('../logger');
 
 /**
  * Format angka dengan pemisah ribuan.
@@ -133,7 +134,7 @@ ${botKecText}
 `;
   } catch (err) {
     // Jangan crash jika context gagal dibangun — cukup kembalikan string kosong
-    console.error('[contextBuilder] Gagal membangun live context:', err.message);
+    _logger.error(`[contextBuilder] Gagal membangun live context: ${err.message}`);
     return '';
   }
 }

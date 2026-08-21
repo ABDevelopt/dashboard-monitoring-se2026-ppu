@@ -20,6 +20,7 @@ const {
 } = require('../../database');
 const { getFirestore, isFirebaseActive } = require('../firebaseService');
 const cacheManager = require('./cacheManager');
+const _logger = require('../logger');
 
 // ─────────────────────────────────────────────
 //  SQL VALIDATION & UTILS
@@ -208,11 +209,11 @@ async function runToolCall(toolCall) {
   // 1. Check cache first
   const cachedVal = cacheManager.get(cacheKey);
   if (cachedVal) {
-    console.info(`[TOOL_REGISTRY] Cache HIT for tool '${name}'`);
+    _logger.info(`[TOOL_REGISTRY] Cache HIT for tool '${name}'`);
     return cachedVal;
   }
 
-  console.info(`[TOOL_REGISTRY] Cache MISS for tool '${name}' - executing...`);
+  _logger.info(`[TOOL_REGISTRY] Cache MISS for tool '${name}' - executing...`);
   let result;
 
   try {
@@ -298,7 +299,7 @@ async function runToolCall(toolCall) {
     return result;
 
   } catch (err) {
-    console.error(`[TOOL_REGISTRY] Error executing tool '${name}':`, err.message);
+    _logger.error(`[TOOL_REGISTRY] Error executing tool '${name}': ${err.message}`);
     return {
       status: 'error',
       message: err.message,
@@ -444,7 +445,7 @@ function processJsonQueryResponse(text) {
       const rows = stmt.all(params);
       return formatQueryHintToMarkdown(queryName, rawParams, rows);
     } catch (err) {
-      console.error(`[TOOL_REGISTRY] Error processing query hint '${queryName}':`, err.message);
+      _logger.error(`[TOOL_REGISTRY] Error processing query hint '${queryName}': ${err.message}`);
     }
   } else if (toolName === 'query_data' || toolName === 'run_read_only_query') {
     try {
@@ -455,7 +456,7 @@ function processJsonQueryResponse(text) {
         return formatQueryHintToMarkdown('custom_query', rawParams, rows);
       }
     } catch (err) {
-      console.error(`[TOOL_REGISTRY] Error executing json query_data:`, err.message);
+      _logger.error(`[TOOL_REGISTRY] Error executing json query_data: ${err.message}`);
     }
   }
 

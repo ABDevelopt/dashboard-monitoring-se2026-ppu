@@ -17,13 +17,13 @@ const MAX_SWITCH_TRIES              = 5;
 const LEGACY_GEMINI_MODELS = new Set([]);
 const _activeControllers = new Map();
 
-// LOGGER
-const LOG_LEVEL = process.env.AGENT_LOG_LEVEL || 'debug';
+// LOGGER — using Winston to ensure all AI logs are captured in log files
+const _winstonLogger = require('../logger');
 const log = {
-  debug : (...a) => ['debug'].includes(LOG_LEVEL) && console.debug('[LLM_GW:DBG]', ...a),
-  info  : (...a) => ['debug','info'].includes(LOG_LEVEL) && console.info ('[LLM_GW:INF]', ...a),
-  warn  : (...a) => ['debug','info','warn'].includes(LOG_LEVEL) && console.warn ('[LLM_GW:WRN]', ...a),
-  error : (...a) => ['debug','info','warn','error'].includes(LOG_LEVEL) && console.error('[LLM_GW:ERR]', ...a),
+  debug : (...a) => _winstonLogger.debug('[LLM_GW] ' + a.map(v => typeof v === 'object' ? JSON.stringify(v) : v).join(' ')),
+  info  : (...a) => _winstonLogger.info('[LLM_GW] '  + a.map(v => typeof v === 'object' ? JSON.stringify(v) : v).join(' ')),
+  warn  : (...a) => _winstonLogger.warn('[LLM_GW] '  + a.map(v => typeof v === 'object' ? JSON.stringify(v) : v).join(' ')),
+  error : (...a) => _winstonLogger.error('[LLM_GW] ' + a.map(v => typeof v === 'object' ? JSON.stringify(v) : v).join(' ')),
 };
 
 function timeoutPromise(promise, ms, errorMessage) {
