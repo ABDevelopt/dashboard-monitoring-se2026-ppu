@@ -1401,6 +1401,89 @@
       font-size: 13px;
     }
   }
+
+  /* Mobile GPS Focus Mode: Hide all menus, topbars, bottom-navs, search panels, KPI bars, and non-essential UI */
+  @media (max-width: 768px) {
+    body.gps-focus-mode .topbar,
+    body.gps-focus-mode .bottom-nav,
+    body.gps-focus-mode #breadcrumb-bar,
+    body.gps-focus-mode .gmaps-floating-search-panel,
+    body.gps-focus-mode .gmaps-floating-kpi-bar,
+    body.gps-focus-mode .gmaps-floating-basemap-pill,
+    body.gps-focus-mode #btnFullscreenMap,
+    .gmaps-container-wrap.gps-focus-mode .gmaps-floating-search-panel,
+    .gmaps-container-wrap.gps-focus-mode .gmaps-floating-kpi-bar,
+    .gmaps-container-wrap.gps-focus-mode .gmaps-floating-basemap-pill,
+    .gmaps-container-wrap.gps-focus-mode #btnFullscreenMap {
+      display: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    body.gps-focus-mode .page-content {
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    body.gps-focus-mode .gmaps-container-wrap,
+    .gmaps-container-wrap.gps-focus-mode {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 1050 !important;
+      border-radius: 0 !important;
+    }
+
+    body.gps-focus-mode .gmaps-floating-right-stack,
+    .gmaps-container-wrap.gps-focus-mode .gmaps-floating-right-stack {
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      right: 10px !important;
+      z-index: 1060 !important;
+    }
+
+    body.gps-focus-mode #btnLocateMe,
+    .gmaps-container-wrap.gps-focus-mode #btnLocateMe {
+      background: linear-gradient(135deg, #0284c7 0%, #06b6d4 100%) !important;
+      color: #ffffff !important;
+      border-color: #38bdf8 !important;
+      box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.45), 0 0 16px rgba(2, 132, 199, 0.75) !important;
+    }
+
+    /* Floating Exit GPS Mode Button on Mobile */
+    .gmaps-exit-gps-pill {
+      display: none;
+      position: absolute;
+      top: calc(12px + env(safe-area-inset-top, 0px));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1070;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 15px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.90) 0%, rgba(2, 132, 199, 0.85) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      color: #ffffff;
+      font-size: 11.5px;
+      font-weight: 700;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 12px rgba(56, 189, 248, 0.35);
+      cursor: pointer;
+      white-space: nowrap;
+      animation: fadeInDown 0.3s ease;
+    }
+
+    body.gps-focus-mode .gmaps-exit-gps-pill,
+    .gmaps-container-wrap.gps-focus-mode .gmaps-exit-gps-pill {
+      display: inline-flex !important;
+    }
+  }
 </style>
 
 <div class="fade-in">
@@ -1420,6 +1503,11 @@
       <span id="gpsToastSpinner" class="spinner-border spinner-border-sm" style="width: 12px; height: 12px; border-width: 2px; color: var(--accent-cyan);"></span>
       <span id="gpsToastText">Mengunci titik koordinat GPS presisi tinggi...</span>
     </div>
+
+    <!-- FLOATING BUTTON TO EXIT GPS FOCUS MODE (MOBILE ONLY) -->
+    <button id="btnExitGpsFocus" class="gmaps-exit-gps-pill" type="button" title="Keluar dari Mode GPS (Tampilkan Menu)">
+      <i class="bi bi-x-circle-fill"></i> Tampilkan Menu
+    </button>
 
     <!-- 2. FLOATING TOP UNIFIED COMMAND BAR (EXPANDED BY DEFAULT) -->
     <div class="gmaps-floating-search-panel" id="gmapsToolsPanel">
@@ -3509,12 +3597,44 @@
           return { matchedSls, matchedDesa, matchedKec };
         }
 
+        // GPS Focus Mode on Mobile (Hides all menus / topbar / bottom-nav / search panel)
+        function enterGpsFocusMode() {
+          if (window.innerWidth <= 768) {
+            document.body.classList.add('gps-focus-mode');
+            const wrapper = document.getElementById('gmapsWrapper');
+            if (wrapper) wrapper.classList.add('gps-focus-mode');
+            setTimeout(() => {
+              if (map) map.invalidateSize();
+            }, 150);
+          }
+        }
+
+        function exitGpsFocusMode() {
+          document.body.classList.remove('gps-focus-mode');
+          const wrapper = document.getElementById('gmapsWrapper');
+          if (wrapper) wrapper.classList.remove('gps-focus-mode');
+          setTimeout(() => {
+            if (map) map.invalidateSize();
+          }, 150);
+        }
+
+        const btnExitGpsFocus = document.getElementById('btnExitGpsFocus');
+        if (btnExitGpsFocus) {
+          btnExitGpsFocus.addEventListener('click', exitGpsFocusMode);
+        }
+
+        window.addEventListener('pjax:start', exitGpsFocusMode);
+        window.addEventListener('popstate', exitGpsFocusMode);
+
         // Locate User GPS with Point-in-Polygon Administrative Detection
         function locateUserGPS() {
           if (!navigator.geolocation) {
             alert('Fitur Geolocation tidak didukung di peramban Anda.');
             return;
           }
+
+          // Otomatis aktifkan mode fokus GPS pada mobile (sembunyikan seluruh menu & topbar/bottom-nav)
+          enterGpsFocusMode();
 
           const gpsToast = document.getElementById('gpsToast');
           const gpsToastText = document.getElementById('gpsToastText');
@@ -3928,6 +4048,7 @@
         // Reset View Button
         if (btnResetView) {
           btnResetView.addEventListener('click', () => {
+            exitGpsFocusMode();
             if (kecFilter) kecFilter.value = '';
             if (desaFilter) desaFilter.value = '';
             if (pclFilter) pclFilter.value = '';
