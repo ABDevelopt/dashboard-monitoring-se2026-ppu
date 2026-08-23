@@ -277,7 +277,7 @@
     font-weight: 600;
   }
 
-  /* Polygon On-Map Progress Labels & Badges */
+  /* Ultra-Lightweight Minimalist Polygon Progress Badges */
   .leaflet-tooltip.map-polygon-label-tooltip {
     background: transparent !important;
     border: none !important;
@@ -293,83 +293,59 @@
 
   .map-label-badge {
     display: inline-flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 4px 8px;
-    border-radius: 8px;
-    background: rgba(15, 23, 42, 0.82);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.20);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.38);
-    color: #ffffff;
-    text-align: center;
-    line-height: 1.2;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 99px;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    color: #f1f5f9;
+    font-size: 10px;
+    line-height: 1;
+    white-space: nowrap;
     pointer-events: none;
     user-select: none;
-    transition: opacity 0.2s ease, transform 0.2s ease;
   }
 
   body.light-mode .map-label-badge {
-    background: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(0, 0, 0, 0.16);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
-    color: #0f172a;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    color: #1e293b;
   }
 
   .map-label-badge.kec-label-badge {
-    padding: 5px 12px;
-    border-radius: 10px;
+    padding: 3px 9px;
+    font-size: 11.5px;
+    font-weight: 600;
   }
-  .map-label-badge.kec-label-badge .map-label-title {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    margin-bottom: 2px;
-    color: #e2e8f0;
-  }
-  body.light-mode .map-label-badge.kec-label-badge .map-label-title {
-    color: #1e293b;
-  }
-  .map-label-badge.kec-label-badge .map-label-pct {
-    font-size: 13px;
+  .map-label-badge.kec-label-badge strong {
+    font-size: 12px;
     font-weight: 800;
   }
 
   .map-label-badge.desa-label-badge {
-    padding: 3px 7px;
-    border-radius: 6px;
-  }
-  .map-label-badge.desa-label-badge .map-label-title {
+    padding: 1.5px 5px;
     font-size: 9.5px;
-    font-weight: 600;
-    margin-bottom: 1px;
-    max-width: 110px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: #e2e8f0;
+    font-weight: 500;
   }
-  body.light-mode .map-label-badge.desa-label-badge .map-label-title {
-    color: #334155;
-  }
-  .map-label-badge.desa-label-badge .map-label-pct {
-    font-size: 10.5px;
+  .map-label-badge.desa-label-badge strong {
+    font-size: 10px;
     font-weight: 700;
   }
 
-  .map-label-pct.status-green { color: #34d399 !important; }
-  .map-label-pct.status-blue { color: #38bdf8 !important; }
-  .map-label-pct.status-yellow { color: #facc15 !important; }
-  .map-label-pct.status-orange { color: #fb923c !important; }
-  .map-label-pct.status-red { color: #f87171 !important; }
+  .status-green { color: #34d399 !important; }
+  .status-blue { color: #38bdf8 !important; }
+  .status-yellow { color: #facc15 !important; }
+  .status-orange { color: #fb923c !important; }
+  .status-red { color: #f87171 !important; }
 
-  body.light-mode .map-label-pct.status-green { color: #059669 !important; }
-  body.light-mode .map-label-pct.status-blue { color: #0284c7 !important; }
-  body.light-mode .map-label-pct.status-yellow { color: #d97706 !important; }
-  body.light-mode .map-label-pct.status-orange { color: #ea580c !important; }
-  body.light-mode .map-label-pct.status-red { color: #dc2626 !important; }
+  body.light-mode .status-green { color: #059669 !important; }
+  body.light-mode .status-blue { color: #0284c7 !important; }
+  body.light-mode .status-yellow { color: #d97706 !important; }
+  body.light-mode .status-orange { color: #ea580c !important; }
+  body.light-mode .status-red { color: #dc2626 !important; }
 
   /* Floating KPI Bar (Top Right) */
   .gmaps-floating-kpi-bar {
@@ -1885,8 +1861,8 @@
               // Bind Permanent On-Map Badge
               const labelHtml = `
                 <div class="map-label-badge kec-label-badge ${showProgressLabels ? '' : 'd-none'}">
-                  <div class="map-label-title"><i class="bi bi-diagram-3-fill" style="font-size: 10px; margin-right: 2px;"></i> Kec. ${feature.properties.nmkec}</div>
-                  <div class="map-label-pct ${fasihColorClass}">${fasihPct.toFixed(1)}%</div>
+                  <span>${feature.properties.nmkec}</span>
+                  <strong class="${fasihColorClass}">${fasihPct.toFixed(1)}%</strong>
                 </div>
               `;
               layer.bindTooltip(labelHtml, {
@@ -1946,8 +1922,8 @@
               // Bind Permanent On-Map Badge
               const labelHtml = `
                 <div class="map-label-badge desa-label-badge ${showProgressLabels ? '' : 'd-none'}">
-                  <div class="map-label-title">${feature.properties.nmdesa}</div>
-                  <div class="map-label-pct ${fasihColorClass}">${fasihPct.toFixed(1)}%</div>
+                  <span>${feature.properties.nmdesa}</span>
+                  <strong class="${fasihColorClass}">${fasihPct.toFixed(1)}%</strong>
                 </div>
               `;
               layer.bindTooltip(labelHtml, {
