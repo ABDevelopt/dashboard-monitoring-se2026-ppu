@@ -166,12 +166,15 @@
             </div>
 
             <% if (detailPcl && detailPcl.length > 0) { %>
-              <div class="mb-4">
-                <% if (!isSakernas) { %>
-                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
-                  Korlap Atasan: <strong><%= detailPcl[0].korlap %></strong>
+              <div class="mb-3">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; flex-wrap: wrap; gap: 6px;">
+                  <% if (!isSakernas) { %>
+                    <div>Korlap Atasan: <strong><%= (selectedPmlStats && selectedPmlStats.korlap) || detailPcl[0].korlap %></strong></div>
+                  <% } else { %>
+                    <div></div>
+                  <% } %>
+                  <div>SubSLS Selesai: <strong style="color: var(--accent-green);"><%= selectedPmlStats ? selectedPmlStats.selesai : 0 %></strong> SubSLS</div>
                 </div>
-                <% } %>
                 <% 
                   let totalBeban = selectedPmlStats ? selectedPmlStats.total_muatan : 0;
                   let totalUsaha = selectedPmlStats ? (selectedPmlStats.muatan_selesai !== undefined ? selectedPmlStats.muatan_selesai : (selectedPmlStats.usaha_total + selectedPmlStats.keluarga_total)) : 0;
@@ -185,10 +188,10 @@
                   let totalFasihVerifPct = selectedPmlStats ? selectedPmlStats.fasih_verified_pct_str : '0.00';
                 %>
                 <!-- Progress FASIH -->
-                <div style="margin-bottom: 16px;">
-                  <div class="bar-label">
+                <div style="margin-bottom: 12px;">
+                  <div class="bar-label" style="font-size: 11.5px; margin-bottom: 4px;">
                     <span><i class="bi bi-phone"></i> Progres FASIH Tim (Submit + Approve + Reject)</span>
-                    <span class="fw-bold"><%= totalFasihDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihPct %>%)</span>
+                    <span class="fw-bold" style="color: var(--accent-purple);"><%= totalFasihDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihPct %>%)</span>
                   </div>
                   <div class="progress-bar-wrap" style="height: 6px;">
                     <div class="progress-bar <%= parseFloat(totalFasihPct) >= 100 ? 'green' : (parseFloat(totalFasihPct) < 40 ? 'red' : 'purple') %>" data-width="<%= totalFasihPct %>" style="width: 0%;"></div>
@@ -196,10 +199,10 @@
                 </div>
 
                 <!-- Progress Verifikasi PML -->
-                <div style="margin-bottom: 16px;">
-                  <div class="bar-label">
+                <div style="margin-bottom: 12px;">
+                  <div class="bar-label" style="font-size: 11.5px; margin-bottom: 4px;">
                     <span><i class="bi bi-shield-check"></i> Progres Verifikasi PML (Approve + Reject)</span>
-                    <span class="fw-bold"><%= totalFasihVerifDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihVerifPct %>%)</span>
+                    <span class="fw-bold" style="color: var(--accent-purple);"><%= totalFasihVerifDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihVerifPct %>%)</span>
                   </div>
                   <div class="progress-bar-wrap" style="height: 6px;">
                     <div class="progress-bar <%= parseFloat(totalFasihVerifPct) >= 100 ? 'green' : (parseFloat(totalFasihVerifPct) < 40 ? 'red' : 'purple') %>" data-width="<%= totalFasihVerifPct %>" style="width: 0%;"></div>
@@ -207,55 +210,18 @@
                 </div>
 
                 <!-- Progress Muatan -->
-                <div style="margin-bottom: 12px;" class="muatan-col">
-                  <div class="bar-label">
+                <% if (settings.show_progres_muatan === '1') { %>
+                <div style="margin-bottom: 14px;" class="muatan-col">
+                  <div class="bar-label" style="font-size: 11.5px; margin-bottom: 4px;">
                     <span><i class="bi bi-briefcase"></i> Progres Muatan Tim</span>
-                    <span class="fw-bold"><%= totalUsaha.toLocaleString('id-ID') %> / <%= totalBeban.toLocaleString('id-ID') %> (<%= totalPct %>%)</span>
+                    <span class="fw-bold" style="color: var(--accent-cyan);"><%= totalUsaha.toLocaleString('id-ID') %> / <%= totalBeban.toLocaleString('id-ID') %> (<%= totalPct %>%)</span>
                   </div>
-                  <div class="progress-bar-target-wrap" style="position: relative; height: 6px; margin-top: 16px; margin-bottom: 8px;">
-                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
-                      <div class="progress-bar <%= parseFloat(totalPct) >= 100 ? 'green' : (parseFloat(totalPct) < 40 ? 'red' : 'blue') %>" data-width="<%= totalPct %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
-                    </div>
-                    
-                    <!-- Marker 25% (30 Juni) -->
-                    <div style="position: absolute; left: 25%; top: -3px; height: 12px; border-left: 1px dashed <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 25 ? '1' : '0.5' %>; z-index: 2; pointer-events: none;">
-                      <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">30 Jun: 25%</span>
-                    </div>
-
-                    <!-- Marker 40% (15 Juli) -->
-                    <div style="position: absolute; left: 40%; top: -3px; height: 12px; border-left: 1px dashed <%= activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 40 ? '1' : '0.5' %>; z-index: 2; pointer-events: none;">
-                      <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: <%= activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">15 Jul: 40%</span>
-                    </div>
+                  <div class="progress-bar-wrap" style="height: 6px;">
+                    <div class="progress-bar <%= parseFloat(totalPct) >= 100 ? 'green' : (parseFloat(totalPct) < 40 ? 'red' : 'cyan') %>" data-width="<%= totalPct %>" style="width: 0%;"></div>
                   </div>
                 </div>
-                
-                <!-- SUMMARY STATS CARD -->
-                <div class="summary-split" style="margin-top: 16px;">
-                  <div class="summary-item" style="display: flex; flex-direction: column; justify-content: space-between;">
-                    <div class="summary-item-label"><i class="bi bi-file-earmark-check"></i> FASIH</div>
-                    <div class="summary-item-value" style="color: var(--accent-purple);"><%= totalFasihPct %>%</div>
-                    <div class="summary-item-sub"><%= totalFasihDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %></div>
-                  </div>
-                  <% if (settings.show_progres_muatan === '1') { %>
-                  <div class="summary-item" style="display: flex; flex-direction: column; justify-content: space-between;">
-                    <div class="summary-item-label"><i class="bi bi-box-seam"></i> Muatan</div>
-                    <div class="summary-item-value" style="color: var(--accent-cyan);"><%= totalPct %>%</div>
-                    <div class="summary-item-sub"><%= totalUsaha.toLocaleString('id-ID') %> / <%= totalBeban.toLocaleString('id-ID') %></div>
-                  </div>
-                  <% } %>
-                  <div class="summary-item" style="display: flex; flex-direction: column; justify-content: space-between;">
-                    <div class="summary-item-label"><i class="bi bi-check2-circle"></i> Selesai (100%)</div>
-                    <div class="summary-item-value" style="color: var(--accent-green);"><%= selectedPmlStats ? selectedPmlStats.selesai : 0 %></div>
-                    <div class="summary-item-sub">SubSLS</div>
-                  </div>
-                  <% if (!isSakernas) { %>
-                  <div class="summary-item" style="display: flex; flex-direction: column; justify-content: space-between;">
-                    <div class="summary-item-label"><i class="bi bi-person-workspace"></i> Korlap</div>
-                    <div class="summary-item-value" style="font-size: 15px; word-break: break-word;"><%= selectedPmlStats && selectedPmlStats.korlap ? selectedPmlStats.korlap : '-' %></div>
-                    <div class="summary-item-sub">Wilayah Binaan</div>
-                  </div>
-                  <% } %>
-                </div>
+                <% } %>
+              </div>
 
                 <!-- PML HISTORICAL CHART ACCORDION -->
                 <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px; overflow: hidden;">
@@ -299,7 +265,7 @@
                     <% const pctVal = parseFloat(item.pct) || 0; %>
                     <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 6px;">
                       <span style="font-weight: 600;"><i class="bi bi-phone"></i> FASIH: <span style="color: var(--accent-purple);"><%= pctVal.toFixed(2) %>%</span></span>
-                      <span><%= ((item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0)).toLocaleString('id-ID') %> / <%= item.target_fasih_total.toLocaleString('id-ID') %></span>
+                      <span><%= ((item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0)).toLocaleString('id-ID') %> / <%= ((item.target_fasih_total !== undefined ? item.target_fasih_total : item.target_fasih) || 0).toLocaleString('id-ID') %></span>
                     </div>
                     <div class="progress-bar-target-wrap" style="position: relative; height: 5px; margin-top: 2px; margin-bottom: 6px;">
                       <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
@@ -312,7 +278,7 @@
                     <% const muatanPctVal = parseFloat(item.muatan_pct) || 0; %>
                     <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 4px;" class="muatan-col">
                       <span style="font-weight: 600;"><i class="bi bi-briefcase"></i> Muatan: <span style="color: var(--accent-cyan);"><%= item.muatan_pct_str %>%</span></span>
-                      <span><%= (item.muatan_selesai !== undefined ? item.muatan_selesai : (item.usaha_total + item.keluarga_total)).toLocaleString('id-ID') %> / <%= item.total_muatan.toLocaleString('id-ID') %></span>
+                      <span><%= (item.muatan_selesai !== undefined ? item.muatan_selesai : (item.usaha_total + item.keluarga_total)).toLocaleString('id-ID') %> / <%= ((item.total_muatan !== undefined ? item.total_muatan : item.muatan) || 0).toLocaleString('id-ID') %></span>
                     </div>
                     <div class="progress-bar-target-wrap muatan-col" style="position: relative; height: 5px; margin-top: 2px; margin-bottom: 6px;">
                       <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
