@@ -4,14 +4,15 @@
     .agent-table-page {
       max-width: 100%;
       margin: 0 auto;
+      color: var(--text-primary);
     }
     .at-header-banner {
-      background: var(--bg-card, #ffffff);
-      border: 1px solid var(--border, #e2e8f0);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
       padding: 18px 20px;
       margin-bottom: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
     }
     .at-toolbar {
       display: flex;
@@ -31,25 +32,37 @@
       width: 100%;
       padding: 8px 12px 8px 34px;
       font-size: 13px;
-      border: 1px solid var(--border, #cbd5e1);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      background: var(--bg-primary, #f8fafc);
-      color: var(--text-primary, #0f172a);
+      background: var(--bg-subtle);
+      color: var(--text-primary);
       outline: none;
       transition: all 0.2s;
     }
     .at-search-box input:focus {
-      border-color: #2563eb;
-      background: #ffffff;
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+      border-color: #3b82f6;
+      background: var(--bg-card);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
     }
     .at-search-box i {
       position: absolute;
       left: 11px;
       top: 50%;
       transform: translateY(-50%);
-      color: var(--text-muted, #94a3b8);
+      color: var(--text-muted);
       font-size: 13px;
+    }
+    .at-select {
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+      outline: none;
+    }
+    .at-select:focus {
+      border-color: #3b82f6;
     }
     .at-actions-group {
       display: flex;
@@ -89,20 +102,20 @@
       color: #ffffff;
     }
     .at-btn-outline {
-      background: var(--bg-card, #ffffff);
-      color: var(--text-primary, #334155);
-      border-color: var(--border, #cbd5e1);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border-color: var(--border);
     }
     .at-btn-outline:hover {
-      background: var(--bg-subtle, #f1f5f9);
-      border-color: var(--text-muted, #94a3b8);
-      color: var(--text-primary, #0f172a);
+      background: var(--bg-subtle);
+      border-color: var(--text-muted);
+      color: var(--text-primary);
     }
     .at-card {
-      background: var(--bg-card, #ffffff);
-      border: 1px solid var(--border, #e2e8f0);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
       overflow: hidden;
     }
     .at-table-container {
@@ -117,14 +130,14 @@
       text-align: left;
     }
     .at-table th {
-      background: var(--bg-subtle, #f8fafc);
-      color: var(--text-muted, #475569);
+      background: var(--bg-subtle);
+      color: var(--text-secondary);
       font-weight: 700;
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.03em;
       padding: 10px 14px;
-      border-bottom: 1px solid var(--border, #e2e8f0);
+      border-bottom: 1px solid var(--border);
       white-space: nowrap;
       position: sticky;
       top: 0;
@@ -135,17 +148,20 @@
       cursor: pointer;
     }
     .at-table th.sortable:hover {
-      background: #e2e8f0;
-      color: #0f172a;
+      background: rgba(59,130,246,0.12);
+      color: var(--text-primary);
     }
     .at-table td {
       padding: 10px 14px;
-      border-bottom: 1px solid var(--border, #f1f5f9);
-      color: var(--text-primary, #1e293b);
+      border-bottom: 1px solid var(--border);
+      color: var(--text-primary);
       white-space: nowrap;
     }
     .at-table tr:hover td {
-      background: var(--bg-subtle, #f8fafc);
+      background: rgba(255,255,255,0.04);
+    }
+    body.light-mode .at-table tr:hover td {
+      background: rgba(0,0,0,0.03);
     }
     .at-badge {
       display: inline-block;
@@ -154,11 +170,17 @@
       font-weight: 600;
       border-radius: 12px;
     }
-    .at-badge-blue { background: rgba(37,99,235,0.12); color: #2563eb; }
-    .at-badge-green { background: rgba(16,185,129,0.12); color: #10b981; }
-    .at-badge-orange { background: rgba(249,115,22,0.12); color: #f97316; }
-    .at-badge-purple { background: rgba(147,51,234,0.12); color: #9333ea; }
-    .at-badge-gray { background: rgba(100,116,139,0.12); color: #64748b; }
+    .at-badge-blue { background: rgba(59,130,246,0.18); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .at-badge-green { background: rgba(34,197,94,0.18); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+    .at-badge-orange { background: rgba(249,115,22,0.18); color: #fb923c; border: 1px solid rgba(249,115,22,0.3); }
+    .at-badge-purple { background: rgba(168,85,247,0.18); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
+    .at-badge-gray { background: rgba(148,163,184,0.18); color: #cbd5e1; border: 1px solid rgba(148,163,184,0.3); }
+    
+    body.light-mode .at-badge-blue { background: rgba(37,99,235,0.12); color: #2563eb; border: 1px solid rgba(37,99,235,0.25); }
+    body.light-mode .at-badge-green { background: rgba(16,185,129,0.12); color: #059669; border: 1px solid rgba(16,185,129,0.25); }
+    body.light-mode .at-badge-orange { background: rgba(234,88,12,0.12); color: #c2410c; border: 1px solid rgba(234,88,12,0.25); }
+    body.light-mode .at-badge-purple { background: rgba(147,51,234,0.12); color: #7e22ce; border: 1px solid rgba(147,51,234,0.25); }
+    body.light-mode .at-badge-gray { background: rgba(100,116,139,0.12); color: #475569; border: 1px solid rgba(100,116,139,0.25); }
     
     .at-pagination-bar {
       display: flex;
@@ -167,10 +189,10 @@
       justify-content: space-between;
       gap: 12px;
       padding: 12px 18px;
-      background: var(--bg-subtle, #f8fafc);
-      border-top: 1px solid var(--border, #e2e8f0);
+      background: var(--bg-subtle);
+      border-top: 1px solid var(--border);
       font-size: 12.5px;
-      color: var(--text-muted, #64748b);
+      color: var(--text-muted);
     }
     .at-pagination-btns {
       display: flex;
@@ -184,10 +206,10 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid var(--border, #cbd5e1);
+      border: 1px solid var(--border);
       border-radius: 6px;
-      background: var(--bg-card, #ffffff);
-      color: var(--text-primary, #334155);
+      background: var(--bg-card);
+      color: var(--text-primary);
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
@@ -195,8 +217,8 @@
       transition: all 0.15s;
     }
     .at-page-btn:hover:not(.disabled):not(.active) {
-      background: var(--bg-subtle, #f1f5f9);
-      border-color: var(--text-muted, #94a3b8);
+      background: var(--bg-subtle);
+      border-color: var(--text-muted);
     }
     .at-page-btn.active {
       background: #2563eb;
@@ -212,8 +234,8 @@
     .at-modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
-      backdrop-filter: blur(2px);
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(3px);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -224,17 +246,18 @@
       display: none;
     }
     .at-modal {
-      background: var(--bg-card, #ffffff);
+      background: var(--bg-card);
       border-radius: 12px;
       max-width: 750px;
       width: 100%;
-      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
       overflow: hidden;
-      border: 1px solid var(--border, #e2e8f0);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
     }
     .at-modal-header {
       padding: 16px 20px;
-      border-bottom: 1px solid var(--border, #e2e8f0);
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -246,10 +269,22 @@
     }
     .at-modal-footer {
       padding: 12px 20px;
-      border-top: 1px solid var(--border, #e2e8f0);
+      border-top: 1px solid var(--border);
       display: flex;
       justify-content: flex-end;
-      background: var(--bg-subtle, #f8fafc);
+      background: var(--bg-subtle);
+    }
+    .at-sql-box {
+      background: var(--bg-primary, #0f172a);
+      color: var(--text-primary, #f8fafc);
+      border: 1px solid var(--border);
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-x: auto;
+      margin: 0;
+      font-family: monospace;
     }
   </style>
 
@@ -260,10 +295,10 @@
         <i class="bi bi-arrow-left"></i> Kembali ke AI Chat
       </a>
       <div>
-        <h2 style="font-size: 19px; font-weight: 800; color: var(--text-primary, #0f172a); margin: 0; display: flex; align-items: center; gap: 8px;">
-          <i class="bi bi-table" style="color: #2563eb;"></i> Eksplorasi Data Tabel AI
+        <h2 style="font-size: 19px; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+          <i class="bi bi-table" style="color: var(--accent-blue, #2563eb);"></i> Eksplorasi Data Tabel AI
         </h2>
-        <div style="font-size: 12px; color: var(--text-muted, #64748b);">Tabel lengkap hasil eksekusi kueri asisten AI Pananyo Taka</div>
+        <div style="font-size: 12px; color: var(--text-muted);">Tabel lengkap hasil eksekusi kueri asisten AI Pananyo Taka</div>
       </div>
     </div>
 
@@ -288,13 +323,13 @@
           <span class="at-badge at-badge-blue"><i class="bi bi-robot"></i> Prompt Pertanyaan</span>
           <span class="at-badge at-badge-purple"><%= query.tool_name || 'Kueri Data' %></span>
           <% if (query.created_at) { %>
-            <span style="font-size: 11.5px; color: var(--text-muted, #64748b);"><i class="bi bi-clock"></i> <%= new Date(query.created_at).toLocaleString('id-ID') %></span>
+            <span style="font-size: 11.5px; color: var(--text-muted);"><i class="bi bi-clock"></i> <%= new Date(query.created_at).toLocaleString('id-ID') %></span>
           <% } %>
         </div>
-        <div style="font-size: 15px; font-weight: 700; color: var(--text-primary, #0f172a); margin-bottom: 6px;">
+        <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
           "<%= query.prompt || 'Eksplorasi Data' %>"
         </div>
-        <div style="font-size: 12px; color: var(--text-muted, #64748b); display: flex; flex-wrap: wrap; align-items: center; gap: 16px;">
+        <div style="font-size: 12px; color: var(--text-muted); display: flex; flex-wrap: wrap; align-items: center; gap: 16px;">
           <span><strong>Total Data:</strong> <span class="at-badge at-badge-green" id="totalRowsBadge" style="font-size: 12px;"><%= rows.length %> baris</span></span>
           <% if (typeof latestUpload !== 'undefined' && latestUpload) { %>
             <span><strong>Data Update:</strong> <%= latestUpload.tanggal %> (Upload ID: <%= latestUpload.id %>)</span>
@@ -306,7 +341,7 @@
 
   <!-- ── TABLE CONTROLS & DATA TABLE ── -->
   <div class="at-card">
-    <div style="padding: 14px 18px; border-bottom: 1px solid var(--border, #e2e8f0);">
+    <div style="padding: 14px 18px; border-bottom: 1px solid var(--border);">
       <div class="at-toolbar" style="margin-bottom: 0;">
         <div class="at-search-box">
           <i class="bi bi-search"></i>
@@ -314,9 +349,9 @@
         </div>
 
         <div class="at-actions-group">
-          <div style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted, #64748b);">
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted);">
             <span>Tampilkan:</span>
-            <select id="atPageSizeSelect" style="padding: 6px 10px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--bg-primary, #f8fafc); color: var(--text-primary, #0f172a);">
+            <select id="atPageSizeSelect" class="at-select">
               <option value="10">10 baris</option>
               <option value="25" selected>25 baris</option>
               <option value="50">50 baris</option>
@@ -333,7 +368,7 @@
 
     <div class="at-table-container">
       <% if (!rows || rows.length === 0) { %>
-        <div style="padding: 50px 20px; text-align: center; color: var(--text-muted, #64748b);">
+        <div style="padding: 50px 20px; text-align: center; color: var(--text-muted);">
           <i class="bi bi-inbox" style="font-size: 36px; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
           Tidak ada data yang tersedia untuk kueri ini.
         </div>
@@ -371,18 +406,18 @@
 <div id="sqlModal" class="at-modal-backdrop hidden" onclick="if(event.target === this) this.classList.add('hidden')">
   <div class="at-modal">
     <div class="at-modal-header">
-      <div style="font-weight: 700; font-size: 15px; color: var(--text-primary, #0f172a); display: flex; align-items: center; gap: 8px;">
-        <i class="bi bi-database-check" style="color: #2563eb;"></i> SQL Query Rekap Data
+      <div style="font-weight: 700; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+        <i class="bi bi-database-check" style="color: var(--accent-blue, #2563eb);"></i> SQL Query Rekap Data
       </div>
       <button type="button" class="at-btn at-btn-outline" style="padding: 2px 8px;" onclick="document.getElementById('sqlModal').classList.add('hidden')">&times;</button>
     </div>
     <div class="at-modal-body">
-      <div style="font-size: 12px; color: var(--text-muted, #64748b); margin-bottom: 8px;">Kueri SQL yang dieksekusi secara aman (Read-Only) pada database SQLite:</div>
-      <pre style="background: #1e293b; color: #f8fafc; padding: 14px; border-radius: 8px; font-size: 12px; line-height: 1.5; overflow-x: auto; margin: 0; font-family: monospace;"><code><%= query.query_sql || '-- Query tidak tersedia' %></code></pre>
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">Kueri SQL yang dieksekusi secara aman (Read-Only) pada database SQLite:</div>
+      <pre class="at-sql-box"><code><%= query.query_sql || '-- Query tidak tersedia' %></code></pre>
       <% if (query.query_params && query.query_params !== '{}') { %>
         <div style="margin-top: 12px;">
-          <div style="font-size: 12px; font-weight: 600; margin-bottom: 4px;">Parameter Binding:</div>
-          <pre style="background: #f1f5f9; padding: 8px 12px; border-radius: 6px; font-size: 11.5px; margin: 0; font-family: monospace;"><code><%= query.query_params %></code></pre>
+          <div style="font-size: 12px; font-weight: 600; margin-bottom: 4px; color: var(--text-primary);">Parameter Binding:</div>
+          <pre class="at-sql-box" style="padding: 8px 12px; font-size: 11.5px;"><code><%= query.query_params %></code></pre>
         </div>
       <% } %>
     </div>
