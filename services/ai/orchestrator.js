@@ -62,14 +62,33 @@ Maka entitas tersebut WAJIB dijadikan filter PENGEQUALIAN (NOT LIKE / NOT IN / !
   - Target muatan adalah \`m.muatan\` / \`SUM(m.muatan)\`.
   - Realisasi muatan adalah \`SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0) + COALESCE(p.ditemukan+p.keluarga_baru,0))\`.
   - Gunakan \`query_data\` pada tabel \`subsls_master m LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ? GROUP BY m.pcl ORDER BY "Realisasi FASIH" DESC, "Realisasi Muatan" DESC\`.
+- **Rata-rata Penambahan Harian per Petugas (PCL/PML/Korlap)**:
+  - Jika pertanyaan menanyakan *"Siapa petugas dengan rata-rata penambahan harian terbanyak / tertinggi..."*:
+    - WAJIB gunakan query yang mengelompokkan data per petugas (\`GROUP BY m.pcl\`), BUKAN mengueri tabel \`uploads\`!
+    - Formula SQL:
+      \`\`\`sql
+      SELECT 
+        m.pcl AS "Nama Petugas",
+        MAX(m.pml) AS "PML Pengawas",
+        MAX(m.kecamatan) AS "Kecamatan",
+        SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS "Total Dokumen Selesai",
+        ROUND(CAST(SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS FLOAT) / (SELECT COUNT(DISTINCT tanggal) FROM uploads WHERE tanggal IS NOT NULL), 2) AS "Rata-rata Harian (Dok/Hari)",
+        SUM(m.target_fasih) AS "Target FASIH"
+      FROM subsls_master m
+      LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = (SELECT id FROM uploads ORDER BY id DESC LIMIT 1)
+      WHERE [terapkan filter/pengecualian jika ada]
+      GROUP BY m.pcl
+      ORDER BY "Rata-rata Harian (Dok/Hari)" DESC
+      \`\`\`
+- **Rata-rata Penambahan Harian Kabupaten / Wilayah (Umum)**:
+  - Gunakan \`query_data\` menghitung \`SUM(submitted_total + approved_total + rejected_total) / (SELECT COUNT(DISTINCT tanggal) FROM uploads)\` dari \`summary_cache\`.
+- **Penambahan Harian Terakhir (Delta Sesi/Hari)**: Gunakan \`query_data\` membandingkan realisasi upload terbaru dengan upload sesi sebelumnya.
 - **Ringkasan & Wilayah**: Gunakan tool \`get_summary\` (parameter: kecamatan/desa jika ada) atau query ke \`summary_cache\`.
 - **Anomali Lapangan**: Gunakan tool \`get_anomaly\` untuk anomali usaha ganda, tidak dapat ditemui, atau rejeksi PML.
 - **Pertanyaan Multi-Kriteria (misal: Anomali + Petugas Tidak Aktif + Potensi Ganda)**:
   - JANGAN menggabungkan seluruh kriteria berbeda dalam satu klausa WHERE AND yang terlalu ketat sehingga menghasilkan 0 baris data.
   - Gunakan tool \`get_anomaly\` atau kueri terpisah untuk setiap indikator.
   - JANGAN PERNAH hanya menjawab "Data tidak ditemukan untuk kriteria pencarian tersebut." Jika salah satu kondisi bernilai 0 (misalnya: tidak ada petugas yang progresnya 0 karena semua 165 PCL aktif bergerak), jelaskan status positif tersebut, lalu tetap sajikan data temuan anomali dan potensi ganda yang ada di sistem secara komprehensif!
-- **Rata-rata Penambahan Harian**: Gunakan \`query_data\` menghitung \`SUM(submitted_total + approved_total + rejected_total) / (SELECT COUNT(DISTINCT tanggal) FROM uploads)\` dari \`summary_cache\`.
-- **Penambahan Harian Terakhir (Delta Sesi/Hari)**: Gunakan \`query_data\` membandingkan realisasi upload terbaru dengan upload sesi sebelumnya.
 - **Detail SLS & Transaksi**: Gunakan \`query_data\` pada tabel \`progres\` JOIN \`subsls_master\` on kode.
 `;
 
@@ -115,6 +134,7 @@ Setiap jawaban yang memuat data statistik, petugas, atau wilayah diakhiri dengan
 - Jika membahas Progres Lambat / Beban Berat / Evaluasi: \`[Buka Daftar Performa Terendah](/performa-terendah)\`
 - Jika membahas Peringatan Dini Wilayah: \`[Buka Early Warning System](/early-warning)\`
 - Jika membahas Prestasi / Top Kinerja: \`[Buka Leaderboard Petugas](/leaderboard)\`
+- Jika membahas Tren Harian / Rata-rata Harian: \`[Buka Tren Progres Harian](/harian)\`
 - Jika membahas Wilayah SLS / SubSLS: \`[Buka Daftar Wilayah SLS & SubSLS](/subsls)\`
 - Jika membahas Spasial / Sebaran Peta: \`[Buka Peta Sebaran Wilayah](/map)\`
 - Jika membahas Unduh Data / Laporan: \`[Buka Halaman Unduh / Export](/export)\`
@@ -150,22 +170,22 @@ function runSimulation(userMessage, chatHistory) {
     const kippFilter = isExcludeKipp ? "AND m.nama_sls NOT LIKE '%KIPP%' AND m.pcl NOT IN (SELECT DISTINCT pcl FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pcl IS NOT NULL AND pcl != '')" : "";
     const kippLabel = isExcludeKipp ? " (Selain Petugas SLS KIPP)" : "";
 
-    if (lowerMsg.includes('terendah') || lowerMsg.includes('rendah') || lowerMsg.includes('buruk') || lowerMsg.includes('beban') || lowerMsg.includes('bantu') || lowerMsg.includes('berat')) {
-      let filterKec = '', kecLabel = 'Seluruh Wilayah';
-      const kecsList = ['sepaku', 'penajam', 'babulu', 'waru'];
-      for (const kec of kecsList) {
-        if (lowerMsg.includes(kec)) {
-          const isExclude = (lowerMsg.includes('selain ' + kec) || lowerMsg.includes('bukan ' + kec) || lowerMsg.includes('kecuali ' + kec) || lowerMsg.includes('di luar ' + kec) || lowerMsg.includes('tanpa ' + kec) || lowerMsg.includes('non ' + kec) || lowerMsg.includes('non-' + kec));
-          if (isExclude) {
-            filterKec += ` AND LOWER(m.kecamatan) != '${kec}'`;
-            kecLabel += ` (Selain ${kec.charAt(0).toUpperCase() + kec.slice(1)})`;
-          } else if (!filterKec.includes(`= '${kec}'`)) {
-            filterKec = ` AND LOWER(m.kecamatan) = '${kec}'`;
-            kecLabel = `Kecamatan ${kec.charAt(0).toUpperCase() + kec.slice(1)}`;
-          }
+    let filterKec = '', kecLabel = '';
+    const kecsList = ['sepaku', 'penajam', 'babulu', 'waru'];
+    for (const kec of kecsList) {
+      if (lowerMsg.includes(kec)) {
+        const isExclude = (lowerMsg.includes('selain ' + kec) || lowerMsg.includes('bukan ' + kec) || lowerMsg.includes('kecuali ' + kec) || lowerMsg.includes('di luar ' + kec) || lowerMsg.includes('tanpa ' + kec) || lowerMsg.includes('non ' + kec) || lowerMsg.includes('non-' + kec));
+        if (isExclude) {
+          filterKec += ` AND LOWER(m.kecamatan) != '${kec}'`;
+          kecLabel += ` (Selain Kecamatan ${kec.charAt(0).toUpperCase() + kec.slice(1)})`;
+        } else if (!filterKec.includes(`= '${kec}'`)) {
+          filterKec = ` AND LOWER(m.kecamatan) = '${kec}'`;
+          kecLabel = ` (Kecamatan ${kec.charAt(0).toUpperCase() + kec.slice(1)})`;
         }
       }
+    }
 
+    if (lowerMsg.includes('terendah') || lowerMsg.includes('rendah') || lowerMsg.includes('buruk') || lowerMsg.includes('beban') || lowerMsg.includes('bantu') || lowerMsg.includes('berat')) {
       let filterKorlap = '';
       if (lowerMsg.includes('korlap')) {
         const korlapMatch = lowerMsg.match(/korlap\s+(\w+)/);
@@ -202,12 +222,12 @@ function runSimulation(userMessage, chatHistory) {
       if (rows.length === 0) {
         return {
           role: 'model',
-          content: `Tidak ditemukan data petugas sensus untuk **${kecLabel}** pada data upload terbaru.\n\n**Tautan Navigasi Dashboard:**\n- [Lihat Detail Monitoring PCL](/pcl)\n- [Buka Rekap Progres Kecamatan](/kecamatan)`,
+          content: `Tidak ditemukan data petugas sensus untuk **${kecLabel || 'Seluruh Wilayah'}** pada data upload terbaru.\n\n**Tautan Navigasi Dashboard:**\n- [Lihat Detail Monitoring PCL](/pcl)\n- [Buka Rekap Progres Kecamatan](/kecamatan)`,
           isSimulation: true
         };
       }
 
-      let content = `Berikut daftar 5 PCL ${isHeavy ? 'dengan beban target tertinggi yang memerlukan pendampingan' : 'dengan progres terendah'} untuk **${kecLabel}** (upload *${latestUpload.tanggal}*):\n\n`;
+      let content = `Berikut daftar 5 PCL ${isHeavy ? 'dengan beban target tertinggi yang memerlukan pendampingan' : 'dengan progres terendah'} untuk **${kecLabel || 'Seluruh Wilayah'}** (upload *${latestUpload.tanggal}*):\n\n`;
       content += `| Nama PCL | PML Pengawas | Kecamatan | Target FASIH | Realisasi | Capaian (%) |\n| :--- | :--- | :--- | :---: | :---: | :---: |\n`;
       rows.forEach(r => {
         const pct = r.target_fasih_total > 0 ? ((r.realisasi_fasih / r.target_fasih_total) * 100).toFixed(2) : (r.total_muatan > 0 ? ((r.muatan_selesai / r.total_muatan) * 100).toFixed(2) : '0.00');
@@ -217,22 +237,32 @@ function runSimulation(userMessage, chatHistory) {
       return { role: 'model', content, isSimulation: true };
     }
 
-    if (lowerMsg.includes('terbaik') || lowerMsg.includes('leaderboard') || lowerMsg.includes('ranking') || lowerMsg.includes('performa') || lowerMsg.includes('tertinggi') || lowerMsg.includes('top')) {
-      let filterKec = '', kecLabel = '';
-      const kecsList = ['sepaku', 'penajam', 'babulu', 'waru'];
-      for (const kec of kecsList) {
-        if (lowerMsg.includes(kec)) {
-          const isExclude = (lowerMsg.includes('selain ' + kec) || lowerMsg.includes('bukan ' + kec) || lowerMsg.includes('kecuali ' + kec) || lowerMsg.includes('di luar ' + kec) || lowerMsg.includes('tanpa ' + kec) || lowerMsg.includes('non ' + kec) || lowerMsg.includes('non-' + kec));
-          if (isExclude) {
-            filterKec += ` AND LOWER(m.kecamatan) != '${kec}'`;
-            kecLabel += ` (Selain Kecamatan ${kec.charAt(0).toUpperCase() + kec.slice(1)})`;
-          } else if (!filterKec.includes(`= '${kec}'`)) {
-            filterKec = ` AND LOWER(m.kecamatan) = '${kec}'`;
-            kecLabel = ` (Kecamatan ${kec.charAt(0).toUpperCase() + kec.slice(1)})`;
-          }
-        }
-      }
+    if (lowerMsg.includes('harian') && (lowerMsg.includes('rata') || lowerMsg.includes('rerata') || lowerMsg.includes('penambahan')) && (lowerMsg.includes('petugas') || lowerMsg.includes('pcl') || lowerMsg.includes('siapa') || lowerMsg.includes('terbanyak') || lowerMsg.includes('tertinggi'))) {
+      const daysCount = db.prepare('SELECT COUNT(DISTINCT tanggal) as days FROM uploads WHERE tanggal IS NOT NULL').get().days || 1;
+      const rows = db.prepare(`
+        SELECT m.pcl, MAX(m.pml) AS pml, MAX(m.kecamatan) AS kecamatan,
+          SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS realisasi,
+          ROUND(CAST(SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS FLOAT) / ${daysCount}, 2) AS rata_rata_harian,
+          SUM(m.target_fasih) AS target_fasih
+        FROM subsls_master m
+        LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+        WHERE 1=1 ${kippFilter} ${filterKec}
+        GROUP BY m.pcl ORDER BY rata_rata_harian DESC LIMIT 5
+      `).all(uploadId);
 
+      let content = `Berikut daftar 5 Petugas (PCL) dengan Rata-rata Penambahan Harian Terbanyak (berdasarkan ${daysCount} hari pendataan)${kippLabel}${kecLabel}:\n\n`;
+      content += `| No | Nama PCL | PML Pengawas | Kecamatan | Total Dokumen Selesai | Rata-rata Harian | Target FASIH |\n| :---: | :--- | :--- | :--- | :---: | :---: | :---: |\n`;
+      rows.forEach((r, i) => {
+        content += `| ${i+1} | **${r.pcl}** | ${r.pml} | ${r.kecamatan} | ${r.realisasi?.toLocaleString('id-ID') || 0} | **${r.rata_rata_harian?.toLocaleString('id-ID')} dok/hari** | ${r.target_fasih?.toLocaleString('id-ID') || 0} |\n`;
+      });
+      content += `\n### Analisis Produktivitas Harian:\n`;
+      content += `* **Peringkat Teratas**: **${rows[0]?.pcl || '-'}** memimpin dengan rata-rata penambahan harian sebesar **${rows[0]?.rata_rata_harian || 0} dokumen/hari**.\n`;
+      content += `* Petugas di atas menunjukkan ritme kerja konsisten dan produktivitas tinggi dalam menyelesaikan dokumen FASIH secara berkelanjutan.\n`;
+      content += `\n**Tautan Navigasi Dashboard:**\n- [Buka Tren Progres Harian](/harian)\n- [Lihat Detail Monitoring PCL](/pcl)\n- [Buka Leaderboard Petugas](/leaderboard)\n`;
+      return { role: 'model', content, isSimulation: true };
+    }
+
+    if (lowerMsg.includes('terbaik') || lowerMsg.includes('leaderboard') || lowerMsg.includes('ranking') || lowerMsg.includes('performa') || lowerMsg.includes('tertinggi') || lowerMsg.includes('top')) {
       const rows = db.prepare(`
         SELECT m.pcl, MAX(m.pml) AS pml, MAX(m.kecamatan) AS kecamatan,
           SUM(m.target_fasih) AS target_fasih,
