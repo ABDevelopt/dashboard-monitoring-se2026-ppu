@@ -10,9 +10,9 @@ PassengerStartupFile server.js
 #  LiteSpeed & cPanel Proxy Optimization for Node.js Streaming
 # ─────────────────────────────────────────────────────────────
 <IfModule Litespeed>
-  # Mencegah pemutusan koneksi saat script/AI stream berjalan lebih dari 30s
+  # Mencegah pemutusan koneksi saat script/AI stream berjalan
   RewriteEngine On
-  RewriteRule .* - [E=noabort:1,E=noconntimeout:1]
+  RewriteRule .* - [E=noabort:1,E=noconntimeout:1,E=dont-vary:1]
 </IfModule>
 
 <IfModule mod_rewrite.c>
@@ -20,4 +20,9 @@ PassengerStartupFile server.js
   # Pastikan header Authorization & CSRF diteruskan ke Node.js
   RewriteCond %{HTTP:Authorization} .
   RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>
+
+# Pastikan proxy buffer dimatikan untuk SSE stream
+<IfModule mod_headers.c>
+  Header set X-Accel-Buffering "no"
 </IfModule>
