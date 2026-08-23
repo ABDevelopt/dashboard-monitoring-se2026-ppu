@@ -1580,26 +1580,48 @@
           return getProgressColor(pct);
         }
 
-        // Thematic Color for SLS
+        // Helper to check if SLS matches KPI status filter
+        function isSlsMatchingKpiStatus(stat, statusKey) {
+          if (!statusKey) return true;
+          const real = stat ? ((stat.submitted_by_pcl || 0) + (stat.approved || 0) + (stat.rejected || 0)) : 0;
+          const draft = stat ? (stat.draft || 0) : 0;
+          const isDone = stat ? stat.selesai === 1 : false;
+          const isInProgress = !isDone && (real > 0 || draft > 0);
+          const isNotStarted = !isDone && !isInProgress;
+
+          if (statusKey === 'done') return isDone;
+          if (statusKey === 'in_progress') return isInProgress;
+          if (statusKey === 'not_started') return isNotStarted;
+          return true;
+        }
+
+        // Thematic Color for SLS - Green (#10b981) STRICTLY for officially completed SLS (stat.selesai === 1)
         function getSlsColor(kode) {
           const stat = slsStats.find(s => s.kode === kode);
           if (!stat) return '#64748b';
 
-          if (currentThematicMetric === 'muatan') {
-            const pct = parseFloat(stat.muatan_pct_str || 0);
-            return getProgressColor(pct, stat.selesai === 1);
-          }
-
-          // Default FASIH
+          // Hijau (#10b981) HANYA untuk status selesai resmi dari upload data
           if (stat.selesai === 1) return '#10b981';
 
-          let pct = parseFloat(stat.fasih_pct_str || 0);
-          if (!pct && stat.target_fasih) {
-            const real = (stat.submitted_by_pcl || 0) + (stat.approved || 0) + (stat.rejected || 0);
-            pct = (real / stat.target_fasih) * 100;
+          let pct = 0;
+          if (currentThematicMetric === 'muatan') {
+            pct = parseFloat(stat.muatan_pct_str || 0);
+          } else {
+            pct = parseFloat(stat.fasih_pct_str || 0);
+            if (!pct && stat.target_fasih) {
+              const real = (stat.submitted_by_pcl || 0) + (stat.approved || 0) + (stat.rejected || 0);
+              pct = (real / stat.target_fasih) * 100;
+            }
           }
 
-          return getProgressColor(pct, stat.selesai === 1);
+          // Jika belum selesai resmi, warna tertinggi adalah Cyan (#06b6d4) meskipun progres >= 100%
+          if (pct >= 85) return '#06b6d4'; // Cyan (85-99% & >=100% yang belum disahkan selesai)
+          if (pct >= 70) return '#3b82f6'; // Royal Blue
+          if (pct >= 55) return '#6366f1'; // Indigo
+          if (pct >= 40) return '#f59e0b'; // Amber Gold
+          if (pct >= 25) return '#f97316'; // Orange
+          if (pct > 0) return '#ef4444';  // Red
+          return '#64748b'; // Slate Gray
         }
 
         // Thematic Color for Kecamatan
@@ -1663,22 +1685,42 @@
 
         function slsStyle(feature) {
           const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
+          const stat = slsStats.find(s => s.kode === feature.properties.kode);
+          const matchesKpi = isSlsMatchingKpiStatus(stat, currentStatusFilter);
+          const isKpiActive = !!currentStatusFilter;
+
           if (isOutlineOnlyMode) {
             return {
               fillColor: 'transparent',
-              weight: isSelectedKec ? 0.8 : 0.3,
-              opacity: isSelectedKec ? 1 : 0.15,
-              color: currentBasemapType === 'satellite' ? '#38bdf8' : '#2563eb',
+              weight: (isSelectedKec && matchesKpi) ? (isKpiActive ? 1.4 : 0.8) : 0.25,
+              opacity: (isSelectedKec && matchesKpi) ? 1 : 0.10,
+              color: (isSelectedKec && matchesKpi && isKpiActive) 
+                ? (currentStatusFilter === 'done' ? '#10b981' : (currentStatusFilter === 'in_progress' ? '#f59e0b' : '#ef4444'))
+                : (currentBasemapType === 'satellite' ? '#38bdf8' : '#2563eb'),
               fillOpacity: 0,
               fillRule: 'nonzero'
             };
           }
+
+          // Jika di luar filter kecamatan atau di luar filter status KPI
+          if (!isSelectedKec || !matchesKpi) {
+            return {
+              fillColor: getSlsColor(feature.properties.kode),
+              weight: 0.2,
+              opacity: 0.08,
+              color: getBorderColor('sls'),
+              fillOpacity: 0.03,
+              fillRule: 'nonzero'
+            };
+          }
+
+          // Wilayah yang terpilih / cocok
           return {
             fillColor: getSlsColor(feature.properties.kode),
-            weight: isSelectedKec ? 0.5 : 0.2,
-            opacity: isSelectedKec ? 1 : 0.10,
-            color: getBorderColor('sls'),
-            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.50 : 0.42) : 0.02,
+            weight: isKpiActive ? 1.6 : 0.5,
+            opacity: 1,
+            color: isKpiActive ? (currentStatusFilter === 'done' ? '#10b981' : (currentStatusFilter === 'in_progress' ? '#f59e0b' : '#ef4444')) : getBorderColor('sls'),
+            fillOpacity: isKpiActive ? (currentBasemapType === 'satellite' ? 0.65 : 0.55) : (currentBasemapType === 'satellite' ? 0.50 : 0.42),
             fillRule: 'nonzero'
           };
         }
@@ -1689,17 +1731,33 @@
           if (!layer || !layer.feature) return;
 
           const isSelectedKec = !currentFilteredKec || layer.feature.properties.nmkec === currentFilteredKec;
+          let matchesKpi = true;
+          if (activeLayerName === 'sls' && currentStatusFilter) {
+            const stat = slsStats.find(s => s.kode === layer.feature.properties.kode);
+            matchesKpi = isSlsMatchingKpiStatus(stat, currentStatusFilter);
+          }
+
+          // Wilayah yang TIDAK terpilih / TIDAK cocok filter: tetap redup (dimmed), jangan diberi sorotan penuh
+          if (!isSelectedKec || !matchesKpi) {
+            layer.setStyle({
+              weight: 0.5,
+              color: '#94a3b8',
+              opacity: 0.25,
+              fillOpacity: 0.06
+            });
+            return;
+          }
 
           if (isOutlineOnlyMode) {
             layer.setStyle({
-              weight: isSelectedKec ? 2.5 : 1.0,
+              weight: 2.5,
               color: getHoverBorderColor(),
               fillOpacity: 0
             });
             return;
           }
 
-          let baseColor = '#cbd5e1';
+          let baseColor = '#64748b';
           if (activeLayerName === 'kec') {
             baseColor = getKecColor(layer.feature.properties.nmkec);
           } else if (activeLayerName === 'desa') {
@@ -1710,10 +1768,10 @@
 
           layer.setStyle({
             fillColor: baseColor,
-            weight: isSelectedKec ? 2.2 : 1.0,
+            weight: 2.2,
             color: getHoverBorderColor(),
-            opacity: isSelectedKec ? 1 : 0.35,
-            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.70 : 0.60) : 0.08
+            opacity: 1,
+            fillOpacity: currentBasemapType === 'satellite' ? 0.70 : 0.60
           });
         }
 
@@ -1789,55 +1847,26 @@
             }
           });
 
-          if (!statusKey) {
-            updateActiveLayerStyles();
-            return;
-          }
-
           if (activeLayerName !== 'sls') {
             switchToSlsLayer();
+          } else {
+            updateActiveLayerStyles();
           }
 
-          setTimeout(() => {
+          if (statusKey && slsLayer) {
             let foundBounds = L.latLngBounds();
             let hasMatch = false;
-
-            if (slsLayer) {
-              slsLayer.eachLayer(layer => {
-                const stat = slsStats.find(s => s.kode === layer.feature.properties.kode);
-                const real = stat ? ((stat.submitted_by_pcl || 0) + (stat.approved || 0) + (stat.rejected || 0)) : 0;
-                const draft = stat ? (stat.draft || 0) : 0;
-                const isDone = stat && stat.selesai === 1;
-                const isInProgress = !isDone && (real > 0 || draft > 0);
-                const isNotStarted = !isDone && !isInProgress;
-
-                let match = false;
-                if (statusKey === 'done' && isDone) match = true;
-                else if (statusKey === 'in_progress' && isInProgress) match = true;
-                else if (statusKey === 'not_started' && isNotStarted) match = true;
-
-                if (match) {
-                  layer.setStyle({
-                    weight: 2.5,
-                    color: statusKey === 'done' ? '#10b981' : (statusKey === 'in_progress' ? '#f59e0b' : '#ef4444'),
-                    opacity: 1,
-                    fillOpacity: currentBasemapType === 'satellite' ? 0.70 : 0.60
-                  });
-                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
-                  hasMatch = true;
-                } else {
-                  layer.setStyle({
-                    opacity: 0.10,
-                    fillOpacity: 0.02
-                  });
-                }
-              });
-            }
-
+            slsLayer.eachLayer(layer => {
+              const stat = slsStats.find(s => s.kode === layer.feature.properties.kode);
+              if (isSlsMatchingKpiStatus(stat, statusKey)) {
+                if (layer.getBounds) foundBounds.extend(layer.getBounds());
+                hasMatch = true;
+              }
+            });
             if (hasMatch && foundBounds.isValid()) {
               map.fitBounds(foundBounds, { padding: [40, 40] });
             }
-          }, 100);
+          }
         }
 
         // Fit map bounds to filtered subdistrict
