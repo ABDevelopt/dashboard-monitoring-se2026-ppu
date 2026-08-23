@@ -3393,9 +3393,13 @@ function saveAgentQuery(queryData, surveyId) {
   const db = getDb(sId);
   const id = queryData.id;
   try {
+    try {
+      db.exec(`ALTER TABLE agent_queries ADD COLUMN analysis_text TEXT;`);
+    } catch (_) {}
+
     db.prepare(`
-      INSERT OR REPLACE INTO agent_queries (id, user_id, prompt, tool_name, query_sql, query_params, columns_json, row_count, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT OR REPLACE INTO agent_queries (id, user_id, prompt, tool_name, query_sql, query_params, columns_json, row_count, analysis_text, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `).run(
       id,
       queryData.userId || null,
@@ -3404,7 +3408,8 @@ function saveAgentQuery(queryData, surveyId) {
       queryData.querySql || '',
       typeof queryData.queryParams === 'string' ? queryData.queryParams : JSON.stringify(queryData.queryParams || {}),
       typeof queryData.columnsJson === 'string' ? queryData.columnsJson : JSON.stringify(queryData.columnsJson || []),
-      queryData.rowCount || 0
+      queryData.rowCount || 0,
+      queryData.analysisText || null
     );
     return id;
   } catch (err) {
@@ -3413,11 +3418,30 @@ function saveAgentQuery(queryData, surveyId) {
   }
 }
 
+function updateAgentQueryAnalysis(id, analysisText, surveyId) {
+  if (!id || !analysisText) return false;
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  try {
+    try {
+      db.exec(`ALTER TABLE agent_queries ADD COLUMN analysis_text TEXT;`);
+    } catch (_) {}
+    db.prepare(`UPDATE agent_queries SET analysis_text = ? WHERE id = ?`).run(analysisText, id);
+    return true;
+  } catch (err) {
+    logger.error(`[DB] updateAgentQueryAnalysis error: ${err.message}`);
+    return false;
+  }
+}
+
 function getAgentQueryById(id, surveyId) {
   if (!id) return null;
   const sId = resolveSurveyId(surveyId);
   const db = getDb(sId);
   try {
+    try {
+      db.exec(`ALTER TABLE agent_queries ADD COLUMN analysis_text TEXT;`);
+    } catch (_) {}
     return db.prepare(`SELECT * FROM agent_queries WHERE id = ?`).get(id);
   } catch (err) {
     logger.error(`[DB] getAgentQueryById error: ${err.message}`);
@@ -3483,7 +3507,7 @@ module.exports = {
   pushWhatsappCommand, popPendingWhatsappCommands,
   queueWhatsappMessage, getPendingWhatsappMessages, updateWhatsappMessageStatus, checkQueuedMessageStatus,
   runWalCheckpoint, runWalCheckpointAll,
-  saveAgentQuery, getAgentQueryById, executeAgentQueryById
+  saveAgentQuery, getAgentQueryById, executeAgentQueryById, updateAgentQueryAnalysis
 };
 
 

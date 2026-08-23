@@ -8,7 +8,7 @@
 //  - Pembersihan dan penyimpanan kembali riwayat
 // ─────────────────────────────────────────────────────────────────────────────
 
-const { getDb, getSettings, getLatestUpload } = require('../../database');
+const { getDb, getSettings, getLatestUpload, updateAgentQueryAnalysis } = require('../../database');
 const contextBuilder = require('./contextBuilder');
 const memoryManager = require('./memoryManager');
 const toolRegistry = require('./toolRegistry');
@@ -345,6 +345,9 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
           userMessage, mergedHistory, settings, current.model, serverController.signal, kItem.key, dynInstruction
         );
         keyPool.markSuccess(kItem.key);
+        if (finalResult.queryId && finalResult.content) {
+          updateAgentQueryAnalysis(finalResult.queryId, finalResult.content);
+        }
         log.info(`[ORCH] -> Sukses dengan ${kItem.label} pada model '${current.model}'`);
         success = true;
         break;
@@ -467,6 +470,9 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
           userMessage, mergedHistory, settings, current.model, abortSignal, kItem.key, onEvent, dynInstruction
         );
         keyPool.markSuccess(kItem.key);
+        if (finalResult.queryId && finalResult.content) {
+          updateAgentQueryAnalysis(finalResult.queryId, finalResult.content);
+        }
         onEvent('done', { 
           reply: finalResult.content, 
           isSimulation: false, 
