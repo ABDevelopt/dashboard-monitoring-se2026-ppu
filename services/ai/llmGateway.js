@@ -480,7 +480,13 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
         }
 
         if (streamedDirectly && fullStreamedText.trim()) {
-          return { role: 'model', content: processJsonQueryResponse(fullStreamedText), isSimulation: false };
+          return { 
+            role: 'model', 
+            content: processJsonQueryResponse(fullStreamedText), 
+            isSimulation: false,
+            queryId: lastExecutedToolResult?.result?.queryId || null,
+            rowCount: lastExecutedToolResult?.result?.rowCount || lastExecutedToolResult?.result?.count || null
+          };
         }
       } catch (streamErr) {
         log.warn('[LLM_GW] Native stream error, proceeding with text fallback:', streamErr.message);
@@ -538,7 +544,13 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
       }
     }
 
-    return { role: 'model', content: processedText, isSimulation: false };
+    return { 
+      role: 'model', 
+      content: processedText, 
+      isSimulation: false,
+      queryId: lastExecutedToolResult?.result?.queryId || null,
+      rowCount: lastExecutedToolResult?.result?.rowCount || lastExecutedToolResult?.result?.count || null
+    };
 
   } catch (error) {
     log.error('streamMessageToGemini error:', error.message);

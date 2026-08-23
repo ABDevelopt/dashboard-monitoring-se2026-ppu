@@ -16,7 +16,8 @@ const {
   getKorlapStats, 
   getAnomalyStats, 
   getEarlyWarning,
-  attachProgressPercentages 
+  attachProgressPercentages,
+  saveAgentQuery
 } = require('../../database');
 const { getFirestore, isFirebaseActive } = require('../firebaseService');
 const cacheManager = require('./cacheManager');
@@ -91,33 +92,51 @@ async function fetchPageDataCompat(route, queryParams = {}) {
   if (!upload) return { error: 'Belum ada data upload dalam sistem.' };
 
   const settings = getSettings();
-  const db = getDb();
 
   switch (page) {
     case '/overview':
       return {
         route: '/overview',
         summary: getOverviewSummary(upload.id, settings),
-        kecamatanStats: getKecamatanStats(upload.id, settings)
+        earlyWarning: getEarlyWarning(upload.id, settings),
+        timestamp: upload.tanggal
       };
-    case '/pcl': {
-      const stats = getPclStats(upload.id, settings);
-      return { route: '/pcl', pclStats: stats };
-    }
+    case '/pcl':
+      return {
+        route: '/pcl',
+        pclList: getPclStats(upload.id, settings),
+        summary: getOverviewSummary(upload.id, settings)
+      };
     case '/pml':
-      return { route: '/pml', pmlStats: getPmlStats(upload.id, settings) };
+      return {
+        route: '/pml',
+        pmlList: getPmlStats(upload.id, settings)
+      };
     case '/korlap':
-      return { route: '/korlap', korlapStats: getKorlapStats(upload.id, settings) };
+      return {
+        route: '/korlap',
+        korlapList: getKorlapStats(upload.id, settings)
+      };
     case '/kecamatan':
-      return { route: '/kecamatan', kecamatanStats: getKecamatanStats(upload.id, settings) };
-    case '/deteksi-anomali':
-    case '/deteksianomali':
-      return { route: '/deteksi-anomali', anomalyStats: getAnomalyStats(upload.id) };
+      return {
+        route: '/kecamatan',
+        kecamatanList: getKecamatanStats(upload.id, settings)
+      };
     case '/early-warning':
-    case '/earlywarning':
-      return { route: '/early-warning', earlyWarning: getEarlyWarning(upload.id) };
+      return {
+        route: '/early-warning',
+        warningData: getEarlyWarning(upload.id, settings)
+      };
+    case '/deteksi-anomali':
+      return {
+        route: '/deteksi-anomali',
+        anomalies: getAnomalyStats(upload.id)
+      };
     default:
-      return { error: `Halaman ${page} tidak dikenal.` };
+      return {
+        route: page,
+        summary: getOverviewSummary(upload.id, settings)
+      };
   }
 }
 
@@ -125,28 +144,27 @@ async function fetchPageDataCompat(route, queryParams = {}) {
 //  TOOL DEFINITIONS FOR LLM
 // ─────────────────────────────────────────────
 const TOOL_SCHEMAS = {
-  // New clean structured tools
   query_data: {
     name: "query_data",
-    description: "Execute a read-only SELECT SQL query on the SQLite database with optional binding parameters.",
+    description: "Run custom read-only SELECT SQL queries against the local SQLite database. Use for aggregate stats, counts, filtering, rankings, and trends.",
     parameters: {
       type: "OBJECT",
       properties: {
-        query: { type: "STRING", description: "The SQLite query starting with SELECT or WITH. e.g. 'SELECT pml, korlap FROM subsls_master WHERE kecamatan = :kec LIMIT 5'" },
-        params: { type: "OBJECT", description: "Optional key-value object to bind query parameters." }
+        query: { type: "STRING", description: "The SELECT SQL query string to run." },
+        params: { type: "OBJECT", description: "Optional named bind parameters object (e.g. { kec: 'Sepaku' })." }
       },
       required: ["query"]
     }
   },
   get_summary: {
     name: "get_summary",
-    description: "Get pre-computed summary aggregates from the summary_cache table directly.",
+    description: "Get cached summary statistics for an upload, optionally filtered by kecamatan or desa.",
     parameters: {
       type: "OBJECT",
       properties: {
-        uploadId: { type: "INTEGER", description: "The upload ID (always query latest from overview if not specified)." },
-        kecamatan: { type: "STRING", description: "Optional kecamatan filter." },
-        desa: { type: "STRING", description: "Optional desa filter." }
+        uploadId: { type: "INTEGER", description: "The upload ID (use latest upload ID if available)." },
+        kecamatan: { type: "STRING", description: "Optional kecamatan name." },
+        desa: { type: "STRING", description: "Optional desa name." }
       },
       required: ["uploadId"]
     }
@@ -174,16 +192,6 @@ const TOOL_SCHEMAS = {
         kecamatan: { type: "STRING", description: "Optional kecamatan name filter (e.g. 'Sepaku', 'Penajam', 'Babulu', 'Waru')." }
       },
       required: ["uploadId", "role"]
-    }
-  },
-  // Legacy compatibility tools
-  run_read_only_query: {
-    name: "run_read_only_query",
-    description: "Execute a read-only SELECT SQL query on the SQLite database.",
-    parameters: {
-      type: "OBJECT",
-      properties: { query: { type: "STRING", description: "The SELECT SQL query." } },
-      required: ["query"]
     }
   },
   fetch_page_data: {
@@ -219,8 +227,7 @@ async function runToolCall(toolCall) {
 
   try {
     switch (name) {
-      case 'query_data':
-      case 'run_read_only_query': {
+      case 'query_data': {
         const query = args.query || '';
         const params = args.params || {};
         const rows = await executeQueryAsync(query, params);
@@ -228,8 +235,19 @@ async function runToolCall(toolCall) {
         const truncated = total > TOOL_RESULT_MAX_ROWS;
         const finalRows = truncated ? rows.slice(0, TOOL_RESULT_MAX_ROWS) : rows;
 
+        const queryId = 'q_' + Math.random().toString(36).substring(2, 9);
+        saveAgentQuery({
+          id: queryId,
+          toolName: name,
+          querySql: query,
+          queryParams: params,
+          columnsJson: Object.keys(rows[0] || {}),
+          rowCount: total
+        });
+
         result = {
           status: 'success',
+          queryId,
           rowCount: total,
           returned: finalRows.length,
           truncated,
@@ -238,7 +256,6 @@ async function runToolCall(toolCall) {
         };
         break;
       }
-
 
       case 'get_summary': {
         const db = getDb();
@@ -257,15 +274,54 @@ async function runToolCall(toolCall) {
         }
         query += ' LIMIT 50';
 
-        const rows = db.prepare(query).all(...params);
-        result = { status: 'success', data: rows };
+        const fullRows = db.prepare(query).all(...params);
+        const queryId = 'q_' + Math.random().toString(36).substring(2, 9);
+        saveAgentQuery({
+          id: queryId,
+          toolName: 'get_summary',
+          querySql: query,
+          queryParams: params,
+          columnsJson: Object.keys(fullRows[0] || {}),
+          rowCount: fullRows.length
+        });
+
+        result = { status: 'success', queryId, rowCount: fullRows.length, data: fullRows.slice(0, 20) };
         break;
       }
 
       case 'get_anomaly': {
         const uploadId = args.uploadId;
         const anomalies = getAnomalyStats(uploadId);
-        result = { status: 'success', anomalyCount: anomalies.length, data: anomalies.slice(0, 20) };
+        const queryId = 'q_' + Math.random().toString(36).substring(2, 9);
+        const anomalySql = `
+          SELECT 
+            p.kode AS "Kode SubSLS",
+            m.nama_sls AS "Nama SLS",
+            m.desa AS "Desa",
+            m.kecamatan AS "Kecamatan",
+            COALESCE(p.pcl_name, m.pcl) AS "Nama PCL",
+            m.pml AS "PML Pengawas",
+            COALESCE(p.usaha_ganda, 0) AS "Usaha Ganda",
+            COALESCE(p.tidak_dapat_ditemui, 0) AS "Tidak Ditemui",
+            COALESCE(p.rejected, 0) AS "Rejected",
+            COALESCE(p.approved, 0) AS "Approved"
+          FROM progres p
+          JOIN subsls_master m ON p.kode = m.kode
+          WHERE p.upload_id = ${uploadId || '(SELECT id FROM uploads ORDER BY id DESC LIMIT 1)'}
+            AND (COALESCE(p.usaha_ganda, 0) > 0 OR COALESCE(p.rejected, 0) > 0 OR COALESCE(p.tidak_dapat_ditemui, 0) > 0)
+          ORDER BY (COALESCE(p.usaha_ganda, 0) + COALESCE(p.rejected, 0) + COALESCE(p.tidak_dapat_ditemui, 0)) DESC
+        `.trim();
+
+        saveAgentQuery({
+          id: queryId,
+          toolName: 'get_anomaly',
+          querySql: anomalySql,
+          queryParams: {},
+          columnsJson: Object.keys(anomalies[0] || {}),
+          rowCount: anomalies.length
+        });
+
+        result = { status: 'success', queryId, anomalyCount: anomalies.length, data: anomalies.slice(0, 20) };
         break;
       }
 
@@ -279,12 +335,40 @@ async function runToolCall(toolCall) {
         else if (role === 'korlap') data = getKorlapStats(uploadId, settings);
         else throw new Error(`Role petugas '${role}' tidak dikenal.`);
 
-        if (args.kecamatan && Array.isArray(data)) {
-          const kecFilter = String(args.kecamatan).toLowerCase().trim();
-          data = data.filter(d => (d.kecamatan || '').toLowerCase().includes(kecFilter));
-        }
+        const queryId = 'q_' + Math.random().toString(36).substring(2, 9);
+        const kecWhere = args.kecamatan ? `AND LOWER(m.kecamatan) LIKE LOWER('%${args.kecamatan.replace(/'/g, "''")}%')` : '';
+        const petugasSql = `
+          SELECT 
+            COALESCE(p.pcl_name, m.pcl) AS "Nama PCL",
+            MAX(m.pml) AS "PML Pengawas",
+            MAX(m.korlap) AS "Korlap",
+            MAX(m.kecamatan) AS "Kecamatan",
+            COUNT(DISTINCT p.kode) AS "Total SubSLS",
+            SUM(COALESCE(p.sls_selesai, 0)) AS "SLS Selesai",
+            SUM(COALESCE(m.muatan, 0)) AS "Target Muatan",
+            SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru, 0) + COALESCE(p.ditemukan+p.keluarga_baru, 0)) AS "Realisasi Muatan",
+            SUM(COALESCE(p.draft, 0)) AS "Draft",
+            SUM(COALESCE(p.submitted_by_pcl, 0)) AS "Submitted",
+            SUM(COALESCE(p.approved, 0)) AS "Approved",
+            SUM(COALESCE(p.rejected, 0)) AS "Rejected",
+            SUM(COALESCE(m.target_fasih, 0)) AS "Target FASIH"
+          FROM progres p
+          LEFT JOIN subsls_master m ON p.kode = m.kode
+          WHERE p.upload_id = ${uploadId || '(SELECT id FROM uploads ORDER BY id DESC LIMIT 1)'} ${kecWhere}
+          GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), COALESCE(p.pcl_name, m.pcl)
+          ORDER BY "Approved" DESC, "Target FASIH" DESC
+        `.trim();
 
-        result = { status: 'success', role, count: data.length, data: data.slice(0, 20) };
+        saveAgentQuery({
+          id: queryId,
+          toolName: 'get_petugas',
+          querySql: petugasSql,
+          queryParams: {},
+          columnsJson: Object.keys(data[0] || {}),
+          rowCount: data.length
+        });
+
+        result = { status: 'success', queryId, role, count: data.length, data: data.slice(0, 20) };
         break;
       }
 

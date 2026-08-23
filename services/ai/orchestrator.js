@@ -461,7 +461,14 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
           userMessage, mergedHistory, settings, current.model, abortSignal, kItem.key, onEvent, dynInstruction
         );
         keyPool.markSuccess(kItem.key);
-        onEvent('done', { reply: finalResult.content, isSimulation: false, role: 'model', model: current.model });
+        onEvent('done', { 
+          reply: finalResult.content, 
+          isSimulation: false, 
+          role: 'model', 
+          model: current.model,
+          queryId: finalResult.queryId || null,
+          rowCount: finalResult.rowCount || null
+        });
         log.info(`[ORCH:STREAM] -> Sukses dengan ${kItem.label} pada model '${current.model}'`);
         success = true;
         break;

@@ -1,0 +1,404 @@
+﻿<div class=fade-in>
+  <!-- ── Top Breadcrumb & Actions Header ── -->
+  <div class=d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4>
+    <div class=d-flex align-items-center gap-3>
+      <a href=<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent class=btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2 rounded-pill px-3 shadow-sm>
+        <i class=bi bi-arrow-left></i> Kembali ke AI Chat
+      </a>
+      <div>
+        <h4 class=fw-bold mb-0 text-primary d-flex align-items-center gap-2>
+          <i class=bi bi-table></i> Eksplorasi Data Tabel AI
+        </h4>
+        <small class=text-muted>Hasil lengkap eksekusi kueri dari asisten AI Pananyo Taka</small>
+      </div>
+    </div>
+
+    <div class=d-flex align-items-center gap-2>
+      <a href=<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent/export-query/<%= queryId %>?format=xlsx class=btn btn-success btn-sm d-inline-flex align-items-center gap-2 rounded-pill px-3 shadow-sm title=Unduh file Excel (.xlsx)>
+        <i class=bi bi-file-earmark-excel-fill></i> Export Excel
+      </a>
+      <a href=<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent/export-query/<%= queryId %>?format=csv class=btn btn-outline-success btn-sm d-inline-flex align-items-center gap-2 rounded-pill px-3 shadow-sm title=Unduh file CSV>
+        <i class=bi bi-filetype-csv></i> Export CSV
+      </a>
+    </div>
+  </div>
+
+  <% if (error) { %>
+    <div class=alert alert-danger shadow-sm rounded-3 d-flex align-items-center gap-3 mb-4>
+      <i class=bi bi-exclamation-triangle-fill fs-3 text-danger></i>
+      <div>
+        <h6 class=fw-bold mb-1>Gagal Menampilkan Data</h6>
+        <p class=mb-0 small><%= error %></p>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- ── Query Context Banner ── -->
+  <div class=card shadow-sm border-0 rounded-3 mb-4 bg-light>
+    <div class=card-body p-3 p-md-4>
+      <div class=row align-items-center g-3>
+        <div class=col-lg-8>
+          <div class=d-flex align-items-center gap-2 mb-2>
+            <span class=badge bg-primary px-3 py-1 rounded-pill><i class=bi bi-robot></i> Prompt AI</span>
+            <span class=badge bg-secondary px-3 py-1 rounded-pill><%= query.tool_name || 'Kueri Data' %></span>
+            <% if (query.created_at) { %>
+              <span class=text-muted small><i class=bi bi-clock></i> <%= new Date(query.created_at).toLocaleString('id-ID') %></span>
+            <% } %>
+          </div>
+          <h5 class=fw-bold text-dark mb-1>
+            <%= query.prompt || 'Eksplorasi Data' %>
+          </h5>
+          <div class=small text-muted d-flex flex-wrap align-items-center gap-3 mt-2>
+            <span><strong>Total Data:</strong> <span class=badge bg-dark rounded-pill text-white><%= rows.length %> baris</span></span>
+            <% if (typeof latestUpload !== 'undefined' && latestUpload) { %>
+              <span><strong>Data Upload:</strong> <%= latestUpload.tanggal %> (ID: <%= latestUpload.id %>)</span>
+            <% } %>
+          </div>
+        </div>
+
+        <div class=col-lg-4 text-lg-end>
+          <button type=button class=btn btn-outline-dark btn-sm rounded-pill px-3 shadow-sm data-bs-toggle=modal data-bs-target=#sqlQueryModal>
+            <i class=bi bi-code-slash></i> Lihat SQL Query
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Table & Interactive Controls ── -->
+  <div class=card shadow-sm border-0 rounded-3 mb-5>
+    <div class=card-header bg-white border-bottom p-3>
+      <div class=row align-items-center g-3>
+        <div class=col-md-5>
+          <div class=input-group>
+            <span class=input-group-text bg-light border-end-0><i class=bi bi-search text-muted></i></span>
+            <input type=text id=tableSearchInput class=form-control bg-light border-start-0 placeholder=Cari di seluruh kolom...>
+          </div>
+        </div>
+
+        <div class=col-md-7 d-flex flex-wrap align-items-center justify-content-md-end gap-3>
+          <div class=d-flex align-items-center gap-2>
+            <small class=text-muted text-nowrap>Tampilkan:</small>
+            <select id=pageSizeSelect class=form-select form-select-sm style=width: auto;>
+              <option value=10>10 baris</option>
+              <option value=25 selected>25 baris</option>
+              <option value=50>50 baris</option>
+              <option value=100>100 baris</option>
+              <option value=all>Semua</option>
+            </select>
+          </div>
+          <button id=copyTableBtn class=btn btn-outline-secondary btn-sm rounded-pill px-3>
+            <i class=bi bi-clipboard></i> Salin Tabel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class=card-body p-0>
+      <% if (!rows || rows.length === 0) { %>
+        <div class=p-5 text-center text-muted>
+          <i class=bi bi-inbox fs-1 d-block mb-2 text-secondary></i>
+          Tidak ada data yang tersedia untuk kueri ini.
+        </div>
+      <% } else { %>
+        <% const columns = Object.keys(rows[0]); %>
+        <div class=table-responsive>
+          <table class=table table-hover table-striped align-middle mb-0 id=aiDataTable>
+            <thead class=table-light>
+              <tr>
+                <th style=width: 50px; class=text-center>#</th>
+                <% columns.forEach(col => { %>
+                  <th class=sortable-th cursor-pointer text-nowrap data-col=<%= col %>>
+                    <div class=d-flex align-items-center justify-content-between gap-2>
+                      <span><%= col.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %></span>
+                      <span class=sort-icon text-muted small><i class=bi bi-arrow-down-up></i></span>
+                    </div>
+                  </th>
+                <% }); %>
+              </tr>
+            </thead>
+            <tbody id=aiDataTableBody>
+              <!-- Rendered via JavaScript for dynamic filtering, sorting & pagination -->
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+    <div class=card-footer bg-white border-top p-3>
+      <div class=d-flex flex-wrap align-items-center justify-content-between gap-3>
+        <small class=text-muted id=paginationInfo>
+          Menampilkan 0 dari 0 data
+        </small>
+        <ul class=pagination pagination-sm mb-0 id=paginationContainer>
+          <!-- Rendered via JavaScript -->
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal SQL Query Viewer ── -->
+<div class=modal fade id=sqlQueryModal tabindex=-1 aria-labelledby=sqlQueryModalLabel aria-hidden=true>
+  <div class=modal-dialog modal-lg modal-dialog-centered>
+    <div class=modal-content rounded-3 shadow>
+      <div class=modal-header>
+        <h5 class=modal-title fw-bold id=sqlQueryModalLabel>
+          <i class=bi bi-database-check text-primary></i> SQL Query Rekap Data
+        </h5>
+        <button type=button class=btn-close data-bs-dismiss=modal aria-label=Close></button>
+      </div>
+      <div class=modal-body p-4>
+        <p class=text-muted small mb-2>Query SQL yang dieksekusi secara aman (Read-Only) pada SQLite Database:</p>
+        <pre class=bg-dark text-light p-3 rounded-3 style=max-height: 320px; overflow-y: auto; font-size: 0.88rem;><code><%= query.query_sql || '-- Query tidak tersedia' %></code></pre>
+        <% if (query.query_params && query.query_params !== '{}') { %>
+          <div class=mt-3>
+            <strong class=small d-block mb-1>Parameter Binding:</strong>
+            <pre class=bg-light p-2 rounded-2 small text-secondary><code><%= query.query_params %></code></pre>
+          </div>
+        <% } %>
+      </div>
+      <div class=modal-footer>
+        <button type=button class=btn btn-secondary btn-sm rounded-pill px-4 data-bs-dismiss=modal>Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Script Client-Side Data Table Management ── -->
+<script>
+  (function() {
+    const rawData = <%- JSON.stringify(rows || []) %>;
+    const columns = rawData.length > 0 ? Object.keys(rawData[0]) : [];
+
+    let filteredData = [...rawData];
+    let sortColumn = null;
+    let sortAsc = true;
+    let currentPage = 1;
+    let pageSize = 25;
+
+    const searchInput = document.getElementById('tableSearchInput');
+    const pageSizeSelect = document.getElementById('pageSizeSelect');
+    const tbody = document.getElementById('aiDataTableBody');
+    const paginationInfo = document.getElementById('paginationInfo');
+    const paginationContainer = document.getElementById('paginationContainer');
+    const copyTableBtn = document.getElementById('copyTableBtn');
+
+    function isNumeric(val) {
+      if (typeof val === 'number') return true;
+      if (typeof val !== 'string') return false;
+      return !isNaN(val) && !isNaN(parseFloat(val));
+    }
+
+    function formatCell(key, val) {
+      if (val === null || val === undefined) return '<span class=text-muted>-</span>';
+      
+      const lowerKey = key.toLowerCase();
+      if (typeof val === 'number') {
+        if (lowerKey.includes('pct') || lowerKey.includes('persen') || lowerKey.includes('percent')) {
+          const colorClass = val >= 100 ? 'bg-success' : (val >= 70 ? 'bg-primary' : (val >= 40 ? 'bg-warning text-dark' : 'bg-danger'));
+          return <span class=badge rounded-pill>%</span>;
+        }
+        return val.toLocaleString('id-ID');
+      }
+
+      if (typeof val === 'string' && (val.endsWith('%') || !isNaN(parseFloat(val)) && lowerKey.includes('persen'))) {
+        const num = parseFloat(val);
+        const colorClass = num >= 100 ? 'bg-success' : (num >= 70 ? 'bg-primary' : (num >= 40 ? 'bg-warning text-dark' : 'bg-danger'));
+        return <span class=badge rounded-pill></span>;
+      }
+
+      return escapeHtml(String(val));
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(//g, '&quot;');
+ }
+
+ function applyFilter() {
+ const q = (searchInput?.value || '').toLowerCase().trim();
+ if (!q) {
+ filteredData = [...rawData];
+ } else {
+ filteredData = rawData.filter(row => {
+ return columns.some(col => {
+ const val = row[col];
+ return val !== null && val !== undefined && String(val).toLowerCase().includes(q);
+ });
+ });
+ }
+ currentPage = 1;
+ applySortAndRender();
+ }
+
+ function applySortAndRender() {
+ if (sortColumn) {
+ filteredData.sort((a, b) => {
+ let valA = a[sortColumn];
+ let valB = b[sortColumn];
+
+ if (valA === null || valA === undefined) return 1;
+ if (valB === null || valB === undefined) return -1;
+
+ if (isNumeric(valA) && isNumeric(valB)) {
+ valA = Number(valA);
+ valB = Number(valB);
+ } else {
+ valA = String(valA).toLowerCase();
+ valB = String(valB).toLowerCase();
+ }
+
+ if (valA < valB) return sortAsc ? -1 : 1;
+ if (valA > valB) return sortAsc ? 1 : -1;
+ return 0;
+ });
+ }
+
+ renderTable();
+ }
+
+ function renderTable() {
+ if (!tbody) return;
+
+ const total = filteredData.length;
+ const effectivePageSize = pageSize === 'all' ? total : parseInt(pageSize, 10);
+ const totalPages = Math.ceil(total / effectivePageSize) || 1;
+
+ if (currentPage > totalPages) currentPage = totalPages;
+ if (currentPage < 1) currentPage = 1;
+
+ const startIdx = (currentPage - 1) * effectivePageSize;
+ const endIdx = pageSize === 'all' ? total : Math.min(startIdx + effectivePageSize, total);
+ const pageRows = filteredData.slice(startIdx, endIdx);
+
+ if (pageRows.length === 0) {
+ tbody.innerHTML = <tr><td colspan= class=text-center py-4 text-muted>Tidak ada data yang cocok dengan pencarian.</td></tr>;
+ } else {
+ tbody.innerHTML = pageRows.map((row, idx) => {
+ const rowNum = startIdx + idx + 1;
+ const cells = columns.map(col => {
+ const val = row[col];
+ const isNum = typeof val === 'number' || (isNumeric(val) && !col.toLowerCase().includes('kode') && !col.toLowerCase().includes('id'));
+ const alignClass = isNum ? 'text-end' : 'text-start';
+ return <td class=></td>;
+ }).join('');
+ return <tr><td class=text-center text-muted small></td></tr>;
+ }).join('');
+ }
+
+ // Update Pagination Info
+ if (paginationInfo) {
+ if (total === 0) {
+ paginationInfo.textContent = 'Menampilkan 0 data';
+ } else {
+ paginationInfo.textContent = Menampilkan - dari total data;
+ }
+ }
+
+ renderPagination(totalPages);
+ }
+
+ function renderPagination(totalPages) {
+ if (!paginationContainer) return;
+ if (totalPages <= 1) {
+ paginationContainer.innerHTML = '';
+ return;
+ }
+
+ let html = '';
+ html += <li class=page-item >
+ <a class=page-link href=# data-page=>&laquo;</a>
+ </li>;
+
+ const maxBtns = 5;
+ let startPage = Math.max(1, currentPage - 2);
+ let endPage = Math.min(totalPages, startPage + maxBtns - 1);
+
+ if (endPage - startPage < maxBtns - 1) {
+ startPage = Math.max(1, endPage - maxBtns + 1);
+ }
+
+ for (let p = startPage; p <= endPage; p++) {
+ html += <li class=page-item >
+ <a class=page-link href=# data-page=></a>
+ </li>;
+ }
+
+ html += <li class=page-item >
+ <a class=page-link href=# data-page=>&raquo;</a>
+ </li>;
+
+ paginationContainer.innerHTML = html;
+ }
+
+ // Event Listeners
+ if (searchInput) {
+ searchInput.addEventListener('input', () => applyFilter());
+ }
+
+ if (pageSizeSelect) {
+ pageSizeSelect.addEventListener('change', (e) => {
+ pageSize = e.target.value;
+ currentPage = 1;
+ renderTable();
+ });
+ }
+
+ if (paginationContainer) {
+ paginationContainer.addEventListener('click', (e) => {
+ const link = e.target.closest('.page-link');
+ if (!link) return;
+ e.preventDefault();
+ const page = parseInt(link.getAttribute('data-page'), 10);
+ if (page && page !== currentPage) {
+ currentPage = page;
+ renderTable();
+ window.scrollTo({ top: document.getElementById('aiDataTable').offsetTop - 80, behavior: 'smooth' });
+ }
+ });
+ }
+
+ // Sort column headers
+ document.querySelectorAll('.sortable-th').forEach(th => {
+ th.addEventListener('click', () => {
+ const col = th.getAttribute('data-col');
+ if (sortColumn === col) {
+ sortAsc = !sortAsc;
+ } else {
+ sortColumn = col;
+ sortAsc = true;
+ }
+
+ document.querySelectorAll('.sortable-th .sort-icon').forEach(icon => {
+ icon.innerHTML = '<i class=bi bi-arrow-down-up></i>';
+ });
+
+ const currentIcon = th.querySelector('.sort-icon');
+ if (currentIcon) {
+ currentIcon.innerHTML = sortAsc ? '<i class=bi bi-arrow-up text-primary></i>' : '<i class=bi bi-arrow-down text-primary></i>';
+ }
+
+ applySortAndRender();
+ });
+ });
+
+ // Copy Table to Clipboard
+ if (copyTableBtn) {
+ copyTableBtn.addEventListener('click', () => {
+ if (!filteredData || filteredData.length === 0) return;
+ const headers = columns.join('\t');
+ const rowsText = filteredData.map(r => columns.map(c => r[c] !== null && r[c] !== undefined ? r[c] : '').join('\t')).join('\n');
+ const fullText = headers + '\n' + rowsText;
+
+ navigator.clipboard.writeText(fullText).then(() => {
+ const orig = copyTableBtn.innerHTML;
+ copyTableBtn.innerHTML = '<i class=bi bi-check-lg text-success></i> Tersalin!';
+ setTimeout(() => copyTableBtn.innerHTML = orig, 2000);
+ });
+ });
+ }
+
+ // Initial render
+ renderTable();
+ })();
+</script>

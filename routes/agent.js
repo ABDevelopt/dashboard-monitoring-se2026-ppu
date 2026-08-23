@@ -1,7 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const { sendMessageToAgent, streamMessageToAgent } = require('../services/agentService');
-const { getSettings } = require('../database');
+const { getSettings, getAgentQueryById, executeAgentQueryById, getLatestUpload } = require('../database');
 const logger = require('../services/logger');
 
 // Auth Middleware for Agent chatbot (allows any authenticated accounts)
@@ -45,6 +45,93 @@ router.get('/', (req, res) => {
     geminiModels,
     hasGeminiKey       : geminiEnabled
   });
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  GET /table — Render Halaman Tabel Lengkap Hasil Query AI
+// ─────────────────────────────────────────────────────────────────
+router.get('/table', (req, res) => {
+  const queryId = req.query.id || req.query.qid || '';
+  if (!queryId) {
+    req.flash('error', 'ID Kueri tidak valid.');
+    return res.redirect('/agent');
+  }
+
+  const queryRecord = getAgentQueryById(queryId);
+  if (!queryRecord) {
+    req.flash('error', 'Riwayat kueri data tidak ditemukan atau sudah kadaluarsa.');
+    return res.redirect('/agent');
+  }
+
+  const executionResult = executeAgentQueryById(queryId);
+  const rows = executionResult.rows || [];
+  const latestUpload = getLatestUpload();
+
+  res.render('agent-table', {
+    title: 'Eksplorasi Data Tabel AI',
+    activePage: 'agent',
+    queryId,
+    query: queryRecord,
+    rows,
+    latestUpload,
+    error: executionResult.error || null
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  GET /api/query-data/:id — API JSON data kueri lengkap
+// ─────────────────────────────────────────────────────────────────
+router.get('/api/query-data/:id', (req, res) => {
+  const queryId = req.params.id;
+  const executionResult = executeAgentQueryById(queryId);
+  if (executionResult.error) {
+    return res.status(404).json({ success: false, error: executionResult.error });
+  }
+  res.json({
+    success: true,
+    query: executionResult.query,
+    totalRows: executionResult.rows.length,
+    rows: executionResult.rows
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  GET /export-query/:id — Export data kueri ke Excel (.xlsx) / CSV
+// ─────────────────────────────────────────────────────────────────
+router.get('/export-query/:id', (req, res) => {
+  try {
+    const queryId = req.params.id;
+    const format = (req.query.format || 'xlsx').toLowerCase();
+    const executionResult = executeAgentQueryById(queryId);
+    
+    if (executionResult.error || !executionResult.rows || executionResult.rows.length === 0) {
+      req.flash('error', executionResult.error || 'Data kueri kosong.');
+      return res.redirect(`/agent/table?id=${queryId}`);
+    }
+
+    const XLSX = require('xlsx');
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(executionResult.rows);
+    XLSX.utils.book_append_sheet(wb, ws, "Hasil Kueri AI");
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `data_kueri_ai_${queryId}_${dateStr}`;
+
+    if (format === 'csv') {
+      const csv = XLSX.utils.sheet_to_csv(ws);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}.csv"`);
+      return res.send(csv);
+    } else {
+      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}.xlsx"`);
+      return res.send(buf);
+    }
+  } catch (err) {
+    logger.error(`[AGENT:EXPORT] Export query error: ${err.message}`);
+    res.status(500).send(`Gagal melakukan export: ${err.message}`);
+  }
 });
 
 // ─────────────────────────────────────────────────────────────────

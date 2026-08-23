@@ -521,12 +521,27 @@
       getText() {
         return accumulatedText;
       },
-      finalize(finalText) {
+      finalize(finalText, queryId = null, rowCount = null) {
         const textToRender = finalText || accumulatedText || 'Tidak ada tanggapan.';
         accumulatedText = textToRender;
         if (cursorEl.parentElement) cursorEl.remove();
         if (thinkingPill.parentElement) thinkingPill.remove();
         contentEl.innerHTML = renderMarkdown(textToRender);
+
+        if (queryId) {
+          const rowBadge = rowCount ? ` (${rowCount} Baris)` : '';
+          const navPrefix = window.location.pathname.split('/')[1] && ['sakernas-pemutakhiran', 'sakernas-pendataan'].includes(window.location.pathname.split('/')[1])
+            ? '/' + window.location.pathname.split('/')[1]
+            : '';
+          const tableBtn = document.createElement('a');
+          tableBtn.href = `${navPrefix}/agent/table?id=${queryId}`;
+          tableBtn.target = '_blank';
+          tableBtn.className = 'ai-widget-full-table-btn';
+          tableBtn.innerHTML = `<i class="bi bi-table"></i> Buka Tabel Lengkap${rowBadge} <i class="bi bi-arrow-right"></i>`;
+          tableBtn.style.cssText = 'display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; margin-top: 8px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-radius: 16px; font-size: 11px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 5px rgba(37,99,235,0.25);';
+          contentEl.appendChild(tableBtn);
+        }
+
         body.scrollTop = body.scrollHeight;
       },
       showError(errText) {
@@ -722,7 +737,7 @@
               } else if (currentEvent === 'chunk') {
                 streamMsg.appendChunk(data.text || '');
               } else if (currentEvent === 'done') {
-                streamMsg.finalize(data.reply || streamMsg.getText());
+                streamMsg.finalize(data.reply || streamMsg.getText(), data.queryId, data.rowCount);
                 const finalReply = streamMsg.getText();
                 if (finalReply.trim()) {
                   chatHistory.push({ role: 'assistant', content: finalReply });

@@ -955,6 +955,26 @@ function runMigrations(dbConn, surveyId = 'se2026') {
       }
     },
     {
+      version: '20260823010000_add_agent_queries',
+      up: (dbConn) => {
+        try {
+          dbConn.exec(`
+            CREATE TABLE IF NOT EXISTS agent_queries (
+              id TEXT PRIMARY KEY,
+              user_id INTEGER,
+              prompt TEXT,
+              tool_name TEXT,
+              query_sql TEXT,
+              query_params TEXT,
+              columns_json TEXT,
+              row_count INTEGER,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+          `);
+        } catch (_) {}
+      }
+    },
+    {
       // ── MIGRASI 20260820 ────────────────────────────────────────────────────
       // Tujuan: Memastikan setiap DB survei memiliki data surveys_registry
       // hanya untuk survei ITU SENDIRI — tidak bergantung pada DB lain.
@@ -3368,6 +3388,70 @@ function runWalCheckpointAll() {
   }
 }
 
+function saveAgentQuery(queryData, surveyId) {
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  const id = queryData.id;
+  try {
+    db.prepare(`
+      INSERT OR REPLACE INTO agent_queries (id, user_id, prompt, tool_name, query_sql, query_params, columns_json, row_count, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(
+      id,
+      queryData.userId || null,
+      queryData.prompt || '',
+      queryData.toolName || '',
+      queryData.querySql || '',
+      typeof queryData.queryParams === 'string' ? queryData.queryParams : JSON.stringify(queryData.queryParams || {}),
+      typeof queryData.columnsJson === 'string' ? queryData.columnsJson : JSON.stringify(queryData.columnsJson || []),
+      queryData.rowCount || 0
+    );
+    return id;
+  } catch (err) {
+    logger.error(`[DB] saveAgentQuery error: ${err.message}`);
+    return null;
+  }
+}
+
+function getAgentQueryById(id, surveyId) {
+  if (!id) return null;
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  try {
+    return db.prepare(`SELECT * FROM agent_queries WHERE id = ?`).get(id);
+  } catch (err) {
+    logger.error(`[DB] getAgentQueryById error: ${err.message}`);
+    return null;
+  }
+}
+
+function executeAgentQueryById(id, surveyId) {
+  const record = getAgentQueryById(id, surveyId);
+  if (!record || !record.query_sql) return { error: 'Kueri tidak ditemukan atau sudah kadaluarsa.' };
+  
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  
+  try {
+    let params = {};
+    if (record.query_params) {
+      try { params = JSON.parse(record.query_params); } catch (_) {}
+    }
+    const cleanSql = record.query_sql.trim();
+    if (!/^(select|with)\s/i.test(cleanSql)) {
+      return { error: 'Hanya kueri SELECT yang diizinkan.' };
+    }
+    const stmt = db.prepare(cleanSql);
+    const rows = Object.keys(params).length > 0 ? stmt.all(params) : stmt.all();
+    return {
+      query: record,
+      rows: rows
+    };
+  } catch (err) {
+    return { error: `Gagal mengeksekusi kueri: ${err.message}` };
+  }
+}
+
 module.exports = {
   getDb, getSharedDb, resolveSurveyId, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -3389,7 +3473,8 @@ module.exports = {
   saveWhatsappLogDb, getWhatsappLogsDb,
   pushWhatsappCommand, popPendingWhatsappCommands,
   queueWhatsappMessage, getPendingWhatsappMessages, updateWhatsappMessageStatus, checkQueuedMessageStatus,
-  runWalCheckpoint, runWalCheckpointAll
+  runWalCheckpoint, runWalCheckpointAll,
+  saveAgentQuery, getAgentQueryById, executeAgentQueryById
 };
 
 

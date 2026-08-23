@@ -2288,13 +2288,26 @@
       getText() {
         return accumulatedText;
       },
-      finalize(finalText, isSimulation = false) {
+      finalize(finalText, isSimulation = false, queryId = null, rowCount = null) {
         const textToRender = finalText || accumulatedText || 'Tidak ada respons yang diterima.';
         accumulatedText = textToRender;
         if (cursorEl.parentElement) cursorEl.remove();
         if (statusCard.parentElement) statusCard.remove();
 
         streamContentEl.innerHTML = renderMarkdown(textToRender);
+
+        // Jika terdapat queryId atau data tabel lengkap dari AI, tambahkan tombol aksi khusus
+        if (queryId) {
+          const rowBadge = rowCount ? ` (${rowCount} Baris)` : '';
+          const tableBtn = document.createElement('a');
+          const navPrefix = '<%= typeof navPrefix !== "undefined" ? navPrefix : "" %>';
+          tableBtn.href = `${navPrefix}/agent/table?id=${queryId}`;
+          tableBtn.target = '_blank';
+          tableBtn.className = 'btn-open-full-table d-inline-flex align-items-center gap-2 mt-3';
+          tableBtn.innerHTML = `<i class="bi bi-table"></i> Buka Tabel Lengkap${rowBadge} <i class="bi bi-arrow-right"></i>`;
+          tableBtn.style.cssText = 'padding: 6px 16px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-radius: 20px; font-size: 12px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 6px rgba(37,99,235,0.3); transition: transform 0.2s;';
+          streamContentEl.appendChild(tableBtn);
+        }
 
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'agent-message-actions';
@@ -2501,7 +2514,7 @@
                 const totalDuration = Date.now() - startTime;
                 console.log('%c[AI DONE]%c Respons selesai dalam ' + totalDuration + 'ms (' + chunkCount + ' chunks)', 'background: #22c55e; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold;', 'color: inherit;', data);
                 console.groupEnd();
-                streamingMsg.finalize(data.reply || streamingMsg.getText(), data.isSimulation);
+                streamingMsg.finalize(data.reply || streamingMsg.getText(), data.isSimulation, data.queryId, data.rowCount);
                 const finalContent = streamingMsg.getText();
                 if (finalContent.trim()) {
                   chatHistory.push({ role: 'model', content: finalContent });
