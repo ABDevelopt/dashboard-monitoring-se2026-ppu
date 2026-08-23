@@ -673,7 +673,10 @@ function init() {
     const db = getDb('se2026'); // initialize schema for se2026
     const rowCount = db.prepare('SELECT COUNT(*) as count FROM subsls_master').get().count;
     if (rowCount === 0) {
-      const masterPath = path.join(__dirname, 'kelompok_populasi_pml_pcl_korlap_muatan.json');
+      let masterPath = path.join(__dirname, 'data', 'kelompok_populasi_pml_pcl_korlap_muatan.json');
+      if (!fs.existsSync(masterPath)) {
+        masterPath = path.join(__dirname, 'kelompok_populasi_pml_pcl_korlap_muatan.json');
+      }
       if (fs.existsSync(masterPath)) {
         const count = loadMasterFromJson(masterPath, 'se2026');
         logger.info(`✅ Master SubSLS SE2026 loaded: ${count} records (from JSON)`);

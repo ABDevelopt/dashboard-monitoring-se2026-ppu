@@ -120,7 +120,10 @@ router.post('/reset', (req, res) => {
     db.prepare('DELETE FROM subsls_master').run();
 
     if (activeSurvey === 'se2026') {
-      const masterPath = path.join(__dirname, '../kelompok_populasi_pml_pcl_korlap_muatan.json');
+      let masterPath = path.join(__dirname, '../data/kelompok_populasi_pml_pcl_korlap_muatan.json');
+      if (!fs.existsSync(masterPath)) {
+        masterPath = path.join(__dirname, '../kelompok_populasi_pml_pcl_korlap_muatan.json');
+      }
       if (fs.existsSync(masterPath)) {
         const count = loadMasterFromJson(masterPath, 'se2026');
         req.flash('success', `Berhasil merestore master data bawaan SE2026! Total record: ${count}`);

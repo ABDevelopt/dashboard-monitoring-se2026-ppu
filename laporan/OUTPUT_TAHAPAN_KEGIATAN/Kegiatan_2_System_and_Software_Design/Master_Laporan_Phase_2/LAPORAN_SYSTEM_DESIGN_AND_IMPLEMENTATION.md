@@ -8,7 +8,7 @@
 | :--- | :--- |
 | **Institusi** | Badan Pusat Statistik (BPS) Kabupaten Penajam Paser Utara |
 | **Versi Sistem** | 2.3.0 |
-| **Penyusun** | Yahya Abdurrohman, S.Tr.Stat. (NIP: 20020420 202410 1 002) |
+| **Penyusun** | Yahya Abdurrohman |
 | **Mentor / Pengesah** | Ketua Tim IPJKD & DLS BPS Kab. PPU (Ketua Tim IPJKD & DLS BPS Kab. PPU) |
 | **Tanggal Dokumen** | 15 Agustus 2026 |
 | **Klasifikasi** | Laporan Teknis Resmi — Rekayasa Perangkat Lunak |
@@ -21,7 +21,7 @@ Laporan Akhir Kegiatan 2: Perancangan Sistem dan Perangkat Lunak (*System & Soft
 
 | Peran | Nama & Gelar | Jabatan / Unit Kerja | Persetujuan |
 | :--- | :--- | :--- | :--- |
-| **Penyusun** | Yahya Abdurrohman, S.Tr.Stat. | Pranata Komputer Ahli Pertama / Peserta Latsar CPNS Gol. III | *(Disahkan)* |
+| **Penyusun** | Yahya Abdurrohman | Pranata Komputer Ahli Pertama / Peserta Latsar CPNS Gol. III | *(Disahkan)* |
 | **Mentor / Pengesah** | Ketua Tim IPJKD & DLS BPS Kab. PPU | Ketua Tim IPJKD & DLS BPS Kab. Penajam Paser Utara | *(Disetujui)* |
 | **Reviewer Teknis** | Tim Seksi Pengolahan Data & Tim IPJKD & DLS | Seksi Pengolahan & TI BPS Kab. Penajam Paser Utara | *(Terverifikasi)* |
 

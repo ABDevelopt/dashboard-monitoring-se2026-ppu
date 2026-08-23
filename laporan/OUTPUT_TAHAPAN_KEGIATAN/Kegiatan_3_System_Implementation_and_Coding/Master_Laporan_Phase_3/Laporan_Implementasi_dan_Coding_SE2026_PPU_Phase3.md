@@ -9,7 +9,7 @@
 **Nama Sistem:** *Pananyo Taka* — Dashboard Monitoring Lapangan SE2026 PPU  
 **Versi Sistem:** 1.0.0  
 **Tanggal Laporan:** 22 Agustus 2026  
-**Penyusun:** Yahya Abdurrohman, S.Tr.Stat.  
+**Penyusun:** Yahya Abdurrohman  
 **Unit Kerja:** Subbagian Umum & Tim IPJKD-DLS, BPS Kabupaten Penajam Paser Utara  
 
 ---
@@ -1329,7 +1329,7 @@ function getRealizationFormula(mode, alias = 'p') {
 
 **Penyusun,**
 
-**Yahya Abdurrohman, S.Tr.Stat.**  
+**Yahya Abdurrohman**  
 *BPS Kabupaten Penajam Paser Utara*
 
 ---

@@ -1,9 +1,9 @@
 const Database = require('better-sqlite3');
 const path = require('path');
-const { rebuildAllSummaryCaches } = require('./database');
+const { rebuildAllSummaryCaches } = require('../database');
 
 // Connect to SQLite database in the project data folder
-const dbPath = path.join(__dirname, 'data', 'se2026.db');
+const dbPath = path.join(__dirname, '..', 'data', 'se2026.db');
 const db = new Database(dbPath);
 
 const pclsToNormalize = [

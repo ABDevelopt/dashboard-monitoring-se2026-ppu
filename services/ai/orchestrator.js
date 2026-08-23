@@ -26,36 +26,40 @@ const log = {
 };
 
 // ─────────────────────────────────────────────
-//  SYSTEM INSTRUCTION COMPOSER
+//  SYSTEM INSTRUCTION COMPOSER (OPTIMIZED FOR SHARED HOSTING)
 // ─────────────────────────────────────────────
 const { dbSchemaDescription } = require('../dbSchema');
-const { QUERY_HINTS } = require('../queryHints');
 
-const hintsText = Object.entries(QUERY_HINTS)
-  .map(([key, h]) => `- **${key}**: ${h.description}\n  SQL:\n  \`\`\`sql\n  ${h.sql.trim()}\n  \`\`\``)
-  .join('\n');
+const COMPACT_QUERY_GUIDELINES = `
+## Panduan Analisis & Query Khusus (Gunakan Tabel summary_cache atau progres)
+- **Ringkasan & Wilayah**: Gunakan tool \`get_summary\` (parameter: kecamatan/desa jika ada) atau query ke \`summary_cache\`.
+- **Kinerja Petugas (PCL/PML/Korlap)**: Gunakan tool \`get_petugas\` (parameter: role, filter, limit, order) untuk top/bottom performa, beban target tertinggi, atau progres.
+- **Anomali Lapangan**: Gunakan tool \`get_anomaly\` untuk anomali usaha ganda, tidak dapat ditemui, atau rejeksi PML.
+- **Rata-rata Penambahan Harian**: Gunakan \`query_data\` menghitung \`SUM(submitted_total + approved_total + rejected_total) / (SELECT COUNT(DISTINCT tanggal) FROM uploads)\` dari \`summary_cache\`.
+- **Penambahan Harian Terakhir (Delta Sesi/Hari)**: Gunakan \`query_data\` membandingkan realisasi upload terbaru dengan upload sesi sebelumnya.
+- **Detail SLS & Transaksi**: Gunakan \`query_data\` pada tabel \`progres\` JOIN \`subsls_master\` on kode.
+`;
 
 const SYSTEM_INSTRUCTION_STATIC = dbSchemaDescription + `
 
 ## 🎯 ATURAN EMAS: FOKUS 100% PADA PERTANYAAN TERKINI (RECENCY FOCUS)
 1. **Jawab HANYA Pertanyaan Terakhir**: Tanggapi secara eksklusif pertanyaan yang diajukan pada pesan pengguna saat ini. JANGAN PERNAH menjawab atau mengulang topik pertanyaan dari riwayat sebelumnya kecuali pengguna secara eksplisit meminta ("lanjutkan yang tadi", "bagaimana dengan dia?", dsb).
-2. **Kesesuaian Pemanggilan Tool**: Saat memanggil tool/fungsi (\`get_summary\`, \`get_petugas\`, \`query_data\`), pastikan parameter dan kueri 100% relevan dengan entitas pertanyaan saat ini (misal: jika ditanya petugas, panggil data petugas; jika ditanya kecamatan, panggil data kecamatan).
-3. **Hindari Greeting Berulang**: Jika ini adalah giliran tanya-jawab lanjutan (bukan sapaan 'halo/hai' pertama), LANGSUNG berikan jawaban data, tabel, dan analisis tanpa kalimat perkenalan diri ulang.
+2. **Kesesuaian Pemanggilan Tool**: Saat memanggil tool/fungsi (\`get_summary\`, \`get_petugas\`, \`get_anomaly\`, \`query_data\`), pastikan parameter dan kueri 100% relevan dengan entitas pertanyaan saat ini.
+3. **Hindari Greeting Berulang**: Jika ini adalah giliran tanya-jawab lanjutan, LANGSUNG berikan jawaban data, tabel, dan analisis tanpa kalimat perkenalan diri ulang.
 4. **Efisiensi Pemanggilan Tool (1-Turn Fetch & Respond)**: Panggil fungsi/tool yang diperlukan secara tepat dan hemat (cukup 1 kali pemanggilan tool atau maksimal 2 tool terkait). Segera setelah data hasil tool diterima, LANGSUNG rangkum, analisis, dan sajikan jawaban lengkap kepada pengguna. JANGAN PERNAH memanggil tool berulang kali secara berantai tanpa henti.
 
 ## Strategi Pengambilan Data — WAJIB DIIKUTI
 
-### PRIORITAS 1: Gunakan get_summary atau get_petugas
-Kueri ini sudah memiliki data teragregasi. Cobalah kueri get_summary/get_petugas sebelum query_data/run_read_only_query untuk:
-- Progres umum, capaian, dan total wilayah -> get_summary
-- Detail kinerja PML, PCL, atau Korlap -> get_petugas
-- Informasi anomali data petugas -> get_anomaly
+### PRIORITAS 1: Gunakan get_summary, get_petugas, atau get_anomaly
+Kueri ini sudah memiliki data teragregasi super cepat di SQLite cache:
+- Progres umum, capaian, dan total wilayah -> \`get_summary\`
+- Detail kinerja PML, PCL, atau Korlap -> \`get_petugas\`
+- Informasi anomali data lapangan -> \`get_anomaly\`
 
-### PRIORITAS 2: Gunakan query_data atau run_read_only_query
+### PRIORITAS 2: Gunakan query_data
 Gunakan SQL SELECT hanya jika data tidak tersedia di agregator ringkas.
 
-## Query Hints yang Tersedia
-${hintsText}
+${COMPACT_QUERY_GUIDELINES}
 
 ## Format Respons & Tampilan — WAJIB DIIKUTI
 1. **Bahasa**: Selalu gunakan Bahasa Indonesia yang profesional, ramah, sopan, dan solutif.
@@ -287,7 +291,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
   if (settings.chatbot_smart_switch !== '0') {
     const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.6-flash, gemini-3.7-flash, gemini-3.1-flash-lite, gemini-2.5-flash';
     for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-      if (tries.length >= 8) break;
+      if (tries.length >= 3) break; // Maksimal 3 kandidat model untuk menjaga responsivitas server
       tries.push({ provider: 'gemini', model: m });
     }
   }
@@ -304,7 +308,8 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
 
   for (let i = 0; i < uniqueTries.length; i++) {
     const current = uniqueTries[i];
-    const keysToTry = keyPool.getOrderedEligibleKeys(settings, current.model);
+    const rawKeys = keyPool.getOrderedEligibleKeys(settings, current.model);
+    const keysToTry = rawKeys.slice(0, 2); // Coba maksimal 2 key terbaik per model
     if (keysToTry.length === 0) continue;
 
     log.info(`[ORCH] Mencoba Model '${current.model}' dengan ${keysToTry.length} API Key tersedia...`);
@@ -399,7 +404,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
   if (settings.chatbot_smart_switch !== '0') {
     const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.6-flash, gemini-3.7-flash, gemini-3.1-flash-lite, gemini-2.5-flash';
     for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-      if (tries.length >= 8) break;
+      if (tries.length >= 3) break; // Maksimal 3 kandidat model untuk streaming
       tries.push({ provider: 'gemini', model: m });
     }
   }
@@ -423,7 +428,8 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
       onEvent('status', { text: `⚡ Mengalihkan ke model cadangan (${current.model})...`, step: 'smart_switch' });
     }
 
-    const keysToTry = keyPool.getOrderedEligibleKeys(settings, current.model);
+    const rawKeys = keyPool.getOrderedEligibleKeys(settings, current.model);
+    const keysToTry = rawKeys.slice(0, 2); // Coba maksimal 2 key terbaik per model
     if (keysToTry.length === 0) continue;
 
     log.info(`[ORCH:STREAM] Mencoba Model '${current.model}' dengan ${keysToTry.length} API Key...`);

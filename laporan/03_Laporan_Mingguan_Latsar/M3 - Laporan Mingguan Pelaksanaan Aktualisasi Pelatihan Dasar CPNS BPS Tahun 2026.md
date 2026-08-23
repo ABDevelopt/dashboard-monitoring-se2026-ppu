@@ -5,7 +5,7 @@
 
 | Identitas Peserta | Keterangan |
 |---|---|
-| **Nama Peserta** | Yahya Abdurrohman, S.Tr.Stat. |
+| **Nama Peserta** | Yahya Abdurrohman |
 | **Angkatan** | Latsar STIS 3-11 (Golongan III Angkatan XI Tahun 2026) |
 | **Minggu ke- / Tanggal** | Minggu ke-3 / 17 – 21 Agustus 2026 |
 | **Kegiatan Aktualisasi** | **Kegiatan 3:** Pemrograman kode (*coding*) dasbor lokal dan integrasi sistem. |

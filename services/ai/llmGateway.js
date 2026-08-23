@@ -13,10 +13,10 @@ const {
   GEMINI_DEFAULT_MODEL = 'gemini-3.5-flash'
 } = process.env;
 
-const AGENT_API_TIMEOUT_MS          = 30000; 
-const AGENT_API_QUICK_RESPONSE_MS   = 20000; 
-const AGENT_API_TOOLRESULT_MS       = 30000; 
-const MAX_SWITCH_TRIES              = 5;
+const AGENT_API_TIMEOUT_MS          = 20000; 
+const AGENT_API_QUICK_RESPONSE_MS   = 12000; 
+const AGENT_API_TOOLRESULT_MS       = 20000; 
+const MAX_SWITCH_TRIES              = 3;
 
 const LEGACY_GEMINI_MODELS = new Set([
   'gemini-pro',
@@ -335,11 +335,13 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
     ];
 
     let loopCount = 0;
-    const MAX_LOOPS = 3;
+    const MAX_LOOPS = 2; // Maksimal 2 turn (1 turn tool calling + 1 turn final answer)
     let finalCandidate = null;
     let lastExecutedToolResult = null;
+    let streamedDirectly = false;
+    let fullStreamedText = '';
 
-    while (loopCount <= MAX_LOOPS) {
+    while (loopCount < MAX_LOOPS) {
       if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
 
       onEvent('status', {
@@ -362,7 +364,8 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
       const parts = candidate.content.parts || [];
       const functionCalls = parts.filter(p => p.functionCall).map(p => p.functionCall);
 
-      if (functionCalls.length === 0 || loopCount === MAX_LOOPS) {
+      if (functionCalls.length === 0) {
+        // Tidak ada tool call yang diminta, langsung gunakan hasil teks dari Turn 1
         break;
       }
 
@@ -392,17 +395,42 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
         })
       );
 
-      onEvent('status', { text: '✍️ Merumuskan jawaban...', step: 'writing' });
-
       // Google Gemini v1beta REST API mewajibkan role 'user' untuk functionResponse
       contents.push({
         role: 'user',
         parts: toolResponses
       });
+
+      // Pada turn final setelah tool dieksekusi, gunakan Native Stream agar token langsung mengalir
+      onEvent('status', { text: '✍️ Merumuskan jawaban...', step: 'writing' });
+      try {
+        const streamResp = await timeoutPromise(
+          model.generateContentStream({ contents }),
+          AGENT_API_TOOLRESULT_MS,
+          'Gemini stream connection timeout'
+        );
+
+        for await (const chunk of streamResp.stream) {
+          if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
+          const piece = chunk.text();
+          if (piece) {
+            fullStreamedText += piece;
+            onEvent('chunk', { text: piece });
+            streamedDirectly = true;
+          }
+        }
+
+        if (streamedDirectly && fullStreamedText.trim()) {
+          return { role: 'model', content: processJsonQueryResponse(fullStreamedText), isSimulation: false };
+        }
+      } catch (streamErr) {
+        log.warn('[LLM_GW] Native stream error, proceeding with text fallback:', streamErr.message);
+        break;
+      }
     }
 
-    let rawText = '';
-    if (finalCandidate?.content?.parts) {
+    let rawText = fullStreamedText;
+    if (!rawText.trim() && finalCandidate?.content?.parts) {
       rawText = finalCandidate.content.parts.filter(p => p.text).map(p => p.text).join('\n');
     }
 
@@ -439,14 +467,16 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
 
     const processedText = processJsonQueryResponse(rawText);
 
-    // Stream text progressively to frontend for smooth, instant typing effect
-    const words = processedText.split(' ');
-    const chunkSize = 4;
-    for (let i = 0; i < words.length; i += chunkSize) {
-      if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
-      const chunk = words.slice(i, i + chunkSize).join(' ') + (i + chunkSize < words.length ? ' ' : '');
-      onEvent('chunk', { text: chunk });
-      await new Promise(r => setTimeout(r, 12));
+    // Stream text progressively jika belum dialirkan secara langsung
+    if (!streamedDirectly) {
+      const words = processedText.split(' ');
+      const chunkSize = 4;
+      for (let i = 0; i < words.length; i += chunkSize) {
+        if (abortSignal?.aborted) throw new Error('Request dibatalkan.');
+        const chunk = words.slice(i, i + chunkSize).join(' ') + (i + chunkSize < words.length ? ' ' : '');
+        onEvent('chunk', { text: chunk });
+        await new Promise(r => setTimeout(r, 10));
+      }
     }
 
     return { role: 'model', content: processedText, isSimulation: false };
