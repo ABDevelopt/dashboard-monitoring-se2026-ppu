@@ -32,14 +32,30 @@ const { dbSchemaDescription } = require('../dbSchema');
 
 const COMPACT_QUERY_GUIDELINES = `
 ## Panduan Analisis & Query Khusus (WAJIB DIIKUTI)
+
+### ATURAN MUTLAK: Penanganan Negasi & Pengecualian (Exclusion Rules)
+Jika pertanyaan pengguna memuat kata negasi/pengecualian seperti:
+- "selain ...", "bukan ...", "kecuali ...", "di luar ...", "tanpa ...", "tidak termasuk ...", "non-...", "minus ..."
+
+Maka entitas tersebut WAJIB dijadikan filter PENGEQUALIAN (NOT LIKE / NOT IN / !=), JANGAN PERNAH dijadikan filter inklusif (LIKE / IN / =)!
+
+1. **Pengecualian Wilayah / Kecamatan / Desa / SLS**:
+   - "selain kecamatan Sepaku" -> \`WHERE LOWER(m.kecamatan) NOT LIKE '%sepaku%'\` (atau \`NOT IN ('Sepaku')\`)
+   - "bukan di Penajam dan Babulu" -> \`WHERE LOWER(m.kecamatan) NOT IN ('penajam', 'babulu')\`
+   - "di luar desa Girimukti" -> \`WHERE LOWER(m.desa) NOT LIKE '%girimukti%'\`
+   - "selain SLS KIPP" / "non-KIPP" -> \`WHERE m.nama_sls NOT LIKE '%KIPP%' AND m.pcl NOT IN (SELECT DISTINCT pcl FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pcl IS NOT NULL AND pcl != '')\`
+2. **Pengecualian Petugas (PCL / PML / Korlap)**:
+   - "petugas terbaik selain [Nama PCL]" -> \`WHERE LOWER(m.pcl) NOT LIKE '%[nama]%'\`
+   - "kinerja PML di luar [Nama PML]" -> \`WHERE LOWER(m.pml) NOT LIKE '%[nama]%'\`
+   - "rekap selain tim Korlap [Nama Korlap]" -> \`WHERE LOWER(m.korlap) NOT LIKE '%[nama]%'\`
+3. **Pengecualian Status / Nilai Data**:
+   - "dokumen selain approved" -> \`WHERE COALESCE(p.approved, 0) = 0\` atau fokus pada \`p.submitted_by_pcl + p.draft + p.rejected\`
+   - "petugas dengan progres bukan 0 (selain yang 0)" -> \`HAVING realisasi > 0\`
+   - "data tanpa anomali / non-anomali" -> \`WHERE COALESCE(p.usaha_ganda,0) = 0 AND COALESCE(p.rejected,0) = 0\`
+
 - **Kinerja & Rangking Petugas (PCL/PML/Korlap)**:
   - UTAMAKAN tool \`get_petugas\` (role: 'pcl'|'pml'|'korlap', kecamatan: optional) untuk pertanyaan seperti siapa submit terbanyak, target tertinggi, progres terendah, dsb.
   - Jika query manual via \`query_data\`, gunakan tabel \`summary_cache\` (kolom: pcl, submitted_total, approved_total, draft_total, target_fasih_total) ATAU tabel \`progres\` yang di-\`LEFT JOIN subsls_master m ON progres.kode = m.kode\` (karena kolom \`progres.pcl_name\` sering NULL, nama resmi petugas ada di \`m.pcl\`).
-- **Pengecualian Wilayah / Non-KIPP (Selain/Bukan Petugas KIPP)**:
-  - SLS KIPP ditandai dengan \`m.nama_sls = 'KIPP IKN'\` atau \`m.nama_sls LIKE '%KIPP%'\`.
-  - Jika pengguna meminta petugas **selain / bukan / di luar SLS KIPP (Non-KIPP)**:
-    - WAJIB gunakan filter pengecualian: \`WHERE m.nama_sls NOT LIKE '%KIPP%' AND m.pcl NOT IN (SELECT DISTINCT pcl FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pcl IS NOT NULL AND pcl != '')\`
-    - JANGAN PERNAH menyaring \`WHERE nama_sls LIKE '%KIPP%'\` karena itu justru mengambil petugas KIPP!
 - **Petugas Terbaik dari Assignment FASIH & Muatan**:
   - Kolom assignment FASIH adalah \`m.target_fasih\` / \`SUM(m.target_fasih)\`.
   - Realisasi FASIH adalah \`SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0))\`.
@@ -130,20 +146,39 @@ function runSimulation(userMessage, chatHistory) {
   const uploadId = latestUpload.id;
 
   try {
+    const isExcludeKipp = (lowerMsg.includes('selain') || lowerMsg.includes('bukan') || lowerMsg.includes('non') || lowerMsg.includes('luar') || lowerMsg.includes('tanpa') || lowerMsg.includes('kecuali')) && lowerMsg.includes('kipp');
+    const kippFilter = isExcludeKipp ? "AND m.nama_sls NOT LIKE '%KIPP%' AND m.pcl NOT IN (SELECT DISTINCT pcl FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pcl IS NOT NULL AND pcl != '')" : "";
+    const kippLabel = isExcludeKipp ? " (Selain Petugas SLS KIPP)" : "";
+
     if (lowerMsg.includes('terendah') || lowerMsg.includes('rendah') || lowerMsg.includes('buruk') || lowerMsg.includes('beban') || lowerMsg.includes('bantu') || lowerMsg.includes('berat')) {
       let filterKec = '', kecLabel = 'Seluruh Wilayah';
-      
-      if      (lowerMsg.includes('sepaku'))   { filterKec = "AND LOWER(m.kecamatan) = 'sepaku'";  kecLabel = 'Kecamatan Sepaku'; }
-      else if (lowerMsg.includes('penajam'))  { filterKec = "AND LOWER(m.kecamatan) = 'penajam'"; kecLabel = 'Kecamatan Penajam'; }
-      else if (lowerMsg.includes('babulu'))   { filterKec = "AND LOWER(m.kecamatan) = 'babulu'";  kecLabel = 'Kecamatan Babulu'; }
-      else if (lowerMsg.includes('waru'))     { filterKec = "AND LOWER(m.kecamatan) = 'waru'";    kecLabel = 'Kecamatan Waru'; }
+      const kecsList = ['sepaku', 'penajam', 'babulu', 'waru'];
+      for (const kec of kecsList) {
+        if (lowerMsg.includes(kec)) {
+          const isExclude = (lowerMsg.includes('selain ' + kec) || lowerMsg.includes('bukan ' + kec) || lowerMsg.includes('kecuali ' + kec) || lowerMsg.includes('di luar ' + kec) || lowerMsg.includes('tanpa ' + kec) || lowerMsg.includes('non ' + kec) || lowerMsg.includes('non-' + kec));
+          if (isExclude) {
+            filterKec += ` AND LOWER(m.kecamatan) != '${kec}'`;
+            kecLabel += ` (Selain ${kec.charAt(0).toUpperCase() + kec.slice(1)})`;
+          } else if (!filterKec.includes(`= '${kec}'`)) {
+            filterKec = ` AND LOWER(m.kecamatan) = '${kec}'`;
+            kecLabel = `Kecamatan ${kec.charAt(0).toUpperCase() + kec.slice(1)}`;
+          }
+        }
+      }
 
       let filterKorlap = '';
       if (lowerMsg.includes('korlap')) {
         const korlapMatch = lowerMsg.match(/korlap\s+(\w+)/);
         if (korlapMatch && korlapMatch[1]) {
-          filterKorlap = `AND LOWER(m.korlap) = '${korlapMatch[1].toLowerCase()}'`;
-          kecLabel += ` (Korlap: ${korlapMatch[1]})`;
+          const kName = korlapMatch[1].toLowerCase();
+          const isExcludeKorlap = lowerMsg.includes('selain korlap') || lowerMsg.includes('bukan korlap') || lowerMsg.includes('kecuali korlap');
+          if (isExcludeKorlap) {
+            filterKorlap = `AND LOWER(m.korlap) != '${kName}'`;
+            kecLabel += ` (Selain Korlap: ${korlapMatch[1]})`;
+          } else {
+            filterKorlap = `AND LOWER(m.korlap) = '${kName}'`;
+            kecLabel += ` (Korlap: ${korlapMatch[1]})`;
+          }
         }
       }
 
@@ -160,7 +195,7 @@ function runSimulation(userMessage, chatHistory) {
           SUM(COALESCE(p.submitted_by_pcl,0)+COALESCE(p.approved,0)+COALESCE(p.rejected,0)) AS realisasi_fasih
         FROM subsls_master m
         LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-        WHERE 1=1 ${filterKec} ${filterKorlap}
+        WHERE 1=1 ${filterKec} ${filterKorlap} ${kippFilter}
         GROUP BY m.pcl ORDER BY ${orderBy} LIMIT 5
       `).all(uploadId);
 
@@ -183,9 +218,20 @@ function runSimulation(userMessage, chatHistory) {
     }
 
     if (lowerMsg.includes('terbaik') || lowerMsg.includes('leaderboard') || lowerMsg.includes('ranking') || lowerMsg.includes('performa') || lowerMsg.includes('tertinggi') || lowerMsg.includes('top')) {
-      const isExcludeKipp = (lowerMsg.includes('selain') || lowerMsg.includes('bukan') || lowerMsg.includes('non') || lowerMsg.includes('luar') || lowerMsg.includes('tanpa')) && lowerMsg.includes('kipp');
-      const kippFilter = isExcludeKipp ? "AND m.nama_sls NOT LIKE '%KIPP%' AND m.pcl NOT IN (SELECT DISTINCT pcl FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pcl IS NOT NULL AND pcl != '')" : "";
-      const kippLabel = isExcludeKipp ? " (Selain Petugas SLS KIPP)" : "";
+      let filterKec = '', kecLabel = '';
+      const kecsList = ['sepaku', 'penajam', 'babulu', 'waru'];
+      for (const kec of kecsList) {
+        if (lowerMsg.includes(kec)) {
+          const isExclude = (lowerMsg.includes('selain ' + kec) || lowerMsg.includes('bukan ' + kec) || lowerMsg.includes('kecuali ' + kec) || lowerMsg.includes('di luar ' + kec) || lowerMsg.includes('tanpa ' + kec) || lowerMsg.includes('non ' + kec) || lowerMsg.includes('non-' + kec));
+          if (isExclude) {
+            filterKec += ` AND LOWER(m.kecamatan) != '${kec}'`;
+            kecLabel += ` (Selain Kecamatan ${kec.charAt(0).toUpperCase() + kec.slice(1)})`;
+          } else if (!filterKec.includes(`= '${kec}'`)) {
+            filterKec = ` AND LOWER(m.kecamatan) = '${kec}'`;
+            kecLabel = ` (Kecamatan ${kec.charAt(0).toUpperCase() + kec.slice(1)})`;
+          }
+        }
+      }
 
       const rows = db.prepare(`
         SELECT m.pcl, MAX(m.pml) AS pml, MAX(m.kecamatan) AS kecamatan,
@@ -195,11 +241,11 @@ function runSimulation(userMessage, chatHistory) {
           SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0)+COALESCE(p.ditemukan+p.keluarga_baru,0)) AS muatan_selesai
         FROM subsls_master m
         LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-        WHERE 1=1 ${kippFilter}
+        WHERE 1=1 ${kippFilter} ${filterKec}
         GROUP BY m.pcl ORDER BY realisasi_fasih DESC, muatan_selesai DESC LIMIT 5
       `).all(uploadId);
 
-      let content = `Berikut daftar 5 Petugas (PCL) Terbaik berdasarkan Capaian Assignment FASIH dan Realisasi Muatan${kippLabel}:\n\n`;
+      let content = `Berikut daftar 5 Petugas (PCL) Terbaik berdasarkan Capaian Assignment FASIH dan Realisasi Muatan${kippLabel}${kecLabel}:\n\n`;
       content += `| No | Nama PCL | PML Pengawas | Kecamatan | Assignment FASIH | Realisasi FASIH | Target Muatan | Realisasi Muatan |\n| :---: | :--- | :--- | :--- | :---: | :---: | :---: | :---: |\n`;
       rows.forEach((r, i) => {
         content += `| ${i+1} | **${r.pcl}** | ${r.pml} | ${r.kecamatan} | ${r.target_fasih || 0} | **${r.realisasi_fasih || 0}** | ${r.total_muatan || 0} | **${r.muatan_selesai || 0}** |\n`;
