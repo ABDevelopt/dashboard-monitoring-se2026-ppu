@@ -251,7 +251,8 @@ router.get('/detail/pcl-daily-history', (req, res) => {
         SUM(c.approved_total) AS approved_total,
         SUM(c.rejected_total) AS rejected_total,
         SUM(c.submitted_total + c.approved_total + c.rejected_total) AS selesai_total,
-        SUM(c.target_fasih_total) AS target_fasih_total
+        SUM(c.target_fasih_total) AS target_fasih_total,
+        SUM(MAX(0, COALESCE(c.target_fasih_total, 0) - (COALESCE(c.draft_total, 0) + COALESCE(c.submitted_total, 0) + COALESCE(c.approved_total, 0) + COALESCE(c.rejected_total, 0)))) AS open_total
       FROM summary_cache c
       JOIN uploads u ON c.upload_id = u.id
       GROUP BY u.tanggal, c.pcl
@@ -272,7 +273,8 @@ router.get('/detail/pcl-daily-history', (req, res) => {
       SUM(c.approved_total) AS approved_total,
       SUM(c.rejected_total) AS rejected_total,
       SUM(c.submitted_total + c.approved_total + c.rejected_total) AS selesai_total,
-      SUM(c.target_fasih_total) AS target_fasih_total
+      SUM(c.target_fasih_total) AS target_fasih_total,
+      SUM(MAX(0, COALESCE(c.target_fasih_total, 0) - (COALESCE(c.draft_total, 0) + COALESCE(c.submitted_total, 0) + COALESCE(c.approved_total, 0) + COALESCE(c.rejected_total, 0)))) AS open_total
     FROM summary_cache c
     JOIN uploads u ON c.upload_id = u.id
     WHERE LOWER(c.pcl) = LOWER(?)

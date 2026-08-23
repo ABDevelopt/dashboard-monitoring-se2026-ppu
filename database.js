@@ -1620,6 +1620,7 @@ function getTrenHarian(surveyId) {
       SUM(COALESCE(s.approved_total, 0)) AS approved_total,
       SUM(COALESCE(s.rejected_total, 0)) AS rejected_total,
       SUM(COALESCE(s.target_fasih_total, 0)) AS target_fasih_total,
+      SUM(MAX(0, COALESCE(s.target_fasih_total, 0) - (COALESCE(s.draft_total, 0) + COALESCE(s.submitted_total, 0) + COALESCE(s.approved_total, 0) + COALESCE(s.rejected_total, 0)))) AS open_total,
       COUNT(DISTINCT CASE WHEN s.pcl IS NOT NULL AND s.pcl != '' THEN s.pcl END) AS total_pcl,
       w.temp AS weather_temp,
       w.code AS weather_code,

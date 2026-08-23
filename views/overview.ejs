@@ -2362,6 +2362,7 @@
       // Hitung dan inisialisasi penambahan harian FASIH per status (Daily Increment per Status)
       const dailyIncrementLabels = [];
       const dailyIncrements = {
+        open: [],
         draft: [],
         submitted: [],
         approved: [],
@@ -2371,14 +2372,18 @@
       for (let i = 0; i < dailyTrenData.length; i++) {
         const current = dailyTrenData[i];
         dailyIncrementLabels.push(current.tanggal);
+        const currOpen = current.open_total !== undefined ? current.open_total : Math.max(0, (current.target_fasih_total || 0) - ((current.draft_total || 0) + (current.submitted_total || 0) + (current.approved_total || 0) + (current.rejected_total || 0)));
         
         if (i === 0) {
+          dailyIncrements.open.push(currOpen);
           dailyIncrements.draft.push(current.draft_total || 0);
           dailyIncrements.submitted.push(current.submitted_total || 0);
           dailyIncrements.approved.push(current.approved_total || 0);
           dailyIncrements.rejected.push(current.rejected_total || 0);
         } else {
           const prev = dailyTrenData[i - 1];
+          const prevOpen = prev.open_total !== undefined ? prev.open_total : Math.max(0, (prev.target_fasih_total || 0) - ((prev.draft_total || 0) + (prev.submitted_total || 0) + (prev.approved_total || 0) + (prev.rejected_total || 0)));
+          dailyIncrements.open.push(Math.max(0, currOpen - prevOpen));
           dailyIncrements.draft.push(Math.max(0, (current.draft_total || 0) - (prev.draft_total || 0)));
           dailyIncrements.submitted.push(Math.max(0, (current.submitted_total || 0) - (prev.submitted_total || 0)));
           dailyIncrements.approved.push(Math.max(0, (current.approved_total || 0) - (prev.approved_total || 0)));
@@ -2389,8 +2394,6 @@
       lazyInitChart('dailyFasihStatusChartCanvas', () =>
         createDailyFasihStatusChart('dailyFasihStatusChartCanvas', dailyIncrementLabels, dailyIncrements, '', dailyTrenData)
       );
-
-
       <% } %>
 
       // Initialize kecamatan comparison bar chart

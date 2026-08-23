@@ -454,6 +454,7 @@ function createFasihTrenChart(canvasId, trenData) {
 
   const theme = getThemeColors();
   const labels = trenData.map(d => d.tanggal);
+  const dataOpen = trenData.map(d => d.open_total !== undefined ? d.open_total : Math.max(0, (d.target_fasih_total || 0) - ((d.draft_total || 0) + (d.submitted_total || 0) + (d.approved_total || 0) + (d.rejected_total || 0))));
   const dataDraft = trenData.map(d => d.draft_total || 0);
   const dataSubmitted = trenData.map(d => d.submitted_total || 0);
   const dataApproved = trenData.map(d => d.approved_total || 0);
@@ -464,6 +465,16 @@ function createFasihTrenChart(canvasId, trenData) {
     data: {
       labels,
       datasets: [
+        {
+          label: 'Open',
+          data: dataOpen,
+          borderColor: '#94a3b8',
+          backgroundColor: 'rgba(148, 163, 184, 0.04)',
+          tension: 0.4,
+          pointRadius: 3.5,
+          pointHoverRadius: 5.5,
+          pointBackgroundColor: '#94a3b8'
+        },
         {
           label: 'Draft',
           data: dataDraft,
@@ -755,36 +766,47 @@ function createDailyFasihStatusChart(canvasId, labels, datasetsData, title = '',
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
   const theme = getThemeColors();
+  const datasets = [];
+  if (datasetsData.open && datasetsData.open.length) {
+    datasets.push({
+      label: 'Open',
+      data: datasetsData.open,
+      backgroundColor: '#94a3b8',
+      borderRadius: 4,
+    });
+  }
+  datasets.push(
+    {
+      label: 'Draft',
+      data: datasetsData.draft,
+      backgroundColor: '#eab308',
+      borderRadius: 4,
+    },
+    {
+      label: 'Submitted',
+      data: datasetsData.submitted,
+      backgroundColor: '#3b82f6',
+      borderRadius: 4,
+    },
+    {
+      label: 'Approved',
+      data: datasetsData.approved,
+      backgroundColor: '#10b981',
+      borderRadius: 4,
+    },
+    {
+      label: 'Rejected',
+      data: datasetsData.rejected,
+      backgroundColor: '#ef4444',
+      borderRadius: 4,
+    }
+  );
+
   const chart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
-      datasets: [
-        {
-          label: 'Draft',
-          data: datasetsData.draft,
-          backgroundColor: '#eab308',
-          borderRadius: 4,
-        },
-        {
-          label: 'Submitted',
-          data: datasetsData.submitted,
-          backgroundColor: '#3b82f6',
-          borderRadius: 4,
-        },
-        {
-          label: 'Approved',
-          data: datasetsData.approved,
-          backgroundColor: '#10b981',
-          borderRadius: 4,
-        },
-        {
-          label: 'Rejected',
-          data: datasetsData.rejected,
-          backgroundColor: '#ef4444',
-          borderRadius: 4,
-        }
-      ]
+      datasets
     },
     options: {
       responsive: true,
@@ -893,6 +915,7 @@ function createPclHistoryChart(canvasId, historyData) {
 
   const theme = getThemeColors();
   const labels = historyData.map(d => d.tanggal);
+  const dataOpen = historyData.map(d => d.open_total !== undefined ? d.open_total : Math.max(0, (d.target_fasih_total || 0) - ((d.draft_total || 0) + (d.submitted_total || 0) + (d.approved_total || 0) + (d.rejected_total || 0))));
   const dataDraft = historyData.map(d => d.draft_total || 0);
   const dataSubmitted = historyData.map(d => d.submitted_total || 0);
   const dataApproved = historyData.map(d => d.approved_total || 0);
@@ -955,6 +978,16 @@ function createPclHistoryChart(canvasId, historyData) {
           pointRadius: 4,
           pointHoverRadius: 6,
           pointBackgroundColor: '#eab308'
+        },
+        {
+          label: 'Open',
+          data: dataOpen,
+          borderColor: '#94a3b8',
+          backgroundColor: 'rgba(148, 163, 184, 0.04)',
+          tension: 0.3,
+          pointRadius: 3.5,
+          pointHoverRadius: 5.5,
+          pointBackgroundColor: '#94a3b8'
         },
         // {
         //   label: 'Target FASIH',
