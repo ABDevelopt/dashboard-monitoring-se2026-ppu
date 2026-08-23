@@ -1634,13 +1634,13 @@
           return getProgressColor(pct);
         }
 
-        // Styles for layers with ultra-crisp consistent outline thickness & Outline Only mode
+        // Styles for layers with ultra-crisp refined outline thickness & Outline Only mode
         function kecStyle(feature) {
           const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
           if (isOutlineOnlyMode) {
             return {
               fillColor: 'transparent',
-              weight: isSelectedKec ? 2.0 : 0.6,
+              weight: isSelectedKec ? 1.5 : 0.5,
               opacity: isSelectedKec ? 1 : 0.15,
               color: currentBasemapType === 'satellite' ? '#38bdf8' : '#2563eb',
               fillOpacity: 0,
@@ -1649,7 +1649,7 @@
           }
           return {
             fillColor: getKecColor(feature.properties.nmkec),
-            weight: isSelectedKec ? 1.5 : 0.6,
+            weight: isSelectedKec ? 1.0 : 0.4,
             opacity: isSelectedKec ? 1 : 0.10,
             color: getBorderColor('kec'),
             fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.55 : 0.45) : 0.02,
@@ -1662,7 +1662,7 @@
           if (isOutlineOnlyMode) {
             return {
               fillColor: 'transparent',
-              weight: isSelectedKec ? 1.2 : 0.4,
+              weight: isSelectedKec ? 0.8 : 0.3,
               opacity: isSelectedKec ? 1 : 0.15,
               color: currentBasemapType === 'satellite' ? '#38bdf8' : '#2563eb',
               fillOpacity: 0,
@@ -1671,7 +1671,7 @@
           }
           return {
             fillColor: getDesaColor(feature.properties.iddesa),
-            weight: isSelectedKec ? 0.8 : 0.3,
+            weight: isSelectedKec ? 0.5 : 0.2,
             opacity: isSelectedKec ? 1 : 0.10,
             color: getBorderColor('desa'),
             fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.50 : 0.42) : 0.02,
@@ -1688,11 +1688,9 @@
           if (isOutlineOnlyMode) {
             return {
               fillColor: 'transparent',
-              weight: (isSelectedKec && matchesKpi) ? (isKpiActive ? 1.4 : 0.8) : 0.25,
+              weight: (isSelectedKec && matchesKpi) ? 0.6 : 0.15,
               opacity: (isSelectedKec && matchesKpi) ? 1 : 0.10,
-              color: (isSelectedKec && matchesKpi && isKpiActive) 
-                ? (currentStatusFilter === 'done' ? '#10b981' : (currentStatusFilter === 'in_progress' ? '#f59e0b' : '#ef4444'))
-                : (currentBasemapType === 'satellite' ? '#38bdf8' : '#2563eb'),
+              color: currentBasemapType === 'satellite' ? '#38bdf8' : '#2563eb',
               fillOpacity: 0,
               fillRule: 'nonzero'
             };
@@ -1702,10 +1700,10 @@
           if (!isSelectedKec || !matchesKpi) {
             return {
               fillColor: getSlsColor(feature.properties.kode),
-              weight: 0.2,
-              opacity: 0.08,
+              weight: 0.15,
+              opacity: 0.06,
               color: getBorderColor('sls'),
-              fillOpacity: 0.03,
+              fillOpacity: 0.02,
               fillRule: 'nonzero'
             };
           }
@@ -1713,9 +1711,9 @@
           // Wilayah yang terpilih / cocok
           return {
             fillColor: getSlsColor(feature.properties.kode),
-            weight: isKpiActive ? 1.6 : 0.5,
-            opacity: 1,
-            color: isKpiActive ? (currentStatusFilter === 'done' ? '#10b981' : (currentStatusFilter === 'in_progress' ? '#f59e0b' : '#ef4444')) : getBorderColor('sls'),
+            weight: isKpiActive ? 0.4 : 0.25,
+            opacity: 0.9,
+            color: getBorderColor('sls'),
             fillOpacity: isKpiActive ? (currentBasemapType === 'satellite' ? 0.65 : 0.55) : (currentBasemapType === 'satellite' ? 0.50 : 0.42),
             fillRule: 'nonzero'
           };
@@ -1736,17 +1734,17 @@
           // Wilayah yang TIDAK terpilih / TIDAK cocok filter: tetap redup (dimmed), jangan diberi sorotan penuh
           if (!isSelectedKec || !matchesKpi) {
             layer.setStyle({
-              weight: 0.5,
+              weight: 0.2,
               color: '#94a3b8',
-              opacity: 0.25,
-              fillOpacity: 0.06
+              opacity: 0.15,
+              fillOpacity: 0.04
             });
             return;
           }
 
           if (isOutlineOnlyMode) {
             layer.setStyle({
-              weight: 2.5,
+              weight: 1.5,
               color: getHoverBorderColor(),
               fillOpacity: 0
             });
@@ -1764,7 +1762,7 @@
 
           layer.setStyle({
             fillColor: baseColor,
-            weight: 2.2,
+            weight: 1.2,
             color: getHoverBorderColor(),
             opacity: 1,
             fillOpacity: currentBasemapType === 'satellite' ? 0.70 : 0.60
