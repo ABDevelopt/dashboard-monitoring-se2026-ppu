@@ -1696,17 +1696,12 @@
           }
 
           const totalSls = activeSls.length;
-          const selesaiCount = activeSls.filter(s => {
-            const target = s.target_fasih || 0;
-            const real = (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0);
-            return s.selesai === 1 || (target > 0 && real >= target);
-          }).length;
+          const selesaiCount = activeSls.filter(s => s.selesai === 1).length;
 
           const inProgressCount = activeSls.filter(s => {
-            const target = s.target_fasih || 0;
             const real = (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0);
             const draft = s.draft || 0;
-            const isDone = s.selesai === 1 || (target > 0 && real >= target);
+            const isDone = s.selesai === 1;
             return !isDone && (real > 0 || draft > 0);
           }).length;
 
@@ -1751,10 +1746,9 @@
             if (slsLayer) {
               slsLayer.eachLayer(layer => {
                 const stat = slsStats.find(s => s.kode === layer.feature.properties.kode);
-                const targetFasih = stat ? stat.target_fasih : 0;
                 const real = stat ? ((stat.submitted_by_pcl || 0) + (stat.approved || 0) + (stat.rejected || 0)) : 0;
                 const draft = stat ? (stat.draft || 0) : 0;
-                const isDone = stat && (stat.selesai === 1 || (targetFasih > 0 && real >= targetFasih));
+                const isDone = stat && stat.selesai === 1;
                 const isInProgress = !isDone && (real > 0 || draft > 0);
                 const isNotStarted = !isDone && !isInProgress;
 
