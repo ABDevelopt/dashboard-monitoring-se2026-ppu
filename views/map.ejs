@@ -80,13 +80,13 @@
     z-index: 1000;
     width: 350px;
     max-width: calc(100% - 28px);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 60%, rgba(15, 23, 42, 0.42) 100%);
-    backdrop-filter: blur(28px) saturate(210%) brightness(105%);
-    -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(105%);
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(15, 23, 42, 0.52) 80%, rgba(255, 255, 255, 0.08) 100%);
+    backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 20px;
     padding: 8px 13px 12px 13px;
-    box-shadow: 0 14px 40px 0 rgba(0, 0, 0, 0.42), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.38), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25);
+    box-shadow: 0 16px 45px 0 rgba(0, 0, 0, 0.45), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.50), inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -97,9 +97,9 @@
     user-select: none !important;
     cursor: grabbing !important;
     transform: scale(1.02) !important;
-    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.60), inset 0 1px 1.5px rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), inset 0 1.5px 2px rgba(255, 255, 255, 0.65) !important;
     transition: none !important;
-    opacity: 0.96;
+    opacity: 0.97;
     z-index: 1050;
   }
 
@@ -124,52 +124,53 @@
     width: 38px;
     height: 4px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.35);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.40);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.6);
     transition: all 0.2s ease;
   }
 
   .gmaps-panel-drag-header:hover .drag-pill-indicator {
     background: var(--accent-cyan);
     width: 48px;
-    box-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
   }
 
   body.light-mode .drag-pill-indicator {
-    background: rgba(0, 0, 0, 0.22);
+    background: rgba(0, 0, 0, 0.25);
   }
 
   body.light-mode .gmaps-floating-search-panel {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.38) 100%);
-    backdrop-filter: blur(28px) saturate(190%) brightness(102%);
-    -webkit-backdrop-filter: blur(28px) saturate(190%) brightness(102%);
-    border: 1px solid rgba(255, 255, 255, 0.75);
-    box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.12), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.90);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(241, 245, 249, 0.65) 100%);
+    backdrop-filter: blur(32px) saturate(200%) brightness(103%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(103%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: 0 14px 36px 0 rgba(0, 0, 0, 0.10), inset 0 1.5px 2.5px 0 rgba(255, 255, 255, 0.98), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.04);
   }
 
   .gmaps-search-box {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(15, 23, 42, 0.30) 100%);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(15, 23, 42, 0.35) 100%);
+    backdrop-filter: blur(20px) saturate(190%);
+    -webkit-backdrop-filter: blur(20px) saturate(190%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 999px;
     padding: 6px 14px;
-    box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.30), inset 0 0.5px 0 rgba(255, 255, 255, 0.25);
-    transition: all 0.2s ease;
+    box-shadow: inset 0 1.5px 2px rgba(0, 0, 0, 0.35), inset 0 0.5px 1px rgba(255, 255, 255, 0.35), 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   body.light-mode .gmaps-search-box {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.80) 0%, rgba(241, 245, 249, 0.55) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow: inset 0 1.5px 2px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.04);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(241, 245, 249, 0.60) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: inset 0 1.5px 2px rgba(0, 0, 0, 0.05), inset 0 0.5px 1px rgba(255, 255, 255, 0.95), 0 2px 8px rgba(0, 0, 0, 0.04);
   }
 
   .gmaps-search-box:focus-within {
     border-color: var(--accent-cyan);
-    box-shadow: 0 0 0 2.5px rgba(6, 182, 212, 0.35), inset 0 1px 2px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(6, 182, 212, 0.12) 100%);
+    box-shadow: 0 0 0 2.5px rgba(6, 182, 212, 0.40), inset 0 1.5px 2px rgba(0, 0, 0, 0.25), inset 0 0.5px 1px rgba(255, 255, 255, 0.50);
   }
 
   .gmaps-search-box .search-icon {
@@ -188,8 +189,8 @@
   }
 
   .gmaps-icon-btn {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
     color: var(--text-secondary);
     cursor: pointer;
     padding: 4px;
@@ -200,19 +201,22 @@
     align-items: center;
     justify-content: center;
     font-size: 12px;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3);
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   body.light-mode .gmaps-icon-btn {
     background: rgba(0, 0, 0, 0.04);
     border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8);
   }
 
   .gmaps-icon-btn:hover {
     color: var(--accent-cyan);
-    background: rgba(6, 182, 212, 0.15);
-    border-color: rgba(6, 182, 212, 0.35);
-    transform: rotate(-90deg) scale(1.08);
+    background: rgba(6, 182, 212, 0.20);
+    border-color: rgba(6, 182, 212, 0.45);
+    transform: rotate(-90deg) scale(1.10);
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.6);
   }
 
   .gmaps-control-row {
@@ -227,11 +231,11 @@
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    background-color: rgba(15, 23, 42, 0.35);
+    background-color: rgba(15, 23, 42, 0.40);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.22);
     color: var(--text-primary);
     font-size: 11.5px;
     font-weight: 600;
@@ -247,39 +251,42 @@
     min-width: 130px;
     outline: none;
     box-sizing: border-box;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.15);
-    transition: all 0.2s ease;
+    backdrop-filter: blur(20px) saturate(190%);
+    -webkit-backdrop-filter: blur(20px) saturate(190%);
+    box-shadow: inset 0 1.5px 2px rgba(0, 0, 0, 0.30), inset 0 0.5px 1px rgba(255, 255, 255, 0.30), 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   body.light-mode .gmaps-select-pill {
-    background-color: rgba(255, 255, 255, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.04);
+    background-color: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: inset 0 1px 1.5px rgba(0, 0, 0, 0.04), inset 0 0.5px 1px rgba(255, 255, 255, 0.95), 0 2px 6px rgba(0, 0, 0, 0.04);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   }
 
   .gmaps-select-pill:hover, .gmaps-select-pill:focus {
     border-color: var(--accent-cyan);
-    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.35);
+    background-color: rgba(15, 23, 42, 0.50);
+    box-shadow: 0 0 0 2.5px rgba(6, 182, 212, 0.40), inset 0 1.5px 2px rgba(0, 0, 0, 0.25), inset 0 0.5px 1px rgba(255, 255, 255, 0.50);
   }
 
   .gmaps-pill-group {
     display: inline-flex;
     align-items: center;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(15, 23, 42, 0.30) 100%);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(15, 23, 42, 0.35) 100%);
+    backdrop-filter: blur(20px) saturate(190%);
+    -webkit-backdrop-filter: blur(20px) saturate(190%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 999px;
     padding: 2.5px;
     gap: 2px;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: inset 0 1.5px 2px rgba(0, 0, 0, 0.30), inset 0 0.5px 1px rgba(255, 255, 255, 0.30), 0 3px 10px rgba(0, 0, 0, 0.20);
   }
 
   body.light-mode .gmaps-pill-group {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.70) 0%, rgba(241, 245, 249, 0.45) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.04);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.82) 0%, rgba(241, 245, 249, 0.55) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: inset 0 1px 1.5px rgba(0, 0, 0, 0.04), inset 0 0.5px 1px rgba(255, 255, 255, 0.95), 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 
   .gmaps-pill-btn {
@@ -301,18 +308,18 @@
 
   .gmaps-pill-btn:hover {
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.10);
   }
 
   body.light-mode .gmaps-pill-btn:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(0, 0, 0, 0.06);
   }
 
   .gmaps-pill-btn.active {
     background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
     color: #ffffff !important;
     font-weight: 600;
-    box-shadow: 0 3px 12px rgba(37, 99, 235, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.40);
+    box-shadow: 0 3px 12px rgba(37, 99, 235, 0.45), inset 0 1px 1.5px rgba(255, 255, 255, 0.55), inset 0 -1px 1px rgba(0, 0, 0, 0.25) !important;
   }
 
   /* Ultra-Lightweight Minimalist Polygon Progress Badges */
@@ -466,7 +473,7 @@
   body.light-mode .status-1   { background: #ef4444 !important; color: #ffffff !important; }
   body.light-mode .status-0   { background: #64748b !important; color: #ffffff !important; }
 
-  /* Floating KPI Bar (Top Right) - Simplified Minimalist Liquid Glass Capsule */
+  /* Floating KPI Bar (Top Right) - iPhone Liquid Glass Capsule */
   .gmaps-floating-kpi-bar {
     position: absolute;
     top: 14px;
@@ -474,14 +481,14 @@
     z-index: 1000;
     display: inline-flex;
     align-items: center;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 60%, rgba(15, 23, 42, 0.45) 100%);
-    backdrop-filter: blur(28px) saturate(210%) brightness(105%);
-    -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(105%);
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(15, 23, 42, 0.52) 80%, rgba(255, 255, 255, 0.08) 100%);
+    backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 999px;
     padding: 3px;
     gap: 3px;
-    box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.38), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.35);
+    box-shadow: 0 14px 40px 0 rgba(0, 0, 0, 0.42), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.48), inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.25);
     max-width: calc(100% - 28px);
     overflow-x: auto;
     scrollbar-width: none;
@@ -489,9 +496,11 @@
   .gmaps-floating-kpi-bar::-webkit-scrollbar { display: none; }
 
   body.light-mode .gmaps-floating-kpi-bar {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.40) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), inset 0 1.5px 2px rgba(255, 255, 255, 0.95);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(241, 245, 249, 0.65) 100%);
+    backdrop-filter: blur(32px) saturate(200%) brightness(103%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(103%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.08), inset 0 1.5px 2.5px 0 rgba(255, 255, 255, 0.98), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.04);
   }
 
   .gmaps-kpi-pill {
@@ -513,11 +522,11 @@
 
   .gmaps-kpi-pill:hover {
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.10);
   }
 
   body.light-mode .gmaps-kpi-pill:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: rgba(0, 0, 0, 0.05);
   }
 
   .gmaps-kpi-pill strong {
@@ -525,15 +534,15 @@
   }
 
   .gmaps-kpi-pill.active-filter {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.06) 100%) !important;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.08) 100%) !important;
     color: var(--text-primary) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.45) !important;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.30), inset 0 1px 1.5px rgba(255, 255, 255, 0.60), inset 0 -1px 1px rgba(0, 0, 0, 0.20) !important;
   }
 
   body.light-mode .gmaps-kpi-pill.active-filter {
     background: #ffffff !important;
     color: #0f172a !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08), inset 0 1.5px 2px rgba(255, 255, 255, 1) !important;
   }
 
   /* Fullscreen Presentation / Command Center Mode */
@@ -580,17 +589,17 @@
     width: 40px;
     height: 40px;
     border-radius: 999px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.03) 60%, rgba(15, 23, 42, 0.42) 100%);
-    backdrop-filter: blur(28px) saturate(210%) brightness(105%);
-    -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(105%);
-    border: 1px solid rgba(255, 255, 255, 0.24);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(15, 23, 42, 0.50) 80%, rgba(255, 255, 255, 0.08) 100%);
+    backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
     color: var(--text-primary);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 15px;
     cursor: pointer;
-    box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.38), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.40), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.20);
+    box-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.42), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.50), inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.25);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -598,8 +607,8 @@
     color: var(--accent-cyan);
     border-color: var(--accent-cyan);
     transform: translateY(-2px) scale(1.06);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.24) 0%, rgba(6, 182, 212, 0.20) 100%);
-    box-shadow: 0 14px 36px 0 rgba(0, 0, 0, 0.45), inset 0 1px 2px 0 rgba(255, 255, 255, 0.60);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.26) 0%, rgba(6, 182, 212, 0.22) 100%);
+    box-shadow: 0 16px 40px 0 rgba(0, 0, 0, 0.50), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.70);
   }
 
   .gmaps-floating-square-btn:active {
@@ -614,20 +623,22 @@
     z-index: 1000;
     display: inline-flex;
     align-items: center;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 60%, rgba(15, 23, 42, 0.42) 100%);
-    backdrop-filter: blur(28px) saturate(210%) brightness(105%);
-    -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(105%);
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(15, 23, 42, 0.50) 80%, rgba(255, 255, 255, 0.08) 100%);
+    backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 999px;
     padding: 3px;
     gap: 3px;
-    box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.38), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.35);
+    box-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.42), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.48), inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.25);
   }
 
   body.light-mode .gmaps-floating-basemap-pill {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.40) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), inset 0 1.5px 2px rgba(255, 255, 255, 0.95);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(241, 245, 249, 0.65) 100%);
+    backdrop-filter: blur(32px) saturate(200%) brightness(103%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(103%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.08), inset 0 1.5px 2.5px 0 rgba(255, 255, 255, 0.98), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.04);
   }
 
   /* GPS Locating Active Radar State */
@@ -651,10 +662,10 @@
     left: 50%;
     transform: translateX(-50%) translateY(-25px);
     z-index: 1050;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.04) 60%, rgba(15, 23, 42, 0.65) 100%);
-    backdrop-filter: blur(28px) saturate(210%) brightness(105%);
-    -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(105%);
-    border: 1px solid rgba(255, 255, 255, 0.26);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.05) 40%, rgba(15, 23, 42, 0.70) 80%, rgba(255, 255, 255, 0.10) 100%);
+    backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    border: 1px solid rgba(255, 255, 255, 0.30);
     border-radius: 999px;
     padding: 7px 18px;
     font-size: 12px;
@@ -663,7 +674,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    box-shadow: 0 14px 40px 0 rgba(0, 0, 0, 0.45), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.45);
+    box-shadow: 0 16px 45px 0 rgba(0, 0, 0, 0.50), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.55), inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.30);
     opacity: 0;
     pointer-events: none;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -677,16 +688,18 @@
 
   body.light-mode .gps-toast-pill {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.55) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), inset 0 1.5px 2px rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(32px) saturate(200%) brightness(103%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(103%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), inset 0 1.5px 2.5px rgba(255, 255, 255, 0.98);
   }
 
   body.light-mode .gmaps-floating-square-btn {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.80) 0%, rgba(255, 255, 255, 0.45) 100%);
-    backdrop-filter: blur(28px) saturate(190%) brightness(102%);
-    -webkit-backdrop-filter: blur(28px) saturate(190%) brightness(102%);
-    border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow: 0 10px 24px 0 rgba(0, 0, 0, 0.08), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.50) 100%);
+    backdrop-filter: blur(32px) saturate(200%) brightness(103%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(103%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: 0 10px 28px 0 rgba(0, 0, 0, 0.08), inset 0 1.5px 2.5px 0 rgba(255, 255, 255, 0.98);
   }
 
   @media (max-width: 992px) {
@@ -709,22 +722,22 @@
     z-index: 1000;
     width: 390px;
     max-width: calc(100% - 28px);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 50%, rgba(15, 23, 42, 0.45) 100%);
-    backdrop-filter: blur(32px) saturate(210%) brightness(105%);
-    -webkit-backdrop-filter: blur(32px) saturate(210%) brightness(105%);
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(15, 23, 42, 0.55) 80%, rgba(255, 255, 255, 0.06) 100%);
+    backdrop-filter: blur(36px) saturate(220%) brightness(108%);
+    -webkit-backdrop-filter: blur(36px) saturate(220%) brightness(108%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 22px;
-    box-shadow: 0 20px 50px 0 rgba(0, 0, 0, 0.48), inset 0 1px 2px 0 rgba(255, 255, 255, 0.38), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25);
+    box-shadow: 0 24px 60px 0 rgba(0, 0, 0, 0.52), inset 0 1.5px 2.5px 0 rgba(255, 255, 255, 0.45), inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.30);
     overflow: hidden;
     transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s ease;
   }
 
   body.light-mode .gmaps-floating-drawer-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.45) 100%);
-    backdrop-filter: blur(32px) saturate(190%) brightness(102%);
-    -webkit-backdrop-filter: blur(32px) saturate(190%) brightness(102%);
-    border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow: 0 20px 45px 0 rgba(0, 0, 0, 0.14), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(241, 245, 249, 0.65) 100%);
+    backdrop-filter: blur(36px) saturate(200%) brightness(103%);
+    -webkit-backdrop-filter: blur(36px) saturate(200%) brightness(103%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: 0 22px 50px 0 rgba(0, 0, 0, 0.14), inset 0 1.5px 2.5px 0 rgba(255, 255, 255, 0.98), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.04);
   }
 
   .gmaps-drawer-header {
@@ -732,7 +745,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px 14px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   }
 
   body.light-mode .gmaps-drawer-header {
@@ -762,14 +775,14 @@
 
   .gmaps-tab-btn:hover {
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.10);
   }
 
   .gmaps-tab-btn.active {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.30) 0%, rgba(37, 99, 235, 0.15) 100%);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.35) 0%, rgba(37, 99, 235, 0.20) 100%);
     color: var(--accent-blue);
-    border: 1px solid rgba(59, 130, 246, 0.40);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.20), inset 0 1px 1px rgba(255, 255, 255, 0.30);
+    border: 1px solid rgba(59, 130, 246, 0.45);
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25), inset 0 1px 1.5px rgba(255, 255, 255, 0.40);
   }
 
   .gmaps-collapse-btn {
