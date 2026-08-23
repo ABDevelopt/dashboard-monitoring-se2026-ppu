@@ -137,79 +137,6 @@
     color: var(--accent-blue);
   }
 
-  /* Fuzzy BM25 Search Dropdown */
-  .gmaps-search-results {
-    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.98);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    max-height: 250px;
-    overflow-y: auto;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 4px;
-    margin-top: 2px;
-    z-index: 1005;
-  }
-
-  body.light-mode .gmaps-search-results {
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
-  }
-
-  .gmaps-search-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 7px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.15s ease;
-    text-decoration: none;
-    color: var(--text-primary);
-  }
-
-  .gmaps-search-item:hover, .gmaps-search-item.selected {
-    background: rgba(59, 130, 246, 0.18);
-  }
-
-  .gmaps-search-item-info {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    min-width: 0;
-    flex: 1;
-  }
-
-  .gmaps-search-item-title {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .gmaps-search-item-sub {
-    font-size: 10.5px;
-    color: var(--text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .gmaps-search-item-badge {
-    font-size: 9.5px;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 4px;
-    flex-shrink: 0;
-    margin-left: 8px;
-  }
-
   .gmaps-control-row {
     display: flex;
     align-items: center;
@@ -870,12 +797,11 @@
     <div class="gmaps-floating-search-panel">
       <div class="gmaps-search-box">
         <i class="bi bi-search search-icon"></i>
-        <input type="text" id="mapSearchInput" placeholder="Cari desa, SLS, atau petugas..." autocomplete="off" />
+        <input type="text" id="mapSearchInput" placeholder="Cari nama desa atau SLS..." />
         <button id="btnResetView" class="gmaps-icon-btn" title="Reset Pandangan Peta">
           <i class="bi bi-arrow-counterclockwise"></i>
         </button>
       </div>
-      <div id="mapSearchResults" class="gmaps-search-results d-none"></div>
       
       <!-- Row 2: Filter Wilayah & Tingkat Layer -->
       <div class="gmaps-control-row">
@@ -2014,6 +1940,7 @@
           kecLayer = L.geoJSON(kecGeoJson, {
             style: kecStyle,
             onEachFeature: (feature, layer) => {
+              layer._searchKey = (feature.properties.nmkec || '').toLowerCase();
               const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === feature.properties.nmkec.toUpperCase());
               const fasihPct = stat ? parseFloat(stat.fasih_pct_str || 0) : 0;
               const totalFasih = stat ? stat.target_fasih_total : 0;
@@ -2070,6 +1997,7 @@
           desaLayer = L.geoJSON(desaGeoJson, {
             style: desaStyle,
             onEachFeature: (feature, layer) => {
+              layer._searchKey = `${feature.properties.nmdesa || ''} ${feature.properties.nmkec || ''} ${feature.properties.iddesa || ''}`.toLowerCase();
               const stat = desaStats.find(s => s.iddesa === feature.properties.iddesa);
               const total = stat ? stat.total_subsls : 0;
               const selesai = stat ? stat.selesai : 0;
@@ -2133,6 +2061,8 @@
           slsLayer = L.geoJSON(slsGeoJson, {
             style: slsStyle,
             onEachFeature: (feature, layer) => {
+              const stat = slsStats.find(s => s.kode === feature.properties.kode);
+              layer._searchKey = `${feature.properties.nmsls || ''} ${feature.properties.nmdesa || ''} ${feature.properties.nmkec || ''} ${feature.properties.kode || ''} ${stat ? stat.pcl || '' : ''} ${stat ? stat.pml || '' : ''}`.toLowerCase();
               layer.on({
                 mouseover: highlightFeature,
                 mouseout: resetHighlightSls,
@@ -2216,9 +2146,6 @@
             setupKecLayer();
             setupDesaLayer();
 
-            // Build initial Fuzzy BM25 Search Index for Kecamatan and Desa
-            buildMapSearchIndex();
-
             if (activeLayerName === 'kec' && kecLayer) {
               kecLayer.addTo(map);
             } else if (desaLayer) {
@@ -2255,8 +2182,6 @@
             const res = await fetch('/data/sls_boundaries.geojson');
             slsGeoJson = await res.json();
             setupSlsLayer();
-            // Rebuild Search Index with SLS boundaries included
-            buildMapSearchIndex();
           } catch (err) {
             console.error('Error lazy loading SLS geojson:', err);
           }
@@ -2511,28 +2436,24 @@
           }
         }
 
+        // -------------------------------------------------------------
+        // ULTRA-LIGHTWEIGHT & FAST SPATIAL SEARCH ENGINE
+        // -------------------------------------------------------------
+        let currentSearchQuery = '';
+        let isSearchActive = false;
+        let searchDebounceTimer = null;
+
         function applySearchHighlightToLayer(layer, layerType) {
-          const q = mapSearchInput ? mapSearchInput.value.toLowerCase().trim() : '';
-          if (!q) {
+          if (!isSearchActive || !currentSearchQuery) {
             if (layerType === 'kec') layer.setStyle(kecStyle(layer.feature));
             else if (layerType === 'desa') layer.setStyle(desaStyle(layer.feature));
             else if (layerType === 'sls') layer.setStyle(slsStyle(layer.feature));
             return;
           }
 
-          const p = layer.feature.properties;
-          let isMatch = false;
-          if (layerType === 'kec') {
-            const str = `kecamatan ${p.nmkec} ${p.nmkec}`;
-            isMatch = str.toLowerCase().includes(q) || (window.fuzzyMatch && window.fuzzyMatch(str, q, 0.45));
-          } else if (layerType === 'desa') {
-            const str = `${p.nmdesa} ${p.nmkec} ${p.iddesa}`;
-            isMatch = str.toLowerCase().includes(q) || (window.fuzzyMatch && window.fuzzyMatch(str, q, 0.45));
-          } else if (layerType === 'sls') {
-            const stat = slsStats.find(s => s.kode === p.kode);
-            const str = `${p.nmsls} ${p.nmdesa} ${p.nmkec} ${p.kode} ${stat ? stat.pcl : ''} ${stat ? stat.pml : ''}`;
-            isMatch = str.toLowerCase().includes(q) || (window.fuzzyMatch && window.fuzzyMatch(str, q, 0.45));
-          }
+          const terms = currentSearchQuery.split(/\s+/).filter(Boolean);
+          const key = layer._searchKey || '';
+          const isMatch = terms.every(term => key.includes(term));
 
           if (isMatch) {
             layer.setStyle({
@@ -2543,211 +2464,63 @@
             });
           } else {
             layer.setStyle({
-              opacity: 0.15,
-              fillOpacity: 0.03
+              opacity: 0.12,
+              fillOpacity: 0.02
             });
           }
         }
 
-        function selectSearchResult(doc) {
-          const resultsContainer = document.getElementById('mapSearchResults');
-          if (resultsContainer) resultsContainer.classList.add('d-none');
-          if (mapSearchInput) mapSearchInput.value = doc.title;
-          activeDropdownIndex = -1;
-
-          // Switch layer level if necessary
-          if (doc.type === 'kec' && activeLayerName !== 'kec') {
-            btnLayerKec.click();
-          } else if (doc.type === 'desa' && activeLayerName !== 'desa') {
-            btnLayerDesa.click();
-          } else if (doc.type === 'sls' && activeLayerName !== 'sls') {
-            btnLayerSls.click();
-          }
-
-          setTimeout(() => {
-            let targetLayer = null;
-            const currentL = activeLayerName === 'kec' ? kecLayer : (activeLayerName === 'desa' ? desaLayer : slsLayer);
-            if (currentL) {
-              currentL.eachLayer(l => {
-                if (doc.type === 'kec' && l.feature.properties.nmkec === doc.properties.nmkec) {
-                  targetLayer = l;
-                } else if (doc.type === 'desa' && l.feature.properties.iddesa === doc.properties.iddesa) {
-                  targetLayer = l;
-                } else if (doc.type === 'sls' && l.feature.properties.kode === doc.properties.kode) {
-                  targetLayer = l;
-                }
-              });
-            }
-
-            if (targetLayer) {
-              if (targetLayer.getBounds) {
-                map.fitBounds(targetLayer.getBounds(), { padding: [60, 60], maxZoom: 16 });
-              } else if (targetLayer.getLatLng) {
-                map.setView(targetLayer.getLatLng(), 15);
-              }
-
-              // Fire click to open detail card & popup
-              targetLayer.fire('click');
-
-              // Flash highlight on target
-              targetLayer.setStyle({
-                weight: 3.5,
-                color: '#f59e0b',
-                fillOpacity: 0.70
-              });
-            }
-          }, 120);
-        }
-
         function performMapSearch(query) {
-          const q = query.toLowerCase().trim();
-          const resultsContainer = document.getElementById('mapSearchResults');
+          const q = (query || '').toLowerCase().trim();
+          currentSearchQuery = q;
+          isSearchActive = q.length > 0;
 
-          if (!q) {
-            if (resultsContainer) {
-              resultsContainer.innerHTML = '';
-              resultsContainer.classList.add('d-none');
-            }
+          if (!isSearchActive) {
             updateActiveLayerStyles();
             return;
           }
 
-          if (!mapBM25Index) {
-            buildMapSearchIndex();
-          }
-
-          let matchedDocs = [];
-          if (mapBM25Index) {
-            const searchResults = mapBM25Index.search(q, 0.05);
-            matchedDocs = searchResults.map(r => r.doc);
-          } else {
-            matchedDocs = mapSearchDocs.filter(d => window.fuzzyMatch ? window.fuzzyMatch(d.text, q, 0.45) : d.text.toLowerCase().includes(q));
-          }
-
-          // Update Dropdown List
-          if (resultsContainer) {
-            activeDropdownIndex = -1;
-            if (matchedDocs.length > 0) {
-              resultsContainer.classList.remove('d-none');
-              resultsContainer.innerHTML = matchedDocs.slice(0, 6).map((doc, idx) => {
-                let typeBadge = '';
-                if (doc.type === 'kec') typeBadge = '<span class="badge badge-purple gmaps-search-item-badge">Kecamatan</span>';
-                else if (doc.type === 'desa') typeBadge = '<span class="badge badge-blue gmaps-search-item-badge">Desa</span>';
-                else if (doc.type === 'sls') typeBadge = '<span class="badge badge-green gmaps-search-item-badge">SLS</span>';
-
-                return `
-                  <div class="gmaps-search-item" data-id="${doc.id}" data-index="${idx}">
-                    <div class="gmaps-search-item-info">
-                      <div class="gmaps-search-item-title">${doc.title}</div>
-                      <div class="gmaps-search-item-sub">${doc.sub}</div>
-                    </div>
-                    ${typeBadge}
-                  </div>
-                `;
-              }).join('');
-
-              resultsContainer.querySelectorAll('.gmaps-search-item').forEach(el => {
-                el.addEventListener('click', () => {
-                  const docId = el.getAttribute('data-id');
-                  const doc = mapSearchDocs.find(d => d.id === docId);
-                  if (doc) selectSearchResult(doc);
-                });
-              });
-            } else {
-              resultsContainer.classList.remove('d-none');
-              resultsContainer.innerHTML = `
-                <div style="padding: 10px; text-align: center; font-size: 11.5px; color: var(--text-muted);">
-                  <i class="bi bi-search"></i> Tidak ditemukan wilayah atau SLS yang cocok
-                </div>
-              `;
-            }
-          }
-
-          // Highlight on map active layer & fit bounds
-          let foundBounds = L.latLngBounds();
-          let hasMatch = false;
+          const terms = q.split(/\s+/).filter(Boolean);
           const currentLayer = activeLayerName === 'kec' ? kecLayer : (activeLayerName === 'desa' ? desaLayer : slsLayer);
+          if (!currentLayer) return;
 
-          if (currentLayer) {
-            currentLayer.eachLayer(layer => {
-              const p = layer.feature.properties;
-              let isMatch = false;
-              if (activeLayerName === 'kec') {
-                const str = `kecamatan ${p.nmkec} ${p.nmkec}`;
-                isMatch = str.toLowerCase().includes(q) || (window.fuzzyMatch && window.fuzzyMatch(str, q, 0.45));
-              } else if (activeLayerName === 'desa') {
-                const str = `${p.nmdesa} ${p.nmkec} ${p.iddesa}`;
-                isMatch = str.toLowerCase().includes(q) || (window.fuzzyMatch && window.fuzzyMatch(str, q, 0.45));
-              } else if (activeLayerName === 'sls') {
-                const stat = slsStats.find(s => s.kode === p.kode);
-                const str = `${p.nmsls} ${p.nmdesa} ${p.nmkec} ${p.kode} ${stat ? stat.pcl : ''} ${stat ? stat.pml : ''}`;
-                isMatch = str.toLowerCase().includes(q) || (window.fuzzyMatch && window.fuzzyMatch(str, q, 0.45));
-              }
+          let foundBounds = L.latLngBounds();
+          let matchCount = 0;
 
-              if (isMatch) {
-                layer.setStyle({
-                  weight: 2.8,
-                  color: '#06b6d4',
-                  opacity: 1,
-                  fillOpacity: currentBasemapType === 'satellite' ? 0.70 : 0.60
-                });
-                if (layer.getBounds) foundBounds.extend(layer.getBounds());
-                hasMatch = true;
-              } else {
-                layer.setStyle({
-                  opacity: 0.15,
-                  fillOpacity: 0.03
-                });
-              }
-            });
-          }
+          currentLayer.eachLayer(layer => {
+            const key = layer._searchKey || '';
+            const isMatch = terms.every(term => key.includes(term));
 
-          if (hasMatch && foundBounds.isValid()) {
-            map.fitBounds(foundBounds, { padding: [40, 40] });
+            if (isMatch) {
+              layer.setStyle({
+                weight: 2.8,
+                color: '#06b6d4',
+                opacity: 1,
+                fillOpacity: currentBasemapType === 'satellite' ? 0.70 : 0.60
+              });
+              if (layer.getBounds) foundBounds.extend(layer.getBounds());
+              matchCount++;
+            } else {
+              layer.setStyle({
+                opacity: 0.12,
+                fillOpacity: 0.02
+              });
+            }
+          });
+
+          if (matchCount > 0 && foundBounds.isValid()) {
+            map.fitBounds(foundBounds, { padding: [40, 40], maxZoom: 16 });
           }
         }
 
         if (mapSearchInput) {
           mapSearchInput.addEventListener('input', (e) => {
-            performMapSearch(e.target.value);
-          });
-
-          mapSearchInput.addEventListener('keydown', (e) => {
-            const resultsContainer = document.getElementById('mapSearchResults');
-            if (!resultsContainer || resultsContainer.classList.contains('d-none')) return;
-
-            const items = resultsContainer.querySelectorAll('.gmaps-search-item');
-            if (items.length === 0) return;
-
-            if (e.key === 'ArrowDown') {
-              e.preventDefault();
-              activeDropdownIndex = (activeDropdownIndex + 1) % items.length;
-              items.forEach((it, idx) => it.classList.toggle('selected', idx === activeDropdownIndex));
-            } else if (e.key === 'ArrowUp') {
-              e.preventDefault();
-              activeDropdownIndex = (activeDropdownIndex - 1 + items.length) % items.length;
-              items.forEach((it, idx) => it.classList.toggle('selected', idx === activeDropdownIndex));
-            } else if (e.key === 'Enter') {
-              e.preventDefault();
-              if (activeDropdownIndex >= 0 && activeDropdownIndex < items.length) {
-                items[activeDropdownIndex].click();
-              } else if (items.length > 0) {
-                items[0].click();
-              }
-            } else if (e.key === 'Escape') {
-              resultsContainer.classList.add('d-none');
-            }
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+              performMapSearch(e.target.value);
+            }, 120);
           });
         }
-
-        // Close search dropdown on click outside
-        document.addEventListener('click', (e) => {
-          const panel = document.querySelector('.gmaps-floating-search-panel');
-          const resultsContainer = document.getElementById('mapSearchResults');
-          if (panel && resultsContainer && !panel.contains(e.target)) {
-            resultsContainer.classList.add('d-none');
-          }
-        });
 
         // Initialize map & load data!
         bootstrap();
