@@ -352,6 +352,47 @@
 </div>
 
 <script>
+  window.togglePmlChart = function() {
+    const body = document.getElementById('pmlChartBody');
+    const chevron = document.getElementById('pmlChartChevron');
+    if (!body) return;
+    const isHidden = body.style.display === 'none' || !body.style.display;
+    if (isHidden) {
+      body.style.display = 'block';
+      if (chevron) chevron.style.transform = 'rotate(180deg)';
+      if (typeof window.initPmlHistoryChart === 'function') {
+        window.initPmlHistoryChart();
+      }
+    } else {
+      body.style.display = 'none';
+      if (chevron) chevron.style.transform = 'rotate(0deg)';
+    }
+  };
+
+  window.initPmlHistoryChart = function() {
+    requestAnimationFrame(() => {
+      const dataEl = document.getElementById('pmlHistoryData');
+      if (!dataEl) return;
+      try {
+        const data = JSON.parse(dataEl.textContent);
+        if (!data || !data.length) return;
+
+        // Retry if Chart.js / createPclHistoryChart not ready yet
+        if (typeof Chart === 'undefined' || typeof createPclHistoryChart !== 'function') {
+          setTimeout(window.initPmlHistoryChart, 150);
+          return;
+        }
+
+        const existingChart = Chart.getChart('pmlHistoryChartCanvas');
+        if (existingChart) existingChart.destroy();
+
+        createPclHistoryChart('pmlHistoryChartCanvas', data);
+      } catch (e) {
+        console.error('Failed to init PML history chart:', e);
+      }
+    });
+  };
+
   document.addEventListener('DOMContentLoaded', () => {
     makeTableSortable('pmlTable');
     makeTableSearchable('pmlSearch', 'pmlTable');
@@ -360,31 +401,6 @@
     <% if (filterPml) { %>
       makeListSearchable('detailPclSearch', 'detailPclList', '.detail-item');
     <% } %>
-
-    function initPmlHistoryChart() {
-      // Defer to next paint cycle so injected canvas has proper dimensions
-      requestAnimationFrame(() => {
-        const dataEl = document.getElementById('pmlHistoryData');
-        if (!dataEl) return;
-        try {
-          const data = JSON.parse(dataEl.textContent);
-          if (!data || !data.length) return;
-
-          // Retry if Chart.js / createPclHistoryChart not ready yet
-          if (typeof Chart === 'undefined' || typeof createPclHistoryChart !== 'function') {
-            setTimeout(initPmlHistoryChart, 150);
-            return;
-          }
-
-          const existingChart = Chart.getChart('pmlHistoryChartCanvas');
-          if (existingChart) existingChart.destroy();
-
-          createPclHistoryChart('pmlHistoryChartCanvas', data);
-        } catch (e) {
-          console.error('Failed to init PML history chart:', e);
-        }
-      });
-    }
 
     // AJAX Drilldown logic for PML
     const detailContainer = document.getElementById('pmlDetailContainer');
