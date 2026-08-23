@@ -427,7 +427,7 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
       log.info(`[STREAM:GEMINI] Tool-call loop ${loopCount}/${MAX_LOOPS}: ${functionCalls.map(f => f.name).join(', ')}`);
 
       for (const fc of functionCalls) {
-        onEvent('tool_start', { tool: fc.name, args: fc.args, message: `⚙️ Menjalankan alat bantu ${fc.name}...` });
+        onEvent('tool_start', { tool: fc.name, args: fc.args, message: `Mengambil data: ${fc.name}...` });
       }
 
       contents.push(candidate.content);
@@ -436,7 +436,7 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
         functionCalls.map(async (fc) => {
           const result = await runToolCall({ name: fc.name, args: fc.args });
           lastExecutedToolResult = { name: fc.name, args: fc.args, result };
-          onEvent('tool_end', { tool: fc.name, message: `✅ Selesai mengambil data` });
+          onEvent('tool_end', { tool: fc.name, message: `Selesai mengambil data` });
           return {
             functionResponse: {
               name: fc.name,
@@ -456,7 +456,7 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
       });
 
       // Pada turn final setelah tool dieksekusi, gunakan Native Stream teks murni agar token langsung mengalir lengkap
-      onEvent('status', { text: '✍️ Merumuskan jawaban...', step: 'writing' });
+      onEvent('status', { text: 'Merumuskan jawaban...', step: 'writing' });
       try {
         const textModel = genAI.getGenerativeModel({
           model: geminiModel,

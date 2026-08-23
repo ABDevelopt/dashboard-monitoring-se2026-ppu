@@ -37,6 +37,10 @@ const COMPACT_QUERY_GUIDELINES = `
   - Jika query manual via \`query_data\`, gunakan tabel \`summary_cache\` (kolom: pcl, submitted_total, approved_total, draft_total, target_fasih_total) ATAU tabel \`progres\` yang di-\`LEFT JOIN subsls_master m ON progres.kode = m.kode\` (karena kolom \`progres.pcl_name\` sering NULL, nama resmi petugas ada di \`m.pcl\`).
 - **Ringkasan & Wilayah**: Gunakan tool \`get_summary\` (parameter: kecamatan/desa jika ada) atau query ke \`summary_cache\`.
 - **Anomali Lapangan**: Gunakan tool \`get_anomaly\` untuk anomali usaha ganda, tidak dapat ditemui, atau rejeksi PML.
+- **Pertanyaan Multi-Kriteria (misal: Anomali + Petugas Tidak Aktif + Potensi Ganda)**:
+  - JANGAN menggabungkan seluruh kriteria berbeda dalam satu klausa WHERE AND yang terlalu ketat sehingga menghasilkan 0 baris data.
+  - Gunakan tool \`get_anomaly\` atau kueri terpisah untuk setiap indikator.
+  - JANGAN PERNAH hanya menjawab "Data tidak ditemukan untuk kriteria pencarian tersebut." Jika salah satu kondisi bernilai 0 (misalnya: tidak ada petugas yang progresnya 0 karena semua 165 PCL aktif bergerak), jelaskan status positif tersebut, lalu tetap sajikan data temuan anomali dan potensi ganda yang ada di sistem secara komprehensif!
 - **Rata-rata Penambahan Harian**: Gunakan \`query_data\` menghitung \`SUM(submitted_total + approved_total + rejected_total) / (SELECT COUNT(DISTINCT tanggal) FROM uploads)\` dari \`summary_cache\`.
 - **Penambahan Harian Terakhir (Delta Sesi/Hari)**: Gunakan \`query_data\` membandingkan realisasi upload terbaru dengan upload sesi sebelumnya.
 - **Detail SLS & Transaksi**: Gunakan \`query_data\` pada tabel \`progres\` JOIN \`subsls_master\` on kode.
@@ -44,7 +48,7 @@ const COMPACT_QUERY_GUIDELINES = `
 
 const SYSTEM_INSTRUCTION_STATIC = dbSchemaDescription + `
 
-## 🎯 ATURAN EMAS: FOKUS 100% PADA PERTANYAAN TERKINI (RECENCY FOCUS)
+## ATURAN EMAS: FOKUS 100% PADA PERTANYAAN TERKINI (RECENCY FOCUS)
 1. **Jawab HANYA Pertanyaan Terakhir**: Tanggapi secara eksklusif pertanyaan yang diajukan pada pesan pengguna saat ini. JANGAN PERNAH menjawab atau mengulang topik pertanyaan dari riwayat sebelumnya kecuali pengguna secara eksplisit meminta ("lanjutkan yang tadi", "bagaimana dengan dia?", dsb).
 2. **Kesesuaian Pemanggilan Tool**: Saat memanggil tool/fungsi (\`get_summary\`, \`get_petugas\`, \`get_anomaly\`, \`query_data\`), pastikan parameter dan kueri 100% relevan dengan entitas pertanyaan saat ini.
 3. **Hindari Greeting Berulang**: Jika ini adalah giliran tanya-jawab lanjutan, LANGSUNG berikan jawaban data, tabel, dan analisis tanpa kalimat perkenalan diri ulang.
@@ -246,13 +250,13 @@ function runSimulation(userMessage, chatHistory) {
 }
 
 async function streamSimulation(userMessage, chatHistory, onEvent, abortSignal) {
-  onEvent('status', { text: '⚙️ Menghubungkan ke basis data lokal...', step: 'simulation_query' });
+  onEvent('status', { text: 'Menghubungkan ke basis data lokal...', step: 'simulation_query' });
   await new Promise(r => setTimeout(r, 150));
 
   const simResult = runSimulation(userMessage, chatHistory);
   const text = simResult.content || '';
 
-  onEvent('status', { text: '✍️ Merumuskan jawaban...', step: 'streaming' });
+  onEvent('status', { text: 'Merumuskan jawaban...', step: 'streaming' });
 
   const words = text.split(/(\s+)/);
   let batch = '';
@@ -439,7 +443,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
     const current = uniqueTries[i];
 
     if (i > 0) {
-      onEvent('status', { text: `⚡ Mengalihkan ke model cadangan (${current.model})...`, step: 'smart_switch' });
+      onEvent('status', { text: `Mengalihkan ke model cadangan (${current.model})...`, step: 'smart_switch' });
     }
 
     const rawKeys = keyPool.getOrderedEligibleKeys(settings, current.model);
@@ -453,7 +457,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
       const kItem = keysToTry[kIdx];
       if (kIdx > 0) {
         onEvent('status', {
-          text: `🔑 Mengalihkan ke API Key ${kItem.label}...`,
+          text: `Mengalihkan ke API Key ${kItem.label}...`,
           step: 'key_switch'
         });
       }
