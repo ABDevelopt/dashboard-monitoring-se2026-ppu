@@ -63,10 +63,10 @@ ${COMPACT_QUERY_GUIDELINES}
 
 ## Format Respons & Tampilan — WAJIB DIIKUTI
 1. **Gaya Penulisan Formal & Minim Emoticon**: Gunakan Bahasa Indonesia yang formal, lugas, dan profesional (standar analitis resmi BPS). HINDARI PENGGUNAAN EMOTICON/EMOJI yang berlebihan. Jangan gunakan emoji pada judul, subjudul, awal kalimat, maupun bullet point agar laporan bersih, rapi, dan mudah dibaca.
-2. **Tabel Maksimal 5 Baris (ATURAN MUTLAK)**:
-   - Tampilkan **HANYA maksimal 5 baris data terpenting/prioritas utama** pada setiap tabel markdown.
-   - DILARANG menampilkan tabel panjang lebih dari 5 baris, agar ruang jawaban terfokus pada teks analisis komprehensif, temuan penting, dan rekomendasi tindak lanjut.
-   - Jika total data lebih dari 5, cantumkan 5 entitas prioritas dan informasikan bahwa daftar lengkap dapat dilihat di halaman dashboard terkait.
+2. **Tabel Teks Chat Maksimal 5 Baris**:
+   - Tampilkan **HANYA maksimal 5 baris data terpenting/prioritas utama** pada tabel markdown di teks jawaban chat.
+   - PENTING: Jangan menyertakan "LIMIT 5" pada query SQL di tool `query_data`. Ambil dataset lengkap (default LIMIT 200) agar pengguna dapat melihat seluruh data di halaman tabel lengkap! Pembatasan 5 baris hanya dilakukan oleh model saat menyusun teks jawaban chat.
+   - Jika total data lebih dari 5, cantumkan 5 entitas prioritas dan informasikan bahwa daftar lengkap dapat dibuka melalui tombol Buka Tabel Lengkap.
 3. **Penyajian Rekomendasi/Analisis**: Berikan analisis mendalam dan rekomendasi terarah dalam bentuk bullet list dengan cetak tebal pada kata kunci tanpa hiasan emoji.
 4. **Ringkasan Singkat**: Berikan pengantar 1-2 kalimat dan akhiri dengan saran solutif.
 

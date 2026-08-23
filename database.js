@@ -3437,10 +3437,19 @@ function executeAgentQueryById(id, surveyId) {
     if (record.query_params) {
       try { params = JSON.parse(record.query_params); } catch (_) {}
     }
-    const cleanSql = record.query_sql.trim();
+    let cleanSql = record.query_sql.trim().replace(/;+$/, '');
     if (!/^(select|with)\s/i.test(cleanSql)) {
       return { error: 'Hanya kueri SELECT yang diizinkan.' };
     }
+
+    // Hapus LIMIT kecil (misal LIMIT 5 atau LIMIT 10) agar halaman tabel mengeksekusi seluruh dataset lengkap
+    if (/\bLIMIT\s+\d+\s*$/i.test(cleanSql)) {
+      const match = cleanSql.match(/\bLIMIT\s+(\d+)\s*$/i);
+      if (match && parseInt(match[1], 10) <= 50) {
+        cleanSql = cleanSql.replace(/\bLIMIT\s+\d+\s*$/i, '').trim();
+      }
+    }
+
     const stmt = db.prepare(cleanSql);
     const rows = Object.keys(params).length > 0 ? stmt.all(params) : stmt.all();
     return {

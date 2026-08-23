@@ -69,7 +69,7 @@ router.get('/table', (req, res) => {
 
   res.render('agent-table', {
     title: 'Eksplorasi Data Tabel AI',
-    activePage: 'agent',
+    activePage: 'agent-table',
     queryId,
     query: queryRecord,
     rows,

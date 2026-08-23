@@ -1,85 +1,322 @@
-﻿<div class=fade-in>
-  <!-- ── Top Breadcrumb & Actions Header ── -->
-  <div class=d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4>
-    <div class=d-flex align-items-center gap-3>
-      <a href=<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent class=btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2 rounded-pill px-3 shadow-sm>
+﻿<div class=fade-in agent-table-page style=padding-bottom: 40px;>
+  <style>
+    /* Scoped styles for AI Data Table Explorer */
+    .agent-table-page {
+      max-width: 100%;
+      margin: 0 auto;
+    }
+    .at-header-banner {
+      background: var(--bg-card, #ffffff);
+      border: 1px solid var(--border, #e2e8f0);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .at-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .at-search-box {
+      position: relative;
+      flex: 1;
+      min-width: 240px;
+      max-width: 450px;
+    }
+    .at-search-box input {
+      width: 100%;
+      padding: 8px 12px 8px 34px;
+      font-size: 13px;
+      border: 1px solid var(--border, #cbd5e1);
+      border-radius: 8px;
+      background: var(--bg-primary, #f8fafc);
+      color: var(--text-primary, #0f172a);
+      outline: none;
+      transition: all 0.2s;
+    }
+    .at-search-box input:focus {
+      border-color: #2563eb;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    }
+    .at-search-box i {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted, #94a3b8);
+      font-size: 13px;
+    }
+    .at-actions-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .at-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      border-radius: 8px;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease-in-out;
+    }
+    .at-btn-primary {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+    }
+    .at-btn-primary:hover {
+      background: #1d4ed8;
+      color: #ffffff;
+    }
+    .at-btn-success {
+      background: #10b981;
+      color: #ffffff;
+      border-color: #10b981;
+    }
+    .at-btn-success:hover {
+      background: #059669;
+      color: #ffffff;
+    }
+    .at-btn-outline {
+      background: var(--bg-card, #ffffff);
+      color: var(--text-primary, #334155);
+      border-color: var(--border, #cbd5e1);
+    }
+    .at-btn-outline:hover {
+      background: var(--bg-subtle, #f1f5f9);
+      border-color: var(--text-muted, #94a3b8);
+      color: var(--text-primary, #0f172a);
+    }
+    .at-card {
+      background: var(--bg-card, #ffffff);
+      border: 1px solid var(--border, #e2e8f0);
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
+    .at-table-container {
+      width: 100%;
+      overflow-x: auto;
+      max-height: 680px;
+    }
+    .at-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+    .at-table th {
+      background: var(--bg-subtle, #f8fafc);
+      color: var(--text-muted, #475569);
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border, #e2e8f0);
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      user-select: none;
+    }
+    .at-table th.sortable {
+      cursor: pointer;
+    }
+    .at-table th.sortable:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .at-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border, #f1f5f9);
+      color: var(--text-primary, #1e293b);
+      white-space: nowrap;
+    }
+    .at-table tr:hover td {
+      background: var(--bg-subtle, #f8fafc);
+    }
+    .at-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 12px;
+    }
+    .at-badge-blue { background: rgba(37,99,235,0.12); color: #2563eb; }
+    .at-badge-green { background: rgba(16,185,129,0.12); color: #10b981; }
+    .at-badge-orange { background: rgba(249,115,22,0.12); color: #f97316; }
+    .at-badge-purple { background: rgba(147,51,234,0.12); color: #9333ea; }
+    .at-badge-gray { background: rgba(100,116,139,0.12); color: #64748b; }
+    
+    .at-pagination-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 18px;
+      background: var(--bg-subtle, #f8fafc);
+      border-top: 1px solid var(--border, #e2e8f0);
+      font-size: 12.5px;
+      color: var(--text-muted, #64748b);
+    }
+    .at-pagination-btns {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .at-page-btn {
+      min-width: 32px;
+      height: 32px;
+      padding: 0 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border, #cbd5e1);
+      border-radius: 6px;
+      background: var(--bg-card, #ffffff);
+      color: var(--text-primary, #334155);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .at-page-btn:hover:not(.disabled):not(.active) {
+      background: var(--bg-subtle, #f1f5f9);
+      border-color: var(--text-muted, #94a3b8);
+    }
+    .at-page-btn.active {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+    }
+    .at-page-btn.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    
+    /* Modal dialog */
+    .at-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 16px;
+    }
+    .at-modal-backdrop.hidden {
+      display: none;
+    }
+    .at-modal {
+      background: var(--bg-card, #ffffff);
+      border-radius: 12px;
+      max-width: 750px;
+      width: 100%;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+      overflow: hidden;
+      border: 1px solid var(--border, #e2e8f0);
+    }
+    .at-modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border, #e2e8f0);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .at-modal-body {
+      padding: 20px;
+      max-height: 480px;
+      overflow-y: auto;
+    }
+    .at-modal-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border, #e2e8f0);
+      display: flex;
+      justify-content: flex-end;
+      background: var(--bg-subtle, #f8fafc);
+    }
+  </style>
+
+  <!-- ── TOP BAR & ACTIONS ── -->
+  <div style=display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;>
+    <div style=display: flex; align-items: center; gap: 12px;>
+      <a href=<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent class=at-btn at-btn-outline style=border-radius: 20px;>
         <i class=bi bi-arrow-left></i> Kembali ke AI Chat
       </a>
       <div>
-        <h4 class=fw-bold mb-0 text-primary d-flex align-items-center gap-2>
-          <i class=bi bi-table></i> Eksplorasi Data Tabel AI
-        </h4>
-        <small class=text-muted>Hasil lengkap eksekusi kueri dari asisten AI Pananyo Taka</small>
+        <h2 style=font-size: 19px; font-weight: 800; color: var(--text-primary, #0f172a); margin: 0; display: flex; align-items: center; gap: 8px;>
+          <i class=bi bi-table style=color: #2563eb;></i> Eksplorasi Data Tabel AI
+        </h2>
+        <div style=font-size: 12px; color: var(--text-muted, #64748b);>Tabel lengkap hasil eksekusi kueri asisten AI Pananyo Taka</div>
       </div>
     </div>
 
-    <div class=d-flex align-items-center gap-2>
-      <a href=<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent/export-query/<%= queryId %>?format=xlsx class=btn btn-success btn-sm d-inline-flex align-items-center gap-2 rounded-pill px-3 shadow-sm title=Unduh file Excel (.xlsx)>
+    <div class=at-actions-group>
+      <a href=<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent/export-query/<%= queryId %>?format=xlsx class=at-btn at-btn-success title=Download Excel (.xlsx)>
         <i class=bi bi-file-earmark-excel-fill></i> Export Excel
       </a>
-      <a href=<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent/export-query/<%= queryId %>?format=csv class=btn btn-outline-success btn-sm d-inline-flex align-items-center gap-2 rounded-pill px-3 shadow-sm title=Unduh file CSV>
+      <a href=<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent/export-query/<%= queryId %>?format=csv class=at-btn at-btn-outline title=Download CSV>
         <i class=bi bi-filetype-csv></i> Export CSV
       </a>
+      <button type=button class=at-btn at-btn-outline onclick=document.getElementById('sqlModal').classList.remove('hidden')>
+        <i class=bi bi-code-slash></i> SQL Query
+      </button>
     </div>
   </div>
 
-  <% if (error) { %>
-    <div class=alert alert-danger shadow-sm rounded-3 d-flex align-items-center gap-3 mb-4>
-      <i class=bi bi-exclamation-triangle-fill fs-3 text-danger></i>
-      <div>
-        <h6 class=fw-bold mb-1>Gagal Menampilkan Data</h6>
-        <p class=mb-0 small><%= error %></p>
-      </div>
-    </div>
-  <% } %>
-
-  <!-- ── Query Context Banner ── -->
-  <div class=card shadow-sm border-0 rounded-3 mb-4 bg-light>
-    <div class=card-body p-3 p-md-4>
-      <div class=row align-items-center g-3>
-        <div class=col-lg-8>
-          <div class=d-flex align-items-center gap-2 mb-2>
-            <span class=badge bg-primary px-3 py-1 rounded-pill><i class=bi bi-robot></i> Prompt AI</span>
-            <span class=badge bg-secondary px-3 py-1 rounded-pill><%= query.tool_name || 'Kueri Data' %></span>
-            <% if (query.created_at) { %>
-              <span class=text-muted small><i class=bi bi-clock></i> <%= new Date(query.created_at).toLocaleString('id-ID') %></span>
-            <% } %>
-          </div>
-          <h5 class=fw-bold text-dark mb-1>
-            <%= query.prompt || 'Eksplorasi Data' %>
-          </h5>
-          <div class=small text-muted d-flex flex-wrap align-items-center gap-3 mt-2>
-            <span><strong>Total Data:</strong> <span class=badge bg-dark rounded-pill text-white><%= rows.length %> baris</span></span>
-            <% if (typeof latestUpload !== 'undefined' && latestUpload) { %>
-              <span><strong>Data Upload:</strong> <%= latestUpload.tanggal %> (ID: <%= latestUpload.id %>)</span>
-            <% } %>
-          </div>
+  <!-- ── QUERY INFO BANNER ── -->
+  <div class=at-header-banner>
+    <div style=display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px;>
+      <div style=flex: 1; min-width: 280px;>
+        <div style=display: flex; align-items: center; gap: 8px; margin-bottom: 6px;>
+          <span class=at-badge at-badge-blue><i class=bi bi-robot></i> Prompt Pertanyaan</span>
+          <span class=at-badge at-badge-purple><%= query.tool_name || 'Kueri Data' %></span>
+          <% if (query.created_at) { %>
+            <span style=font-size: 11.5px; color: var(--text-muted, #64748b);><i class=bi bi-clock></i> <%= new Date(query.created_at).toLocaleString('id-ID') %></span>
+          <% } %>
         </div>
-
-        <div class=col-lg-4 text-lg-end>
-          <button type=button class=btn btn-outline-dark btn-sm rounded-pill px-3 shadow-sm data-bs-toggle=modal data-bs-target=#sqlQueryModal>
-            <i class=bi bi-code-slash></i> Lihat SQL Query
-          </button>
+        <div style=font-size: 15px; font-weight: 700; color: var(--text-primary, #0f172a); margin-bottom: 6px;>
+          <%= query.prompt || 'Eksplorasi Data' %>
+        </div>
+        <div style=font-size: 12px; color: var(--text-muted, #64748b); display: flex; flex-wrap: wrap; align-items: center; gap: 16px;>
+          <span><strong>Total Data:</strong> <span class=at-badge at-badge-green id=totalRowsBadge style=font-size: 12px;><%= rows.length %> baris</span></span>
+          <% if (typeof latestUpload !== 'undefined' && latestUpload) { %>
+            <span><strong>Data Update:</strong> <%= latestUpload.tanggal %> (Upload ID: <%= latestUpload.id %>)</span>
+          <% } %>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── Table & Interactive Controls ── -->
-  <div class=card shadow-sm border-0 rounded-3 mb-5>
-    <div class=card-header bg-white border-bottom p-3>
-      <div class=row align-items-center g-3>
-        <div class=col-md-5>
-          <div class=input-group>
-            <span class=input-group-text bg-light border-end-0><i class=bi bi-search text-muted></i></span>
-            <input type=text id=tableSearchInput class=form-control bg-light border-start-0 placeholder=Cari di seluruh kolom...>
-          </div>
+  <!-- ── TABLE CONTROLS & DATA TABLE ── -->
+  <div class=at-card>
+    <div style=padding: 14px 18px; border-bottom: 1px solid var(--border, #e2e8f0);>
+      <div class=at-toolbar style=margin-bottom: 0;>
+        <div class=at-search-box>
+          <i class=bi bi-search></i>
+          <input type=text id=atSearchInput placeholder=Cari di seluruh kolom data... autocomplete=off>
         </div>
 
-        <div class=col-md-7 d-flex flex-wrap align-items-center justify-content-md-end gap-3>
-          <div class=d-flex align-items-center gap-2>
-            <small class=text-muted text-nowrap>Tampilkan:</small>
-            <select id=pageSizeSelect class=form-select form-select-sm style=width: auto;>
+        <div class=at-actions-group>
+          <div style=display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted, #64748b);>
+            <span>Tampilkan:</span>
+            <select id=atPageSizeSelect style=padding: 6px 10px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--bg-primary, #f8fafc); color: var(--text-primary, #0f172a);>
               <option value=10>10 baris</option>
               <option value=25 selected>25 baris</option>
               <option value=50>50 baris</option>
@@ -87,85 +324,75 @@
               <option value=all>Semua</option>
             </select>
           </div>
-          <button id=copyTableBtn class=btn btn-outline-secondary btn-sm rounded-pill px-3>
+          <button id=atCopyBtn class=at-btn at-btn-outline style=padding: 6px 12px;>
             <i class=bi bi-clipboard></i> Salin Tabel
           </button>
         </div>
       </div>
     </div>
 
-    <div class=card-body p-0>
+    <div class=at-table-container>
       <% if (!rows || rows.length === 0) { %>
-        <div class=p-5 text-center text-muted>
-          <i class=bi bi-inbox fs-1 d-block mb-2 text-secondary></i>
+        <div style=padding: 50px 20px; text-align: center; color: var(--text-muted, #64748b);>
+          <i class=bi bi-inbox style=font-size: 36px; display: block; margin-bottom: 8px; opacity: 0.5;></i>
           Tidak ada data yang tersedia untuk kueri ini.
         </div>
       <% } else { %>
         <% const columns = Object.keys(rows[0]); %>
-        <div class=table-responsive>
-          <table class=table table-hover table-striped align-middle mb-0 id=aiDataTable>
-            <thead class=table-light>
-              <tr>
-                <th style=width: 50px; class=text-center>#</th>
-                <% columns.forEach(col => { %>
-                  <th class=sortable-th cursor-pointer text-nowrap data-col=<%= col %>>
-                    <div class=d-flex align-items-center justify-content-between gap-2>
-                      <span><%= col.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %></span>
-                      <span class=sort-icon text-muted small><i class=bi bi-arrow-down-up></i></span>
-                    </div>
-                  </th>
-                <% }); %>
-              </tr>
-            </thead>
-            <tbody id=aiDataTableBody>
-              <!-- Rendered via JavaScript for dynamic filtering, sorting & pagination -->
-            </tbody>
-          </table>
-        </div>
+        <table class=at-table id=atMainTable>
+          <thead>
+            <tr>
+              <th style=width: 48px; text-align: center;>No</th>
+              <% columns.forEach(col => { %>
+                <th class=sortable data-col=<%= col %>>
+                  <div style=display: flex; align-items: center; justify-content: space-between; gap: 8px;>
+                    <span><%= col.replace(/_/g, ' ') %></span>
+                    <span class=sort-icon style=font-size: 11px; opacity: 0.5;><i class=bi bi-arrow-down-up></i></span>
+                  </div>
+                </th>
+              <% }); %>
+            </tr>
+          </thead>
+          <tbody id=atTableBody>
+            <!-- Rendered by client script -->
+          </tbody>
+        </table>
       <% } %>
     </div>
 
-    <div class=card-footer bg-white border-top p-3>
-      <div class=d-flex flex-wrap align-items-center justify-content-between gap-3>
-        <small class=text-muted id=paginationInfo>
-          Menampilkan 0 dari 0 data
-        </small>
-        <ul class=pagination pagination-sm mb-0 id=paginationContainer>
-          <!-- Rendered via JavaScript -->
-        </ul>
-      </div>
+    <div class=at-pagination-bar>
+      <div id=atPaginationInfo>Menampilkan data...</div>
+      <div class=at-pagination-btns id=atPaginationBtns></div>
     </div>
   </div>
 </div>
 
-<!-- ── Modal SQL Query Viewer ── -->
-<div class=modal fade id=sqlQueryModal tabindex=-1 aria-labelledby=sqlQueryModalLabel aria-hidden=true>
-  <div class=modal-dialog modal-lg modal-dialog-centered>
-    <div class=modal-content rounded-3 shadow>
-      <div class=modal-header>
-        <h5 class=modal-title fw-bold id=sqlQueryModalLabel>
-          <i class=bi bi-database-check text-primary></i> SQL Query Rekap Data
-        </h5>
-        <button type=button class=btn-close data-bs-dismiss=modal aria-label=Close></button>
+<!-- ── SQL QUERY MODAL ── -->
+<div id=sqlModal class=at-modal-backdrop hidden onclick=if(event.target === this) this.classList.add('hidden')>
+  <div class=at-modal>
+    <div class=at-modal-header>
+      <div style=font-weight: 700; font-size: 15px; color: var(--text-primary, #0f172a); display: flex; align-items: center; gap: 8px;>
+        <i class=bi bi-database-check style=color: #2563eb;></i> SQL Query Rekap Data
       </div>
-      <div class=modal-body p-4>
-        <p class=text-muted small mb-2>Query SQL yang dieksekusi secara aman (Read-Only) pada SQLite Database:</p>
-        <pre class=bg-dark text-light p-3 rounded-3 style=max-height: 320px; overflow-y: auto; font-size: 0.88rem;><code><%= query.query_sql || '-- Query tidak tersedia' %></code></pre>
-        <% if (query.query_params && query.query_params !== '{}') { %>
-          <div class=mt-3>
-            <strong class=small d-block mb-1>Parameter Binding:</strong>
-            <pre class=bg-light p-2 rounded-2 small text-secondary><code><%= query.query_params %></code></pre>
-          </div>
-        <% } %>
-      </div>
-      <div class=modal-footer>
-        <button type=button class=btn btn-secondary btn-sm rounded-pill px-4 data-bs-dismiss=modal>Tutup</button>
-      </div>
+      <button type=button class=at-btn at-btn-outline style=padding: 2px 8px; onclick=document.getElementById('sqlModal').classList.add('hidden')>&times;</button>
+    </div>
+    <div class=at-modal-body>
+      <div style=font-size: 12px; color: var(--text-muted, #64748b); margin-bottom: 8px;>Kueri SQL yang dieksekusi secara aman (Read-Only) pada database SQLite:</div>
+      <pre style=background: #1e293b; color: #f8fafc; padding: 14px; border-radius: 8px; font-size: 12px; line-height: 1.5; overflow-x: auto; margin: 0; font-family: monospace;><code><%= query.query_sql || '-- Query tidak tersedia' %></code></pre>
+      <% if (query.query_params && query.query_params !== '{}') { %>
+        <div style=margin-top: 12px;>
+          <div style=font-size: 12px; font-weight: 600; margin-bottom: 4px;>Parameter Binding:</div>
+          <pre style=background: #f1f5f9; padding: 8px 12px; border-radius: 6px; font-size: 11.5px; margin: 0; font-family: monospace;><code><%= query.query_params %></code></pre>
+        </div>
+      <% } %>
+    </div>
+    <div class=at-modal-footer>
+      <button type=button class=at-btn at-btn-primary onclick=document.getElementById('sqlModal').classList.add('hidden')>Tutup</button>
     </div>
   </div>
 </div>
 
-<!-- ── Script Client-Side Data Table Management ── -->
+<!-- ── CLIENT SCRIPT FOR DYNAMIC DATA TABLE ── -->
 <script>
   (function() {
     const rawData = <%- JSON.stringify(rows || []) %>;
@@ -177,12 +404,12 @@
     let currentPage = 1;
     let pageSize = 25;
 
-    const searchInput = document.getElementById('tableSearchInput');
-    const pageSizeSelect = document.getElementById('pageSizeSelect');
-    const tbody = document.getElementById('aiDataTableBody');
-    const paginationInfo = document.getElementById('paginationInfo');
-    const paginationContainer = document.getElementById('paginationContainer');
-    const copyTableBtn = document.getElementById('copyTableBtn');
+    const searchInput = document.getElementById('atSearchInput');
+    const pageSizeSelect = document.getElementById('atPageSizeSelect');
+    const tbody = document.getElementById('atTableBody');
+    const paginationInfo = document.getElementById('atPaginationInfo');
+    const paginationBtns = document.getElementById('atPaginationBtns');
+    const copyBtn = document.getElementById('atCopyBtn');
 
     function isNumeric(val) {
       if (typeof val === 'number') return true;
@@ -191,28 +418,28 @@
     }
 
     function formatCell(key, val) {
-      if (val === null || val === undefined) return '<span class=text-muted>-</span>';
+      if (val === null || val === undefined) return '<span style=color: #94a3b8;>-</span>';
       
       const lowerKey = key.toLowerCase();
       if (typeof val === 'number') {
         if (lowerKey.includes('pct') || lowerKey.includes('persen') || lowerKey.includes('percent')) {
-          const colorClass = val >= 100 ? 'bg-success' : (val >= 70 ? 'bg-primary' : (val >= 40 ? 'bg-warning text-dark' : 'bg-danger'));
-          return <span class=badge rounded-pill>%</span>;
+          const badgeClass = val >= 100 ? 'at-badge-green' : (val >= 70 ? 'at-badge-blue' : (val >= 40 ? 'at-badge-orange' : 'at-badge-orange'));
+          return <span class=at-badge >%</span>;
         }
         return val.toLocaleString('id-ID');
       }
 
-      if (typeof val === 'string' && (val.endsWith('%') || !isNaN(parseFloat(val)) && lowerKey.includes('persen'))) {
+      if (typeof val === 'string' && (val.endsWith('%') || (!isNaN(parseFloat(val)) && lowerKey.includes('persen')))) {
         const num = parseFloat(val);
-        const colorClass = num >= 100 ? 'bg-success' : (num >= 70 ? 'bg-primary' : (num >= 40 ? 'bg-warning text-dark' : 'bg-danger'));
-        return <span class=badge rounded-pill></span>;
+        const badgeClass = num >= 100 ? 'at-badge-green' : (num >= 70 ? 'at-badge-blue' : (num >= 40 ? 'at-badge-orange' : 'at-badge-orange'));
+        return <span class=at-badge ></span>;
       }
 
       return escapeHtml(String(val));
     }
 
     function escapeHtml(str) {
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(//g, '&quot;');
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(//g, '&quot;');
  }
 
  function applyFilter() {
@@ -272,17 +499,17 @@
  const pageRows = filteredData.slice(startIdx, endIdx);
 
  if (pageRows.length === 0) {
- tbody.innerHTML = <tr><td colspan= class=text-center py-4 text-muted>Tidak ada data yang cocok dengan pencarian.</td></tr>;
+ tbody.innerHTML = <tr><td colspan= style=text-align: center; padding: 30px; color: var(--text-muted, #64748b);>Tidak ada baris data yang cocok dengan filter pencarian.</td></tr>;
  } else {
  tbody.innerHTML = pageRows.map((row, idx) => {
  const rowNum = startIdx + idx + 1;
  const cells = columns.map(col => {
  const val = row[col];
- const isNum = typeof val === 'number' || (isNumeric(val) && !col.toLowerCase().includes('kode') && !col.toLowerCase().includes('id'));
- const alignClass = isNum ? 'text-end' : 'text-start';
- return <td class=></td>;
+ const isNum = typeof val === 'number' || (isNumeric(val) && !col.toLowerCase().includes('kode') && !col.toLowerCase().includes('id') && !col.toLowerCase().includes('telepon') && !col.toLowerCase().includes('phone'));
+ const alignStyle = isNum ? 'text-align: right;' : 'text-align: left;';
+ return <td style=></td>;
  }).join('');
- return <tr><td class=text-center text-muted small></td></tr>;
+ return <tr><td style=text-align: center; color: var(--text-muted, #94a3b8); font-size: 11.5px;></td></tr>;
  }).join('');
  }
 
@@ -299,16 +526,14 @@
  }
 
  function renderPagination(totalPages) {
- if (!paginationContainer) return;
+ if (!paginationBtns) return;
  if (totalPages <= 1) {
- paginationContainer.innerHTML = '';
+ paginationBtns.innerHTML = '';
  return;
  }
 
  let html = '';
- html += <li class=page-item >
- <a class=page-link href=# data-page=>&laquo;</a>
- </li>;
+ html += <button type=button class=at-page-btn  data-page=>&laquo;</button>;
 
  const maxBtns = 5;
  let startPage = Math.max(1, currentPage - 2);
@@ -319,16 +544,12 @@
  }
 
  for (let p = startPage; p <= endPage; p++) {
- html += <li class=page-item >
- <a class=page-link href=# data-page=></a>
- </li>;
+ html += <button type=button class=at-page-btn  data-page=></button>;
  }
 
- html += <li class=page-item >
- <a class=page-link href=# data-page=>&raquo;</a>
- </li>;
+ html += <button type=button class=at-page-btn  data-page=>&raquo;</button>;
 
- paginationContainer.innerHTML = html;
+ paginationBtns.innerHTML = html;
  }
 
  // Event Listeners
@@ -344,22 +565,24 @@
  });
  }
 
- if (paginationContainer) {
- paginationContainer.addEventListener('click', (e) => {
- const link = e.target.closest('.page-link');
- if (!link) return;
- e.preventDefault();
- const page = parseInt(link.getAttribute('data-page'), 10);
+ if (paginationBtns) {
+ paginationBtns.addEventListener('click', (e) => {
+ const btn = e.target.closest('.at-page-btn');
+ if (!btn || btn.classList.contains('disabled') || btn.classList.contains('active')) return;
+ const page = parseInt(btn.getAttribute('data-page'), 10);
  if (page && page !== currentPage) {
  currentPage = page;
  renderTable();
- window.scrollTo({ top: document.getElementById('aiDataTable').offsetTop - 80, behavior: 'smooth' });
+ const tableEl = document.getElementById('atMainTable');
+ if (tableEl) {
+ window.scrollTo({ top: tableEl.offsetTop - 80, behavior: 'smooth' });
+ }
  }
  });
  }
 
  // Sort column headers
- document.querySelectorAll('.sortable-th').forEach(th => {
+ document.querySelectorAll('.at-table th.sortable').forEach(th => {
  th.addEventListener('click', () => {
  const col = th.getAttribute('data-col');
  if (sortColumn === col) {
@@ -369,13 +592,15 @@
  sortAsc = true;
  }
 
- document.querySelectorAll('.sortable-th .sort-icon').forEach(icon => {
+ document.querySelectorAll('.at-table th.sortable .sort-icon').forEach(icon => {
  icon.innerHTML = '<i class=bi bi-arrow-down-up></i>';
+ icon.style.opacity = '0.5';
  });
 
  const currentIcon = th.querySelector('.sort-icon');
  if (currentIcon) {
- currentIcon.innerHTML = sortAsc ? '<i class=bi bi-arrow-up text-primary></i>' : '<i class=bi bi-arrow-down text-primary></i>';
+ currentIcon.innerHTML = sortAsc ? '<i class=bi bi-arrow-up style=color: #2563eb;></i>' : '<i class=bi bi-arrow-down style=color: #2563eb;></i>';
+ currentIcon.style.opacity = '1';
  }
 
  applySortAndRender();
@@ -383,17 +608,17 @@
  });
 
  // Copy Table to Clipboard
- if (copyTableBtn) {
- copyTableBtn.addEventListener('click', () => {
+ if (copyBtn) {
+ copyBtn.addEventListener('click', () => {
  if (!filteredData || filteredData.length === 0) return;
  const headers = columns.join('\t');
  const rowsText = filteredData.map(r => columns.map(c => r[c] !== null && r[c] !== undefined ? r[c] : '').join('\t')).join('\n');
  const fullText = headers + '\n' + rowsText;
 
  navigator.clipboard.writeText(fullText).then(() => {
- const orig = copyTableBtn.innerHTML;
- copyTableBtn.innerHTML = '<i class=bi bi-check-lg text-success></i> Tersalin!';
- setTimeout(() => copyTableBtn.innerHTML = orig, 2000);
+ const orig = copyBtn.innerHTML;
+ copyBtn.innerHTML = '<i class=bi bi-check-lg style=color: #10b981;></i> Tersalin!';
+ setTimeout(() => copyBtn.innerHTML = orig, 2000);
  });
  });
  }
