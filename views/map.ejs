@@ -3029,6 +3029,9 @@
               setTimeout(() => { loadingOverlay.style.display = 'none'; }, 300);
             }
 
+            // Apply URL parameters if redirected from Drilldown Wilayah (?kec=..., ?desa=..., ?search=...)
+            applyUrlParameters();
+
             // Lazy load high-detail SLS boundaries in background
             lazyLoadSlsGeoJSON();
 
@@ -3044,11 +3047,64 @@
           }
         }
 
+        function applyUrlParameters() {
+          try {
+            const params = new URLSearchParams(window.location.search);
+            const kecParam = params.get('kec');
+            const desaParam = params.get('desa');
+            const searchParam = params.get('search') || params.get('kode');
+
+            if (kecParam) {
+              if (kecFilter) kecFilter.value = kecParam;
+              currentFilteredKec = kecParam;
+              updateActiveLayerStyles();
+              setTimeout(() => fitBoundsToKecamatan(kecParam), 200);
+            }
+
+            if (desaParam) {
+              switchToDesaLayer();
+              setTimeout(() => {
+                let targetLayer = null;
+                if (desaLayer) {
+                  desaLayer.eachLayer(layer => {
+                    if (layer.feature && layer.feature.properties && 
+                        ((layer.feature.properties.nmdesa && layer.feature.properties.nmdesa.toUpperCase() === desaParam.toUpperCase()) ||
+                         layer.feature.properties.iddesa === desaParam)) {
+                      targetLayer = layer;
+                    }
+                  });
+                }
+                if (targetLayer) {
+                  const bounds = targetLayer.getBounds ? targetLayer.getBounds() : null;
+                  if (bounds) map.fitBounds(bounds, { padding: [40, 40] });
+                  showDesaDetails(targetLayer.feature.properties);
+                  targetLayer.fire('click');
+                }
+              }, 250);
+            }
+
+            if (searchParam && mapSearchInput) {
+              mapSearchInput.value = searchParam;
+            }
+          } catch (e) {
+            console.warn('Could not parse map URL params:', e);
+          }
+        }
+
         async function lazyLoadSlsGeoJSON() {
           try {
             const res = await fetch('/data/sls_boundaries.geojson');
             slsGeoJson = await res.json();
             setupSlsLayer();
+
+            // Auto focus SLS if search/kode query param is provided
+            const params = new URLSearchParams(window.location.search);
+            const searchParam = params.get('search') || params.get('kode');
+            if (searchParam) {
+              setTimeout(() => {
+                if (window.focusSubSlsOnMap) window.focusSubSlsOnMap(searchParam);
+              }, 150);
+            }
           } catch (err) {
             console.error('Error lazy loading SLS geojson:', err);
           }
