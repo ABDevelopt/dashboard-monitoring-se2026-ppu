@@ -1560,6 +1560,7 @@
         let currentFilteredKec = '';
         let currentThematicMetric = 'fasih'; // 'fasih' | 'muatan'
         let currentStatusFilter = ''; // '' | 'done' | 'in_progress' | 'not_started'
+        let currentHighlightedPcl = ''; // Nama PCL yang sedang disorot wilayahnya
         let userLocationMarker = null;
         let userAccuracyCircle = null;
 
@@ -1754,10 +1755,36 @@
         }
 
         function slsStyle(feature) {
-          const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
           const stat = slsStats.find(s => s.kode === feature.properties.kode);
+          const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
           const matchesKpi = isSlsMatchingKpiStatus(stat, currentStatusFilter);
           const isKpiActive = !!currentStatusFilter;
+
+          // Jika sedang dalam mode sorot wilayah PCL tertentu
+          if (currentHighlightedPcl) {
+            const layerPcl = stat ? stat.pcl : (feature.properties.pcl || '');
+            const isMatchPcl = layerPcl && layerPcl.toLowerCase().trim() === currentHighlightedPcl;
+
+            if (isMatchPcl) {
+              return {
+                fillColor: '#f59e0b',
+                weight: 2.2,
+                opacity: 1,
+                color: '#ffffff',
+                fillOpacity: currentBasemapType === 'satellite' ? 0.75 : 0.65,
+                fillRule: 'nonzero'
+              };
+            } else {
+              return {
+                fillColor: getSlsColor(feature.properties.kode),
+                weight: 0.15,
+                opacity: 0.08,
+                color: getBorderColor('sls'),
+                fillOpacity: 0.02,
+                fillRule: 'nonzero'
+              };
+            }
+          }
 
           if (isOutlineOnlyMode) {
             return {
@@ -1797,6 +1824,31 @@
         function highlightFeature(e) {
           const layer = e.target;
           if (!layer || !layer.feature) return;
+
+          // Jika sedang sorot wilayah PCL aktif
+          if (activeLayerName === 'sls' && currentHighlightedPcl) {
+            const stat = slsStats.find(s => s.kode === layer.feature.properties.kode);
+            const layerPcl = stat ? stat.pcl : (layer.feature.properties.pcl || '');
+            const isMatchPcl = layerPcl && layerPcl.toLowerCase().trim() === currentHighlightedPcl;
+
+            if (isMatchPcl) {
+              layer.setStyle({
+                fillColor: '#fbbf24',
+                weight: 3.2,
+                color: '#ffffff',
+                opacity: 1,
+                fillOpacity: 0.85
+              });
+            } else {
+              layer.setStyle({
+                weight: 0.15,
+                color: '#94a3b8',
+                opacity: 0.10,
+                fillOpacity: 0.02
+              });
+            }
+            return;
+          }
 
           const isSelectedKec = !currentFilteredKec || layer.feature.properties.nmkec === currentFilteredKec;
           let matchesKpi = true;
@@ -1906,6 +1958,7 @@
 
         function filterByKpiStatus(statusKey) {
           currentStatusFilter = statusKey;
+          currentHighlightedPcl = ''; // Reset sorotan PCL jika ada filter KPI baru
 
           document.querySelectorAll('.gmaps-kpi-pill').forEach(pill => {
             if (pill.getAttribute('data-status') === statusKey) {
@@ -2018,30 +2071,30 @@
 
           sidebarStats.innerHTML = `
             <!-- Header Title Card -->
-            <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+            <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); padding: 10px 12px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
               <div>
-                <div style="font-size: 15px; font-weight: 800; color: var(--accent-blue); display: flex; align-items: center; gap: 6px;">
-                  <i class="bi bi-diagram-3-fill"></i> Kecamatan ${nmkec}
+                <div style="font-size: 14.5px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                  <i class="bi bi-diagram-3-fill" style="color: var(--text-muted);"></i> Kecamatan ${nmkec}
                 </div>
-                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">
                   Kabupaten Penajam Paser Utara
                 </div>
               </div>
-              <span class="badge ${isComplete ? 'badge-green' : 'badge-purple'}" style="font-size: 11px; padding: 4px 9px; flex-shrink: 0;">
+              <span style="font-size: 11px; padding: 3px 8px; border-radius: 6px; font-weight: 600; flex-shrink: 0; ${isComplete ? 'background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35);' : 'background: rgba(148, 163, 184, 0.15); color: var(--text-secondary); border: 1px solid rgba(148, 163, 184, 0.25);'}">
                 ${isComplete ? '<i class="bi bi-check-circle-fill"></i> 100% Selesai' : `${fasihPct}% FASIH`}
               </span>
             </div>
 
             <!-- Visual Progress Track -->
-            <div style="background: var(--bg-secondary); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; margin-bottom: 6px;">
-                <span style="color: var(--text-primary);"><i class="bi bi-bar-chart-line" style="color: var(--accent-blue);"></i> Realisasi FASIH Kecamatan</span>
-                <span style="color: ${fasihColor}; font-weight: 700;">${fasihPct}%</span>
+            <div style="background: rgba(255, 255, 255, 0.03); padding: 9px 11px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 600; margin-bottom: 6px;">
+                <span style="color: var(--text-muted);"><i class="bi bi-bar-chart-line" style="color: var(--text-muted);"></i> Realisasi FASIH Kecamatan</span>
+                <span style="color: var(--text-primary); font-weight: 700;">${fasihPct}%</span>
               </div>
-              <div class="progress-track-sm" style="height: 8px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden;">
+              <div class="progress-track-sm" style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden;">
                 <div class="progress-bar ${fasihPct >= 100 ? 'green' : (fasihPct < 25 ? 'red' : 'purple')}" style="width: ${fasihPct}%; height: 100%; border-radius: 99px; transition: width 0.4s ease;"></div>
               </div>
-              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 6px; display: flex; justify-content: space-between;">
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px; display: flex; justify-content: space-between;">
                 <span>Realisasi: <strong style="color: var(--text-primary);">${totalRealisasiFasih.toLocaleString('id-ID')}</strong></span>
                 <span>Target: <strong style="color: var(--text-primary);">${targetFasih.toLocaleString('id-ID')} Dok</strong></span>
               </div>
@@ -2050,19 +2103,19 @@
             <!-- Metric Cards Grid -->
             <div class="map-card-stat-grid">
               <div class="map-card-stat-item">
-                <span class="map-card-stat-label"><i class="bi bi-houses" style="color: var(--accent-blue);"></i> Total Desa</span>
+                <span class="map-card-stat-label"><i class="bi bi-houses" style="color: var(--text-muted);"></i> Total Desa</span>
                 <span class="map-card-stat-value">${stat.total_desa || kecDesaList.length} Desa</span>
               </div>
               <div class="map-card-stat-item">
-                <span class="map-card-stat-label"><i class="bi bi-box-seam" style="color: var(--accent-purple);"></i> Total SubSLS</span>
+                <span class="map-card-stat-label"><i class="bi bi-box-seam" style="color: var(--text-muted);"></i> Total SubSLS</span>
                 <span class="map-card-stat-value">${stat.total_subsls || 0} SLS</span>
               </div>
               <div class="map-card-stat-item">
-                <span class="map-card-stat-label"><i class="bi bi-check2-circle" style="color: var(--accent-green);"></i> Target Selesai</span>
-                <span class="map-card-stat-value" style="color: var(--accent-green);">${stat.selesai || 0} SLS</span>
+                <span class="map-card-stat-label"><i class="bi bi-check2-circle" style="color: var(--text-muted);"></i> SLS Selesai</span>
+                <span class="map-card-stat-value" style="color: #10b981;">${stat.selesai || 0} SLS</span>
               </div>
               <div class="map-card-stat-item muatan-col">
-                <span class="map-card-stat-label"><i class="bi bi-pie-chart" style="color: var(--accent-cyan);"></i> Progres Muatan</span>
+                <span class="map-card-stat-label"><i class="bi bi-pie-chart" style="color: var(--text-muted);"></i> Progres Muatan</span>
                 <span class="map-card-stat-value">${stat.muatan_pct_str || '0.00'}%</span>
               </div>
             </div>
@@ -2184,28 +2237,28 @@
             <!-- Header Title Card -->
             <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
               <div>
-                <div style="font-size: 14.5px; font-weight: 800; color: var(--accent-blue); display: flex; align-items: center; gap: 6px;">
-                  <i class="bi bi-geo-alt-fill"></i> Desa/Kel. ${properties.nmdesa}
+                <div style="font-size: 14.5px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                  <i class="bi bi-geo-alt-fill" style="color: var(--text-muted);"></i> Desa/Kel. ${properties.nmdesa}
                 </div>
-                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">
                   Kecamatan ${properties.nmkec}
                 </div>
               </div>
-              <span class="badge ${isComplete ? 'badge-green' : 'badge-purple'}" style="font-size: 11px; padding: 4px 9px; flex-shrink: 0;">
+              <span style="font-size: 11px; padding: 3px 8px; border-radius: 6px; font-weight: 600; flex-shrink: 0; ${isComplete ? 'background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35);' : 'background: rgba(148, 163, 184, 0.15); color: var(--text-secondary); border: 1px solid rgba(148, 163, 184, 0.25);'}">
                 ${isComplete ? '<i class="bi bi-check-circle-fill"></i> 100% Selesai' : `${fasihPct}% FASIH`}
               </span>
             </div>
 
             <!-- Visual Progress Track -->
-            <div style="background: var(--bg-secondary); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; margin-bottom: 6px;">
-                <span style="color: var(--text-primary);"><i class="bi bi-bar-chart-line" style="color: var(--accent-blue);"></i> Realisasi FASIH</span>
-                <span style="color: ${fasihColor}; font-weight: 700;">${fasihPct}%</span>
+            <div style="background: rgba(255, 255, 255, 0.03); padding: 9px 11px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 600; margin-bottom: 6px;">
+                <span style="color: var(--text-muted);"><i class="bi bi-bar-chart-line" style="color: var(--text-muted);"></i> Realisasi FASIH</span>
+                <span style="color: var(--text-primary); font-weight: 700;">${fasihPct}%</span>
               </div>
-              <div class="progress-track-sm" style="height: 8px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden;">
+              <div class="progress-track-sm" style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden;">
                 <div class="progress-bar ${fasihPct >= 100 ? 'green' : (fasihPct < 25 ? 'red' : 'purple')}" style="width: ${fasihPct}%; height: 100%; border-radius: 99px; transition: width 0.4s ease;"></div>
               </div>
-              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 6px; display: flex; justify-content: space-between;">
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px; display: flex; justify-content: space-between;">
                 <span>Realisasi: <strong style="color: var(--text-primary);">${totalRealisasiFasih.toLocaleString('id-ID')}</strong></span>
                 <span>Target: <strong style="color: var(--text-primary);">${targetFasih.toLocaleString('id-ID')} Dok</strong></span>
               </div>
@@ -2214,27 +2267,27 @@
             <!-- Metric Cards Grid -->
             <div class="map-card-stat-grid">
               <div class="map-card-stat-item">
-                <span class="map-card-stat-label"><i class="bi bi-box-seam" style="color: var(--accent-blue);"></i> SubSLS</span>
+                <span class="map-card-stat-label"><i class="bi bi-box-seam" style="color: var(--text-muted);"></i> SubSLS</span>
                 <span class="map-card-stat-value">${total} SLS</span>
               </div>
               <div class="map-card-stat-item">
-                <span class="map-card-stat-label"><i class="bi bi-check2-circle" style="color: var(--accent-green);"></i> Target Selesai</span>
-                <span class="map-card-stat-value" style="color: var(--accent-green);">${selesai} SLS</span>
+                <span class="map-card-stat-label"><i class="bi bi-check2-circle" style="color: var(--text-muted);"></i> SLS Selesai</span>
+                <span class="map-card-stat-value" style="color: #10b981;">${selesai} SLS</span>
               </div>
               <div class="map-card-stat-item muatan-col">
-                <span class="map-card-stat-label"><i class="bi bi-pie-chart" style="color: var(--accent-yellow);"></i> Progres Muatan</span>
+                <span class="map-card-stat-label"><i class="bi bi-pie-chart" style="color: var(--text-muted);"></i> Progres Muatan</span>
                 <span class="map-card-stat-value">${pct}%</span>
               </div>
               <div class="map-card-stat-item muatan-col">
-                <span class="map-card-stat-label"><i class="bi bi-flag" style="color: var(--accent-purple);"></i> Target Muatan</span>
+                <span class="map-card-stat-label"><i class="bi bi-flag" style="color: var(--text-muted);"></i> Target Muatan</span>
                 <span class="map-card-stat-value">${totalMuatan.toLocaleString('id-ID')}</span>
               </div>
               <div class="map-card-stat-item muatan-col">
-                <span class="map-card-stat-label"><i class="bi bi-shop" style="color: var(--accent-cyan);"></i> Usaha Terdata</span>
+                <span class="map-card-stat-label"><i class="bi bi-shop" style="color: var(--text-muted);"></i> Usaha Terdata</span>
                 <span class="map-card-stat-value">${usaha.toLocaleString('id-ID')}</span>
               </div>
               <div class="map-card-stat-item muatan-col">
-                <span class="map-card-stat-label"><i class="bi bi-people" style="color: var(--accent-green);"></i> Keluarga Terdata</span>
+                <span class="map-card-stat-label"><i class="bi bi-people" style="color: var(--text-muted);"></i> Keluarga Terdata</span>
                 <span class="map-card-stat-value">${keluarga.toLocaleString('id-ID')}</span>
               </div>
             </div>
@@ -2305,66 +2358,66 @@
 
           sidebarStats.innerHTML = `
             <!-- Header Title Card -->
-            <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+            <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); padding: 10px 12px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
               <div>
-                <div style="font-size: 14px; font-weight: 800; color: var(--accent-blue); display: flex; align-items: center; gap: 6px;">
-                  <i class="bi bi-box-seam"></i> SLS: ${properties.nmsls}
+                <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                  <i class="bi bi-pin-map-fill" style="color: var(--text-muted);"></i> SLS: ${properties.nmsls}
                 </div>
-                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">
                   Desa ${properties.nmdesa}, Kec. ${properties.nmkec}
                 </div>
               </div>
-              <span class="badge ${isSelesai ? 'badge-green' : 'badge-red'}" style="font-size: 11px; padding: 4px 9px; flex-shrink: 0;">
+              <span style="font-size: 11px; padding: 3px 8px; border-radius: 6px; font-weight: 600; flex-shrink: 0; ${isSelesai ? 'background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.35);' : 'background: rgba(148, 163, 184, 0.15); color: var(--text-secondary); border: 1px solid rgba(148, 163, 184, 0.25);'}">
                 ${isSelesai ? '<i class="bi bi-check-circle-fill"></i> Selesai' : '<i class="bi bi-hourglass-split"></i> Belum Selesai'}
               </span>
             </div>
 
-            <!-- Status Breakdown Pills -->
-            <div style="background: var(--bg-secondary); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 12px;">
-              <div style="font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between;">
+            <!-- Status Breakdown Pills (Clean Minimalist Glass) -->
+            <div style="background: rgba(255, 255, 255, 0.03); padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 10px;">
+              <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between;">
                 <span>Rincian Status FASIH</span>
-                <span style="color: var(--accent-blue); font-weight: 700;">${realisasiFasih} / ${targetFasih} Dok (${fasihPct}%)</span>
+                <span style="color: var(--text-primary); font-weight: 700;">${realisasiFasih} / ${targetFasih} Dok (${fasihPct}%)</span>
               </div>
-              <div class="map-status-pills-row">
-                <span class="map-status-pill approved" title="Approved / Di-approve"><i class="bi bi-check-lg"></i> App: ${approved}</span>
-                <span class="map-status-pill submitted" title="Submitted by PCL"><i class="bi bi-send"></i> Sub: ${submitted}</span>
-                <span class="map-status-pill rejected" title="Rejected"><i class="bi bi-x-lg"></i> Rej: ${rejected}</span>
-                <span class="map-status-pill draft" title="Draft / Belum Di-submit"><i class="bi bi-file-earmark-text"></i> Draft: ${draft}</span>
+              <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                <span style="font-size: 10.5px; font-weight: 500; padding: 2px 7px; border-radius: 5px; background: rgba(255, 255, 255, 0.06); color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.08);">App: <strong style="color: var(--text-primary);">${approved}</strong></span>
+                <span style="font-size: 10.5px; font-weight: 500; padding: 2px 7px; border-radius: 5px; background: rgba(255, 255, 255, 0.06); color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.08);">Sub: <strong style="color: var(--text-primary);">${submitted}</strong></span>
+                <span style="font-size: 10.5px; font-weight: 500; padding: 2px 7px; border-radius: 5px; background: rgba(255, 255, 255, 0.06); color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.08);">Rej: <strong style="color: var(--text-primary);">${rejected}</strong></span>
+                <span style="font-size: 10.5px; font-weight: 500; padding: 2px 7px; border-radius: 5px; background: rgba(255, 255, 255, 0.06); color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.08);">Draft: <strong style="color: var(--text-primary);">${draft}</strong></span>
               </div>
             </div>
 
-            <!-- Metric Cards Grid -->
+            <!-- Metric Cards Grid (Monochrome Clean Structure) -->
             <div class="map-card-stat-grid">
               <div class="map-card-stat-item full-width">
-                <span class="map-card-stat-label"><i class="bi bi-qr-code" style="color: var(--accent-purple);"></i> Kode SLS</span>
-                <span class="map-card-stat-value" style="font-family: monospace; font-size: 12px; color: var(--accent-cyan);">${properties.kode}</span>
+                <span class="map-card-stat-label"><i class="bi bi-qr-code" style="color: var(--text-muted);"></i> Kode SLS</span>
+                <span class="map-card-stat-value" style="font-family: monospace; font-size: 12px; color: var(--text-primary);">${properties.kode}</span>
               </div>
               <div class="map-card-stat-item">
-                <span class="map-card-stat-label"><i class="bi bi-person-badge" style="color: var(--accent-blue);"></i> PCL</span>
+                <span class="map-card-stat-label"><i class="bi bi-person-badge" style="color: var(--text-muted);"></i> PCL</span>
                 <span class="map-card-stat-value" title="${pcl}">${pcl}</span>
               </div>
               <div class="map-card-stat-item">
-                <span class="map-card-stat-label"><i class="bi bi-person-check" style="color: var(--accent-green);"></i> PML</span>
+                <span class="map-card-stat-label"><i class="bi bi-person-check" style="color: var(--text-muted);"></i> PML</span>
                 <span class="map-card-stat-value" title="${pml}">${pml}</span>
               </div>
               <div class="map-card-stat-item">
-                <span class="map-card-stat-label"><i class="bi bi-person-workspace" style="color: var(--accent-yellow);"></i> Korlap</span>
+                <span class="map-card-stat-label"><i class="bi bi-person-workspace" style="color: var(--text-muted);"></i> Korlap</span>
                 <span class="map-card-stat-value" title="${korlap}">${korlap}</span>
               </div>
               <div class="map-card-stat-item muatan-col">
-                <span class="map-card-stat-label"><i class="bi bi-pie-chart" style="color: var(--accent-yellow);"></i> Progres Muatan</span>
+                <span class="map-card-stat-label"><i class="bi bi-pie-chart" style="color: var(--text-muted);"></i> Progres Muatan</span>
                 <span class="map-card-stat-value">${muatanPct}%</span>
               </div>
               <div class="map-card-stat-item muatan-col">
-                <span class="map-card-stat-label"><i class="bi bi-target" style="color: var(--accent-red);"></i> Target Muatan</span>
+                <span class="map-card-stat-label"><i class="bi bi-target" style="color: var(--text-muted);"></i> Target Muatan</span>
                 <span class="map-card-stat-value">${totalMuatan.toLocaleString('id-ID')}</span>
               </div>
               <div class="map-card-stat-item muatan-col">
-                <span class="map-card-stat-label"><i class="bi bi-shop" style="color: var(--accent-cyan);"></i> Usaha Terdata</span>
+                <span class="map-card-stat-label"><i class="bi bi-shop" style="color: var(--text-muted);"></i> Usaha Terdata</span>
                 <span class="map-card-stat-value">${usaha.toLocaleString('id-ID')}</span>
               </div>
               <div class="map-card-stat-item muatan-col">
-                <span class="map-card-stat-label"><i class="bi bi-people" style="color: var(--accent-green);"></i> Keluarga Terdata</span>
+                <span class="map-card-stat-label"><i class="bi bi-people" style="color: var(--text-muted);"></i> Keluarga Terdata</span>
                 <span class="map-card-stat-value">${keluarga.toLocaleString('id-ID')}</span>
               </div>
             </div>
@@ -2382,7 +2435,7 @@
                 ` : ''}
               </div>
               ${(pcl && pcl !== 'Belum Ditentukan') ? `
-                <button type="button" class="btn btn-primary btn-sm" onclick="highlightPclTerritory('${pcl.replace(/'/g, "\\'")}')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; font-size: 11.5px; font-weight: 600; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); cursor: pointer;">
+                <button type="button" class="btn btn-sm" onclick="highlightPclTerritory('${pcl.replace(/'/g, "\\'")}')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7.5px 10px; font-size: 11.5px; font-weight: 600; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.12); color: #f59e0b; cursor: pointer;">
                   <i class="bi bi-funnel-fill"></i> Sorot Wilayah PCL (${pcl})
                 </button>
               ` : ''}
@@ -3176,6 +3229,7 @@
           kecFilter.value = '';
           currentFilteredKec = '';
           currentStatusFilter = '';
+          currentHighlightedPcl = '';
           currentThematicMetric = 'fasih';
           switchThematicMetric('fasih');
           filterByKpiStatus('');
@@ -3188,8 +3242,21 @@
         // PCL Territory Highlight Helper
         window.highlightPclTerritory = function(pclName) {
           if (!pclName || pclName === 'Belum Ditentukan') return;
+          currentHighlightedPcl = pclName.toLowerCase().trim();
+          currentStatusFilter = ''; // Reset KPI status filter
+
+          document.querySelectorAll('.gmaps-kpi-pill').forEach(pill => {
+            if (pill.getAttribute('data-status') === '') {
+              pill.classList.add('active-filter');
+            } else {
+              pill.classList.remove('active-filter');
+            }
+          });
+
           if (activeLayerName !== 'sls') {
             switchToSlsLayer();
+          } else {
+            updateActiveLayerStyles();
           }
 
           setTimeout(() => {
@@ -3201,21 +3268,9 @@
                 const stat = slsStats.find(s => s.kode === layer.feature.properties.kode);
                 const layerPcl = stat ? stat.pcl : (layer.feature.properties.pcl || '');
 
-                if (layerPcl && layerPcl.toLowerCase().trim() === pclName.toLowerCase().trim()) {
-                  layer.setStyle({
-                    weight: 2.8,
-                    color: '#f59e0b',
-                    fillColor: '#f59e0b',
-                    fillOpacity: 0.70,
-                    opacity: 1
-                  });
+                if (layerPcl && layerPcl.toLowerCase().trim() === currentHighlightedPcl) {
                   if (layer.getBounds) foundBounds.extend(layer.getBounds());
                   count++;
-                } else {
-                  layer.setStyle({
-                    opacity: 0.10,
-                    fillOpacity: 0.02
-                  });
                 }
               });
             }
