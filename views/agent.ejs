@@ -1939,7 +1939,7 @@
         if (msg.role === 'user') {
           appendMessage('user', msg.content, false);
         } else {
-          appendMessage('agent', renderMarkdown(msg.content), true);
+          appendMessage('agent', renderMarkdown(msg.content), true, msg.queryId || null, msg.rowCount || null);
         }
       });
 
@@ -2059,13 +2059,20 @@
     }
   };
 
-  function appendMessage(sender, content, isHtml = false) {
+  function appendMessage(sender, content, isHtml = false, queryId = null, rowCount = null) {
     const container = document.getElementById('chatMessages');
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${sender}`;
     
     const bodyDiv = document.createElement('div');
     bodyDiv.className = 'message-body';
+    
+    if (sender === 'agent') {
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      avatar.innerHTML = '<i class="bi bi-robot"></i>';
+      bodyDiv.appendChild(avatar);
+    }
     
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
@@ -2074,6 +2081,18 @@
       bubble.innerHTML = content;
     } else {
       bubble.textContent = content;
+    }
+
+    if (queryId) {
+      const rowBadge = rowCount ? ` (${rowCount} Baris)` : '';
+      const tableBtn = document.createElement('a');
+      const navPrefix = window.navPrefix || '<%= typeof navPrefix !== "undefined" ? navPrefix : "" %>';
+      tableBtn.href = `${navPrefix}/agent/table?id=${queryId}`;
+      tableBtn.target = '_blank';
+      tableBtn.className = 'btn-open-full-table d-inline-flex align-items-center gap-2 mt-3';
+      tableBtn.innerHTML = `<i class="bi bi-table"></i> Buka Tabel Lengkap${rowBadge} <i class="bi bi-arrow-right"></i>`;
+      tableBtn.style.cssText = 'padding: 6px 16px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-radius: 20px; font-size: 12px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 6px rgba(37,99,235,0.3); transition: transform 0.2s;';
+      bubble.appendChild(tableBtn);
     }
     
     bodyDiv.appendChild(bubble);
@@ -2517,7 +2536,7 @@
                 streamingMsg.finalize(data.reply || streamingMsg.getText(), data.isSimulation, data.queryId, data.rowCount);
                 const finalContent = streamingMsg.getText();
                 if (finalContent.trim()) {
-                  chatHistory.push({ role: 'model', content: finalContent });
+                  chatHistory.push({ role: 'model', content: finalContent, queryId: data.queryId || null, rowCount: data.rowCount || null });
                   saveChatHistory();
                 }
               } else if (currentEvent === 'error') {

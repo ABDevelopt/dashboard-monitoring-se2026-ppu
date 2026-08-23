@@ -410,7 +410,7 @@
   };
 
   // Append Message to UI
-  function appendMessage(role, text, timeStr = null) {
+  function appendMessage(role, text, timeStr = null, queryId = null, rowCount = null) {
     const body = document.getElementById('ai-widget-body');
     if (!body) return;
 
@@ -421,8 +421,17 @@
     const now = new Date();
     const timeDisplay = timeStr || now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    let btnHtml = '';
+    if (queryId) {
+      const rowBadge = rowCount ? ` (${rowCount} Baris)` : '';
+      const navPrefix = window.location.pathname.split('/')[1] && ['sakernas-pemutakhiran', 'sakernas-pendataan'].includes(window.location.pathname.split('/')[1])
+        ? '/' + window.location.pathname.split('/')[1]
+        : '';
+      btnHtml = `<br><a href="${navPrefix}/agent/table?id=${queryId}" target="_blank" class="ai-widget-full-table-btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; margin-top: 8px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-radius: 16px; font-size: 11px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 5px rgba(37,99,235,0.25);"><i class="bi bi-table"></i> Buka Tabel Lengkap${rowBadge} <i class="bi bi-arrow-right"></i></a>`;
+    }
+
     msgDiv.innerHTML = `
-      <div class="ai-msg-bubble">${isUser ? escapeHtml(text) : renderMarkdown(text)}</div>
+      <div class="ai-msg-bubble">${isUser ? escapeHtml(text) : renderMarkdown(text)}${btnHtml}</div>
       <span class="ai-msg-time">${timeDisplay}</span>
     `;
 
@@ -623,7 +632,7 @@
         chatHistory = parsed;
         body.innerHTML = '';
         chatHistory.forEach(msg => {
-          appendMessage(msg.role === 'user' ? 'user' : 'assistant', msg.content);
+          appendMessage(msg.role === 'user' ? 'user' : 'assistant', msg.content, null, msg.queryId || null, msg.rowCount || null);
         });
       } else {
         chatHistory = [];
@@ -740,7 +749,7 @@
                 streamMsg.finalize(data.reply || streamMsg.getText(), data.queryId, data.rowCount);
                 const finalReply = streamMsg.getText();
                 if (finalReply.trim()) {
-                  chatHistory.push({ role: 'assistant', content: finalReply });
+                  chatHistory.push({ role: 'assistant', content: finalReply, queryId: data.queryId || null, rowCount: data.rowCount || null });
                   saveLocalStorageHistory();
                 }
               } else if (currentEvent === 'error') {
