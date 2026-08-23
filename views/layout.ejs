@@ -188,75 +188,106 @@
 <%# SIDEBAR OVERLAY %>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<%# SIDEBAR %>
+<%# MODERNIZED NATIVE SIDE-DRAWER %>
 <aside class="sidebar" id="sidebar" aria-label="Sidebar Menu">
-  <button class="btn-close-sidebar" id="sidebarClose" aria-label="Tutup Sidebar"><i class="bi bi-x-lg"></i></button>
-  <div class="sidebar-logo" style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 16px; border-bottom: 1px solid var(--border);">
-<% if (activeSurvey === 'se2026') { %>
-    <img src="/logo-vertical.png" alt="Logo SE2026" class="logo-light" width="140" height="90" loading="eager" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
-    <img src="/logo-vertical-dark.png" alt="Logo SE2026" class="logo-dark" width="140" height="90" fetchpriority="high" loading="eager" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
-    <% } else { %>
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 0; margin-bottom: 8px; width: 100%; text-align: center;">
-      <img src="<%= surveyLogoSrc %>" alt="Logo <%= surveyConfig.shortName %>" width="56" height="56" style="width: 56px; height: 56px; object-fit: contain; margin-bottom: 8px; filter: drop-shadow(0 4px 12px rgba(var(--accent-rgb), 0.25));">
-      <div style="font-size: 13.5px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.2px; line-height: 1.2;"><%= surveyConfig.shortName %></div>
-      <div style="font-size: 10.5px; font-weight: 600; color: var(--accent-primary); margin-top: 2px;">BPS PPU</div>
+  <!-- Drawer Header -->
+  <div class="sidebar-header-drawer">
+    <div class="drawer-brand-row">
+      <div class="drawer-brand-info">
+        <% if (activeSurvey === 'se2026') { %>
+          <img src="/logo-vertical.png" alt="Logo SE2026" class="logo-light drawer-logo-img" width="110" height="70" loading="eager">
+          <img src="/logo-vertical-dark.png" alt="Logo SE2026" class="logo-dark drawer-logo-img" width="110" height="70" fetchpriority="high" loading="eager">
+        <% } else { %>
+          <div class="drawer-custom-brand">
+            <img src="<%= surveyLogoSrc %>" alt="Logo <%= surveyConfig.shortName %>" width="36" height="36" class="drawer-custom-logo">
+            <div>
+              <div class="drawer-title-main"><%= surveyConfig.shortName %></div>
+              <div class="drawer-title-sub">BPS PPU</div>
+            </div>
+          </div>
+        <% } %>
+      </div>
+      <button class="btn-close-sidebar" id="sidebarClose" aria-label="Tutup Sidebar" title="Tutup Menu">
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
-    <% } %>
-    <% if (typeof surveyConfig !== 'undefined' && surveyConfig.id !== 'se2026') { %>
-      <span style="font-size: 10.5px; color: var(--accent-primary); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 4px; background: rgba(var(--accent-rgb), 0.12); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(var(--accent-rgb), 0.25);">
-        <i class="bi bi-clipboard-check-fill"></i> <%= surveyConfig.name %>
-      </span>
-    <% } else { %>
-      <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 4px;">Penajam Paser Utara</p>
-    <% } %>
+
+    <!-- Quick Action Pills inside Drawer -->
+    <div class="drawer-quick-strip">
+      <button type="button" class="drawer-quick-pill" onclick="toggleTheme(event)" title="Ganti Tema">
+        <i class="bi bi-moon-stars-fill theme-icon"></i>
+        <span>Tema</span>
+      </button>
+      <button type="button" class="drawer-quick-pill" onclick="closeSidebarDrawer(); window.toggleGlobalSearchModal(true);" title="Cari Data Global">
+        <i class="bi bi-search"></i>
+        <span>Cari Data</span>
+      </button>
+      <% if ((typeof user !== 'undefined' && user) || (typeof isAdmin !== 'undefined' && isAdmin)) { %>
+      <a href="/logout" class="drawer-quick-pill text-red" title="Logout Sesi">
+        <i class="bi bi-box-arrow-right"></i>
+        <span>Logout</span>
+      </a>
+      <% } else { %>
+      <a href="/login" class="drawer-quick-pill text-blue" title="Login Petugas/Admin">
+        <i class="bi bi-box-arrow-in-right"></i>
+        <span>Login</span>
+      </a>
+      <% } %>
+    </div>
   </div>
 
-  <div class="sidebar-upload-info" style="margin: 12px 16px; padding: 10px 12px; background: rgba(var(--accent-rgb), 0.03); border: 1px solid var(--border); border-radius: 8px; font-size: 11px; display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && ((!hideMuatanGlobal && latestUploadsDetailed.muatan) || latestUploadsDetailed.fasih)) ? 'flex' : 'none' %>; flex-direction: column; gap: 8px;">
+  <div class="sidebar-upload-info" style="margin: 10px 14px; padding: 9px 12px; background: rgba(var(--accent-rgb), 0.04); border: 1px solid var(--border); border-radius: 10px; font-size: 11px; display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && ((!hideMuatanGlobal && latestUploadsDetailed.muatan) || latestUploadsDetailed.fasih)) ? 'flex' : 'none' %>; flex-direction: column; gap: 6px;">
     <% if (!hideMuatanGlobal) { %>
-    <div id="sidebarMuatanInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'flex' : 'none' %>; flex-direction: column; gap: 3px;">
+    <div id="sidebarMuatanInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'flex' : 'none' %>; flex-direction: column; gap: 2px;">
       <span style="color: var(--text-muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; display: flex; align-items: center; gap: 5px;">
         <i class="bi bi-box-seam" style="color: var(--accent-cyan); font-size: 11px;"></i> Update Muatan
       </span>
-      <span id="sidebarMuatanDate" style="color: var(--text-primary); font-weight: 500; font-size: 11px; padding-left: 16px; line-height: 1.35;">
+      <span id="sidebarMuatanDate" style="color: var(--text-primary); font-weight: 600; font-size: 10.5px; padding-left: 16px; line-height: 1.3;">
         <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.created_at) ? formatWita(latestUploadsDetailed.muatan.created_at) : '' %>
       </span>
     </div>
     <% } %>
-    <div id="sidebarFasihInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.fasih) ? 'flex' : 'none' %>; flex-direction: column; gap: 3px; <%= (!hideMuatanGlobal && typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'border-top: 1px solid var(--border); padding-top: 8px;' : '' %>">
+    <div id="sidebarFasihInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.fasih) ? 'flex' : 'none' %>; flex-direction: column; gap: 2px; <%= (!hideMuatanGlobal && typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'border-top: 1px solid var(--border); padding-top: 6px;' : '' %>">
       <span style="color: var(--text-muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; display: flex; align-items: center; gap: 5px;">
         <i class="bi bi-phone" style="color: var(--accent-purple); font-size: 11px;"></i> Update FASIH
       </span>
-      <span id="sidebarFasihDate" style="color: var(--text-primary); font-weight: 500; font-size: 11px; padding-left: 16px; line-height: 1.35;">
+      <span id="sidebarFasihDate" style="color: var(--text-primary); font-weight: 600; font-size: 10.5px; padding-left: 16px; line-height: 1.3;">
         <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.created_at) ? formatWita(latestUploadsDetailed.fasih.created_at) : '' %>
       </span>
     </div>
   </div>
 
-  <div class="sidebar-search" style="padding: 8px 16px; border-bottom: 1px solid var(--border);">
+  <div class="sidebar-search" style="padding: 6px 14px; border-bottom: 1px solid var(--border);">
     <div style="position: relative;">
-      <input type="text" id="sidebarMenuSearch" placeholder="Cari menu..." style="width: 100%; padding: 6px 10px 6px 28px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-subtle); color: var(--text-primary); transition: all 0.2s;">
-      <i class="bi bi-search" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-muted);"></i>
+      <input type="text" id="sidebarMenuSearch" placeholder="Cari menu dashboard..." style="width: 100%; padding: 7px 10px 7px 30px; font-size: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-subtle); color: var(--text-primary); transition: all 0.2s;">
+      <i class="bi bi-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-muted);"></i>
     </div>
   </div>
 
   <nav class="sidebar-nav">
     <%# Section 1: Utama %>
-    <div class="nav-section-wrapper" data-section="utama">
-      <div class="nav-section-header">
+    <div class="nav-section-wrapper <%= ['overview', 'map', 'agent'].includes(activePage) ? 'has-active is-open' : '' %>" data-section="utama">
+      <div class="nav-section-header" role="button" tabindex="0">
         <span>Utama</span>
+        <i class="bi bi-chevron-down nav-section-chevron"></i>
       </div>
       <div class="nav-section-content">
         <a href="<%= navPrefix %>/" class="nav-item <%= activePage === 'overview' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-house-door"></i></span> Overview
+          <span class="nav-icon icon-blue"><i class="bi bi-house-door"></i></span>
+          <span class="nav-label">Overview</span>
         </a>
         <% if (typeof settings !== 'undefined' && settings.page_map === '1') { %>
         <a href="<%= navPrefix %>/map" class="nav-item <%= activePage === 'map' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-map"></i></span> Peta Progres
+          <span class="nav-icon icon-cyan"><i class="bi bi-map"></i></span>
+          <span class="nav-label">Peta Progres</span>
+          <span class="nav-tag-badge" style="background: linear-gradient(135deg, #06b6d4, #3b82f6); color: white; font-size: 8.5px; font-weight: 800; padding: 1px 5px; border-radius: 4px; margin-left: auto;">GIS</span>
         </a>
         <% } %>
         <% if (typeof settings === 'undefined' || !settings || settings.page_aiagent !== '0') { %>
         <a href="<%= navPrefix %>/agent" class="nav-item <%= activePage === 'agent' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-robot text-purple"></i></span> Pananyo Taka <span class="nav-tag-badge" style="background: linear-gradient(135deg, #4285F4, #9b72cb); color: white; font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 4px; margin-left: 4px; letter-spacing: 0.5px;">AI</span>
+          <span class="nav-icon icon-purple"><i class="bi bi-robot"></i></span>
+          <span class="nav-label">Pananyo Taka</span>
+          <span class="nav-tag-badge" style="background: linear-gradient(135deg, #4285F4, #9b72cb); color: white; font-size: 8.5px; font-weight: 800; padding: 1px 5px; border-radius: 4px; margin-left: auto;">AI</span>
         </a>
         <% } %>
       </div>
@@ -264,130 +295,149 @@
 
     <%# Section: Favorit / Pinned (Local Storage client-side) %>
     <div class="nav-section-wrapper" data-section="favorit" id="sidebarPinnedSection" style="display: none;">
-      <div class="nav-section-header">
+      <div class="nav-section-header" role="button" tabindex="0">
         <span>Favorit Saya</span>
+        <i class="bi bi-chevron-down nav-section-chevron"></i>
       </div>
       <div class="nav-section-content" id="sidebarPinnedList">
         <!-- Populated dynamically from localStorage by JS -->
       </div>
     </div>
 
-    <!-- Section 5: Drilldown Petugas -->
-    <% if (typeof settings !== 'undefined' && (settings.page_korlap === '1' || settings.page_pml === '1' || settings.page_pcl === '1')) { %>
-    <div class="nav-section-wrapper" data-section="petugas">
-      <div class="nav-section-header">
-        <span>Drilldown Petugas</span>
+    <!-- Section 2: Drilldown Wilayah -->
+    <% if (typeof settings !== 'undefined' && (settings.page_kecamatan === '1' || settings.page_subsls === '1')) { %>
+    <div class="nav-section-wrapper <%= ['kecamatan', 'subsls'].includes(activePage) ? 'has-active is-open' : '' %>" data-section="wilayah">
+      <div class="nav-section-header" role="button" tabindex="0">
+        <span>Drilldown Wilayah</span>
+        <i class="bi bi-chevron-down nav-section-chevron"></i>
       </div>
       <div class="nav-section-content">
-        <% if (settings.page_korlap === '1') { %>
-        <a href="<%= navPrefix %>/korlap" class="nav-item <%= activePage === 'korlap' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-person-workspace"></i></span> Korlap
+        <% if (settings.page_kecamatan === '1') { %>
+        <a href="<%= navPrefix %>/kecamatan" class="nav-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
+          <span class="nav-icon icon-blue"><i class="bi bi-geo-alt"></i></span>
+          <span class="nav-label">Kecamatan</span>
         </a>
         <% } %>
-        <% if (settings.page_pml === '1') { %>
-        <a href="<%= navPrefix %>/pml" class="nav-item <%= activePage === 'pml' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-clipboard2-data"></i></span> PML
-        </a>
-        <% } %>
-        <% if (settings.page_pcl === '1') { %>
-        <a href="<%= navPrefix %>/pcl" class="nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-person-gear"></i></span> <%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'PPL' : 'PCL' %>
+        <% if (settings.page_subsls === '1') { %>
+        <a href="<%= navPrefix %>/subsls" class="nav-item <%= activePage === 'subsls' ? 'active' : '' %>">
+          <span class="nav-icon icon-purple"><i class="bi bi-box-seam"></i></span>
+          <span class="nav-label">SubSLS / SLS</span>
         </a>
         <% } %>
       </div>
     </div>
     <% } %>
 
-    <!-- Section 2: Evaluasi & Kualitas -->
+    <!-- Section 3: Drilldown Petugas -->
+    <% if (typeof settings !== 'undefined' && (settings.page_korlap === '1' || settings.page_pml === '1' || settings.page_pcl === '1')) { %>
+    <div class="nav-section-wrapper <%= ['korlap', 'pml', 'pcl'].includes(activePage) ? 'has-active is-open' : '' %>" data-section="petugas">
+      <div class="nav-section-header" role="button" tabindex="0">
+        <span>Drilldown Petugas</span>
+        <i class="bi bi-chevron-down nav-section-chevron"></i>
+      </div>
+      <div class="nav-section-content">
+        <% if (settings.page_korlap === '1') { %>
+        <a href="<%= navPrefix %>/korlap" class="nav-item <%= activePage === 'korlap' ? 'active' : '' %>">
+          <span class="nav-icon icon-purple"><i class="bi bi-person-workspace"></i></span>
+          <span class="nav-label">Korlap</span>
+        </a>
+        <% } %>
+        <% if (settings.page_pml === '1') { %>
+        <a href="<%= navPrefix %>/pml" class="nav-item <%= activePage === 'pml' ? 'active' : '' %>">
+          <span class="nav-icon icon-blue"><i class="bi bi-clipboard2-data"></i></span>
+          <span class="nav-label">PML</span>
+        </a>
+        <% } %>
+        <% if (settings.page_pcl === '1') { %>
+        <a href="<%= navPrefix %>/pcl" class="nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
+          <span class="nav-icon icon-cyan"><i class="bi bi-person-gear"></i></span>
+          <span class="nav-label"><%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'PPL' : 'PCL' %></span>
+        </a>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Section 4: Analisis Kinerja -->
+    <% if (typeof settings !== 'undefined' && (settings.page_performa === '1' || settings.page_leaderboard === '1' || settings.page_performatrendah === '1')) { %>
+    <div class="nav-section-wrapper <%= ['performa', 'harian', 'leaderboard', 'performa-terendah'].includes(activePage) ? 'has-active is-open' : '' %>" data-section="analisis">
+      <div class="nav-section-header" role="button" tabindex="0">
+        <span>Analisis Kinerja</span>
+        <i class="bi bi-chevron-down nav-section-chevron"></i>
+      </div>
+      <div class="nav-section-content">
+        <% if (settings.page_performa === '1') { %>
+        <a href="<%= navPrefix %>/performa" class="nav-item <%= activePage === 'performa' ? 'active' : '' %>">
+          <span class="nav-icon icon-emerald"><i class="bi bi-speedometer2"></i></span>
+          <span class="nav-label">Performa Petugas</span>
+        </a>
+        <% } %>
+        <% if (settings.page_performa === '1') { %>
+        <a href="<%= navPrefix %>/harian" class="nav-item <%= activePage === 'harian' ? 'active' : '' %>">
+          <span class="nav-icon icon-indigo"><i class="bi bi-calendar3"></i></span>
+          <span class="nav-label">Progres Harian</span>
+        </a>
+        <% } %>
+        <% if (settings.page_leaderboard === '1') { %>
+        <a href="<%= navPrefix %>/leaderboard" class="nav-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
+          <span class="nav-icon icon-amber"><i class="bi bi-trophy"></i></span>
+          <span class="nav-label">Performa Terbaik</span>
+        </a>
+        <% } %>
+        <% if (settings.page_performatrendah === '1') { %>
+        <a href="<%= navPrefix %>/performa-terendah" class="nav-item <%= activePage === 'performa-terendah' ? 'active' : '' %>">
+          <span class="nav-icon icon-red"><i class="bi bi-graph-down"></i></span>
+          <span class="nav-label">Performa Terendah</span>
+        </a>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Section 5: Evaluasi & Kualitas -->
     <% 
       const isSakernasLayout = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
       const showAnomali = !isSakernasLayout && typeof settings !== 'undefined' && settings.page_deteksianomali === '1';
       const showEarlyWarning = typeof settings !== 'undefined' && settings.page_earlywarning === '1';
     %>
     <% if (showEarlyWarning || showAnomali) { %>
-    <div class="nav-section-wrapper" data-section="evaluasi">
-      <div class="nav-section-header">
+    <div class="nav-section-wrapper <%= ['earlywarning', 'deteksi-anomali'].includes(activePage) ? 'has-active is-open' : '' %>" data-section="evaluasi">
+      <div class="nav-section-header" role="button" tabindex="0">
         <span>Evaluasi &amp; Kualitas</span>
+        <i class="bi bi-chevron-down nav-section-chevron"></i>
       </div>
       <div class="nav-section-content">
         <% if (showEarlyWarning) { %>
         <a href="<%= navPrefix %>/early-warning" class="nav-item <%= activePage === 'earlywarning' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-exclamation-octagon"></i></span> Early Warning
+          <span class="nav-icon icon-amber"><i class="bi bi-exclamation-octagon"></i></span>
+          <span class="nav-label">Early Warning</span>
         </a>
         <% } %>
         <% if (showAnomali) { %>
         <a href="<%= navPrefix %>/deteksi-anomali" class="nav-item <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-shield-exclamation"></i></span> Anomali
+          <span class="nav-icon icon-red"><i class="bi bi-shield-exclamation"></i></span>
+          <span class="nav-label">Anomali</span>
         </a>
         <% } %>
       </div>
     </div>
     <% } %>
-
-    <!-- Section 3: Analisis Kinerja -->
-    <% if (typeof settings !== 'undefined' && (settings.page_performa === '1' || settings.page_leaderboard === '1' || settings.page_performatrendah === '1')) { %>
-    <div class="nav-section-wrapper" data-section="analisis">
-      <div class="nav-section-header">
-        <span>Analisis Kinerja</span>
-      </div>
-      <div class="nav-section-content">
-        <% if (settings.page_performa === '1') { %>
-        <a href="<%= navPrefix %>/performa" class="nav-item <%= activePage === 'performa' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-speedometer2"></i></span> Performa Petugas
-        </a>
-        <% } %>
-        <% if (settings.page_performa === '1') { %>
-        <a href="<%= navPrefix %>/harian" class="nav-item <%= activePage === 'harian' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-calendar3"></i></span> Progres Harian
-        </a>
-        <% } %>
-        <% if (settings.page_leaderboard === '1') { %>
-        <a href="<%= navPrefix %>/leaderboard" class="nav-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-trophy"></i></span> Performa Terbaik
-        </a>
-        <% } %>
-        <% if (settings.page_performatrendah === '1') { %>
-        <a href="<%= navPrefix %>/performa-terendah" class="nav-item <%= activePage === 'performa-terendah' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-graph-down"></i></span> Performa Terendah
-        </a>
-        <% } %>
-      </div>
-    </div>
-    <% } %>
-
-    <!-- Section 4: Drilldown Wilayah -->
-    <% if (typeof settings !== 'undefined' && (settings.page_kecamatan === '1' || settings.page_subsls === '1')) { %>
-    <div class="nav-section-wrapper" data-section="wilayah">
-      <div class="nav-section-header">
-        <span>Drilldown Wilayah</span>
-      </div>
-      <div class="nav-section-content">
-        <% if (settings.page_kecamatan === '1') { %>
-        <a href="<%= navPrefix %>/kecamatan" class="nav-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-geo-alt"></i></span> Kecamatan
-        </a>
-        <% } %>
-        <% if (settings.page_subsls === '1') { %>
-        <a href="<%= navPrefix %>/subsls" class="nav-item <%= activePage === 'subsls' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-box-seam"></i></span> Subsls
-        </a>
-        <% } %>
-      </div>
-    </div>
-    <% } %>
-
-
-
 
     <!-- Section 6: Data & Utilitas -->
     <% if (typeof settings !== 'undefined' && settings.page_export === '1') { %>
-    <div class="nav-section-wrapper" data-section="data">
-      <div class="nav-section-header">
-        <span>Data &amp; Utilitas</span>
+    <div class="nav-section-wrapper <%= ['export', 'help'].includes(activePage) ? 'has-active is-open' : '' %>" data-section="data">
+      <div class="nav-section-header" role="button" tabindex="0">
+        <span>Data &amp; Bantuan</span>
+        <i class="bi bi-chevron-down nav-section-chevron"></i>
       </div>
       <div class="nav-section-content">
         <a href="<%= navPrefix %>/export" class="nav-item <%= activePage === 'export' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-download"></i></span> Export Data
+          <span class="nav-icon icon-emerald"><i class="bi bi-download"></i></span>
+          <span class="nav-label">Export Data</span>
+        </a>
+        <a href="<%= navPrefix %>/help" class="nav-item <%= activePage === 'help' ? 'active' : '' %>">
+          <span class="nav-icon icon-blue"><i class="bi bi-life-preserver"></i></span>
+          <span class="nav-label">Panduan &amp; Bantuan</span>
         </a>
       </div>
     </div>
@@ -395,75 +445,80 @@
 
     <!-- Section Admin: Administrasi & Sistem -->
     <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-    <div class="nav-section-wrapper" data-section="admin">
-      <div class="nav-section-header">
+    <div class="nav-section-wrapper <%= ['admin-menu', 'upload', 'upload-muatan', 'upload-fasih', 'upload-sls', 'master', 'users', 'petugas-email', 'settings', 'chatbot-settings', 'whatsapp', 'settings-backup'].includes(activePage) ? 'has-active is-open' : '' %>" data-section="admin">
+      <div class="nav-section-header" role="button" tabindex="0">
         <span>Administrasi &amp; Sistem</span>
+        <i class="bi bi-chevron-down nav-section-chevron"></i>
       </div>
       <div class="nav-section-content">
         <a href="<%= navPrefix %>/admin" class="nav-item <%= activePage === 'admin-menu' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-grid-fill"></i></span> Menu Utama Admin
+          <span class="nav-icon icon-purple"><i class="bi bi-grid-fill"></i></span>
+          <span class="nav-label">Menu Utama Admin</span>
         </a>
         <a href="<%= navPrefix %>/admin/upload?tab=muatan" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'muatan') || activePage === 'upload-muatan' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-people-fill text-cyan"></i></span> 1. Progres Muatan
+          <span class="nav-icon icon-cyan"><i class="bi bi-people-fill"></i></span>
+          <span class="nav-label">1. Progres Muatan</span>
         </a>
         <a href="<%= navPrefix %>/admin/upload?tab=fasih" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'fasih') || activePage === 'upload-fasih' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-file-earmark-code-fill text-purple"></i></span> 2. Status FASIH
+          <span class="nav-icon icon-purple"><i class="bi bi-file-earmark-code-fill"></i></span>
+          <span class="nav-label">2. Status FASIH</span>
         </a>
         <a href="<%= navPrefix %>/admin/upload?tab=sls" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'sls') || activePage === 'upload-sls' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-check2-square text-green"></i></span> 3. Status SLS Selesai
+          <span class="nav-icon icon-emerald"><i class="bi bi-check2-square"></i></span>
+          <span class="nav-label">3. Status SLS Selesai</span>
         </a>
         <a href="<%= navPrefix %>/admin/master" class="nav-item <%= activePage === 'master' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-database-fill-gear"></i></span> Kelola Master Data
+          <span class="nav-icon icon-cyan"><i class="bi bi-database-fill-gear"></i></span>
+          <span class="nav-label">Kelola Master Data</span>
         </a>
         <a href="<%= navPrefix %>/admin/users" class="nav-item <%= activePage === 'users' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-people-fill"></i></span> Kelola Pengguna
+          <span class="nav-icon icon-blue"><i class="bi bi-people-fill"></i></span>
+          <span class="nav-label">Kelola Pengguna</span>
         </a>
         <a href="<%= navPrefix %>/admin/petugas-email" class="nav-item <%= activePage === 'petugas-email' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-envelope-at-fill"></i></span> Data Email Petugas
+          <span class="nav-icon icon-amber"><i class="bi bi-envelope-at-fill"></i></span>
+          <span class="nav-label">Data Email Petugas</span>
         </a>
         <a href="<%= navPrefix %>/admin/settings" class="nav-item <%= activePage === 'settings' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-sliders"></i></span> Pengaturan Tampilan
+          <span class="nav-icon icon-blue"><i class="bi bi-sliders"></i></span>
+          <span class="nav-label">Pengaturan Tampilan</span>
         </a>
         <a href="<%= navPrefix %>/admin/settings/chatbot" class="nav-item <%= activePage === 'chatbot-settings' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-chat-left-dots-fill"></i></span> Pengaturan Chatbot AI
+          <span class="nav-icon icon-purple"><i class="bi bi-chat-left-dots-fill"></i></span>
+          <span class="nav-label">Pengaturan Chatbot AI</span>
         </a>
         <a href="<%= navPrefix %>/admin/whatsapp" class="nav-item <%= activePage === 'whatsapp' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-whatsapp"></i></span> Integrasi WhatsApp
+          <span class="nav-icon icon-emerald"><i class="bi bi-whatsapp"></i></span>
+          <span class="nav-label">Integrasi WhatsApp</span>
         </a>
         <a href="<%= navPrefix %>/admin/settings/backup" class="nav-item <%= activePage === 'settings-backup' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-cloud-arrow-down-fill"></i></span> Backup &amp; Restore
+          <span class="nav-icon icon-cyan"><i class="bi bi-cloud-arrow-down-fill"></i></span>
+          <span class="nav-label">Backup &amp; Restore</span>
         </a>
       </div>
     </div>
     <% } %>
 
-    <!-- Help / Bantuan -->
-    <div class="nav-section-wrapper" data-section="bantuan">
-      <div class="nav-section-content">
-        <a href="<%= navPrefix %>/help" class="nav-item <%= activePage === 'help' ? 'active' : '' %>">
-          <span class="nav-icon"><i class="bi bi-life-preserver"></i></span> Panduan &amp; Bantuan
-        </a>
-      </div>
-    </div>
-
     <!-- Akun & Sesi / Login - Logout -->
-    <div class="nav-section-wrapper" data-section="akun">
-      <div class="nav-section-header">
+    <div class="nav-section-wrapper <%= ['login', 'logout'].includes(activePage) ? 'has-active is-open' : '' %>" data-section="akun">
+      <div class="nav-section-header" role="button" tabindex="0">
         <span>Sesi &amp; Autentikasi</span>
+        <i class="bi bi-chevron-down nav-section-chevron"></i>
       </div>
       <div class="nav-section-content">
         <% if ((typeof user !== 'undefined' && user) || (typeof isAdmin !== 'undefined' && isAdmin)) { %>
         <a href="/logout" class="nav-item nav-item-auth nav-item-logout <%= activePage === 'logout' ? 'active' : '' %>" title="Logout Sesi (<%= (typeof user !== 'undefined' && user) ? user.username : 'Admin' %>)">
-          <span class="nav-icon"><i class="bi bi-box-arrow-right text-red"></i></span> Logout
+          <span class="nav-icon icon-red"><i class="bi bi-box-arrow-right"></i></span>
+          <span class="nav-label">Logout</span>
         </a>
         <% } else { %>
         <a href="/login" class="nav-item nav-item-auth nav-item-login <%= activePage === 'login' ? 'active' : '' %>" title="Login Ke Sistem">
-          <span class="nav-icon"><i class="bi bi-box-arrow-in-right text-blue"></i></span> Login
+          <span class="nav-icon icon-blue"><i class="bi bi-box-arrow-in-right"></i></span>
+          <span class="nav-label">Login</span>
         </a>
         <% } %>
       </div>
     </div>
-
   </nav>
 
   <div class="sidebar-footer" style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
@@ -485,317 +540,29 @@
   </div>
 </aside>
 
-<%# BOTTOM NAVIGATION BAR (MOBILE ONLY) %>
+<%# MODERN MOBILE BOTTOM QUICK-DOCK %>
 <nav class="bottom-nav" aria-label="Mobile Navigation">
   <a href="/" class="bottom-nav-item <%= activePage === 'overview' ? 'active' : '' %>">
     <i class="bi bi-house-door"></i>
     <span>Home</span>
   </a>
-  <button id="bottomNavWilayahBtn" class="bottom-nav-item <%= ['kecamatan', 'subsls', 'map'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Wilayah">
-    <i class="bi bi-geo-alt"></i>
-    <span>Wilayah</span>
-  </button>
+  <a href="<%= navPrefix %>/map" class="bottom-nav-item <%= activePage === 'map' ? 'active' : '' %>">
+    <i class="bi bi-map"></i>
+    <span>Peta</span>
+  </a>
+  <a href="<%= navPrefix %>/agent" class="bottom-nav-item <%= activePage === 'agent' ? 'active' : '' %>">
+    <i class="bi bi-robot"></i>
+    <span>AI Agent</span>
+  </a>
   <button id="bottomNavPetugasBtn" class="bottom-nav-item <%= ['pcl', 'pml', 'korlap', 'performa', 'leaderboard', 'performa-terendah'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Petugas">
     <i class="bi bi-people"></i>
     <span>Petugas</span>
   </button>
-  <a href="<%= navPrefix %>/agent" class="bottom-nav-item <%= activePage === 'agent' ? 'active' : '' %>">
-    <i class="bi bi-robot"></i>
-    <span>Pananyo Taka</span>
-  </a>
-  <button id="bottomNavMenuBtn" class="bottom-nav-item <%= ['earlywarning', 'deteksi-anomali', 'harian', 'help', 'admin-menu', 'export'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Utama & Sistem">
+  <button id="bottomNavMenuBtn" class="bottom-nav-item <%= ['earlywarning', 'deteksi-anomali', 'harian', 'help', 'admin-menu', 'export'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Lengkap">
     <i class="bi bi-grid"></i>
     <span>Menu</span>
   </button>
 </nav>
-
-<%# ULTRA-PREMIUM MOBILE BOTTOM SHEETS (Wilayah, Petugas, Menu) %>
-<div class="bottom-nav-overlay" id="bottomNavOverlay" onclick="closeNavSheets()"></div>
-
-<!-- 1. WILAYAH ACTION SHEET -->
-<div class="bottom-nav-sheet" id="sheetWilayah" role="dialog" aria-modal="true" aria-label="Menu Wilayah">
-  <div class="bottom-nav-sheet-header">
-    <div class="bottom-nav-sheet-handle"></div>
-    <div class="bottom-nav-sheet-title">
-      <i class="bi bi-geo-alt-fill text-cyan" style="font-size: 16px;"></i>
-      <span>Navigasi Wilayah</span>
-    </div>
-    <button type="button" class="bottom-nav-sheet-close" onclick="closeNavSheets()" aria-label="Tutup"><i class="bi bi-x"></i></button>
-  </div>
-  <div class="bottom-nav-sheet-content">
-    <% if (typeof settings !== 'undefined' && settings.page_map === '1') { %>
-    <!-- Hero Feature: Peta Spasial -->
-    <a href="<%= navPrefix %>/map" class="bottom-sheet-item bottom-sheet-hero <%= activePage === 'map' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(6, 182, 212, 0.18); color: #06b6d4;">
-        <i class="bi bi-map-fill"></i>
-      </div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label" style="display: flex; align-items: center; gap: 6px;">
-          <span>Peta Spasial Interaktif</span>
-          <span class="sheet-badge-pill" style="background: linear-gradient(135deg, #06b6d4, #3b82f6); color: white; font-size: 8.5px; font-weight: 800; padding: 1.5px 6px; border-radius: 999px; letter-spacing: 0.3px;">PETA GIS</span>
-        </div>
-        <div class="bottom-sheet-desc">Visualisasi batas SLS, desa, kecamatan & GPS</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-
-    <div class="sheet-section-title">Drilldown Wilayah Kerja</div>
-
-    <% if (typeof settings === 'undefined' || settings.page_kecamatan === '1') { %>
-    <a href="<%= navPrefix %>/kecamatan" class="bottom-sheet-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(59, 130, 246, 0.14); color: #3b82f6;">
-        <i class="bi bi-geo-alt"></i>
-      </div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Kecamatan</div>
-        <div class="bottom-sheet-desc">4 Kecamatan di Penajam Paser Utara</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-
-    <% if (typeof settings === 'undefined' || settings.page_subsls === '1') { %>
-    <a href="<%= navPrefix %>/subsls" class="bottom-sheet-item <%= activePage === 'subsls' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(139, 92, 246, 0.14); color: #8b5cf6;">
-        <i class="bi bi-box-seam"></i>
-      </div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">SubSLS / SLS</div>
-        <div class="bottom-sheet-desc">Rincian 1.042 SLS dan satuan lingkungan</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-  </div>
-</div>
-
-<!-- 2. PETUGAS HUB ACTION SHEET -->
-<div class="bottom-nav-sheet" id="sheetPetugas" role="dialog" aria-modal="true" aria-label="Menu Petugas">
-  <div class="bottom-nav-sheet-header">
-    <div class="bottom-nav-sheet-handle"></div>
-    <div class="bottom-nav-sheet-title">
-      <i class="bi bi-people-fill text-blue" style="font-size: 16px;"></i>
-      <span>Kinerja &amp; Petugas</span>
-    </div>
-    <button type="button" class="bottom-nav-sheet-close" onclick="closeNavSheets()" aria-label="Tutup"><i class="bi bi-x"></i></button>
-  </div>
-  <div class="bottom-nav-sheet-content">
-    <div class="sheet-section-title">Hierarki Petugas Lapangan</div>
-    <div class="sheet-quick-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px;">
-      <% if (typeof settings === 'undefined' || settings.page_pcl === '1') { %>
-      <a href="<%= navPrefix %>/pcl" class="sheet-grid-card <%= activePage === 'pcl' ? 'active' : '' %>">
-        <div class="sheet-grid-icon" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;">
-          <i class="bi bi-person-gear"></i>
-        </div>
-        <span class="sheet-grid-name"><%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'PPL' : 'PCL' %></span>
-        <span class="sheet-grid-sub">Pencacah</span>
-      </a>
-      <% } %>
-      <% if (typeof settings === 'undefined' || settings.page_pml === '1') { %>
-      <a href="<%= navPrefix %>/pml" class="sheet-grid-card <%= activePage === 'pml' ? 'active' : '' %>">
-        <div class="sheet-grid-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
-          <i class="bi bi-clipboard2-data"></i>
-        </div>
-        <span class="sheet-grid-name">PML</span>
-        <span class="sheet-grid-sub">Pemeriksa</span>
-      </a>
-      <% } %>
-      <% if (typeof settings === 'undefined' || settings.page_korlap === '1') { %>
-      <a href="<%= navPrefix %>/korlap" class="sheet-grid-card <%= activePage === 'korlap' ? 'active' : '' %>">
-        <div class="sheet-grid-icon" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
-          <i class="bi bi-person-workspace"></i>
-        </div>
-        <span class="sheet-grid-name">Korlap</span>
-        <span class="sheet-grid-sub">Koordinator</span>
-      </a>
-      <% } %>
-    </div>
-
-    <div class="sheet-section-title">Analisis Kinerja &amp; Peringkat</div>
-
-    <% if (typeof settings === 'undefined' || settings.page_performa === '1') { %>
-    <a href="<%= navPrefix %>/performa" class="bottom-sheet-item <%= activePage === 'performa' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(16, 185, 129, 0.14); color: #10b981;">
-        <i class="bi bi-speedometer2"></i>
-      </div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Performa Petugas</div>
-        <div class="bottom-sheet-desc">Evaluasi beban kerja, kecepatan &amp; target</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-
-    <% if (typeof settings === 'undefined' || settings.page_performa === '1') { %>
-    <a href="<%= navPrefix %>/harian" class="bottom-sheet-item <%= activePage === 'harian' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(99, 102, 241, 0.14); color: #6366f1;">
-        <i class="bi bi-calendar3"></i>
-      </div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Progres Harian</div>
-        <div class="bottom-sheet-desc">Tren penerimaan dokumen &amp; listing harian</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-
-    <% if (typeof settings === 'undefined' || settings.page_leaderboard === '1') { %>
-    <a href="<%= navPrefix %>/leaderboard" class="bottom-sheet-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(245, 158, 11, 0.14); color: #f59e0b;">
-        <i class="bi bi-trophy"></i>
-      </div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Performa Terbaik</div>
-        <div class="bottom-sheet-desc">Leaderboard petugas realisasi tertinggi</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-
-    <% if (typeof settings === 'undefined' || settings.page_performatrendah === '1') { %>
-    <a href="<%= navPrefix %>/performa-terendah" class="bottom-sheet-item <%= activePage === 'performa-terendah' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(239, 68, 68, 0.14); color: #ef4444;">
-        <i class="bi bi-graph-down"></i>
-      </div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Performa Terendah</div>
-        <div class="bottom-sheet-desc">Petugas perlu asistensi &amp; percepatan</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-  </div>
-</div>
-
-<!-- 3. SUPER MENU & SISTEM ACTION SHEET -->
-<div class="bottom-nav-sheet" id="sheetMenu" role="dialog" aria-modal="true" aria-label="Menu Utama & Sistem">
-  <div class="bottom-nav-sheet-header">
-    <div class="bottom-nav-sheet-handle"></div>
-    <div class="bottom-nav-sheet-title">
-      <i class="bi bi-grid-fill text-orange" style="font-size: 16px;"></i>
-      <span>Menu &amp; Sistem</span>
-    </div>
-    <button type="button" class="bottom-nav-sheet-close" onclick="closeNavSheets()" aria-label="Tutup"><i class="bi bi-x"></i></button>
-  </div>
-  <div class="bottom-nav-sheet-content">
-    <!-- Quick Actions Top Bar (Theme, Search, Session) -->
-    <div class="sheet-quick-actions-bar" style="display: flex; gap: 8px; margin-bottom: 10px;">
-      <button type="button" class="sheet-quick-action-pill" onclick="toggleTheme(event)">
-        <i class="bi bi-moon-stars-fill theme-icon"></i>
-        <span>Tema</span>
-      </button>
-      <button type="button" class="sheet-quick-action-pill" onclick="closeNavSheets(); window.toggleGlobalSearchModal(true);">
-        <i class="bi bi-search"></i>
-        <span>Cari Data</span>
-      </button>
-      <% if ((typeof user !== 'undefined' && user) || (typeof isAdmin !== 'undefined' && isAdmin)) { %>
-      <a href="/logout" class="sheet-quick-action-pill text-red" style="text-decoration: none;">
-        <i class="bi bi-box-arrow-right"></i>
-        <span>Logout</span>
-      </a>
-      <% } else { %>
-      <a href="/login" class="sheet-quick-action-pill text-blue" style="text-decoration: none;">
-        <i class="bi bi-box-arrow-in-right"></i>
-        <span>Login</span>
-      </a>
-      <% } %>
-    </div>
-
-    <!-- Evaluasi & Kualitas -->
-    <% 
-      const showAnomaliMob = !isSakernasLayout && typeof settings !== 'undefined' && settings.page_deteksianomali === '1';
-      const showEarlyWarningMob = typeof settings !== 'undefined' && settings.page_earlywarning === '1';
-    %>
-    <% if (showEarlyWarningMob || showAnomaliMob) { %>
-    <div class="sheet-section-title">Evaluasi &amp; Kualitas Data</div>
-    <% if (showEarlyWarningMob) { %>
-    <a href="<%= navPrefix %>/early-warning" class="bottom-sheet-item <%= activePage === 'earlywarning' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(245, 158, 11, 0.14); color: #f59e0b;">
-        <i class="bi bi-exclamation-octagon"></i>
-      </div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Early Warning System</div>
-        <div class="bottom-sheet-desc">Deteksi dini wilayah berisiko terlambat</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-    <% if (showAnomaliMob) { %>
-    <a href="<%= navPrefix %>/deteksi-anomali" class="bottom-sheet-item <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(239, 68, 68, 0.14); color: #ef4444;">
-        <i class="bi bi-shield-exclamation"></i>
-      </div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Deteksi Anomali</div>
-        <div class="bottom-sheet-desc">Validasi inkonsistensi &amp; outlier data</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-    <% } %>
-
-    <!-- Data & Utilitas -->
-    <div class="sheet-section-title">Data &amp; Bantuan</div>
-    <% if (typeof settings === 'undefined' || settings.page_export === '1') { %>
-    <a href="<%= navPrefix %>/export" class="bottom-sheet-item <%= activePage === 'export' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(16, 185, 129, 0.14); color: #10b981;">
-        <i class="bi bi-download"></i>
-      </div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Export Data</div>
-        <div class="bottom-sheet-desc">Unduh rekap tabel Excel &amp; CSV</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-    <a href="<%= navPrefix %>/help" class="bottom-sheet-item <%= activePage === 'help' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(59, 130, 246, 0.14); color: #3b82f6;">
-        <i class="bi bi-life-preserver"></i>
-      </div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Panduan &amp; Bantuan</div>
-        <div class="bottom-sheet-desc">FAQ, kamus istilah &amp; cara penggunaan</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-
-    <!-- Administrasi (Khusus Admin) -->
-    <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-    <div class="sheet-section-title">Administrasi &amp; Sistem</div>
-    <a href="<%= navPrefix %>/admin" class="bottom-sheet-item <%= activePage === 'admin-menu' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(139, 92, 246, 0.14); color: #8b5cf6;">
-        <i class="bi bi-grid-fill"></i>
-      </div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Menu Utama Admin</div>
-        <div class="bottom-sheet-desc">Portal manajemen &amp; kontrol sistem</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <a href="<%= navPrefix %>/admin/master" class="bottom-sheet-item <%= activePage === 'master' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(6, 182, 212, 0.14); color: #06b6d4;">
-        <i class="bi bi-database-fill-gear"></i>
-      </div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Kelola Master Data</div>
-        <div class="bottom-sheet-desc">Data SLS, Desa, Kecamatan &amp; Petugas</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <a href="<%= navPrefix %>/admin/settings" class="bottom-sheet-item <%= activePage === 'settings' ? 'active' : '' %>">
-      <div class="bottom-sheet-icon" style="background: rgba(59, 130, 246, 0.14); color: #3b82f6;">
-        <i class="bi bi-sliders"></i>
-      </div>
-      <div class="bottom-sheet-info">
-        <div class="bottom-sheet-label">Pengaturan Tampilan</div>
-        <div class="bottom-sheet-desc">Konfigurasi modul &amp; fitur aktif</div>
-      </div>
-      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
-    </a>
-    <% } %>
-  </div>
-</div>
 
 <!-- MAIN WRAPPER -->
 <div class="main-wrapper">

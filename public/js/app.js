@@ -1081,129 +1081,28 @@ function updateTime() {
       }
     }
 
-    // Mobile Bottom Nav Sheet Helper Functions
-    function openNavSheet(sheetId) {
-      if (window.innerWidth > 768) return; // Do not open bottom sheets on desktop view
-      closeNavSheets();
-      const sheet = document.getElementById(sheetId);
-      const overlay = document.getElementById('bottomNavOverlay');
-      if (sheet && overlay) {
-        if (navigator.vibrate) {
-          try { navigator.vibrate(10); } catch (e) {}
-        }
-        overlay.classList.add('active');
-        sheet.classList.add('active');
-        document.body.style.overflow = 'hidden';
-      }
-    }
-
-    function closeNavSheets() {
-      const overlay = document.getElementById('bottomNavOverlay');
-      document.querySelectorAll('.bottom-nav-sheet').forEach(sheet => {
-        sheet.classList.remove('active');
-        sheet.style.transform = '';
-        sheet.style.transition = '';
-      });
-      if (overlay) {
-        overlay.classList.remove('active');
-        overlay.style.opacity = '';
-      }
-      document.body.style.overflow = '';
-    }
-
-    window.openNavSheet = openNavSheet;
-    window.closeNavSheets = closeNavSheets;
-
-    // Swipe-to-Close Drag Handler for Mobile Bottom Nav Sheets
-    (function setupSheetDragToClose() {
-      let activeSheet = null;
-      let startY = 0;
-      let currentY = 0;
-      let isDragging = false;
-
-      document.addEventListener('touchstart', (e) => {
-        const sheet = e.target.closest('.bottom-nav-sheet.active');
-        if (!sheet) return;
-
-        const content = sheet.querySelector('.bottom-nav-sheet-content');
-        const header = e.target.closest('.bottom-nav-sheet-header, .bottom-nav-sheet-handle');
-
-        if (header || (content && content.scrollTop <= 0)) {
-          activeSheet = sheet;
-          startY = e.touches[0].clientY;
-          currentY = startY;
-          isDragging = false;
-        }
-      }, { passive: true });
-
-      document.addEventListener('touchmove', (e) => {
-        if (!activeSheet) return;
-        currentY = e.touches[0].clientY;
-        const diffY = currentY - startY;
-
-        if (diffY > 0) {
-          const content = activeSheet.querySelector('.bottom-nav-sheet-content');
-          const isHeader = e.target.closest('.bottom-nav-sheet-header, .bottom-nav-sheet-handle');
-          if (isHeader || (content && content.scrollTop <= 0)) {
-            isDragging = true;
-            activeSheet.style.transition = 'none';
-            activeSheet.style.transform = `translateY(${diffY}px)`;
-            const overlay = document.getElementById('bottomNavOverlay');
-            if (overlay) {
-              const opacity = Math.max(0, 1 - (diffY / 250));
-              overlay.style.opacity = opacity.toString();
-            }
-          }
-        }
-      }, { passive: true });
-
-      const handleTouchEnd = () => {
-        if (!activeSheet) return;
-        const diffY = currentY - startY;
-        const sheetToReset = activeSheet;
-        const overlay = document.getElementById('bottomNavOverlay');
-
-        sheetToReset.style.transition = 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
-        
-        if (isDragging && diffY > 80) {
-          closeNavSheets();
-        } else {
-          sheetToReset.style.transform = '';
-          if (overlay) overlay.style.opacity = '';
-        }
-
-        setTimeout(() => {
-          if (sheetToReset) {
-            sheetToReset.style.transition = '';
-            sheetToReset.style.transform = '';
-          }
-          if (overlay) overlay.style.opacity = '';
-        }, 250);
-
-        activeSheet = null;
-        isDragging = false;
-      };
-
-      document.addEventListener('touchend', handleTouchEnd, { passive: true });
-      document.addEventListener('touchcancel', handleTouchEnd, { passive: true });
-    })();
-
-    window.addEventListener('pjax:start', closeNavSheets);
-    window.addEventListener('popstate', closeNavSheets);
-
+    // Modernized Native Side-Drawer Helper Functions
     function openSidebarDrawer(sectionName = null) {
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('sidebarOverlay');
       const mainToggleBtn = document.getElementById('sidebarToggle');
       if (sidebar && overlay) {
+        if (navigator.vibrate) {
+          try { navigator.vibrate(10); } catch (e) {}
+        }
         sidebar.classList.add('active');
         overlay.classList.add('active');
+        if (window.innerWidth <= 768) {
+          document.body.style.overflow = 'hidden';
+        }
         if (mainToggleBtn) mainToggleBtn.setAttribute('aria-expanded', 'true');
 
         if (sectionName) {
           setTimeout(() => {
             const targetSection = sidebar.querySelector(`.nav-section-wrapper[data-section="${sectionName}"]`);
             if (targetSection) {
+              targetSection.classList.remove('is-collapsed');
+              targetSection.classList.add('is-open');
               targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
           }, 120);
@@ -1211,28 +1110,102 @@ function updateTime() {
       }
     }
 
+    function closeSidebarDrawer() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const mainToggleBtn = document.getElementById('sidebarToggle');
+      if (sidebar) {
+        sidebar.classList.remove('active');
+        sidebar.style.transform = '';
+      }
+      if (overlay) overlay.classList.remove('active');
+      if (mainToggleBtn) mainToggleBtn.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+    }
+
+    window.openSidebarDrawer = openSidebarDrawer;
+    window.closeSidebarDrawer = closeSidebarDrawer;
+
+    // Swipe-to-Close Drag Handler for Side-Drawer
+    (function setupSidebarDragToClose() {
+      let startX = 0;
+      let currentX = 0;
+      let isDragging = false;
+
+      document.addEventListener('touchstart', (e) => {
+        const sidebar = e.target.closest('.sidebar.active');
+        if (!sidebar || window.innerWidth > 768) return;
+        startX = e.touches[0].clientX;
+        currentX = startX;
+        isDragging = true;
+      }, { passive: true });
+
+      document.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        currentX = e.touches[0].clientX;
+        const diffX = currentX - startX;
+        if (diffX < 0) { // dragging left
+          const sidebar = document.getElementById('sidebar');
+          if (sidebar) {
+            sidebar.style.transition = 'none';
+            sidebar.style.transform = `translateX(${diffX}px)`;
+          }
+        }
+      }, { passive: true });
+
+      const handleTouchEnd = () => {
+        if (!isDragging) return;
+        const diffX = currentX - startX;
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+          sidebar.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+          if (diffX < -65) {
+            closeSidebarDrawer();
+          } else {
+            sidebar.style.transform = '';
+          }
+          setTimeout(() => {
+            if (sidebar) sidebar.style.transition = '';
+          }, 300);
+        }
+        isDragging = false;
+      };
+
+      document.addEventListener('touchend', handleTouchEnd, { passive: true });
+      document.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+    })();
+
+    window.addEventListener('pjax:start', closeSidebarDrawer);
+    window.addEventListener('popstate', closeSidebarDrawer);
+
+    // Collapsible Accordion in Sidebar
+    document.addEventListener('click', (e) => {
+      const sectionHeader = e.target.closest('.nav-section-header');
+      if (sectionHeader && window.innerWidth <= 768) {
+        const wrapper = sectionHeader.closest('.nav-section-wrapper');
+        if (wrapper) {
+          wrapper.classList.toggle('is-collapsed');
+          wrapper.classList.toggle('is-open');
+        }
+      }
+    });
+
     // Event delegation on document for sidebar toggling and theme toggling
     // This ensures buttons remain clickable even after PJAX page swaps them
     document.addEventListener('click', (e) => {
       // 0. Mobile Bottom Nav & Sidebar Toggle Clicks
-      const wilayahBtn = e.target.closest('#bottomNavWilayahBtn');
       const petugasBtn = e.target.closest('#bottomNavPetugasBtn');
       const bottomNavMenuBtn = e.target.closest('#bottomNavMenuBtn');
       const toggleBtn = e.target.closest('#sidebarToggle');
 
-      if (wilayahBtn) {
-        e.preventDefault();
-        openNavSheet('sheetWilayah');
-        return;
-      }
       if (petugasBtn) {
         e.preventDefault();
-        openNavSheet('sheetPetugas');
+        openSidebarDrawer('petugas');
         return;
       }
       if (bottomNavMenuBtn) {
         e.preventDefault();
-        openNavSheet('sheetMenu');
+        openSidebarDrawer();
         return;
       }
       if (toggleBtn) {
@@ -1244,8 +1217,8 @@ function updateTime() {
           localStorage.setItem('sidebar-collapsed', isCollapsed);
           toggleBtn.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
         } else {
-          // Mobile open super menu sheet
-          openNavSheet('sheetMenu');
+          // Mobile open modernized side-drawer
+          openSidebarDrawer();
         }
         return;
       }
@@ -1254,15 +1227,7 @@ function updateTime() {
       const closeBtn = e.target.closest('#sidebarClose');
       const sidebarOverlay = e.target.closest('#sidebarOverlay');
       if (closeBtn || sidebarOverlay) {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        const mainToggleBtn = document.getElementById('sidebarToggle');
-        
-        if (sidebar && overlay) {
-          sidebar.classList.remove('active');
-          overlay.classList.remove('active');
-          if (mainToggleBtn) mainToggleBtn.setAttribute('aria-expanded', 'false');
-        }
+        closeSidebarDrawer();
         return;
       }
 

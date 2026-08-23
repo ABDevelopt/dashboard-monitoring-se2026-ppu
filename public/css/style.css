@@ -3425,211 +3425,326 @@ body.light-mode .skeleton-block {
 }
 
 
-/* ====== MOBILE BOTTOM SHEET & MENU CARD ADAPTATION ====== */
+/* ====== MODERNIZED NATIVE SIDE-DRAWER (MOBILE) ====== */
 @media (max-width: 768px) {
-  /* Transform left-sliding sidebar into a bottom sheet with GPU acceleration */
   .sidebar {
     position: fixed !important;
+    top: 0 !important;
     bottom: 0 !important;
     left: 0 !important;
-    width: 100% !important;
-    height: 75vh !important; /* height of bottom sheet */
-    max-height: 80vh !important;
-    top: auto !important;
-    border-radius: 20px 20px 0 0 !important;
-    border-right: none !important;
-    border-top: 1px solid var(--border) !important;
-    box-shadow: var(--shadow-lg) !important;
-    transform: translate3d(0, 100%, 0); /* 3D transform triggers GPU compositing */
-    transition: none !important;
-    z-index: 1050 !important;
+    width: min(320px, 86vw) !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 24px 24px 0 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-top: none !important;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.96) 0%, rgba(10, 15, 26, 0.99) 100%) !important;
+    backdrop-filter: blur(28px) saturate(200%) brightness(105%) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(105%) !important;
+    box-shadow: 16px 0 50px rgba(0, 0, 0, 0.65) !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    z-index: 1100 !important;
     display: flex !important;
     flex-direction: column !important;
-    min-height: auto !important;
-    overflow-y: hidden !important; /* contain scrolling within the nav container */
+    overflow-y: hidden !important;
     will-change: transform;
-    backface-visibility: hidden;
-    overscroll-behavior: contain;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  }
+
+  body.light-mode .sidebar {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0%, rgba(248, 250, 252, 0.99) 100%) !important;
+    border-right: 1px solid rgba(226, 232, 240, 0.95) !important;
+    box-shadow: 16px 0 45px rgba(0, 0, 0, 0.12) !important;
   }
 
   .sidebar.active {
-    transform: translate3d(0, 0, 0);
+    transform: translateX(0) !important;
   }
 
-  /* Notch / drag handle at the top of the sheet */
   .sidebar::before {
-    content: '';
-    display: block;
-    width: 48px;
-    height: 5px;
-    background: var(--text-muted);
-    border-radius: 10px;
-    margin: 12px auto 8px;
-    opacity: 0.4;
-    flex-shrink: 0;
-  }
-
-  /* Close button positioned inside the bottom sheet */
-  .btn-close-sidebar {
-    top: 12px !important;
-    right: 16px !important;
-    padding: 8px !important;
-    font-size: 14px !important;
-    border-radius: 50% !important;
-    background: rgba(var(--accent-rgb), 0.05) !important;
-    border: 1px solid var(--border) !important;
-    color: var(--text-primary) !important;
-  }
-
-  /* Hide vertical logo to save valuable sheet space */
-  .sidebar-logo {
     display: none !important;
   }
 
-  /* Search block formatting inside bottom sheet */
-  .sidebar-search {
-    padding: 12px 16px 8px !important;
-    border-bottom: none !important;
-    flex-shrink: 0 !important;
+  /* Modern Drawer Header */
+  .sidebar-header-drawer {
+    padding: 16px 14px 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
   }
 
-  .sidebar-search input {
-    background: var(--bg-primary) !important;
-    border: 1px solid var(--border) !important;
-    height: 42px !important;
-    border-radius: 10px !important;
-    font-size: 14px !important;
-    padding-left: 36px !important;
+  body.light-mode .sidebar-header-drawer {
+    background: rgba(248, 250, 252, 0.85);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.9);
   }
 
-  .sidebar-search .bi-search {
-    left: 14px !important;
+  .drawer-brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .drawer-brand-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .drawer-logo-img {
+    width: auto;
+    max-width: 110px;
+    max-height: 60px;
+    object-fit: contain;
+  }
+
+  .drawer-custom-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .drawer-custom-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    border-radius: 8px;
+  }
+
+  .drawer-title-main {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+
+  .drawer-title-sub {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--accent-blue);
+  }
+
+  .btn-close-sidebar {
+    position: static !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: var(--text-secondary) !important;
     font-size: 13px !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
   }
 
-  /* Menu scroll container: vertical flex with momentum scroll */
+  body.light-mode .btn-close-sidebar {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    color: #475569 !important;
+  }
+
+  .btn-close-sidebar:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+    color: var(--text-primary) !important;
+  }
+
+  /* Quick Strip inside Drawer */
+  .drawer-quick-strip {
+    display: flex;
+    gap: 6px;
+  }
+
+  .drawer-quick-pill {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 7.5px 8px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    font-size: 11.5px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body.light-mode .drawer-quick-pill {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  }
+
+  .drawer-quick-pill:active {
+    transform: scale(0.95);
+  }
+
+  /* Scroll Container for Drawer Menu */
   .sidebar-nav {
     display: flex !important;
     flex-direction: column !important;
-    gap: 20px !important;
-    padding: 8px 16px 24px !important;
-    margin: 0 !important;
+    gap: 4px !important;
+    padding: 8px 10px 20px 10px !important;
     overflow-y: auto !important;
     flex: 1 !important;
-    -webkit-overflow-scrolling: touch !important; /* Momentum scrolling on iOS */
-    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch !important;
   }
 
-  /* Keep section wrapper as standard block */
+  /* Collapsible Accordion Sections in Drawer */
   .nav-section-wrapper {
     display: block !important;
+    margin-bottom: 4px !important;
+    border-radius: 12px !important;
+    transition: all 0.2s ease;
   }
 
-  /* Styling for category header on mobile menu */
   .nav-section-header {
-    display: block !important;
-    font-size: 10px !important;
-    font-weight: 800 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 9px 12px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.08em !important;
+    letter-spacing: 0.06em !important;
     color: var(--text-muted) !important;
-    margin: 0 0 10px 4px !important;
-    border-bottom: 1px dashed var(--border) !important;
-    padding-bottom: 4px !important;
+    cursor: pointer !important;
+    border-radius: 10px !important;
+    user-select: none !important;
+    margin: 0 !important;
+    border: none !important;
+    transition: all 0.2s ease;
   }
 
-  /* Convert section content to a 3-column Grid for cards */
+  .nav-section-header:hover {
+    background: rgba(255, 255, 255, 0.04) !important;
+    color: var(--text-primary) !important;
+  }
+
+  body.light-mode .nav-section-header:hover {
+    background: rgba(0, 0, 0, 0.03) !important;
+  }
+
+  .nav-section-chevron {
+    font-size: 11px;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    color: var(--text-muted);
+  }
+
+  .nav-section-wrapper.is-collapsed .nav-section-chevron {
+    transform: rotate(-90deg);
+  }
+
+  .nav-section-wrapper.is-collapsed .nav-section-content {
+    display: none !important;
+  }
+
   .nav-section-content {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 10px !important;
-  }
-
-  /* Styles for each individual Card Menu Item */
-  .nav-item {
     display: flex !important;
     flex-direction: column !important;
+    gap: 3px !important;
+    padding: 2px 0 6px 0 !important;
+  }
+
+  /* Nav Item Styling with Squircle Icon Pods */
+  .sidebar .nav-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    gap: 10px !important;
+    padding: 8px 10px !important;
+    margin: 0 !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    color: var(--text-secondary) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    min-height: auto !important;
+    aspect-ratio: auto !important;
+    box-shadow: none !important;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    position: relative !important;
+  }
+
+  .sidebar .nav-item:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: var(--text-primary) !important;
+  }
+
+  body.light-mode .sidebar .nav-item:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+  }
+
+  .sidebar .nav-item.active {
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0.16) 0%, rgba(56, 189, 248, 0.03) 100%) !important;
+    border: 1px solid rgba(56, 189, 248, 0.25) !important;
+    color: #38bdf8 !important;
+    font-weight: 700 !important;
+  }
+
+  body.light-mode .sidebar .nav-item.active {
+    background: linear-gradient(90deg, rgba(2, 132, 199, 0.12) 0%, rgba(2, 132, 199, 0.02) 100%) !important;
+    border: 1px solid rgba(2, 132, 199, 0.2) !important;
+    color: #0284c7 !important;
+  }
+
+  .sidebar .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    background: var(--accent-blue);
+    border-radius: 0 3px 3px 0;
+  }
+
+  .sidebar .nav-icon {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+    display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    text-align: center !important;
-    padding: 12px 6px !important;
-    border-radius: 12px !important;
-    background: var(--bg-secondary) !important;
-    border: 1px solid var(--border) !important;
-    color: var(--text-primary) !important;
-    font-size: 10px !important;
-    font-weight: 600 !important;
-    letter-spacing: normal !important;
+    font-size: 15px !important;
+    flex-shrink: 0 !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
     margin: 0 !important;
-    min-height: 84px !important;
-    aspect-ratio: 1.1 / 1 !important;
-    transition: all 0.15s ease-out !important; /* fast response transition */
-    gap: 6px !important;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+    transition: transform 0.2s ease !important;
   }
 
-  /* Larger icons inside cards */
-  .nav-item .nav-icon {
-    font-size: 22px !important;
-    margin: 0 !important;
-    color: var(--accent-blue) !important;
-    transition: transform 0.15s ease-out !important;
+  body.light-mode .sidebar .nav-icon {
+    background: #f1f5f9 !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
   }
 
-  /* Active card styling with glowing accents */
-  .nav-item.active {
-    background: rgba(var(--accent-rgb), 0.08) !important;
-    border-color: var(--accent-purple) !important;
-    color: var(--accent-purple) !important;
-    box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.1) !important;
+  .sidebar .nav-item:hover .nav-icon {
+    transform: scale(1.08) !important;
   }
 
-  .nav-item.active .nav-icon {
-    color: var(--accent-purple) !important;
-    transform: scale(1.08);
-  }
-
-  /* Hover and active micro-animations */
-  .nav-item:active {
-    transform: scale(0.94) !important;
-    background: var(--bg-card-hover) !important;
-  }
-
-  /* Unpin star button inside cards */
-  .unpin-sidebar-btn {
-    position: absolute !important;
-    right: 4px !important;
-    top: 4px !important;
-    opacity: 0.8 !important;
-    font-size: 9px !important;
-    padding: 2px !important;
-  }
-
-  /* Mobile Menu Auth Items Styling */
-  .nav-item-logout {
-    border-color: rgba(239, 68, 68, 0.35) !important;
-    background: rgba(239, 68, 68, 0.08) !important;
-    color: var(--accent-red, #ef4444) !important;
-  }
-  .nav-item-logout .nav-icon {
-    color: var(--accent-red, #ef4444) !important;
-  }
-  .nav-item-login {
-    border-color: rgba(59, 130, 246, 0.35) !important;
-    background: rgba(59, 130, 246, 0.08) !important;
-    color: var(--accent-blue, #3b82f6) !important;
-  }
-  .nav-item-login .nav-icon {
-    color: var(--accent-blue, #3b82f6) !important;
-  }
-
-  /* High performance overlay without heavy backdrop-filter blur on mobile */
   .sidebar-overlay {
-    z-index: 1040 !important;
-    backdrop-filter: none !important; /* disable blur on mobile for smooth performance */
-    background: rgba(10, 14, 26, 0.5) !important; /* solid transparent fallback */
+    z-index: 1090 !important;
+    background: rgba(10, 14, 26, 0.65) !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
     will-change: opacity;
-    transition: opacity 0.3s ease-out !important;
+    transition: opacity 0.28s ease !important;
   }
 
   /* Safe Area Inset Layout Offsets for Notch/Statusbar/Home-Indicator */
