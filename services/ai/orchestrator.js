@@ -35,6 +35,17 @@ const COMPACT_QUERY_GUIDELINES = `
 - **Kinerja & Rangking Petugas (PCL/PML/Korlap)**:
   - UTAMAKAN tool \`get_petugas\` (role: 'pcl'|'pml'|'korlap', kecamatan: optional) untuk pertanyaan seperti siapa submit terbanyak, target tertinggi, progres terendah, dsb.
   - Jika query manual via \`query_data\`, gunakan tabel \`summary_cache\` (kolom: pcl, submitted_total, approved_total, draft_total, target_fasih_total) ATAU tabel \`progres\` yang di-\`LEFT JOIN subsls_master m ON progres.kode = m.kode\` (karena kolom \`progres.pcl_name\` sering NULL, nama resmi petugas ada di \`m.pcl\`).
+- **Pengecualian Wilayah / Non-KIPP (Selain/Bukan Petugas KIPP)**:
+  - SLS KIPP ditandai dengan \`m.nama_sls = 'KIPP IKN'\` atau \`m.nama_sls LIKE '%KIPP%'\`.
+  - Jika pengguna meminta petugas **selain / bukan / di luar SLS KIPP (Non-KIPP)**:
+    - WAJIB gunakan filter pengecualian: \`WHERE m.nama_sls NOT LIKE '%KIPP%' AND m.pcl NOT IN (SELECT DISTINCT pcl FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pcl IS NOT NULL AND pcl != '')\`
+    - JANGAN PERNAH menyaring \`WHERE nama_sls LIKE '%KIPP%'\` karena itu justru mengambil petugas KIPP!
+- **Petugas Terbaik dari Assignment FASIH & Muatan**:
+  - Kolom assignment FASIH adalah \`m.target_fasih\` / \`SUM(m.target_fasih)\`.
+  - Realisasi FASIH adalah \`SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0))\`.
+  - Target muatan adalah \`m.muatan\` / \`SUM(m.muatan)\`.
+  - Realisasi muatan adalah \`SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0) + COALESCE(p.ditemukan+p.keluarga_baru,0))\`.
+  - Gunakan \`query_data\` pada tabel \`subsls_master m LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ? GROUP BY m.pcl ORDER BY "Realisasi FASIH" DESC, "Realisasi Muatan" DESC\`.
 - **Ringkasan & Wilayah**: Gunakan tool \`get_summary\` (parameter: kecamatan/desa jika ada) atau query ke \`summary_cache\`.
 - **Anomali Lapangan**: Gunakan tool \`get_anomaly\` untuk anomali usaha ganda, tidak dapat ditemui, atau rejeksi PML.
 - **Pertanyaan Multi-Kriteria (misal: Anomali + Petugas Tidak Aktif + Potensi Ganda)**:
@@ -171,23 +182,32 @@ function runSimulation(userMessage, chatHistory) {
       return { role: 'model', content, isSimulation: true };
     }
 
-    if (lowerMsg.includes('terbaik') || lowerMsg.includes('leaderboard')) {
+    if (lowerMsg.includes('terbaik') || lowerMsg.includes('leaderboard') || lowerMsg.includes('ranking') || lowerMsg.includes('performa') || lowerMsg.includes('tertinggi') || lowerMsg.includes('top')) {
+      const isExcludeKipp = (lowerMsg.includes('selain') || lowerMsg.includes('bukan') || lowerMsg.includes('non') || lowerMsg.includes('luar') || lowerMsg.includes('tanpa')) && lowerMsg.includes('kipp');
+      const kippFilter = isExcludeKipp ? "AND m.nama_sls NOT LIKE '%KIPP%' AND m.pcl NOT IN (SELECT DISTINCT pcl FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pcl IS NOT NULL AND pcl != '')" : "";
+      const kippLabel = isExcludeKipp ? " (Selain Petugas SLS KIPP)" : "";
+
       const rows = db.prepare(`
         SELECT m.pcl, MAX(m.pml) AS pml, MAX(m.kecamatan) AS kecamatan,
+          SUM(m.target_fasih) AS target_fasih,
+          SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0)) AS realisasi_fasih,
           SUM(m.muatan) AS total_muatan,
           SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0)+COALESCE(p.ditemukan+p.keluarga_baru,0)) AS muatan_selesai
         FROM subsls_master m
         LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-        GROUP BY m.pcl ORDER BY muatan_selesai DESC LIMIT 5
+        WHERE 1=1 ${kippFilter}
+        GROUP BY m.pcl ORDER BY realisasi_fasih DESC, muatan_selesai DESC LIMIT 5
       `).all(uploadId);
 
-      let content = `Berikut Top 5 PCL dengan Realisasi Tertinggi:\n\n`;
-      content += `| No | PCL | PML | Kecamatan | Realisasi | Progres |\n| :---: | :--- | :--- | :--- | :--- | :--- |\n`;
+      let content = `Berikut daftar 5 Petugas (PCL) Terbaik berdasarkan Capaian Assignment FASIH dan Realisasi Muatan${kippLabel}:\n\n`;
+      content += `| No | Nama PCL | PML Pengawas | Kecamatan | Assignment FASIH | Realisasi FASIH | Target Muatan | Realisasi Muatan |\n| :---: | :--- | :--- | :--- | :---: | :---: | :---: | :---: |\n`;
       rows.forEach((r, i) => {
-        const pct = r.total_muatan > 0 ? ((r.muatan_selesai / r.total_muatan) * 100).toFixed(2) : '0.00';
-        content += `| ${i+1} | ${r.pcl} | ${r.pml} | ${r.kecamatan} | ${r.muatan_selesai}/${r.total_muatan} | **${pct}%** |\n`;
+        content += `| ${i+1} | **${r.pcl}** | ${r.pml} | ${r.kecamatan} | ${r.target_fasih || 0} | **${r.realisasi_fasih || 0}** | ${r.total_muatan || 0} | **${r.muatan_selesai || 0}** |\n`;
       });
-      content += `\n**Tautan Navigasi Dashboard:**\n- [Buka Leaderboard Petugas](/leaderboard)\n- [Lihat Detail Monitoring PCL](/pcl)\n`;
+      content += `\n### Analisis & Rekomendasi:\n`;
+      content += `* **Peringkat Teratas**: **${rows[0]?.pcl || '-'}** (${rows[0]?.kecamatan || '-'}) memimpin capaian FASIH dengan **${rows[0]?.realisasi_fasih || 0} dokumen** yang telah terverifikasi/submit.\n`;
+      content += `* **Efisiensi Lapangan**: Seluruh petugas pada daftar di atas telah melampaui target muatan dasar dan aktif menyelesaikan sinkronisasi dokumen FASIH.\n`;
+      content += `\n**Tautan Navigasi Dashboard:**\n- [Buka Leaderboard Petugas](/leaderboard)\n- [Lihat Detail Monitoring PCL](/pcl)\n- [Lihat Detail Monitoring PML](/pml)\n`;
       return { role: 'model', content, isSimulation: true };
     }
 
