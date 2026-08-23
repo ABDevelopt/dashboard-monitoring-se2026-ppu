@@ -93,6 +93,8 @@ router.get('/map-stats', (req, res) => {
       m.pml,
       m.pcl,
       m.muatan,
+      (${targetMuatanFormula}) AS total_muatan,
+      (${realFormula}) AS muatan_selesai,
       (${singleSelesaiFormula}) AS selesai,
       (${usahaTotalFormula}) AS usaha_total,
       (${keluargaTotalFormula}) AS keluarga_total,
@@ -110,7 +112,7 @@ router.get('/map-stats', (req, res) => {
 
   const { getKecamatanStats } = require('../database');
   const kecStats = getKecamatanStats(uploadId, settings);
-  res.json({ kecStats: attachProgressPercentages(kecStats), desaStats: attachProgressPercentages(desaStats), slsStats: attachProgressPercentages(slsStats) });
+  res.json({ kecStats: attachProgressPercentages(kecStats, settings), desaStats: attachProgressPercentages(desaStats, settings), slsStats: attachProgressPercentages(slsStats, settings) });
 });
 
 // Detail Korlap

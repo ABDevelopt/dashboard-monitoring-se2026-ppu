@@ -817,24 +817,19 @@
     <!-- 3. FLOATING KPI OVERLAY BAR (TOP RIGHT) -->
     <div class="gmaps-floating-kpi-bar">
       <div class="gmaps-kpi-pill">
-        <i class="bi bi-map-fill" style="color: var(--accent-blue);"></i>
-        <span class="label">Total:</span>
-        <strong id="statTotalDesa">-- Desa</strong>
+        <i class="bi bi-check2-circle" style="color: var(--accent-green);"></i>
+        <span class="label">SLS Selesai:</span>
+        <strong id="statSlsSelesai" style="color: var(--accent-green);">-- / -- SLS</strong>
       </div>
       <div class="gmaps-kpi-pill">
-        <i class="bi bi-check-circle-fill" style="color: var(--accent-green);"></i>
-        <span class="label">100%:</span>
-        <strong id="statDesa100" style="color: var(--accent-green);">-- Desa</strong>
+        <i class="bi bi-pie-chart-fill" style="color: var(--accent-blue);"></i>
+        <span class="label">Progres FASIH:</span>
+        <strong id="statProgresFasih" style="color: var(--accent-blue);">--%</strong>
       </div>
       <div class="gmaps-kpi-pill">
-        <i class="bi bi-hourglass-split" style="color: var(--accent-yellow);"></i>
-        <span class="label">25-99%:</span>
-        <strong id="statDesaHigh" style="color: var(--accent-yellow);">-- Desa</strong>
-      </div>
-      <div class="gmaps-kpi-pill">
-        <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red);"></i>
-        <span class="label">&lt;25%:</span>
-        <strong id="statDesaLow" style="color: var(--accent-red);">-- Desa</strong>
+        <i class="bi bi-geo-alt-fill" style="color: var(--accent-cyan);"></i>
+        <span class="label">Wilayah:</span>
+        <strong id="statTotalWilayah">4 Kec / 54 Desa</strong>
       </div>
     </div>
 
@@ -1379,30 +1374,22 @@
         // Top Statistics Calculator
         function updateTopStats(statsList) {
           if (!statsList || !statsList.length) return;
-          let totalDesa = statsList.length;
-          let count100 = 0;
-          let countHigh = 0;
-          let countLow = 0;
+          const totalDesa = statsList.length;
+          const totalSls = statsList.reduce((sum, d) => sum + (d.total_subsls || 0), 0);
+          const selesaiSls = statsList.reduce((sum, d) => sum + (d.selesai || 0), 0);
+          const pctSelesai = totalSls ? ((selesaiSls / totalSls) * 100).toFixed(1) : '0.0';
 
-          statsList.forEach(s => {
-            const totalFasih = s.target_fasih_total || 0;
-            const realisasi = (s.submitted_total || 0) + (s.approved_total || 0) + (s.rejected_total || 0);
-            const pct = totalFasih ? (realisasi / totalFasih) * 100 : 0;
+          const totalTargetFasih = statsList.reduce((sum, d) => sum + (d.target_fasih_total || 0), 0);
+          const totalRealisasiFasih = statsList.reduce((sum, d) => sum + ((d.submitted_total || 0) + (d.approved_total || 0) + (d.rejected_total || 0)), 0);
+          const pctFasih = totalTargetFasih ? ((totalRealisasiFasih / totalTargetFasih) * 100).toFixed(1) : '0.0';
 
-            if (pct >= 100) count100++;
-            else if (pct >= 25) countHigh++;
-            else countLow++;
-          });
+          const statSls = document.getElementById('statSlsSelesai');
+          const statFasih = document.getElementById('statProgresFasih');
+          const statWilayah = document.getElementById('statTotalWilayah');
 
-          const statTotal = document.getElementById('statTotalDesa');
-          const stat100 = document.getElementById('statDesa100');
-          const statHigh = document.getElementById('statDesaHigh');
-          const statLow = document.getElementById('statDesaLow');
-
-          if (statTotal) statTotal.textContent = `${totalDesa} Desa`;
-          if (stat100) stat100.textContent = `${count100} Desa`;
-          if (statHigh) statHigh.textContent = `${countHigh} Desa`;
-          if (statLow) statLow.textContent = `${countLow} Desa`;
+          if (statSls) statSls.textContent = `${selesaiSls.toLocaleString('id-ID')} / ${totalSls.toLocaleString('id-ID')} SLS (${pctSelesai}%)`;
+          if (statFasih) statFasih.textContent = `${pctFasih}%`;
+          if (statWilayah) statWilayah.textContent = `4 Kec / ${totalDesa} Desa`;
         }
 
         // Fit map bounds to filtered subdistrict
@@ -1557,10 +1544,11 @@
           const stat = desaStats.find(s => s.iddesa === properties.iddesa);
           const total = stat ? stat.total_subsls : 0;
           const selesai = stat ? stat.selesai : 0;
-          const totalMuatan = stat ? stat.total_muatan : (properties.total_muatan || 0);
-          const usaha = stat ? stat.usaha_total : 0;
-          const pct = totalMuatan ? ((usaha / totalMuatan) * 100).toFixed(2) : '0.00';
-          const keluarga = stat ? stat.keluarga_total : 0;
+          const totalMuatan = stat ? (stat.total_muatan !== undefined ? stat.total_muatan : (properties.total_muatan || 0)) : (properties.total_muatan || 0);
+          const muatanSelesai = stat ? (stat.muatan_selesai !== undefined ? stat.muatan_selesai : ((stat.usaha_total || 0) + (stat.keluarga_total || 0))) : 0;
+          const pct = stat ? (stat.muatan_pct_str || '0.00') : (totalMuatan ? ((muatanSelesai / totalMuatan) * 100).toFixed(2) : '0.00');
+          const usaha = stat ? (stat.usaha_total || 0) : 0;
+          const keluarga = stat ? (stat.keluarga_total || 0) : 0;
 
           // FASIH Capaian
           const targetFasih = stat ? stat.target_fasih_total : 0;
