@@ -165,12 +165,13 @@ const TOOL_SCHEMAS = {
   },
   get_petugas: {
     name: "get_petugas",
-    description: "Get progress stats for PCL (surveyors), PML (supervisors), or Korlap (coordinators).",
+    description: "Get progress stats for PCL (surveyors), PML (supervisors), or Korlap (coordinators). Supports optional filtering by kecamatan.",
     parameters: {
       type: "OBJECT",
       properties: {
         uploadId: { type: "INTEGER", description: "The upload ID." },
-        role: { type: "STRING", description: "Role name to fetch: 'pcl', 'pml', or 'korlap'." }
+        role: { type: "STRING", description: "Role name to fetch: 'pcl', 'pml', or 'korlap'." },
+        kecamatan: { type: "STRING", description: "Optional kecamatan name filter (e.g. 'Sepaku', 'Penajam', 'Babulu', 'Waru')." }
       },
       required: ["uploadId", "role"]
     }
@@ -278,7 +279,12 @@ async function runToolCall(toolCall) {
         else if (role === 'korlap') data = getKorlapStats(uploadId, settings);
         else throw new Error(`Role petugas '${role}' tidak dikenal.`);
 
-        result = { status: 'success', role, data: data.slice(0, 20) };
+        if (args.kecamatan && Array.isArray(data)) {
+          const kecFilter = String(args.kecamatan).toLowerCase().trim();
+          data = data.filter(d => (d.kecamatan || '').toLowerCase().includes(kecFilter));
+        }
+
+        result = { status: 'success', role, count: data.length, data: data.slice(0, 20) };
         break;
       }
 

@@ -455,11 +455,16 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
         parts: toolResponses
       });
 
-      // Pada turn final setelah tool dieksekusi, gunakan Native Stream agar token langsung mengalir
+      // Pada turn final setelah tool dieksekusi, gunakan Native Stream teks murni agar token langsung mengalir lengkap
       onEvent('status', { text: '✍️ Merumuskan jawaban...', step: 'writing' });
       try {
+        const textModel = genAI.getGenerativeModel({
+          model: geminiModel,
+          systemInstruction: systemInstruction,
+          generationConfig: { maxOutputTokens: 4096 }
+        });
         const streamResp = await timeoutPromise(
-          model.generateContentStream({ contents }),
+          textModel.generateContentStream({ contents }),
           AGENT_API_TOOLRESULT_MS,
           'Gemini stream connection timeout'
         );
