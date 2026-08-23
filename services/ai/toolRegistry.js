@@ -211,7 +211,7 @@ const TOOL_SCHEMAS = {
 // ─────────────────────────────────────────────
 //  TOOL RUNNER WITH CACHE INTEGRATION (5 MINS TTL)
 // ─────────────────────────────────────────────
-async function runToolCall(toolCall) {
+async function runToolCall(toolCall, context = {}) {
   const { name, args } = toolCall;
   const cacheKey = cacheManager.generateKey(name, args);
 
@@ -238,6 +238,8 @@ async function runToolCall(toolCall) {
         const queryId = 'q_' + Math.random().toString(36).substring(2, 9);
         saveAgentQuery({
           id: queryId,
+          userId: context.userId || null,
+          prompt: context.prompt || args.prompt || '',
           toolName: name,
           querySql: query,
           queryParams: params,
@@ -278,6 +280,8 @@ async function runToolCall(toolCall) {
         const queryId = 'q_' + Math.random().toString(36).substring(2, 9);
         saveAgentQuery({
           id: queryId,
+          userId: context.userId || null,
+          prompt: context.prompt || args.prompt || '',
           toolName: 'get_summary',
           querySql: query,
           queryParams: params,
@@ -314,6 +318,8 @@ async function runToolCall(toolCall) {
 
         saveAgentQuery({
           id: queryId,
+          userId: context.userId || null,
+          prompt: context.prompt || args.prompt || '',
           toolName: 'get_anomaly',
           querySql: anomalySql,
           queryParams: {},
@@ -361,6 +367,8 @@ async function runToolCall(toolCall) {
 
         saveAgentQuery({
           id: queryId,
+          userId: context.userId || null,
+          prompt: context.prompt || args.prompt || '',
           toolName: 'get_petugas',
           querySql: petugasSql,
           queryParams: {},

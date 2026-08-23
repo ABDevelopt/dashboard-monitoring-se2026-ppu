@@ -298,7 +298,7 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
 
       const toolResponses = await Promise.all(
         functionCalls.map(async (fc) => {
-          const result = await runToolCall({ name: fc.name, args: fc.args });
+          const result = await runToolCall({ name: fc.name, args: fc.args }, { prompt: userMessage });
           lastExecutedToolResult = { name: fc.name, args: fc.args, result };
           return {
             functionResponse: {
@@ -434,7 +434,7 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
 
       const toolResponses = await Promise.all(
         functionCalls.map(async (fc) => {
-          const result = await runToolCall({ name: fc.name, args: fc.args });
+          const result = await runToolCall({ name: fc.name, args: fc.args }, { prompt: userMessage });
           lastExecutedToolResult = { name: fc.name, args: fc.args, result };
           onEvent('tool_end', { tool: fc.name, message: `Selesai mengambil data` });
           return {
