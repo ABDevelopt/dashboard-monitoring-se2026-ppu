@@ -552,6 +552,57 @@
     transform: scale(0.94);
   }
 
+  /* GPS Locating Active Radar State */
+  .gmaps-floating-square-btn.is-locating {
+    border-color: var(--accent-cyan) !important;
+    color: var(--accent-cyan) !important;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.35) 0%, rgba(15, 23, 42, 0.55) 100%) !important;
+    box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.35), 0 10px 32px rgba(6, 182, 212, 0.40), inset 0 1px 2px rgba(255, 255, 255, 0.50) !important;
+    animation: locateRadarPulse 1.2s infinite ease-in-out;
+  }
+
+  @keyframes locateRadarPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.10); }
+  }
+
+  /* Floating GPS Toast Notification - iPhone Liquid Glass Pill */
+  .gps-toast-pill {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-25px);
+    z-index: 1050;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.04) 60%, rgba(15, 23, 42, 0.65) 100%);
+    backdrop-filter: blur(28px) saturate(210%) brightness(105%);
+    -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(105%);
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    border-radius: 999px;
+    padding: 7px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 14px 40px 0 rgba(0, 0, 0, 0.45), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .gps-toast-pill.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  body.light-mode .gps-toast-pill {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.55) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), inset 0 1.5px 2px rgba(255, 255, 255, 0.95);
+  }
+
   body.light-mode .gmaps-floating-square-btn {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.80) 0%, rgba(255, 255, 255, 0.45) 100%);
     backdrop-filter: blur(28px) saturate(190%) brightness(102%);
@@ -984,6 +1035,12 @@
         <div id="loadingStatusText" style="font-size: 13px; font-weight: 500;">Memuat Peta Spasial Penajam Paser Utara...</div>
       </div>
       <div id="map"></div>
+    </div>
+
+    <!-- FLOATING GPS TOAST NOTIFICATION PILL -->
+    <div id="gpsToast" class="gps-toast-pill">
+      <span id="gpsToastSpinner" class="spinner-border spinner-border-sm" style="width: 12px; height: 12px; border-width: 2px; color: var(--accent-cyan);"></span>
+      <span id="gpsToastText">Mengunci titik koordinat GPS presisi tinggi...</span>
     </div>
 
     <!-- 2. FLOATING TOP SEARCH & FILTER BAR (GOOGLE MAPS STYLE SEARCH PILL) -->
@@ -2691,15 +2748,27 @@
         if (btnMetricFasih) btnMetricFasih.addEventListener('click', () => switchThematicMetric('fasih'));
         if (btnMetricMuatan) btnMetricMuatan.addEventListener('click', () => switchThematicMetric('muatan'));
 
-        // GPS Geolocation Listener
+        // GPS Geolocation Listener with Smooth iPhone Radar & Toast Animation
         function locateUserGPS() {
           if (!navigator.geolocation) {
             alert('Perangkat atau browser Anda tidak mendukung Geolocation GPS.');
             return;
           }
 
+          const gpsToast = document.getElementById('gpsToast');
+          const gpsToastText = document.getElementById('gpsToastText');
+          const gpsToastSpinner = document.getElementById('gpsToastSpinner');
+
           if (btnLocateMe) {
-            btnLocateMe.innerHTML = '<span class="spinner-border spinner-border-sm" style="width: 11px; height: 11px; border-width: 2px;"></span>';
+            btnLocateMe.classList.add('is-locating');
+            btnLocateMe.innerHTML = '<span class="spinner-border spinner-border-sm" style="width: 13px; height: 13px; border-width: 2px;"></span>';
+          }
+
+          if (gpsToast && gpsToastText && gpsToastSpinner) {
+            gpsToastSpinner.style.display = 'inline-block';
+            gpsToastSpinner.className = 'spinner-border spinner-border-sm';
+            gpsToastText.textContent = 'Mengunci titik koordinat GPS presisi tinggi...';
+            gpsToast.classList.add('show');
           }
 
           navigator.geolocation.getCurrentPosition(
@@ -2709,8 +2778,17 @@
               const accuracy = pos.coords.accuracy;
 
               if (btnLocateMe) {
+                btnLocateMe.classList.remove('is-locating');
                 btnLocateMe.innerHTML = '<i class="bi bi-crosshair"></i>';
                 btnLocateMe.style.color = 'var(--accent-cyan)';
+              }
+
+              if (gpsToast && gpsToastText && gpsToastSpinner) {
+                gpsToastSpinner.style.display = 'none';
+                gpsToastText.innerHTML = `<i class="bi bi-check-circle-fill" style="color: #10b981;"></i> Lokasi Terkunci (±${Math.round(accuracy)}m)`;
+                setTimeout(() => {
+                  gpsToast.classList.remove('show');
+                }, 2200);
               }
 
               if (userLocationMarker) map.removeLayer(userLocationMarker);
@@ -2748,11 +2826,20 @@
                 updateActiveLayerStyles();
               }
 
-              map.setView([lat, lng], 16, { animate: true });
+              map.flyTo([lat, lng], 16, { animate: true, duration: 1.2 });
             },
             (err) => {
-              if (btnLocateMe) btnLocateMe.innerHTML = '<i class="bi bi-crosshair"></i>';
-              alert('Gagal mendapatkan lokasi GPS: ' + (err.message || 'Izin lokasi tidak diberikan.'));
+              if (btnLocateMe) {
+                btnLocateMe.classList.remove('is-locating');
+                btnLocateMe.innerHTML = '<i class="bi bi-crosshair"></i>';
+              }
+              if (gpsToast && gpsToastText && gpsToastSpinner) {
+                gpsToastSpinner.style.display = 'none';
+                gpsToastText.innerHTML = `<i class="bi bi-exclamation-circle-fill" style="color: #ef4444;"></i> Gagal Mengunci GPS (${err.message || 'Izin ditolak'})`;
+                setTimeout(() => {
+                  gpsToast.classList.remove('show');
+                }, 2600);
+              }
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
           );
