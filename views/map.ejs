@@ -407,22 +407,16 @@
     font-weight: 700;
   }
 
-  /* High-Contrast Unified Status Color Scale */
+  /* High-Contrast Intuitive Status Color Scale (5-Tier) */
   .status-100 { background: #10b981 !important; color: #ffffff !important; } /* Emerald Green - 100% Selesai */
-  .status-85  { background: #06b6d4 !important; color: #ffffff !important; } /* Cyan - 85-99% */
-  .status-70  { background: #3b82f6 !important; color: #ffffff !important; } /* Royal Blue - 70-84% */
-  .status-55  { background: #6366f1 !important; color: #ffffff !important; } /* Indigo - 55-69% */
-  .status-40  { background: #f59e0b !important; color: #ffffff !important; } /* Amber Gold - 40-54% */
-  .status-25  { background: #f97316 !important; color: #ffffff !important; } /* Orange - 25-39% */
-  .status-1   { background: #ef4444 !important; color: #ffffff !important; } /* Red - 1-24% */
+  .status-75  { background: #0284c7 !important; color: #ffffff !important; } /* Sky Blue - 75-99% */
+  .status-40  { background: #f59e0b !important; color: #ffffff !important; } /* Amber Yellow - 40-74% */
+  .status-1   { background: #ef4444 !important; color: #ffffff !important; } /* Coral Red - 1-39% */
   .status-0   { background: #64748b !important; color: #ffffff !important; } /* Slate Gray - 0% */
 
   body.light-mode .status-100 { background: #10b981 !important; color: #ffffff !important; }
-  body.light-mode .status-85  { background: #06b6d4 !important; color: #ffffff !important; }
-  body.light-mode .status-70  { background: #3b82f6 !important; color: #ffffff !important; }
-  body.light-mode .status-55  { background: #6366f1 !important; color: #ffffff !important; }
+  body.light-mode .status-75  { background: #0284c7 !important; color: #ffffff !important; }
   body.light-mode .status-40  { background: #f59e0b !important; color: #ffffff !important; }
-  body.light-mode .status-25  { background: #f97316 !important; color: #ffffff !important; }
   body.light-mode .status-1   { background: #ef4444 !important; color: #ffffff !important; }
   body.light-mode .status-0   { background: #64748b !important; color: #ffffff !important; }
 
@@ -1178,39 +1172,30 @@
         <!-- TAB 2: LEGEND -->
         <div id="gmapsLegendTabContent" style="display: none;">
           <div id="legendKec" style="display: none;">
-            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Gradasi Realisasi Kecamatan:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>100%</strong> (Target Selesai)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #06b6d4;"></div><span><strong>85% - 99%</strong> (Hampir Selesai)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #3b82f6;"></div><span><strong>70% - 84%</strong> (Sangat Baik)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #6366f1;"></div><span><strong>55% - 69%</strong> (Baik)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f59e0b;"></div><span><strong>40% - 54%</strong> (Sedang)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>25% - 39%</strong> (Awal Menengah)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>1% - 24%</strong> (Awal Progres)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #64748b;"></div><span><strong>0%</strong> (Belum Ada Progres)</span></div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Kategori Realisasi Kecamatan:</div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>100%</strong> Selesai</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>75% &ndash; 99%</strong> Tinggi</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #f59e0b;"></div><span><strong>40% &ndash; 74%</strong> Sedang</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>1% &ndash; 39%</strong> Rendah</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #64748b;"></div><span><strong>0%</strong> Belum Mulai</span></div>
           </div>
 
           <div id="legendDesa">
-            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Gradasi Realisasi Desa:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>100%</strong> (Target Selesai)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #06b6d4;"></div><span><strong>85% - 99%</strong> (Hampir Selesai)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #3b82f6;"></div><span><strong>70% - 84%</strong> (Sangat Baik)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #6366f1;"></div><span><strong>55% - 69%</strong> (Baik)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f59e0b;"></div><span><strong>40% - 54%</strong> (Sedang)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>25% - 39%</strong> (Awal Menengah)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>1% - 24%</strong> (Awal Progres)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #64748b;"></div><span><strong>0%</strong> (Belum Ada Progres)</span></div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Kategori Realisasi Desa:</div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>100%</strong> Selesai</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>75% &ndash; 99%</strong> Tinggi</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #f59e0b;"></div><span><strong>40% &ndash; 74%</strong> Sedang</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>1% &ndash; 39%</strong> Rendah</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #64748b;"></div><span><strong>0%</strong> Belum Mulai</span></div>
           </div>
 
           <div id="legendSls" style="display: none;">
-            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Gradasi Progres SubSLS:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>SLS Selesai / 100%</strong> (Selesai Resmi)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #06b6d4;"></div><span><strong>85% - 99%</strong> Progres</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #3b82f6;"></div><span><strong>70% - 84%</strong> Progres</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #6366f1;"></div><span><strong>55% - 69%</strong> Progres</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f59e0b;"></div><span><strong>40% - 54%</strong> Progres</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>25% - 39%</strong> Progres</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>1% - 24%</strong> Progres</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #64748b;"></div><span><strong>0%</strong> (Belum Mulai)</span></div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Kategori Progres SubSLS:</div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>Selesai Resmi</strong> (BPS)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>75% &ndash; 99%</strong> Tinggi</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #f59e0b;"></div><span><strong>40% &ndash; 74%</strong> Sedang</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>1% &ndash; 39%</strong> Rendah</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #64748b;"></div><span><strong>0%</strong> Belum Mulai</span></div>
           </div>
         </div>
       </div>
@@ -1562,24 +1547,19 @@
           return '#06b6d4';
         }
 
+        // 5-Tier Intuitive Color Scale (Green = Selesai, Blue = Tinggi, Yellow = Sedang, Red = Rendah, Gray = Belum)
         function getProgressColor(pct, isSelesai) {
-          if (isSelesai || pct >= 100) return '#10b981'; // Emerald Green
-          if (pct >= 85) return '#06b6d4'; // Cyan
-          if (pct >= 70) return '#3b82f6'; // Royal Blue
-          if (pct >= 55) return '#6366f1'; // Indigo
-          if (pct >= 40) return '#f59e0b'; // Amber Gold
-          if (pct >= 25) return '#f97316'; // Orange
-          if (pct > 0) return '#ef4444';  // Red
-          return '#64748b'; // Slate Gray
+          if (isSelesai || pct >= 100) return '#10b981'; // Hijau Emerald: 100% Selesai
+          if (pct >= 75) return '#0284c7';               // Biru: Tinggi (75-99%)
+          if (pct >= 40) return '#f59e0b';               // Kuning Amber: Sedang (40-74%)
+          if (pct > 0) return '#ef4444';                 // Merah: Rendah (1-39%)
+          return '#64748b';                              // Abu-abu: Belum Mulai (0%)
         }
 
         function getFasihBadgeClass(pct) {
           if (pct >= 100) return 'status-100';
-          if (pct >= 85) return 'status-85';
-          if (pct >= 70) return 'status-70';
-          if (pct >= 55) return 'status-55';
+          if (pct >= 75) return 'status-75';
           if (pct >= 40) return 'status-40';
-          if (pct >= 25) return 'status-25';
           if (pct > 0) return 'status-1';
           return 'status-0';
         }
@@ -1633,14 +1613,11 @@
             }
           }
 
-          // Jika belum selesai resmi, warna tertinggi adalah Cyan (#06b6d4) meskipun progres >= 100%
-          if (pct >= 85) return '#06b6d4'; // Cyan (85-99% & >=100% yang belum disahkan selesai)
-          if (pct >= 70) return '#3b82f6'; // Royal Blue
-          if (pct >= 55) return '#6366f1'; // Indigo
-          if (pct >= 40) return '#f59e0b'; // Amber Gold
-          if (pct >= 25) return '#f97316'; // Orange
-          if (pct > 0) return '#ef4444';  // Red
-          return '#64748b'; // Slate Gray
+          // Jika belum selesai resmi, warna tertinggi adalah Biru (#0284c7) meskipun progres >= 100%
+          if (pct >= 75) return '#0284c7'; // Biru (75-99% & >=100% yang belum disahkan selesai)
+          if (pct >= 40) return '#f59e0b'; // Kuning (40-74%)
+          if (pct > 0) return '#ef4444';  // Merah (1-39%)
+          return '#64748b'; // Abu-abu (0%)
         }
 
         // Thematic Color for Kecamatan
