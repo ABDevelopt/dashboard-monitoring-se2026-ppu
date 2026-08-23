@@ -319,6 +319,8 @@ function formatToolRowsToMarkdown(toolName, args, rows) {
     return `🤖 **Hasil Pencarian Data**\n\nTidak ditemukan data untuk parameter tersebut.`;
   }
 
+  const topRows = rows.slice(0, 5); // Maksimal 5 baris data
+
   const colMap = {
     pcl: 'Nama PCL',
     pml: 'PML Pengawas',
@@ -350,7 +352,7 @@ function formatToolRowsToMarkdown(toolName, args, rows) {
     avg_daily: 'Rata-Rata Harian'
   };
 
-  const keys = Object.keys(rows[0]);
+  const keys = Object.keys(topRows[0]);
   const headers = keys.map(k => {
     const lk = k.toLowerCase();
     return colMap[lk] || colMap[k] || k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -358,8 +360,8 @@ function formatToolRowsToMarkdown(toolName, args, rows) {
 
   let markdown = `Berikut ringkasan data hasil analisis:\n\n`;
 
-  if (rows.length === 1 && keys.length <= 8) {
-    const row = rows[0];
+  if (topRows.length === 1 && keys.length <= 8) {
+    const row = topRows[0];
     markdown += `📊 **Indikator Kinerja Utama:**\n`;
     keys.forEach(k => {
       const label = colMap[k.toLowerCase()] || k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -374,7 +376,7 @@ function formatToolRowsToMarkdown(toolName, args, rows) {
   markdown += `| # | ${headers.join(' | ')} |\n`;
   markdown += `| :---: | ${keys.map(() => ':---').join(' | ')} |\n`;
 
-  rows.forEach((r, idx) => {
+  topRows.forEach((r, idx) => {
     const rowVals = keys.map(k => {
       let val = r[k];
       if (val === null || val === undefined) return '-';
@@ -385,9 +387,13 @@ function formatToolRowsToMarkdown(toolName, args, rows) {
     markdown += `| ${idx + 1} | ${rowVals.join(' | ')} |\n`;
   });
 
+  if (rows.length > 5) {
+    markdown += `\n*Menampilkan 5 data prioritas utama dari total ${rows.length} entitas. Data lengkap dapat diakses pada menu monitoring terkait.*\n`;
+  }
+
   const avgKey = keys.find(k => k.toLowerCase().includes('avg'));
   if (avgKey) {
-    const avgVal = rows[0][avgKey];
+    const avgVal = topRows[0][avgKey];
     if (avgVal) {
       markdown += `\n📌 **Rekomendasi / Analisis:** Rata-rata pencapaian PCL sebesar **${avgVal} dokumen per hari per petugas**. Tingkatkan pengawasan lapangan untuk wilayah dengan progres di bawah rata-rata.`;
     }
