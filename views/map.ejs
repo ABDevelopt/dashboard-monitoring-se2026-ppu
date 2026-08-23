@@ -919,7 +919,8 @@
 
           <div id="legendSls" style="display: none;">
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Gradasi Progres SubSLS:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #172554;"></div><span><strong>100%</strong> (Target Selesai / Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>SLS Selesai</strong> (Dikonfirmasi Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #172554;"></div><span><strong>100%</strong> Progres FASIH/Muatan</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #1d4ed8;"></div><span><strong>85% - 99%</strong> Progres FASIH/Muatan</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #2563eb;"></div><span><strong>70% - 84%</strong> Progres FASIH/Muatan</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>55% - 69%</strong> Progres FASIH/Muatan</span></div>
@@ -1288,11 +1289,14 @@
           return '#cbd5e1';                 // Slate Neutral Gray (0% Belum Ada Progres)
         }
 
-        // Single-hue primary color gradient function for SLS
+        // Single-hue primary color gradient function for SLS (Green for Completed SLS)
         function getSlsColor(kode) {
           const stat = slsStats.find(s => s.kode === kode);
           if (!stat) return '#cbd5e1'; // gray
           
+          // Tandai hijau terang untuk SLS yang dinyatakan Selesai
+          if (stat.selesai === 1) return '#10b981'; // Green Emerald (SLS Selesai)
+
           let pct = 0;
           if (!isSakernasMap && typeof settings !== 'undefined' && settings.show_progres_muatan === '1') {
             pct = parseFloat(stat.muatan_pct_str || 0);
@@ -1304,7 +1308,7 @@
             }
           }
 
-          if (stat.selesai === 1 || pct >= 100) return '#172554';
+          if (pct >= 100) return '#172554';
           if (pct >= 85) return '#1d4ed8';
           if (pct >= 70) return '#2563eb';
           if (pct >= 55) return '#0284c7';
