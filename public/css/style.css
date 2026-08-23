@@ -1002,7 +1002,7 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
 /* ====== KECAMATAN CARDS ====== */
 .kec-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
   gap: 16px;
   margin-bottom: 20px;
   min-width: 0;
@@ -1016,11 +1016,12 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 16px;
   cursor: pointer;
   transition: var(--transition);
   text-decoration: none;
   display: block;
+  box-sizing: border-box;
 }
 .kec-card:hover, .kec-card.active {
   border-color: var(--accent-blue);
@@ -1029,7 +1030,7 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
   box-shadow: var(--shadow);
 }
 .kec-name { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; word-break: break-word; }
-.kec-pct { font-size: 26px; font-weight: 800; color: var(--accent-cyan); }
+.kec-pct { font-size: 24px; font-weight: 800; color: var(--accent-cyan); }
 .kec-detail { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
 
 /* Mobile inline detail: span full grid width when injected inside .kec-grid */
