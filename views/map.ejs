@@ -336,41 +336,37 @@
   }
 
   .status-100 { color: #60a5fa !important; }
-  .status-90  { color: #93c5fd !important; }
-  .status-80  { color: #38bdf8 !important; }
-  .status-70  { color: #0ea5e9 !important; }
-  .status-60  { color: #06b6d4 !important; }
-  .status-50  { color: #22d3ee !important; }
-  .status-40  { color: #facc15 !important; }
-  .status-25  { color: #fbbf24 !important; }
-  .status-1   { color: #fb923c !important; }
-  .status-0   { color: #f87171 !important; }
+  .status-85  { color: #93c5fd !important; }
+  .status-70  { color: #60a5fa !important; }
+  .status-55  { color: #38bdf8 !important; }
+  .status-40  { color: #7dd3fc !important; }
+  .status-25  { color: #cbd5e1 !important; }
+  .status-1   { color: #94a3b8 !important; }
+  .status-0   { color: #64748b !important; }
 
   /* Legacy Fallbacks */
-  .status-green { color: #34d399 !important; }
-  .status-blue { color: #60a5fa !important; }
-  .status-cyan { color: #22d3ee !important; }
-  .status-yellow { color: #facc15 !important; }
-  .status-orange { color: #fb923c !important; }
-  .status-red { color: #f87171 !important; }
+  .status-green { color: #60a5fa !important; }
+  .status-blue { color: #93c5fd !important; }
+  .status-cyan { color: #38bdf8 !important; }
+  .status-yellow { color: #7dd3fc !important; }
+  .status-orange { color: #cbd5e1 !important; }
+  .status-red { color: #64748b !important; }
 
-  body.light-mode .status-100 { color: #1e3a8a !important; }
-  body.light-mode .status-90  { color: #1e40af !important; }
-  body.light-mode .status-80  { color: #2563eb !important; }
-  body.light-mode .status-70  { color: #3b82f6 !important; }
-  body.light-mode .status-60  { color: #0284c7 !important; }
-  body.light-mode .status-50  { color: #0891b2 !important; }
-  body.light-mode .status-40  { color: #d97706 !important; }
-  body.light-mode .status-25  { color: #b45309 !important; }
-  body.light-mode .status-1   { color: #ea580c !important; }
-  body.light-mode .status-0   { color: #dc2626 !important; }
+  body.light-mode .status-100 { color: #172554 !important; }
+  body.light-mode .status-85  { color: #1d4ed8 !important; }
+  body.light-mode .status-70  { color: #2563eb !important; }
+  body.light-mode .status-55  { color: #0284c7 !important; }
+  body.light-mode .status-40  { color: #0369a1 !important; }
+  body.light-mode .status-25  { color: #475569 !important; }
+  body.light-mode .status-1   { color: #64748b !important; }
+  body.light-mode .status-0   { color: #94a3b8 !important; }
 
-  body.light-mode .status-green { color: #059669 !important; }
-  body.light-mode .status-blue { color: #2563eb !important; }
-  body.light-mode .status-cyan { color: #0891b2 !important; }
-  body.light-mode .status-yellow { color: #d97706 !important; }
-  body.light-mode .status-orange { color: #ea580c !important; }
-  body.light-mode .status-red { color: #dc2626 !important; }
+  body.light-mode .status-green { color: #172554 !important; }
+  body.light-mode .status-blue { color: #1d4ed8 !important; }
+  body.light-mode .status-cyan { color: #0284c7 !important; }
+  body.light-mode .status-yellow { color: #0369a1 !important; }
+  body.light-mode .status-orange { color: #64748b !important; }
+  body.light-mode .status-red { color: #94a3b8 !important; }
 
   /* Floating KPI Bar (Top Right) */
   .gmaps-floating-kpi-bar {
@@ -899,45 +895,38 @@
         <div id="gmapsLegendTabContent" style="display: none;">
           <div id="legendKec" style="display: none;">
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Gradasi Realisasi Kecamatan:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #1e3a8a;"></div><span><strong>100%</strong> (Target Selesai)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #1e40af;"></div><span><strong>90% - 99%</strong> (Hampir Selesai)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #2563eb;"></div><span><strong>80% - 89%</strong> (Sangat Baik)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #3b82f6;"></div><span><strong>70% - 79%</strong> (Baik Sekali)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #0ea5e9;"></div><span><strong>60% - 69%</strong> (Baik)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #06b6d4;"></div><span><strong>50% - 59%</strong> (Separuh Target)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #eab308;"></div><span><strong>40% - 49%</strong> (Sedang-Tinggi)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f59e0b;"></div><span><strong>25% - 39%</strong> (Sedang)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>1% - 24%</strong> (Awal Progres)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>0%</strong> (Belum Ada Progres)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #172554;"></div><span><strong>100%</strong> (Target Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #1d4ed8;"></div><span><strong>85% - 99%</strong> (Hampir Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #2563eb;"></div><span><strong>70% - 84%</strong> (Sangat Baik)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>55% - 69%</strong> (Baik)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #38bdf8;"></div><span><strong>40% - 54%</strong> (Sedang)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #93c5fd;"></div><span><strong>25% - 39%</strong> (Awal Menengah)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #e0f2fe;"></div><span><strong>1% - 24%</strong> (Awal Progres)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #cbd5e1;"></div><span><strong>0%</strong> (Belum Ada Progres)</span></div>
           </div>
 
           <div id="legendDesa">
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Gradasi Realisasi FASIH Desa:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #1e3a8a;"></div><span><strong>100%</strong> FASIH (Target Selesai)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #1e40af;"></div><span><strong>90% - 99%</strong> FASIH (Hampir Selesai)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #2563eb;"></div><span><strong>80% - 89%</strong> FASIH (Sangat Baik)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #3b82f6;"></div><span><strong>70% - 79%</strong> FASIH (Baik Sekali)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #0ea5e9;"></div><span><strong>60% - 69%</strong> FASIH (Baik)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #06b6d4;"></div><span><strong>50% - 59%</strong> FASIH (Separuh Target)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #eab308;"></div><span><strong>40% - 49%</strong> FASIH (Sedang-Tinggi)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f59e0b;"></div><span><strong>25% - 39%</strong> FASIH (Sedang)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>1% - 24%</strong> FASIH (Awal Progres)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>0%</strong> FASIH (Belum Ada Progres)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #172554;"></div><span><strong>100%</strong> FASIH (Target Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #1d4ed8;"></div><span><strong>85% - 99%</strong> FASIH (Hampir Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #2563eb;"></div><span><strong>70% - 84%</strong> FASIH (Sangat Baik)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>55% - 69%</strong> FASIH (Baik)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #38bdf8;"></div><span><strong>40% - 54%</strong> FASIH (Sedang)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #93c5fd;"></div><span><strong>25% - 39%</strong> FASIH (Awal Menengah)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #e0f2fe;"></div><span><strong>1% - 24%</strong> FASIH (Awal Progres)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #cbd5e1;"></div><span><strong>0%</strong> FASIH (Belum Ada Progres)</span></div>
           </div>
 
           <div id="legendSls" style="display: none;">
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Gradasi Progres SubSLS:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>Selesai</strong> (Dinyatakan Selesai Resmi)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #1e3a8a;"></div><span><strong>100%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #1e40af;"></div><span><strong>90% - 99%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #2563eb;"></div><span><strong>80% - 89%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #3b82f6;"></div><span><strong>70% - 79%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #0ea5e9;"></div><span><strong>60% - 69%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #06b6d4;"></div><span><strong>50% - 59%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #eab308;"></div><span><strong>40% - 49%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f59e0b;"></div><span><strong>25% - 39%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>1% - 24%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>0%</strong> (Belum Ada Isian)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #172554;"></div><span><strong>100%</strong> (Target Selesai / Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #1d4ed8;"></div><span><strong>85% - 99%</strong> Progres FASIH/Muatan</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #2563eb;"></div><span><strong>70% - 84%</strong> Progres FASIH/Muatan</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>55% - 69%</strong> Progres FASIH/Muatan</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #38bdf8;"></div><span><strong>40% - 54%</strong> Progres FASIH/Muatan</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #93c5fd;"></div><span><strong>25% - 39%</strong> Progres FASIH/Muatan</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #e0f2fe;"></div><span><strong>1% - 24%</strong> Progres FASIH/Muatan</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #cbd5e1;"></div><span><strong>0%</strong> (Belum Ada Isian)</span></div>
           </div>
         </div>
       </div>
@@ -1275,38 +1264,34 @@
 
         function getFasihBadgeClass(pct) {
           if (pct >= 100) return 'status-100';
-          if (pct >= 90) return 'status-90';
-          if (pct >= 80) return 'status-80';
+          if (pct >= 85) return 'status-85';
           if (pct >= 70) return 'status-70';
-          if (pct >= 60) return 'status-60';
-          if (pct >= 50) return 'status-50';
+          if (pct >= 55) return 'status-55';
           if (pct >= 40) return 'status-40';
           if (pct >= 25) return 'status-25';
           if (pct > 0) return 'status-1';
           return 'status-0';
         }
 
-        // Color coding function for Desa (Red to Blue Gradient - 10 Categories)
+        // Monochromatic High-Contrast Blue Gradient (8 Categories)
         function getDesaColor(iddesa) {
           const stat = desaStats.find(s => s.iddesa === iddesa);
-          if (!stat) return '#94a3b8'; // gray for no data
+          if (!stat) return '#cbd5e1'; // gray for no data
           const pct = stat.target_fasih_total ? ((stat.submitted_total + stat.approved_total + stat.rejected_total) / stat.target_fasih_total) * 100 : 0;
-          if (pct >= 100) return '#1e3a8a'; // Deep Navy Blue (100% Target Selesai)
-          if (pct >= 90) return '#1e40af';  // Dark Royal Blue (90% - 99% Hampir Selesai)
-          if (pct >= 80) return '#2563eb';  // Royal Blue (80% - 89% Sangat Baik)
-          if (pct >= 70) return '#3b82f6';  // Bright Blue (70% - 79% Baik Sekali)
-          if (pct >= 60) return '#0ea5e9';  // Sky Blue (60% - 69% Baik)
-          if (pct >= 50) return '#06b6d4';  // Cyan (50% - 59% Separuh Target)
-          if (pct >= 40) return '#eab308';  // Yellow (40% - 49% Sedang-Tinggi)
-          if (pct >= 25) return '#f59e0b';  // Amber (25% - 39% Sedang)
-          if (pct > 0) return '#f97316';    // Orange (1% - 24% Awal Progres)
-          return '#ef4444';                 // Red (0% Belum Ada Progres)
+          if (pct >= 100) return '#172554'; // Deep Midnight Navy (100% Target Selesai)
+          if (pct >= 85) return '#1d4ed8';  // Strong Deep Blue (85% - 99% Hampir Selesai)
+          if (pct >= 70) return '#2563eb';  // Vibrant Royal Blue (70% - 84% Sangat Baik)
+          if (pct >= 55) return '#0284c7';  // Ocean Sky Blue (55% - 69% Baik)
+          if (pct >= 40) return '#38bdf8';  // Bright Sky Blue (40% - 54% Sedang)
+          if (pct >= 25) return '#93c5fd';  // Soft Pastel Blue (25% - 39% Awal Menengah)
+          if (pct > 0) return '#e0f2fe';    // Pale Ice Blue (1% - 24% Awal Progres)
+          return '#cbd5e1';                 // Slate Neutral Gray (0% Belum Ada Progres)
         }
 
-        // Color coding function for SLS (Green for Selesai, Red to Blue Gradient for Progress)
+        // Single-hue primary color gradient function for SLS
         function getSlsColor(kode) {
           const stat = slsStats.find(s => s.kode === kode);
-          if (!stat) return '#94a3b8'; // gray
+          if (!stat) return '#cbd5e1'; // gray
           
           let pct = 0;
           if (!isSakernasMap && typeof settings !== 'undefined' && settings.show_progres_muatan === '1') {
@@ -1319,34 +1304,29 @@
             }
           }
 
-          if (stat.selesai === 1) return '#10b981'; // Green (SubSLS Selesai Resmi)
-          if (pct >= 100) return '#1e3a8a';
-          if (pct >= 90) return '#1e40af';
-          if (pct >= 80) return '#2563eb';
-          if (pct >= 70) return '#3b82f6';
-          if (pct >= 60) return '#0ea5e9';
-          if (pct >= 50) return '#06b6d4';
-          if (pct >= 40) return '#eab308';
-          if (pct >= 25) return '#f59e0b';
-          if (pct > 0) return '#f97316';
-          return '#ef4444';
+          if (stat.selesai === 1 || pct >= 100) return '#172554';
+          if (pct >= 85) return '#1d4ed8';
+          if (pct >= 70) return '#2563eb';
+          if (pct >= 55) return '#0284c7';
+          if (pct >= 40) return '#38bdf8';
+          if (pct >= 25) return '#93c5fd';
+          if (pct > 0) return '#e0f2fe';
+          return '#cbd5e1';
         }
 
-        // Color coding function for Kecamatan (Red to Blue Gradient - 10 Categories)
+        // Color coding function for Kecamatan (8 categories)
         function getKecColor(nmkec) {
           const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === nmkec.toUpperCase());
-          if (!stat) return '#94a3b8';
+          if (!stat) return '#cbd5e1';
           const pct = parseFloat(stat.fasih_pct_str || 0);
-          if (pct >= 100) return '#1e3a8a';
-          if (pct >= 90) return '#1e40af';
-          if (pct >= 80) return '#2563eb';
-          if (pct >= 70) return '#3b82f6';
-          if (pct >= 60) return '#0ea5e9';
-          if (pct >= 50) return '#06b6d4';
-          if (pct >= 40) return '#eab308';
-          if (pct >= 25) return '#f59e0b';
-          if (pct > 0) return '#f97316';
-          return '#ef4444';
+          if (pct >= 100) return '#172554';
+          if (pct >= 85) return '#1d4ed8';
+          if (pct >= 70) return '#2563eb';
+          if (pct >= 55) return '#0284c7';
+          if (pct >= 40) return '#38bdf8';
+          if (pct >= 25) return '#93c5fd';
+          if (pct > 0) return '#e0f2fe';
+          return '#cbd5e1';
         }
 
         // Styles for layers with ultra-crisp reduced outline thickness & Outline Only mode
