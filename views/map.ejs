@@ -1223,6 +1223,11 @@
           if (btnStats) btnStats.classList.remove('active');
           if (btnLegend) btnLegend.classList.add('active');
         }
+
+        // Otomatis buka / tampilkan panel jika sedang tertutup (collapsed)
+        if (typeof window.ensureGmapsDrawerOpen === 'function') {
+          window.ensureGmapsDrawerOpen();
+        }
       };
 
       window.toggleGmapsDrawer = function() {
