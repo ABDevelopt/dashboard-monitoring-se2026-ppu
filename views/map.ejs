@@ -245,11 +245,11 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 3px 8px 3px;
+    padding: 3px 6px;
     border-radius: 8px;
-    background: #090d16; /* Solid ultra-deep slate for high contrast */
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65);
+    background: #0b0f19; /* Solid deep dark slate */
+    border: 1.5px solid #334155;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.75);
     color: #ffffff;
     text-align: center;
     white-space: nowrap;
@@ -259,87 +259,90 @@
   }
 
   body.light-mode .map-label-badge {
-    background: #ffffff; /* Solid crisp white */
-    border: 1.5px solid #475569;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+    background: #ffffff; /* Solid pure white */
+    border: 1.5px solid #cbd5e1;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
     color: #0f172a;
   }
 
   .map-label-badge .badge-pct-hero {
     font-size: 13.5px;
-    font-weight: 800;
+    font-weight: 900;
     line-height: 1.1;
-    letter-spacing: -0.02em;
-    padding: 1.5px 6px;
+    letter-spacing: -0.01em;
+    padding: 2px 7px;
     border-radius: 6px;
     margin-bottom: 2px;
     display: inline-block;
+    color: #ffffff !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
 
   .map-label-badge .badge-subname {
-    font-size: 10px;
-    font-weight: 600;
-    color: #cbd5e1;
-    line-height: 1.1;
-    max-width: 95px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #f1f5f9;
+    line-height: 1.15;
+    max-width: 100px;
     overflow: hidden;
     text-overflow: ellipsis;
+    padding: 0 2px;
   }
 
   body.light-mode .map-label-badge .badge-subname {
-    color: #334155;
+    color: #0f172a;
   }
 
   .map-label-badge.kec-label-badge {
-    padding: 4px 10px 4px;
+    padding: 4px 8px;
     border-radius: 10px;
   }
   .map-label-badge.kec-label-badge .badge-pct-hero {
-    font-size: 15.5px;
+    font-size: 16px;
     font-weight: 900;
-    padding: 2px 8px;
+    padding: 2.5px 9px;
   }
   .map-label-badge.kec-label-badge .badge-subname {
-    font-size: 11px;
-    font-weight: 700;
-    color: #f1f5f9;
-    max-width: 120px;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #ffffff;
+    max-width: 125px;
   }
   body.light-mode .map-label-badge.kec-label-badge .badge-subname {
     color: #0f172a;
   }
 
   .map-label-badge.desa-label-badge {
-    padding: 3px 7px 3px;
+    padding: 3px 6px;
     border-radius: 8px;
   }
   .map-label-badge.desa-label-badge .badge-pct-hero {
-    font-size: 13px;
-    font-weight: 800;
+    font-size: 13.5px;
+    font-weight: 900;
   }
   .map-label-badge.desa-label-badge .badge-subname {
-    font-size: 10px;
-    font-weight: 600;
+    font-size: 10.5px;
+    font-weight: 700;
   }
 
-  /* High-Contrast Progress Status Indicators with Distinct Tinted Backdrops */
-  .status-100 { color: #34d399 !important; background: rgba(16, 185, 129, 0.3) !important; border: 1px solid rgba(52, 211, 153, 0.4); } /* Green */
-  .status-85  { color: #38bdf8 !important; background: rgba(56, 189, 248, 0.3) !important; border: 1px solid rgba(56, 189, 248, 0.4); } /* Sky */
-  .status-70  { color: #60a5fa !important; background: rgba(96, 165, 250, 0.3) !important; border: 1px solid rgba(96, 165, 250, 0.4); } /* Blue */
-  .status-55  { color: #22d3ee !important; background: rgba(34, 211, 238, 0.3) !important; border: 1px solid rgba(34, 211, 238, 0.4); } /* Cyan */
-  .status-40  { color: #facc15 !important; background: rgba(250, 204, 21, 0.3) !important; border: 1px solid rgba(250, 204, 21, 0.4); } /* Yellow */
-  .status-25  { color: #fb923c !important; background: rgba(251, 146, 60, 0.3) !important; border: 1px solid rgba(251, 146, 60, 0.4); } /* Orange */
-  .status-1   { color: #f87171 !important; background: rgba(248, 113, 113, 0.3) !important; border: 1px solid rgba(248, 113, 113, 0.4); } /* Red */
-  .status-0   { color: #cbd5e1 !important; background: rgba(148, 163, 184, 0.25) !important; border: 1px solid rgba(203, 213, 225, 0.3); } /* Gray */
+  /* High-Contrast Solid Fill Status Badges with Pure White Text */
+  .status-100 { background: #059669 !important; color: #ffffff !important; } /* Emerald Green */
+  .status-85  { background: #0284c7 !important; color: #ffffff !important; } /* Deep Sky Blue */
+  .status-70  { background: #2563eb !important; color: #ffffff !important; } /* Royal Blue */
+  .status-55  { background: #0891b2 !important; color: #ffffff !important; } /* Cyan Ocean */
+  .status-40  { background: #d97706 !important; color: #ffffff !important; } /* Amber Gold */
+  .status-25  { background: #ea580c !important; color: #ffffff !important; } /* Deep Orange */
+  .status-1   { background: #dc2626 !important; color: #ffffff !important; } /* Crimson Red */
+  .status-0   { background: #475569 !important; color: #ffffff !important; } /* Slate Gray */
 
-  body.light-mode .status-100 { color: #047857 !important; background: #d1fae5 !important; border: 1px solid #6ee7b7; }
-  body.light-mode .status-85  { color: #0369a1 !important; background: #e0f2fe !important; border: 1px solid #7dd3fc; }
-  body.light-mode .status-70  { color: #1d4ed8 !important; background: #dbeafe !important; border: 1px solid #93c5fd; }
-  body.light-mode .status-55  { color: #0e7490 !important; background: #cffafe !important; border: 1px solid #67e8f9; }
-  body.light-mode .status-40  { color: #b45309 !important; background: #fef3c7 !important; border: 1px solid #fde047; }
-  body.light-mode .status-25  { color: #c2410c !important; background: #ffedd5 !important; border: 1px solid #fdba74; }
-  body.light-mode .status-1   { color: #b91c1c !important; background: #fee2e2 !important; border: 1px solid #fca5a5; }
-  body.light-mode .status-0   { color: #334155 !important; background: #f1f5f9 !important; border: 1px solid #cbd5e1; }
+  body.light-mode .status-100 { background: #059669 !important; color: #ffffff !important; }
+  body.light-mode .status-85  { background: #0284c7 !important; color: #ffffff !important; }
+  body.light-mode .status-70  { background: #2563eb !important; color: #ffffff !important; }
+  body.light-mode .status-55  { background: #0891b2 !important; color: #ffffff !important; }
+  body.light-mode .status-40  { background: #d97706 !important; color: #ffffff !important; }
+  body.light-mode .status-25  { background: #ea580c !important; color: #ffffff !important; }
+  body.light-mode .status-1   { background: #dc2626 !important; color: #ffffff !important; }
+  body.light-mode .status-0   { background: #475569 !important; color: #ffffff !important; }
 
   /* Floating KPI Bar (Top Right) */
   .gmaps-floating-kpi-bar {
