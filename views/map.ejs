@@ -1334,7 +1334,7 @@
         </button>
       </div>
       
-      <!-- Primary Selectors (Kecamatan & Quick PCL Symmetrical 2-Column Grid) -->
+      <!-- Primary Spatial Selectors (Kecamatan & Desa/Kelurahan 2-Column Grid) -->
       <div class="gmaps-control-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px;">
         <select id="kecFilter" class="gmaps-select-pill" title="Filter Berdasarkan Kecamatan" style="width: 100%;">
           <option value="">-- Semua Kecamatan --</option>
@@ -1344,14 +1344,22 @@
           <option value="SEPAKU">Kec. Sepaku</option>
         </select>
         
-        <select id="pclFilter" class="gmaps-select-pill" title="Filter Cepat Berdasarkan Petugas PCL" style="width: 100%;">
-          <option value="">-- Semua Petugas PCL --</option>
+        <select id="desaFilter" class="gmaps-select-pill" title="Filter Berdasarkan Desa / Kelurahan" style="width: 100%;">
+          <option value="">-- Semua Desa / Kel --</option>
         </select>
       </div>
 
       <!-- Collapsible Filter & Options Section -->
       <div class="gmaps-controls-collapsible" id="toolsExtraRows">
-        <!-- Section 1: Layer Peta & Metrik -->
+        <!-- Section 1: Filter Petugas PCL -->
+        <div class="gmaps-section-label"><i class="bi bi-person-badge"></i> Filter Petugas PCL</div>
+        <div class="gmaps-control-row" style="margin-bottom: 8px;">
+          <select id="pclFilter" class="gmaps-select-pill" title="Filter Cepat Berdasarkan Petugas PCL" style="width: 100%;">
+            <option value="">-- Semua Petugas PCL --</option>
+          </select>
+        </div>
+
+        <!-- Section 2: Layer Peta & Metrik -->
         <div class="gmaps-section-label"><i class="bi bi-layers-fill"></i> Tampilan Layer &amp; Metrik</div>
         <div class="gmaps-control-row" style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 7px;">
           <div class="gmaps-pill-group" style="display: flex; width: 100%;">
@@ -1897,6 +1905,7 @@
         let showProgressLabels = false;
         let activeLayerName = 'desa'; // 'desa', 'sls', or 'kec'
         let currentFilteredKec = '';
+        let currentFilteredDesa = '';
         let currentThematicMetric = 'fasih'; // 'fasih' | 'muatan'
         let currentStatusFilter = ''; // '' | 'done' | 'in_progress' | 'not_started'
         let currentHighlightedPcl = ''; // Nama PCL yang sedang disorot wilayahnya
@@ -1907,6 +1916,8 @@
         const loadingOverlay = document.getElementById('mapLoading');
         const loadingText = document.getElementById('loadingStatusText');
         const kecFilter = document.getElementById('kecFilter');
+        const desaFilter = document.getElementById('desaFilter');
+        const pclFilter = document.getElementById('pclFilter');
         const mapSearchInput = document.getElementById('mapSearchInput');
         const btnResetView = document.getElementById('btnResetView');
         const btnLocateMe = document.getElementById('btnLocateMe');
@@ -2072,12 +2083,18 @@
         }
 
         function desaStyle(feature) {
-          const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
+          const isSelectedKec = !currentFilteredKec || (feature.properties.nmkec && feature.properties.nmkec.toUpperCase() === currentFilteredKec.toUpperCase());
+          const isSelectedDesa = !currentFilteredDesa || (
+            (feature.properties.nmdesa && feature.properties.nmdesa.toUpperCase() === currentFilteredDesa.toUpperCase()) ||
+            feature.properties.iddesa === currentFilteredDesa
+          );
+          const isMatch = isSelectedKec && isSelectedDesa;
+
           if (isOutlineOnlyMode) {
             return {
               fillColor: 'transparent',
-              weight: isSelectedKec ? 0.8 : 0.3,
-              opacity: isSelectedKec ? 1 : 0.15,
+              weight: isMatch ? (currentFilteredDesa ? 1.4 : 0.8) : 0.3,
+              opacity: isMatch ? 1 : 0.15,
               color: currentBasemapType === 'satellite' ? '#38bdf8' : '#2563eb',
               fillOpacity: 0,
               fillRule: 'nonzero'
@@ -2085,17 +2102,23 @@
           }
           return {
             fillColor: getDesaColor(feature.properties.iddesa),
-            weight: isSelectedKec ? 0.5 : 0.2,
-            opacity: isSelectedKec ? 1 : 0.10,
-            color: getBorderColor('desa'),
-            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.50 : 0.42) : 0.02,
+            weight: isMatch ? (currentFilteredDesa ? 1.4 : 0.5) : 0.2,
+            opacity: isMatch ? 1 : 0.10,
+            color: (isMatch && currentFilteredDesa) ? '#ffffff' : getBorderColor('desa'),
+            fillOpacity: isMatch ? (currentBasemapType === 'satellite' ? 0.50 : 0.42) : 0.02,
             fillRule: 'nonzero'
           };
         }
 
         function slsStyle(feature) {
           const stat = getSlsStat(feature.properties.kode);
-          const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
+          const isSelectedKec = !currentFilteredKec || (feature.properties.nmkec && feature.properties.nmkec.toUpperCase() === currentFilteredKec.toUpperCase());
+          const isSelectedDesa = !currentFilteredDesa || (
+            (feature.properties.nmdesa && feature.properties.nmdesa.toUpperCase() === currentFilteredDesa.toUpperCase()) ||
+            feature.properties.iddesa === currentFilteredDesa ||
+            (stat && stat.desa && stat.desa.toUpperCase() === currentFilteredDesa.toUpperCase())
+          );
+          const isMatchRegion = isSelectedKec && isSelectedDesa;
           const matchesKpi = isSlsMatchingKpiStatus(stat, currentStatusFilter);
           const isKpiActive = !!currentStatusFilter;
 
@@ -2128,16 +2151,16 @@
           if (isOutlineOnlyMode) {
             return {
               fillColor: 'transparent',
-              weight: (isSelectedKec && matchesKpi) ? 0.6 : 0.15,
-              opacity: (isSelectedKec && matchesKpi) ? 1 : 0.10,
+              weight: (isMatchRegion && matchesKpi) ? 0.6 : 0.15,
+              opacity: (isMatchRegion && matchesKpi) ? 1 : 0.10,
               color: currentBasemapType === 'satellite' ? '#38bdf8' : '#2563eb',
               fillOpacity: 0,
               fillRule: 'nonzero'
             };
           }
 
-          // Jika di luar filter kecamatan atau di luar filter status KPI
-          if (!isSelectedKec || !matchesKpi) {
+          // Jika di luar filter wilayah atau di luar filter status KPI
+          if (!isMatchRegion || !matchesKpi) {
             return {
               fillColor: getSlsColor(feature.properties.kode),
               weight: 0.15,
@@ -2268,7 +2291,10 @@
         function updateTopStats() {
           let activeSls = slsStats || [];
           if (currentFilteredKec) {
-            activeSls = slsStats.filter(s => s.kecamatan && s.kecamatan.toUpperCase() === currentFilteredKec.toUpperCase());
+            activeSls = activeSls.filter(s => s.kecamatan && s.kecamatan.toUpperCase() === currentFilteredKec.toUpperCase());
+          }
+          if (currentFilteredDesa) {
+            activeSls = activeSls.filter(s => s.desa && s.desa.toUpperCase() === currentFilteredDesa.toUpperCase());
           }
 
           const totalSls = activeSls.length;
@@ -3003,8 +3029,9 @@
             // Build O(1) indexed maps for instant lookup and smooth rendering
             buildStatsLookupMaps();
 
-            // Populate PCL Quick Filter Select
+            // Populate PCL Quick Filter & Desa Filter Select
             populatePclFilterList();
+            populateDesaFilterList();
 
             // Update top KPI cards
             updateTopStats(desaStats);
@@ -3057,13 +3084,19 @@
             if (kecParam) {
               if (kecFilter) kecFilter.value = kecParam;
               currentFilteredKec = kecParam;
+              populateDesaFilterList(kecParam);
               updateActiveLayerStyles();
               setTimeout(() => fitBoundsToKecamatan(kecParam), 200);
             }
 
             if (desaParam) {
+              currentFilteredDesa = desaParam;
+              if (desaFilter) desaFilter.value = desaParam;
+              updateActiveLayerStyles();
+              updateTopStats();
               switchToDesaLayer();
               setTimeout(() => {
+                fitBoundsToDesa(desaParam);
                 let targetLayer = null;
                 if (desaLayer) {
                   desaLayer.eachLayer(layer => {
@@ -3075,8 +3108,6 @@
                   });
                 }
                 if (targetLayer) {
-                  const bounds = targetLayer.getBounds ? targetLayer.getBounds() : null;
-                  if (bounds) map.fitBounds(bounds, { padding: [40, 40] });
                   showDesaDetails(targetLayer.feature.properties);
                   targetLayer.fire('click');
                 }
@@ -3690,17 +3721,105 @@
           });
         }
 
-        // Filter Dropdown Listener
+        function populateDesaFilterList(selectedKec) {
+          const desaSelect = document.getElementById('desaFilter');
+          if (!desaSelect || !desaStats || !desaStats.length) return;
+          const currentVal = desaSelect.value;
+          
+          let filteredDesas = desaStats;
+          if (selectedKec) {
+            filteredDesas = desaStats.filter(d => d.kecamatan && d.kecamatan.toUpperCase() === selectedKec.toUpperCase());
+          }
+
+          filteredDesas = [...filteredDesas].sort((a, b) => (a.desa || '').localeCompare(b.desa || ''));
+
+          let optionsHtml = '<option value="">-- Semua Desa / Kel --</option>';
+          filteredDesas.forEach(d => {
+            const label = selectedKec ? d.desa : `${d.desa} (${d.kecamatan})`;
+            optionsHtml += `<option value="${d.desa}">${label}</option>`;
+          });
+          desaSelect.innerHTML = optionsHtml;
+          
+          if (currentVal && filteredDesas.some(d => d.desa.toUpperCase() === currentVal.toUpperCase())) {
+            desaSelect.value = currentVal;
+          } else {
+            desaSelect.value = '';
+            currentFilteredDesa = '';
+          }
+        }
+
+        function fitBoundsToDesa(desaNameOrId) {
+          if (!desaNameOrId) return;
+          let targetLayer = null;
+          if (desaLayer) {
+            desaLayer.eachLayer(layer => {
+              if (layer.feature && layer.feature.properties &&
+                  ((layer.feature.properties.nmdesa && layer.feature.properties.nmdesa.toUpperCase() === desaNameOrId.toUpperCase()) ||
+                   layer.feature.properties.iddesa === desaNameOrId)) {
+                targetLayer = layer;
+              }
+            });
+          }
+          if (targetLayer && targetLayer.getBounds) {
+            const bounds = targetLayer.getBounds();
+            if (bounds && bounds.isValid()) {
+              map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+            }
+          }
+        }
+
+        // Kecamatan Filter Dropdown Listener
         if (kecFilter) {
           kecFilter.addEventListener('change', (e) => {
             currentFilteredKec = e.target.value;
+            populateDesaFilterList(currentFilteredKec);
+            currentFilteredDesa = '';
             updateActiveLayerStyles();
             updateTopStats();
-            fitBoundsToKecamatan(currentFilteredKec);
-            if (currentFilteredKec && typeof window.updateMapBreadcrumbs === 'function') {
-              window.updateMapBreadcrumbs('kec', currentFilteredKec);
-            } else if (typeof window.updateMapBreadcrumbs === 'function') {
-              window.updateMapBreadcrumbs('kab');
+            if (currentFilteredKec) {
+              fitBoundsToKecamatan(currentFilteredKec);
+              if (typeof window.updateMapBreadcrumbs === 'function') {
+                window.updateMapBreadcrumbs('kec', currentFilteredKec);
+              }
+            } else {
+              if (typeof window.updateMapBreadcrumbs === 'function') {
+                window.updateMapBreadcrumbs('kab');
+              }
+            }
+          });
+        }
+
+        // Desa / Kelurahan Filter Dropdown Listener
+        if (desaFilter) {
+          desaFilter.addEventListener('change', (e) => {
+            currentFilteredDesa = e.target.value;
+            
+            // Auto match kecamatan if desa selected without prior kecamatan
+            if (currentFilteredDesa && !currentFilteredKec && desaStats) {
+              const matchedDesa = desaStats.find(d => d.desa && d.desa.toUpperCase() === currentFilteredDesa.toUpperCase());
+              if (matchedDesa && matchedDesa.kecamatan) {
+                currentFilteredKec = matchedDesa.kecamatan;
+                if (kecFilter) kecFilter.value = currentFilteredKec;
+              }
+            }
+
+            updateActiveLayerStyles();
+            updateTopStats();
+            
+            if (currentFilteredDesa) {
+              fitBoundsToDesa(currentFilteredDesa);
+              if (typeof window.updateMapBreadcrumbs === 'function') {
+                window.updateMapBreadcrumbs('desa', currentFilteredKec, currentFilteredDesa);
+              }
+            } else if (currentFilteredKec) {
+              fitBoundsToKecamatan(currentFilteredKec);
+              if (typeof window.updateMapBreadcrumbs === 'function') {
+                window.updateMapBreadcrumbs('kec', currentFilteredKec);
+              }
+            } else {
+              if (typeof window.updateMapBreadcrumbs === 'function') {
+                window.updateMapBreadcrumbs('kab');
+              }
             }
           });
         }
@@ -3709,8 +3828,11 @@
         if (btnResetView) {
           btnResetView.addEventListener('click', () => {
             if (kecFilter) kecFilter.value = '';
+            if (desaFilter) desaFilter.value = '';
             if (pclFilter) pclFilter.value = '';
             currentFilteredKec = '';
+            currentFilteredDesa = '';
+            populateDesaFilterList('');
             currentStatusFilter = '';
             currentHighlightedPcl = '';
             currentThematicMetric = 'fasih';
