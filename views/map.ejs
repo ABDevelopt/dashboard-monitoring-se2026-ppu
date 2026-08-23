@@ -1402,7 +1402,7 @@
     }
   }
 
-  /* Mobile GPS Focus Mode: Hide all menus, topbars, bottom-navs, search panels, KPI bars, and non-essential UI */
+  /* Mobile GPS Focus Mode: Hide all menus, topbars, bottom-navs, search panels, KPI bars, drawer cards, and non-essential UI */
   @media (max-width: 768px) {
     body.gps-focus-mode .topbar,
     body.gps-focus-mode .bottom-nav,
@@ -1410,14 +1410,19 @@
     body.gps-focus-mode .gmaps-floating-search-panel,
     body.gps-focus-mode .gmaps-floating-kpi-bar,
     body.gps-focus-mode .gmaps-floating-basemap-pill,
+    body.gps-focus-mode .gmaps-floating-drawer-card,
+    body.gps-focus-mode #gmapsDrawerCard,
     body.gps-focus-mode #btnFullscreenMap,
     .gmaps-container-wrap.gps-focus-mode .gmaps-floating-search-panel,
     .gmaps-container-wrap.gps-focus-mode .gmaps-floating-kpi-bar,
     .gmaps-container-wrap.gps-focus-mode .gmaps-floating-basemap-pill,
+    .gmaps-container-wrap.gps-focus-mode .gmaps-floating-drawer-card,
+    .gmaps-container-wrap.gps-focus-mode #gmapsDrawerCard,
     .gmaps-container-wrap.gps-focus-mode #btnFullscreenMap {
       display: none !important;
       opacity: 0 !important;
       pointer-events: none !important;
+      transform: translateY(100%) !important;
     }
 
     body.gps-focus-mode .page-content {
@@ -3725,9 +3730,9 @@
                     <span style="font-size: 10px; color: var(--text-muted); display: block; text-align: right;">Akurasi: ±${Math.round(accuracy)}m</span>
                   </div>
                 `;
-                // Tampilkan rincian lengkap di drawer samping
+                // Tampilkan rincian lengkap di drawer samping (hanya buka otomatis di desktop)
                 showSlsDetails(matchedSls.properties);
-                if (typeof window.ensureGmapsDrawerOpen === 'function') {
+                if (window.innerWidth > 768 && typeof window.ensureGmapsDrawerOpen === 'function') {
                   window.ensureGmapsDrawerOpen();
                 }
               } else if (matchedDesa) {
@@ -3742,7 +3747,7 @@
                   </div>
                 `;
                 showDesaDetails(matchedDesa.properties);
-                if (typeof window.ensureGmapsDrawerOpen === 'function') {
+                if (window.innerWidth > 768 && typeof window.ensureGmapsDrawerOpen === 'function') {
                   window.ensureGmapsDrawerOpen();
                 }
               } else {
