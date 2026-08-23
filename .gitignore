@@ -7,39 +7,54 @@ data/*.db-journal
 data/*.db-shm
 data/*.db-wal
 data/backups/
+data/sessions.db
+database.db
+database.sqlite
 
 # User uploaded files
 uploads/*
 !uploads/.gitkeep
 
-# System/IDE configs
+# System/IDE configs & caches
 .idea/
 .vscode/
 .DS_Store
 .gemini/
 .agents/
-
-# Temporary Office lock files
-~$*.xlsx
-~$*.xls
-
-# Untracked spreadsheets and scratch folder
-*.xlsx
-*.xls
-!rancangan-muatan-se2026-ppu.xlsx
 scratch/
 logs/
 
-# WhatsApp session files (contains large cache files that may be locked)
+# Temporary Office lock files & generated documents
+~$*
+*.docx
+*.drawio
+*.kml
+*.kmz
+
+# Spreadsheets and raw data dumps (Keep clean in production repo)
+*.xlsx
+*.xls
+*.csv
+kelompok_populasi_*.json
+session-cookies.json
+
+# Reports directory (archived in 'master' and 'laporan-archive' branches)
+laporan/
+
+# WhatsApp session files & caches
 .wwebjs_auth/
+.wwebjs_cache/
+baileys_auth_info/
+wa_auth/
+
 # Anomaly Disk Cache
-data/anomaly_cache.json
+data/anomaly_cache*.json
 
 # Environment & Secrets
 .env
 .env.*
 
-# Firebase Keys & Credentials (Keep secret credentials off git)
+# Firebase Keys & Credentials
 firebase-key.json
 firebase-service-account.json
 *firebase*.json
