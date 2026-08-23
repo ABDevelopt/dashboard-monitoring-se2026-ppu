@@ -211,22 +211,22 @@
     <% } %>
   </div>
 
-  <div class="sidebar-upload-info" style="margin: 4px 16px 12px; padding: 10px; background: rgba(var(--accent-rgb), 0.03); border: 1px solid var(--border); border-radius: 8px; font-size: 10px; display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && ((!hideMuatanGlobal && latestUploadsDetailed.muatan) || latestUploadsDetailed.fasih)) ? 'flex' : 'none' %>; flex-direction: column; gap: 6px;">
+  <div class="sidebar-upload-info" style="margin: 12px 16px; padding: 10px 12px; background: rgba(var(--accent-rgb), 0.03); border: 1px solid var(--border); border-radius: 8px; font-size: 11px; display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && ((!hideMuatanGlobal && latestUploadsDetailed.muatan) || latestUploadsDetailed.fasih)) ? 'flex' : 'none' %>; flex-direction: column; gap: 8px;">
     <% if (!hideMuatanGlobal) { %>
-    <div id="sidebarMuatanInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'flex' : 'none' %>; flex-direction: column; gap: 2px;">
-      <span style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; display: flex; align-items: center; gap: 4px;">
-        <i class="bi bi-box-seam" style="color: var(--accent-cyan);"></i> Update Muatan
+    <div id="sidebarMuatanInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'flex' : 'none' %>; flex-direction: column; gap: 3px;">
+      <span style="color: var(--text-muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+        <i class="bi bi-box-seam" style="color: var(--accent-cyan); font-size: 11px;"></i> Update Muatan
       </span>
-      <span id="sidebarMuatanDate" style="color: var(--text-primary); font-weight: 500; padding-left: 14px;">
+      <span id="sidebarMuatanDate" style="color: var(--text-primary); font-weight: 500; font-size: 11px; padding-left: 16px; line-height: 1.35;">
         <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.created_at) ? formatWita(latestUploadsDetailed.muatan.created_at) : '' %>
       </span>
     </div>
     <% } %>
-    <div id="sidebarFasihInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.fasih) ? 'flex' : 'none' %>; flex-direction: column; gap: 2px; <%= (!hideMuatanGlobal && typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px;' : '' %>">
-      <span style="color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; display: flex; align-items: center; gap: 4px;">
-        <i class="bi bi-phone" style="color: var(--accent-purple);"></i> Update FASIH
+    <div id="sidebarFasihInfo" style="display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.fasih) ? 'flex' : 'none' %>; flex-direction: column; gap: 3px; <%= (!hideMuatanGlobal && typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.muatan) ? 'border-top: 1px solid var(--border); padding-top: 8px;' : '' %>">
+      <span style="color: var(--text-muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+        <i class="bi bi-phone" style="color: var(--accent-purple); font-size: 11px;"></i> Update FASIH
       </span>
-      <span id="sidebarFasihDate" style="color: var(--text-primary); font-weight: 500; padding-left: 14px;">
+      <span id="sidebarFasihDate" style="color: var(--text-primary); font-weight: 500; font-size: 11px; padding-left: 16px; line-height: 1.35;">
         <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.created_at) ? formatWita(latestUploadsDetailed.fasih.created_at) : '' %>
       </span>
     </div>
@@ -1091,8 +1091,7 @@
               sidebarFasihInfo.style.display = 'flex';
               if (data.muatan || notifiedMuatanDate) {
                 sidebarFasihInfo.style.borderTop = '1px solid var(--border)';
-                sidebarFasihInfo.style.paddingTop = '6px';
-                sidebarFasihInfo.style.marginTop = '2px';
+                sidebarFasihInfo.style.paddingTop = '8px';
               }
             }
             if (sidebarFasihDateEl) sidebarFasihDateEl.innerHTML = formatWitaString(data.fasih.created_at);
