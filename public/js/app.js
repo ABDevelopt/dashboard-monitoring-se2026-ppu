@@ -1088,6 +1088,9 @@ function updateTime() {
       const sheet = document.getElementById(sheetId);
       const overlay = document.getElementById('bottomNavOverlay');
       if (sheet && overlay) {
+        if (navigator.vibrate) {
+          try { navigator.vibrate(10); } catch (e) {}
+        }
         overlay.classList.add('active');
         sheet.classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -1107,6 +1110,9 @@ function updateTime() {
       }
       document.body.style.overflow = '';
     }
+
+    window.openNavSheet = openNavSheet;
+    window.closeNavSheets = closeNavSheets;
 
     // Swipe-to-Close Drag Handler for Mobile Bottom Nav Sheets
     (function setupSheetDragToClose() {
@@ -1216,25 +1222,30 @@ function updateTime() {
 
       if (wilayahBtn) {
         e.preventDefault();
-        openSidebarDrawer('wilayah');
+        openNavSheet('sheetWilayah');
         return;
       }
       if (petugasBtn) {
         e.preventDefault();
-        openSidebarDrawer('petugas');
+        openNavSheet('sheetPetugas');
         return;
       }
-      if (bottomNavMenuBtn || toggleBtn) {
+      if (bottomNavMenuBtn) {
         e.preventDefault();
-        if (window.innerWidth > 768 && toggleBtn) {
+        openNavSheet('sheetMenu');
+        return;
+      }
+      if (toggleBtn) {
+        e.preventDefault();
+        if (window.innerWidth > 768) {
           // Desktop collapse logic
           document.body.classList.toggle('sidebar-collapsed');
           const isCollapsed = document.body.classList.contains('sidebar-collapsed');
           localStorage.setItem('sidebar-collapsed', isCollapsed);
           toggleBtn.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
         } else {
-          // Mobile slide-out overlay logic
-          openSidebarDrawer();
+          // Mobile open super menu sheet
+          openNavSheet('sheetMenu');
         }
         return;
       }

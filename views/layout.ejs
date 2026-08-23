@@ -503,11 +503,299 @@
     <i class="bi bi-robot"></i>
     <span>Pananyo Taka</span>
   </a>
-  <button id="bottomNavMenuBtn" class="bottom-nav-item <%= ['earlywarning', 'deteksi-anomali', 'harian', 'help', 'admin-menu'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Utama & Sistem">
+  <button id="bottomNavMenuBtn" class="bottom-nav-item <%= ['earlywarning', 'deteksi-anomali', 'harian', 'help', 'admin-menu', 'export'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Utama & Sistem">
     <i class="bi bi-grid"></i>
     <span>Menu</span>
   </button>
 </nav>
+
+<%# ULTRA-PREMIUM MOBILE BOTTOM SHEETS (Wilayah, Petugas, Menu) %>
+<div class="bottom-nav-overlay" id="bottomNavOverlay" onclick="closeNavSheets()"></div>
+
+<!-- 1. WILAYAH ACTION SHEET -->
+<div class="bottom-nav-sheet" id="sheetWilayah" role="dialog" aria-modal="true" aria-label="Menu Wilayah">
+  <div class="bottom-nav-sheet-header">
+    <div class="bottom-nav-sheet-handle"></div>
+    <div class="bottom-nav-sheet-title">
+      <i class="bi bi-geo-alt-fill text-cyan" style="font-size: 16px;"></i>
+      <span>Navigasi Wilayah</span>
+    </div>
+    <button type="button" class="bottom-nav-sheet-close" onclick="closeNavSheets()" aria-label="Tutup"><i class="bi bi-x"></i></button>
+  </div>
+  <div class="bottom-nav-sheet-content">
+    <% if (typeof settings !== 'undefined' && settings.page_map === '1') { %>
+    <!-- Hero Feature: Peta Spasial -->
+    <a href="<%= navPrefix %>/map" class="bottom-sheet-item bottom-sheet-hero <%= activePage === 'map' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(6, 182, 212, 0.18); color: #06b6d4;">
+        <i class="bi bi-map-fill"></i>
+      </div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label" style="display: flex; align-items: center; gap: 6px;">
+          <span>Peta Spasial Interaktif</span>
+          <span class="sheet-badge-pill" style="background: linear-gradient(135deg, #06b6d4, #3b82f6); color: white; font-size: 8.5px; font-weight: 800; padding: 1.5px 6px; border-radius: 999px; letter-spacing: 0.3px;">PETA GIS</span>
+        </div>
+        <div class="bottom-sheet-desc">Visualisasi batas SLS, desa, kecamatan & GPS</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+
+    <div class="sheet-section-title">Drilldown Wilayah Kerja</div>
+
+    <% if (typeof settings === 'undefined' || settings.page_kecamatan === '1') { %>
+    <a href="<%= navPrefix %>/kecamatan" class="bottom-sheet-item <%= activePage === 'kecamatan' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(59, 130, 246, 0.14); color: #3b82f6;">
+        <i class="bi bi-geo-alt"></i>
+      </div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Kecamatan</div>
+        <div class="bottom-sheet-desc">4 Kecamatan di Penajam Paser Utara</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+
+    <% if (typeof settings === 'undefined' || settings.page_subsls === '1') { %>
+    <a href="<%= navPrefix %>/subsls" class="bottom-sheet-item <%= activePage === 'subsls' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(139, 92, 246, 0.14); color: #8b5cf6;">
+        <i class="bi bi-box-seam"></i>
+      </div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">SubSLS / SLS</div>
+        <div class="bottom-sheet-desc">Rincian 1.042 SLS dan satuan lingkungan</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+  </div>
+</div>
+
+<!-- 2. PETUGAS HUB ACTION SHEET -->
+<div class="bottom-nav-sheet" id="sheetPetugas" role="dialog" aria-modal="true" aria-label="Menu Petugas">
+  <div class="bottom-nav-sheet-header">
+    <div class="bottom-nav-sheet-handle"></div>
+    <div class="bottom-nav-sheet-title">
+      <i class="bi bi-people-fill text-blue" style="font-size: 16px;"></i>
+      <span>Kinerja &amp; Petugas</span>
+    </div>
+    <button type="button" class="bottom-nav-sheet-close" onclick="closeNavSheets()" aria-label="Tutup"><i class="bi bi-x"></i></button>
+  </div>
+  <div class="bottom-nav-sheet-content">
+    <div class="sheet-section-title">Hierarki Petugas Lapangan</div>
+    <div class="sheet-quick-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px;">
+      <% if (typeof settings === 'undefined' || settings.page_pcl === '1') { %>
+      <a href="<%= navPrefix %>/pcl" class="sheet-grid-card <%= activePage === 'pcl' ? 'active' : '' %>">
+        <div class="sheet-grid-icon" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;">
+          <i class="bi bi-person-gear"></i>
+        </div>
+        <span class="sheet-grid-name"><%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'PPL' : 'PCL' %></span>
+        <span class="sheet-grid-sub">Pencacah</span>
+      </a>
+      <% } %>
+      <% if (typeof settings === 'undefined' || settings.page_pml === '1') { %>
+      <a href="<%= navPrefix %>/pml" class="sheet-grid-card <%= activePage === 'pml' ? 'active' : '' %>">
+        <div class="sheet-grid-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
+          <i class="bi bi-clipboard2-data"></i>
+        </div>
+        <span class="sheet-grid-name">PML</span>
+        <span class="sheet-grid-sub">Pemeriksa</span>
+      </a>
+      <% } %>
+      <% if (typeof settings === 'undefined' || settings.page_korlap === '1') { %>
+      <a href="<%= navPrefix %>/korlap" class="sheet-grid-card <%= activePage === 'korlap' ? 'active' : '' %>">
+        <div class="sheet-grid-icon" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">
+          <i class="bi bi-person-workspace"></i>
+        </div>
+        <span class="sheet-grid-name">Korlap</span>
+        <span class="sheet-grid-sub">Koordinator</span>
+      </a>
+      <% } %>
+    </div>
+
+    <div class="sheet-section-title">Analisis Kinerja &amp; Peringkat</div>
+
+    <% if (typeof settings === 'undefined' || settings.page_performa === '1') { %>
+    <a href="<%= navPrefix %>/performa" class="bottom-sheet-item <%= activePage === 'performa' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(16, 185, 129, 0.14); color: #10b981;">
+        <i class="bi bi-speedometer2"></i>
+      </div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Performa Petugas</div>
+        <div class="bottom-sheet-desc">Evaluasi beban kerja, kecepatan &amp; target</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+
+    <% if (typeof settings === 'undefined' || settings.page_performa === '1') { %>
+    <a href="<%= navPrefix %>/harian" class="bottom-sheet-item <%= activePage === 'harian' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(99, 102, 241, 0.14); color: #6366f1;">
+        <i class="bi bi-calendar3"></i>
+      </div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Progres Harian</div>
+        <div class="bottom-sheet-desc">Tren penerimaan dokumen &amp; listing harian</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+
+    <% if (typeof settings === 'undefined' || settings.page_leaderboard === '1') { %>
+    <a href="<%= navPrefix %>/leaderboard" class="bottom-sheet-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(245, 158, 11, 0.14); color: #f59e0b;">
+        <i class="bi bi-trophy"></i>
+      </div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Performa Terbaik</div>
+        <div class="bottom-sheet-desc">Leaderboard petugas realisasi tertinggi</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+
+    <% if (typeof settings === 'undefined' || settings.page_performatrendah === '1') { %>
+    <a href="<%= navPrefix %>/performa-terendah" class="bottom-sheet-item <%= activePage === 'performa-terendah' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(239, 68, 68, 0.14); color: #ef4444;">
+        <i class="bi bi-graph-down"></i>
+      </div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Performa Terendah</div>
+        <div class="bottom-sheet-desc">Petugas perlu asistensi &amp; percepatan</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+  </div>
+</div>
+
+<!-- 3. SUPER MENU & SISTEM ACTION SHEET -->
+<div class="bottom-nav-sheet" id="sheetMenu" role="dialog" aria-modal="true" aria-label="Menu Utama & Sistem">
+  <div class="bottom-nav-sheet-header">
+    <div class="bottom-nav-sheet-handle"></div>
+    <div class="bottom-nav-sheet-title">
+      <i class="bi bi-grid-fill text-orange" style="font-size: 16px;"></i>
+      <span>Menu &amp; Sistem</span>
+    </div>
+    <button type="button" class="bottom-nav-sheet-close" onclick="closeNavSheets()" aria-label="Tutup"><i class="bi bi-x"></i></button>
+  </div>
+  <div class="bottom-nav-sheet-content">
+    <!-- Quick Actions Top Bar (Theme, Search, Session) -->
+    <div class="sheet-quick-actions-bar" style="display: flex; gap: 8px; margin-bottom: 10px;">
+      <button type="button" class="sheet-quick-action-pill" onclick="toggleTheme(event)">
+        <i class="bi bi-moon-stars-fill theme-icon"></i>
+        <span>Tema</span>
+      </button>
+      <button type="button" class="sheet-quick-action-pill" onclick="closeNavSheets(); window.toggleGlobalSearchModal(true);">
+        <i class="bi bi-search"></i>
+        <span>Cari Data</span>
+      </button>
+      <% if ((typeof user !== 'undefined' && user) || (typeof isAdmin !== 'undefined' && isAdmin)) { %>
+      <a href="/logout" class="sheet-quick-action-pill text-red" style="text-decoration: none;">
+        <i class="bi bi-box-arrow-right"></i>
+        <span>Logout</span>
+      </a>
+      <% } else { %>
+      <a href="/login" class="sheet-quick-action-pill text-blue" style="text-decoration: none;">
+        <i class="bi bi-box-arrow-in-right"></i>
+        <span>Login</span>
+      </a>
+      <% } %>
+    </div>
+
+    <!-- Evaluasi & Kualitas -->
+    <% 
+      const showAnomaliMob = !isSakernasLayout && typeof settings !== 'undefined' && settings.page_deteksianomali === '1';
+      const showEarlyWarningMob = typeof settings !== 'undefined' && settings.page_earlywarning === '1';
+    %>
+    <% if (showEarlyWarningMob || showAnomaliMob) { %>
+    <div class="sheet-section-title">Evaluasi &amp; Kualitas Data</div>
+    <% if (showEarlyWarningMob) { %>
+    <a href="<%= navPrefix %>/early-warning" class="bottom-sheet-item <%= activePage === 'earlywarning' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(245, 158, 11, 0.14); color: #f59e0b;">
+        <i class="bi bi-exclamation-octagon"></i>
+      </div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Early Warning System</div>
+        <div class="bottom-sheet-desc">Deteksi dini wilayah berisiko terlambat</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+    <% if (showAnomaliMob) { %>
+    <a href="<%= navPrefix %>/deteksi-anomali" class="bottom-sheet-item <%= activePage === 'deteksi-anomali' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(239, 68, 68, 0.14); color: #ef4444;">
+        <i class="bi bi-shield-exclamation"></i>
+      </div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Deteksi Anomali</div>
+        <div class="bottom-sheet-desc">Validasi inkonsistensi &amp; outlier data</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+    <% } %>
+
+    <!-- Data & Utilitas -->
+    <div class="sheet-section-title">Data &amp; Bantuan</div>
+    <% if (typeof settings === 'undefined' || settings.page_export === '1') { %>
+    <a href="<%= navPrefix %>/export" class="bottom-sheet-item <%= activePage === 'export' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(16, 185, 129, 0.14); color: #10b981;">
+        <i class="bi bi-download"></i>
+      </div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Export Data</div>
+        <div class="bottom-sheet-desc">Unduh rekap tabel Excel &amp; CSV</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+    <a href="<%= navPrefix %>/help" class="bottom-sheet-item <%= activePage === 'help' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(59, 130, 246, 0.14); color: #3b82f6;">
+        <i class="bi bi-life-preserver"></i>
+      </div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Panduan &amp; Bantuan</div>
+        <div class="bottom-sheet-desc">FAQ, kamus istilah &amp; cara penggunaan</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+
+    <!-- Administrasi (Khusus Admin) -->
+    <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+    <div class="sheet-section-title">Administrasi &amp; Sistem</div>
+    <a href="<%= navPrefix %>/admin" class="bottom-sheet-item <%= activePage === 'admin-menu' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(139, 92, 246, 0.14); color: #8b5cf6;">
+        <i class="bi bi-grid-fill"></i>
+      </div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Menu Utama Admin</div>
+        <div class="bottom-sheet-desc">Portal manajemen &amp; kontrol sistem</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <a href="<%= navPrefix %>/admin/master" class="bottom-sheet-item <%= activePage === 'master' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(6, 182, 212, 0.14); color: #06b6d4;">
+        <i class="bi bi-database-fill-gear"></i>
+      </div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Kelola Master Data</div>
+        <div class="bottom-sheet-desc">Data SLS, Desa, Kecamatan &amp; Petugas</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <a href="<%= navPrefix %>/admin/settings" class="bottom-sheet-item <%= activePage === 'settings' ? 'active' : '' %>">
+      <div class="bottom-sheet-icon" style="background: rgba(59, 130, 246, 0.14); color: #3b82f6;">
+        <i class="bi bi-sliders"></i>
+      </div>
+      <div class="bottom-sheet-info">
+        <div class="bottom-sheet-label">Pengaturan Tampilan</div>
+        <div class="bottom-sheet-desc">Konfigurasi modul &amp; fitur aktif</div>
+      </div>
+      <i class="bi bi-chevron-right bottom-sheet-arrow"></i>
+    </a>
+    <% } %>
+  </div>
+</div>
 
 <!-- MAIN WRAPPER -->
 <div class="main-wrapper">
