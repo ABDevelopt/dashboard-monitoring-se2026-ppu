@@ -31,9 +31,11 @@ const log = {
 const { dbSchemaDescription } = require('../dbSchema');
 
 const COMPACT_QUERY_GUIDELINES = `
-## Panduan Analisis & Query Khusus (Gunakan Tabel summary_cache atau progres)
+## Panduan Analisis & Query Khusus (WAJIB DIIKUTI)
+- **Kinerja & Rangking Petugas (PCL/PML/Korlap)**:
+  - UTAMAKAN tool \`get_petugas\` (role: 'pcl'|'pml'|'korlap', kecamatan: optional) untuk pertanyaan seperti siapa submit terbanyak, target tertinggi, progres terendah, dsb.
+  - Jika query manual via \`query_data\`, gunakan tabel \`summary_cache\` (kolom: pcl, submitted_total, approved_total, draft_total, target_fasih_total) ATAU tabel \`progres\` yang di-\`LEFT JOIN subsls_master m ON progres.kode = m.kode\` (karena kolom \`progres.pcl_name\` sering NULL, nama resmi petugas ada di \`m.pcl\`).
 - **Ringkasan & Wilayah**: Gunakan tool \`get_summary\` (parameter: kecamatan/desa jika ada) atau query ke \`summary_cache\`.
-- **Kinerja Petugas (PCL/PML/Korlap)**: Gunakan tool \`get_petugas\` (parameter: role, filter, limit, order) untuk top/bottom performa, beban target tertinggi, atau progres.
 - **Anomali Lapangan**: Gunakan tool \`get_anomaly\` untuk anomali usaha ganda, tidak dapat ditemui, atau rejeksi PML.
 - **Rata-rata Penambahan Harian**: Gunakan \`query_data\` menghitung \`SUM(submitted_total + approved_total + rejected_total) / (SELECT COUNT(DISTINCT tanggal) FROM uploads)\` dari \`summary_cache\`.
 - **Penambahan Harian Terakhir (Delta Sesi/Hari)**: Gunakan \`query_data\` membandingkan realisasi upload terbaru dengan upload sesi sebelumnya.

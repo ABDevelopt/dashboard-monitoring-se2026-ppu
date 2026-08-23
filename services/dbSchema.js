@@ -27,12 +27,12 @@ You have read-only access to a SQLite database with the following schema:
    - target_fasih: INTEGER (Target count of family documents to be completed in FASIH app)
 
 
-3. Table: progres (Stores progress per SubSLS per officer per upload. CRITICAL RULE: A single SubSLS code can be worked on by multiple PCL officers simultaneously. Progress is saved per (upload_id, kode, pcl_email))
+3. Table: progres (Stores progress per SubSLS per upload)
    - id: INTEGER PRIMARY KEY AUTOINCREMENT
    - upload_id: INTEGER REFERENCES uploads(id) ON DELETE CASCADE
    - kode: TEXT (SubSLS code references subsls_master.kode)
-   - pcl_email: TEXT (Email of the officer who worked on this SubSLS entry)
-   - pcl_name: TEXT (Full name of the officer)
+   - pcl_email: TEXT (Email of the officer)
+   - pcl_name: TEXT (NOTE: Often NULL. ALWAYS JOIN subsls_master m ON progres.kode = m.kode to get officer names m.pcl, m.pml, m.korlap!)
    - pcl_sobat_id: TEXT (Sobat ID of the officer)
    - usaha_ditemukan: INTEGER (Businesses found during census)
    - usaha_baru: INTEGER (New businesses found)
@@ -45,11 +45,6 @@ You have read-only access to a SQLite database with the following schema:
    - meninggal: INTEGER (Deceased counts)
    - tidak_eligible: INTEGER (Ineligible entries)
    - tidak_dapat_ditemui: INTEGER (Could not be met - anomaly indicator)
-   - rumah_tunggal: INTEGER (Single house building type count)
-   - rumah_deret: INTEGER (Row house building type count)
-   - rumah_susun: INTEGER (Apartment/Flat building type count)
-   - apartemen: INTEGER (Premium Apartment building type count)
-   - lainnya: INTEGER (Other building types count)
    - draft: INTEGER (FASIH document draft status count)
    - submitted_by_pcl: INTEGER (FASIH document submitted by PCL, waiting for PML review)
    - approved: INTEGER (FASIH document approved by PML - count of completed documents)
