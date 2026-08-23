@@ -308,6 +308,26 @@
     margin: 0;
   }
 
+  /* Micro Section Headers inside Search Panel */
+  .gmaps-section-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-top: 4px;
+    margin-bottom: -2px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding-left: 3px;
+    opacity: 0.85;
+  }
+
+  body.light-mode .gmaps-section-label {
+    color: #64748b;
+  }
+
   /* Breadcrumb Navigation */
   .gmaps-breadcrumb-bar {
     display: flex;
@@ -1299,8 +1319,8 @@
       <span id="gpsToastText">Mengunci titik koordinat GPS presisi tinggi...</span>
     </div>
 
-    <!-- 2. FLOATING TOP UNIFIED COMMAND BAR (DRAGGABLE & COLLAPSIBLE) -->
-    <div class="gmaps-floating-search-panel" id="gmapsToolsPanel">
+    <!-- 2. FLOATING TOP UNIFIED COMMAND BAR (COMPACT DEFAULT & EXPANDABLE) -->
+    <div class="gmaps-floating-search-panel is-collapsed" id="gmapsToolsPanel">
       <div class="gmaps-panel-drag-header" id="toolsPanelDragHandle" title="Klik dan geser untuk memindahkan posisi menu">
         <div class="drag-pill-indicator"></div>
       </div>
@@ -1331,7 +1351,8 @@
 
       <!-- Collapsible Filter & Options Section -->
       <div class="gmaps-controls-collapsible" id="toolsExtraRows">
-        <!-- Row 3: Tingkat Layer & Metrik Tematik (Balanced Segmented Grids) -->
+        <!-- Section 1: Layer Peta & Metrik -->
+        <div class="gmaps-section-label"><i class="bi bi-layers-fill"></i> Tampilan Layer &amp; Metrik</div>
         <div class="gmaps-control-row" style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 7px;">
           <div class="gmaps-pill-group" style="display: flex; width: 100%;">
             <button id="btnLayerKec" class="gmaps-pill-btn" title="Tingkat Kecamatan" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-diagram-3"></i> Kec</button>
@@ -1345,7 +1366,8 @@
           </div>
         </div>
 
-        <!-- Row 4: Saklar Fitur Peta (Symmetrical On/Off Toggle Buttons) -->
+        <!-- Section 2: Saklar Fitur Peta -->
+        <div class="gmaps-section-label"><i class="bi bi-toggles"></i> Saklar Fitur Tambahan</div>
         <div class="gmaps-control-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px;">
           <button id="btnOutlineOnly" class="gmaps-toggle-btn" title="Aktifkan/Matikan Garis Batas Saja (Tanpa Warna Isi)" type="button" aria-pressed="false" style="width: 100%;">
             <span style="display: inline-flex; align-items: center; gap: 5px;">
@@ -1360,28 +1382,34 @@
             <i class="bi bi-toggle-off toggle-indicator" id="iconLabelsToggle"></i>
           </button>
         </div>
-
-        <!-- Row 5: KPI Status Filters Symmetrical 4-Column Grid Capsule -->
-        <div class="gmaps-control-row">
-          <div class="gmaps-pill-group" style="width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); padding: 2.5px; gap: 2px;">
-            <button type="button" class="gmaps-kpi-pill active-filter" id="kpiFilterAll" data-status="" title="Tampilkan Semua SLS" style="justify-content: center; font-size: 11px; padding: 4px 2px;">
-              <span>Semua</span> <strong id="kpiTotalSls">--</strong>
-            </button>
-            <button type="button" class="gmaps-kpi-pill" id="kpiFilterDone" data-status="done" title="Hanya SLS Selesai" style="justify-content: center; font-size: 11px; padding: 4px 2px;">
-              <span>Selesai</span> <strong id="kpiSlsSelesai" style="color: #10b981;">--</strong>
-            </button>
-            <button type="button" class="gmaps-kpi-pill" id="kpiFilterInProgress" data-status="in_progress" title="Hanya SLS Progres" style="justify-content: center; font-size: 11px; padding: 4px 2px;">
-              <span>Progres</span> <strong id="kpiSlsBelum" style="color: #f59e0b;">--</strong>
-            </button>
-            <button type="button" class="gmaps-kpi-pill" id="kpiFilterNotStarted" data-status="not_started" title="Hanya SLS Belum" style="justify-content: center; font-size: 11px; padding: 4px 2px;">
-              <span>Belum</span> <strong id="kpiSlsNotStarted" style="color: #ef4444;">--</strong>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
 
-    <!-- 3. FLOATING RIGHT VERTICAL ACTION STACK (FULLSCREEN, GPS, RESET) -->
+    <!-- 3. FLOATING TOP RIGHT KPI BAR (COMMAND CENTER STATUS CAPSULE) -->
+    <div class="gmaps-floating-kpi-bar">
+      <button type="button" class="gmaps-kpi-pill active-filter" id="kpiFilterAll" data-status="" title="Tampilkan Semua SLS">
+        <i class="bi bi-grid-fill" style="color: var(--accent-blue);"></i>
+        <span>Semua</span>
+        <strong id="kpiTotalSls">--</strong>
+      </button>
+      <button type="button" class="gmaps-kpi-pill" id="kpiFilterDone" data-status="done" title="Hanya SLS Selesai">
+        <i class="bi bi-check-circle-fill" style="color: #10b981;"></i>
+        <span>Selesai</span>
+        <strong id="kpiSlsSelesai" style="color: #10b981;">--</strong>
+      </button>
+      <button type="button" class="gmaps-kpi-pill" id="kpiFilterInProgress" data-status="in_progress" title="Hanya SLS Progres">
+        <i class="bi bi-hourglass-split" style="color: #f59e0b;"></i>
+        <span>Progres</span>
+        <strong id="kpiSlsBelum" style="color: #f59e0b;">--</strong>
+      </button>
+      <button type="button" class="gmaps-kpi-pill" id="kpiFilterNotStarted" data-status="not_started" title="Hanya SLS Belum">
+        <i class="bi bi-dash-circle-fill" style="color: #ef4444;"></i>
+        <span>Belum</span>
+        <strong id="kpiSlsNotStarted" style="color: #ef4444;">--</strong>
+      </button>
+    </div>
+
+    <!-- 4. FLOATING RIGHT VERTICAL ACTION STACK (FULLSCREEN, GPS, RESET) -->
     <div class="gmaps-floating-right-stack">
       <button id="btnFullscreenMap" class="gmaps-floating-square-btn" title="Mode Layar Penuh (Command Center)" type="button">
         <i class="bi bi-arrows-fullscreen"></i>
