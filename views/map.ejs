@@ -407,24 +407,24 @@
     font-weight: 700;
   }
 
-  /* High-Contrast Solid Fill Status Badges with Pure White Text */
-  .status-100 { background: #059669 !important; color: #ffffff !important; } /* Emerald Green */
-  .status-85  { background: #0284c7 !important; color: #ffffff !important; } /* Deep Sky Blue */
-  .status-70  { background: #2563eb !important; color: #ffffff !important; } /* Royal Blue */
-  .status-55  { background: #0891b2 !important; color: #ffffff !important; } /* Cyan Ocean */
-  .status-40  { background: #d97706 !important; color: #ffffff !important; } /* Amber Gold */
-  .status-25  { background: #ea580c !important; color: #ffffff !important; } /* Deep Orange */
-  .status-1   { background: #dc2626 !important; color: #ffffff !important; } /* Crimson Red */
-  .status-0   { background: #475569 !important; color: #ffffff !important; } /* Slate Gray */
+  /* High-Contrast Unified Status Color Scale */
+  .status-100 { background: #10b981 !important; color: #ffffff !important; } /* Emerald Green - 100% Selesai */
+  .status-85  { background: #06b6d4 !important; color: #ffffff !important; } /* Cyan - 85-99% */
+  .status-70  { background: #3b82f6 !important; color: #ffffff !important; } /* Royal Blue - 70-84% */
+  .status-55  { background: #6366f1 !important; color: #ffffff !important; } /* Indigo - 55-69% */
+  .status-40  { background: #f59e0b !important; color: #ffffff !important; } /* Amber Gold - 40-54% */
+  .status-25  { background: #f97316 !important; color: #ffffff !important; } /* Orange - 25-39% */
+  .status-1   { background: #ef4444 !important; color: #ffffff !important; } /* Red - 1-24% */
+  .status-0   { background: #64748b !important; color: #ffffff !important; } /* Slate Gray - 0% */
 
-  body.light-mode .status-100 { background: #059669 !important; color: #ffffff !important; }
-  body.light-mode .status-85  { background: #0284c7 !important; color: #ffffff !important; }
-  body.light-mode .status-70  { background: #2563eb !important; color: #ffffff !important; }
-  body.light-mode .status-55  { background: #0891b2 !important; color: #ffffff !important; }
-  body.light-mode .status-40  { background: #d97706 !important; color: #ffffff !important; }
-  body.light-mode .status-25  { background: #ea580c !important; color: #ffffff !important; }
-  body.light-mode .status-1   { background: #dc2626 !important; color: #ffffff !important; }
-  body.light-mode .status-0   { background: #475569 !important; color: #ffffff !important; }
+  body.light-mode .status-100 { background: #10b981 !important; color: #ffffff !important; }
+  body.light-mode .status-85  { background: #06b6d4 !important; color: #ffffff !important; }
+  body.light-mode .status-70  { background: #3b82f6 !important; color: #ffffff !important; }
+  body.light-mode .status-55  { background: #6366f1 !important; color: #ffffff !important; }
+  body.light-mode .status-40  { background: #f59e0b !important; color: #ffffff !important; }
+  body.light-mode .status-25  { background: #f97316 !important; color: #ffffff !important; }
+  body.light-mode .status-1   { background: #ef4444 !important; color: #ffffff !important; }
+  body.light-mode .status-0   { background: #64748b !important; color: #ffffff !important; }
 
   /* Floating KPI Bar (Top Right) - iPhone Liquid Glass */
   .gmaps-floating-kpi-bar {
@@ -1165,39 +1165,38 @@
         <div id="gmapsLegendTabContent" style="display: none;">
           <div id="legendKec" style="display: none;">
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Gradasi Realisasi Kecamatan:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #172554;"></div><span><strong>100%</strong> (Target Selesai)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #1d4ed8;"></div><span><strong>85% - 99%</strong> (Hampir Selesai)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #2563eb;"></div><span><strong>70% - 84%</strong> (Sangat Baik)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>55% - 69%</strong> (Baik)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #38bdf8;"></div><span><strong>40% - 54%</strong> (Sedang)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #93c5fd;"></div><span><strong>25% - 39%</strong> (Awal Menengah)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #e0f2fe;"></div><span><strong>1% - 24%</strong> (Awal Progres)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #cbd5e1;"></div><span><strong>0%</strong> (Belum Ada Progres)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>100%</strong> (Target Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #06b6d4;"></div><span><strong>85% - 99%</strong> (Hampir Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #3b82f6;"></div><span><strong>70% - 84%</strong> (Sangat Baik)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #6366f1;"></div><span><strong>55% - 69%</strong> (Baik)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #f59e0b;"></div><span><strong>40% - 54%</strong> (Sedang)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>25% - 39%</strong> (Awal Menengah)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>1% - 24%</strong> (Awal Progres)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #64748b;"></div><span><strong>0%</strong> (Belum Ada Progres)</span></div>
           </div>
 
           <div id="legendDesa">
-            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Gradasi Realisasi FASIH Desa:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #172554;"></div><span><strong>100%</strong> FASIH (Target Selesai)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #1d4ed8;"></div><span><strong>85% - 99%</strong> FASIH (Hampir Selesai)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #2563eb;"></div><span><strong>70% - 84%</strong> FASIH (Sangat Baik)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>55% - 69%</strong> FASIH (Baik)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #38bdf8;"></div><span><strong>40% - 54%</strong> FASIH (Sedang)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #93c5fd;"></div><span><strong>25% - 39%</strong> FASIH (Awal Menengah)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #e0f2fe;"></div><span><strong>1% - 24%</strong> FASIH (Awal Progres)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #cbd5e1;"></div><span><strong>0%</strong> FASIH (Belum Ada Progres)</span></div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Gradasi Realisasi Desa:</div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>100%</strong> (Target Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #06b6d4;"></div><span><strong>85% - 99%</strong> (Hampir Selesai)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #3b82f6;"></div><span><strong>70% - 84%</strong> (Sangat Baik)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #6366f1;"></div><span><strong>55% - 69%</strong> (Baik)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #f59e0b;"></div><span><strong>40% - 54%</strong> (Sedang)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>25% - 39%</strong> (Awal Menengah)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>1% - 24%</strong> (Awal Progres)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #64748b;"></div><span><strong>0%</strong> (Belum Ada Progres)</span></div>
           </div>
 
           <div id="legendSls" style="display: none;">
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Gradasi Progres SubSLS:</div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>SLS Selesai</strong> (Dikonfirmasi Selesai)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #172554;"></div><span><strong>100%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #1d4ed8;"></div><span><strong>85% - 99%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #2563eb;"></div><span><strong>70% - 84%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>55% - 69%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #38bdf8;"></div><span><strong>40% - 54%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #93c5fd;"></div><span><strong>25% - 39%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #e0f2fe;"></div><span><strong>1% - 24%</strong> Progres FASIH/Muatan</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #cbd5e1;"></div><span><strong>0%</strong> (Belum Ada Isian)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>SLS Selesai / 100%</strong> (Selesai Resmi)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #06b6d4;"></div><span><strong>85% - 99%</strong> Progres</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #3b82f6;"></div><span><strong>70% - 84%</strong> Progres</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #6366f1;"></div><span><strong>55% - 69%</strong> Progres</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #f59e0b;"></div><span><strong>40% - 54%</strong> Progres</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>25% - 39%</strong> Progres</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>1% - 24%</strong> Progres</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #64748b;"></div><span><strong>0%</strong> (Belum Mulai)</span></div>
           </div>
         </div>
       </div>
@@ -1531,14 +1530,28 @@
           });
         }
 
-        // Styles
-        function getBorderColor() {
+        // Styles & Unified Color Mapping
+        function getBorderColor(layerType) {
           if (currentBasemapType === 'satellite') return '#ffffff';
-          return document.body.classList.contains('light-mode') ? '#1e293b' : '#ffffff';
+          const isLight = document.body.classList.contains('light-mode');
+          if (layerType === 'kec') return isLight ? '#1e293b' : '#ffffff';
+          if (layerType === 'desa') return isLight ? '#334155' : '#f1f5f9';
+          return isLight ? '#475569' : '#e2e8f0';
         }
 
         function getHoverBorderColor() {
-          return 'var(--accent-cyan)';
+          return '#06b6d4';
+        }
+
+        function getProgressColor(pct, isSelesai) {
+          if (isSelesai || pct >= 100) return '#10b981'; // Emerald Green
+          if (pct >= 85) return '#06b6d4'; // Cyan
+          if (pct >= 70) return '#3b82f6'; // Royal Blue
+          if (pct >= 55) return '#6366f1'; // Indigo
+          if (pct >= 40) return '#f59e0b'; // Amber Gold
+          if (pct >= 25) return '#f97316'; // Orange
+          if (pct > 0) return '#ef4444';  // Red
+          return '#64748b'; // Slate Gray
         }
 
         function getFasihBadgeClass(pct) {
@@ -1555,47 +1568,26 @@
         // Monochromatic / Thematic Color for Desa
         function getDesaColor(iddesa) {
           const stat = desaStats.find(s => s.iddesa === iddesa);
-          if (!stat) return '#cbd5e1';
+          if (!stat) return '#64748b';
 
           if (currentThematicMetric === 'muatan') {
             const pct = stat.muatan_pct_str ? parseFloat(stat.muatan_pct_str) : 0;
-            if (pct >= 100) return '#065f46';
-            if (pct >= 85) return '#059669';
-            if (pct >= 70) return '#10b981';
-            if (pct >= 55) return '#0d9488';
-            if (pct >= 40) return '#14b8a6';
-            if (pct >= 25) return '#5eead4';
-            if (pct > 0) return '#ccfbf1';
-            return '#cbd5e1';
+            return getProgressColor(pct);
           }
 
           // Default FASIH
           const pct = stat.target_fasih_total ? ((stat.submitted_total + stat.approved_total + stat.rejected_total) / stat.target_fasih_total) * 100 : 0;
-          if (pct >= 100) return '#172554';
-          if (pct >= 85) return '#1d4ed8';
-          if (pct >= 70) return '#2563eb';
-          if (pct >= 55) return '#0284c7';
-          if (pct >= 40) return '#38bdf8';
-          if (pct >= 25) return '#93c5fd';
-          if (pct > 0) return '#e0f2fe';
-          return '#cbd5e1';
+          return getProgressColor(pct);
         }
 
         // Thematic Color for SLS
         function getSlsColor(kode) {
           const stat = slsStats.find(s => s.kode === kode);
-          if (!stat) return '#cbd5e1';
+          if (!stat) return '#64748b';
 
           if (currentThematicMetric === 'muatan') {
             const pct = parseFloat(stat.muatan_pct_str || 0);
-            if (pct >= 100) return '#065f46';
-            if (pct >= 85) return '#059669';
-            if (pct >= 70) return '#10b981';
-            if (pct >= 55) return '#0d9488';
-            if (pct >= 40) return '#14b8a6';
-            if (pct >= 25) return '#5eead4';
-            if (pct > 0) return '#ccfbf1';
-            return '#cbd5e1';
+            return getProgressColor(pct, stat.selesai === 1);
           }
 
           // Default FASIH
@@ -1607,45 +1599,24 @@
             pct = (real / stat.target_fasih) * 100;
           }
 
-          if (pct >= 100) return '#172554';
-          if (pct >= 85) return '#1d4ed8';
-          if (pct >= 70) return '#2563eb';
-          if (pct >= 55) return '#0284c7';
-          if (pct >= 40) return '#38bdf8';
-          if (pct >= 25) return '#93c5fd';
-          if (pct > 0) return '#e0f2fe';
-          return '#cbd5e1';
+          return getProgressColor(pct, stat.selesai === 1);
         }
 
         // Thematic Color for Kecamatan
         function getKecColor(nmkec) {
           const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === nmkec.toUpperCase());
-          if (!stat) return '#cbd5e1';
+          if (!stat) return '#64748b';
 
           if (currentThematicMetric === 'muatan') {
             const pct = stat.muatan_pct_str ? parseFloat(stat.muatan_pct_str) : 0;
-            if (pct >= 100) return '#065f46';
-            if (pct >= 85) return '#059669';
-            if (pct >= 70) return '#10b981';
-            if (pct >= 55) return '#0d9488';
-            if (pct >= 40) return '#14b8a6';
-            if (pct >= 25) return '#5eead4';
-            if (pct > 0) return '#ccfbf1';
-            return '#cbd5e1';
+            return getProgressColor(pct);
           }
 
           const pct = parseFloat(stat.fasih_pct_str || 0);
-          if (pct >= 100) return '#172554';
-          if (pct >= 85) return '#1d4ed8';
-          if (pct >= 70) return '#2563eb';
-          if (pct >= 55) return '#0284c7';
-          if (pct >= 40) return '#38bdf8';
-          if (pct >= 25) return '#93c5fd';
-          if (pct > 0) return '#e0f2fe';
-          return '#cbd5e1';
+          return getProgressColor(pct);
         }
 
-        // Styles for layers with ultra-crisp reduced outline thickness & Outline Only mode
+        // Styles for layers with ultra-crisp consistent outline thickness & Outline Only mode
         function kecStyle(feature) {
           const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
           if (isOutlineOnlyMode) {
@@ -1653,17 +1624,17 @@
               fillColor: 'transparent',
               weight: isSelectedKec ? 2.0 : 0.6,
               opacity: isSelectedKec ? 1 : 0.15,
-              color: currentBasemapType === 'satellite' ? '#38bdf8' : 'var(--accent-blue)',
+              color: currentBasemapType === 'satellite' ? '#38bdf8' : '#2563eb',
               fillOpacity: 0,
               fillRule: 'nonzero'
             };
           }
           return {
             fillColor: getKecColor(feature.properties.nmkec),
-            weight: 1.5,
-            opacity: isSelectedKec ? 1 : 0.08,
-            color: getBorderColor(),
-            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.50 : 0.42) : 0.02,
+            weight: isSelectedKec ? 1.5 : 0.6,
+            opacity: isSelectedKec ? 1 : 0.10,
+            color: getBorderColor('kec'),
+            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.55 : 0.45) : 0.02,
             fillRule: 'nonzero'
           };
         }
@@ -1673,19 +1644,19 @@
           if (isOutlineOnlyMode) {
             return {
               fillColor: 'transparent',
-              weight: isSelectedKec ? 1.0 : 0.3,
+              weight: isSelectedKec ? 1.2 : 0.4,
               opacity: isSelectedKec ? 1 : 0.15,
-              color: currentBasemapType === 'satellite' ? '#38bdf8' : 'var(--accent-blue)',
+              color: currentBasemapType === 'satellite' ? '#38bdf8' : '#2563eb',
               fillOpacity: 0,
               fillRule: 'nonzero'
             };
           }
           return {
             fillColor: getDesaColor(feature.properties.iddesa),
-            weight: 0.6,
-            opacity: isSelectedKec ? 1 : 0.08,
-            color: getBorderColor(),
-            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.45 : 0.38) : 0.02,
+            weight: isSelectedKec ? 0.8 : 0.3,
+            opacity: isSelectedKec ? 1 : 0.10,
+            color: getBorderColor('desa'),
+            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.50 : 0.42) : 0.02,
             fillRule: 'nonzero'
           };
         }
@@ -1695,19 +1666,19 @@
           if (isOutlineOnlyMode) {
             return {
               fillColor: 'transparent',
-              weight: isSelectedKec ? 0.7 : 0.2,
+              weight: isSelectedKec ? 0.8 : 0.3,
               opacity: isSelectedKec ? 1 : 0.15,
-              color: currentBasemapType === 'satellite' ? '#a7f3d0' : '#059669',
+              color: currentBasemapType === 'satellite' ? '#38bdf8' : '#2563eb',
               fillOpacity: 0,
               fillRule: 'nonzero'
             };
           }
           return {
             fillColor: getSlsColor(feature.properties.kode),
-            weight: 0.35,
-            opacity: isSelectedKec ? 1 : 0.08,
-            color: getBorderColor(),
-            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.45 : 0.38) : 0.02,
+            weight: isSelectedKec ? 0.5 : 0.2,
+            opacity: isSelectedKec ? 1 : 0.10,
+            color: getBorderColor('sls'),
+            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.50 : 0.42) : 0.02,
             fillRule: 'nonzero'
           };
         }
