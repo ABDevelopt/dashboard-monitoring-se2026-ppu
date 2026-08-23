@@ -3061,19 +3061,39 @@
 
         if (btnLocateMe) btnLocateMe.addEventListener('click', locateUserGPS);
 
-        // Fullscreen / Command Center Presentation Mode
+        // Fullscreen / Command Center Presentation Mode with Session Persistence
         function toggleFullscreenMap() {
           const wrapper = document.getElementById('gmapsWrapper');
           if (!wrapper) return;
 
-          if (!document.fullscreenElement) {
-            if (wrapper.requestFullscreen) wrapper.requestFullscreen();
-            else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
-            else if (wrapper.msRequestFullscreen) wrapper.msRequestFullscreen();
-            else wrapper.classList.toggle('is-fullscreen');
+          const isCurrentlyFullscreen = !!document.fullscreenElement || wrapper.classList.contains('is-fullscreen');
+
+          if (!isCurrentlyFullscreen) {
+            localStorage.setItem('se2026_map_fullscreen', 'true');
+            if (wrapper.requestFullscreen) {
+              wrapper.requestFullscreen().catch(() => {
+                wrapper.classList.add('is-fullscreen');
+              });
+            } else if (wrapper.webkitRequestFullscreen) {
+              wrapper.webkitRequestFullscreen();
+            } else if (wrapper.msRequestFullscreen) {
+              wrapper.msRequestFullscreen();
+            } else {
+              wrapper.classList.add('is-fullscreen');
+            }
+            if (btnFullscreenMap) {
+              btnFullscreenMap.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+            }
           } else {
-            if (document.exitFullscreen) document.exitFullscreen();
-            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            localStorage.setItem('se2026_map_fullscreen', 'false');
+            wrapper.classList.remove('is-fullscreen');
+            if (document.fullscreenElement) {
+              if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+              else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+            if (btnFullscreenMap) {
+              btnFullscreenMap.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+            }
           }
 
           setTimeout(() => { map.invalidateSize(); }, 200);
@@ -3081,13 +3101,59 @@
 
         if (btnFullscreenMap) btnFullscreenMap.addEventListener('click', toggleFullscreenMap);
 
-        document.addEventListener('fullscreenchange', () => {
-          const isFull = !!document.fullscreenElement;
+        function updateFullscreenUiState() {
+          const wrapper = document.getElementById('gmapsWrapper');
+          const isFull = !!document.fullscreenElement || (wrapper && wrapper.classList.contains('is-fullscreen'));
           if (btnFullscreenMap) {
             btnFullscreenMap.innerHTML = isFull ? '<i class="bi bi-fullscreen-exit"></i>' : '<i class="bi bi-arrows-fullscreen"></i>';
           }
-          map.invalidateSize();
+          if (map) {
+            setTimeout(() => { map.invalidateSize(); }, 150);
+          }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+          const isFull = !!document.fullscreenElement;
+          const wrapper = document.getElementById('gmapsWrapper');
+          if (!isFull && wrapper && !wrapper.classList.contains('is-fullscreen')) {
+            localStorage.setItem('se2026_map_fullscreen', 'false');
+          }
+          updateFullscreenUiState();
         });
+        document.addEventListener('webkitfullscreenchange', updateFullscreenUiState);
+        document.addEventListener('mozfullscreenchange', updateFullscreenUiState);
+        document.addEventListener('MSFullscreenChange', updateFullscreenUiState);
+
+        // Auto-restore Fullscreen state on page load / refresh
+        function restoreFullscreenState() {
+          const savedFullscreen = localStorage.getItem('se2026_map_fullscreen');
+          const wrapper = document.getElementById('gmapsWrapper');
+          if (savedFullscreen === 'true' && wrapper) {
+            wrapper.classList.add('is-fullscreen');
+            if (btnFullscreenMap) {
+              btnFullscreenMap.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+            }
+            setTimeout(() => { map.invalidateSize(); }, 200);
+
+            // Attempt native fullscreen on first user interaction if not already active
+            const autoNativeFullscreenOnInteraction = () => {
+              if (localStorage.getItem('se2026_map_fullscreen') === 'true' && !document.fullscreenElement) {
+                if (wrapper.requestFullscreen) {
+                  wrapper.requestFullscreen().catch(() => {});
+                }
+              }
+              document.removeEventListener('click', autoNativeFullscreenOnInteraction);
+              document.removeEventListener('keydown', autoNativeFullscreenOnInteraction);
+              document.removeEventListener('touchstart', autoNativeFullscreenOnInteraction);
+            };
+
+            document.addEventListener('click', autoNativeFullscreenOnInteraction, { once: true });
+            document.addEventListener('keydown', autoNativeFullscreenOnInteraction, { once: true });
+            document.addEventListener('touchstart', autoNativeFullscreenOnInteraction, { once: true });
+          }
+        }
+
+        restoreFullscreenState();
 
         // Interactive KPI Bar Status Filter Listeners
         document.querySelectorAll('.gmaps-kpi-pill').forEach(pill => {
