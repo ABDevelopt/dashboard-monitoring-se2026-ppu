@@ -606,6 +606,30 @@
     transform: scale(0.94);
   }
 
+  /* Floating Basemap Switcher (Bottom Right) - iPhone Liquid Glass */
+  .gmaps-floating-basemap-pill {
+    position: absolute;
+    bottom: 14px;
+    right: 56px;
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 60%, rgba(15, 23, 42, 0.42) 100%);
+    backdrop-filter: blur(28px) saturate(210%) brightness(105%);
+    -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(105%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 3px;
+    box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.38), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.35);
+  }
+
+  body.light-mode .gmaps-floating-basemap-pill {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.40) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), inset 0 1.5px 2px rgba(255, 255, 255, 0.95);
+  }
+
   /* GPS Locating Active Radar State */
   .gmaps-floating-square-btn.is-locating {
     border-color: var(--accent-cyan) !important;
@@ -1140,14 +1164,9 @@
 
       <!-- Row 4: Opsi Peta & Layer Display -->
       <div class="gmaps-control-row">
-        <div class="gmaps-pill-group">
-          <button id="btnBasemapDefault" class="gmaps-pill-btn active" title="Peta Vektor"><i class="bi bi-map"></i> Vektor</button>
-          <button id="btnBasemapSatellite" class="gmaps-pill-btn" title="Citra Satelit"><i class="bi bi-globe-americas"></i> Satelit</button>
-        </div>
-
-        <div class="gmaps-pill-group">
-          <button id="btnOutlineOnly" class="gmaps-pill-btn" title="Garis Batas Saja (Tanpa Warna Isi)"><i class="bi bi-bounding-box-circles"></i> Batas Saja</button>
-          <button id="btnToggleLabels" class="gmaps-pill-btn" title="Tampilkan/Sembunyikan Label Progres" aria-pressed="false"><i class="bi bi-percent"></i> Label Progres</button>
+        <div class="gmaps-pill-group" style="width: 100%;">
+          <button id="btnOutlineOnly" class="gmaps-pill-btn" title="Garis Batas Saja (Tanpa Warna Isi)" style="flex: 1;"><i class="bi bi-bounding-box-circles"></i> Batas Saja</button>
+          <button id="btnToggleLabels" class="gmaps-pill-btn" title="Tampilkan/Sembunyikan Label Progres" aria-pressed="false" style="flex: 1;"><i class="bi bi-percent"></i> Label Progres</button>
         </div>
       </div>
     </div>
@@ -1186,7 +1205,13 @@
       </button>
     </div>
 
-    <!-- 4. FLOATING SIDE CARD DRAWER (LEFT SIDE) FOR STATS & LEGEND -->
+    <!-- 5. FLOATING BASEMAP SWITCHER (POJOK KANAN BAWAH) -->
+    <div class="gmaps-floating-basemap-pill">
+      <button id="btnBasemapDefault" class="gmaps-pill-btn active" title="Peta Vektor"><i class="bi bi-map"></i> Vektor</button>
+      <button id="btnBasemapSatellite" class="gmaps-pill-btn" title="Citra Satelit"><i class="bi bi-globe-americas"></i> Satelit</button>
+    </div>
+
+    <!-- 6. FLOATING SIDE CARD DRAWER (LEFT SIDE) FOR STATS & LEGEND -->
     <div class="gmaps-floating-drawer-card collapsed" id="gmapsDrawerCard">
       <div class="gmaps-drawer-header">
         <div class="gmaps-drawer-tabs">
