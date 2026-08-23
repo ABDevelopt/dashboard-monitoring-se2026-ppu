@@ -7,7 +7,7 @@
 **Nama Sistem:** Pananyo Taka — Dashboard Monitoring SE2026 PPU
 **Versi Sistem:** v1.0.0 (Node.js 20+, Express 5, Better-SQLite3, Baileys WA, Gemini AI)
 **Mentor:** Baihaqi Ilham Syah, S.Tr.Stat.
-**Penyusun:** Yahya Abdurrohman, S.Tr.Stat. | BPS Kabupaten Penajam Paser Utara
+**Penyusun:** Yahya Abdurrohman | BPS Kabupaten Penajam Paser Utara
 **Tanggal:** 22 Agustus 2026
 
 ---

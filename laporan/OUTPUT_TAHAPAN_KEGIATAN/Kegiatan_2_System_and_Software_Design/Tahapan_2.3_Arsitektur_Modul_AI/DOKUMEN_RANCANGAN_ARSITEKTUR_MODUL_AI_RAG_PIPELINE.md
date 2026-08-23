@@ -9,7 +9,7 @@
 | **Sistem Utama** | Dashboard Pemantauan Lapangan SE2026 & Multi-Survei BPS PPU |
 | **Institusi** | Badan Pusat Statistik (BPS) Kabupaten Penajam Paser Utara |
 | **Versi Arsitektur** | 2.3.0 (SDLC Phase 2 Final) |
-| **Penyusun** | Yahya Abdurrohman, S.Tr.Stat. (Pranata Komputer Ahli Pertama) |
+| **Penyusun** | Yahya Abdurrohman (Pranata Komputer Ahli Pertama) |
 | **Pengesah** | Ketua Tim IPJKD & DLS BPS Kab. PPU (Ketua Tim IPJKD & DLS BPS Kab. PPU) |
 | **Tanggal Dokumen** | 15 Agustus 2026 |
 

@@ -27,7 +27,7 @@ Penelaahan teknis dihadiri oleh Penyusun, Mentor, serta Tim Reviewer Teknis Seks
 
 | No. | Nama & Gelar | NIP / Unit Kerja | Peran dalam Sesi Review | Persetujuan |
 | :--- | :--- | :--- | :--- | :--- |
-| 1 | **Yahya Abdurrohman, S.Tr.Stat.** | 20020420 202410 1 002<br/>Pranata Komputer Ahli Pertama | Penyusun Arsitektur Sistem & Presenter | *(Disahkan)* |
+| 1 | **Yahya Abdurrohman** | 20020420 202410 1 002<br/>Pranata Komputer Ahli Pertama | Penyusun Arsitektur Sistem & Presenter | *(Disahkan)* |
 | 2 | **Ketua Tim IPJKD & DLS BPS Kab. PPU** | Ketua Tim IPJKD & DLS<br/>BPS Kab. Penajam Paser Utara | Mentor & Pengesah Utama | *(Disetujui)* |
 | 3 | **Tim Seksi Pengolahan Data & TI dan Tim IPJKD & DLS** | Seksi Pengolahan Data & TI<br/>BPS Kab. Penajam Paser Utara | Reviewer Teknis & Penelaah Infrastruktur | *(Terverifikasi)* |
 
@@ -134,6 +134,6 @@ Berdasarkan hasil evaluasi menyeluruh terhadap 4 aspek utama arsitektur dan 7 di
 
 | Peran | Nama & Gelar | Tanda Tangan |
 | :--- | :--- | :--- |
-| **Penyusun / Proposer** | **Yahya Abdurrohman, S.Tr.Stat.**<br/>NIP. 20020420 202410 1 002 | *(Ditandatangani)* |
+| **Penyusun / Proposer** | **Yahya Abdurrohman**<br/> | *(Ditandatangani)* |
 | **Reviewer Teknis TI** | **Tim Seksi Pengolahan Data & TI dan Tim IPJKD & DLS**<br/>BPS Kab. Penajam Paser Utara | *(Terverifikasi)* |
 | **Mentor / Pengesah Utama** | **Ketua Tim IPJKD & DLS BPS Kab. PPU**<br/>Ketua Tim IPJKD & DLS BPS Kab. PPU | *(Disetujui & Disahkan)* |

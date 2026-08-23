@@ -4,7 +4,7 @@
 **Nama Sistem:** Dashboard Pemantauan Lapangan Sensus Ekonomi 2026 (SE2026) & Multi-Survei BPS PPU (Pananyo Taka)  
 **Institusi Pengembang:** Badan Pusat Statistik (BPS) Kabupaten Penajam Paser Utara  
 **Versi Sistem:** 2.3.0  
-**Penyusun:** Yahya Abdurrohman, S.Tr.Stat. (NIP: 20020420 202410 1 002)  
+**Penyusun:** Yahya Abdurrohman  
 **Pengesah / Mentor:** Ketua Tim IPJKD & DLS BPS Kab. PPU (Ketua Tim IPJKD & DLS BPS Kabupaten Penajam Paser Utara)  
 **Tanggal Rilis:** Agustus 2026  
 **Klasifikasi Dokumen:** Laporan Teknis Standar Desain Antarmuka (*Technical Interface Design Guideline*)
@@ -17,7 +17,7 @@ Dokumen Laporan Panduan Desain Sistem dan Spesifikasi Antarmuka Pengguna (*UI/UX
 
 | Peran | Nama & Gelar | Jabatan / Unit Kerja | Tanda Tangan & Persetujuan |
 | :--- | :--- | :--- | :--- |
-| **Penyusun** | Yahya Abdurrohman, S.Tr.Stat. | Pranata Komputer Ahli Pertama / Peserta Latsar CPNS Gol. III | *(Disahkan)* |
+| **Penyusun** | Yahya Abdurrohman | Pranata Komputer Ahli Pertama / Peserta Latsar CPNS Gol. III | *(Disahkan)* |
 | **Mentor / Pengesah** | Ketua Tim IPJKD & DLS BPS Kab. PPU | Ketua Tim IPJKD & DLS BPS Kabupaten Penajam Paser Utara | *(Disetujui)* |
 | **Reviewer Teknis** | Tim IT Seksi Pengolahan & Tim IPJKD & DLS Data & Tim IPJKD & DLS | Seksi Pengolahan & TI BPS Kabupaten Penajam Paser Utara | *(Terverifikasi)* |
 

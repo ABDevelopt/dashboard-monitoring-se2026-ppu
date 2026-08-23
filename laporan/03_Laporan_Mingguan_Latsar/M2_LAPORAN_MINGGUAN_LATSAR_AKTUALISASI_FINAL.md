@@ -8,8 +8,7 @@
 
 | Uraian | Keterangan |
 | :--- | :--- |
-| **Nama Peserta** | Yahya Abdurrohman, S.Tr.Stat. |
-| **NIP** | 20020420 202410 1 002 |
+| **Nama Peserta** | Yahya Abdurrohman |
 | **Jabatan** | Pranata Komputer Ahli Pertama |
 | **Unit Kerja** | BPS Kabupaten Penajam Paser Utara |
 | **Mentor** | Ketua Tim IPJKD & DLS BPS Kab. PPU |
@@ -23,7 +22,7 @@
 
 | Peran | Nama & Gelar | Jabatan | Tanda Tangan |
 | :--- | :--- | :--- | :--- |
-| **Peserta Latsar** | Yahya Abdurrohman, S.Tr.Stat. | Pranata Komputer Ahli Pertama | *(Ditandatangani)* |
+| **Peserta Latsar** | Yahya Abdurrohman | Pranata Komputer Ahli Pertama | *(Ditandatangani)* |
 | **Mentor** | Ketua Tim IPJKD & DLS BPS Kab. PPU | Ketua Tim IPJKD & DLS BPS Kab. PPU | *(Disetujui)* |
 
 **Penajam, 15 Agustus 2026**
@@ -114,4 +113,3 @@ Untuk menyelesaikan kegiatan tersebut, dilaksanakan empat tahapan kegiatan, yakn
 
 Ketua Tim IPJKD & DLS BPS Kab. PPU
 Ketua Tim IPJKD & DLS BPS Kab. Penajam Paser Utara
-NIP: 198...
