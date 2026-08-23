@@ -426,60 +426,74 @@
   body.light-mode .status-1   { background: #ef4444 !important; color: #ffffff !important; }
   body.light-mode .status-0   { background: #64748b !important; color: #ffffff !important; }
 
-  /* Floating KPI Bar (Top Right) - iPhone Liquid Glass */
+  /* Floating KPI Bar (Top Right) - Simplified Minimalist Liquid Glass Capsule */
   .gmaps-floating-kpi-bar {
     position: absolute;
     top: 14px;
     right: 14px;
     z-index: 1000;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 7px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-
-  .gmaps-kpi-pill {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 60%, rgba(15, 23, 42, 0.42) 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 60%, rgba(15, 23, 42, 0.45) 100%);
     backdrop-filter: blur(28px) saturate(210%) brightness(105%);
     -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(105%);
     border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 999px;
-    padding: 6px 15px;
-    font-size: 12px;
-    display: flex;
+    padding: 3px;
+    gap: 3px;
+    box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.38), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.35);
+    max-width: calc(100% - 28px);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .gmaps-floating-kpi-bar::-webkit-scrollbar { display: none; }
+
+  body.light-mode .gmaps-floating-kpi-bar {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.40) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), inset 0 1.5px 2px rgba(255, 255, 255, 0.95);
+  }
+
+  .gmaps-kpi-pill {
+    background: transparent;
+    border: none;
+    border-radius: 999px;
+    padding: 5px 11px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
-    box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.35), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.40), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.20);
+    gap: 5px;
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     user-select: none;
+    white-space: nowrap;
   }
 
   .gmaps-kpi-pill:hover {
-    border-color: var(--accent-cyan);
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 14px 36px 0 rgba(0, 0, 0, 0.45), inset 0 1px 2px 0 rgba(255, 255, 255, 0.50);
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  body.light-mode .gmaps-kpi-pill:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .gmaps-kpi-pill strong {
+    font-weight: 700;
   }
 
   .gmaps-kpi-pill.active-filter {
-    border-color: var(--accent-cyan) !important;
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.35) 0%, rgba(15, 23, 42, 0.45) 100%) !important;
-    box-shadow: 0 0 0 2.5px rgba(6, 182, 212, 0.45), 0 12px 36px rgba(6, 182, 212, 0.25), inset 0 1px 1.5px rgba(255, 255, 255, 0.5) !important;
-  }
-
-  body.light-mode .gmaps-kpi-pill {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.40) 100%);
-    backdrop-filter: blur(28px) saturate(190%) brightness(102%);
-    -webkit-backdrop-filter: blur(28px) saturate(190%) brightness(102%);
-    border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow: 0 10px 24px 0 rgba(0, 0, 0, 0.08), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.06) 100%) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.45) !important;
   }
 
   body.light-mode .gmaps-kpi-pill.active-filter {
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.22) 0%, rgba(255, 255, 255, 0.65) 100%) !important;
-    border-color: var(--accent-cyan) !important;
-    box-shadow: 0 0 0 2.5px rgba(6, 182, 212, 0.35), 0 10px 24px rgba(6, 182, 212, 0.15) !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.95) !important;
   }
 
   /* Fullscreen Presentation / Command Center Mode */
@@ -1095,28 +1109,28 @@
       </div>
     </div>
 
-    <!-- 3. FLOATING KPI OVERLAY BAR (TOP RIGHT) - INFORMASI SLS SELESAI & FILTER CEPAT -->
+    <!-- 3. FLOATING KPI OVERLAY BAR (TOP RIGHT) - MINIMALIST LIQUID GLASS CAPSULE -->
     <div class="gmaps-floating-kpi-bar">
-      <div class="gmaps-kpi-pill active-filter" id="kpiFilterAll" data-status="" title="Klik untuk menampilkan Semua SLS">
-        <i class="bi bi-geo-alt-fill" style="color: var(--accent-blue);"></i>
-        <span class="label">Total:</span>
-        <strong id="kpiTotalSls">-- SLS</strong>
-      </div>
-      <div class="gmaps-kpi-pill" id="kpiFilterDone" data-status="done" title="Klik untuk hanya sorot SLS Selesai (100%)">
-        <i class="bi bi-check-circle-fill" style="color: var(--accent-green);"></i>
-        <span class="label">Selesai:</span>
-        <strong id="kpiSlsSelesai" style="color: var(--accent-green);">-- SLS</strong>
-      </div>
-      <div class="gmaps-kpi-pill" id="kpiFilterInProgress" data-status="in_progress" title="Klik untuk hanya sorot SLS Sedang Berjalan (1-99%)">
-        <i class="bi bi-hourglass-split" style="color: var(--accent-yellow);"></i>
-        <span class="label">Berjalan:</span>
-        <strong id="kpiSlsBelum" style="color: var(--accent-yellow);">-- SLS</strong>
-      </div>
-      <div class="gmaps-kpi-pill" id="kpiFilterNotStarted" data-status="not_started" title="Klik untuk hanya sorot SLS Belum Mulai (0%)">
-        <i class="bi bi-dash-circle-fill" style="color: var(--accent-red);"></i>
-        <span class="label">0% Mulai:</span>
-        <strong id="kpiSlsNotStarted" style="color: var(--accent-red);">-- SLS</strong>
-      </div>
+      <button type="button" class="gmaps-kpi-pill active-filter" id="kpiFilterAll" data-status="" title="Tampilkan Semua SLS">
+        <i class="bi bi-grid-fill" style="color: var(--accent-blue);"></i>
+        <span>Semua</span>
+        <strong id="kpiTotalSls">--</strong>
+      </button>
+      <button type="button" class="gmaps-kpi-pill" id="kpiFilterDone" data-status="done" title="Hanya SLS Selesai Resmi">
+        <i class="bi bi-check-circle-fill" style="color: #10b981;"></i>
+        <span>Selesai</span>
+        <strong id="kpiSlsSelesai" style="color: #10b981;">--</strong>
+      </button>
+      <button type="button" class="gmaps-kpi-pill" id="kpiFilterInProgress" data-status="in_progress" title="Hanya SLS Sedang Berjalan">
+        <i class="bi bi-hourglass-split" style="color: #f59e0b;"></i>
+        <span>Progres</span>
+        <strong id="kpiSlsBelum" style="color: #f59e0b;">--</strong>
+      </button>
+      <button type="button" class="gmaps-kpi-pill" id="kpiFilterNotStarted" data-status="not_started" title="Hanya SLS Belum Mulai">
+        <i class="bi bi-dash-circle-fill" style="color: #ef4444;"></i>
+        <span>Belum</span>
+        <strong id="kpiSlsNotStarted" style="color: #ef4444;">--</strong>
+      </button>
     </div>
 
     <!-- 4. FLOATING RIGHT ACTION BUTTONS (GPS LOCATE & FULLSCREEN) -->
@@ -1835,10 +1849,10 @@
           const kpiBelum = document.getElementById('kpiSlsBelum');
           const kpiNotStarted = document.getElementById('kpiSlsNotStarted');
 
-          if (kpiTotal) kpiTotal.textContent = `${totalSls.toLocaleString('id-ID')} SLS`;
+          if (kpiTotal) kpiTotal.textContent = totalSls.toLocaleString('id-ID');
           if (kpiSelesai) kpiSelesai.textContent = `${selesaiCount.toLocaleString('id-ID')} (${selesaiPct}%)`;
-          if (kpiBelum) kpiBelum.textContent = `${inProgressCount.toLocaleString('id-ID')} SLS`;
-          if (kpiNotStarted) kpiNotStarted.textContent = `${notStartedCount.toLocaleString('id-ID')} SLS`;
+          if (kpiBelum) kpiBelum.textContent = inProgressCount.toLocaleString('id-ID');
+          if (kpiNotStarted) kpiNotStarted.textContent = notStartedCount.toLocaleString('id-ID');
         }
 
         function filterByKpiStatus(statusKey) {
