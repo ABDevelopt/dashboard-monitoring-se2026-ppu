@@ -2816,13 +2816,6 @@
         if (btnMetricFasih) btnMetricFasih.addEventListener('click', () => switchThematicMetric('fasih'));
         if (btnMetricMuatan) btnMetricMuatan.addEventListener('click', () => switchThematicMetric('muatan'));
 
-        // GPS Geolocation Listener with Smooth iPhone Radar & Toast Animation
-        function locateUserGPS() {
-          if (!navigator.geolocation) {
-            alert('Perangkat atau browser Anda tidak mendukung Geolocation GPS.');
-            return;
-          }
-
         // Point-in-polygon algorithm (Ray-casting)
         function isPointInPolygonCoords(point, vs) {
           const x = point[0], y = point[1];
