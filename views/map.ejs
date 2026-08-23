@@ -1031,9 +1031,17 @@
   }
 
   .map-status-pill.approved { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-  .map-status-pill.submitted { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+  .map-status-pill.submitted { background: rgba(245, 158, 11, 0.22); color: #000000 !important; font-weight: 700 !important; }
   .map-status-pill.rejected { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
   .map-status-pill.draft { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+
+  /* Teks Oren di Drawer diubah menjadi Hitam Bold */
+  .gmaps-floating-drawer-card .badge-orange,
+  .gmaps-floating-drawer-card .badge.badge-orange,
+  .gmaps-floating-drawer-card .btn-highlight-pcl {
+    color: #000000 !important;
+    font-weight: 700 !important;
+  }
 
   /* Action Buttons Container */
   .map-drawer-actions {
@@ -2648,7 +2656,7 @@
 
               let statusBadge = '<span class="badge badge-gray" style="font-size: 8px; padding: 1px 5px;">Belum Mulai</span>';
               if (item.sudah_diisi === 'sedang_didata') {
-                statusBadge = '<span class="badge badge-orange" style="font-size: 8px; padding: 1px 5px;">Sedang Didata</span>';
+                statusBadge = '<span class="badge badge-orange" style="font-size: 8px; padding: 1px 5px; color: #000000; font-weight: 700;">Sedang Didata</span>';
               } else if (item.sudah_diisi === 'memenuhi_target') {
                 statusBadge = '<span class="badge badge-purple" style="font-size: 8px; padding: 1px 5px;">Memenuhi Target</span>';
               } else if (item.sudah_diisi === 'selesai' || item.selesai === 1) {
@@ -2906,8 +2914,8 @@
                 ` : ''}
               </div>
               ${(pcl && pcl !== 'Belum Ditentukan') ? `
-                <button type="button" class="btn btn-sm" onclick="highlightPclTerritory('${pcl.replace(/'/g, "\\'")}')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7.5px 10px; font-size: 11.5px; font-weight: 600; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.12); color: #f59e0b; cursor: pointer;">
-                  <i class="bi bi-funnel-fill"></i> Sorot Wilayah PCL (${pcl})
+                <button type="button" class="btn btn-sm btn-highlight-pcl" onclick="highlightPclTerritory('${pcl.replace(/'/g, "\\'")}')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7.5px 10px; font-size: 11.5px; font-weight: 700; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.20); color: #000000; cursor: pointer;">
+                  <i class="bi bi-funnel-fill" style="color: #000000;"></i> Sorot Wilayah PCL (${pcl})
                 </button>
               ` : ''}
             </div>
@@ -3583,7 +3591,7 @@
                     <div style="background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; margin: 8px 0 6px 0; font-size: 11px;">
                       <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
                         <span style="color: var(--text-muted);">Status:</span>
-                        <strong style="color: ${isSelesai ? '#10b981' : '#f59e0b'};">${isSelesai ? '🟢 Selesai Resmi' : '🟡 Sedang Berjalan'}</strong>
+                        <strong style="color: ${isSelesai ? '#10b981' : '#000000'}; font-weight: 700;">${isSelesai ? '🟢 Selesai Resmi' : '🟡 Sedang Berjalan'}</strong>
                       </div>
                       <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
                         <span style="color: var(--text-muted);">Progres FASIH:</span>
