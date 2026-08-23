@@ -316,7 +316,7 @@ async function runToolCall(toolCall) {
 
 function formatToolRowsToMarkdown(toolName, args, rows) {
   if (!rows || !Array.isArray(rows) || rows.length === 0) {
-    return `🤖 **Hasil Pencarian Data**\n\nTidak ditemukan data untuk parameter tersebut.`;
+    return `**Hasil Pencarian Data**\n\nTidak ditemukan data untuk parameter tersebut.`;
   }
 
   const topRows = rows.slice(0, 5); // Maksimal 5 baris data
@@ -362,7 +362,7 @@ function formatToolRowsToMarkdown(toolName, args, rows) {
 
   if (topRows.length === 1 && keys.length <= 8) {
     const row = topRows[0];
-    markdown += `📊 **Indikator Kinerja Utama:**\n`;
+    markdown += `**Indikator Kinerja Utama:**\n`;
     keys.forEach(k => {
       const label = colMap[k.toLowerCase()] || k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
       let val = row[k];
@@ -395,7 +395,7 @@ function formatToolRowsToMarkdown(toolName, args, rows) {
   if (avgKey) {
     const avgVal = topRows[0][avgKey];
     if (avgVal) {
-      markdown += `\n📌 **Rekomendasi / Analisis:** Rata-rata pencapaian PCL sebesar **${avgVal} dokumen per hari per petugas**. Tingkatkan pengawasan lapangan untuk wilayah dengan progres di bawah rata-rata.`;
+      markdown += `\n**Rekomendasi / Analisis:** Rata-rata pencapaian PCL sebesar **${avgVal} dokumen per hari per petugas**. Tingkatkan pengawasan lapangan untuk wilayah dengan progres di bawah rata-rata.`;
     }
   }
 
@@ -404,7 +404,7 @@ function formatToolRowsToMarkdown(toolName, args, rows) {
 
 function formatQueryHintToMarkdown(queryName, params, rows) {
   if (!rows || rows.length === 0) {
-    return `🤖 **Hasil Pencarian Data**\n\nTidak ditemukan data untuk parameter: \`${JSON.stringify(params || {})}\`.`;
+    return `**Hasil Pencarian Data**\n\nTidak ditemukan data untuk parameter: \`${JSON.stringify(params || {})}\`.`;
   }
 
   return formatToolRowsToMarkdown(queryName, params, rows);

@@ -62,29 +62,30 @@ Gunakan SQL SELECT hanya jika data tidak tersedia di agregator ringkas.
 ${COMPACT_QUERY_GUIDELINES}
 
 ## Format Respons & Tampilan — WAJIB DIIKUTI
-1. **Bahasa**: Selalu gunakan Bahasa Indonesia yang profesional, ramah, sopan, dan solutif.
+1. **Gaya Penulisan Formal & Minim Emoticon**: Gunakan Bahasa Indonesia yang formal, lugas, dan profesional (standar analitis resmi BPS). HINDARI PENGGUNAAN EMOTICON/EMOJI yang berlebihan. Jangan gunakan emoji pada judul, subjudul, awal kalimat, maupun bullet point agar laporan bersih, rapi, dan mudah dibaca.
 2. **Tabel Maksimal 5 Baris (ATURAN MUTLAK)**:
    - Tampilkan **HANYA maksimal 5 baris data terpenting/prioritas utama** pada setiap tabel markdown.
    - DILARANG menampilkan tabel panjang lebih dari 5 baris, agar ruang jawaban terfokus pada teks analisis komprehensif, temuan penting, dan rekomendasi tindak lanjut.
    - Jika total data lebih dari 5, cantumkan 5 entitas prioritas dan informasikan bahwa daftar lengkap dapat dilihat di halaman dashboard terkait.
-3. **Penyajian Rekomendasi/Analisis**: Berikan analisis mendalam dan rekomendasi terarah dalam bentuk bullet list dengan cetak tebal pada kata kunci.
+3. **Penyajian Rekomendasi/Analisis**: Berikan analisis mendalam dan rekomendasi terarah dalam bentuk bullet list dengan cetak tebal pada kata kunci tanpa hiasan emoji.
 4. **Ringkasan Singkat**: Berikan pengantar 1-2 kalimat dan akhiri dengan saran solutif.
-## 🔗 ATURAN WAJIB: TAUTAN NAVIGASI DASHBOARD (ACTION LINKS)
-Setiap jawaban yang memuat data statistik, petugas, atau wilayah WAJIB diakhiri dengan bagian tautan navigasi dashboard menggunakan tautan Markdown relevan agar pengguna dapat langsung membuka dan mengeksplorasi data lengkap di halaman dashboard:
 
-**📌 Tautan Navigasi Dashboard:**
-- Jika membahas Petugas PCL / Beban / Kinerja: \`[👥 Buka Detail Monitoring PCL](/pcl)\`
-- Jika membahas Pengawas PML / Verifikasi Dokumen: \`[📋 Buka Detail Monitoring PML](/pml)\`
-- Jika membahas Koordinator Lapangan: \`[👔 Buka Halaman Monitoring Korlap](/korlap)\`
-- Jika membahas Kecamatan / Desa: \`[📊 Buka Rekap Progres Kecamatan](/kecamatan)\`
-- Jika membahas Anomali / Ganda / Dokumen Reject: \`[🔍 Buka Deteksi Anomali Lapangan](/deteksi-anomali)\`
-- Jika membahas Progres Lambat / Beban Berat / Evaluasi: \`[⚠️ Buka Daftar Performa Terendah](/performa-terendah)\`
-- Jika membahas Peringatan Dini Wilayah: \`[🚨 Buka Early Warning System](/early-warning)\`
-- Jika membahas Prestasi / Top Kinerja: \`[🏆 Buka Leaderboard Petugas](/leaderboard)\`
-- Jika membahas Wilayah SLS / SubSLS: \`[🗺️ Buka Daftar Wilayah SLS & SubSLS](/subsls)\`
-- Jika membahas Spasial / Sebaran Peta: \`[📍 Buka Peta Sebaran Wilayah](/map)\`
-- Jika membahas Unduh Data / Laporan: \`[📥 Buka Halaman Unduh / Export](/export)\`
-- Jika membahas Ringkasan Umum Kabupaten: \`[🏠 Buka Ringkasan Beranda](/)\`
+## Tautan Navigasi Dashboard (Action Links)
+Setiap jawaban yang memuat data statistik, petugas, atau wilayah diakhiri dengan bagian tautan navigasi dashboard menggunakan tautan Markdown resmi:
+
+**Tautan Navigasi Dashboard:**
+- Jika membahas Petugas PCL / Beban / Kinerja: \`[Lihat Detail Monitoring PCL](/pcl)\`
+- Jika membahas Pengawas PML / Verifikasi Dokumen: \`[Lihat Detail Monitoring PML](/pml)\`
+- Jika membahas Koordinator Lapangan: \`[Buka Monitoring Korlap](/korlap)\`
+- Jika membahas Kecamatan / Desa: \`[Buka Rekap Progres Kecamatan](/kecamatan)\`
+- Jika membahas Anomali / Ganda / Dokumen Reject: \`[Buka Deteksi Anomali Lapangan](/deteksi-anomali)\`
+- Jika membahas Progres Lambat / Beban Berat / Evaluasi: \`[Buka Daftar Performa Terendah](/performa-terendah)\`
+- Jika membahas Peringatan Dini Wilayah: \`[Buka Early Warning System](/early-warning)\`
+- Jika membahas Prestasi / Top Kinerja: \`[Buka Leaderboard Petugas](/leaderboard)\`
+- Jika membahas Wilayah SLS / SubSLS: \`[Buka Daftar Wilayah SLS & SubSLS](/subsls)\`
+- Jika membahas Spasial / Sebaran Peta: \`[Buka Peta Sebaran Wilayah](/map)\`
+- Jika membahas Unduh Data / Laporan: \`[Buka Halaman Unduh / Export](/export)\`
+- Jika membahas Ringkasan Umum Kabupaten: \`[Buka Ringkasan Beranda](/)\`
 
 Sertakan 2–4 tautan yang PALING RELEVAN dengan konteks pertanyaan dan jawaban di atas.
 `;
@@ -104,7 +105,7 @@ function runSimulation(userMessage, chatHistory) {
   if (!latestUpload) {
     return {
       role: 'model',
-      content: `🤖 **Mode Simulasi (Preview)**\n\nBelum ada data upload di sistem. Silakan masuk ke menu **Upload Data** terlebih dahulu.\n\n**📌 Tautan Navigasi Dashboard:**\n- [📤 Buka Halaman Upload Data](/upload)`,
+      content: `Belum ada data upload di sistem. Silakan masuk ke menu **Upload Data** terlebih dahulu.\n\n**Tautan Navigasi Dashboard:**\n- [Buka Halaman Upload Data](/upload)`,
       isSimulation: true
     };
   }
@@ -149,18 +150,18 @@ function runSimulation(userMessage, chatHistory) {
       if (rows.length === 0) {
         return {
           role: 'model',
-          content: `🤖 **Mode Simulasi**\n\nTidak ditemukan data petugas sensus untuk **${kecLabel}** pada data upload terbaru.\n\n**📌 Tautan Navigasi Dashboard:**\n- [👥 Lihat Detail Monitoring PCL](/pcl)\n- [📊 Buka Rekap Progres Kecamatan](/kecamatan)`,
+          content: `Tidak ditemukan data petugas sensus untuk **${kecLabel}** pada data upload terbaru.\n\n**Tautan Navigasi Dashboard:**\n- [Lihat Detail Monitoring PCL](/pcl)\n- [Buka Rekap Progres Kecamatan](/kecamatan)`,
           isSimulation: true
         };
       }
 
-      let content = `🤖 **Mode Analitik Offline (${kecLabel})**\n\nBerikut daftar PCL ${isHeavy ? 'dengan beban target tertinggi yang memerlukan pendampingan' : 'dengan progres terendah'} (upload *${latestUpload.tanggal}*):\n\n`;
+      let content = `Berikut daftar 5 PCL ${isHeavy ? 'dengan beban target tertinggi yang memerlukan pendampingan' : 'dengan progres terendah'} untuk **${kecLabel}** (upload *${latestUpload.tanggal}*):\n\n`;
       content += `| Nama PCL | PML Pengawas | Kecamatan | Target FASIH | Realisasi | Capaian (%) |\n| :--- | :--- | :--- | :---: | :---: | :---: |\n`;
       rows.forEach(r => {
         const pct = r.target_fasih_total > 0 ? ((r.realisasi_fasih / r.target_fasih_total) * 100).toFixed(2) : (r.total_muatan > 0 ? ((r.muatan_selesai / r.total_muatan) * 100).toFixed(2) : '0.00');
         content += `| **${r.pcl}** | ${r.pml} | ${r.kecamatan} | ${r.target_fasih_total || r.total_muatan} | ${r.realisasi_fasih || r.muatan_selesai} | **${pct}%** |\n`;
       });
-      content += `\n📌 **Rekomendasi:** Prioritaskan pendampingan lapangan langsung oleh PML terhadap **${rows[0].pcl}** untuk menyelesaikan target SLS yang tersisa.\n\n**📌 Tautan Navigasi Dashboard:**\n- [👥 Buka Detail Monitoring PCL](/pcl)\n- [⚠️ Buka Daftar Performa Terendah](/performa-terendah)\n- [📋 Buka Detail Monitoring PML](/pml)\n`;
+      content += `\n**Rekomendasi:** Prioritaskan pendampingan lapangan langsung oleh PML terhadap **${rows[0].pcl}** untuk menyelesaikan target SLS yang tersisa.\n\n**Tautan Navigasi Dashboard:**\n- [Lihat Detail Monitoring PCL](/pcl)\n- [Buka Daftar Performa Terendah](/performa-terendah)\n- [Lihat Detail Monitoring PML](/pml)\n`;
       return { role: 'model', content, isSimulation: true };
     }
 
@@ -174,13 +175,13 @@ function runSimulation(userMessage, chatHistory) {
         GROUP BY m.pcl ORDER BY muatan_selesai DESC LIMIT 5
       `).all(uploadId);
 
-      let content = `🤖 **Mode Simulasi**\n\nTop 5 PCL Teraktif:\n\n`;
-      content += `| # | PCL | PML | Kecamatan | Realisasi | Progres |\n| :---: | :--- | :--- | :--- | :--- | :--- |\n`;
+      let content = `Berikut Top 5 PCL dengan Realisasi Tertinggi:\n\n`;
+      content += `| No | PCL | PML | Kecamatan | Realisasi | Progres |\n| :---: | :--- | :--- | :--- | :--- | :--- |\n`;
       rows.forEach((r, i) => {
         const pct = r.total_muatan > 0 ? ((r.muatan_selesai / r.total_muatan) * 100).toFixed(2) : '0.00';
-        content += `| #${i+1} | ${r.pcl} | ${r.pml} | ${r.kecamatan} | ${r.muatan_selesai}/${r.total_muatan} | **${pct}%** |\n`;
+        content += `| ${i+1} | ${r.pcl} | ${r.pml} | ${r.kecamatan} | ${r.muatan_selesai}/${r.total_muatan} | **${pct}%** |\n`;
       });
-      content += `\n**📌 Tautan Navigasi Dashboard:**\n- [🏆 Buka Leaderboard Petugas](/leaderboard)\n- [👥 Buka Detail Monitoring PCL](/pcl)\n`;
+      content += `\n**Tautan Navigasi Dashboard:**\n- [Buka Leaderboard Petugas](/leaderboard)\n- [Lihat Detail Monitoring PCL](/pcl)\n`;
       return { role: 'model', content, isSimulation: true };
     }
 
@@ -200,7 +201,7 @@ function runSimulation(userMessage, chatHistory) {
       const slsPct    = totalSls    > 0 ? ((totalDone    / totalSls)    * 100).toFixed(2) : '0.00';
       const muatanPct = muatanTotal > 0 ? ((muatanSelesai / muatanTotal) * 100).toFixed(2) : '0.00';
 
-      let content = `🤖 **Mode Simulasi**\n\n`;
+      let content = `Ringkasan Progres Lapangan:\n\n`;
       content += `- **Total SLS:** ${totalSls.toLocaleString('id-ID')} | Selesai: **${totalDone.toLocaleString('id-ID')} (${slsPct}%)**\n`;
       content += `- **Total Muatan:** ${muatanTotal.toLocaleString('id-ID')} | Realisasi: **${muatanSelesai.toLocaleString('id-ID')} (${muatanPct}%)**\n\n`;
       content += `### Capaian per Kecamatan:\n\n| Kecamatan | SLS | Target Muatan | Realisasi | % |\n| :--- | :---: | :---: | :---: | :---: |\n`;
@@ -208,7 +209,7 @@ function runSimulation(userMessage, chatHistory) {
         const p = k.total_muatan > 0 ? ((k.muatan_selesai / k.total_muatan) * 100).toFixed(2) : '0.00';
         content += `| ${k.kecamatan} | ${k.total_subsls} | ${k.total_muatan} | ${k.muatan_selesai} | **${p}%** |\n`;
       });
-      content += `\n**📌 Tautan Navigasi Dashboard:**\n- [📊 Buka Rekap Progres Kecamatan](/kecamatan)\n- [🏠 Buka Ringkasan Beranda](/)\n`;
+      content += `\n**Tautan Navigasi Dashboard:**\n- [Buka Rekap Progres Kecamatan](/kecamatan)\n- [Buka Ringkasan Beranda](/)\n`;
       return { role: 'model', content, isSimulation: true };
     }
 
@@ -222,23 +223,23 @@ function runSimulation(userMessage, chatHistory) {
         GROUP BY m.pcl HAVING ganda>0 OR reject>0 ORDER BY (ganda+reject) DESC LIMIT 3
       `).all(uploadId);
 
-      let content = `🤖 **Mode Simulasi**\n\n1. **Usaha Ganda:** **${ganda} kasus**\n2. **Tidak dapat ditemui:** **${noMeet}**\n3. **Dokumen ditolak:** **${reject}**\n\n`;
+      let content = `Rekap Temuan Anomali Data Lapangan:\n\n1. **Usaha Ganda:** **${ganda} kasus**\n2. **Tidak dapat ditemui:** **${noMeet} kasus**\n3. **Dokumen ditolak (Rejected):** **${reject} dokumen**\n\n`;
       if (top.length > 0) {
         content += `| PCL | PML | Ganda | Rejected |\n| :--- | :--- | :---: | :---: |\n`;
         top.forEach(r => content += `| ${r.pcl} | ${r.pml} | ${r.ganda} | ${r.reject} |\n`);
       }
-      content += `\n**📌 Tautan Navigasi Dashboard:**\n- [🔍 Buka Deteksi Anomali Lapangan](/deteksi-anomali)\n- [🚨 Buka Early Warning System](/early-warning)\n- [📋 Buka Detail Monitoring PML](/pml)\n`;
+      content += `\n**Tautan Navigasi Dashboard:**\n- [Buka Deteksi Anomali Lapangan](/deteksi-anomali)\n- [Buka Early Warning System](/early-warning)\n- [Lihat Detail Monitoring PML](/pml)\n`;
       return { role: 'model', content, isSimulation: true };
     }
 
     return {
       role: 'model',
-      content: `🤖 **Mode Simulasi**\n\nKata kunci yang didukung: **progres**, **terendah**, **terbaik**, **anomali**.\n\n**📌 Tautan Navigasi Dashboard:**\n- [📊 Buka Rekap Progres Kecamatan](/kecamatan)\n- [👥 Buka Detail Monitoring PCL](/pcl)\n- [🏠 Buka Ringkasan Beranda](/)\n\n*Konfigurasikan API Key untuk pertanyaan bebas.*`,
+      content: `Pencarian data dapat menggunakan kata kunci: **progres**, **terendah**, **terbaik**, atau **anomali**.\n\n**Tautan Navigasi Dashboard:**\n- [Buka Rekap Progres Kecamatan](/kecamatan)\n- [Lihat Detail Monitoring PCL](/pcl)\n- [Buka Ringkasan Beranda](/)\n\n*Konfigurasikan API Key untuk pertanyaan bebas.*`,
       isSimulation: true
     };
   } catch (err) {
     log.error('runSimulation DB error:', err.message);
-    return { role: 'model', content: `🤖 **Mode Simulasi (Error DB)**\n\n${err.message}`, isSimulation: true };
+    return { role: 'model', content: `Terjadi kendala saat membaca basis data: ${err.message}`, isSimulation: true };
   }
 }
 
