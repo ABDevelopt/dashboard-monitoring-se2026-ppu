@@ -1,0 +1,91 @@
+<mxfile version="22.1.2" type="device">
+  <diagram id="arch" name="Architecture">
+    <mxGraphModel dx="2200" dy="1600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1600" background="#0B132B" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <mxCell id="tier1" value="TIER 1 — PRESENTATION &amp;amp; USER INTERFACE LAYER  (EJS SSR + Vanilla JS Client)" style="fillColor=#0E3A5C;strokeColor=#0284C7;fontColor=#38BDF8;fontSize=12;fontStyle=1;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="2120" height="440" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="b1" value="&#x1F4F1; Mobile Responsive Layout&amp;#xa;─────────────────&amp;#xa;• Bottom Nav Bar 64px Fixed&amp;#xa;• Smartphone Vertical Stack&amp;#xa;• Tap Targets ≥ 44×44px&amp;#xa;• Progressive Enhancement" style="fillColor=#1E293B;strokeColor=#0284C7;fontColor=#F8FAFC;fontSize=10;rounded=0;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="80" y="80" width="460" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="b2" value="&#x1F4CA; Analytics &amp;amp; Visualizer&amp;#xa;─────────────────&amp;#xa;• Speedometer Milestone KPI&amp;#xa;• Chart.js Dual-Line Tren Harian&amp;#xa;• Leaderboard &amp;amp; Heatmap&amp;#xa;• Burn-down Date Proyeksi" style="fillColor=#1E293B;strokeColor=#0284C7;fontColor=#F8FAFC;fontSize=10;rounded=0;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="580" y="80" width="460" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="b3" value="&#x1F5FA;️ Interactive GIS Leaflet&amp;#xa;─────────────────&amp;#xa;• KML 54 Desa/Kel. Polygons&amp;#xa;• Choropleth Thematic Layer&amp;#xa;• Dynamic SLS Popup Detail&amp;#xa;• Koordinat GPS Petugas" style="fillColor=#1E293B;strokeColor=#0284C7;fontColor=#F8FAFC;fontSize=10;rounded=0;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="1080" y="80" width="460" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="b4" value="&#x1F3A8; UI Theme &amp;amp; AI Modal&amp;#xa;─────────────────&amp;#xa;• Dark Slate CSS Token System&amp;#xa;• Multi-Survey Theme Dynamic&amp;#xa;• KIPP Chatbot Sandbox&amp;#xa;• Status Bracket [ON-TRACK]" style="fillColor=#1E293B;strokeColor=#0284C7;fontColor=#F8FAFC;fontSize=10;rounded=0;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="1580" y="80" width="460" height="320" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tier2" value="TIER 2 — APPLICATION &amp;amp; BUSINESS LOGIC LAYER  (Node.js Runtime + Express.js 5.x)" style="fillColor=#1E0B3F;strokeColor=#8B5CF6;fontColor=#C4B5FD;fontSize=12;fontStyle=1;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="40" y="520" width="2120" height="440" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="b5" value="⚙️ Routing &amp;amp; Security&amp;#xa;─────────────────&amp;#xa;• Express v5 REST &amp;amp; SSR Router&amp;#xa;• Session Auth &amp;amp; CSRF 32-byte&amp;#xa;• RBAC: Admin vs Pegawai&amp;#xa;• Helmet.js Security Headers" style="fillColor=#1E293B;strokeColor=#8B5CF6;fontColor=#F8FAFC;fontSize=10;rounded=0;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="80" y="560" width="460" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="b6" value="&#x1F4E5; ETL Excel Pipeline&amp;#xa;─────────────────&amp;#xa;• Multi-Version FASIH Parser&amp;#xa;• 5 Status Mapper Engine&amp;#xa;• Transactional Batch Ingest&amp;#xa;• Sub-SLS 16-digit Validator" style="fillColor=#1E293B;strokeColor=#8B5CF6;fontColor=#F8FAFC;fontSize=10;rounded=0;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="580" y="560" width="460" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="b7" value="&#x1F9E0; AI RAG &amp;amp; SQL Sandbox&amp;#xa;─────────────────&amp;#xa;• System Prompt Injector&amp;#xa;• Read-Only SQL Tool Call&amp;#xa;• Google Gemini 2.5 Flash/Pro&amp;#xa;• cURL Fallback Engine" style="fillColor=#1E293B;strokeColor=#8B5CF6;fontColor=#F8FAFC;fontSize=10;rounded=0;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="1080" y="560" width="460" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="b8" value="&#x1F310; Multi-Survey &amp;amp; EWS&amp;#xa;─────────────────&amp;#xa;• AsyncLocalStorage Isolation&amp;#xa;• Zero-Progress EWS Detector&amp;#xa;• WhatsApp Baileys Gateway&amp;#xa;• Google Sheets Anomaly Sync" style="fillColor=#1E293B;strokeColor=#8B5CF6;fontColor=#F8FAFC;fontSize=10;rounded=0;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="1580" y="560" width="460" height="320" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tier3" value="TIER 3 — DATA &amp;amp; PERSISTENCE LAYER  (SQLite WAL + External Cloud APIs)" style="fillColor=#0A2A1E;strokeColor=#10B981;fontColor=#6EE7B7;fontSize=12;fontStyle=1;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1000" width="2120" height="440" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="b9" value="&#x1F5C4;️ In-Process SQLite Engine&amp;#xa;─────────────────────────&amp;#xa;• WAL Mode Non-Blocking Reads&amp;#xa;• Memory-Mapped I/O (&amp;lt;5ms)&amp;#xa;• 19 Relational 3NF Tables&amp;#xa;• summary_cache Pre-calculated&amp;#xa;• better-sqlite3 C++ Binding" style="fillColor=#1E293B;strokeColor=#10B981;fontColor=#F8FAFC;fontSize=10;rounded=0;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="80" y="1040" width="620" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="b10" value="&#x1F4C1; Isolated Survey Databases&amp;#xa;─────────────────────────&amp;#xa;• data/se2026.db (Primer)&amp;#xa;• data/sakernas-pemutakhiran.db&amp;#xa;• data/sakernas-pendataan.db&amp;#xa;• data/sessions.db (Sesi)&amp;#xa;• Isolasi Fisik Per-Kegiatan" style="fillColor=#1E293B;strokeColor=#10B981;fontColor=#F8FAFC;fontSize=10;rounded=0;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="760" y="1040" width="620" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="b11" value="☁️ External Cloud APIs&amp;#xa;─────────────────────────&amp;#xa;• Google Gemini LLM API&amp;#xa;• Open-Meteo Weather API PPU&amp;#xa;• Google Spreadsheets API Sync&amp;#xa;• WhatsApp Baileys WA Gateway&amp;#xa;• Sentry Error Tracking" style="fillColor=#1E293B;strokeColor=#10B981;fontColor=#F8FAFC;fontSize=10;rounded=0;align=left;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="1440" y="1040" width="620" height="320" as="geometry" />
+        </mxCell>
+
+        <mxCell id="a1" value="HTTP/HTTPS Client Requests" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#94A3B8;endArrow=block;endFill=1;fontSize=9;fontColor=#94A3B8;" edge="1" parent="1" source="b1" target="b5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" value="AJAX / Aggregates Fetch" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#94A3B8;endArrow=block;endFill=1;fontSize=9;fontColor=#94A3B8;" edge="1" parent="1" source="b2" target="b6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" value="GeoJSON Data Fetch" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#94A3B8;endArrow=block;endFill=1;fontSize=9;fontColor=#94A3B8;" edge="1" parent="1" source="b3" target="b8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a4" value="POST /api/agent/chat" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#94A3B8;endArrow=block;endFill=1;fontSize=9;fontColor=#94A3B8;" edge="1" parent="1" source="b4" target="b7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="a5" value="Session &amp;amp; Auth Query" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#94A3B8;endArrow=block;endFill=1;fontSize=9;fontColor=#94A3B8;" edge="1" parent="1" source="b5" target="b9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a6" value="In-Process C++ Binding (&amp;lt;5ms)" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#94A3B8;endArrow=block;endFill=1;fontSize=9;fontColor=#94A3B8;" edge="1" parent="1" source="b6" target="b9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a7" value="Batch Ingest Transaksi" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#94A3B8;endArrow=block;endFill=1;fontSize=9;fontColor=#94A3B8;" edge="1" parent="1" source="b6" target="b10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a8" value="Read-Only SQL Sandbox" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#94A3B8;endArrow=block;endFill=1;fontSize=9;fontColor=#94A3B8;" edge="1" parent="1" source="b7" target="b10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a9" value="Prompt &amp;amp; Function Calling" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#94A3B8;endArrow=block;endFill=1;fontSize=9;fontColor=#94A3B8;startArrow=block;startFill=1" edge="1" parent="1" source="b7" target="b11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a10" value="Fetch Weather &amp;amp; WA Send" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#94A3B8;endArrow=block;endFill=1;fontSize=9;fontColor=#94A3B8;startArrow=block;startFill=1" edge="1" parent="1" source="b8" target="b11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

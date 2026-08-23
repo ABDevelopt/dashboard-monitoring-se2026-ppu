@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="Electron" modified="2026-08-15T21:49:15.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="seq_diag" name="Page-1">
+    <mxGraphModel dx="2000" dy="1600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="1600" background="#0B132B" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Lifeline Boxes -->
+        <mxCell id="L1" value="👤 Pegawai BPS&#10;/ Pengawas" style="rounded=0;fillColor=#0F172A;strokeColor=#0284C7;fontColor=#F8FAFC;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="L2" value="🖥️ Frontend UI&#10;(Chatbot KIPP)" style="rounded=0;fillColor=#0E3A5C;strokeColor=#38BDF8;fontColor=#F8FAFC;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="40" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="L3" value="⚙️ Chat Controller&#10;(Express Router)" style="rounded=0;fillColor=#1E293B;strokeColor=#8B5CF6;fontColor=#F8FAFC;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="40" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="L4" value="📚 Query Hints&#10;Engine" style="rounded=0;fillColor=#1E293B;strokeColor=#F59E0B;fontColor=#F8FAFC;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="880" y="40" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="L5" value="🗄️ SQLite DB&#10;(Read-Only Sandbox)" style="rounded=0;fillColor=#0B3D2E;strokeColor=#10B981;fontColor=#F8FAFC;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="40" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="L6" value="🧠 Google Gemini&#10;LLM API" style="rounded=0;fillColor=#2D1B69;strokeColor=#8B5CF6;fontColor=#F8FAFC;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1440" y="40" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="L7" value="🛡️ cURL Fallback&#10;Engine" style="rounded=0;fillColor=#3D1A1A;strokeColor=#EF4444;fontColor=#F8FAFC;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="40" width="220" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Dashed Vertical Lifelines -->
+        <!-- Center X positions: L1=150, L2=430, L3=710, L4=990, L5=1270, L6=1550, L7=1830 -->
+        <mxCell id="line1" value="" style="endArrow=none;dashed=1;strokeColor=#475569;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="150" y="120" /><mxPoint x="150" y="1560" /></mxGeometry>
+        </mxCell>
+        <mxCell id="line2" value="" style="endArrow=none;dashed=1;strokeColor=#475569;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="430" y="120" /><mxPoint x="430" y="1560" /></mxGeometry>
+        </mxCell>
+        <mxCell id="line3" value="" style="endArrow=none;dashed=1;strokeColor=#475569;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="710" y="120" /><mxPoint x="710" y="1560" /></mxGeometry>
+        </mxCell>
+        <mxCell id="line4" value="" style="endArrow=none;dashed=1;strokeColor=#475569;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="990" y="120" /><mxPoint x="990" y="1560" /></mxGeometry>
+        </mxCell>
+        <mxCell id="line5" value="" style="endArrow=none;dashed=1;strokeColor=#475569;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="1270" y="120" /><mxPoint x="1270" y="1560" /></mxGeometry>
+        </mxCell>
+        <mxCell id="line6" value="" style="endArrow=none;dashed=1;strokeColor=#475569;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="1550" y="120" /><mxPoint x="1550" y="1560" /></mxGeometry>
+        </mxCell>
+        <mxCell id="line7" value="" style="endArrow=none;dashed=1;strokeColor=#475569;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="1830" y="120" /><mxPoint x="1830" y="1560" /></mxGeometry>
+        </mxCell>
+
+        <!-- Messages -->
+        <mxCell id="m1" value="1. Input Pertanyaan Bahasa Alami" style="endArrow=block;endFill=1;strokeColor=#94A3B8;fontColor=#CBD5E1;fontSize=9;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="150" y="200" /><mxPoint x="430" y="200" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m2" value="2. POST /api/agent/chat { prompt }" style="endArrow=block;endFill=1;strokeColor=#94A3B8;fontColor=#CBD5E1;fontSize=9;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="430" y="280" /><mxPoint x="710" y="280" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m3" value="3. Request Schema Dictionary &amp; Live Context" style="endArrow=block;endFill=1;strokeColor=#94A3B8;fontColor=#CBD5E1;fontSize=9;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="710" y="360" /><mxPoint x="990" y="360" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m4" value="4. Return System Prompt + Schema Hints" style="endArrow=open;dashed=1;strokeColor=#475569;fontColor=#64748B;fontSize=9;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="990" y="440" /><mxPoint x="710" y="440" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m5" value="5. Kirim Prompt + Context RAG (Function Calling)" style="endArrow=block;endFill=1;strokeColor=#94A3B8;fontColor=#CBD5E1;fontSize=9;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="710" y="520" /><mxPoint x="1550" y="520" /></mxGeometry>
+        </mxCell>
+
+        <!-- ALT FRAME Normal -->
+        <mxCell id="alt1" value="Skenario Normal — Koneksi API Berhasil" style="shape=rect;dashed=1;strokeColor=#10B981;fillColor=none;fontColor=#10B981;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="560" width="1100" height="480" as="geometry" />
+        </mxCell>
+
+        <mxCell id="m6" value="6. Function Call: execute_sql(query)" style="endArrow=block;endFill=1;strokeColor=#94A3B8;fontColor=#CBD5E1;fontSize=9;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="1550" y="600" /><mxPoint x="710" y="600" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m7" value="7. Eksekusi SQL Read-Only Sandbox" style="endArrow=block;endFill=1;strokeColor=#94A3B8;fontColor=#CBD5E1;fontSize=9;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="710" y="680" /><mxPoint x="1270" y="680" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m8" value="8. Return Recordset (JSON)" style="endArrow=open;dashed=1;strokeColor=#475569;fontColor=#64748B;fontSize=9;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="1270" y="760" /><mxPoint x="710" y="760" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m9" value="9. Kirim Recordset ke Model LLM" style="endArrow=block;endFill=1;strokeColor=#94A3B8;fontColor=#CBD5E1;fontSize=9;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="710" y="840" /><mxPoint x="1550" y="840" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m10" value="10. Return Narasi Analitik (Bahasa Indonesia)" style="endArrow=open;dashed=1;strokeColor=#475569;fontColor=#64748B;fontSize=9;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="1550" y="920" /><mxPoint x="710" y="920" /></mxGeometry>
+        </mxCell>
+
+        <!-- ALT FRAME Fallback -->
+        <mxCell id="alt2" value="Skenario Kendala SSL / Network" style="shape=rect;dashed=1;strokeColor=#EF4444;fillColor=none;fontColor=#EF4444;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="1000" width="1200" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="m11" value="11. Fallback via cURL Native Child Process" style="endArrow=block;endFill=1;strokeColor=#94A3B8;fontColor=#CBD5E1;fontSize=9;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="710" y="1040" /><mxPoint x="1830" y="1040" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m12" value="12. Return Raw JSON Response Gemini" style="endArrow=open;dashed=1;strokeColor=#475569;fontColor=#64748B;fontSize=9;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="1830" y="1120" /><mxPoint x="710" y="1120" /></mxGeometry>
+        </mxCell>
+
+        <!-- End Flow -->
+        <mxCell id="m13" value="13. Return JSON { response: 'Narasi &amp; Tabel' }" style="endArrow=block;endFill=1;strokeColor=#94A3B8;fontColor=#CBD5E1;fontSize=9;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="710" y="1280" /><mxPoint x="430" y="1280" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m14" value="14. Tampilkan Jawaban Cerdas &amp; Ringkasan Eksekutif" style="endArrow=block;endFill=1;strokeColor=#94A3B8;fontColor=#CBD5E1;fontSize=9;labelBackgroundColor=none;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="430" y="1360" /><mxPoint x="150" y="1360" /></mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
