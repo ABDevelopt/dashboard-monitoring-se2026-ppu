@@ -2402,7 +2402,14 @@
     if (!reqModel || !VALID_GEMINI_MODELS.includes(reqModel)) {
       reqModel = 'gemini-3.5-flash';
     }
-    const safePayloadHistory = chatHistory.slice(Math.max(0, chatHistory.length - 11), -1);
+
+    const safePayloadHistory = chatHistory
+      .slice(0, -1)
+      .slice(-4)
+      .map(m => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        content: typeof m.content === 'string' ? m.content.slice(0, 600) : ''
+      }));
 
     const navPrefix = window.navPrefix || '<%= typeof navPrefix !== "undefined" ? navPrefix : "" %>';
     const streamUrl = (navPrefix ? navPrefix : '') + '/agent/chat/stream';
