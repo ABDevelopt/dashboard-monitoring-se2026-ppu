@@ -123,9 +123,21 @@ router.get('/', (req, res) => {
   }
 
   // Get filter lists
-  const kecList = db.prepare('SELECT DISTINCT kecamatan FROM subsls_master ORDER BY kecamatan').all();
-  const korlapList = db.prepare('SELECT DISTINCT korlap FROM subsls_master ORDER BY korlap').all();
-  const pmlList = db.prepare('SELECT DISTINCT pml FROM subsls_master ORDER BY pml').all();
+  const kecList = db.prepare('SELECT DISTINCT kecamatan FROM subsls_master WHERE kecamatan IS NOT NULL ORDER BY kecamatan').all();
+  
+  let korlapSql = 'SELECT DISTINCT korlap FROM subsls_master WHERE korlap IS NOT NULL';
+  let pmlSql = 'SELECT DISTINCT pml FROM subsls_master WHERE pml IS NOT NULL';
+  let pclSql = 'SELECT DISTINCT pcl FROM subsls_master WHERE pcl IS NOT NULL AND pcl != ""';
+  const listParams = [];
+  if (filterKec) {
+    korlapSql += ' AND kecamatan = ?';
+    pmlSql += ' AND kecamatan = ?';
+    pclSql += ' AND kecamatan = ?';
+    listParams.push(filterKec);
+  }
+  const korlapList = db.prepare(korlapSql + ' ORDER BY korlap').all(...listParams);
+  const pmlList = db.prepare(pmlSql + ' ORDER BY pml').all(...listParams);
+  const pclList = db.prepare(pclSql + ' ORDER BY pcl').all(...listParams);
 
   // Get historical progress of selected PCL
   let pclHistory = [];
@@ -162,6 +174,7 @@ router.get('/', (req, res) => {
     kecList,
     korlapList,
     pmlList,
+    pclList,
     diffDays,
     daysRemaining,
     pclHistory,

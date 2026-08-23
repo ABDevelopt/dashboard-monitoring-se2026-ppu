@@ -58,8 +58,76 @@
 
     <% } %>
 
+    <!-- FILTER BAR -->
+    <div class="card mb-3" style="padding: 14px 18px;">
+      <form method="GET" action="<%= navPrefix %>/pcl" id="filterForm">
+        <div class="filter-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: flex-end;">
+          <div>
+            <label for="filterKec" class="ui-label" style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; display: block;">Kecamatan</label>
+            <select id="filterKec" name="kec" onchange="this.form.submit()" class="w-full" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 13px;">
+              <option value="">-- Semua Kecamatan --</option>
+              <% if (typeof kecList !== 'undefined' && kecList) { %>
+                <% kecList.forEach(k => { %>
+                  <option value="<%= k.kecamatan %>" <%= (filterKec && filterKec.toUpperCase() === k.kecamatan.toUpperCase()) ? 'selected' : '' %>><%= k.kecamatan %></option>
+                <% }) %>
+              <% } %>
+            </select>
+          </div>
+
+          <% if (!isSakernas) { %>
+          <div>
+            <label for="filterKorlap" class="ui-label" style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; display: block;">Koordinator Lapangan</label>
+            <select id="filterKorlap" name="korlap" onchange="this.form.submit()" class="w-full" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 13px;">
+              <option value="">-- Semua Korlap --</option>
+              <% if (typeof korlapList !== 'undefined' && korlapList) { %>
+                <% korlapList.forEach(k => { %>
+                  <option value="<%= k.korlap %>" <%= (filterKorlap && filterKorlap.toUpperCase() === k.korlap.toUpperCase()) ? 'selected' : '' %>><%= k.korlap %></option>
+                <% }) %>
+              <% } %>
+            </select>
+          </div>
+          <% } %>
+
+          <div>
+            <label for="filterPml" class="ui-label" style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; display: block;">PML (Pengawas)</label>
+            <select id="filterPml" name="pml" onchange="this.form.submit()" class="w-full" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 13px;">
+              <option value="">-- Semua PML --</option>
+              <% if (typeof pmlList !== 'undefined' && pmlList) { %>
+                <% pmlList.forEach(p => { %>
+                  <option value="<%= p.pml %>" <%= (filterPml && filterPml.toUpperCase() === p.pml.toUpperCase()) ? 'selected' : '' %>><%= p.pml %></option>
+                <% }) %>
+              <% } %>
+            </select>
+          </div>
+
+          <div>
+            <label for="filterPcl" class="ui-label" style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; display: block;"><%= officerLabel %> (<%= isSakernas ? 'Petugas Pendataan' : 'Pencacah' %>)</label>
+            <select id="filterPcl" name="pcl" onchange="this.form.submit()" class="w-full" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 13px;">
+              <option value="">-- Semua <%= officerLabel %> --</option>
+              <% if (typeof pclList !== 'undefined' && pclList) { %>
+                <% pclList.forEach(p => { %>
+                  <option value="<%= p.pcl %>" <%= (filterPcl && filterPcl.toUpperCase() === p.pcl.toUpperCase()) ? 'selected' : '' %>><%= p.pcl %></option>
+                <% }) %>
+              <% } %>
+            </select>
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <button type="submit" class="btn btn-primary" style="padding: 6px 14px; font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; border-radius: 6px;">
+              <i class="bi bi-filter"></i> Filter
+            </button>
+            <% if (filterKec || filterKorlap || filterPml || filterPcl) { %>
+              <a href="<%= navPrefix %>/pcl" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; border-radius: 6px;" title="Reset Semua Filter">
+                <i class="bi bi-x-circle"></i> Reset
+              </a>
+            <% } %>
+          </div>
+        </div>
+      </form>
+    </div>
+
     <!-- TWO-COLUMN GRID FOR DRILLDOWN -->
-    <div class="drilldown-grid <%= filterPcl ? 'has-selection' : 'no-selection' %> mt-4">
+    <div class="drilldown-grid <%= filterPcl ? 'has-selection' : 'no-selection' %> mt-3">
       
       <!-- PCL LIST TABLE -->
       <div class="card" style="margin-bottom: 0;">
