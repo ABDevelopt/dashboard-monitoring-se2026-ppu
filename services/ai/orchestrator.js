@@ -272,16 +272,16 @@ function runSimulation(userMessage, chatHistory) {
         FROM subsls_master m
         LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
         WHERE 1=1 ${kippFilter} ${filterKec}
-        GROUP BY m.pcl ORDER BY realisasi_fasih DESC, muatan_selesai DESC LIMIT 5
+        GROUP BY m.pcl ORDER BY target_fasih DESC, realisasi_fasih DESC, muatan_selesai DESC LIMIT 5
       `).all(uploadId);
 
-      let content = `Berikut daftar 5 Petugas (PCL) Terbaik berdasarkan Capaian Assignment FASIH dan Realisasi Muatan${kippLabel}${kecLabel}:\n\n`;
+      let content = `Berikut daftar 5 Petugas (PCL) Terbaik berdasarkan Prioritas Jumlah Assignment FASIH dan Realisasi Dokumen${kippLabel}${kecLabel}:\n\n`;
       content += `| No | Nama PCL | PML Pengawas | Kecamatan | Assignment FASIH | Realisasi FASIH | Target Muatan | Realisasi Muatan |\n| :---: | :--- | :--- | :--- | :---: | :---: | :---: | :---: |\n`;
       rows.forEach((r, i) => {
         content += `| ${i+1} | **${r.pcl}** | ${r.pml} | ${r.kecamatan} | ${r.target_fasih || 0} | **${r.realisasi_fasih || 0}** | ${r.total_muatan || 0} | **${r.muatan_selesai || 0}** |\n`;
       });
       content += `\n### Analisis & Rekomendasi:\n`;
-      content += `* **Peringkat Teratas**: **${rows[0]?.pcl || '-'}** (${rows[0]?.kecamatan || '-'}) memimpin capaian FASIH dengan **${rows[0]?.realisasi_fasih || 0} dokumen** yang telah terverifikasi/submit.\n`;
+      content += `* **Peringkat Teratas**: **${rows[0]?.pcl || '-'}** (${rows[0]?.kecamatan || '-'}) memegang assignment FASIH tertinggi sebesar **${rows[0]?.target_fasih || 0} dokumen** dengan realisasi **${rows[0]?.realisasi_fasih || 0} dokumen** terverifikasi/submit.\n`;
       content += `* **Efisiensi Lapangan**: Seluruh petugas pada daftar di atas telah melampaui target muatan dasar dan aktif menyelesaikan sinkronisasi dokumen FASIH.\n`;
       content += `\n**Tautan Navigasi Dashboard:**\n- [Buka Leaderboard Petugas](/leaderboard)\n- [Lihat Detail Monitoring PCL](/pcl)\n- [Lihat Detail Monitoring PML](/pml)\n`;
       return { role: 'model', content, isSimulation: true };

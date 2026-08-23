@@ -2048,14 +2048,14 @@ function getTopPerformers(uploadId, filters = {}, settings = null, surveyId = 's
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pcl COLLATE NOCASE
-    ORDER BY pct DESC, (submitted_total + approved_total + rejected_total) DESC, target_fasih_total DESC
+    ORDER BY target_fasih_total DESC, pct DESC, (submitted_total + approved_total + rejected_total) DESC
     LIMIT ?
   `).all(...params, limit);
 
   const topPml = db.prepare(`
     SELECT 
       m.pml, 
-      MAX(m.korlap) AS korlap,
+      MAX(m.korlap) AS korlap, 
       COUNT(m.kode) AS total_subsls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
@@ -2073,7 +2073,7 @@ function getTopPerformers(uploadId, filters = {}, settings = null, surveyId = 's
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE 1=1 ${where}
     GROUP BY m.pml COLLATE NOCASE
-    ORDER BY pct DESC, (submitted_total + approved_total + rejected_total) DESC, target_fasih_total DESC
+    ORDER BY target_fasih_total DESC, pct DESC, (submitted_total + approved_total + rejected_total) DESC
     LIMIT ?
   `).all(...params, limit);
 
