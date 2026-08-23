@@ -1838,6 +1838,57 @@
         let desaStats = [];
         let slsStats = [];
         let kecStats = [];
+
+        // High-performance O(1) indexed lookup maps
+        const slsStatsMap = new Map();
+        const slsByDesaMap = new Map();
+        const slsByPclMap = new Map();
+        const desaStatsMap = new Map();
+        const kecStatsMap = new Map();
+
+        function buildStatsLookupMaps() {
+          slsStatsMap.clear();
+          slsByDesaMap.clear();
+          slsByPclMap.clear();
+          (slsStats || []).forEach(s => {
+            if (s && s.kode) slsStatsMap.set(s.kode, s);
+            if (s && s.desa) {
+              const dKey = String(s.desa).toUpperCase().trim();
+              if (!slsByDesaMap.has(dKey)) slsByDesaMap.set(dKey, []);
+              slsByDesaMap.get(dKey).push(s);
+            }
+            if (s && s.pcl && s.pcl.trim() && s.pcl !== 'Belum Ditentukan') {
+              const pKey = String(s.pcl).toLowerCase().trim();
+              if (!slsByPclMap.has(pKey)) slsByPclMap.set(pKey, []);
+              slsByPclMap.get(pKey).push(s);
+            }
+          });
+
+          desaStatsMap.clear();
+          (desaStats || []).forEach(d => {
+            if (d && d.iddesa) desaStatsMap.set(d.iddesa, d);
+            if (d && d.desa) desaStatsMap.set(String(d.desa).toUpperCase().trim(), d);
+          });
+
+          kecStatsMap.clear();
+          (kecStats || []).forEach(k => {
+            if (k && k.kecamatan) kecStatsMap.set(String(k.kecamatan).toUpperCase().trim(), k);
+          });
+        }
+
+        function getSlsStat(kode) {
+          return slsStatsMap.get(kode) || null;
+        }
+
+        function getDesaStat(iddesaOrName) {
+          if (!iddesaOrName) return null;
+          return desaStatsMap.get(iddesaOrName) || desaStatsMap.get(String(iddesaOrName).toUpperCase().trim()) || null;
+        }
+
+        function getKecStat(name) {
+          if (!name) return null;
+          return kecStatsMap.get(String(name).toUpperCase().trim()) || null;
+        }
         
         let kecLayer = null;
         let desaLayer = null;
@@ -1929,7 +1980,7 @@
 
         // Monochromatic / Thematic Color for Desa
         function getDesaColor(iddesa) {
-          const stat = desaStats.find(s => s.iddesa === iddesa);
+          const stat = getDesaStat(iddesa);
           if (!stat) return '#64748b';
 
           if (currentThematicMetric === 'muatan') {
@@ -1959,7 +2010,7 @@
 
         // Thematic Color for SLS - Green (#10b981) STRICTLY for officially completed SLS (stat.selesai === 1)
         function getSlsColor(kode) {
-          const stat = slsStats.find(s => s.kode === kode);
+          const stat = getSlsStat(kode);
           if (!stat) return '#64748b';
 
           // Hijau (#10b981) HANYA untuk status selesai resmi dari upload data
@@ -1985,7 +2036,7 @@
 
         // Thematic Color for Kecamatan
         function getKecColor(nmkec) {
-          const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === nmkec.toUpperCase());
+          const stat = getKecStat(nmkec);
           if (!stat) return '#64748b';
 
           if (currentThematicMetric === 'muatan') {
@@ -2043,7 +2094,7 @@
         }
 
         function slsStyle(feature) {
-          const stat = slsStats.find(s => s.kode === feature.properties.kode);
+          const stat = getSlsStat(feature.properties.kode);
           const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
           const matchesKpi = isSlsMatchingKpiStatus(stat, currentStatusFilter);
           const isKpiActive = !!currentStatusFilter;
@@ -2115,7 +2166,7 @@
 
           // Jika sedang sorot wilayah PCL aktif
           if (activeLayerName === 'sls' && currentHighlightedPcl) {
-            const stat = slsStats.find(s => s.kode === layer.feature.properties.kode);
+            const stat = getSlsStat(layer.feature.properties.kode);
             const layerPcl = stat ? stat.pcl : (layer.feature.properties.pcl || '');
             const isMatchPcl = layerPcl && layerPcl.toLowerCase().trim() === currentHighlightedPcl;
 
@@ -2141,7 +2192,7 @@
           const isSelectedKec = !currentFilteredKec || layer.feature.properties.nmkec === currentFilteredKec;
           let matchesKpi = true;
           if (activeLayerName === 'sls' && currentStatusFilter) {
-            const stat = slsStats.find(s => s.kode === layer.feature.properties.kode);
+            const stat = getSlsStat(layer.feature.properties.kode);
             matchesKpi = isSlsMatchingKpiStatus(stat, currentStatusFilter);
           }
 
@@ -2266,7 +2317,7 @@
             let foundBounds = L.latLngBounds();
             let hasMatch = false;
             slsLayer.eachLayer(layer => {
-              const stat = slsStats.find(s => s.kode === layer.feature.properties.kode);
+              const stat = getSlsStat(layer.feature.properties.kode);
               if (isSlsMatchingKpiStatus(stat, statusKey)) {
                 if (layer.getBounds) foundBounds.extend(layer.getBounds());
                 hasMatch = true;
@@ -2309,7 +2360,7 @@
           if (typeof window.updateMapBreadcrumbs === 'function') {
             window.updateMapBreadcrumbs('kec', nmkec);
           }
-          const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === nmkec.toUpperCase());
+          const stat = getKecStat(nmkec);
           if (!stat) return;
 
           const fasihPct = parseFloat(stat.fasih_pct_str || 0);
@@ -2433,7 +2484,7 @@
           if (typeof window.updateMapBreadcrumbs === 'function') {
             window.updateMapBreadcrumbs('desa', properties.nmkec, properties.nmdesa, null, properties.iddesa);
           }
-          const stat = desaStats.find(s => s.iddesa === properties.iddesa);
+          const stat = getDesaStat(properties.iddesa);
           const total = stat ? stat.total_subsls : 0;
           const selesai = stat ? stat.selesai : 0;
           const totalMuatan = stat ? (stat.total_muatan !== undefined ? stat.total_muatan : (properties.total_muatan || 0)) : (properties.total_muatan || 0);
@@ -2452,8 +2503,8 @@
           const fasihColor = fasihPct >= 100 ? '#10b981' : (fasihPct < 25 ? '#ef4444' : '#3b82f6');
           const isComplete = fasihPct >= 100;
 
-          // Render SubSLS list for this Desa
-          const desaSubslsList = slsStats.filter(s => s.desa && properties.nmdesa && String(s.desa).toUpperCase() === String(properties.nmdesa).toUpperCase());
+          // Render SubSLS list for this Desa using O(1) indexed Map
+          const desaSubslsList = slsByDesaMap.get(String(properties.nmdesa || '').toUpperCase().trim()) || [];
           let subslsListHtml = '';
 
           if (desaSubslsList.length > 0) {
@@ -2634,7 +2685,7 @@
           if (typeof window.updateMapBreadcrumbs === 'function') {
             window.updateMapBreadcrumbs('sls', properties.nmkec, properties.nmdesa, properties.nmsls, properties.iddesa);
           }
-          const stat = slsStats.find(s => s.kode === properties.kode);
+          const stat = getSlsStat(properties.kode);
           const isSelesai = stat ? stat.selesai === 1 : false;
           const totalMuatan = stat ? (stat.total_muatan !== undefined ? stat.total_muatan : (stat.muatan || properties.muatan || 0)) : (properties.muatan || 0);
           const muatanSelesai = stat ? (stat.muatan_selesai !== undefined ? stat.muatan_selesai : ((stat.usaha_total || 0) + (stat.keluarga_total || 0))) : 0;
@@ -2750,7 +2801,7 @@
             style: kecStyle,
             onEachFeature: (feature, layer) => {
               layer._searchKey = (feature.properties.nmkec || '').toLowerCase();
-              const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === feature.properties.nmkec.toUpperCase());
+              const stat = getKecStat(feature.properties.nmkec);
               const fasihPct = stat ? parseFloat(stat.fasih_pct_str || 0) : 0;
               const totalFasih = stat ? stat.target_fasih_total : 0;
               const realisasiFasih = stat ? ((stat.submitted_total || 0) + (stat.approved_total || 0) + (stat.rejected_total || 0)) : 0;
@@ -2807,7 +2858,7 @@
             style: desaStyle,
             onEachFeature: (feature, layer) => {
               layer._searchKey = `${feature.properties.nmdesa || ''} ${feature.properties.nmkec || ''} ${feature.properties.iddesa || ''}`.toLowerCase();
-              const stat = desaStats.find(s => s.iddesa === feature.properties.iddesa);
+              const stat = getDesaStat(feature.properties.iddesa);
               const total = stat ? stat.total_subsls : 0;
               const selesai = stat ? stat.selesai : 0;
               const targetFasih = stat ? stat.target_fasih_total : 0;
@@ -2869,8 +2920,9 @@
           if (!slsGeoJson) return;
           slsLayer = L.geoJSON(slsGeoJson, {
             style: slsStyle,
+            smoothFactor: 1.0,
             onEachFeature: (feature, layer) => {
-              const stat = slsStats.find(s => s.kode === feature.properties.kode);
+              const stat = getSlsStat(feature.properties.kode);
               layer._searchKey = `${feature.properties.nmsls || ''} ${feature.properties.nmdesa || ''} ${feature.properties.nmkec || ''} ${feature.properties.kode || ''} ${stat ? stat.pcl || '' : ''} ${stat ? stat.pml || '' : ''}`.toLowerCase();
               layer.on({
                 mouseover: highlightFeature,
@@ -2878,7 +2930,7 @@
                 click: (e) => {
                   showSlsDetails(feature.properties);
                   
-                  const stat = slsStats.find(s => s.kode === feature.properties.kode);
+                  const stat = getSlsStat(feature.properties.kode);
                   const status = stat && stat.selesai === 1 ? 'Selesai' : 'Belum Selesai';
                   const targetFasih = stat ? stat.target_fasih : 0;
                   const submitted = stat ? stat.submitted_by_pcl : 0;
@@ -2947,6 +2999,9 @@
             slsStats = stats.slsStats || [];
             desaGeoJson = await desaGeoRes.json();
             kecGeoJson = await kecGeoRes.json();
+
+            // Build O(1) indexed maps for instant lookup and smooth rendering
+            buildStatsLookupMaps();
 
             // Populate PCL Quick Filter Select
             populatePclFilterList();
@@ -3307,7 +3362,7 @@
               const nmsls = matchedSls ? (matchedSls.properties.nmsls || matchedSls.properties.nama || ('SLS ' + matchedSls.properties.kode)) : '';
               const nmdesa = matchedDesa ? matchedDesa.properties.nmdesa : (matchedSls ? matchedSls.properties.nmdesa : '');
               const nmkec = matchedKec ? matchedKec.properties.nmkec : (matchedSls ? matchedSls.properties.nmkec : (matchedDesa ? matchedDesa.properties.nmkec : ''));
-              const stat = matchedSls ? slsStats.find(s => s.kode === matchedSls.properties.kode) : null;
+              const stat = matchedSls ? getSlsStat(matchedSls.properties.kode) : null;
 
               if (nmsls && nmdesa) {
                 locationDesc = `Desa ${nmdesa} &bull; ${nmsls}`;
@@ -3644,7 +3699,7 @@
 
             if (slsLayer) {
               slsLayer.eachLayer(layer => {
-                const stat = slsStats.find(s => s.kode === layer.feature.properties.kode);
+                const stat = getSlsStat(layer.feature.properties.kode);
                 const layerPcl = stat ? stat.pcl : (layer.feature.properties.pcl || '');
 
                 if (layerPcl && layerPcl.toLowerCase().trim() === currentHighlightedPcl) {

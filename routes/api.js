@@ -46,6 +46,7 @@ router.get('/summary', (req, res) => {
 
 // Map Statistics API
 router.get('/map-stats', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=20, stale-while-revalidate=60');
   const uploadId = res.locals.uploadId || -1;
 
   const db = getDb();
