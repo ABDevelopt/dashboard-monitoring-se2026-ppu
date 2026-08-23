@@ -427,7 +427,7 @@
       const navPrefix = window.location.pathname.split('/')[1] && ['sakernas-pemutakhiran', 'sakernas-pendataan'].includes(window.location.pathname.split('/')[1])
         ? '/' + window.location.pathname.split('/')[1]
         : '';
-      btnHtml = `<br><a href="${navPrefix}/agent/table?id=${queryId}" target="_blank" class="ai-widget-full-table-btn" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; margin-top: 8px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-radius: 16px; font-size: 11px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 5px rgba(37,99,235,0.25);"><i class="bi bi-table"></i> Buka Tabel Lengkap${rowBadge} <i class="bi bi-arrow-right"></i></a>`;
+      btnHtml = `<br><a href="${navPrefix}/agent/table?id=${queryId}" target="_blank" class="ai-widget-full-table-btn"><i class="bi bi-table"></i> Buka Tabel Lengkap${rowBadge} <i class="bi bi-box-arrow-up-right"></i></a>`;
     }
 
     msgDiv.innerHTML = `
@@ -546,8 +546,7 @@
           tableBtn.href = `${navPrefix}/agent/table?id=${queryId}`;
           tableBtn.target = '_blank';
           tableBtn.className = 'ai-widget-full-table-btn';
-          tableBtn.innerHTML = `<i class="bi bi-table"></i> Buka Tabel Lengkap${rowBadge} <i class="bi bi-arrow-right"></i>`;
-          tableBtn.style.cssText = 'display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; margin-top: 8px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-radius: 16px; font-size: 11px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 5px rgba(37,99,235,0.25);';
+          tableBtn.innerHTML = `<i class="bi bi-table"></i> Buka Tabel Lengkap${rowBadge} <i class="bi bi-box-arrow-up-right"></i>`;
           contentEl.appendChild(tableBtn);
         }
 
