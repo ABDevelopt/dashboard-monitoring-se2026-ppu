@@ -1,4 +1,4 @@
-﻿<div class=fade-in agent-table-page style=padding-bottom: 40px;>
+<div class="fade-in agent-table-page" style="padding-bottom: 40px;">
   <style>
     /* Scoped styles for AI Data Table Explorer */
     .agent-table-page {
@@ -254,48 +254,48 @@
   </style>
 
   <!-- ── TOP BAR & ACTIONS ── -->
-  <div style=display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;>
-    <div style=display: flex; align-items: center; gap: 12px;>
-      <a href=<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent class=at-btn at-btn-outline style=border-radius: 20px;>
-        <i class=bi bi-arrow-left></i> Kembali ke AI Chat
+  <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <a href="<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent" class="at-btn at-btn-outline" style="border-radius: 20px;">
+        <i class="bi bi-arrow-left"></i> Kembali ke AI Chat
       </a>
       <div>
-        <h2 style=font-size: 19px; font-weight: 800; color: var(--text-primary, #0f172a); margin: 0; display: flex; align-items: center; gap: 8px;>
-          <i class=bi bi-table style=color: #2563eb;></i> Eksplorasi Data Tabel AI
+        <h2 style="font-size: 19px; font-weight: 800; color: var(--text-primary, #0f172a); margin: 0; display: flex; align-items: center; gap: 8px;">
+          <i class="bi bi-table" style="color: #2563eb;"></i> Eksplorasi Data Tabel AI
         </h2>
-        <div style=font-size: 12px; color: var(--text-muted, #64748b);>Tabel lengkap hasil eksekusi kueri asisten AI Pananyo Taka</div>
+        <div style="font-size: 12px; color: var(--text-muted, #64748b);">Tabel lengkap hasil eksekusi kueri asisten AI Pananyo Taka</div>
       </div>
     </div>
 
-    <div class=at-actions-group>
-      <a href=<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent/export-query/<%= queryId %>?format=xlsx class=at-btn at-btn-success title=Download Excel (.xlsx)>
-        <i class=bi bi-file-earmark-excel-fill></i> Export Excel
+    <div class="at-actions-group">
+      <a href="<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent/export-query/<%= queryId %>?format=xlsx" class="at-btn at-btn-success" title="Download Excel (.xlsx)">
+        <i class="bi bi-file-earmark-excel-fill"></i> Export Excel
       </a>
-      <a href=<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent/export-query/<%= queryId %>?format=csv class=at-btn at-btn-outline title=Download CSV>
-        <i class=bi bi-filetype-csv></i> Export CSV
+      <a href="<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent/export-query/<%= queryId %>?format=csv" class="at-btn at-btn-outline" title="Download CSV">
+        <i class="bi bi-filetype-csv"></i> Export CSV
       </a>
-      <button type=button class=at-btn at-btn-outline onclick=document.getElementById('sqlModal').classList.remove('hidden')>
-        <i class=bi bi-code-slash></i> SQL Query
+      <button type="button" class="at-btn at-btn-outline" onclick="document.getElementById('sqlModal').classList.remove('hidden')">
+        <i class="bi bi-code-slash"></i> SQL Query
       </button>
     </div>
   </div>
 
   <!-- ── QUERY INFO BANNER ── -->
-  <div class=at-header-banner>
-    <div style=display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px;>
-      <div style=flex: 1; min-width: 280px;>
-        <div style=display: flex; align-items: center; gap: 8px; margin-bottom: 6px;>
-          <span class=at-badge at-badge-blue><i class=bi bi-robot></i> Prompt Pertanyaan</span>
-          <span class=at-badge at-badge-purple><%= query.tool_name || 'Kueri Data' %></span>
+  <div class="at-header-banner">
+    <div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px;">
+      <div style="flex: 1; min-width: 280px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span class="at-badge at-badge-blue"><i class="bi bi-robot"></i> Prompt Pertanyaan</span>
+          <span class="at-badge at-badge-purple"><%= query.tool_name || 'Kueri Data' %></span>
           <% if (query.created_at) { %>
-            <span style=font-size: 11.5px; color: var(--text-muted, #64748b);><i class=bi bi-clock></i> <%= new Date(query.created_at).toLocaleString('id-ID') %></span>
+            <span style="font-size: 11.5px; color: var(--text-muted, #64748b);"><i class="bi bi-clock"></i> <%= new Date(query.created_at).toLocaleString('id-ID') %></span>
           <% } %>
         </div>
-        <div style=font-size: 15px; font-weight: 700; color: var(--text-primary, #0f172a); margin-bottom: 6px;>
-          <%= query.prompt || 'Eksplorasi Data' %>
+        <div style="font-size: 15px; font-weight: 700; color: var(--text-primary, #0f172a); margin-bottom: 6px;">
+          "<%= query.prompt || 'Eksplorasi Data' %>"
         </div>
-        <div style=font-size: 12px; color: var(--text-muted, #64748b); display: flex; flex-wrap: wrap; align-items: center; gap: 16px;>
-          <span><strong>Total Data:</strong> <span class=at-badge at-badge-green id=totalRowsBadge style=font-size: 12px;><%= rows.length %> baris</span></span>
+        <div style="font-size: 12px; color: var(--text-muted, #64748b); display: flex; flex-wrap: wrap; align-items: center; gap: 16px;">
+          <span><strong>Total Data:</strong> <span class="at-badge at-badge-green" id="totalRowsBadge" style="font-size: 12px;"><%= rows.length %> baris</span></span>
           <% if (typeof latestUpload !== 'undefined' && latestUpload) { %>
             <span><strong>Data Update:</strong> <%= latestUpload.tanggal %> (Upload ID: <%= latestUpload.id %>)</span>
           <% } %>
@@ -305,89 +305,89 @@
   </div>
 
   <!-- ── TABLE CONTROLS & DATA TABLE ── -->
-  <div class=at-card>
-    <div style=padding: 14px 18px; border-bottom: 1px solid var(--border, #e2e8f0);>
-      <div class=at-toolbar style=margin-bottom: 0;>
-        <div class=at-search-box>
-          <i class=bi bi-search></i>
-          <input type=text id=atSearchInput placeholder=Cari di seluruh kolom data... autocomplete=off>
+  <div class="at-card">
+    <div style="padding: 14px 18px; border-bottom: 1px solid var(--border, #e2e8f0);">
+      <div class="at-toolbar" style="margin-bottom: 0;">
+        <div class="at-search-box">
+          <i class="bi bi-search"></i>
+          <input type="text" id="atSearchInput" placeholder="Cari di seluruh kolom data..." autocomplete="off">
         </div>
 
-        <div class=at-actions-group>
-          <div style=display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted, #64748b);>
+        <div class="at-actions-group">
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted, #64748b);">
             <span>Tampilkan:</span>
-            <select id=atPageSizeSelect style=padding: 6px 10px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--bg-primary, #f8fafc); color: var(--text-primary, #0f172a);>
-              <option value=10>10 baris</option>
-              <option value=25 selected>25 baris</option>
-              <option value=50>50 baris</option>
-              <option value=100>100 baris</option>
-              <option value=all>Semua</option>
+            <select id="atPageSizeSelect" style="padding: 6px 10px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--bg-primary, #f8fafc); color: var(--text-primary, #0f172a);">
+              <option value="10">10 baris</option>
+              <option value="25" selected>25 baris</option>
+              <option value="50">50 baris</option>
+              <option value="100">100 baris</option>
+              <option value="all">Semua</option>
             </select>
           </div>
-          <button id=atCopyBtn class=at-btn at-btn-outline style=padding: 6px 12px;>
-            <i class=bi bi-clipboard></i> Salin Tabel
+          <button id="atCopyBtn" class="at-btn at-btn-outline" style="padding: 6px 12px;">
+            <i class="bi bi-clipboard"></i> Salin Tabel
           </button>
         </div>
       </div>
     </div>
 
-    <div class=at-table-container>
+    <div class="at-table-container">
       <% if (!rows || rows.length === 0) { %>
-        <div style=padding: 50px 20px; text-align: center; color: var(--text-muted, #64748b);>
-          <i class=bi bi-inbox style=font-size: 36px; display: block; margin-bottom: 8px; opacity: 0.5;></i>
+        <div style="padding: 50px 20px; text-align: center; color: var(--text-muted, #64748b);">
+          <i class="bi bi-inbox" style="font-size: 36px; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
           Tidak ada data yang tersedia untuk kueri ini.
         </div>
       <% } else { %>
         <% const columns = Object.keys(rows[0]); %>
-        <table class=at-table id=atMainTable>
+        <table class="at-table" id="atMainTable">
           <thead>
             <tr>
-              <th style=width: 48px; text-align: center;>No</th>
+              <th style="width: 48px; text-align: center;">No</th>
               <% columns.forEach(col => { %>
-                <th class=sortable data-col=<%= col %>>
-                  <div style=display: flex; align-items: center; justify-content: space-between; gap: 8px;>
+                <th class="sortable" data-col="<%= col %>">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
                     <span><%= col.replace(/_/g, ' ') %></span>
-                    <span class=sort-icon style=font-size: 11px; opacity: 0.5;><i class=bi bi-arrow-down-up></i></span>
+                    <span class="sort-icon" style="font-size: 11px; opacity: 0.5;"><i class="bi bi-arrow-down-up"></i></span>
                   </div>
                 </th>
               <% }); %>
             </tr>
           </thead>
-          <tbody id=atTableBody>
+          <tbody id="atTableBody">
             <!-- Rendered by client script -->
           </tbody>
         </table>
       <% } %>
     </div>
 
-    <div class=at-pagination-bar>
-      <div id=atPaginationInfo>Menampilkan data...</div>
-      <div class=at-pagination-btns id=atPaginationBtns></div>
+    <div class="at-pagination-bar">
+      <div id="atPaginationInfo">Menampilkan data...</div>
+      <div class="at-pagination-btns" id="atPaginationBtns"></div>
     </div>
   </div>
 </div>
 
 <!-- ── SQL QUERY MODAL ── -->
-<div id=sqlModal class=at-modal-backdrop hidden onclick=if(event.target === this) this.classList.add('hidden')>
-  <div class=at-modal>
-    <div class=at-modal-header>
-      <div style=font-weight: 700; font-size: 15px; color: var(--text-primary, #0f172a); display: flex; align-items: center; gap: 8px;>
-        <i class=bi bi-database-check style=color: #2563eb;></i> SQL Query Rekap Data
+<div id="sqlModal" class="at-modal-backdrop hidden" onclick="if(event.target === this) this.classList.add('hidden')">
+  <div class="at-modal">
+    <div class="at-modal-header">
+      <div style="font-weight: 700; font-size: 15px; color: var(--text-primary, #0f172a); display: flex; align-items: center; gap: 8px;">
+        <i class="bi bi-database-check" style="color: #2563eb;"></i> SQL Query Rekap Data
       </div>
-      <button type=button class=at-btn at-btn-outline style=padding: 2px 8px; onclick=document.getElementById('sqlModal').classList.add('hidden')>&times;</button>
+      <button type="button" class="at-btn at-btn-outline" style="padding: 2px 8px;" onclick="document.getElementById('sqlModal').classList.add('hidden')">&times;</button>
     </div>
-    <div class=at-modal-body>
-      <div style=font-size: 12px; color: var(--text-muted, #64748b); margin-bottom: 8px;>Kueri SQL yang dieksekusi secara aman (Read-Only) pada database SQLite:</div>
-      <pre style=background: #1e293b; color: #f8fafc; padding: 14px; border-radius: 8px; font-size: 12px; line-height: 1.5; overflow-x: auto; margin: 0; font-family: monospace;><code><%= query.query_sql || '-- Query tidak tersedia' %></code></pre>
+    <div class="at-modal-body">
+      <div style="font-size: 12px; color: var(--text-muted, #64748b); margin-bottom: 8px;">Kueri SQL yang dieksekusi secara aman (Read-Only) pada database SQLite:</div>
+      <pre style="background: #1e293b; color: #f8fafc; padding: 14px; border-radius: 8px; font-size: 12px; line-height: 1.5; overflow-x: auto; margin: 0; font-family: monospace;"><code><%= query.query_sql || '-- Query tidak tersedia' %></code></pre>
       <% if (query.query_params && query.query_params !== '{}') { %>
-        <div style=margin-top: 12px;>
-          <div style=font-size: 12px; font-weight: 600; margin-bottom: 4px;>Parameter Binding:</div>
-          <pre style=background: #f1f5f9; padding: 8px 12px; border-radius: 6px; font-size: 11.5px; margin: 0; font-family: monospace;><code><%= query.query_params %></code></pre>
+        <div style="margin-top: 12px;">
+          <div style="font-size: 12px; font-weight: 600; margin-bottom: 4px;">Parameter Binding:</div>
+          <pre style="background: #f1f5f9; padding: 8px 12px; border-radius: 6px; font-size: 11.5px; margin: 0; font-family: monospace;"><code><%= query.query_params %></code></pre>
         </div>
       <% } %>
     </div>
-    <div class=at-modal-footer>
-      <button type=button class=at-btn at-btn-primary onclick=document.getElementById('sqlModal').classList.add('hidden')>Tutup</button>
+    <div class="at-modal-footer">
+      <button type="button" class="at-btn at-btn-primary" onclick="document.getElementById('sqlModal').classList.add('hidden')">Tutup</button>
     </div>
   </div>
 </div>
@@ -395,21 +395,21 @@
 <!-- ── CLIENT SCRIPT FOR DYNAMIC DATA TABLE ── -->
 <script>
   (function() {
-    const rawData = <%- JSON.stringify(rows || []) %>;
-    const columns = rawData.length > 0 ? Object.keys(rawData[0]) : [];
+    var rawData = <%- JSON.stringify(rows || []) %>;
+    var columns = rawData.length > 0 ? Object.keys(rawData[0]) : [];
 
-    let filteredData = [...rawData];
-    let sortColumn = null;
-    let sortAsc = true;
-    let currentPage = 1;
-    let pageSize = 25;
+    var filteredData = rawData.slice();
+    var sortColumn = null;
+    var sortAsc = true;
+    var currentPage = 1;
+    var pageSize = 25;
 
-    const searchInput = document.getElementById('atSearchInput');
-    const pageSizeSelect = document.getElementById('atPageSizeSelect');
-    const tbody = document.getElementById('atTableBody');
-    const paginationInfo = document.getElementById('atPaginationInfo');
-    const paginationBtns = document.getElementById('atPaginationBtns');
-    const copyBtn = document.getElementById('atCopyBtn');
+    var searchInput = document.getElementById('atSearchInput');
+    var pageSizeSelect = document.getElementById('atPageSizeSelect');
+    var tbody = document.getElementById('atTableBody');
+    var paginationInfo = document.getElementById('atPaginationInfo');
+    var paginationBtns = document.getElementById('atPaginationBtns');
+    var copyBtn = document.getElementById('atCopyBtn');
 
     function isNumeric(val) {
       if (typeof val === 'number') return true;
@@ -418,212 +418,212 @@
     }
 
     function formatCell(key, val) {
-      if (val === null || val === undefined) return '<span style=color: #94a3b8;>-</span>';
+      if (val === null || val === undefined) return '<span style="color: #94a3b8;">-</span>';
       
-      const lowerKey = key.toLowerCase();
+      var lowerKey = key.toLowerCase();
       if (typeof val === 'number') {
         if (lowerKey.includes('pct') || lowerKey.includes('persen') || lowerKey.includes('percent')) {
-          const badgeClass = val >= 100 ? 'at-badge-green' : (val >= 70 ? 'at-badge-blue' : (val >= 40 ? 'at-badge-orange' : 'at-badge-orange'));
-          return <span class=at-badge >%</span>;
+          var badgeClass = val >= 100 ? 'at-badge-green' : (val >= 70 ? 'at-badge-blue' : (val >= 40 ? 'at-badge-orange' : 'at-badge-orange'));
+          return '<span class="at-badge ' + badgeClass + '">' + val.toLocaleString('id-ID') + '%</span>';
         }
         return val.toLocaleString('id-ID');
       }
 
       if (typeof val === 'string' && (val.endsWith('%') || (!isNaN(parseFloat(val)) && lowerKey.includes('persen')))) {
-        const num = parseFloat(val);
-        const badgeClass = num >= 100 ? 'at-badge-green' : (num >= 70 ? 'at-badge-blue' : (num >= 40 ? 'at-badge-orange' : 'at-badge-orange'));
-        return <span class=at-badge ></span>;
+        var num = parseFloat(val);
+        var badgeClass2 = num >= 100 ? 'at-badge-green' : (num >= 70 ? 'at-badge-blue' : (num >= 40 ? 'at-badge-orange' : 'at-badge-orange'));
+        return '<span class="at-badge ' + badgeClass2 + '">' + val + '</span>';
       }
 
       return escapeHtml(String(val));
     }
 
     function escapeHtml(str) {
-      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(//g, '&quot;');
- }
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
- function applyFilter() {
- const q = (searchInput?.value || '').toLowerCase().trim();
- if (!q) {
- filteredData = [...rawData];
- } else {
- filteredData = rawData.filter(row => {
- return columns.some(col => {
- const val = row[col];
- return val !== null && val !== undefined && String(val).toLowerCase().includes(q);
- });
- });
- }
- currentPage = 1;
- applySortAndRender();
- }
+    function applyFilter() {
+      var q = (searchInput && searchInput.value ? searchInput.value : '').toLowerCase().trim();
+      if (!q) {
+        filteredData = rawData.slice();
+      } else {
+        filteredData = rawData.filter(function(row) {
+          return columns.some(function(col) {
+            var val = row[col];
+            return val !== null && val !== undefined && String(val).toLowerCase().includes(q);
+          });
+        });
+      }
+      currentPage = 1;
+      applySortAndRender();
+    }
 
- function applySortAndRender() {
- if (sortColumn) {
- filteredData.sort((a, b) => {
- let valA = a[sortColumn];
- let valB = b[sortColumn];
+    function applySortAndRender() {
+      if (sortColumn) {
+        filteredData.sort(function(a, b) {
+          var valA = a[sortColumn];
+          var valB = b[sortColumn];
 
- if (valA === null || valA === undefined) return 1;
- if (valB === null || valB === undefined) return -1;
+          if (valA === null || valA === undefined) return 1;
+          if (valB === null || valB === undefined) return -1;
 
- if (isNumeric(valA) && isNumeric(valB)) {
- valA = Number(valA);
- valB = Number(valB);
- } else {
- valA = String(valA).toLowerCase();
- valB = String(valB).toLowerCase();
- }
+          if (isNumeric(valA) && isNumeric(valB)) {
+            valA = Number(valA);
+            valB = Number(valB);
+          } else {
+            valA = String(valA).toLowerCase();
+            valB = String(valB).toLowerCase();
+          }
 
- if (valA < valB) return sortAsc ? -1 : 1;
- if (valA > valB) return sortAsc ? 1 : -1;
- return 0;
- });
- }
+          if (valA < valB) return sortAsc ? -1 : 1;
+          if (valA > valB) return sortAsc ? 1 : -1;
+          return 0;
+        });
+      }
 
- renderTable();
- }
+      renderTable();
+    }
 
- function renderTable() {
- if (!tbody) return;
+    function renderTable() {
+      if (!tbody) return;
 
- const total = filteredData.length;
- const effectivePageSize = pageSize === 'all' ? total : parseInt(pageSize, 10);
- const totalPages = Math.ceil(total / effectivePageSize) || 1;
+      var total = filteredData.length;
+      var effectivePageSize = pageSize === 'all' ? total : parseInt(pageSize, 10);
+      var totalPages = Math.ceil(total / effectivePageSize) || 1;
 
- if (currentPage > totalPages) currentPage = totalPages;
- if (currentPage < 1) currentPage = 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
 
- const startIdx = (currentPage - 1) * effectivePageSize;
- const endIdx = pageSize === 'all' ? total : Math.min(startIdx + effectivePageSize, total);
- const pageRows = filteredData.slice(startIdx, endIdx);
+      var startIdx = (currentPage - 1) * effectivePageSize;
+      var endIdx = pageSize === 'all' ? total : Math.min(startIdx + effectivePageSize, total);
+      var pageRows = filteredData.slice(startIdx, endIdx);
 
- if (pageRows.length === 0) {
- tbody.innerHTML = <tr><td colspan= style=text-align: center; padding: 30px; color: var(--text-muted, #64748b);>Tidak ada baris data yang cocok dengan filter pencarian.</td></tr>;
- } else {
- tbody.innerHTML = pageRows.map((row, idx) => {
- const rowNum = startIdx + idx + 1;
- const cells = columns.map(col => {
- const val = row[col];
- const isNum = typeof val === 'number' || (isNumeric(val) && !col.toLowerCase().includes('kode') && !col.toLowerCase().includes('id') && !col.toLowerCase().includes('telepon') && !col.toLowerCase().includes('phone'));
- const alignStyle = isNum ? 'text-align: right;' : 'text-align: left;';
- return <td style=></td>;
- }).join('');
- return <tr><td style=text-align: center; color: var(--text-muted, #94a3b8); font-size: 11.5px;></td></tr>;
- }).join('');
- }
+      if (pageRows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="' + (columns.length + 1) + '" style="text-align: center; padding: 30px; color: var(--text-muted, #64748b);">Tidak ada baris data yang cocok dengan filter pencarian.</td></tr>';
+      } else {
+        tbody.innerHTML = pageRows.map(function(row, idx) {
+          var rowNum = startIdx + idx + 1;
+          var cells = columns.map(function(col) {
+            var val = row[col];
+            var isNum = typeof val === 'number' || (isNumeric(val) && !col.toLowerCase().includes('kode') && !col.toLowerCase().includes('id') && !col.toLowerCase().includes('telepon') && !col.toLowerCase().includes('phone'));
+            var alignStyle = isNum ? 'text-align: right;' : 'text-align: left;';
+            return '<td style="' + alignStyle + '">' + formatCell(col, val) + '</td>';
+          }).join('');
+          return '<tr><td style="text-align: center; color: var(--text-muted, #94a3b8); font-size: 11.5px;">' + rowNum + '</td>' + cells + '</tr>';
+        }).join('');
+      }
 
- // Update Pagination Info
- if (paginationInfo) {
- if (total === 0) {
- paginationInfo.textContent = 'Menampilkan 0 data';
- } else {
- paginationInfo.textContent = Menampilkan - dari total data;
- }
- }
+      // Update Pagination Info
+      if (paginationInfo) {
+        if (total === 0) {
+          paginationInfo.textContent = 'Menampilkan 0 data';
+        } else {
+          paginationInfo.textContent = 'Menampilkan ' + (startIdx + 1) + ' - ' + endIdx + ' dari total ' + total + ' data';
+        }
+      }
 
- renderPagination(totalPages);
- }
+      renderPagination(totalPages);
+    }
 
- function renderPagination(totalPages) {
- if (!paginationBtns) return;
- if (totalPages <= 1) {
- paginationBtns.innerHTML = '';
- return;
- }
+    function renderPagination(totalPages) {
+      if (!paginationBtns) return;
+      if (totalPages <= 1) {
+        paginationBtns.innerHTML = '';
+        return;
+      }
 
- let html = '';
- html += <button type=button class=at-page-btn  data-page=>&laquo;</button>;
+      var html = '';
+      html += '<button type="button" class="at-page-btn ' + (currentPage === 1 ? 'disabled' : '') + '" data-page="' + (currentPage - 1) + '">&laquo;</button>';
 
- const maxBtns = 5;
- let startPage = Math.max(1, currentPage - 2);
- let endPage = Math.min(totalPages, startPage + maxBtns - 1);
+      var maxBtns = 5;
+      var startPage = Math.max(1, currentPage - 2);
+      var endPage = Math.min(totalPages, startPage + maxBtns - 1);
 
- if (endPage - startPage < maxBtns - 1) {
- startPage = Math.max(1, endPage - maxBtns + 1);
- }
+      if (endPage - startPage < maxBtns - 1) {
+        startPage = Math.max(1, endPage - maxBtns + 1);
+      }
 
- for (let p = startPage; p <= endPage; p++) {
- html += <button type=button class=at-page-btn  data-page=></button>;
- }
+      for (var p = startPage; p <= endPage; p++) {
+        html += '<button type="button" class="at-page-btn ' + (p === currentPage ? 'active' : '') + '" data-page="' + p + '">' + p + '</button>';
+      }
 
- html += <button type=button class=at-page-btn  data-page=>&raquo;</button>;
+      html += '<button type="button" class="at-page-btn ' + (currentPage === totalPages ? 'disabled' : '') + '" data-page="' + (currentPage + 1) + '">&raquo;</button>';
 
- paginationBtns.innerHTML = html;
- }
+      paginationBtns.innerHTML = html;
+    }
 
- // Event Listeners
- if (searchInput) {
- searchInput.addEventListener('input', () => applyFilter());
- }
+    // Event Listeners
+    if (searchInput) {
+      searchInput.addEventListener('input', function() { applyFilter(); });
+    }
 
- if (pageSizeSelect) {
- pageSizeSelect.addEventListener('change', (e) => {
- pageSize = e.target.value;
- currentPage = 1;
- renderTable();
- });
- }
+    if (pageSizeSelect) {
+      pageSizeSelect.addEventListener('change', function(e) {
+        pageSize = e.target.value;
+        currentPage = 1;
+        renderTable();
+      });
+    }
 
- if (paginationBtns) {
- paginationBtns.addEventListener('click', (e) => {
- const btn = e.target.closest('.at-page-btn');
- if (!btn || btn.classList.contains('disabled') || btn.classList.contains('active')) return;
- const page = parseInt(btn.getAttribute('data-page'), 10);
- if (page && page !== currentPage) {
- currentPage = page;
- renderTable();
- const tableEl = document.getElementById('atMainTable');
- if (tableEl) {
- window.scrollTo({ top: tableEl.offsetTop - 80, behavior: 'smooth' });
- }
- }
- });
- }
+    if (paginationBtns) {
+      paginationBtns.addEventListener('click', function(e) {
+        var btn = e.target.closest('.at-page-btn');
+        if (!btn || btn.classList.contains('disabled') || btn.classList.contains('active')) return;
+        var page = parseInt(btn.getAttribute('data-page'), 10);
+        if (page && page !== currentPage) {
+          currentPage = page;
+          renderTable();
+          var tableEl = document.getElementById('atMainTable');
+          if (tableEl) {
+            window.scrollTo({ top: tableEl.offsetTop - 80, behavior: 'smooth' });
+          }
+        }
+      });
+    }
 
- // Sort column headers
- document.querySelectorAll('.at-table th.sortable').forEach(th => {
- th.addEventListener('click', () => {
- const col = th.getAttribute('data-col');
- if (sortColumn === col) {
- sortAsc = !sortAsc;
- } else {
- sortColumn = col;
- sortAsc = true;
- }
+    // Sort column headers
+    document.querySelectorAll('.at-table th.sortable').forEach(function(th) {
+      th.addEventListener('click', function() {
+        var col = th.getAttribute('data-col');
+        if (sortColumn === col) {
+          sortAsc = !sortAsc;
+        } else {
+          sortColumn = col;
+          sortAsc = true;
+        }
 
- document.querySelectorAll('.at-table th.sortable .sort-icon').forEach(icon => {
- icon.innerHTML = '<i class=bi bi-arrow-down-up></i>';
- icon.style.opacity = '0.5';
- });
+        document.querySelectorAll('.at-table th.sortable .sort-icon').forEach(function(icon) {
+          icon.innerHTML = '<i class="bi bi-arrow-down-up"></i>';
+          icon.style.opacity = '0.5';
+        });
 
- const currentIcon = th.querySelector('.sort-icon');
- if (currentIcon) {
- currentIcon.innerHTML = sortAsc ? '<i class=bi bi-arrow-up style=color: #2563eb;></i>' : '<i class=bi bi-arrow-down style=color: #2563eb;></i>';
- currentIcon.style.opacity = '1';
- }
+        var currentIcon = th.querySelector('.sort-icon');
+        if (currentIcon) {
+          currentIcon.innerHTML = sortAsc ? '<i class="bi bi-arrow-up" style="color: #2563eb;"></i>' : '<i class="bi bi-arrow-down" style="color: #2563eb;"></i>';
+          currentIcon.style.opacity = '1';
+        }
 
- applySortAndRender();
- });
- });
+        applySortAndRender();
+      });
+    });
 
- // Copy Table to Clipboard
- if (copyBtn) {
- copyBtn.addEventListener('click', () => {
- if (!filteredData || filteredData.length === 0) return;
- const headers = columns.join('\t');
- const rowsText = filteredData.map(r => columns.map(c => r[c] !== null && r[c] !== undefined ? r[c] : '').join('\t')).join('\n');
- const fullText = headers + '\n' + rowsText;
+    // Copy Table to Clipboard
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function() {
+        if (!filteredData || filteredData.length === 0) return;
+        var headers = columns.join('\t');
+        var rowsText = filteredData.map(function(r) { return columns.map(function(c) { return r[c] !== null && r[c] !== undefined ? r[c] : ''; }).join('\t'); }).join('\n');
+        var fullText = headers + '\n' + rowsText;
 
- navigator.clipboard.writeText(fullText).then(() => {
- const orig = copyBtn.innerHTML;
- copyBtn.innerHTML = '<i class=bi bi-check-lg style=color: #10b981;></i> Tersalin!';
- setTimeout(() => copyBtn.innerHTML = orig, 2000);
- });
- });
- }
+        navigator.clipboard.writeText(fullText).then(function() {
+          var orig = copyBtn.innerHTML;
+          copyBtn.innerHTML = '<i class="bi bi-check-lg" style="color: #10b981;"></i> Tersalin!';
+          setTimeout(function() { copyBtn.innerHTML = orig; }, 2000);
+        });
+      });
+    }
 
- // Initial render
- renderTable();
- })();
+    // Initial render
+    renderTable();
+  })();
 </script>
