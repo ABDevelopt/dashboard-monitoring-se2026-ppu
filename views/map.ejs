@@ -2738,6 +2738,16 @@
                 weight: 1.5
               }).addTo(map);
 
+              // Otomatis beralih ke mode "Batas Saja" (Outline Only) agar posisi GPS di peta terlihat jelas tanpa terhalang warna fill
+              if (!isOutlineOnlyMode) {
+                isOutlineOnlyMode = true;
+                if (btnOutlineOnly) {
+                  btnOutlineOnly.classList.add('active');
+                  btnOutlineOnly.setAttribute('aria-pressed', 'true');
+                }
+                updateActiveLayerStyles();
+              }
+
               map.setView([lat, lng], 16, { animate: true });
             },
             (err) => {
