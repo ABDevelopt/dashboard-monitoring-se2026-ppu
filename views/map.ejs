@@ -337,12 +337,14 @@
 
   .status-green { color: #34d399 !important; }
   .status-blue { color: #38bdf8 !important; }
+  .status-cyan { color: #22d3ee !important; }
   .status-yellow { color: #facc15 !important; }
   .status-orange { color: #fb923c !important; }
   .status-red { color: #f87171 !important; }
 
   body.light-mode .status-green { color: #059669 !important; }
   body.light-mode .status-blue { color: #0284c7 !important; }
+  body.light-mode .status-cyan { color: #0891b2 !important; }
   body.light-mode .status-yellow { color: #d97706 !important; }
   body.light-mode .status-orange { color: #ea580c !important; }
   body.light-mode .status-red { color: #dc2626 !important; }
@@ -775,11 +777,8 @@
     <div class="gmaps-floating-search-panel">
       <div class="gmaps-search-box">
         <i class="bi bi-search search-icon"></i>
-        <input type="text" id="mapSearchInput" placeholder="Cari desa atau SLS..." autocomplete="off" />
-        <button id="btnClearSearch" class="gmaps-icon-btn" style="display: none;" title="Hapus Pencarian">
-          <i class="bi bi-x-circle-fill"></i>
-        </button>
-        <button id="btnResetView" class="gmaps-icon-btn" title="Reset Tampilan Peta">
+        <input type="text" id="mapSearchInput" placeholder="Cari nama desa atau SLS..." />
+        <button id="btnResetView" class="gmaps-icon-btn" title="Reset Pandangan Peta">
           <i class="bi bi-arrow-counterclockwise"></i>
         </button>
       </div>
@@ -820,19 +819,24 @@
     <!-- 3. FLOATING KPI OVERLAY BAR (TOP RIGHT) -->
     <div class="gmaps-floating-kpi-bar">
       <div class="gmaps-kpi-pill">
-        <i class="bi bi-check2-circle" style="color: var(--accent-green);"></i>
-        <span class="label">SLS Selesai:</span>
-        <strong id="statSlsSelesai" style="color: var(--accent-green);">-- / -- SLS</strong>
+        <i class="bi bi-map-fill" style="color: var(--accent-blue);"></i>
+        <span class="label">Total:</span>
+        <strong id="statTotalDesa">-- Desa</strong>
       </div>
       <div class="gmaps-kpi-pill">
-        <i class="bi bi-pie-chart-fill" style="color: var(--accent-blue);"></i>
-        <span class="label">Progres FASIH:</span>
-        <strong id="statProgresFasih" style="color: var(--accent-blue);">--%</strong>
+        <i class="bi bi-check-circle-fill" style="color: var(--accent-green);"></i>
+        <span class="label">100%:</span>
+        <strong id="statDesa100" style="color: var(--accent-green);">-- Desa</strong>
       </div>
       <div class="gmaps-kpi-pill">
-        <i class="bi bi-geo-alt-fill" style="color: var(--accent-cyan);"></i>
-        <span class="label">Wilayah:</span>
-        <strong id="statTotalWilayah">4 Kec / 54 Desa</strong>
+        <i class="bi bi-hourglass-split" style="color: var(--accent-yellow);"></i>
+        <span class="label">25-99%:</span>
+        <strong id="statDesaHigh" style="color: var(--accent-yellow);">-- Desa</strong>
+      </div>
+      <div class="gmaps-kpi-pill">
+        <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red);"></i>
+        <span class="label">&lt;25%:</span>
+        <strong id="statDesaLow" style="color: var(--accent-red);">-- Desa</strong>
       </div>
     </div>
 
@@ -874,7 +878,8 @@
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Progres Realisasi Kecamatan:</div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>100%</strong> (Target Selesai)</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>75% - 99%</strong> (Sangat Baik)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #eab308;"></div><span><strong>25% - 74%</strong> (Sedang)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #06b6d4;"></div><span><strong>50% - 74%</strong> (Baik)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #eab308;"></div><span><strong>25% - 49%</strong> (Sedang)</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>1% - 24%</strong> (Awal Progres)</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>0%</strong> (Belum Ada Progres)</span></div>
           </div>
@@ -883,7 +888,8 @@
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Persentase Realisasi FASIH Desa:</div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>100%</strong> FASIH (Target Selesai)</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>75% - 99%</strong> FASIH (Sangat Baik)</span></div>
-            <div class="map-legend-item"><div class="map-legend-color" style="background: #eab308;"></div><span><strong>25% - 74%</strong> FASIH (Sedang)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #06b6d4;"></div><span><strong>50% - 74%</strong> FASIH (Baik)</span></div>
+            <div class="map-legend-item"><div class="map-legend-color" style="background: #eab308;"></div><span><strong>25% - 49%</strong> FASIH (Sedang)</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #f97316;"></div><span><strong>1% - 24%</strong> FASIH (Awal Progres)</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #ef4444;"></div><span><strong>0%</strong> FASIH (Belum Ada Progres)</span></div>
           </div>
@@ -1232,16 +1238,17 @@
           return 'var(--accent-cyan)';
         }
 
-        // Color coding function for Desa
+        // Color coding function for Desa (6 categories)
         function getDesaColor(iddesa) {
           const stat = desaStats.find(s => s.iddesa === iddesa);
           if (!stat) return '#94a3b8'; // gray for no data
           const pct = stat.target_fasih_total ? ((stat.submitted_total + stat.approved_total + stat.rejected_total) / stat.target_fasih_total) * 100 : 0;
-          if (pct >= 100) return '#10b981'; // Green
-          if (pct >= 75) return '#0284c7';  // Blue
-          if (pct >= 25) return '#eab308';  // Yellow
-          if (pct > 0) return '#f97316';    // Orange
-          return '#ef4444';                 // Red
+          if (pct >= 100) return '#10b981'; // Green (100% Target Selesai)
+          if (pct >= 75) return '#0284c7';  // Blue (75% - 99% Sangat Baik)
+          if (pct >= 50) return '#06b6d4';  // Cyan (50% - 74% Baik)
+          if (pct >= 25) return '#eab308';  // Yellow (25% - 49% Sedang)
+          if (pct > 0) return '#f97316';    // Orange (1% - 24% Awal Progres)
+          return '#ef4444';                 // Red (0% Belum Ada Progres)
         }
 
         // Single-hue primary color gradient function for SLS
@@ -1269,13 +1276,14 @@
           return '#cbd5e1';                 // Muted Gray (0% Belum Ada Isian)
         }
 
-        // Color coding function for Kecamatan
+        // Color coding function for Kecamatan (6 categories)
         function getKecColor(nmkec) {
           const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === nmkec.toUpperCase());
           if (!stat) return '#94a3b8';
           const pct = parseFloat(stat.fasih_pct_str || 0);
           if (pct >= 100) return '#10b981'; // Green
           if (pct >= 75) return '#0284c7';  // Blue
+          if (pct >= 50) return '#06b6d4';  // Cyan
           if (pct >= 25) return '#eab308';  // Yellow
           if (pct > 0) return '#f97316';    // Orange
           return '#ef4444';                 // Red
@@ -1377,22 +1385,30 @@
         // Top Statistics Calculator
         function updateTopStats(statsList) {
           if (!statsList || !statsList.length) return;
-          const totalDesa = statsList.length;
-          const totalSls = statsList.reduce((sum, d) => sum + (d.total_subsls || 0), 0);
-          const selesaiSls = statsList.reduce((sum, d) => sum + (d.selesai || 0), 0);
-          const pctSelesai = totalSls ? ((selesaiSls / totalSls) * 100).toFixed(1) : '0.0';
+          let totalDesa = statsList.length;
+          let count100 = 0;
+          let countHigh = 0;
+          let countLow = 0;
 
-          const totalTargetFasih = statsList.reduce((sum, d) => sum + (d.target_fasih_total || 0), 0);
-          const totalRealisasiFasih = statsList.reduce((sum, d) => sum + ((d.submitted_total || 0) + (d.approved_total || 0) + (d.rejected_total || 0)), 0);
-          const pctFasih = totalTargetFasih ? ((totalRealisasiFasih / totalTargetFasih) * 100).toFixed(1) : '0.0';
+          statsList.forEach(s => {
+            const totalFasih = s.target_fasih_total || 0;
+            const realisasi = (s.submitted_total || 0) + (s.approved_total || 0) + (s.rejected_total || 0);
+            const pct = totalFasih ? (realisasi / totalFasih) * 100 : 0;
 
-          const statSls = document.getElementById('statSlsSelesai');
-          const statFasih = document.getElementById('statProgresFasih');
-          const statWilayah = document.getElementById('statTotalWilayah');
+            if (pct >= 100) count100++;
+            else if (pct >= 25) countHigh++;
+            else countLow++;
+          });
 
-          if (statSls) statSls.textContent = `${selesaiSls.toLocaleString('id-ID')} / ${totalSls.toLocaleString('id-ID')} SLS (${pctSelesai}%)`;
-          if (statFasih) statFasih.textContent = `${pctFasih}%`;
-          if (statWilayah) statWilayah.textContent = `4 Kec / ${totalDesa} Desa`;
+          const statTotal = document.getElementById('statTotalDesa');
+          const stat100 = document.getElementById('statDesa100');
+          const statHigh = document.getElementById('statDesaHigh');
+          const statLow = document.getElementById('statDesaLow');
+
+          if (statTotal) statTotal.textContent = `${totalDesa} Desa`;
+          if (stat100) stat100.textContent = `${count100} Desa`;
+          if (statHigh) statHigh.textContent = `${countHigh} Desa`;
+          if (statLow) statLow.textContent = `${countLow} Desa`;
         }
 
         // Fit map bounds to filtered subdistrict
@@ -1423,8 +1439,6 @@
         }
 
         function showKecDetails(nmkec) {
-          if (window.ensureGmapsDrawerOpen) window.ensureGmapsDrawerOpen();
-          if (window.switchGmapsTab) window.switchGmapsTab('stats');
           const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === nmkec.toUpperCase());
           if (!stat) return;
 
@@ -1546,8 +1560,6 @@
         // Show details in Sidebar + Integrated Drilldown Links
         function showDesaDetails(properties) {
           if (!properties) return;
-          if (window.ensureGmapsDrawerOpen) window.ensureGmapsDrawerOpen();
-          if (window.switchGmapsTab) window.switchGmapsTab('stats');
           const stat = desaStats.find(s => s.iddesa === properties.iddesa);
           const total = stat ? stat.total_subsls : 0;
           const selesai = stat ? stat.selesai : 0;
@@ -1746,13 +1758,13 @@
 
         function showSlsDetails(properties) {
           if (!properties) return;
-          if (window.ensureGmapsDrawerOpen) window.ensureGmapsDrawerOpen();
-          if (window.switchGmapsTab) window.switchGmapsTab('stats');
           const stat = slsStats.find(s => s.kode === properties.kode);
           const isSelesai = stat ? stat.selesai === 1 : false;
-          const muatan = stat ? stat.muatan : (properties.muatan || 0);
-          const usaha = stat ? stat.usaha_total : 0;
-          const keluarga = stat ? stat.keluarga_total : 0;
+          const totalMuatan = stat ? (stat.total_muatan !== undefined ? stat.total_muatan : (stat.muatan || properties.muatan || 0)) : (properties.muatan || 0);
+          const muatanSelesai = stat ? (stat.muatan_selesai !== undefined ? stat.muatan_selesai : ((stat.usaha_total || 0) + (stat.keluarga_total || 0))) : 0;
+          const muatanPct = stat ? (stat.muatan_pct_str || '0.00') : (totalMuatan ? ((muatanSelesai / totalMuatan) * 100).toFixed(2) : '0.00');
+          const usaha = stat ? (stat.usaha_total || 0) : 0;
+          const keluarga = stat ? (stat.keluarga_total || 0) : 0;
           const pcl = stat ? stat.pcl : 'Belum Ditentukan';
           const pml = stat ? stat.pml : 'Belum Ditentukan';
           const korlap = stat ? stat.korlap : 'Belum Ditentukan';
@@ -1814,8 +1826,12 @@
                 <span class="map-card-stat-value" title="${korlap}">${korlap}</span>
               </div>
               <div class="map-card-stat-item muatan-col">
+                <span class="map-card-stat-label"><i class="bi bi-pie-chart" style="color: var(--accent-yellow);"></i> Progres Muatan</span>
+                <span class="map-card-stat-value">${muatanPct}%</span>
+              </div>
+              <div class="map-card-stat-item muatan-col">
                 <span class="map-card-stat-label"><i class="bi bi-target" style="color: var(--accent-red);"></i> Target Muatan</span>
-                <span class="map-card-stat-value">${muatan}</span>
+                <span class="map-card-stat-value">${totalMuatan.toLocaleString('id-ID')}</span>
               </div>
               <div class="map-card-stat-item muatan-col">
                 <span class="map-card-stat-label"><i class="bi bi-shop" style="color: var(--accent-cyan);"></i> Usaha Terdata</span>
@@ -1853,7 +1869,7 @@
               const fasihPct = stat ? parseFloat(stat.fasih_pct_str || 0) : 0;
               const totalFasih = stat ? stat.target_fasih_total : 0;
               const realisasiFasih = stat ? ((stat.submitted_total || 0) + (stat.approved_total || 0) + (stat.rejected_total || 0)) : 0;
-              const fasihColorClass = fasihPct >= 100 ? 'status-green' : (fasihPct >= 75 ? 'status-blue' : (fasihPct >= 25 ? 'status-yellow' : (fasihPct > 0 ? 'status-orange' : 'status-red')));
+              const fasihColorClass = fasihPct >= 100 ? 'status-green' : (fasihPct >= 75 ? 'status-blue' : (fasihPct >= 50 ? 'status-cyan' : (fasihPct >= 25 ? 'status-yellow' : (fasihPct > 0 ? 'status-orange' : 'status-red'))));
 
               // Bind Permanent On-Map Badge
               const labelHtml = `
@@ -1911,10 +1927,9 @@
               const rejected = stat ? stat.rejected_total : 0;
               const totalRealisasiFasih = submitted + approved + rejected;
               const fasihPct = targetFasih ? Math.min(parseFloat(((totalRealisasiFasih / targetFasih) * 100).toFixed(1)), 100) : 0;
-              const totalMuatan = stat ? stat.total_muatan : 0;
-              const usaha = stat ? stat.usaha_total : 0;
-              const pct = totalMuatan ? ((usaha / totalMuatan) * 100).toFixed(1) : '0.0';
-              const fasihColorClass = fasihPct >= 100 ? 'status-green' : (fasihPct >= 75 ? 'status-blue' : (fasihPct >= 25 ? 'status-yellow' : (fasihPct > 0 ? 'status-orange' : 'status-red')));
+              const totalMuatan = stat ? (stat.total_muatan !== undefined ? stat.total_muatan : 0) : 0;
+              const muatanPct = stat ? (stat.muatan_pct_str || '0.00') : '0.00';
+              const fasihColorClass = fasihPct >= 100 ? 'status-green' : (fasihPct >= 75 ? 'status-blue' : (fasihPct >= 50 ? 'status-cyan' : (fasihPct >= 25 ? 'status-yellow' : (fasihPct > 0 ? 'status-orange' : 'status-red'))));
 
               // Bind Permanent On-Map Badge
               const labelHtml = `
@@ -1942,7 +1957,7 @@
                       <table class="info-table">
                         <tr><td class="label">SLS Selesai</td><td class="value">${selesai} / ${total} SLS</td></tr>
                         <tr><td class="label">Progres FASIH</td><td class="value" style="color: ${fasihPct >= 100 ? 'var(--accent-green)' : 'var(--accent-blue)'};">${fasihPct}%</td></tr>
-                        <tr class="muatan-col"><td class="label">Progres Muatan</td><td class="value">${pct}%</td></tr>
+                        <tr class="muatan-col"><td class="label">Progres Muatan</td><td class="value">${muatanPct}%</td></tr>
                       </table>
                       <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
                         <a href="<%= navPrefix %>/subsls?kec=${encodeURIComponent(feature.properties.nmkec)}&desa=${encodeURIComponent(feature.properties.nmdesa)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
@@ -2001,7 +2016,8 @@
                       <table class="info-table">
                         <tr><td class="label">PCL</td><td class="value">${stat ? stat.pcl : '-'}</td></tr>
                         <tr><td class="label">Status Target</td><td class="value" style="color: ${status === 'Selesai' ? 'var(--accent-green)' : 'var(--accent-red)'}">${status}</td></tr>
-                        <tr class="muatan-col"><td class="label">Usaha Terdata</td><td class="value">${stat ? stat.usaha_total : 0}</td></tr>
+                        <tr class="muatan-col"><td class="label">Progres Muatan</td><td class="value">${stat ? (stat.muatan_pct_str || '0.00') : '0.00'}%</td></tr>
+                        <tr class="muatan-col"><td class="label">Usaha / Keluarga</td><td class="value">${stat ? (stat.usaha_total || 0).toLocaleString('id-ID') : 0} / ${stat ? (stat.keluarga_total || 0).toLocaleString('id-ID') : 0}</td></tr>
                       </table>
                       <div style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 6px;">
                         <a href="<%= navPrefix %>/subsls?search=${encodeURIComponent(feature.properties.kode)}" class="btn btn-primary btn-xs" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 4px; padding: 4px 8px; font-size: 10px; text-decoration: none;">
@@ -2250,34 +2266,19 @@
           fitBoundsToKecamatan(currentFilteredKec);
         });
 
-        const btnClearSearch = document.getElementById('btnClearSearch');
-
         // Reset View Button
         btnResetView.addEventListener('click', () => {
           kecFilter.value = '';
           currentFilteredKec = '';
           if (mapSearchInput) mapSearchInput.value = '';
-          if (btnClearSearch) btnClearSearch.style.display = 'none';
           map.setView(centerCoords, defaultZoom);
           updateActiveLayerStyles();
         });
-
-        if (btnClearSearch && mapSearchInput) {
-          btnClearSearch.addEventListener('click', () => {
-            mapSearchInput.value = '';
-            btnClearSearch.style.display = 'none';
-            mapSearchInput.focus();
-            updateActiveLayerStyles();
-          });
-        }
 
         // Search Input Listener with auto-focus/highlight
         if (mapSearchInput) {
           mapSearchInput.addEventListener('input', (e) => {
             const q = e.target.value.toLowerCase().trim();
-            if (btnClearSearch) {
-              btnClearSearch.style.display = q ? 'flex' : 'none';
-            }
             if (!q) {
               updateActiveLayerStyles();
               return;
