@@ -188,52 +188,28 @@
 <%# SIDEBAR OVERLAY %>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<%# MODERNIZED NATIVE SIDE-DRAWER %>
+<%# SIDEBAR %>
 <aside class="sidebar" id="sidebar" aria-label="Sidebar Menu">
-  <!-- Drawer Header -->
-  <div class="sidebar-header-drawer">
-    <div class="drawer-brand-row">
-      <div class="drawer-brand-info">
-        <% if (activeSurvey === 'se2026') { %>
-          <img src="/logo-vertical.png" alt="Logo SE2026" class="logo-light drawer-logo-img" width="110" height="70" loading="eager">
-          <img src="/logo-vertical-dark.png" alt="Logo SE2026" class="logo-dark drawer-logo-img" width="110" height="70" fetchpriority="high" loading="eager">
-        <% } else { %>
-          <div class="drawer-custom-brand">
-            <img src="<%= surveyLogoSrc %>" alt="Logo <%= surveyConfig.shortName %>" width="36" height="36" class="drawer-custom-logo">
-            <div>
-              <div class="drawer-title-main"><%= surveyConfig.shortName %></div>
-              <div class="drawer-title-sub">BPS PPU</div>
-            </div>
-          </div>
-        <% } %>
-      </div>
-      <button class="btn-close-sidebar" id="sidebarClose" aria-label="Tutup Sidebar" title="Tutup Menu">
-        <i class="bi bi-x-lg"></i>
-      </button>
-    </div>
+  <button class="btn-close-sidebar" id="sidebarClose" aria-label="Tutup Sidebar" title="Tutup Menu"><i class="bi bi-x-lg"></i></button>
 
-    <!-- Quick Action Pills inside Drawer -->
-    <div class="drawer-quick-strip">
-      <button type="button" class="drawer-quick-pill" onclick="toggleTheme(event)" title="Ganti Tema">
-        <i class="bi bi-moon-stars-fill theme-icon"></i>
-        <span>Tema</span>
-      </button>
-      <button type="button" class="drawer-quick-pill" onclick="closeSidebarDrawer(); window.toggleGlobalSearchModal(true);" title="Cari Data Global">
-        <i class="bi bi-search"></i>
-        <span>Cari Data</span>
-      </button>
-      <% if ((typeof user !== 'undefined' && user) || (typeof isAdmin !== 'undefined' && isAdmin)) { %>
-      <a href="/logout" class="drawer-quick-pill text-red" title="Logout Sesi">
-        <i class="bi bi-box-arrow-right"></i>
-        <span>Logout</span>
-      </a>
-      <% } else { %>
-      <a href="/login" class="drawer-quick-pill text-blue" title="Login Petugas/Admin">
-        <i class="bi bi-box-arrow-in-right"></i>
-        <span>Login</span>
-      </a>
-      <% } %>
-    </div>
+  <div class="sidebar-logo" style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px 16px; border-bottom: 1px solid var(--border); position: relative;">
+    <% if (activeSurvey === 'se2026') { %>
+      <img src="/logo-vertical.png" alt="Logo SE2026" class="logo-light" width="140" height="90" loading="eager" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
+      <img src="/logo-vertical-dark.png" alt="Logo SE2026" class="logo-dark" width="140" height="90" fetchpriority="high" loading="eager" style="width: auto; max-width: 140px; max-height: 90px; object-fit: contain; margin-bottom: 8px;">
+    <% } else { %>
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 0; margin-bottom: 8px; width: 100%; text-align: center;">
+        <img src="<%= surveyLogoSrc %>" alt="Logo <%= surveyConfig.shortName %>" width="56" height="56" style="width: 56px; height: 56px; object-fit: contain; margin-bottom: 8px; filter: drop-shadow(0 4px 12px rgba(var(--accent-rgb), 0.25));">
+        <div style="font-size: 13.5px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.2px; line-height: 1.2;"><%= surveyConfig.shortName %></div>
+        <div style="font-size: 10.5px; font-weight: 600; color: var(--accent-primary); margin-top: 2px;">BPS PPU</div>
+      </div>
+    <% } %>
+    <% if (typeof surveyConfig !== 'undefined' && surveyConfig.id !== 'se2026') { %>
+      <span style="font-size: 10.5px; color: var(--accent-primary); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 4px; background: rgba(var(--accent-rgb), 0.12); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(var(--accent-rgb), 0.25);">
+        <i class="bi bi-clipboard-check-fill"></i> <%= surveyConfig.name %>
+      </span>
+    <% } else { %>
+      <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 4px;">Penajam Paser Utara</p>
+    <% } %>
   </div>
 
   <div class="sidebar-upload-info" style="margin: 10px 14px; padding: 9px 12px; background: rgba(var(--accent-rgb), 0.04); border: 1px solid var(--border); border-radius: 10px; font-size: 11px; display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && ((!hideMuatanGlobal && latestUploadsDetailed.muatan) || latestUploadsDetailed.fasih)) ? 'flex' : 'none' %>; flex-direction: column; gap: 6px;">
