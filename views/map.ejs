@@ -372,6 +372,73 @@
     box-shadow: 0 3px 12px rgba(37, 99, 235, 0.45), inset 0 1px 1.5px rgba(255, 255, 255, 0.55), inset 0 -1px 1px rgba(0, 0, 0, 0.25) !important;
   }
 
+  /* Independent On/Off Toggle Buttons (Saklar Mandiri) */
+  .gmaps-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(15, 23, 42, 0.40) 100%);
+    backdrop-filter: blur(20px) saturate(190%);
+    -webkit-backdrop-filter: blur(20px) saturate(190%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+    box-shadow: inset 0 1px 1.5px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  body.light-mode .gmaps-toggle-btn {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(241, 245, 249, 0.65) 100%);
+    border: 1px solid rgba(203, 213, 225, 0.85);
+    box-shadow: inset 0 1px 1.5px rgba(0, 0, 0, 0.04), 0 2px 5px rgba(0, 0, 0, 0.04);
+  }
+
+  .gmaps-toggle-btn:hover {
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.35);
+    transform: translateY(-0.5px);
+  }
+
+  body.light-mode .gmaps-toggle-btn:hover {
+    border-color: rgba(148, 163, 184, 0.8);
+  }
+
+  .gmaps-toggle-btn.active {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.22) 0%, rgba(14, 165, 233, 0.38) 100%) !important;
+    border-color: var(--accent-cyan) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    box-shadow: 0 0 14px rgba(6, 182, 212, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.60) !important;
+  }
+
+  body.light-mode .gmaps-toggle-btn.active {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.18) 0%, rgba(2, 132, 199, 0.28) 100%) !important;
+    border-color: #0284c7 !important;
+    color: #0369a1 !important;
+    box-shadow: 0 0 12px rgba(2, 132, 199, 0.25), inset 0 1px 1.5px rgba(255, 255, 255, 0.90) !important;
+  }
+
+  .gmaps-toggle-btn .toggle-indicator {
+    font-size: 14px;
+    color: var(--text-muted);
+    transition: all 0.25s ease;
+  }
+
+  .gmaps-toggle-btn.active .toggle-indicator {
+    color: var(--accent-cyan);
+    transform: scale(1.18);
+  }
+
+  body.light-mode .gmaps-toggle-btn.active .toggle-indicator {
+    color: #0284c7;
+  }
+
   /* Ultra-Lightweight Minimalist Polygon Progress Badges */
   .leaflet-tooltip.map-polygon-label-tooltip {
     background: transparent !important;
@@ -1275,12 +1342,20 @@
           </div>
         </div>
 
-        <!-- Row 4: Opsi Tampilan Peta -->
+        <!-- Row 4: Saklar Fitur Peta (On/Off Toggle Switch) -->
         <div class="gmaps-control-row">
-          <div class="gmaps-pill-group" style="width: 100%;">
-            <button id="btnOutlineOnly" class="gmaps-pill-btn" title="Garis Batas Saja (Tanpa Warna Isi)" type="button" style="flex: 1;"><i class="bi bi-bounding-box-circles"></i> Batas Saja</button>
-            <button id="btnToggleLabels" class="gmaps-pill-btn" title="Tampilkan/Sembunyikan Label Progres" aria-pressed="false" type="button" style="flex: 1;"><i class="bi bi-percent"></i> Label Progres</button>
-          </div>
+          <button id="btnOutlineOnly" class="gmaps-toggle-btn" title="Aktifkan/Matikan Garis Batas Saja (Tanpa Warna Isi)" type="button" aria-pressed="false" style="flex: 1;">
+            <span style="display: inline-flex; align-items: center; gap: 5px;">
+              <i class="bi bi-bounding-box-circles"></i> Batas Saja
+            </span>
+            <i class="bi bi-toggle-off toggle-indicator" id="iconOutlineToggle"></i>
+          </button>
+          <button id="btnToggleLabels" class="gmaps-toggle-btn" title="Aktifkan/Matikan Label Progres Pada Peta" type="button" aria-pressed="false" style="flex: 1;">
+            <span style="display: inline-flex; align-items: center; gap: 5px;">
+              <i class="bi bi-percent"></i> Label Progres
+            </span>
+            <i class="bi bi-toggle-off toggle-indicator" id="iconLabelsToggle"></i>
+          </button>
         </div>
 
         <!-- Row 5: KPI Status Filters Integrated Capsule -->
@@ -3003,17 +3078,41 @@
         if (btnLayerDesa) btnLayerDesa.addEventListener('click', switchToDesaLayer);
         if (btnLayerSls) btnLayerSls.addEventListener('click', switchToSlsLayer);
 
+        const iconOutlineToggle = document.getElementById('iconOutlineToggle');
+        const iconLabelsToggle = document.getElementById('iconLabelsToggle');
+
+        function updateOutlineToggleUi(isActive) {
+          if (!btnOutlineOnly) return;
+          if (isActive) {
+            btnOutlineOnly.classList.add('active');
+            btnOutlineOnly.setAttribute('aria-pressed', 'true');
+            if (iconOutlineToggle) iconOutlineToggle.className = 'bi bi-toggle-on toggle-indicator';
+          } else {
+            btnOutlineOnly.classList.remove('active');
+            btnOutlineOnly.setAttribute('aria-pressed', 'false');
+            if (iconOutlineToggle) iconOutlineToggle.className = 'bi bi-toggle-off toggle-indicator';
+          }
+        }
+
+        function updateLabelsToggleUi(isActive) {
+          if (!btnToggleLabels) return;
+          if (isActive) {
+            btnToggleLabels.classList.add('active');
+            btnToggleLabels.setAttribute('aria-pressed', 'true');
+            if (iconLabelsToggle) iconLabelsToggle.className = 'bi bi-toggle-on toggle-indicator';
+            document.querySelectorAll('.map-label-badge').forEach(el => el.classList.remove('d-none'));
+          } else {
+            btnToggleLabels.classList.remove('active');
+            btnToggleLabels.setAttribute('aria-pressed', 'false');
+            if (iconLabelsToggle) iconLabelsToggle.className = 'bi bi-toggle-off toggle-indicator';
+            document.querySelectorAll('.map-label-badge').forEach(el => el.classList.add('d-none'));
+          }
+        }
+
         if (btnOutlineOnly) {
           btnOutlineOnly.addEventListener('click', () => {
             isOutlineOnlyMode = !isOutlineOnlyMode;
-            if (isOutlineOnlyMode) {
-              btnOutlineOnly.classList.add('active');
-              btnOutlineOnly.setAttribute('aria-pressed', 'true');
-            } else {
-              btnOutlineOnly.classList.remove('active');
-              btnOutlineOnly.setAttribute('aria-pressed', 'false');
-            }
-
+            updateOutlineToggleUi(isOutlineOnlyMode);
             updateActiveLayerStyles();
           });
         }
@@ -3021,15 +3120,7 @@
         if (btnToggleLabels) {
           btnToggleLabels.addEventListener('click', () => {
             showProgressLabels = !showProgressLabels;
-            if (showProgressLabels) {
-              btnToggleLabels.classList.add('active');
-              btnToggleLabels.setAttribute('aria-pressed', 'true');
-              document.querySelectorAll('.map-label-badge').forEach(el => el.classList.remove('d-none'));
-            } else {
-              btnToggleLabels.classList.remove('active');
-              btnToggleLabels.setAttribute('aria-pressed', 'false');
-              document.querySelectorAll('.map-label-badge').forEach(el => el.classList.add('d-none'));
-            }
+            updateLabelsToggleUi(showProgressLabels);
           });
         }
 
@@ -3283,10 +3374,7 @@
               // Otomatis beralih ke mode "Batas Saja" (Outline Only) agar posisi GPS di peta terlihat jelas tanpa terhalang warna fill
               if (!isOutlineOnlyMode) {
                 isOutlineOnlyMode = true;
-                if (btnOutlineOnly) {
-                  btnOutlineOnly.classList.add('active');
-                  btnOutlineOnly.setAttribute('aria-pressed', 'true');
-                }
+                updateOutlineToggleUi(true);
                 updateActiveLayerStyles();
               }
 
