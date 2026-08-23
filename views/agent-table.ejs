@@ -288,57 +288,41 @@
     }
   </style>
 
-  <!-- ── TOP BAR & ACTIONS ── -->
-  <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;">
-    <div style="display: flex; align-items: center; gap: 12px;">
-      <a href="<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent" class="at-btn at-btn-outline" style="border-radius: 20px;">
-        <i class="bi bi-arrow-left"></i> Kembali ke AI Chat
-      </a>
-      <div>
-        <h2 style="font-size: 19px; font-weight: 800; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
-          <i class="bi bi-table" style="color: var(--accent-blue, #2563eb);"></i> Eksplorasi Data Tabel AI
-        </h2>
-        <div style="font-size: 12px; color: var(--text-muted);">Tabel lengkap hasil eksekusi kueri asisten AI Pananyo Taka</div>
+  <!-- ── UNIFIED COMPACT HEADER BANNER ── -->
+  <div class="at-header-banner" style="padding: 14px 18px; margin-bottom: 16px;">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px;">
+      <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 260px;">
+        <a href="<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent" class="at-btn at-btn-outline" style="border-radius: 20px; padding: 5px 12px; font-size: 12px;" title="Kembali ke AI Chat">
+          <i class="bi bi-arrow-left"></i> Kembali ke AI Chat
+        </a>
+        <h1 style="font-size: 15.5px; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.35;">
+          &ldquo;<%= query.prompt || 'Eksplorasi Data Tabel AI' %>&rdquo;
+        </h1>
+      </div>
+
+      <div class="at-actions-group">
+        <a href="<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent/export-query/<%= queryId %>?format=xlsx" class="at-btn at-btn-success" style="padding: 6px 12px; font-size: 12px;" title="Download Excel (.xlsx)">
+          <i class="bi bi-file-earmark-excel-fill"></i> Export Excel
+        </a>
+        <a href="<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent/export-query/<%= queryId %>?format=csv" class="at-btn at-btn-outline" style="padding: 6px 12px; font-size: 12px;" title="Download CSV">
+          <i class="bi bi-filetype-csv"></i> Export CSV
+        </a>
+        <button type="button" class="at-btn at-btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="document.getElementById('sqlModal').classList.remove('hidden')">
+          <i class="bi bi-code-slash"></i> SQL Query
+        </button>
       </div>
     </div>
 
-    <div class="at-actions-group">
-      <a href="<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent/export-query/<%= queryId %>?format=xlsx" class="at-btn at-btn-success" title="Download Excel (.xlsx)">
-        <i class="bi bi-file-earmark-excel-fill"></i> Export Excel
-      </a>
-      <a href="<%= typeof navPrefix !== 'undefined' ? navPrefix : '' %>/agent/export-query/<%= queryId %>?format=csv" class="at-btn at-btn-outline" title="Download CSV">
-        <i class="bi bi-filetype-csv"></i> Export CSV
-      </a>
-      <button type="button" class="at-btn at-btn-outline" onclick="document.getElementById('sqlModal').classList.remove('hidden')">
-        <i class="bi bi-code-slash"></i> SQL Query
-      </button>
-    </div>
-  </div>
-
-  <!-- ── QUERY INFO BANNER ── -->
-  <div class="at-header-banner">
-    <div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px;">
-      <div style="flex: 1; min-width: 280px;">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-          <span class="at-badge at-badge-blue"><i class="bi bi-chat-left-quote-fill"></i> Prompt Pertanyaan AI</span>
-          <span class="at-badge at-badge-purple"><%= query.tool_name || 'Kueri Data' %></span>
-          <% if (query.created_at) { %>
-            <span style="font-size: 11.5px; color: var(--text-muted);"><i class="bi bi-clock"></i> <%= new Date(query.created_at).toLocaleString('id-ID') %></span>
-          <% } %>
-        </div>
-        <div style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; line-height: 1.4;">
-          &ldquo;<%= query.prompt || 'Eksplorasi Data' %>&rdquo;
-        </div>
-        <div style="font-size: 12px; color: var(--text-muted); display: flex; flex-wrap: wrap; align-items: center; gap: 16px;">
-          <span><strong>Total Data:</strong> <span class="at-badge at-badge-green" id="totalRowsBadge" style="font-size: 12px;"><%= rows.length %> baris</span></span>
-          <% if (typeof latestUpload !== 'undefined' && latestUpload) { %>
-            <span><strong>Data Update:</strong> <%= latestUpload.tanggal %> (Upload ID: <%= latestUpload.id %>)</span>
-          <% } %>
-          <button type="button" style="background: none; border: none; padding: 0; color: var(--accent-blue, #2563eb); font-size: 12px; cursor: pointer; text-decoration: underline;" onclick="document.getElementById('sqlModal').classList.remove('hidden')">
-            <i class="bi bi-code-slash"></i> Lihat SQL Query
-          </button>
-        </div>
-      </div>
+    <!-- Sub-baris Metadata Ringkas -->
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 9px;">
+      <span class="at-badge at-badge-purple" style="font-size: 11px;"><i class="bi bi-robot"></i> <%= query.tool_name || 'query_data' %></span>
+      <span><strong>Total:</strong> <span class="at-badge at-badge-green" id="totalRowsBadge" style="font-size: 11px;"><%= rows.length %> baris</span></span>
+      <% if (typeof latestUpload !== 'undefined' && latestUpload) { %>
+        <span><strong>Data Update:</strong> <%= latestUpload.tanggal %> (Upload ID: <%= latestUpload.id %>)</span>
+      <% } %>
+      <% if (query.created_at) { %>
+        <span><i class="bi bi-clock"></i> <%= new Date(query.created_at).toLocaleString('id-ID') %></span>
+      <% } %>
     </div>
   </div>
 
