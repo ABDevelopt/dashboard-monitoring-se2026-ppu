@@ -85,12 +85,58 @@
     -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(105%);
     border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 20px;
-    padding: 11px 13px;
+    padding: 8px 13px 12px 13px;
     box-shadow: 0 14px 40px 0 rgba(0, 0, 0, 0.42), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.38), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
     gap: 8px;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .gmaps-floating-search-panel.is-dragging {
+    user-select: none !important;
+    cursor: grabbing !important;
+    transform: scale(1.02) !important;
+    box-shadow: 0 24px 56px rgba(0, 0, 0, 0.60), inset 0 1px 1.5px rgba(255, 255, 255, 0.5) !important;
+    transition: none !important;
+    opacity: 0.96;
+    z-index: 1050;
+  }
+
+  .gmaps-panel-drag-header {
+    width: 100%;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    margin-top: -2px;
+    margin-bottom: 2px;
+  }
+
+  .gmaps-panel-drag-header:active {
+    cursor: grabbing;
+  }
+
+  .drag-pill-indicator {
+    width: 38px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.35);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+  }
+
+  .gmaps-panel-drag-header:hover .drag-pill-indicator {
+    background: var(--accent-cyan);
+    width: 48px;
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+  }
+
+  body.light-mode .drag-pill-indicator {
+    background: rgba(0, 0, 0, 0.22);
   }
 
   body.light-mode .gmaps-floating-search-panel {
@@ -1051,8 +1097,11 @@
       <span id="gpsToastText">Mengunci titik koordinat GPS presisi tinggi...</span>
     </div>
 
-    <!-- 2. FLOATING TOP SEARCH & FILTER BAR (GOOGLE MAPS STYLE SEARCH PILL) -->
-    <div class="gmaps-floating-search-panel">
+    <!-- 2. FLOATING TOP SEARCH & FILTER BAR (DRAGGABLE TOOLS PANEL) -->
+    <div class="gmaps-floating-search-panel" id="gmapsToolsPanel">
+      <div class="gmaps-panel-drag-header" id="toolsPanelDragHandle" title="Klik dan geser untuk memindahkan posisi menu">
+        <div class="drag-pill-indicator"></div>
+      </div>
       <div class="gmaps-search-box">
         <i class="bi bi-search search-icon"></i>
         <input type="text" id="mapSearchInput" placeholder="Cari nama desa atau SLS..." />
@@ -3025,6 +3074,106 @@
             }, 120);
           });
         }
+
+        // Draggable Floating Tools Panel Setup
+        function setupDraggableToolsPanel() {
+          const panel = document.getElementById('gmapsToolsPanel');
+          const handle = document.getElementById('toolsPanelDragHandle') || panel;
+          const container = document.getElementById('gmapsWrapper') || document.body;
+          if (!panel || !handle) return;
+
+          // Prevent map dragging & zooming when interacting with the panel
+          if (typeof L !== 'undefined' && L.DomEvent) {
+            L.DomEvent.disableClickPropagation(panel);
+            L.DomEvent.disableScrollPropagation(panel);
+          }
+
+          let isDragging = false;
+          let startX = 0, startY = 0;
+          let initialLeft = 0, initialTop = 0;
+
+          function startDrag(e) {
+            // Ignore if clicking interactive form controls
+            if (['INPUT', 'BUTTON', 'SELECT', 'I', 'A', 'OPTION'].includes(e.target.tagName)) {
+              return;
+            }
+
+            isDragging = true;
+            panel.classList.add('is-dragging');
+
+            const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+
+            startX = clientX;
+            startY = clientY;
+
+            const rect = panel.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+
+            initialLeft = rect.left - containerRect.left;
+            initialTop = rect.top - containerRect.top;
+
+            // Set fixed left/top in pixel
+            panel.style.left = initialLeft + 'px';
+            panel.style.top = initialTop + 'px';
+            panel.style.right = 'auto';
+            panel.style.bottom = 'auto';
+
+            if (e.type.startsWith('touch')) {
+              window.addEventListener('touchmove', moveDrag, { passive: false });
+              window.addEventListener('touchend', endDrag);
+            } else {
+              window.addEventListener('mousemove', moveDrag);
+              window.addEventListener('mouseup', endDrag);
+            }
+          }
+
+          function moveDrag(e) {
+            if (!isDragging) return;
+            if (e.cancelable) e.preventDefault();
+
+            const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+
+            const dx = clientX - startX;
+            const dy = clientY - startY;
+
+            const containerRect = container.getBoundingClientRect();
+            const panelWidth = panel.offsetWidth;
+            const panelHeight = panel.offsetHeight;
+
+            let newLeft = initialLeft + dx;
+            let newTop = initialTop + dy;
+
+            // Constrain inside map bounds with 10px margin
+            const minLeft = 10;
+            const maxLeft = containerRect.width - panelWidth - 10;
+            const minTop = 10;
+            const maxTop = containerRect.height - panelHeight - 10;
+
+            newLeft = Math.max(minLeft, Math.min(maxLeft, newLeft));
+            newTop = Math.max(minTop, Math.min(maxTop, newTop));
+
+            panel.style.left = newLeft + 'px';
+            panel.style.top = newTop + 'px';
+          }
+
+          function endDrag() {
+            if (!isDragging) return;
+            isDragging = false;
+            panel.classList.remove('is-dragging');
+
+            window.removeEventListener('mousemove', moveDrag);
+            window.removeEventListener('mouseup', endDrag);
+            window.removeEventListener('touchmove', moveDrag);
+            window.removeEventListener('touchend', endDrag);
+          }
+
+          handle.addEventListener('mousedown', startDrag);
+          handle.addEventListener('touchstart', startDrag, { passive: true });
+        }
+
+        setupDraggableToolsPanel();
 
         // Initialize map & load data!
         bootstrap();
