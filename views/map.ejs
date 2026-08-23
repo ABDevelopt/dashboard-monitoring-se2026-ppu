@@ -277,6 +277,100 @@
     font-weight: 600;
   }
 
+  /* Polygon On-Map Progress Labels & Badges */
+  .leaflet-tooltip.map-polygon-label-tooltip {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    cursor: default;
+  }
+  .leaflet-tooltip.map-polygon-label-tooltip::before,
+  .leaflet-tooltip.map-polygon-label-tooltip::after {
+    display: none !important;
+  }
+
+  .map-label-badge {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.38);
+    color: #ffffff;
+    text-align: center;
+    line-height: 1.2;
+    pointer-events: none;
+    user-select: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  body.light-mode .map-label-badge {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(0, 0, 0, 0.16);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+    color: #0f172a;
+  }
+
+  .map-label-badge.kec-label-badge {
+    padding: 5px 12px;
+    border-radius: 10px;
+  }
+  .map-label-badge.kec-label-badge .map-label-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin-bottom: 2px;
+    color: #e2e8f0;
+  }
+  body.light-mode .map-label-badge.kec-label-badge .map-label-title {
+    color: #1e293b;
+  }
+  .map-label-badge.kec-label-badge .map-label-pct {
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .map-label-badge.desa-label-badge {
+    padding: 3px 7px;
+    border-radius: 6px;
+  }
+  .map-label-badge.desa-label-badge .map-label-title {
+    font-size: 9.5px;
+    font-weight: 600;
+    margin-bottom: 1px;
+    max-width: 110px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #e2e8f0;
+  }
+  body.light-mode .map-label-badge.desa-label-badge .map-label-title {
+    color: #334155;
+  }
+  .map-label-badge.desa-label-badge .map-label-pct {
+    font-size: 10.5px;
+    font-weight: 700;
+  }
+
+  .map-label-pct.status-green { color: #34d399 !important; }
+  .map-label-pct.status-blue { color: #38bdf8 !important; }
+  .map-label-pct.status-yellow { color: #facc15 !important; }
+  .map-label-pct.status-orange { color: #fb923c !important; }
+  .map-label-pct.status-red { color: #f87171 !important; }
+
+  body.light-mode .map-label-pct.status-green { color: #059669 !important; }
+  body.light-mode .map-label-pct.status-blue { color: #0284c7 !important; }
+  body.light-mode .map-label-pct.status-yellow { color: #d97706 !important; }
+  body.light-mode .map-label-pct.status-orange { color: #ea580c !important; }
+  body.light-mode .map-label-pct.status-red { color: #dc2626 !important; }
+
   /* Floating KPI Bar (Top Right) */
   .gmaps-floating-kpi-bar {
     position: absolute;
@@ -734,6 +828,7 @@
 
           <div class="gmaps-pill-group">
             <button id="btnOutlineOnly" class="gmaps-pill-btn" title="Tampilkan Garis Batas Wilayah Saja (Tanpa Warna Isi)"><i class="bi bi-bounding-box-circles"></i> Garis Batas Saja</button>
+            <button id="btnToggleLabels" class="gmaps-pill-btn active" title="Tampilkan/Sembunyikan Label Persentase Progres di Peta"><i class="bi bi-percent"></i> Label Progres</button>
           </div>
         </div>
 
@@ -1108,6 +1203,7 @@
         let desaLayer = null;
         let slsLayer = null;
         let isOutlineOnlyMode = false;
+        let showProgressLabels = true;
         let activeLayerName = 'desa'; // 'desa', 'sls', or 'kec'
         let currentFilteredKec = '';
 
@@ -1123,6 +1219,7 @@
         const btnBasemapDefault = document.getElementById('btnBasemapDefault');
         const btnBasemapSatellite = document.getElementById('btnBasemapSatellite');
         const btnOutlineOnly = document.getElementById('btnOutlineOnly');
+        const btnToggleLabels = document.getElementById('btnToggleLabels');
         const legendKec = document.getElementById('legendKec');
         const legendDesa = document.getElementById('legendDesa');
         const legendSls = document.getElementById('legendSls');
@@ -1779,17 +1876,31 @@
           kecLayer = L.geoJSON(kecGeoJson, {
             style: kecStyle,
             onEachFeature: (feature, layer) => {
+              const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === feature.properties.nmkec.toUpperCase());
+              const fasihPct = stat ? parseFloat(stat.fasih_pct_str || 0) : 0;
+              const totalFasih = stat ? stat.target_fasih_total : 0;
+              const realisasiFasih = stat ? ((stat.submitted_total || 0) + (stat.approved_total || 0) + (stat.rejected_total || 0)) : 0;
+              const fasihColorClass = fasihPct >= 100 ? 'status-green' : (fasihPct >= 75 ? 'status-blue' : (fasihPct >= 25 ? 'status-yellow' : (fasihPct > 0 ? 'status-orange' : 'status-red')));
+
+              // Bind Permanent On-Map Badge
+              const labelHtml = `
+                <div class="map-label-badge kec-label-badge ${showProgressLabels ? '' : 'd-none'}">
+                  <div class="map-label-title"><i class="bi bi-diagram-3-fill" style="font-size: 10px; margin-right: 2px;"></i> Kec. ${feature.properties.nmkec}</div>
+                  <div class="map-label-pct ${fasihColorClass}">${fasihPct.toFixed(1)}%</div>
+                </div>
+              `;
+              layer.bindTooltip(labelHtml, {
+                permanent: true,
+                direction: 'center',
+                className: 'map-polygon-label-tooltip'
+              });
+
               layer.on({
                 mouseover: highlightFeature,
                 mouseout: resetHighlightKec,
                 click: (e) => {
                   showKecDetails(feature.properties.nmkec);
                   
-                  const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === feature.properties.nmkec.toUpperCase());
-                  const fasihPct = stat ? parseFloat(stat.fasih_pct_str || 0) : 0;
-                  const totalFasih = stat ? stat.target_fasih_total : 0;
-                  const realisasiFasih = stat ? ((stat.submitted_total || 0) + (stat.approved_total || 0) + (stat.rejected_total || 0)) : 0;
-
                   const popupHtml = `
                     <div style="font-family: 'Inter', sans-serif; min-width: 200px; padding: 2px;">
                       <strong style="font-size: 13.5px; color: var(--accent-blue);"><i class="bi bi-diagram-3-fill"></i> Kec. ${feature.properties.nmkec}</strong><br>
@@ -1818,25 +1929,38 @@
           desaLayer = L.geoJSON(desaGeoJson, {
             style: desaStyle,
             onEachFeature: (feature, layer) => {
+              const stat = desaStats.find(s => s.iddesa === feature.properties.iddesa);
+              const total = stat ? stat.total_subsls : 0;
+              const selesai = stat ? stat.selesai : 0;
+              const targetFasih = stat ? stat.target_fasih_total : 0;
+              const submitted = stat ? stat.submitted_total : 0;
+              const approved = stat ? stat.approved_total : 0;
+              const rejected = stat ? stat.rejected_total : 0;
+              const totalRealisasiFasih = submitted + approved + rejected;
+              const fasihPct = targetFasih ? Math.min(parseFloat(((totalRealisasiFasih / targetFasih) * 100).toFixed(1)), 100) : 0;
+              const totalMuatan = stat ? stat.total_muatan : 0;
+              const usaha = stat ? stat.usaha_total : 0;
+              const pct = totalMuatan ? ((usaha / totalMuatan) * 100).toFixed(1) : '0.0';
+              const fasihColorClass = fasihPct >= 100 ? 'status-green' : (fasihPct >= 75 ? 'status-blue' : (fasihPct >= 25 ? 'status-yellow' : (fasihPct > 0 ? 'status-orange' : 'status-red')));
+
+              // Bind Permanent On-Map Badge
+              const labelHtml = `
+                <div class="map-label-badge desa-label-badge ${showProgressLabels ? '' : 'd-none'}">
+                  <div class="map-label-title">${feature.properties.nmdesa}</div>
+                  <div class="map-label-pct ${fasihColorClass}">${fasihPct.toFixed(1)}%</div>
+                </div>
+              `;
+              layer.bindTooltip(labelHtml, {
+                permanent: true,
+                direction: 'center',
+                className: 'map-polygon-label-tooltip'
+              });
+
               layer.on({
                 mouseover: highlightFeature,
                 mouseout: resetHighlightDesa,
                 click: (e) => {
                   showDesaDetails(feature.properties);
-                  
-                  // Open popup
-                  const stat = desaStats.find(s => s.iddesa === feature.properties.iddesa);
-                  const total = stat ? stat.total_subsls : 0;
-                  const selesai = stat ? stat.selesai : 0;
-                  const targetFasih = stat ? stat.target_fasih_total : 0;
-                  const submitted = stat ? stat.submitted_total : 0;
-                  const approved = stat ? stat.approved_total : 0;
-                  const rejected = stat ? stat.rejected_total : 0;
-                  const totalRealisasiFasih = submitted + approved + rejected;
-                  const fasihPct = targetFasih ? Math.min(parseFloat(((totalRealisasiFasih / targetFasih) * 100).toFixed(2)), 100) : 0;
-                  const totalMuatan = stat ? stat.total_muatan : 0;
-                  const usaha = stat ? stat.usaha_total : 0;
-                  const pct = totalMuatan ? ((usaha / totalMuatan) * 100).toFixed(2) : '0.00';
                   
                   const popupHtml = `
                     <div style="font-family: 'Inter', sans-serif; min-width: 190px; padding: 2px;">
@@ -2111,6 +2235,21 @@
             }
 
             updateActiveLayerStyles();
+          });
+        }
+
+        if (btnToggleLabels) {
+          btnToggleLabels.addEventListener('click', () => {
+            showProgressLabels = !showProgressLabels;
+            if (showProgressLabels) {
+              btnToggleLabels.classList.add('active');
+              btnToggleLabels.setAttribute('aria-pressed', 'true');
+              document.querySelectorAll('.map-label-badge').forEach(el => el.classList.remove('d-none'));
+            } else {
+              btnToggleLabels.classList.remove('active');
+              btnToggleLabels.setAttribute('aria-pressed', 'false');
+              document.querySelectorAll('.map-label-badge').forEach(el => el.classList.add('d-none'));
+            }
           });
         }
 
