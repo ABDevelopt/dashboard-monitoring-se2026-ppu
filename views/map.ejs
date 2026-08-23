@@ -78,14 +78,14 @@
     top: 14px;
     left: 14px;
     z-index: 1000;
-    width: 440px;
+    width: 420px;
     max-width: calc(100% - 28px);
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(15, 23, 42, 0.52) 80%, rgba(255, 255, 255, 0.08) 100%);
     backdrop-filter: blur(32px) saturate(220%) brightness(108%);
     -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(108%);
     border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 20px;
-    padding: 8px 13px 10px 13px;
+    padding: 8px 12px 10px 12px;
     box-shadow: 0 16px 45px 0 rgba(0, 0, 0, 0.45), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.50), inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
@@ -221,10 +221,10 @@
 
   .gmaps-control-row {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     justify-content: space-between;
-    gap: 6px;
-    flex-wrap: wrap;
+    gap: 7px;
+    width: 100%;
   }
 
   .gmaps-select-pill {
@@ -240,15 +240,18 @@
     font-size: 11.5px;
     font-weight: 600;
     border-radius: 999px;
-    padding: 4px 24px 4px 11px;
+    padding: 4px 22px 4px 10px;
     cursor: pointer;
-    height: 29px;
+    height: 31px;
     display: inline-flex;
     align-items: center;
     line-height: 1;
     white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
     flex: 1;
-    min-width: 120px;
+    min-width: 0;
+    width: 100%;
     outline: none;
     box-sizing: border-box;
     backdrop-filter: blur(20px) saturate(190%);
@@ -837,7 +840,7 @@
     bottom: 30px;
     left: 14px;
     z-index: 1000;
-    width: 400px;
+    width: 420px;
     max-width: calc(100% - 28px);
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(15, 23, 42, 0.55) 80%, rgba(255, 255, 255, 0.06) 100%);
     backdrop-filter: blur(36px) saturate(220%) brightness(108%);
@@ -1311,9 +1314,9 @@
         </button>
       </div>
       
-      <!-- Primary Selectors (Kecamatan & Quick PCL) -->
-      <div class="gmaps-control-row">
-        <select id="kecFilter" class="gmaps-select-pill" title="Filter Berdasarkan Kecamatan" style="flex: 1.1;">
+      <!-- Primary Selectors (Kecamatan & Quick PCL Symmetrical 2-Column Grid) -->
+      <div class="gmaps-control-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px;">
+        <select id="kecFilter" class="gmaps-select-pill" title="Filter Berdasarkan Kecamatan" style="width: 100%;">
           <option value="">-- Semua Kecamatan --</option>
           <option value="BABULU">Kec. Babulu</option>
           <option value="WARU">Kec. Waru</option>
@@ -1321,36 +1324,36 @@
           <option value="SEPAKU">Kec. Sepaku</option>
         </select>
         
-        <select id="pclFilter" class="gmaps-select-pill" title="Filter Cepat Berdasarkan Petugas PCL" style="flex: 1.2;">
+        <select id="pclFilter" class="gmaps-select-pill" title="Filter Cepat Berdasarkan Petugas PCL" style="width: 100%;">
           <option value="">-- Semua Petugas PCL --</option>
         </select>
       </div>
 
       <!-- Collapsible Filter & Options Section -->
       <div class="gmaps-controls-collapsible" id="toolsExtraRows">
-        <!-- Row 3: Tingkat Layer & Metrik Tematik -->
-        <div class="gmaps-control-row">
-          <div class="gmaps-pill-group" style="flex: 1.2;">
-            <button id="btnLayerKec" class="gmaps-pill-btn" title="Tingkat Kecamatan" type="button"><i class="bi bi-diagram-3"></i> Kec</button>
-            <button id="btnLayerDesa" class="gmaps-pill-btn active" title="Tingkat Desa / Kelurahan" type="button"><i class="bi bi-geo"></i> Desa</button>
-            <button id="btnLayerSls" class="gmaps-pill-btn" title="Tingkat SubSLS / RT" type="button"><i class="bi bi-pin-map"></i> SLS</button>
+        <!-- Row 3: Tingkat Layer & Metrik Tematik (Balanced Segmented Grids) -->
+        <div class="gmaps-control-row" style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 7px;">
+          <div class="gmaps-pill-group" style="display: flex; width: 100%;">
+            <button id="btnLayerKec" class="gmaps-pill-btn" title="Tingkat Kecamatan" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-diagram-3"></i> Kec</button>
+            <button id="btnLayerDesa" class="gmaps-pill-btn active" title="Tingkat Desa / Kelurahan" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-geo"></i> Desa</button>
+            <button id="btnLayerSls" class="gmaps-pill-btn" title="Tingkat SubSLS / RT" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-pin-map"></i> SLS</button>
           </div>
 
-          <div class="gmaps-pill-group" style="flex: 1;">
-            <button id="btnMetricFasih" class="gmaps-pill-btn active" title="Pewarnaan Capaian FASIH" type="button"><i class="bi bi-phone"></i> FASIH</button>
-            <button id="btnMetricMuatan" class="gmaps-pill-btn" title="Pewarnaan Capaian Muatan" type="button"><i class="bi bi-pie-chart"></i> Muatan</button>
+          <div class="gmaps-pill-group" style="display: flex; width: 100%;">
+            <button id="btnMetricFasih" class="gmaps-pill-btn active" title="Pewarnaan Capaian FASIH" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-phone"></i> FASIH</button>
+            <button id="btnMetricMuatan" class="gmaps-pill-btn" title="Pewarnaan Capaian Muatan" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-pie-chart"></i> Muatan</button>
           </div>
         </div>
 
-        <!-- Row 4: Saklar Fitur Peta (On/Off Toggle Switch) -->
-        <div class="gmaps-control-row">
-          <button id="btnOutlineOnly" class="gmaps-toggle-btn" title="Aktifkan/Matikan Garis Batas Saja (Tanpa Warna Isi)" type="button" aria-pressed="false" style="flex: 1;">
+        <!-- Row 4: Saklar Fitur Peta (Symmetrical On/Off Toggle Buttons) -->
+        <div class="gmaps-control-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px;">
+          <button id="btnOutlineOnly" class="gmaps-toggle-btn" title="Aktifkan/Matikan Garis Batas Saja (Tanpa Warna Isi)" type="button" aria-pressed="false" style="width: 100%;">
             <span style="display: inline-flex; align-items: center; gap: 5px;">
               <i class="bi bi-bounding-box-circles"></i> Batas Saja
             </span>
             <i class="bi bi-toggle-off toggle-indicator" id="iconOutlineToggle"></i>
           </button>
-          <button id="btnToggleLabels" class="gmaps-toggle-btn" title="Aktifkan/Matikan Label Progres Pada Peta" type="button" aria-pressed="false" style="flex: 1;">
+          <button id="btnToggleLabels" class="gmaps-toggle-btn" title="Aktifkan/Matikan Label Progres Pada Peta" type="button" aria-pressed="false" style="width: 100%;">
             <span style="display: inline-flex; align-items: center; gap: 5px;">
               <i class="bi bi-percent"></i> Label Progres
             </span>
@@ -1358,19 +1361,19 @@
           </button>
         </div>
 
-        <!-- Row 5: KPI Status Filters Integrated Capsule -->
+        <!-- Row 5: KPI Status Filters Symmetrical 4-Column Grid Capsule -->
         <div class="gmaps-control-row">
-          <div class="gmaps-pill-group" style="width: 100%; justify-content: space-between; padding: 2px;">
-            <button type="button" class="gmaps-kpi-pill active-filter" id="kpiFilterAll" data-status="" title="Tampilkan Semua SLS" style="flex: 1; justify-content: center; font-size: 11px; padding: 4px 6px;">
+          <div class="gmaps-pill-group" style="width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); padding: 2.5px; gap: 2px;">
+            <button type="button" class="gmaps-kpi-pill active-filter" id="kpiFilterAll" data-status="" title="Tampilkan Semua SLS" style="justify-content: center; font-size: 11px; padding: 4px 2px;">
               <span>Semua</span> <strong id="kpiTotalSls">--</strong>
             </button>
-            <button type="button" class="gmaps-kpi-pill" id="kpiFilterDone" data-status="done" title="Hanya SLS Selesai" style="flex: 1; justify-content: center; font-size: 11px; padding: 4px 6px;">
+            <button type="button" class="gmaps-kpi-pill" id="kpiFilterDone" data-status="done" title="Hanya SLS Selesai" style="justify-content: center; font-size: 11px; padding: 4px 2px;">
               <span>Selesai</span> <strong id="kpiSlsSelesai" style="color: #10b981;">--</strong>
             </button>
-            <button type="button" class="gmaps-kpi-pill" id="kpiFilterInProgress" data-status="in_progress" title="Hanya SLS Progres" style="flex: 1; justify-content: center; font-size: 11px; padding: 4px 6px;">
+            <button type="button" class="gmaps-kpi-pill" id="kpiFilterInProgress" data-status="in_progress" title="Hanya SLS Progres" style="justify-content: center; font-size: 11px; padding: 4px 2px;">
               <span>Progres</span> <strong id="kpiSlsBelum" style="color: #f59e0b;">--</strong>
             </button>
-            <button type="button" class="gmaps-kpi-pill" id="kpiFilterNotStarted" data-status="not_started" title="Hanya SLS Belum" style="flex: 1; justify-content: center; font-size: 11px; padding: 4px 6px;">
+            <button type="button" class="gmaps-kpi-pill" id="kpiFilterNotStarted" data-status="not_started" title="Hanya SLS Belum" style="justify-content: center; font-size: 11px; padding: 4px 2px;">
               <span>Belum</span> <strong id="kpiSlsNotStarted" style="color: #ef4444;">--</strong>
             </button>
           </div>
