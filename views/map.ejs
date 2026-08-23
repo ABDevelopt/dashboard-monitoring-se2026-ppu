@@ -137,6 +137,79 @@
     color: var(--accent-blue);
   }
 
+  /* Fuzzy BM25 Search Dropdown */
+  .gmaps-search-results {
+    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.98);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    max-height: 250px;
+    overflow-y: auto;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px;
+    margin-top: 2px;
+    z-index: 1005;
+  }
+
+  body.light-mode .gmaps-search-results {
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+  }
+
+  .gmaps-search-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    text-decoration: none;
+    color: var(--text-primary);
+  }
+
+  .gmaps-search-item:hover, .gmaps-search-item.selected {
+    background: rgba(59, 130, 246, 0.18);
+  }
+
+  .gmaps-search-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .gmaps-search-item-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gmaps-search-item-sub {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gmaps-search-item-badge {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-left: 8px;
+  }
+
   .gmaps-control-row {
     display: flex;
     align-items: center;
@@ -797,11 +870,12 @@
     <div class="gmaps-floating-search-panel">
       <div class="gmaps-search-box">
         <i class="bi bi-search search-icon"></i>
-        <input type="text" id="mapSearchInput" placeholder="Cari nama desa atau SLS..." />
+        <input type="text" id="mapSearchInput" placeholder="Cari desa, SLS, atau petugas..." autocomplete="off" />
         <button id="btnResetView" class="gmaps-icon-btn" title="Reset Pandangan Peta">
           <i class="bi bi-arrow-counterclockwise"></i>
         </button>
       </div>
+      <div id="mapSearchResults" class="gmaps-search-results d-none"></div>
       
       <!-- Row 2: Filter Wilayah & Tingkat Layer -->
       <div class="gmaps-control-row">
@@ -1399,30 +1473,68 @@
           };
         }
 
-        // Highlight features on hover with refined border width
+        // Highlight features on hover with high-fidelity style preservation
         function highlightFeature(e) {
           const layer = e.target;
+          if (!layer || !layer.feature) return;
+
+          const isSelectedKec = !currentFilteredKec || layer.feature.properties.nmkec === currentFilteredKec;
+
+          if (isOutlineOnlyMode) {
+            layer.setStyle({
+              weight: isSelectedKec ? 2.5 : 1.0,
+              color: getHoverBorderColor(),
+              fillOpacity: 0
+            });
+            return;
+          }
+
+          let baseColor = '#cbd5e1';
+          if (activeLayerName === 'kec') {
+            baseColor = getKecColor(layer.feature.properties.nmkec);
+          } else if (activeLayerName === 'desa') {
+            baseColor = getDesaColor(layer.feature.properties.iddesa);
+          } else if (activeLayerName === 'sls') {
+            baseColor = getSlsColor(layer.feature.properties.kode);
+          }
+
           layer.setStyle({
-            weight: 1.5,
+            fillColor: baseColor,
+            weight: isSelectedKec ? 2.2 : 1.0,
             color: getHoverBorderColor(),
-            fillOpacity: 0.85
+            opacity: isSelectedKec ? 1 : 0.35,
+            fillOpacity: isSelectedKec ? (currentBasemapType === 'satellite' ? 0.70 : 0.60) : 0.08
           });
-          // Note: We deliberately do NOT call layer.bringToFront() here because features are already
-          // pre-sorted by area descending (largest first -> smallest last). Not calling bringToFront()
-          // preserves the natural DOM stacking order where smaller enclosed SLS features remain on top
-          // and receive all mouse click/hover events without being blocked by larger container features.
         }
 
         function resetHighlightKec(e) {
-          if (kecLayer) kecLayer.resetStyle(e.target);
+          const layer = e.target;
+          if (!layer || !layer.feature) return;
+          if (mapSearchInput && mapSearchInput.value.trim().length > 0) {
+            applySearchHighlightToLayer(layer, 'kec');
+            return;
+          }
+          layer.setStyle(kecStyle(layer.feature));
         }
 
         function resetHighlightDesa(e) {
-          if (desaLayer) desaLayer.resetStyle(e.target);
+          const layer = e.target;
+          if (!layer || !layer.feature) return;
+          if (mapSearchInput && mapSearchInput.value.trim().length > 0) {
+            applySearchHighlightToLayer(layer, 'desa');
+            return;
+          }
+          layer.setStyle(desaStyle(layer.feature));
         }
 
         function resetHighlightSls(e) {
-          if (slsLayer) slsLayer.resetStyle(e.target);
+          const layer = e.target;
+          if (!layer || !layer.feature) return;
+          if (mapSearchInput && mapSearchInput.value.trim().length > 0) {
+            applySearchHighlightToLayer(layer, 'sls');
+            return;
+          }
+          layer.setStyle(slsStyle(layer.feature));
         }
 
         // Top Statistics Calculator (Informasi SLS Selesai)
@@ -2104,6 +2216,9 @@
             setupKecLayer();
             setupDesaLayer();
 
+            // Build initial Fuzzy BM25 Search Index for Kecamatan and Desa
+            buildMapSearchIndex();
+
             if (activeLayerName === 'kec' && kecLayer) {
               kecLayer.addTo(map);
             } else if (desaLayer) {
@@ -2140,6 +2255,8 @@
             const res = await fetch('/data/sls_boundaries.geojson');
             slsGeoJson = await res.json();
             setupSlsLayer();
+            // Rebuild Search Index with SLS boundaries included
+            buildMapSearchIndex();
           } catch (err) {
             console.error('Error lazy loading SLS geojson:', err);
           }
@@ -2320,61 +2437,317 @@
           updateTopStats();
         });
 
-        // Search Input Listener with auto-focus/highlight
+        // -------------------------------------------------------------
+        // ADVANCED SPATIAL SEARCH ENGINE (FUZZY MATCHING + BM25 RANKING)
+        // -------------------------------------------------------------
+        let mapSearchDocs = [];
+        let mapBM25Index = null;
+        let activeDropdownIndex = -1;
+
+        function buildMapSearchIndex() {
+          mapSearchDocs = [];
+
+          // 1. Index Kecamatan
+          if (kecGeoJson && kecGeoJson.features) {
+            kecGeoJson.features.forEach(f => {
+              const p = f.properties;
+              const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === p.nmkec.toUpperCase());
+              const pct = stat ? parseFloat(stat.fasih_pct_str || 0) : 0;
+              mapSearchDocs.push({
+                id: `kec_${p.nmkec}`,
+                type: 'kec',
+                title: `Kec. ${p.nmkec}`,
+                sub: `Kabupaten Penajam Paser Utara · ${pct.toFixed(1)}% FASIH`,
+                text: `kecamatan ${p.nmkec} kec ${p.nmkec} penajam paser utara`,
+                feature: f,
+                properties: p,
+                pct: pct
+              });
+            });
+          }
+
+          // 2. Index Desa
+          if (desaGeoJson && desaGeoJson.features) {
+            desaGeoJson.features.forEach(f => {
+              const p = f.properties;
+              const stat = desaStats.find(s => s.iddesa === p.iddesa);
+              const pct = stat ? parseFloat(stat.fasih_pct_str || 0) : 0;
+              mapSearchDocs.push({
+                id: `desa_${p.iddesa}`,
+                type: 'desa',
+                title: `Desa ${p.nmdesa}`,
+                sub: `Kec. ${p.nmkec} · ${pct.toFixed(1)}% FASIH`,
+                text: `desa kelurahan ${p.nmdesa} ${p.nmkec} ${p.iddesa}`,
+                feature: f,
+                properties: p,
+                pct: pct
+              });
+            });
+          }
+
+          // 3. Index SLS
+          if (slsGeoJson && slsGeoJson.features) {
+            slsGeoJson.features.forEach(f => {
+              const p = f.properties;
+              const stat = slsStats.find(s => s.kode === p.kode);
+              const pcl = stat ? (stat.pcl || '') : (p.pcl || '');
+              const pml = stat ? (stat.pml || '') : (p.pml || '');
+              const statusStr = stat && stat.selesai === 1 ? 'Selesai' : 'Belum Selesai';
+              mapSearchDocs.push({
+                id: `sls_${p.kode}`,
+                type: 'sls',
+                title: `${p.nmsls || p.kode}`,
+                sub: `${p.nmdesa}, Kec. ${p.nmkec} ${pcl ? '· PCL: ' + pcl : ''} · [${statusStr}]`,
+                text: `sls rt rw ${p.nmsls} ${p.nmdesa} ${p.nmkec} ${p.kode} ${pcl} ${pml}`,
+                feature: f,
+                properties: p,
+                stat: stat
+              });
+            });
+          }
+
+          if (window.FuzzyBM25 && mapSearchDocs.length > 0) {
+            mapBM25Index = new window.FuzzyBM25(mapSearchDocs);
+          }
+        }
+
+        function applySearchHighlightToLayer(layer, layerType) {
+          const q = mapSearchInput ? mapSearchInput.value.toLowerCase().trim() : '';
+          if (!q) {
+            if (layerType === 'kec') layer.setStyle(kecStyle(layer.feature));
+            else if (layerType === 'desa') layer.setStyle(desaStyle(layer.feature));
+            else if (layerType === 'sls') layer.setStyle(slsStyle(layer.feature));
+            return;
+          }
+
+          const p = layer.feature.properties;
+          let isMatch = false;
+          if (layerType === 'kec') {
+            const str = `kecamatan ${p.nmkec} ${p.nmkec}`;
+            isMatch = str.toLowerCase().includes(q) || (window.fuzzyMatch && window.fuzzyMatch(str, q, 0.45));
+          } else if (layerType === 'desa') {
+            const str = `${p.nmdesa} ${p.nmkec} ${p.iddesa}`;
+            isMatch = str.toLowerCase().includes(q) || (window.fuzzyMatch && window.fuzzyMatch(str, q, 0.45));
+          } else if (layerType === 'sls') {
+            const stat = slsStats.find(s => s.kode === p.kode);
+            const str = `${p.nmsls} ${p.nmdesa} ${p.nmkec} ${p.kode} ${stat ? stat.pcl : ''} ${stat ? stat.pml : ''}`;
+            isMatch = str.toLowerCase().includes(q) || (window.fuzzyMatch && window.fuzzyMatch(str, q, 0.45));
+          }
+
+          if (isMatch) {
+            layer.setStyle({
+              weight: 2.8,
+              color: '#06b6d4',
+              opacity: 1,
+              fillOpacity: currentBasemapType === 'satellite' ? 0.70 : 0.60
+            });
+          } else {
+            layer.setStyle({
+              opacity: 0.15,
+              fillOpacity: 0.03
+            });
+          }
+        }
+
+        function selectSearchResult(doc) {
+          const resultsContainer = document.getElementById('mapSearchResults');
+          if (resultsContainer) resultsContainer.classList.add('d-none');
+          if (mapSearchInput) mapSearchInput.value = doc.title;
+          activeDropdownIndex = -1;
+
+          // Switch layer level if necessary
+          if (doc.type === 'kec' && activeLayerName !== 'kec') {
+            btnLayerKec.click();
+          } else if (doc.type === 'desa' && activeLayerName !== 'desa') {
+            btnLayerDesa.click();
+          } else if (doc.type === 'sls' && activeLayerName !== 'sls') {
+            btnLayerSls.click();
+          }
+
+          setTimeout(() => {
+            let targetLayer = null;
+            const currentL = activeLayerName === 'kec' ? kecLayer : (activeLayerName === 'desa' ? desaLayer : slsLayer);
+            if (currentL) {
+              currentL.eachLayer(l => {
+                if (doc.type === 'kec' && l.feature.properties.nmkec === doc.properties.nmkec) {
+                  targetLayer = l;
+                } else if (doc.type === 'desa' && l.feature.properties.iddesa === doc.properties.iddesa) {
+                  targetLayer = l;
+                } else if (doc.type === 'sls' && l.feature.properties.kode === doc.properties.kode) {
+                  targetLayer = l;
+                }
+              });
+            }
+
+            if (targetLayer) {
+              if (targetLayer.getBounds) {
+                map.fitBounds(targetLayer.getBounds(), { padding: [60, 60], maxZoom: 16 });
+              } else if (targetLayer.getLatLng) {
+                map.setView(targetLayer.getLatLng(), 15);
+              }
+
+              // Fire click to open detail card & popup
+              targetLayer.fire('click');
+
+              // Flash highlight on target
+              targetLayer.setStyle({
+                weight: 3.5,
+                color: '#f59e0b',
+                fillOpacity: 0.70
+              });
+            }
+          }, 120);
+        }
+
+        function performMapSearch(query) {
+          const q = query.toLowerCase().trim();
+          const resultsContainer = document.getElementById('mapSearchResults');
+
+          if (!q) {
+            if (resultsContainer) {
+              resultsContainer.innerHTML = '';
+              resultsContainer.classList.add('d-none');
+            }
+            updateActiveLayerStyles();
+            return;
+          }
+
+          if (!mapBM25Index) {
+            buildMapSearchIndex();
+          }
+
+          let matchedDocs = [];
+          if (mapBM25Index) {
+            const searchResults = mapBM25Index.search(q, 0.05);
+            matchedDocs = searchResults.map(r => r.doc);
+          } else {
+            matchedDocs = mapSearchDocs.filter(d => window.fuzzyMatch ? window.fuzzyMatch(d.text, q, 0.45) : d.text.toLowerCase().includes(q));
+          }
+
+          // Update Dropdown List
+          if (resultsContainer) {
+            activeDropdownIndex = -1;
+            if (matchedDocs.length > 0) {
+              resultsContainer.classList.remove('d-none');
+              resultsContainer.innerHTML = matchedDocs.slice(0, 6).map((doc, idx) => {
+                let typeBadge = '';
+                if (doc.type === 'kec') typeBadge = '<span class="badge badge-purple gmaps-search-item-badge">Kecamatan</span>';
+                else if (doc.type === 'desa') typeBadge = '<span class="badge badge-blue gmaps-search-item-badge">Desa</span>';
+                else if (doc.type === 'sls') typeBadge = '<span class="badge badge-green gmaps-search-item-badge">SLS</span>';
+
+                return `
+                  <div class="gmaps-search-item" data-id="${doc.id}" data-index="${idx}">
+                    <div class="gmaps-search-item-info">
+                      <div class="gmaps-search-item-title">${doc.title}</div>
+                      <div class="gmaps-search-item-sub">${doc.sub}</div>
+                    </div>
+                    ${typeBadge}
+                  </div>
+                `;
+              }).join('');
+
+              resultsContainer.querySelectorAll('.gmaps-search-item').forEach(el => {
+                el.addEventListener('click', () => {
+                  const docId = el.getAttribute('data-id');
+                  const doc = mapSearchDocs.find(d => d.id === docId);
+                  if (doc) selectSearchResult(doc);
+                });
+              });
+            } else {
+              resultsContainer.classList.remove('d-none');
+              resultsContainer.innerHTML = `
+                <div style="padding: 10px; text-align: center; font-size: 11.5px; color: var(--text-muted);">
+                  <i class="bi bi-search"></i> Tidak ditemukan wilayah atau SLS yang cocok
+                </div>
+              `;
+            }
+          }
+
+          // Highlight on map active layer & fit bounds
+          let foundBounds = L.latLngBounds();
+          let hasMatch = false;
+          const currentLayer = activeLayerName === 'kec' ? kecLayer : (activeLayerName === 'desa' ? desaLayer : slsLayer);
+
+          if (currentLayer) {
+            currentLayer.eachLayer(layer => {
+              const p = layer.feature.properties;
+              let isMatch = false;
+              if (activeLayerName === 'kec') {
+                const str = `kecamatan ${p.nmkec} ${p.nmkec}`;
+                isMatch = str.toLowerCase().includes(q) || (window.fuzzyMatch && window.fuzzyMatch(str, q, 0.45));
+              } else if (activeLayerName === 'desa') {
+                const str = `${p.nmdesa} ${p.nmkec} ${p.iddesa}`;
+                isMatch = str.toLowerCase().includes(q) || (window.fuzzyMatch && window.fuzzyMatch(str, q, 0.45));
+              } else if (activeLayerName === 'sls') {
+                const stat = slsStats.find(s => s.kode === p.kode);
+                const str = `${p.nmsls} ${p.nmdesa} ${p.nmkec} ${p.kode} ${stat ? stat.pcl : ''} ${stat ? stat.pml : ''}`;
+                isMatch = str.toLowerCase().includes(q) || (window.fuzzyMatch && window.fuzzyMatch(str, q, 0.45));
+              }
+
+              if (isMatch) {
+                layer.setStyle({
+                  weight: 2.8,
+                  color: '#06b6d4',
+                  opacity: 1,
+                  fillOpacity: currentBasemapType === 'satellite' ? 0.70 : 0.60
+                });
+                if (layer.getBounds) foundBounds.extend(layer.getBounds());
+                hasMatch = true;
+              } else {
+                layer.setStyle({
+                  opacity: 0.15,
+                  fillOpacity: 0.03
+                });
+              }
+            });
+          }
+
+          if (hasMatch && foundBounds.isValid()) {
+            map.fitBounds(foundBounds, { padding: [40, 40] });
+          }
+        }
+
         if (mapSearchInput) {
           mapSearchInput.addEventListener('input', (e) => {
-            const q = e.target.value.toLowerCase().trim();
-            if (!q) {
-              updateActiveLayerStyles();
-              return;
-            }
+            performMapSearch(e.target.value);
+          });
 
-            let foundBounds = L.latLngBounds();
-            let hasMatch = false;
+          mapSearchInput.addEventListener('keydown', (e) => {
+            const resultsContainer = document.getElementById('mapSearchResults');
+            if (!resultsContainer || resultsContainer.classList.contains('d-none')) return;
 
-            if (activeLayerName === 'kec' && kecLayer) {
-              kecLayer.eachLayer(layer => {
-                const nmkec = (layer.feature.properties.nmkec || '').toLowerCase();
-                if (nmkec.includes(q)) {
-                  layer.setStyle({ weight: 3, color: 'var(--accent-cyan)', fillOpacity: 0.85 });
-                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
-                  hasMatch = true;
-                } else {
-                  layer.setStyle({ opacity: 0.1, fillOpacity: 0.05 });
-                }
-              });
-            } else if (activeLayerName === 'desa' && desaLayer) {
-              desaLayer.eachLayer(layer => {
-                const nmdesa = (layer.feature.properties.nmdesa || '').toLowerCase();
-                const nmkec = (layer.feature.properties.nmkec || '').toLowerCase();
-                if (nmdesa.includes(q) || nmkec.includes(q)) {
-                  layer.setStyle({ weight: 3, color: 'var(--accent-cyan)', fillOpacity: 0.85 });
-                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
-                  hasMatch = true;
-                } else {
-                  layer.setStyle({ opacity: 0.1, fillOpacity: 0.05 });
-                }
-              });
-            } else if (activeLayerName === 'sls' && slsLayer) {
-              slsLayer.eachLayer(layer => {
-                const nmsls = (layer.feature.properties.nmsls || '').toLowerCase();
-                const nmdesa = (layer.feature.properties.nmdesa || '').toLowerCase();
-                const kode = (layer.feature.properties.kode || '').toLowerCase();
-                if (nmsls.includes(q) || nmdesa.includes(q) || kode.includes(q)) {
-                  layer.setStyle({ weight: 3, color: 'var(--accent-cyan)', fillOpacity: 0.85 });
-                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
-                  hasMatch = true;
-                } else {
-                  layer.setStyle({ opacity: 0.1, fillOpacity: 0.05 });
-                }
-              });
-            }
+            const items = resultsContainer.querySelectorAll('.gmaps-search-item');
+            if (items.length === 0) return;
 
-            if (hasMatch && foundBounds.isValid()) {
-              map.fitBounds(foundBounds, { padding: [40, 40] });
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              activeDropdownIndex = (activeDropdownIndex + 1) % items.length;
+              items.forEach((it, idx) => it.classList.toggle('selected', idx === activeDropdownIndex));
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              activeDropdownIndex = (activeDropdownIndex - 1 + items.length) % items.length;
+              items.forEach((it, idx) => it.classList.toggle('selected', idx === activeDropdownIndex));
+            } else if (e.key === 'Enter') {
+              e.preventDefault();
+              if (activeDropdownIndex >= 0 && activeDropdownIndex < items.length) {
+                items[activeDropdownIndex].click();
+              } else if (items.length > 0) {
+                items[0].click();
+              }
+            } else if (e.key === 'Escape') {
+              resultsContainer.classList.add('d-none');
             }
           });
         }
+
+        // Close search dropdown on click outside
+        document.addEventListener('click', (e) => {
+          const panel = document.querySelector('.gmaps-floating-search-panel');
+          const resultsContainer = document.getElementById('mapSearchResults');
+          if (panel && resultsContainer && !panel.contains(e.target)) {
+            resultsContainer.classList.add('d-none');
+          }
+        });
 
         // Initialize map & load data!
         bootstrap();
