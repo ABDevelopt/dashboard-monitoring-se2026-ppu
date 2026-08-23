@@ -4,13 +4,67 @@
 //  Menyatukan API calls ke Gemini serta manajemen kegagalan otomatis (SmartSwitch).
 // ─────────────────────────────────────────────────────────────────────────────
 
+const https = require('https');
+const { Readable } = require('stream');
 const dns = require('dns');
+
 if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  IPv4-Forced HTTPS Fetch Wrapper untuk Google Generative AI API
+//  Mencegah 'fetch failed' akibat masalah rute IPv6 pada CloudLinux / Dewaweb
+// ─────────────────────────────────────────────────────────────────────────────
+const _originalFetch = globalThis.fetch;
+const customHttpsFetch = (url, options = {}) => {
+  const urlStr = typeof url === 'string' ? url : (url?.toString ? url.toString() : '');
+  if (urlStr.includes('generativelanguage.googleapis.com')) {
+    return new Promise((resolve, reject) => {
+      const u = new URL(urlStr);
+      let headersObj = {};
+      if (options.headers) {
+        if (typeof options.headers.entries === 'function') {
+          headersObj = Object.fromEntries(options.headers.entries());
+        } else {
+          headersObj = { ...options.headers };
+        }
+      }
+      const reqOpts = {
+        hostname: u.hostname,
+        port: u.port || 443,
+        path: u.pathname + u.search,
+        method: options.method || 'GET',
+        headers: headersObj,
+        family: 4 // Paksa IPv4 murni (Mencegah IPv6 drop/timeout di CloudLinux cPanel)
+      };
+      const req = https.request(reqOpts, res => {
+        const webStream = typeof Readable.toWeb === 'function' ? Readable.toWeb(res) : res;
+        resolve(new Response(webStream, {
+          status: res.statusCode,
+          statusText: res.statusMessage,
+          headers: res.headers
+        }));
+      });
+      req.on('error', reject);
+      if (options.signal) {
+        options.signal.addEventListener('abort', () => {
+          req.destroy(new Error('Request aborted'));
+        }, { once: true });
+      }
+      if (options.body) {
+        req.write(options.body);
+      }
+      req.end();
+    });
+  }
+  return _originalFetch ? _originalFetch(url, options) : fetch(url, options);
+};
+
+globalThis.fetch = customHttpsFetch;
+
 const { 
-  GEMINI_DEFAULT_MODEL = 'gemini-3.5-flash'
+  GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash'
 } = process.env;
 
 const AGENT_API_TIMEOUT_MS          = 20000; 
