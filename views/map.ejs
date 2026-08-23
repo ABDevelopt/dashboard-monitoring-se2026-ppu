@@ -2823,6 +2823,90 @@
             return;
           }
 
+        // Point-in-polygon algorithm (Ray-casting)
+        function isPointInPolygonCoords(point, vs) {
+          const x = point[0], y = point[1];
+          let inside = false;
+          for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+            const xi = vs[i][0], yi = vs[i][1];
+            const xj = vs[j][0], yj = vs[j][1];
+            const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+          }
+          return inside;
+        }
+
+        function isCoordinateInsideFeature(lng, lat, feature) {
+          if (!feature || !feature.geometry) return false;
+          const pt = [lng, lat];
+          const geom = feature.geometry;
+          if (geom.type === 'Polygon') {
+            if (!isPointInPolygonCoords(pt, geom.coordinates[0])) return false;
+            for (let h = 1; h < geom.coordinates.length; h++) {
+              if (isPointInPolygonCoords(pt, geom.coordinates[h])) return false;
+            }
+            return true;
+          } else if (geom.type === 'MultiPolygon') {
+            for (let p = 0; p < geom.coordinates.length; p++) {
+              const poly = geom.coordinates[p];
+              if (isPointInPolygonCoords(pt, poly[0])) {
+                let inHole = false;
+                for (let h = 1; h < poly.length; h++) {
+                  if (isPointInPolygonCoords(pt, poly[h])) {
+                    inHole = true;
+                    break;
+                  }
+                }
+                if (!inHole) return true;
+              }
+            }
+            return false;
+          }
+          return false;
+        }
+
+        function findLocationSpatialHierarchy(lng, lat) {
+          let matchedSls = null;
+          let matchedDesa = null;
+          let matchedKec = null;
+
+          if (slsGeoJson && slsGeoJson.features) {
+            for (const f of slsGeoJson.features) {
+              if (isCoordinateInsideFeature(lng, lat, f)) {
+                matchedSls = f;
+                break;
+              }
+            }
+          }
+
+          if (desaGeoJson && desaGeoJson.features) {
+            for (const f of desaGeoJson.features) {
+              if (isCoordinateInsideFeature(lng, lat, f)) {
+                matchedDesa = f;
+                break;
+              }
+            }
+          }
+
+          if (kecGeoJson && kecGeoJson.features) {
+            for (const f of kecGeoJson.features) {
+              if (isCoordinateInsideFeature(lng, lat, f)) {
+                matchedKec = f;
+                break;
+              }
+            }
+          }
+
+          return { matchedSls, matchedDesa, matchedKec };
+        }
+
+        // Locate User GPS with Point-in-Polygon Administrative Detection
+        function locateUserGPS() {
+          if (!navigator.geolocation) {
+            alert('Fitur Geolocation tidak didukung di peramban Anda.');
+            return;
+          }
+
           const gpsToast = document.getElementById('gpsToast');
           const gpsToastText = document.getElementById('gpsToastText');
           const gpsToastSpinner = document.getElementById('gpsToastSpinner');
@@ -2851,12 +2935,27 @@
                 btnLocateMe.style.color = 'var(--accent-cyan)';
               }
 
+              // Deteksi posisi spasial pengguna (Desa dan SLS mana)
+              const { matchedSls, matchedDesa, matchedKec } = findLocationSpatialHierarchy(lng, lat);
+              
+              let locationDesc = 'Posisi GPS Terkunci';
+              const nmsls = matchedSls ? (matchedSls.properties.nmsls || matchedSls.properties.nama || ('SLS ' + matchedSls.properties.kode)) : '';
+              const nmdesa = matchedDesa ? matchedDesa.properties.nmdesa : (matchedSls ? matchedSls.properties.nmdesa : '');
+              const nmkec = matchedKec ? matchedKec.properties.nmkec : (matchedSls ? matchedSls.properties.nmkec : (matchedDesa ? matchedDesa.properties.nmkec : ''));
+              const stat = matchedSls ? slsStats.find(s => s.kode === matchedSls.properties.kode) : null;
+
+              if (nmsls && nmdesa) {
+                locationDesc = `Desa ${nmdesa} &bull; ${nmsls}`;
+              } else if (nmdesa) {
+                locationDesc = `Desa ${nmdesa}, Kec. ${nmkec || ''}`;
+              }
+
               if (gpsToast && gpsToastText && gpsToastSpinner) {
                 gpsToastSpinner.style.display = 'none';
-                gpsToastText.innerHTML = `<i class="bi bi-check-circle-fill" style="color: #10b981;"></i> Lokasi Terkunci (±${Math.round(accuracy)}m)`;
+                gpsToastText.innerHTML = `<i class="bi bi-geo-alt-fill" style="color: #10b981;"></i> <strong>${locationDesc}</strong> (±${Math.round(accuracy)}m)`;
                 setTimeout(() => {
                   gpsToast.classList.remove('show');
-                }, 2200);
+                }, 4000);
               }
 
               if (userLocationMarker) map.removeLayer(userLocationMarker);
@@ -2868,13 +2967,67 @@
                 iconAnchor: [8, 8]
               });
 
+              let popupContent = '';
+              if (matchedSls) {
+                const isSelesai = stat ? stat.selesai === 1 : false;
+                const pcl = stat ? (stat.pcl || '-') : (matchedSls.properties.pcl || '-');
+                const fasihPct = stat ? (stat.fasih_pct_str || '0.0') : '0.0';
+                popupContent = `
+                  <div style="font-family: 'Inter', sans-serif; min-width: 220px; padding: 2px;">
+                    <div style="font-size: 10px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">
+                      <i class="bi bi-crosshair"></i> Posisi GPS Anda Terdeteksi:
+                    </div>
+                    <strong style="font-size: 13.5px; color: var(--text-primary);"><i class="bi bi-pin-map-fill" style="color: #0284c7;"></i> ${nmsls}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-secondary);"><i class="bi bi-geo-alt"></i> Desa ${nmdesa}, Kec. ${nmkec}</span>
+                    <div style="background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; margin: 8px 0 6px 0; font-size: 11px;">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="color: var(--text-muted);">Status:</span>
+                        <strong style="color: ${isSelesai ? '#10b981' : '#f59e0b'};">${isSelesai ? '🟢 Selesai Resmi' : '🟡 Sedang Berjalan'}</strong>
+                      </div>
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="color: var(--text-muted);">Progres FASIH:</span>
+                        <strong style="color: var(--accent-blue);">${fasihPct}%</strong>
+                      </div>
+                      <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-muted);">Petugas PCL:</span>
+                        <strong style="color: var(--text-primary);">${pcl}</strong>
+                      </div>
+                    </div>
+                    <span style="font-size: 10px; color: var(--text-muted); display: block; text-align: right;">Akurasi: ±${Math.round(accuracy)}m</span>
+                  </div>
+                `;
+                // Tampilkan rincian lengkap di drawer samping
+                showSlsDetails(matchedSls.properties);
+                if (typeof window.ensureGmapsDrawerOpen === 'function') {
+                  window.ensureGmapsDrawerOpen();
+                }
+              } else if (matchedDesa) {
+                popupContent = `
+                  <div style="font-family: 'Inter', sans-serif; min-width: 200px; padding: 2px;">
+                    <div style="font-size: 10px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; margin-bottom: 2px;">
+                      <i class="bi bi-crosshair"></i> Posisi GPS Anda Terdeteksi:
+                    </div>
+                    <strong style="font-size: 13.5px; color: var(--text-primary);"><i class="bi bi-geo-alt-fill" style="color: #0284c7;"></i> Desa ${nmdesa}</strong><br>
+                    <span style="font-size: 11px; color: var(--text-secondary);">Kecamatan ${nmkec}</span>
+                    <span style="font-size: 10px; color: var(--text-muted); display: block; margin-top: 6px; text-align: right;">Akurasi: ±${Math.round(accuracy)}m</span>
+                  </div>
+                `;
+                showDesaDetails(matchedDesa.properties);
+                if (typeof window.ensureGmapsDrawerOpen === 'function') {
+                  window.ensureGmapsDrawerOpen();
+                }
+              } else {
+                popupContent = `
+                  <div style="font-family: 'Inter', sans-serif; padding: 2px;">
+                    <strong style="color: var(--accent-blue);"><i class="bi bi-geo-alt-fill"></i> Posisi GPS Anda</strong><br>
+                    <span style="font-size: 11px; color: var(--text-muted);">(Di luar batas PPU / Belum Terpetakan)</span><br>
+                    <span style="font-size: 10px; color: var(--text-muted);">Akurasi: ±${Math.round(accuracy)} meter</span>
+                  </div>
+                `;
+              }
+
               userLocationMarker = L.marker([lat, lng], { icon: gpsIcon }).addTo(map);
-              userLocationMarker.bindPopup(`
-                <div style="font-family: 'Inter', sans-serif; padding: 2px;">
-                  <strong style="color: var(--accent-blue);"><i class="bi bi-geo-alt-fill"></i> Posisi GPS Anda</strong><br>
-                  <span style="font-size: 11px; color: var(--text-muted);">Akurasi: ±${Math.round(accuracy)} meter</span>
-                </div>
-              `).openPopup();
+              userLocationMarker.bindPopup(popupContent).openPopup();
 
               userAccuracyCircle = L.circle([lat, lng], {
                 radius: accuracy,
