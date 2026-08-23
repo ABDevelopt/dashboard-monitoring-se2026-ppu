@@ -72,7 +72,7 @@
     z-index: 10;
   }
 
-  /* Floating Search & Filter Bar (Top Left) - Ultra-Transparent Glassmorphism */
+  /* Floating Search & Filter Bar (Top Left) - iPhone Liquid Glass */
   .gmaps-floating-search-panel {
     position: absolute;
     top: 14px;
@@ -80,48 +80,50 @@
     z-index: 1000;
     width: 350px;
     max-width: calc(100% - 28px);
-    background: rgba(var(--bg-card-rgb, 15, 23, 42), 0.50);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 16px;
-    padding: 10px 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.38);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 60%, rgba(15, 23, 42, 0.42) 100%);
+    backdrop-filter: blur(28px) saturate(210%) brightness(105%);
+    -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(105%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 20px;
+    padding: 11px 13px;
+    box-shadow: 0 14px 40px 0 rgba(0, 0, 0, 0.42), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.38), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
-    gap: 7px;
-    transition: all 0.2s ease;
+    gap: 8px;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   body.light-mode .gmaps-floating-search-panel {
-    background: rgba(255, 255, 255, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.60);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.38) 100%);
+    backdrop-filter: blur(28px) saturate(190%) brightness(102%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%) brightness(102%);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.12), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.90);
   }
 
   .gmaps-search-box {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(var(--bg-primary-rgb, 15, 23, 42), 0.38);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 99px;
-    padding: 5px 12px;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25);
-    transition: all 0.15s ease;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(15, 23, 42, 0.30) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    padding: 6px 14px;
+    box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.30), inset 0 0.5px 0 rgba(255, 255, 255, 0.25);
+    transition: all 0.2s ease;
   }
 
   body.light-mode .gmaps-search-box {
-    background: rgba(255, 255, 255, 0.50);
-    border: 1px solid rgba(0, 0, 0, 0.10);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.80) 0%, rgba(241, 245, 249, 0.55) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: inset 0 1.5px 2px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.04);
   }
 
   .gmaps-search-box:focus-within {
     border-color: var(--accent-cyan);
-    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.30);
+    box-shadow: 0 0 0 2.5px rgba(6, 182, 212, 0.35), inset 0 1px 2px rgba(0, 0, 0, 0.2);
   }
 
   .gmaps-search-box .search-icon {
@@ -136,25 +138,35 @@
     outline: none;
     color: var(--text-primary);
     font-size: 12px;
+    font-weight: 500;
   }
 
   .gmaps-icon-btn {
-    background: transparent;
-    border: none;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     color: var(--text-secondary);
     cursor: pointer;
     padding: 4px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
-    transition: all 0.15s ease;
+    font-size: 12px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body.light-mode .gmaps-icon-btn {
+    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.06);
   }
 
   .gmaps-icon-btn:hover {
     color: var(--accent-cyan);
-    transform: rotate(-45deg);
+    background: rgba(6, 182, 212, 0.15);
+    border-color: rgba(6, 182, 212, 0.35);
+    transform: rotate(-90deg) scale(1.08);
   }
 
   .gmaps-control-row {
@@ -169,20 +181,18 @@
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    background-color: rgba(var(--bg-primary-rgb, 15, 23, 42), 0.38);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    background-color: rgba(15, 23, 42, 0.35);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     color: var(--text-primary);
     font-size: 11.5px;
-    font-weight: 500;
-    border-radius: 99px;
-    padding: 4px 24px 4px 10px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 4px 24px 4px 11px;
     cursor: pointer;
-    height: 28px;
+    height: 29px;
     display: inline-flex;
     align-items: center;
     line-height: 1;
@@ -191,37 +201,39 @@
     min-width: 130px;
     outline: none;
     box-sizing: border-box;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-    transition: all 0.15s ease;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
   }
 
   body.light-mode .gmaps-select-pill {
-    background-color: rgba(255, 255, 255, 0.50);
-    border: 1px solid rgba(0, 0, 0, 0.10);
+    background-color: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.04);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   }
 
   .gmaps-select-pill:hover, .gmaps-select-pill:focus {
     border-color: var(--accent-cyan);
-    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.30);
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.35);
   }
 
   .gmaps-pill-group {
     display: inline-flex;
     align-items: center;
-    background: rgba(var(--bg-primary-rgb, 15, 23, 42), 0.38);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(15, 23, 42, 0.30) 100%);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 99px;
-    padding: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    padding: 2.5px;
     gap: 2px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.15);
   }
 
   body.light-mode .gmaps-pill-group {
-    background: rgba(255, 255, 255, 0.50);
-    border: 1px solid rgba(0, 0, 0, 0.10);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.70) 0%, rgba(241, 245, 249, 0.45) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.04);
   }
 
   .gmaps-pill-btn {
@@ -231,10 +243,10 @@
     font-size: 11px;
     font-weight: 500;
     padding: 4px 10px;
-    border-radius: 99px;
+    border-radius: 999px;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -243,13 +255,18 @@
 
   .gmaps-pill-btn:hover {
     color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  body.light-mode .gmaps-pill-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
   }
 
   .gmaps-pill-btn.active {
-    background: var(--accent-blue);
-    color: #ffffff;
+    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+    color: #ffffff !important;
     font-weight: 600;
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.45);
+    box-shadow: 0 3px 12px rgba(37, 99, 235, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.40);
   }
 
   /* Ultra-Lightweight Minimalist Polygon Progress Badges */
@@ -409,7 +426,7 @@
   body.light-mode .status-1   { background: #dc2626 !important; color: #ffffff !important; }
   body.light-mode .status-0   { background: #475569 !important; color: #ffffff !important; }
 
-  /* Floating KPI Bar (Top Right) */
+  /* Floating KPI Bar (Top Right) - iPhone Liquid Glass */
   .gmaps-floating-kpi-bar {
     position: absolute;
     top: 14px;
@@ -417,49 +434,52 @@
     z-index: 1000;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
     flex-wrap: wrap;
     justify-content: flex-end;
   }
 
   .gmaps-kpi-pill {
-    background: rgba(var(--bg-card-rgb, 15, 23, 42), 0.50);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 99px;
-    padding: 6px 14px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 60%, rgba(15, 23, 42, 0.42) 100%);
+    backdrop-filter: blur(28px) saturate(210%) brightness(105%);
+    -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(105%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    padding: 6px 15px;
     font-size: 12px;
     display: flex;
     align-items: center;
     gap: 6px;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.28);
+    box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.35), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.40), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.20);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     user-select: none;
   }
 
   .gmaps-kpi-pill:hover {
-    border-color: var(--accent-blue);
-    transform: translateY(-1px);
-    box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+    border-color: var(--accent-cyan);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 14px 36px 0 rgba(0, 0, 0, 0.45), inset 0 1px 2px 0 rgba(255, 255, 255, 0.50);
   }
 
   .gmaps-kpi-pill.active-filter {
     border-color: var(--accent-cyan) !important;
-    background: rgba(6, 182, 212, 0.22) !important;
-    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.40), 0 8px 28px rgba(6, 182, 212, 0.25) !important;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.35) 0%, rgba(15, 23, 42, 0.45) 100%) !important;
+    box-shadow: 0 0 0 2.5px rgba(6, 182, 212, 0.45), 0 12px 36px rgba(6, 182, 212, 0.25), inset 0 1px 1.5px rgba(255, 255, 255, 0.5) !important;
   }
 
   body.light-mode .gmaps-kpi-pill {
-    background: rgba(255, 255, 255, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.60);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.40) 100%);
+    backdrop-filter: blur(28px) saturate(190%) brightness(102%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%) brightness(102%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 10px 24px 0 rgba(0, 0, 0, 0.08), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95);
   }
 
   body.light-mode .gmaps-kpi-pill.active-filter {
-    background: rgba(6, 182, 212, 0.18) !important;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.22) 0%, rgba(255, 255, 255, 0.65) 100%) !important;
     border-color: var(--accent-cyan) !important;
+    box-shadow: 0 0 0 2.5px rgba(6, 182, 212, 0.35), 0 10px 24px rgba(6, 182, 212, 0.15) !important;
   }
 
   /* Fullscreen Presentation / Command Center Mode */
@@ -491,7 +511,7 @@
     100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
   }
 
-  /* Floating Right Action Controls (GPS & Fullscreen) - Ultra-Transparent Glassmorphism */
+  /* Floating Right Action Controls (GPS & Fullscreen) - iPhone Liquid Glass */
   .gmaps-floating-right-stack {
     position: absolute;
     top: 66px;
@@ -499,43 +519,45 @@
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 9px;
   }
 
   .gmaps-floating-square-btn {
-    width: 38px;
-    height: 38px;
-    border-radius: 99px;
-    background: rgba(var(--bg-card-rgb, 15, 23, 42), 0.50);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.03) 60%, rgba(15, 23, 42, 0.42) 100%);
+    backdrop-filter: blur(28px) saturate(210%) brightness(105%);
+    -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(105%);
+    border: 1px solid rgba(255, 255, 255, 0.24);
     color: var(--text-primary);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 15px;
     cursor: pointer;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
-    transition: all 0.15s ease;
+    box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.38), inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.40), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.20);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .gmaps-floating-square-btn:hover {
     color: var(--accent-cyan);
     border-color: var(--accent-cyan);
-    transform: translateY(-1px);
-    background: rgba(var(--bg-card-rgb, 15, 23, 42), 0.68);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    transform: translateY(-2px) scale(1.06);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.24) 0%, rgba(6, 182, 212, 0.20) 100%);
+    box-shadow: 0 14px 36px 0 rgba(0, 0, 0, 0.45), inset 0 1px 2px 0 rgba(255, 255, 255, 0.60);
   }
 
   .gmaps-floating-square-btn:active {
-    transform: scale(0.96);
+    transform: scale(0.94);
   }
 
   body.light-mode .gmaps-floating-square-btn {
-    background: rgba(255, 255, 255, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.60);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.80) 0%, rgba(255, 255, 255, 0.45) 100%);
+    backdrop-filter: blur(28px) saturate(190%) brightness(102%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%) brightness(102%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 10px 24px 0 rgba(0, 0, 0, 0.08), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95);
   }
 
   @media (max-width: 992px) {
@@ -550,7 +572,7 @@
     }
   }
 
-  /* Floating Info & Legend Drawer Card (Bottom Left) - Ultra-Transparent Glassmorphism */
+  /* Floating Info & Legend Drawer Card (Bottom Left) - iPhone Liquid Glass */
   .gmaps-floating-drawer-card {
     position: absolute;
     bottom: 30px;
@@ -558,28 +580,30 @@
     z-index: 1000;
     width: 390px;
     max-width: calc(100% - 28px);
-    background: rgba(var(--bg-card-rgb, 15, 23, 42), 0.55);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 16px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.42);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 50%, rgba(15, 23, 42, 0.45) 100%);
+    backdrop-filter: blur(32px) saturate(210%) brightness(105%);
+    -webkit-backdrop-filter: blur(32px) saturate(210%) brightness(105%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 22px;
+    box-shadow: 0 20px 50px 0 rgba(0, 0, 0, 0.48), inset 0 1px 2px 0 rgba(255, 255, 255, 0.38), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25);
     overflow: hidden;
     transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s ease;
   }
 
   body.light-mode .gmaps-floating-drawer-card {
-    background: rgba(255, 255, 255, 0.60);
-    border: 1px solid rgba(255, 255, 255, 0.60);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.45) 100%);
+    backdrop-filter: blur(32px) saturate(190%) brightness(102%);
+    -webkit-backdrop-filter: blur(32px) saturate(190%) brightness(102%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 20px 45px 0 rgba(0, 0, 0, 0.14), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95);
   }
 
   .gmaps-drawer-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 9px 13px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   }
 
   body.light-mode .gmaps-drawer-header {
@@ -594,22 +618,29 @@
 
   .gmaps-tab-btn {
     background: transparent;
-    border: none;
-    color: var(--text-muted);
-    font-size: 12.5px;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
     font-weight: 600;
-    padding: 5px 11px;
-    border-radius: 8px;
+    padding: 5px 12px;
+    border-radius: 999px;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    transition: all 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .gmaps-tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
   }
 
   .gmaps-tab-btn.active {
-    background: rgba(59, 130, 246, 0.15);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.30) 0%, rgba(37, 99, 235, 0.15) 100%);
     color: var(--accent-blue);
+    border: 1px solid rgba(59, 130, 246, 0.40);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.20), inset 0 1px 1px rgba(255, 255, 255, 0.30);
   }
 
   .gmaps-collapse-btn {
