@@ -394,10 +394,57 @@
     align-items: center;
     gap: 6px;
     box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+
+  .gmaps-kpi-pill:hover {
+    border-color: var(--accent-blue);
+    transform: translateY(-1px);
+  }
+
+  .gmaps-kpi-pill.active-filter {
+    border-color: var(--accent-cyan) !important;
+    background: rgba(6, 182, 212, 0.16) !important;
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.35) !important;
   }
 
   body.light-mode .gmaps-kpi-pill {
     background: rgba(255, 255, 255, 0.92);
+  }
+
+  body.light-mode .gmaps-kpi-pill.active-filter {
+    background: rgba(6, 182, 212, 0.12) !important;
+  }
+
+  /* Fullscreen Presentation / Command Center Mode */
+  .gmaps-container-wrap.is-fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 99999 !important;
+    border-radius: 0 !important;
+  }
+
+  /* GPS Pulsing Live Location Marker */
+  .gps-user-marker {
+    background: #0284c7;
+    border: 2.5px solid #ffffff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.4), 0 0 16px rgba(2, 132, 199, 0.6);
+    animation: gpsPulse 2s infinite;
+  }
+  @keyframes gpsPulse {
+    0% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.6); }
+    70% { box-shadow: 0 0 0 14px rgba(2, 132, 199, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
   }
 
   /* Floating Info & Legend Drawer Card (Bottom Left) */
@@ -798,6 +845,12 @@
       <div class="gmaps-search-box">
         <i class="bi bi-search search-icon"></i>
         <input type="text" id="mapSearchInput" placeholder="Cari nama desa atau SLS..." />
+        <button id="btnLocateMe" class="gmaps-icon-btn" title="Lokasi GPS Saya">
+          <i class="bi bi-crosshair"></i>
+        </button>
+        <button id="btnFullscreenMap" class="gmaps-icon-btn" title="Mode Layar Penuh (Command Center)">
+          <i class="bi bi-arrows-fullscreen"></i>
+        </button>
         <button id="btnResetView" class="gmaps-icon-btn" title="Reset Pandangan Peta">
           <i class="bi bi-arrow-counterclockwise"></i>
         </button>
@@ -820,7 +873,19 @@
         </div>
       </div>
 
-      <!-- Row 3: Opsi Peta & Layer Display -->
+      <!-- Row 3: Metrik Tematik Peta -->
+      <div class="gmaps-control-row">
+        <span style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 4px; padding-left: 2px;">
+          <i class="bi bi-palette"></i> Metrik:
+        </span>
+        <div class="gmaps-pill-group" style="flex: 1;">
+          <button id="btnMetricFasih" class="gmaps-pill-btn active" title="Pewarnaan berdasarkan Capaian Dokumen FASIH" style="flex: 1;"><i class="bi bi-phone"></i> FASIH</button>
+          <button id="btnMetricMuatan" class="gmaps-pill-btn" title="Pewarnaan berdasarkan Capaian Listing Usaha & Keluarga" style="flex: 1;"><i class="bi bi-pie-chart"></i> Muatan</button>
+          <button id="btnMetricReject" class="gmaps-pill-btn" title="Pewarnaan Dokumen Ditolak / Reject" style="flex: 1;"><i class="bi bi-x-circle"></i> Reject</button>
+        </div>
+      </div>
+
+      <!-- Row 4: Opsi Peta & Layer Display -->
       <div class="gmaps-control-row">
         <div class="gmaps-pill-group">
           <button id="btnBasemapDefault" class="gmaps-pill-btn active" title="Peta Vektor"><i class="bi bi-map"></i> Vektor</button>
@@ -834,27 +899,27 @@
       </div>
     </div>
 
-    <!-- 3. FLOATING KPI OVERLAY BAR (TOP RIGHT) - INFORMASI SLS SELESAI -->
+    <!-- 3. FLOATING KPI OVERLAY BAR (TOP RIGHT) - INFORMASI SLS SELESAI & FILTER CEPAT -->
     <div class="gmaps-floating-kpi-bar">
-      <div class="gmaps-kpi-pill">
+      <div class="gmaps-kpi-pill active-filter" id="kpiFilterAll" data-status="" title="Klik untuk menampilkan Semua SLS">
         <i class="bi bi-geo-alt-fill" style="color: var(--accent-blue);"></i>
-        <span class="label">Total SLS:</span>
+        <span class="label">Total:</span>
         <strong id="kpiTotalSls">-- SLS</strong>
       </div>
-      <div class="gmaps-kpi-pill">
+      <div class="gmaps-kpi-pill" id="kpiFilterDone" data-status="done" title="Klik untuk hanya sorot SLS Selesai (100%)">
         <i class="bi bi-check-circle-fill" style="color: var(--accent-green);"></i>
         <span class="label">Selesai:</span>
         <strong id="kpiSlsSelesai" style="color: var(--accent-green);">-- SLS</strong>
       </div>
-      <div class="gmaps-kpi-pill">
+      <div class="gmaps-kpi-pill" id="kpiFilterInProgress" data-status="in_progress" title="Klik untuk hanya sorot SLS Sedang Berjalan (1-99%)">
         <i class="bi bi-hourglass-split" style="color: var(--accent-yellow);"></i>
-        <span class="label">Belum:</span>
+        <span class="label">Berjalan:</span>
         <strong id="kpiSlsBelum" style="color: var(--accent-yellow);">-- SLS</strong>
       </div>
-      <div class="gmaps-kpi-pill">
-        <i class="bi bi-pie-chart-fill" style="color: var(--accent-cyan);"></i>
-        <span class="label">Capaian:</span>
-        <strong id="kpiSlsPct" style="color: var(--accent-cyan);">--%</strong>
+      <div class="gmaps-kpi-pill" id="kpiFilterNotStarted" data-status="not_started" title="Klik untuk hanya sorot SLS Belum Mulai (0%)">
+        <i class="bi bi-dash-circle-fill" style="color: var(--accent-red);"></i>
+        <span class="label">0% Mulai:</span>
+        <strong id="kpiSlsNotStarted" style="color: var(--accent-red);">-- SLS</strong>
       </div>
     </div>
 
@@ -1210,6 +1275,10 @@
         let showProgressLabels = true;
         let activeLayerName = 'desa'; // 'desa', 'sls', or 'kec'
         let currentFilteredKec = '';
+        let currentThematicMetric = 'fasih'; // 'fasih' | 'muatan' | 'reject'
+        let currentStatusFilter = ''; // '' | 'done' | 'in_progress' | 'not_started'
+        let userLocationMarker = null;
+        let userAccuracyCircle = null;
 
         // UI Selectors
         const loadingOverlay = document.getElementById('mapLoading');
@@ -1217,6 +1286,11 @@
         const kecFilter = document.getElementById('kecFilter');
         const mapSearchInput = document.getElementById('mapSearchInput');
         const btnResetView = document.getElementById('btnResetView');
+        const btnLocateMe = document.getElementById('btnLocateMe');
+        const btnFullscreenMap = document.getElementById('btnFullscreenMap');
+        const btnMetricFasih = document.getElementById('btnMetricFasih');
+        const btnMetricMuatan = document.getElementById('btnMetricMuatan');
+        const btnMetricReject = document.getElementById('btnMetricReject');
         const btnLayerKec = document.getElementById('btnLayerKec');
         const btnLayerDesa = document.getElementById('btnLayerDesa');
         const btnLayerSls = document.getElementById('btnLayerSls');
@@ -1273,38 +1347,73 @@
           return 'status-0';
         }
 
-        // Monochromatic High-Contrast Blue Gradient (8 Categories)
+        // Monochromatic / Thematic Color for Desa
         function getDesaColor(iddesa) {
           const stat = desaStats.find(s => s.iddesa === iddesa);
-          if (!stat) return '#cbd5e1'; // gray for no data
+          if (!stat) return '#cbd5e1';
+
+          if (currentThematicMetric === 'muatan') {
+            const pct = stat.muatan_pct_str ? parseFloat(stat.muatan_pct_str) : 0;
+            if (pct >= 100) return '#065f46';
+            if (pct >= 85) return '#059669';
+            if (pct >= 70) return '#10b981';
+            if (pct >= 55) return '#0d9488';
+            if (pct >= 40) return '#14b8a6';
+            if (pct >= 25) return '#5eead4';
+            if (pct > 0) return '#ccfbf1';
+            return '#cbd5e1';
+          } else if (currentThematicMetric === 'reject') {
+            const rej = stat.rejected_total || 0;
+            if (rej >= 20) return '#7f1d1d';
+            if (rej >= 10) return '#dc2626';
+            if (rej >= 5) return '#ea580c';
+            if (rej > 0) return '#f59e0b';
+            return '#059669';
+          }
+
+          // Default FASIH
           const pct = stat.target_fasih_total ? ((stat.submitted_total + stat.approved_total + stat.rejected_total) / stat.target_fasih_total) * 100 : 0;
-          if (pct >= 100) return '#172554'; // Deep Midnight Navy (100% Target Selesai)
-          if (pct >= 85) return '#1d4ed8';  // Strong Deep Blue (85% - 99% Hampir Selesai)
-          if (pct >= 70) return '#2563eb';  // Vibrant Royal Blue (70% - 84% Sangat Baik)
-          if (pct >= 55) return '#0284c7';  // Ocean Sky Blue (55% - 69% Baik)
-          if (pct >= 40) return '#38bdf8';  // Bright Sky Blue (40% - 54% Sedang)
-          if (pct >= 25) return '#93c5fd';  // Soft Pastel Blue (25% - 39% Awal Menengah)
-          if (pct > 0) return '#e0f2fe';    // Pale Ice Blue (1% - 24% Awal Progres)
-          return '#cbd5e1';                 // Slate Neutral Gray (0% Belum Ada Progres)
+          if (pct >= 100) return '#172554';
+          if (pct >= 85) return '#1d4ed8';
+          if (pct >= 70) return '#2563eb';
+          if (pct >= 55) return '#0284c7';
+          if (pct >= 40) return '#38bdf8';
+          if (pct >= 25) return '#93c5fd';
+          if (pct > 0) return '#e0f2fe';
+          return '#cbd5e1';
         }
 
-        // Single-hue primary color gradient function for SLS (Green for Completed SLS)
+        // Thematic Color for SLS
         function getSlsColor(kode) {
           const stat = slsStats.find(s => s.kode === kode);
-          if (!stat) return '#cbd5e1'; // gray
-          
-          // Tandai hijau terang untuk SLS yang dinyatakan Selesai
-          if (stat.selesai === 1) return '#10b981'; // Green Emerald (SLS Selesai)
+          if (!stat) return '#cbd5e1';
 
-          let pct = 0;
-          if (!isSakernasMap && typeof settings !== 'undefined' && settings.show_progres_muatan === '1') {
-            pct = parseFloat(stat.muatan_pct_str || 0);
-          } else {
-            pct = parseFloat(stat.fasih_pct_str || 0);
-            if (!pct && stat.target_fasih) {
-              const real = (stat.submitted_by_pcl || 0) + (stat.approved || 0) + (stat.rejected || 0);
-              pct = (real / stat.target_fasih) * 100;
-            }
+          if (currentThematicMetric === 'muatan') {
+            const pct = parseFloat(stat.muatan_pct_str || 0);
+            if (pct >= 100) return '#065f46';
+            if (pct >= 85) return '#059669';
+            if (pct >= 70) return '#10b981';
+            if (pct >= 55) return '#0d9488';
+            if (pct >= 40) return '#14b8a6';
+            if (pct >= 25) return '#5eead4';
+            if (pct > 0) return '#ccfbf1';
+            return '#cbd5e1';
+          } else if (currentThematicMetric === 'reject') {
+            const rej = stat.rejected || 0;
+            if (rej >= 10) return '#7f1d1d';
+            if (rej >= 5) return '#dc2626';
+            if (rej >= 2) return '#ea580c';
+            if (rej > 0) return '#f59e0b';
+            return '#059669';
+          }
+
+          // Default FASIH
+          if (stat.selesai === 1) return '#10b981';
+
+          let pct = parseFloat(stat.fasih_pct_str || 0);
+          if (!pct && stat.target_fasih) {
+            const real = (stat.submitted_by_pcl || 0) + (stat.approved || 0) + (stat.rejected || 0);
+            pct = (real / stat.target_fasih) * 100;
           }
 
           if (pct >= 100) return '#172554';
@@ -1317,10 +1426,30 @@
           return '#cbd5e1';
         }
 
-        // Color coding function for Kecamatan (8 categories)
+        // Thematic Color for Kecamatan
         function getKecColor(nmkec) {
           const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === nmkec.toUpperCase());
           if (!stat) return '#cbd5e1';
+
+          if (currentThematicMetric === 'muatan') {
+            const pct = stat.muatan_pct_str ? parseFloat(stat.muatan_pct_str) : 0;
+            if (pct >= 100) return '#065f46';
+            if (pct >= 85) return '#059669';
+            if (pct >= 70) return '#10b981';
+            if (pct >= 55) return '#0d9488';
+            if (pct >= 40) return '#14b8a6';
+            if (pct >= 25) return '#5eead4';
+            if (pct > 0) return '#ccfbf1';
+            return '#cbd5e1';
+          } else if (currentThematicMetric === 'reject') {
+            const rej = stat.rejected_total || 0;
+            if (rej >= 50) return '#7f1d1d';
+            if (rej >= 25) return '#dc2626';
+            if (rej >= 10) return '#ea580c';
+            if (rej > 0) return '#f59e0b';
+            return '#059669';
+          }
+
           const pct = parseFloat(stat.fasih_pct_str || 0);
           if (pct >= 100) return '#172554';
           if (pct >= 85) return '#1d4ed8';
@@ -1463,7 +1592,7 @@
           layer.setStyle(slsStyle(layer.feature));
         }
 
-        // Top Statistics Calculator (Informasi SLS Selesai)
+        // Top Statistics Calculator (Informasi SLS Selesai & Filter Interaktif)
         function updateTopStats() {
           let activeSls = slsStats || [];
           if (currentFilteredKec) {
@@ -1471,19 +1600,95 @@
           }
 
           const totalSls = activeSls.length;
-          const selesaiCount = activeSls.filter(s => s.selesai === 1).length;
-          const belumCount = totalSls - selesaiCount;
+          const selesaiCount = activeSls.filter(s => {
+            const target = s.target_fasih || 0;
+            const real = (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0);
+            return s.selesai === 1 || (target > 0 && real >= target);
+          }).length;
+
+          const inProgressCount = activeSls.filter(s => {
+            const target = s.target_fasih || 0;
+            const real = (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0);
+            const draft = s.draft || 0;
+            const isDone = s.selesai === 1 || (target > 0 && real >= target);
+            return !isDone && (real > 0 || draft > 0);
+          }).length;
+
+          const notStartedCount = Math.max(0, totalSls - selesaiCount - inProgressCount);
           const selesaiPct = totalSls ? ((selesaiCount / totalSls) * 100).toFixed(1) : '0.0';
 
           const kpiTotal = document.getElementById('kpiTotalSls');
           const kpiSelesai = document.getElementById('kpiSlsSelesai');
           const kpiBelum = document.getElementById('kpiSlsBelum');
-          const kpiPct = document.getElementById('kpiSlsPct');
+          const kpiNotStarted = document.getElementById('kpiSlsNotStarted');
 
           if (kpiTotal) kpiTotal.textContent = `${totalSls.toLocaleString('id-ID')} SLS`;
-          if (kpiSelesai) kpiSelesai.textContent = `${selesaiCount.toLocaleString('id-ID')} SLS (${selesaiPct}%)`;
-          if (kpiBelum) kpiBelum.textContent = `${belumCount.toLocaleString('id-ID')} SLS`;
-          if (kpiPct) kpiPct.textContent = `${selesaiPct}% Selesai`;
+          if (kpiSelesai) kpiSelesai.textContent = `${selesaiCount.toLocaleString('id-ID')} (${selesaiPct}%)`;
+          if (kpiBelum) kpiBelum.textContent = `${inProgressCount.toLocaleString('id-ID')} SLS`;
+          if (kpiNotStarted) kpiNotStarted.textContent = `${notStartedCount.toLocaleString('id-ID')} SLS`;
+        }
+
+        function filterByKpiStatus(statusKey) {
+          currentStatusFilter = statusKey;
+
+          document.querySelectorAll('.gmaps-kpi-pill').forEach(pill => {
+            if (pill.getAttribute('data-status') === statusKey) {
+              pill.classList.add('active-filter');
+            } else {
+              pill.classList.remove('active-filter');
+            }
+          });
+
+          if (!statusKey) {
+            updateActiveLayerStyles();
+            return;
+          }
+
+          if (activeLayerName !== 'sls') {
+            switchToSlsLayer();
+          }
+
+          setTimeout(() => {
+            let foundBounds = L.latLngBounds();
+            let hasMatch = false;
+
+            if (slsLayer) {
+              slsLayer.eachLayer(layer => {
+                const stat = slsStats.find(s => s.kode === layer.feature.properties.kode);
+                const targetFasih = stat ? stat.target_fasih : 0;
+                const real = stat ? ((stat.submitted_by_pcl || 0) + (stat.approved || 0) + (stat.rejected || 0)) : 0;
+                const draft = stat ? (stat.draft || 0) : 0;
+                const isDone = stat && (stat.selesai === 1 || (targetFasih > 0 && real >= targetFasih));
+                const isInProgress = !isDone && (real > 0 || draft > 0);
+                const isNotStarted = !isDone && !isInProgress;
+
+                let match = false;
+                if (statusKey === 'done' && isDone) match = true;
+                else if (statusKey === 'in_progress' && isInProgress) match = true;
+                else if (statusKey === 'not_started' && isNotStarted) match = true;
+
+                if (match) {
+                  layer.setStyle({
+                    weight: 2.5,
+                    color: statusKey === 'done' ? '#10b981' : (statusKey === 'in_progress' ? '#f59e0b' : '#ef4444'),
+                    opacity: 1,
+                    fillOpacity: currentBasemapType === 'satellite' ? 0.70 : 0.60
+                  });
+                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
+                  hasMatch = true;
+                } else {
+                  layer.setStyle({
+                    opacity: 0.10,
+                    fillOpacity: 0.02
+                  });
+                }
+              });
+            }
+
+            if (hasMatch && foundBounds.isValid()) {
+              map.fitBounds(foundBounds, { padding: [40, 40] });
+            }
+          }, 100);
         }
 
         // Fit map bounds to filtered subdistrict
@@ -1920,16 +2125,21 @@
 
             <!-- Action Navigation Links -->
             <div class="map-drawer-actions">
-              <div class="map-action-btn-group" style="grid-template-columns: ${(pcl && pcl !== 'Belum Ditentukan') ? '1fr 1fr' : '1fr'};">
-                <a href="<%= navPrefix %>/subsls?search=${encodeURIComponent(properties.kode)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
-                  <i class="bi bi-table"></i> Tabel SLS (${properties.kode})
+              <div class="map-action-btn-group" style="grid-template-columns: ${(pcl && pcl !== 'Belum Ditentukan') ? '1fr 1fr' : '1fr'}; margin-bottom: 6px;">
+                <a href="<%= navPrefix %>/subsls?search=${encodeURIComponent(properties.kode)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; text-decoration: none; font-size: 11.5px; font-weight: 600; border-radius: 8px;">
+                  <i class="bi bi-table"></i> Tabel SLS
                 </a>
                 ${(pcl && pcl !== 'Belum Ditentukan') ? `
-                  <a href="<%= navPrefix %>/pcl?pcl=${encodeURIComponent(pcl)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; text-decoration: none; font-size: 12.5px; font-weight: 600; border-radius: 8px;">
+                  <a href="<%= navPrefix %>/pcl?pcl=${encodeURIComponent(pcl)}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; text-decoration: none; font-size: 11.5px; font-weight: 600; border-radius: 8px;">
                     <i class="bi bi-person"></i> Detail PCL
                   </a>
                 ` : ''}
               </div>
+              ${(pcl && pcl !== 'Belum Ditentukan') ? `
+                <button type="button" class="btn btn-primary btn-sm" onclick="highlightPclTerritory('${pcl.replace(/'/g, "\\'")}')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; font-size: 11.5px; font-weight: 600; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); cursor: pointer;">
+                  <i class="bi bi-funnel-fill"></i> Sorot Wilayah PCL (${pcl})
+                </button>
+              ` : ''}
             </div>
           `;
         }
@@ -2344,6 +2554,119 @@
           updateActiveLayerStyles();
         });
 
+        // Thematic Metric Switcher Listeners
+        function switchThematicMetric(metric) {
+          currentThematicMetric = metric;
+          [btnMetricFasih, btnMetricMuatan, btnMetricReject].forEach(btn => {
+            if (btn) btn.classList.remove('active');
+          });
+
+          if (metric === 'fasih' && btnMetricFasih) btnMetricFasih.classList.add('active');
+          else if (metric === 'muatan' && btnMetricMuatan) btnMetricMuatan.classList.add('active');
+          else if (metric === 'reject' && btnMetricReject) btnMetricReject.classList.add('active');
+
+          updateActiveLayerStyles();
+        }
+
+        if (btnMetricFasih) btnMetricFasih.addEventListener('click', () => switchThematicMetric('fasih'));
+        if (btnMetricMuatan) btnMetricMuatan.addEventListener('click', () => switchThematicMetric('muatan'));
+        if (btnMetricReject) btnMetricReject.addEventListener('click', () => switchThematicMetric('reject'));
+
+        // GPS Geolocation Listener
+        function locateUserGPS() {
+          if (!navigator.geolocation) {
+            alert('Perangkat atau browser Anda tidak mendukung Geolocation GPS.');
+            return;
+          }
+
+          if (btnLocateMe) {
+            btnLocateMe.innerHTML = '<span class="spinner-border spinner-border-sm" style="width: 11px; height: 11px; border-width: 2px;"></span>';
+          }
+
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const lat = pos.coords.latitude;
+              const lng = pos.coords.longitude;
+              const accuracy = pos.coords.accuracy;
+
+              if (btnLocateMe) {
+                btnLocateMe.innerHTML = '<i class="bi bi-crosshair"></i>';
+                btnLocateMe.style.color = 'var(--accent-cyan)';
+              }
+
+              if (userLocationMarker) map.removeLayer(userLocationMarker);
+              if (userAccuracyCircle) map.removeLayer(userAccuracyCircle);
+
+              const gpsIcon = L.divIcon({
+                className: 'gps-user-marker',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+              });
+
+              userLocationMarker = L.marker([lat, lng], { icon: gpsIcon }).addTo(map);
+              userLocationMarker.bindPopup(`
+                <div style="font-family: 'Inter', sans-serif; padding: 2px;">
+                  <strong style="color: var(--accent-blue);"><i class="bi bi-geo-alt-fill"></i> Posisi GPS Anda</strong><br>
+                  <span style="font-size: 11px; color: var(--text-muted);">Akurasi: ±${Math.round(accuracy)} meter</span>
+                </div>
+              `).openPopup();
+
+              userAccuracyCircle = L.circle([lat, lng], {
+                radius: accuracy,
+                color: '#0284c7',
+                fillColor: '#0284c7',
+                fillOpacity: 0.12,
+                weight: 1.5
+              }).addTo(map);
+
+              map.setView([lat, lng], 16, { animate: true });
+            },
+            (err) => {
+              if (btnLocateMe) btnLocateMe.innerHTML = '<i class="bi bi-crosshair"></i>';
+              alert('Gagal mendapatkan lokasi GPS: ' + (err.message || 'Izin lokasi tidak diberikan.'));
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          );
+        }
+
+        if (btnLocateMe) btnLocateMe.addEventListener('click', locateUserGPS);
+
+        // Fullscreen / Command Center Presentation Mode
+        function toggleFullscreenMap() {
+          const wrapper = document.getElementById('gmapsWrapper');
+          if (!wrapper) return;
+
+          if (!document.fullscreenElement) {
+            if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+            else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+            else if (wrapper.msRequestFullscreen) wrapper.msRequestFullscreen();
+            else wrapper.classList.toggle('is-fullscreen');
+          } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+          }
+
+          setTimeout(() => { map.invalidateSize(); }, 200);
+        }
+
+        if (btnFullscreenMap) btnFullscreenMap.addEventListener('click', toggleFullscreenMap);
+
+        document.addEventListener('fullscreenchange', () => {
+          const isFull = !!document.fullscreenElement;
+          if (btnFullscreenMap) {
+            btnFullscreenMap.innerHTML = isFull ? '<i class="bi bi-fullscreen-exit"></i>' : '<i class="bi bi-arrows-fullscreen"></i>';
+          }
+          map.invalidateSize();
+        });
+
+        // Interactive KPI Bar Status Filter Listeners
+        document.querySelectorAll('.gmaps-kpi-pill').forEach(pill => {
+          pill.addEventListener('click', () => {
+            const statusKey = pill.getAttribute('data-status') || '';
+            filterByKpiStatus(statusKey);
+          });
+        });
+
         // Filter Dropdown Listener
         kecFilter.addEventListener('change', (e) => {
           currentFilteredKec = e.target.value;
@@ -2356,85 +2679,56 @@
         btnResetView.addEventListener('click', () => {
           kecFilter.value = '';
           currentFilteredKec = '';
+          currentStatusFilter = '';
+          currentThematicMetric = 'fasih';
+          switchThematicMetric('fasih');
+          filterByKpiStatus('');
           if (mapSearchInput) mapSearchInput.value = '';
           map.setView(centerCoords, defaultZoom);
           updateActiveLayerStyles();
           updateTopStats();
         });
 
-        // -------------------------------------------------------------
-        // ADVANCED SPATIAL SEARCH ENGINE (FUZZY MATCHING + BM25 RANKING)
-        // -------------------------------------------------------------
-        let mapSearchDocs = [];
-        let mapBM25Index = null;
-        let activeDropdownIndex = -1;
+        // PCL Territory Highlight Helper
+        window.highlightPclTerritory = function(pclName) {
+          if (!pclName || pclName === 'Belum Ditentukan') return;
+          if (activeLayerName !== 'sls') {
+            switchToSlsLayer();
+          }
 
-        function buildMapSearchIndex() {
-          mapSearchDocs = [];
+          setTimeout(() => {
+            let foundBounds = L.latLngBounds();
+            let count = 0;
 
-          // 1. Index Kecamatan
-          if (kecGeoJson && kecGeoJson.features) {
-            kecGeoJson.features.forEach(f => {
-              const p = f.properties;
-              const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === p.nmkec.toUpperCase());
-              const pct = stat ? parseFloat(stat.fasih_pct_str || 0) : 0;
-              mapSearchDocs.push({
-                id: `kec_${p.nmkec}`,
-                type: 'kec',
-                title: `Kec. ${p.nmkec}`,
-                sub: `Kabupaten Penajam Paser Utara · ${pct.toFixed(1)}% FASIH`,
-                text: `kecamatan ${p.nmkec} kec ${p.nmkec} penajam paser utara`,
-                feature: f,
-                properties: p,
-                pct: pct
+            if (slsLayer) {
+              slsLayer.eachLayer(layer => {
+                const stat = slsStats.find(s => s.kode === layer.feature.properties.kode);
+                const layerPcl = stat ? stat.pcl : (layer.feature.properties.pcl || '');
+
+                if (layerPcl && layerPcl.toLowerCase().trim() === pclName.toLowerCase().trim()) {
+                  layer.setStyle({
+                    weight: 2.8,
+                    color: '#f59e0b',
+                    fillColor: '#f59e0b',
+                    fillOpacity: 0.70,
+                    opacity: 1
+                  });
+                  if (layer.getBounds) foundBounds.extend(layer.getBounds());
+                  count++;
+                } else {
+                  layer.setStyle({
+                    opacity: 0.10,
+                    fillOpacity: 0.02
+                  });
+                }
               });
-            });
-          }
+            }
 
-          // 2. Index Desa
-          if (desaGeoJson && desaGeoJson.features) {
-            desaGeoJson.features.forEach(f => {
-              const p = f.properties;
-              const stat = desaStats.find(s => s.iddesa === p.iddesa);
-              const pct = stat ? parseFloat(stat.fasih_pct_str || 0) : 0;
-              mapSearchDocs.push({
-                id: `desa_${p.iddesa}`,
-                type: 'desa',
-                title: `Desa ${p.nmdesa}`,
-                sub: `Kec. ${p.nmkec} · ${pct.toFixed(1)}% FASIH`,
-                text: `desa kelurahan ${p.nmdesa} ${p.nmkec} ${p.iddesa}`,
-                feature: f,
-                properties: p,
-                pct: pct
-              });
-            });
-          }
-
-          // 3. Index SLS
-          if (slsGeoJson && slsGeoJson.features) {
-            slsGeoJson.features.forEach(f => {
-              const p = f.properties;
-              const stat = slsStats.find(s => s.kode === p.kode);
-              const pcl = stat ? (stat.pcl || '') : (p.pcl || '');
-              const pml = stat ? (stat.pml || '') : (p.pml || '');
-              const statusStr = stat && stat.selesai === 1 ? 'Selesai' : 'Belum Selesai';
-              mapSearchDocs.push({
-                id: `sls_${p.kode}`,
-                type: 'sls',
-                title: `${p.nmsls || p.kode}`,
-                sub: `${p.nmdesa}, Kec. ${p.nmkec} ${pcl ? '· PCL: ' + pcl : ''} · [${statusStr}]`,
-                text: `sls rt rw ${p.nmsls} ${p.nmdesa} ${p.nmkec} ${p.kode} ${pcl} ${pml}`,
-                feature: f,
-                properties: p,
-                stat: stat
-              });
-            });
-          }
-
-          if (window.FuzzyBM25 && mapSearchDocs.length > 0) {
-            mapBM25Index = new window.FuzzyBM25(mapSearchDocs);
-          }
-        }
+            if (count > 0 && foundBounds.isValid()) {
+              map.fitBounds(foundBounds, { padding: [50, 50] });
+            }
+          }, 120);
+        };
 
         // -------------------------------------------------------------
         // ULTRA-LIGHTWEIGHT & FAST SPATIAL SEARCH ENGINE
