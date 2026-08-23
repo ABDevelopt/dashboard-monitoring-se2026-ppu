@@ -72,7 +72,7 @@
     z-index: 10;
   }
 
-  /* Floating Search & Filter Bar (Top Left) */
+  /* Floating Search & Filter Bar (Top Left) - Glassmorphism */
   .gmaps-floating-search-panel {
     position: absolute;
     top: 14px;
@@ -80,30 +80,48 @@
     z-index: 1000;
     width: 350px;
     max-width: calc(100% - 28px);
-    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.92);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid var(--border);
-    border-radius: 14px;
+    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
     padding: 10px 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.32);
     display: flex;
     flex-direction: column;
     gap: 7px;
+    transition: all 0.2s ease;
   }
 
   body.light-mode .gmaps-floating-search-panel {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   }
 
   .gmaps-search-box {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: rgba(var(--bg-primary-rgb, 15, 23, 42), 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 99px;
-    padding: 4px 12px;
+    padding: 5px 12px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: all 0.15s ease;
+  }
+
+  body.light-mode .gmaps-search-box {
+    background: rgba(241, 245, 249, 0.85);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .gmaps-search-box:focus-within {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
   }
 
   .gmaps-search-box .search-icon {
@@ -131,10 +149,12 @@
     align-items: center;
     justify-content: center;
     font-size: 13px;
+    transition: all 0.15s ease;
   }
 
   .gmaps-icon-btn:hover {
-    color: var(--accent-blue);
+    color: var(--accent-cyan);
+    transform: rotate(-45deg);
   }
 
   .gmaps-control-row {
@@ -149,11 +169,13 @@
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    background-color: var(--bg-secondary);
+    background-color: rgba(var(--bg-primary-rgb, 15, 23, 42), 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
-    border: 1px solid var(--border);
+    border: 1px solid rgba(255, 255, 255, 0.10);
     color: var(--text-primary);
     font-size: 11.5px;
     font-weight: 500;
@@ -169,25 +191,37 @@
     min-width: 130px;
     outline: none;
     box-sizing: border-box;
-    transition: border-color 0.15s ease, background-color 0.15s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    transition: all 0.15s ease;
   }
 
   body.light-mode .gmaps-select-pill {
+    background-color: rgba(241, 245, 249, 0.85);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   }
 
   .gmaps-select-pill:hover, .gmaps-select-pill:focus {
     border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
   }
 
   .gmaps-pill-group {
     display: inline-flex;
     align-items: center;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    background: rgba(var(--bg-primary-rgb, 15, 23, 42), 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 99px;
     padding: 2px;
     gap: 2px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+
+  body.light-mode .gmaps-pill-group {
+    background: rgba(241, 245, 249, 0.85);
+    border: 1px solid rgba(0, 0, 0, 0.08);
   }
 
   .gmaps-pill-btn {
@@ -196,7 +230,7 @@
     color: var(--text-secondary);
     font-size: 11px;
     font-weight: 500;
-    padding: 4px 9px;
+    padding: 4px 10px;
     border-radius: 99px;
     cursor: pointer;
     white-space: nowrap;
@@ -204,12 +238,18 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    user-select: none;
+  }
+
+  .gmaps-pill-btn:hover {
+    color: var(--text-primary);
   }
 
   .gmaps-pill-btn.active {
     background: var(--accent-blue);
-    color: white;
+    color: #ffffff;
     font-weight: 600;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.45);
   }
 
   /* Ultra-Lightweight Minimalist Polygon Progress Badges */
@@ -383,17 +423,17 @@
   }
 
   .gmaps-kpi-pill {
-    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.88);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--border);
+    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 99px;
-    padding: 6px 13px;
+    padding: 6px 14px;
     font-size: 12px;
     display: flex;
     align-items: center;
     gap: 6px;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.22);
     cursor: pointer;
     transition: all 0.15s ease;
     user-select: none;
@@ -402,20 +442,24 @@
   .gmaps-kpi-pill:hover {
     border-color: var(--accent-blue);
     transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.28);
   }
 
   .gmaps-kpi-pill.active-filter {
     border-color: var(--accent-cyan) !important;
-    background: rgba(6, 182, 212, 0.16) !important;
-    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.35) !important;
+    background: rgba(6, 182, 212, 0.18) !important;
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.35), 0 8px 24px rgba(6, 182, 212, 0.20) !important;
   }
 
   body.light-mode .gmaps-kpi-pill {
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
   }
 
   body.light-mode .gmaps-kpi-pill.active-filter {
-    background: rgba(6, 182, 212, 0.12) !important;
+    background: rgba(6, 182, 212, 0.14) !important;
+    border-color: var(--accent-cyan) !important;
   }
 
   /* Fullscreen Presentation / Command Center Mode */
@@ -447,7 +491,66 @@
     100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
   }
 
-  /* Floating Info & Legend Drawer Card (Bottom Left) */
+  /* Floating Right Action Controls (GPS & Fullscreen) - Glassmorphism */
+  .gmaps-floating-right-stack {
+    position: absolute;
+    top: 66px;
+    right: 14px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .gmaps-floating-square-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 99px;
+    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+    transition: all 0.15s ease;
+  }
+
+  .gmaps-floating-square-btn:hover {
+    color: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    transform: translateY(-1px);
+    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.95);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  }
+
+  .gmaps-floating-square-btn:active {
+    transform: scale(0.96);
+  }
+
+  body.light-mode .gmaps-floating-square-btn {
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  }
+
+  @media (max-width: 992px) {
+    .gmaps-floating-right-stack {
+      top: 155px;
+      right: 12px;
+    }
+    .gmaps-floating-square-btn {
+      width: 36px;
+      height: 36px;
+      font-size: 14px;
+    }
+  }
+
+  /* Floating Info & Legend Drawer Card (Bottom Left) - Glassmorphism */
   .gmaps-floating-drawer-card {
     position: absolute;
     bottom: 30px;
@@ -455,19 +558,20 @@
     z-index: 1000;
     width: 390px;
     max-width: calc(100% - 28px);
-    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.92);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38);
     overflow: hidden;
     transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s ease;
   }
 
   body.light-mode .gmaps-floating-drawer-card {
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14);
   }
 
   .gmaps-drawer-header {
@@ -475,7 +579,11 @@
     align-items: center;
     justify-content: space-between;
     padding: 9px 13px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  body.light-mode .gmaps-drawer-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   }
 
   .gmaps-drawer-tabs {
@@ -845,12 +953,6 @@
       <div class="gmaps-search-box">
         <i class="bi bi-search search-icon"></i>
         <input type="text" id="mapSearchInput" placeholder="Cari nama desa atau SLS..." />
-        <button id="btnLocateMe" class="gmaps-icon-btn" title="Lokasi GPS Saya">
-          <i class="bi bi-crosshair"></i>
-        </button>
-        <button id="btnFullscreenMap" class="gmaps-icon-btn" title="Mode Layar Penuh (Command Center)">
-          <i class="bi bi-arrows-fullscreen"></i>
-        </button>
         <button id="btnResetView" class="gmaps-icon-btn" title="Reset Pandangan Peta">
           <i class="bi bi-arrow-counterclockwise"></i>
         </button>
@@ -873,7 +975,7 @@
         </div>
       </div>
 
-      <!-- Row 3: Metrik Tematik Peta -->
+      <!-- Row 3: Metrik Tematik Peta (FASIH / Muatan) -->
       <div class="gmaps-control-row">
         <span style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 4px; padding-left: 2px;">
           <i class="bi bi-palette"></i> Metrik:
@@ -881,7 +983,6 @@
         <div class="gmaps-pill-group" style="flex: 1;">
           <button id="btnMetricFasih" class="gmaps-pill-btn active" title="Pewarnaan berdasarkan Capaian Dokumen FASIH" style="flex: 1;"><i class="bi bi-phone"></i> FASIH</button>
           <button id="btnMetricMuatan" class="gmaps-pill-btn" title="Pewarnaan berdasarkan Capaian Listing Usaha & Keluarga" style="flex: 1;"><i class="bi bi-pie-chart"></i> Muatan</button>
-          <button id="btnMetricReject" class="gmaps-pill-btn" title="Pewarnaan Dokumen Ditolak / Reject" style="flex: 1;"><i class="bi bi-x-circle"></i> Reject</button>
         </div>
       </div>
 
@@ -921,6 +1022,16 @@
         <span class="label">0% Mulai:</span>
         <strong id="kpiSlsNotStarted" style="color: var(--accent-red);">-- SLS</strong>
       </div>
+    </div>
+
+    <!-- 4. FLOATING RIGHT ACTION BUTTONS (GPS LOCATE & FULLSCREEN) -->
+    <div class="gmaps-floating-right-stack">
+      <button id="btnLocateMe" class="gmaps-floating-square-btn" title="Lokasi GPS Saya">
+        <i class="bi bi-crosshair"></i>
+      </button>
+      <button id="btnFullscreenMap" class="gmaps-floating-square-btn" title="Mode Layar Penuh (Command Center)">
+        <i class="bi bi-arrows-fullscreen"></i>
+      </button>
     </div>
 
     <!-- 4. FLOATING SIDE CARD DRAWER (LEFT SIDE) FOR STATS & LEGEND -->
@@ -1290,7 +1401,6 @@
         const btnFullscreenMap = document.getElementById('btnFullscreenMap');
         const btnMetricFasih = document.getElementById('btnMetricFasih');
         const btnMetricMuatan = document.getElementById('btnMetricMuatan');
-        const btnMetricReject = document.getElementById('btnMetricReject');
         const btnLayerKec = document.getElementById('btnLayerKec');
         const btnLayerDesa = document.getElementById('btnLayerDesa');
         const btnLayerSls = document.getElementById('btnLayerSls');
@@ -1362,13 +1472,6 @@
             if (pct >= 25) return '#5eead4';
             if (pct > 0) return '#ccfbf1';
             return '#cbd5e1';
-          } else if (currentThematicMetric === 'reject') {
-            const rej = stat.rejected_total || 0;
-            if (rej >= 20) return '#7f1d1d';
-            if (rej >= 10) return '#dc2626';
-            if (rej >= 5) return '#ea580c';
-            if (rej > 0) return '#f59e0b';
-            return '#059669';
           }
 
           // Default FASIH
@@ -1398,13 +1501,6 @@
             if (pct >= 25) return '#5eead4';
             if (pct > 0) return '#ccfbf1';
             return '#cbd5e1';
-          } else if (currentThematicMetric === 'reject') {
-            const rej = stat.rejected || 0;
-            if (rej >= 10) return '#7f1d1d';
-            if (rej >= 5) return '#dc2626';
-            if (rej >= 2) return '#ea580c';
-            if (rej > 0) return '#f59e0b';
-            return '#059669';
           }
 
           // Default FASIH
@@ -1441,13 +1537,6 @@
             if (pct >= 25) return '#5eead4';
             if (pct > 0) return '#ccfbf1';
             return '#cbd5e1';
-          } else if (currentThematicMetric === 'reject') {
-            const rej = stat.rejected_total || 0;
-            if (rej >= 50) return '#7f1d1d';
-            if (rej >= 25) return '#dc2626';
-            if (rej >= 10) return '#ea580c';
-            if (rej > 0) return '#f59e0b';
-            return '#059669';
           }
 
           const pct = parseFloat(stat.fasih_pct_str || 0);
@@ -2557,20 +2646,18 @@
         // Thematic Metric Switcher Listeners
         function switchThematicMetric(metric) {
           currentThematicMetric = metric;
-          [btnMetricFasih, btnMetricMuatan, btnMetricReject].forEach(btn => {
+          [btnMetricFasih, btnMetricMuatan].forEach(btn => {
             if (btn) btn.classList.remove('active');
           });
 
           if (metric === 'fasih' && btnMetricFasih) btnMetricFasih.classList.add('active');
           else if (metric === 'muatan' && btnMetricMuatan) btnMetricMuatan.classList.add('active');
-          else if (metric === 'reject' && btnMetricReject) btnMetricReject.classList.add('active');
 
           updateActiveLayerStyles();
         }
 
         if (btnMetricFasih) btnMetricFasih.addEventListener('click', () => switchThematicMetric('fasih'));
         if (btnMetricMuatan) btnMetricMuatan.addEventListener('click', () => switchThematicMetric('muatan'));
-        if (btnMetricReject) btnMetricReject.addEventListener('click', () => switchThematicMetric('reject'));
 
         // GPS Geolocation Listener
         function locateUserGPS() {
