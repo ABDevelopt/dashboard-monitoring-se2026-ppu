@@ -775,8 +775,11 @@
     <div class="gmaps-floating-search-panel">
       <div class="gmaps-search-box">
         <i class="bi bi-search search-icon"></i>
-        <input type="text" id="mapSearchInput" placeholder="Cari nama desa atau SLS..." />
-        <button id="btnResetView" class="gmaps-icon-btn" title="Reset Pandangan Peta">
+        <input type="text" id="mapSearchInput" placeholder="Cari desa atau SLS..." autocomplete="off" />
+        <button id="btnClearSearch" class="gmaps-icon-btn" style="display: none;" title="Hapus Pencarian">
+          <i class="bi bi-x-circle-fill"></i>
+        </button>
+        <button id="btnResetView" class="gmaps-icon-btn" title="Reset Tampilan Peta">
           <i class="bi bi-arrow-counterclockwise"></i>
         </button>
       </div>
@@ -1420,6 +1423,8 @@
         }
 
         function showKecDetails(nmkec) {
+          if (window.ensureGmapsDrawerOpen) window.ensureGmapsDrawerOpen();
+          if (window.switchGmapsTab) window.switchGmapsTab('stats');
           const stat = kecStats.find(k => k.kecamatan && k.kecamatan.toUpperCase() === nmkec.toUpperCase());
           if (!stat) return;
 
@@ -1541,6 +1546,8 @@
         // Show details in Sidebar + Integrated Drilldown Links
         function showDesaDetails(properties) {
           if (!properties) return;
+          if (window.ensureGmapsDrawerOpen) window.ensureGmapsDrawerOpen();
+          if (window.switchGmapsTab) window.switchGmapsTab('stats');
           const stat = desaStats.find(s => s.iddesa === properties.iddesa);
           const total = stat ? stat.total_subsls : 0;
           const selesai = stat ? stat.selesai : 0;
@@ -1739,6 +1746,8 @@
 
         function showSlsDetails(properties) {
           if (!properties) return;
+          if (window.ensureGmapsDrawerOpen) window.ensureGmapsDrawerOpen();
+          if (window.switchGmapsTab) window.switchGmapsTab('stats');
           const stat = slsStats.find(s => s.kode === properties.kode);
           const isSelesai = stat ? stat.selesai === 1 : false;
           const muatan = stat ? stat.muatan : (properties.muatan || 0);
@@ -2241,19 +2250,34 @@
           fitBoundsToKecamatan(currentFilteredKec);
         });
 
+        const btnClearSearch = document.getElementById('btnClearSearch');
+
         // Reset View Button
         btnResetView.addEventListener('click', () => {
           kecFilter.value = '';
           currentFilteredKec = '';
           if (mapSearchInput) mapSearchInput.value = '';
+          if (btnClearSearch) btnClearSearch.style.display = 'none';
           map.setView(centerCoords, defaultZoom);
           updateActiveLayerStyles();
         });
+
+        if (btnClearSearch && mapSearchInput) {
+          btnClearSearch.addEventListener('click', () => {
+            mapSearchInput.value = '';
+            btnClearSearch.style.display = 'none';
+            mapSearchInput.focus();
+            updateActiveLayerStyles();
+          });
+        }
 
         // Search Input Listener with auto-focus/highlight
         if (mapSearchInput) {
           mapSearchInput.addEventListener('input', (e) => {
             const q = e.target.value.toLowerCase().trim();
+            if (btnClearSearch) {
+              btnClearSearch.style.display = q ? 'flex' : 'none';
+            }
             if (!q) {
               updateActiveLayerStyles();
               return;
