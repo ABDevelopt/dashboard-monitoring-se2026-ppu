@@ -3632,29 +3632,66 @@
               if (matchedSls) {
                 const isSelesai = stat ? stat.selesai === 1 : false;
                 const pcl = stat ? (stat.pcl || '-') : (matchedSls.properties.pcl || '-');
-                const fasihPct = stat ? (stat.fasih_pct_str || '0.0') : '0.0';
+                const pml = stat ? (stat.pml || '-') : (matchedSls.properties.pml || '-');
+                const targetFasih = stat ? (stat.target_fasih || 0) : 0;
+                const submitted = stat ? (stat.submitted_by_pcl || 0) : 0;
+                const approved = stat ? (stat.approved || 0) : 0;
+                const rejected = stat ? (stat.rejected || 0) : 0;
+                const realisasiFasih = submitted + approved + rejected;
+                const fasihPct = targetFasih ? Math.min(parseFloat(((realisasiFasih / targetFasih) * 100).toFixed(1)), 100) : 0;
+                const usaha = stat ? (stat.usaha_total || 0) : 0;
+                const keluarga = stat ? (stat.keluarga_total || 0) : 0;
+                const kodeSls = matchedSls.properties.kode || '';
+
                 popupContent = `
-                  <div style="font-family: 'Inter', sans-serif; min-width: 220px; padding: 2px;">
-                    <div style="font-size: 10px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">
-                      <i class="bi bi-crosshair"></i> Posisi GPS Anda Terdeteksi:
+                  <div style="font-family: 'Inter', sans-serif; min-width: 230px; max-width: 260px; padding: 2px;">
+                    <div style="font-size: 10px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between;">
+                      <span><i class="bi bi-crosshair"></i> Posisi GPS Terdeteksi</span>
+                      <span style="font-size: 9px; color: var(--text-muted); font-weight: 500;">±${Math.round(accuracy)}m</span>
                     </div>
-                    <strong style="font-size: 13.5px; color: var(--text-primary);"><i class="bi bi-pin-map-fill" style="color: #0284c7;"></i> ${nmsls}</strong><br>
-                    <span style="font-size: 11px; color: var(--text-secondary);"><i class="bi bi-geo-alt"></i> Desa ${nmdesa}, Kec. ${nmkec}</span>
-                    <div style="background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; margin: 8px 0 6px 0; font-size: 11px;">
-                      <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                    <strong style="font-size: 13.5px; color: var(--text-primary); display: block;"><i class="bi bi-pin-map-fill" style="color: #0284c7;"></i> ${nmsls}</strong>
+                    <span style="font-size: 10.5px; color: var(--text-secondary); display: block; margin-bottom: 6px;"><i class="bi bi-geo-alt"></i> Desa ${nmdesa}, Kec. ${nmkec}</span>
+
+                    <!-- Main Stats Container -->
+                    <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; margin-bottom: 8px; font-size: 10.5px;">
+                      <!-- Status Pill & Workload Ratio -->
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                         <span style="color: var(--text-muted);">Status:</span>
                         <strong style="color: ${isSelesai ? '#10b981' : '#f59e0b'}; font-weight: 700;">${isSelesai ? '🟢 Selesai Resmi' : '🟡 Sedang Berjalan'}</strong>
                       </div>
-                      <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
-                        <span style="color: var(--text-muted);">Progres FASIH:</span>
-                        <strong style="color: var(--accent-blue);">${fasihPct}%</strong>
+
+                      <!-- Mini Progress Track -->
+                      <div style="margin-bottom: 6px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 10px;">
+                          <span style="color: var(--text-muted);">Progres FASIH:</span>
+                          <strong style="color: var(--accent-blue);">${realisasiFasih} / ${targetFasih} Dok (${fasihPct}%)</strong>
+                        </div>
+                        <div style="height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 99px; overflow: hidden;">
+                          <div style="width: ${Math.min(fasihPct, 100)}%; height: 100%; background: ${isSelesai ? '#10b981' : (fasihPct < 40 ? '#ef4444' : '#0284c7')}; border-radius: 99px;"></div>
+                        </div>
+                      </div>
+
+                      <!-- Usaha & Keluarga -->
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
+                        <span style="color: var(--text-muted);"><i class="bi bi-shop" style="font-size: 9.5px;"></i> Usaha / Keluarga:</span>
+                        <strong style="color: var(--text-primary);">${usaha.toLocaleString('id-ID')} / ${keluarga.toLocaleString('id-ID')}</strong>
+                      </div>
+
+                      <!-- Officers Info (PCL & PML) -->
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                        <span style="color: var(--text-muted);"><i class="bi bi-person-badge" style="font-size: 9.5px;"></i> PCL:</span>
+                        <strong style="color: var(--text-primary);" title="${pcl}">${pcl}</strong>
                       </div>
                       <div style="display: flex; justify-content: space-between;">
-                        <span style="color: var(--text-muted);">Petugas PCL:</span>
-                        <strong style="color: var(--text-primary);">${pcl}</strong>
+                        <span style="color: var(--text-muted);"><i class="bi bi-person-check" style="font-size: 9.5px;"></i> PML (Pengawas):</span>
+                        <strong style="color: var(--text-primary);" title="${pml}">${pml}</strong>
                       </div>
                     </div>
-                    <span style="font-size: 10px; color: var(--text-muted); display: block; text-align: right;">Akurasi: ±${Math.round(accuracy)}m</span>
+
+                    <!-- Quick Action Link -->
+                    <button type="button" class="btn btn-primary btn-xs" onclick="if (window.focusSubSlsOnMap) window.focusSubSlsOnMap('${kodeSls}');" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 5px; padding: 5px; font-size: 10.5px; font-weight: 700; border-radius: 6px; text-decoration: none;">
+                      <i class="bi bi-layout-sidebar-reverse"></i> Lihat Detail Lengkap SLS
+                    </button>
                   </div>
                 `;
                 // Tampilkan rincian data di drawer samping (hanya buka otomatis di layar besar)
@@ -3663,14 +3700,45 @@
                   window.ensureGmapsDrawerOpen();
                 }
               } else if (matchedDesa) {
+                const stat = getDesaStat(matchedDesa.properties.iddesa);
+                const total = stat ? stat.total_subsls : 0;
+                const selesai = stat ? stat.selesai : 0;
+                const targetFasih = stat ? stat.target_fasih_total : 0;
+                const submitted = stat ? stat.submitted_total : 0;
+                const approved = stat ? stat.approved_total : 0;
+                const rejected = stat ? stat.rejected_total : 0;
+                const totalRealisasiFasih = submitted + approved + rejected;
+                const fasihPct = targetFasih ? Math.min(parseFloat(((totalRealisasiFasih / targetFasih) * 100).toFixed(1)), 100) : 0;
+                const iddesa = matchedDesa.properties.iddesa || '';
+
                 popupContent = `
-                  <div style="font-family: 'Inter', sans-serif; min-width: 200px; padding: 2px;">
-                    <div style="font-size: 10px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; margin-bottom: 2px;">
-                      <i class="bi bi-crosshair"></i> Posisi GPS Anda Terdeteksi:
+                  <div style="font-family: 'Inter', sans-serif; min-width: 230px; max-width: 260px; padding: 2px;">
+                    <div style="font-size: 10px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between;">
+                      <span><i class="bi bi-crosshair"></i> Posisi GPS Terdeteksi</span>
+                      <span style="font-size: 9px; color: var(--text-muted); font-weight: 500;">±${Math.round(accuracy)}m</span>
                     </div>
-                    <strong style="font-size: 13.5px; color: var(--text-primary);"><i class="bi bi-geo-alt-fill" style="color: #0284c7;"></i> Desa ${nmdesa}</strong><br>
-                    <span style="font-size: 11px; color: var(--text-secondary);">Kecamatan ${nmkec}</span>
-                    <span style="font-size: 10px; color: var(--text-muted); display: block; margin-top: 6px; text-align: right;">Akurasi: ±${Math.round(accuracy)}m</span>
+                    <strong style="font-size: 13.5px; color: var(--text-primary); display: block;"><i class="bi bi-geo-alt-fill" style="color: #0284c7;"></i> Desa ${nmdesa}</strong>
+                    <span style="font-size: 10.5px; color: var(--text-secondary); display: block; margin-bottom: 6px;">Kecamatan ${nmkec}</span>
+
+                    <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; margin-bottom: 8px; font-size: 10.5px;">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span style="color: var(--text-muted);">SLS Selesai:</span>
+                        <strong style="color: #10b981;">${selesai} / ${total} SLS</strong>
+                      </div>
+                      <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 10px;">
+                          <span style="color: var(--text-muted);">Progres FASIH:</span>
+                          <strong style="color: var(--accent-blue);">${totalRealisasiFasih.toLocaleString('id-ID')} / ${targetFasih.toLocaleString('id-ID')} Dok (${fasihPct}%)</strong>
+                        </div>
+                        <div style="height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 99px; overflow: hidden;">
+                          <div style="width: ${Math.min(fasihPct, 100)}%; height: 100%; background: ${fasihPct >= 100 ? '#10b981' : (fasihPct < 25 ? '#ef4444' : '#0284c7')}; border-radius: 99px;"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button type="button" class="btn btn-primary btn-xs" onclick="if (window.focusDesaOnMap) window.focusDesaOnMap('${iddesa}');" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 5px; padding: 5px; font-size: 10.5px; font-weight: 700; border-radius: 6px; text-decoration: none;">
+                      <i class="bi bi-layout-sidebar-reverse"></i> Lihat Detail Lengkap Desa
+                    </button>
                   </div>
                 `;
                 showDesaDetails(matchedDesa.properties);
