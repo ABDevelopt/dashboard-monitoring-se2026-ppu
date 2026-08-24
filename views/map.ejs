@@ -1036,12 +1036,16 @@
   .map-status-pill.rejected { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
   .map-status-pill.draft { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
 
-  /* Teks Oren di Drawer diubah menjadi Hitam Bold */
-  .gmaps-floating-drawer-card .badge-orange,
-  .gmaps-floating-drawer-card .badge.badge-orange,
+  /* Button Highlight PCL di Drawer - High Contrast White in Dark Mode */
   .gmaps-floating-drawer-card .btn-highlight-pcl {
-    color: #000000 !important;
+    color: #ffffff !important;
     font-weight: 700 !important;
+  }
+
+  body.light-mode .gmaps-floating-drawer-card .btn-highlight-pcl {
+    color: #7c2d12 !important;
+    background: rgba(245, 158, 11, 0.25) !important;
+    border-color: rgba(245, 158, 11, 0.6) !important;
   }
 
   /* Action Buttons Container */
@@ -2978,8 +2982,8 @@
                 ` : ''}
               </div>
               ${(pcl && pcl !== 'Belum Ditentukan') ? `
-                <button type="button" class="btn btn-sm btn-highlight-pcl" onclick="highlightPclTerritory('${pcl.replace(/'/g, "\\'")}')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7.5px 10px; font-size: 11.5px; font-weight: 700; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.20); color: #fbbf24; cursor: pointer;">
-                  <i class="bi bi-funnel-fill" style="color: #fbbf24;"></i> Sorot Wilayah PCL (${pcl})
+                <button type="button" class="btn btn-sm btn-highlight-pcl" onclick="highlightPclTerritory('${pcl.replace(/'/g, "\\'")}')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7.5px 10px; font-size: 11.5px; font-weight: 700; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.20); color: #ffffff; cursor: pointer;">
+                  <i class="bi bi-funnel-fill" style="color: #ffffff;"></i> Sorot Wilayah PCL (${pcl})
                 </button>
               ` : ''}
             </div>
