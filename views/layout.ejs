@@ -431,18 +431,31 @@
           <span class="nav-icon icon-purple"><i class="bi bi-grid-fill"></i></span>
           <span class="nav-label">Menu Utama Admin</span>
         </a>
-        <a href="<%= navPrefix %>/admin/upload?tab=fasih" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'fasih') || activePage === 'upload-fasih' ? 'active' : '' %>">
-          <span class="nav-icon icon-purple"><i class="bi bi-file-earmark-code-fill"></i></span>
-          <span class="nav-label">Status FASIH</span>
-        </a>
-        <a href="<%= navPrefix %>/admin/upload?tab=muatan" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'muatan') || activePage === 'upload-muatan' ? 'active' : '' %>">
-          <span class="nav-icon icon-cyan"><i class="bi bi-people-fill"></i></span>
-          <span class="nav-label">Progres Muatan</span>
-        </a>
-        <a href="<%= navPrefix %>/admin/upload?tab=sls" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'sls') || activePage === 'upload-sls' ? 'active' : '' %>">
-          <span class="nav-icon icon-emerald"><i class="bi bi-check2-square"></i></span>
-          <span class="nav-label">Status SLS Selesai</span>
-        </a>
+        <!-- Collapsible Item: Upload Data -->
+        <% const isUploadActive = (activePage === 'upload' || ['upload-muatan', 'upload-fasih', 'upload-sls'].includes(activePage)); %>
+        <div class="nav-sub-wrapper <%= isUploadActive ? 'is-open' : 'is-collapsed' %>" id="uploadNavSubWrapper" style="margin-bottom: 2px;">
+          <div class="nav-item nav-sub-header <%= isUploadActive ? 'active' : '' %>" onclick="toggleUploadSubMenu(event)" role="button" tabindex="0" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="nav-icon icon-amber"><i class="bi bi-cloud-arrow-up-fill"></i></span>
+              <span class="nav-label">Upload Data</span>
+            </div>
+            <i class="bi bi-chevron-down nav-sub-chevron" id="uploadSubChevron" style="font-size: 11px; transition: transform 0.25s ease; color: var(--text-muted); <%= isUploadActive ? 'transform: rotate(0deg);' : 'transform: rotate(-90deg);' %>"></i>
+          </div>
+          <div class="nav-sub-content" id="uploadSubContent" style="<%= isUploadActive ? 'display: block;' : 'display: none;' %> padding-left: 14px; margin-top: 2px; margin-bottom: 4px; border-left: 2px solid rgba(255, 255, 255, 0.1); margin-left: 16px;">
+            <a href="<%= navPrefix %>/admin/upload?tab=fasih" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'fasih') || activePage === 'upload-fasih' ? 'active' : '' %>" style="font-size: 12.5px; padding: 7px 10px; margin-bottom: 2px;">
+              <span class="nav-icon icon-purple"><i class="bi bi-file-earmark-code-fill"></i></span>
+              <span class="nav-label">Status FASIH</span>
+            </a>
+            <a href="<%= navPrefix %>/admin/upload?tab=muatan" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'muatan') || activePage === 'upload-muatan' ? 'active' : '' %>" style="font-size: 12.5px; padding: 7px 10px; margin-bottom: 2px;">
+              <span class="nav-icon icon-cyan"><i class="bi bi-people-fill"></i></span>
+              <span class="nav-label">Progres Muatan</span>
+            </a>
+            <a href="<%= navPrefix %>/admin/upload?tab=sls" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'sls') || activePage === 'upload-sls' ? 'active' : '' %>" style="font-size: 12.5px; padding: 7px 10px;">
+              <span class="nav-icon icon-emerald"><i class="bi bi-check2-square"></i></span>
+              <span class="nav-label">Status SLS Selesai</span>
+            </a>
+          </div>
+        </div>
         <a href="<%= navPrefix %>/admin/master" class="nav-item <%= activePage === 'master' ? 'active' : '' %>">
           <span class="nav-icon icon-cyan"><i class="bi bi-database-fill-gear"></i></span>
           <span class="nav-label">Kelola Master Data</span>
@@ -515,6 +528,31 @@
     </div>
   </div>
 </aside>
+<script>
+  window.toggleUploadSubMenu = function(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const wrapper = document.getElementById('uploadNavSubWrapper');
+    const content = document.getElementById('uploadSubContent');
+    const chevron = document.getElementById('uploadSubChevron');
+    if (!wrapper || !content) return;
+    
+    const isCollapsed = content.style.display === 'none' || wrapper.classList.contains('is-collapsed');
+    if (isCollapsed) {
+      wrapper.classList.remove('is-collapsed');
+      wrapper.classList.add('is-open');
+      content.style.display = 'block';
+      if (chevron) chevron.style.transform = 'rotate(0deg)';
+    } else {
+      wrapper.classList.add('is-collapsed');
+      wrapper.classList.remove('is-open');
+      content.style.display = 'none';
+      if (chevron) chevron.style.transform = 'rotate(-90deg)';
+    }
+  };
+</script>
 
 <%# MODERN MOBILE BOTTOM QUICK-DOCK %>
 <nav class="bottom-nav" aria-label="Mobile Navigation">
