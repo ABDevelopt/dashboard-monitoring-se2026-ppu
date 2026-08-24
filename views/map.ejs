@@ -1513,23 +1513,23 @@
         </button>
       </div>
       
-      <!-- Primary Spatial Selectors (Kecamatan & Desa/Kelurahan 2-Column Grid) -->
-      <div class="gmaps-control-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px;">
-        <select id="kecFilter" class="gmaps-select-pill" title="Filter Berdasarkan Kecamatan" style="width: 100%;">
-          <option value="">-- Semua Kecamatan --</option>
-          <option value="BABULU">Kec. Babulu</option>
-          <option value="WARU">Kec. Waru</option>
-          <option value="PENAJAM">Kec. Penajam</option>
-          <option value="SEPAKU">Kec. Sepaku</option>
-        </select>
-        
-        <select id="desaFilter" class="gmaps-select-pill" title="Filter Berdasarkan Desa / Kelurahan" style="width: 100%;">
-          <option value="">-- Semua Desa / Kel --</option>
-        </select>
-      </div>
-
       <!-- Collapsible Filter & Options Section -->
       <div class="gmaps-controls-collapsible" id="toolsExtraRows">
+        <!-- Section 1: Filter Wilayah (Kecamatan & Desa) -->
+        <div class="gmaps-section-label"><i class="bi bi-geo-alt"></i> Filter Wilayah Spasial</div>
+        <div class="gmaps-control-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 6px;">
+          <select id="kecFilter" class="gmaps-select-pill" title="Filter Berdasarkan Kecamatan" style="width: 100%;">
+            <option value="">-- Semua Kecamatan --</option>
+            <option value="BABULU">Kec. Babulu</option>
+            <option value="WARU">Kec. Waru</option>
+            <option value="PENAJAM">Kec. Penajam</option>
+            <option value="SEPAKU">Kec. Sepaku</option>
+          </select>
+          
+          <select id="desaFilter" class="gmaps-select-pill" title="Filter Berdasarkan Desa / Kelurahan" style="width: 100%;">
+            <option value="">-- Semua Desa / Kel --</option>
+          </select>
+        </div>
         <!-- Section 1: Filter Petugas PCL -->
         <div class="gmaps-section-label"><i class="bi bi-person-badge"></i> Filter Petugas PCL</div>
         <div class="gmaps-control-row" style="margin-bottom: 8px;">
@@ -1737,13 +1737,12 @@
         const expandIcon = document.getElementById('drawerExpandIcon');
         if (!card) return;
 
-        if (card.classList.contains('collapsed')) {
-          card.classList.remove('collapsed');
-          if (icon) icon.className = 'bi bi-chevron-down';
-        }
-
-        // Pada mobile (<= 768px), buka drawer secara separuh (is-peek mode) saat wilayah dipilih
+        // Hanya buka drawer secara otomatis di layar mobile (<= 768px)
         if (window.innerWidth <= 768) {
+          if (card.classList.contains('collapsed')) {
+            card.classList.remove('collapsed');
+            if (icon) icon.className = 'bi bi-chevron-down';
+          }
           card.classList.add('is-peek');
           if (expandIcon) expandIcon.className = 'bi bi-arrows-angle-expand';
         }
@@ -4024,10 +4023,21 @@
           });
         }
 
-        // Toggle Tools Expand / Collapse
+        // Toggle Tools Expand / Collapse (Tutup otomatis di Mobile saat halaman dibuka, terbuka di Desktop)
         const btnToggleToolsExpand = document.getElementById('btnToggleToolsExpand');
         const gmapsToolsPanel = document.getElementById('gmapsToolsPanel');
         const toolsExpandIcon = document.getElementById('toolsExpandIcon');
+
+        if (gmapsToolsPanel) {
+          if (window.innerWidth <= 768) {
+            gmapsToolsPanel.classList.add('is-collapsed');
+            if (toolsExpandIcon) toolsExpandIcon.className = 'bi bi-sliders';
+          } else {
+            gmapsToolsPanel.classList.remove('is-collapsed');
+            if (toolsExpandIcon) toolsExpandIcon.className = 'bi bi-chevron-bar-up';
+          }
+        }
+
         if (btnToggleToolsExpand && gmapsToolsPanel) {
           btnToggleToolsExpand.addEventListener('click', () => {
             gmapsToolsPanel.classList.toggle('is-collapsed');
