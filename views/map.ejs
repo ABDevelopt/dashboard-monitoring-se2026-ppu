@@ -2163,7 +2163,7 @@
 
         // Styles for layers with ultra-crisp refined outline thickness & Outline Only mode
         function kecStyle(feature) {
-          const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
+          const isSelectedKec = !currentFilteredKec || (feature.properties.nmkec && feature.properties.nmkec.toUpperCase() === currentFilteredKec.toUpperCase());
           if (isOutlineOnlyMode) {
             return {
               fillColor: 'transparent',
@@ -2314,7 +2314,7 @@
             return;
           }
 
-          const isSelectedKec = !currentFilteredKec || layer.feature.properties.nmkec === currentFilteredKec;
+          const isSelectedKec = !currentFilteredKec || (layer.feature.properties.nmkec && layer.feature.properties.nmkec.toUpperCase() === currentFilteredKec.toUpperCase());
           let matchesKpi = true;
           if (activeLayerName === 'sls' && currentStatusFilter) {
             const stat = getSlsStat(layer.feature.properties.kode);
@@ -3184,15 +3184,29 @@
             const searchParam = params.get('search') || params.get('kode');
 
             if (kecParam) {
-              if (kecFilter) kecFilter.value = kecParam;
-              currentFilteredKec = kecParam;
-              populateDesaFilterList(kecParam);
+              currentFilteredKec = kecParam.toUpperCase();
+              if (kecFilter) {
+                const opt = Array.from(kecFilter.options).find(o => o.value.toUpperCase() === currentFilteredKec);
+                if (opt) kecFilter.value = opt.value;
+              }
+              populateDesaFilterList(currentFilteredKec);
               updateActiveLayerStyles();
-              setTimeout(() => fitBoundsToKecamatan(kecParam), 200);
+              setTimeout(() => fitBoundsToKecamatan(currentFilteredKec), 200);
             }
 
             if (desaParam) {
               currentFilteredDesa = desaParam;
+              if (desaStats) {
+                const matched = desaStats.find(d => d.desa && d.desa.toUpperCase() === desaParam.toUpperCase());
+                if (matched && matched.kecamatan) {
+                  currentFilteredKec = matched.kecamatan.toUpperCase();
+                  if (kecFilter) {
+                    const opt = Array.from(kecFilter.options).find(o => o.value.toUpperCase() === currentFilteredKec);
+                    if (opt) kecFilter.value = opt.value;
+                  }
+                  populateDesaFilterList(currentFilteredKec);
+                }
+              }
               if (desaFilter) desaFilter.value = desaParam;
               updateActiveLayerStyles();
               updateTopStats();
@@ -3933,13 +3947,22 @@
           desaFilter.addEventListener('change', (e) => {
             currentFilteredDesa = e.target.value;
             
-            // Auto match kecamatan if desa selected without prior kecamatan
-            if (currentFilteredDesa && !currentFilteredKec && desaStats) {
+            // Auto match & update kecamatan whenever a desa is selected
+            if (currentFilteredDesa && desaStats) {
               const matchedDesa = desaStats.find(d => d.desa && d.desa.toUpperCase() === currentFilteredDesa.toUpperCase());
               if (matchedDesa && matchedDesa.kecamatan) {
-                currentFilteredKec = matchedDesa.kecamatan;
-                if (kecFilter) kecFilter.value = currentFilteredKec;
+                currentFilteredKec = matchedDesa.kecamatan.toUpperCase();
+                if (kecFilter) {
+                  const opt = Array.from(kecFilter.options).find(o => o.value.toUpperCase() === currentFilteredKec);
+                  if (opt) kecFilter.value = opt.value;
+                  else kecFilter.value = currentFilteredKec;
+                }
+                populateDesaFilterList(currentFilteredKec);
               }
+            } else if (!currentFilteredDesa && currentFilteredKec) {
+              populateDesaFilterList(currentFilteredKec);
+            } else if (!currentFilteredDesa && !currentFilteredKec) {
+              populateDesaFilterList('');
             }
 
             updateActiveLayerStyles();
