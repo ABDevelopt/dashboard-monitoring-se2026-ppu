@@ -1429,6 +1429,15 @@
       border-radius: 20px 20px 0 0;
       border-bottom: none;
       box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.45);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .gmaps-drawer-content {
+      height: 360px;
+      max-height: 60vh;
+    }
+    .gmaps-floating-drawer-card.is-peek .gmaps-drawer-content {
+      height: 185px !important;
+      max-height: 185px !important;
     }
     .gmaps-floating-basemap-pill {
       bottom: 56px;
@@ -1725,9 +1734,18 @@
       window.ensureGmapsDrawerOpen = function() {
         const card = document.getElementById('gmapsDrawerCard');
         const icon = document.getElementById('drawerCollapseIcon');
-        if (card && card.classList.contains('collapsed')) {
+        const expandIcon = document.getElementById('drawerExpandIcon');
+        if (!card) return;
+
+        if (card.classList.contains('collapsed')) {
           card.classList.remove('collapsed');
           if (icon) icon.className = 'bi bi-chevron-down';
+        }
+
+        // Pada mobile (<= 768px), buka drawer secara separuh (is-peek mode) saat wilayah dipilih
+        if (window.innerWidth <= 768) {
+          card.classList.add('is-peek');
+          if (expandIcon) expandIcon.className = 'bi bi-arrows-angle-expand';
         }
       };
 
@@ -2553,6 +2571,7 @@
         }
 
         function showKecDetails(nmkec) {
+          if (typeof window.ensureGmapsDrawerOpen === 'function') window.ensureGmapsDrawerOpen();
           if (typeof window.updateMapBreadcrumbs === 'function') {
             window.updateMapBreadcrumbs('kec', nmkec);
           }
@@ -2677,6 +2696,7 @@
         // Show details in Sidebar + Integrated Drilldown Links
         function showDesaDetails(properties) {
           if (!properties) return;
+          if (typeof window.ensureGmapsDrawerOpen === 'function') window.ensureGmapsDrawerOpen();
           if (typeof window.updateMapBreadcrumbs === 'function') {
             window.updateMapBreadcrumbs('desa', properties.nmkec, properties.nmdesa, null, properties.iddesa);
           }
@@ -2878,6 +2898,7 @@
 
         function showSlsDetails(properties) {
           if (!properties) return;
+          if (typeof window.ensureGmapsDrawerOpen === 'function') window.ensureGmapsDrawerOpen();
           if (typeof window.updateMapBreadcrumbs === 'function') {
             window.updateMapBreadcrumbs('sls', properties.nmkec, properties.nmdesa, properties.nmsls, properties.iddesa);
           }
@@ -3041,7 +3062,11 @@
                       </div>
                     </div>
                   `;
-                  layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
+                  if (window.innerWidth > 768) {
+                    layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
+                  } else {
+                    map.closePopup();
+                  }
                 }
               });
             }
@@ -3105,7 +3130,11 @@
                       </div>
                     </div>
                   `;
-                  layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
+                  if (window.innerWidth > 768) {
+                    layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
+                  } else {
+                    map.closePopup();
+                  }
                 }
               });
             }
@@ -3168,7 +3197,11 @@
                       </div>
                     </div>
                   `;
-                  layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
+                  if (window.innerWidth > 768) {
+                    layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
+                  } else {
+                    map.closePopup();
+                  }
                 }
               });
             }
@@ -3758,7 +3791,7 @@
                 `;
                 // Tampilkan rincian data di drawer samping (hanya buka otomatis di layar besar)
                 showSlsDetails(matchedSls.properties);
-                if (window.innerWidth > 768 && typeof window.ensureGmapsDrawerOpen === 'function') {
+                if (typeof window.ensureGmapsDrawerOpen === 'function') {
                   window.ensureGmapsDrawerOpen();
                 }
               } else if (matchedDesa) {
@@ -3804,7 +3837,7 @@
                   </div>
                 `;
                 showDesaDetails(matchedDesa.properties);
-                if (window.innerWidth > 768 && typeof window.ensureGmapsDrawerOpen === 'function') {
+                if (typeof window.ensureGmapsDrawerOpen === 'function') {
                   window.ensureGmapsDrawerOpen();
                 }
               } else {
@@ -3818,7 +3851,11 @@
               }
 
               userLocationMarker = L.marker([lat, lng], { icon: gpsIcon }).addTo(map);
-              userLocationMarker.bindPopup(popupContent).openPopup();
+              if (window.innerWidth > 768) {
+                userLocationMarker.bindPopup(popupContent).openPopup();
+              } else {
+                map.closePopup();
+              }
 
               userAccuracyCircle = L.circle([lat, lng], {
                 radius: accuracy,
