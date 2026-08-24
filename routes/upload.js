@@ -26,7 +26,7 @@ const upload = multer({
 
 // GET: Unified Upload page with tabs
 router.get('/', (req, res) => {
-  const activeTab = req.query.tab || 'muatan';
+  const activeTab = req.query.tab || 'fasih';
   const allUploads = getAllUploads().sort((a, b) => (b.id - a.id) || b.tanggal.localeCompare(a.tanggal));
   
   const muatanUploads = allUploads.filter(u => u.filename && u.filename.length > 0);

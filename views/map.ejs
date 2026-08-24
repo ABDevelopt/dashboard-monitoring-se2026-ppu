@@ -232,7 +232,7 @@
     -webkit-appearance: none;
     -moz-appearance: none;
     background-color: rgba(15, 23, 42, 0.40);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
     border: 1px solid rgba(255, 255, 255, 0.22);
@@ -264,7 +264,7 @@
     background-color: rgba(255, 255, 255, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.90);
     box-shadow: inset 0 1px 1.5px rgba(0, 0, 0, 0.04), inset 0 0.5px 1px rgba(255, 255, 255, 0.95), 0 2px 6px rgba(0, 0, 0, 0.04);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   }
 
   .gmaps-select-pill:hover, .gmaps-select-pill:focus {
@@ -321,11 +321,18 @@
     align-items: center;
     gap: 5px;
     padding-left: 3px;
-    opacity: 0.85;
+    opacity: 1;
   }
 
   body.light-mode .gmaps-section-label {
-    color: #64748b;
+    color: var(--text-muted);
+    opacity: 1;
+  }
+
+  @media (min-width: 769px) {
+    .gmaps-status-filter-mobile-only {
+      display: none !important;
+    }
   }
 
   /* Breadcrumb Navigation */
@@ -1035,12 +1042,16 @@
   .map-status-pill.rejected { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
   .map-status-pill.draft { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
 
-  /* Teks Oren di Drawer diubah menjadi Hitam Bold */
-  .gmaps-floating-drawer-card .badge-orange,
-  .gmaps-floating-drawer-card .badge.badge-orange,
+  /* Button Highlight PCL di Drawer - High Contrast White in Dark Mode */
   .gmaps-floating-drawer-card .btn-highlight-pcl {
-    color: #000000 !important;
+    color: #ffffff !important;
     font-weight: 700 !important;
+  }
+
+  body.light-mode .gmaps-floating-drawer-card .btn-highlight-pcl {
+    color: #7c2d12 !important;
+    background: rgba(245, 158, 11, 0.25) !important;
+    border-color: rgba(245, 158, 11, 0.6) !important;
   }
 
   /* Action Buttons Container */
@@ -1146,56 +1157,119 @@
     font-weight: 600;
   }
 
+  /* Ultra Premium Liquid Glass Overhaul for Leaflet Popups */
   .leaflet-popup-content-wrapper {
-    background: var(--bg-card) !important;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(15, 23, 42, 0.65) 80%, rgba(255, 255, 255, 0.08) 100%) !important;
+    backdrop-filter: blur(32px) saturate(220%) brightness(108%) !important;
+    -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(108%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    border-radius: 18px !important;
     color: var(--text-primary) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius) !important;
     font-family: 'Inter', system-ui, sans-serif !important;
-    box-shadow: var(--shadow-lg) !important;
-    padding: 4px !important;
+    box-shadow: 0 20px 50px 0 rgba(0, 0, 0, 0.55), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.50), inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.25) !important;
+    padding: 6px 8px !important;
+  }
+
+  body.light-mode .leaflet-popup-content-wrapper {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.90) 0%, rgba(255, 255, 255, 0.65) 50%, rgba(241, 245, 249, 0.75) 100%) !important;
+    backdrop-filter: blur(32px) saturate(200%) brightness(103%) !important;
+    -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(103%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.90) !important;
+    box-shadow: 0 16px 40px 0 rgba(0, 0, 0, 0.12), inset 0 1.5px 2.5px 0 rgba(255, 255, 255, 0.98), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.04) !important;
+  }
+
+  .leaflet-popup-tip-container {
+    overflow: visible !important;
   }
 
   .leaflet-popup-tip {
-    background: var(--bg-card) !important;
-    border-left: 1px solid var(--border) !important;
-    border-bottom: 1px solid var(--border) !important;
+    background: rgba(15, 23, 42, 0.70) !important;
+    backdrop-filter: blur(20px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(200%) !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.25) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25) !important;
+    box-shadow: -3px 3px 10px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  body.light-mode .leaflet-popup-tip {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.90) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.90) !important;
   }
 
   .leaflet-container a.leaflet-popup-close-button {
     color: var(--text-secondary) !important;
-    padding: 6px !important;
+    top: 8px !important;
+    right: 8px !important;
+    width: 22px !important;
+    height: 22px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 13px !important;
+    line-height: 1 !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+  }
+
+  body.light-mode .leaflet-container a.leaflet-popup-close-button {
+    background: rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  .leaflet-container a.leaflet-popup-close-button:hover {
+    background: rgba(239, 68, 68, 0.3) !important;
+    color: #ef4444 !important;
+    border-color: rgba(239, 68, 68, 0.6) !important;
+    transform: scale(1.1) rotate(90deg) !important;
   }
 
   .leaflet-popup-content-wrapper a.btn-primary,
   .leaflet-popup-content-wrapper .btn-primary {
     color: #ffffff !important;
-    background: var(--accent-blue) !important;
-    font-weight: 600 !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    transition: all 0.2s ease !important;
   }
 
-  .leaflet-popup-content-wrapper a.btn-primary:hover {
-    background: #ea580c !important;
-    color: #ffffff !important;
+  .leaflet-popup-content-wrapper a.btn-primary:hover,
+  .leaflet-popup-content-wrapper .btn-primary:hover {
+    background: linear-gradient(135deg, #0369a1 0%, #1d4ed8 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 5px 14px rgba(2, 132, 199, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
   }
 
   .leaflet-bar {
-    border: 1px solid var(--border) !important;
-    box-shadow: var(--shadow) !important;
-    border-radius: var(--radius-sm) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+    border-radius: 12px !important;
     overflow: hidden;
+    backdrop-filter: blur(20px) saturate(200%);
+    -webkit-backdrop-filter: blur(20px) saturate(200%);
   }
 
   .leaflet-bar a {
-    background-color: var(--bg-card) !important;
+    background: rgba(15, 23, 42, 0.65) !important;
     color: var(--text-primary) !important;
-    border-bottom: 1px solid var(--border) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(16px);
+  }
+
+  body.light-mode .leaflet-bar a {
+    background: rgba(255, 255, 255, 0.80) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
   }
 
   .leaflet-bar a:hover {
-    background-color: var(--bg-card-hover) !important;
-    color: var(--accent-blue) !important;
+    background: rgba(6, 182, 212, 0.25) !important;
+    color: var(--accent-cyan) !important;
   }
 
   .loading-overlay {
@@ -1329,12 +1403,7 @@
       padding: 6px 9px 8px 9px;
     }
     .gmaps-floating-kpi-bar {
-      top: 86px;
-      left: 8px;
-      right: 8px;
-      max-width: calc(100% - 16px);
-      padding: 3px 4px;
-      gap: 4px;
+      display: none !important;
     }
     .gmaps-kpi-pill {
       padding: 3.5px 8px;
@@ -1361,6 +1430,15 @@
       border-radius: 20px 20px 0 0;
       border-bottom: none;
       box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.45);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .gmaps-drawer-content {
+      height: 360px;
+      max-height: 60vh;
+    }
+    .gmaps-floating-drawer-card.is-peek .gmaps-drawer-content {
+      height: 185px !important;
+      max-height: 185px !important;
     }
     .gmaps-floating-basemap-pill {
       bottom: 56px;
@@ -1375,14 +1453,6 @@
       right: 6px;
       max-width: calc(100% - 12px);
       padding: 5px 8px 7px 8px;
-    }
-    .gmaps-floating-kpi-bar {
-      top: 82px;
-      left: 6px;
-      right: 6px;
-      max-width: calc(100% - 12px);
-      padding: 2.5px 4px;
-      gap: 3.5px;
     }
     .gmaps-kpi-pill {
       padding: 3px 7px;
@@ -1436,23 +1506,34 @@
         </button>
       </div>
       
-      <!-- Primary Spatial Selectors (Kecamatan & Desa/Kelurahan 2-Column Grid) -->
-      <div class="gmaps-control-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px;">
-        <select id="kecFilter" class="gmaps-select-pill" title="Filter Berdasarkan Kecamatan" style="width: 100%;">
-          <option value="">-- Semua Kecamatan --</option>
-          <option value="BABULU">Kec. Babulu</option>
-          <option value="WARU">Kec. Waru</option>
-          <option value="PENAJAM">Kec. Penajam</option>
-          <option value="SEPAKU">Kec. Sepaku</option>
-        </select>
-        
-        <select id="desaFilter" class="gmaps-select-pill" title="Filter Berdasarkan Desa / Kelurahan" style="width: 100%;">
-          <option value="">-- Semua Desa / Kel --</option>
-        </select>
-      </div>
-
       <!-- Collapsible Filter & Options Section -->
       <div class="gmaps-controls-collapsible" id="toolsExtraRows">
+        <!-- Section 1: Filter Wilayah (Kecamatan & Desa) -->
+        <div class="gmaps-section-label"><i class="bi bi-geo-alt"></i> Filter Wilayah Spasial</div>
+        <div class="gmaps-control-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 6px;">
+          <select id="kecFilter" class="gmaps-select-pill" title="Filter Berdasarkan Kecamatan" style="width: 100%;">
+            <option value="">-- Semua Kecamatan --</option>
+            <option value="BABULU">Kec. Babulu</option>
+            <option value="WARU">Kec. Waru</option>
+            <option value="PENAJAM">Kec. Penajam</option>
+            <option value="SEPAKU">Kec. Sepaku</option>
+          </select>
+          
+          <select id="desaFilter" class="gmaps-select-pill" title="Filter Berdasarkan Desa / Kelurahan" style="width: 100%;">
+            <option value="">-- Semua Desa / Kel --</option>
+          </select>
+        </div>
+
+        <!-- Section 2: Filter Status Target SLS (Hanya Tampil di Layar Mobile) -->
+        <div class="gmaps-section-label gmaps-status-filter-mobile-only"><i class="bi bi-funnel-fill"></i> Filter Status Target SLS</div>
+        <div class="gmaps-control-row gmaps-status-filter-mobile-only" style="margin-bottom: 6px;">
+          <select id="statusFilterSelect" class="gmaps-select-pill" title="Filter Berdasarkan Status Target SLS" style="width: 100%;">
+            <option value="" id="optStatusAll">-- Semua Status SLS --</option>
+            <option value="done" id="optStatusDone">🟢 SLS Selesai</option>
+            <option value="in_progress" id="optStatusInProgress">🟡 SLS Sedang Progres</option>
+            <option value="not_started" id="optStatusNotStarted">🔴 SLS Belum Dimulai</option>
+          </select>
+        </div>
         <!-- Section 1: Filter Petugas PCL -->
         <div class="gmaps-section-label"><i class="bi bi-person-badge"></i> Filter Petugas PCL</div>
         <div class="gmaps-control-row" style="margin-bottom: 8px;">
@@ -1657,9 +1738,17 @@
       window.ensureGmapsDrawerOpen = function() {
         const card = document.getElementById('gmapsDrawerCard');
         const icon = document.getElementById('drawerCollapseIcon');
-        if (card && card.classList.contains('collapsed')) {
-          card.classList.remove('collapsed');
-          if (icon) icon.className = 'bi bi-chevron-down';
+        const expandIcon = document.getElementById('drawerExpandIcon');
+        if (!card) return;
+
+        // Hanya buka drawer secara otomatis di layar mobile (<= 768px)
+        if (window.innerWidth <= 768) {
+          if (card.classList.contains('collapsed')) {
+            card.classList.remove('collapsed');
+            if (icon) icon.className = 'bi bi-chevron-down';
+          }
+          card.classList.add('is-peek');
+          if (expandIcon) expandIcon.className = 'bi bi-arrows-angle-expand';
         }
       };
 
@@ -2163,7 +2252,7 @@
 
         // Styles for layers with ultra-crisp refined outline thickness & Outline Only mode
         function kecStyle(feature) {
-          const isSelectedKec = !currentFilteredKec || feature.properties.nmkec === currentFilteredKec;
+          const isSelectedKec = !currentFilteredKec || (feature.properties.nmkec && feature.properties.nmkec.toUpperCase() === currentFilteredKec.toUpperCase());
           if (isOutlineOnlyMode) {
             return {
               fillColor: 'transparent',
@@ -2314,7 +2403,7 @@
             return;
           }
 
-          const isSelectedKec = !currentFilteredKec || layer.feature.properties.nmkec === currentFilteredKec;
+          const isSelectedKec = !currentFilteredKec || (layer.feature.properties.nmkec && layer.feature.properties.nmkec.toUpperCase() === currentFilteredKec.toUpperCase());
           let matchesKpi = true;
           if (activeLayerName === 'sls' && currentStatusFilter) {
             const stat = getSlsStat(layer.feature.properties.kode);
@@ -2421,6 +2510,17 @@
           if (kpiSelesai) kpiSelesai.textContent = `${selesaiCount.toLocaleString('id-ID')} (${selesaiPct}%)`;
           if (kpiBelum) kpiBelum.textContent = inProgressCount.toLocaleString('id-ID');
           if (kpiNotStarted) kpiNotStarted.textContent = notStartedCount.toLocaleString('id-ID');
+
+          // Synchronize statusFilterSelect dropdown options
+          const optAll = document.getElementById('optStatusAll');
+          const optDone = document.getElementById('optStatusDone');
+          const optInProgress = document.getElementById('optStatusInProgress');
+          const optNotStarted = document.getElementById('optStatusNotStarted');
+
+          if (optAll) optAll.textContent = `-- Semua Status SLS (${totalSls.toLocaleString('id-ID')} SLS) --`;
+          if (optDone) optDone.textContent = `🟢 SLS Selesai (${selesaiCount.toLocaleString('id-ID')} SLS - ${selesaiPct}%)`;
+          if (optInProgress) optInProgress.textContent = `🟡 SLS Sedang Progres (${inProgressCount.toLocaleString('id-ID')} SLS)`;
+          if (optNotStarted) optNotStarted.textContent = `🔴 SLS Belum Dimulai (${notStartedCount.toLocaleString('id-ID')} SLS)`;
         }
 
         function filterByKpiStatus(statusKey) {
@@ -2434,6 +2534,11 @@
               pill.classList.remove('active-filter');
             }
           });
+
+          const statusSelect = document.getElementById('statusFilterSelect');
+          if (statusSelect && statusSelect.value !== (statusKey || '')) {
+            statusSelect.value = statusKey || '';
+          }
 
           if (activeLayerName !== 'sls') {
             switchToSlsLayer();
@@ -2485,6 +2590,7 @@
         }
 
         function showKecDetails(nmkec) {
+          if (typeof window.ensureGmapsDrawerOpen === 'function') window.ensureGmapsDrawerOpen();
           if (typeof window.updateMapBreadcrumbs === 'function') {
             window.updateMapBreadcrumbs('kec', nmkec);
           }
@@ -2609,6 +2715,7 @@
         // Show details in Sidebar + Integrated Drilldown Links
         function showDesaDetails(properties) {
           if (!properties) return;
+          if (typeof window.ensureGmapsDrawerOpen === 'function') window.ensureGmapsDrawerOpen();
           if (typeof window.updateMapBreadcrumbs === 'function') {
             window.updateMapBreadcrumbs('desa', properties.nmkec, properties.nmdesa, null, properties.iddesa);
           }
@@ -2810,6 +2917,7 @@
 
         function showSlsDetails(properties) {
           if (!properties) return;
+          if (typeof window.ensureGmapsDrawerOpen === 'function') window.ensureGmapsDrawerOpen();
           if (typeof window.updateMapBreadcrumbs === 'function') {
             window.updateMapBreadcrumbs('sls', properties.nmkec, properties.nmdesa, properties.nmsls, properties.iddesa);
           }
@@ -2914,8 +3022,8 @@
                 ` : ''}
               </div>
               ${(pcl && pcl !== 'Belum Ditentukan') ? `
-                <button type="button" class="btn btn-sm btn-highlight-pcl" onclick="highlightPclTerritory('${pcl.replace(/'/g, "\\'")}')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7.5px 10px; font-size: 11.5px; font-weight: 700; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.20); color: #000000; cursor: pointer;">
-                  <i class="bi bi-funnel-fill" style="color: #000000;"></i> Sorot Wilayah PCL (${pcl})
+                <button type="button" class="btn btn-sm btn-highlight-pcl" onclick="highlightPclTerritory('${pcl.replace(/'/g, "\\'")}')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7.5px 10px; font-size: 11.5px; font-weight: 700; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.20); color: #ffffff; cursor: pointer;">
+                  <i class="bi bi-funnel-fill" style="color: #ffffff;"></i> Sorot Wilayah PCL (${pcl})
                 </button>
               ` : ''}
             </div>
@@ -2973,7 +3081,11 @@
                       </div>
                     </div>
                   `;
-                  layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
+                  if (window.innerWidth > 768) {
+                    layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
+                  } else {
+                    map.closePopup();
+                  }
                 }
               });
             }
@@ -3037,7 +3149,11 @@
                       </div>
                     </div>
                   `;
-                  layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
+                  if (window.innerWidth > 768) {
+                    layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
+                  } else {
+                    map.closePopup();
+                  }
                 }
               });
             }
@@ -3100,7 +3216,11 @@
                       </div>
                     </div>
                   `;
-                  layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
+                  if (window.innerWidth > 768) {
+                    layer.bindPopup(popupHtml).openPopup(e && e.latlng ? e.latlng : undefined);
+                  } else {
+                    map.closePopup();
+                  }
                 }
               });
             }
@@ -3184,15 +3304,29 @@
             const searchParam = params.get('search') || params.get('kode');
 
             if (kecParam) {
-              if (kecFilter) kecFilter.value = kecParam;
-              currentFilteredKec = kecParam;
-              populateDesaFilterList(kecParam);
+              currentFilteredKec = kecParam.toUpperCase();
+              if (kecFilter) {
+                const opt = Array.from(kecFilter.options).find(o => o.value.toUpperCase() === currentFilteredKec);
+                if (opt) kecFilter.value = opt.value;
+              }
+              populateDesaFilterList(currentFilteredKec);
               updateActiveLayerStyles();
-              setTimeout(() => fitBoundsToKecamatan(kecParam), 200);
+              setTimeout(() => fitBoundsToKecamatan(currentFilteredKec), 200);
             }
 
             if (desaParam) {
               currentFilteredDesa = desaParam;
+              if (desaStats) {
+                const matched = desaStats.find(d => d.desa && d.desa.toUpperCase() === desaParam.toUpperCase());
+                if (matched && matched.kecamatan) {
+                  currentFilteredKec = matched.kecamatan.toUpperCase();
+                  if (kecFilter) {
+                    const opt = Array.from(kecFilter.options).find(o => o.value.toUpperCase() === currentFilteredKec);
+                    if (opt) kecFilter.value = opt.value;
+                  }
+                  populateDesaFilterList(currentFilteredKec);
+                }
+              }
               if (desaFilter) desaFilter.value = desaParam;
               updateActiveLayerStyles();
               updateTopStats();
@@ -3618,49 +3752,111 @@
               if (matchedSls) {
                 const isSelesai = stat ? stat.selesai === 1 : false;
                 const pcl = stat ? (stat.pcl || '-') : (matchedSls.properties.pcl || '-');
-                const fasihPct = stat ? (stat.fasih_pct_str || '0.0') : '0.0';
+                const pml = stat ? (stat.pml || '-') : (matchedSls.properties.pml || '-');
+                const targetFasih = stat ? (stat.target_fasih || 0) : 0;
+                const submitted = stat ? (stat.submitted_by_pcl || 0) : 0;
+                const approved = stat ? (stat.approved || 0) : 0;
+                const rejected = stat ? (stat.rejected || 0) : 0;
+                const realisasiFasih = submitted + approved + rejected;
+                const fasihPct = targetFasih ? Math.min(parseFloat(((realisasiFasih / targetFasih) * 100).toFixed(1)), 100) : 0;
+                const usaha = stat ? (stat.usaha_total || 0) : 0;
+                const keluarga = stat ? (stat.keluarga_total || 0) : 0;
+                const kodeSls = matchedSls.properties.kode || '';
+
                 popupContent = `
-                  <div style="font-family: 'Inter', sans-serif; min-width: 220px; padding: 2px;">
-                    <div style="font-size: 10px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">
-                      <i class="bi bi-crosshair"></i> Posisi GPS Anda Terdeteksi:
+                  <div style="font-family: 'Inter', sans-serif; min-width: 230px; max-width: 260px; padding: 2px;">
+                    <div style="font-size: 10px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between;">
+                      <span><i class="bi bi-crosshair"></i> Posisi GPS Terdeteksi</span>
+                      <span style="font-size: 9px; color: var(--text-muted); font-weight: 500;">±${Math.round(accuracy)}m</span>
                     </div>
-                    <strong style="font-size: 13.5px; color: var(--text-primary);"><i class="bi bi-pin-map-fill" style="color: #0284c7;"></i> ${nmsls}</strong><br>
-                    <span style="font-size: 11px; color: var(--text-secondary);"><i class="bi bi-geo-alt"></i> Desa ${nmdesa}, Kec. ${nmkec}</span>
-                    <div style="background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; margin: 8px 0 6px 0; font-size: 11px;">
-                      <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
-                        <span style="color: var(--text-muted);">Status:</span>
-                        <strong style="color: ${isSelesai ? '#10b981' : '#000000'}; font-weight: 700;">${isSelesai ? '🟢 Selesai Resmi' : '🟡 Sedang Berjalan'}</strong>
+                    <strong style="font-size: 13.5px; color: var(--text-primary); display: block;"><i class="bi bi-pin-map-fill" style="color: #0284c7;"></i> ${nmsls}</strong>
+                    <span style="font-size: 10.5px; color: var(--text-secondary); display: block; margin-bottom: 6px;"><i class="bi bi-geo-alt"></i> Desa ${nmdesa}, Kec. ${nmkec}</span>
+
+                    <!-- Main Stats Container -->
+                    <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; margin-bottom: 8px; font-size: 10.5px;">
+                      <!-- Mini Progress Track -->
+                      <div style="margin-bottom: 6px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 10px;">
+                          <span style="color: var(--text-muted);">Progres FASIH:</span>
+                          <strong style="color: var(--accent-blue);">${realisasiFasih} / ${targetFasih} Dok (${fasihPct}%)</strong>
+                        </div>
+                        <div style="height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 99px; overflow: hidden;">
+                          <div style="width: ${Math.min(fasihPct, 100)}%; height: 100%; background: ${isSelesai ? '#10b981' : (fasihPct < 40 ? '#ef4444' : '#0284c7')}; border-radius: 99px;"></div>
+                        </div>
                       </div>
-                      <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
-                        <span style="color: var(--text-muted);">Progres FASIH:</span>
-                        <strong style="color: var(--accent-blue);">${fasihPct}%</strong>
+
+                      <!-- Usaha & Keluarga -->
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 4px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 4px;">
+                        <span style="color: var(--text-muted);"><i class="bi bi-shop" style="font-size: 9.5px;"></i> Usaha / Keluarga:</span>
+                        <strong style="color: var(--text-primary);">${usaha.toLocaleString('id-ID')} / ${keluarga.toLocaleString('id-ID')}</strong>
+                      </div>
+
+                      <!-- Officers Info (PCL & PML) -->
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                        <span style="color: var(--text-muted);"><i class="bi bi-person-badge" style="font-size: 9.5px;"></i> PCL:</span>
+                        <strong style="color: var(--text-primary);" title="${pcl}">${pcl}</strong>
                       </div>
                       <div style="display: flex; justify-content: space-between;">
-                        <span style="color: var(--text-muted);">Petugas PCL:</span>
-                        <strong style="color: var(--text-primary);">${pcl}</strong>
+                        <span style="color: var(--text-muted);"><i class="bi bi-person-check" style="font-size: 9.5px;"></i> PML (Pengawas):</span>
+                        <strong style="color: var(--text-primary);" title="${pml}">${pml}</strong>
                       </div>
                     </div>
-                    <span style="font-size: 10px; color: var(--text-muted); display: block; text-align: right;">Akurasi: ±${Math.round(accuracy)}m</span>
+
+                    <!-- Quick Action Link -->
+                    <button type="button" class="btn btn-primary btn-xs" onclick="if (window.focusSubSlsOnMap) window.focusSubSlsOnMap('${kodeSls}');" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 5px; padding: 5px; font-size: 10.5px; font-weight: 700; border-radius: 6px; text-decoration: none;">
+                      <i class="bi bi-layout-sidebar-reverse"></i> Lihat Detail Lengkap SLS
+                    </button>
                   </div>
                 `;
                 // Tampilkan rincian data di drawer samping (hanya buka otomatis di layar besar)
                 showSlsDetails(matchedSls.properties);
-                if (window.innerWidth > 768 && typeof window.ensureGmapsDrawerOpen === 'function') {
+                if (typeof window.ensureGmapsDrawerOpen === 'function') {
                   window.ensureGmapsDrawerOpen();
                 }
               } else if (matchedDesa) {
+                const stat = getDesaStat(matchedDesa.properties.iddesa);
+                const total = stat ? stat.total_subsls : 0;
+                const selesai = stat ? stat.selesai : 0;
+                const targetFasih = stat ? stat.target_fasih_total : 0;
+                const submitted = stat ? stat.submitted_total : 0;
+                const approved = stat ? stat.approved_total : 0;
+                const rejected = stat ? stat.rejected_total : 0;
+                const totalRealisasiFasih = submitted + approved + rejected;
+                const fasihPct = targetFasih ? Math.min(parseFloat(((totalRealisasiFasih / targetFasih) * 100).toFixed(1)), 100) : 0;
+                const iddesa = matchedDesa.properties.iddesa || '';
+
                 popupContent = `
-                  <div style="font-family: 'Inter', sans-serif; min-width: 200px; padding: 2px;">
-                    <div style="font-size: 10px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; margin-bottom: 2px;">
-                      <i class="bi bi-crosshair"></i> Posisi GPS Anda Terdeteksi:
+                  <div style="font-family: 'Inter', sans-serif; min-width: 230px; max-width: 260px; padding: 2px;">
+                    <div style="font-size: 10px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between;">
+                      <span><i class="bi bi-crosshair"></i> Posisi GPS Terdeteksi</span>
+                      <span style="font-size: 9px; color: var(--text-muted); font-weight: 500;">±${Math.round(accuracy)}m</span>
                     </div>
-                    <strong style="font-size: 13.5px; color: var(--text-primary);"><i class="bi bi-geo-alt-fill" style="color: #0284c7;"></i> Desa ${nmdesa}</strong><br>
-                    <span style="font-size: 11px; color: var(--text-secondary);">Kecamatan ${nmkec}</span>
-                    <span style="font-size: 10px; color: var(--text-muted); display: block; margin-top: 6px; text-align: right;">Akurasi: ±${Math.round(accuracy)}m</span>
+                    <strong style="font-size: 13.5px; color: var(--text-primary); display: block;"><i class="bi bi-geo-alt-fill" style="color: #0284c7;"></i> Desa ${nmdesa}</strong>
+                    <span style="font-size: 10.5px; color: var(--text-secondary); display: block; margin-bottom: 6px;">Kecamatan ${nmkec}</span>
+
+                    <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; margin-bottom: 8px; font-size: 10.5px;">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span style="color: var(--text-muted);">SLS Selesai:</span>
+                        <strong style="color: #10b981;">${selesai} / ${total} SLS</strong>
+                      </div>
+                      <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 2px; font-size: 10px;">
+                          <span style="color: var(--text-muted);">Progres FASIH:</span>
+                          <strong style="color: var(--accent-blue);">${totalRealisasiFasih.toLocaleString('id-ID')} / ${targetFasih.toLocaleString('id-ID')} Dok (${fasihPct}%)</strong>
+                        </div>
+                        <div style="height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 99px; overflow: hidden;">
+                          <div style="width: ${Math.min(fasihPct, 100)}%; height: 100%; background: ${fasihPct >= 100 ? '#10b981' : (fasihPct < 25 ? '#ef4444' : '#0284c7')}; border-radius: 99px;"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button type="button" class="btn btn-primary btn-xs" onclick="if (window.focusDesaOnMap) window.focusDesaOnMap('${iddesa}');" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 5px; padding: 5px; font-size: 10.5px; font-weight: 700; border-radius: 6px; text-decoration: none;">
+                      <i class="bi bi-layout-sidebar-reverse"></i> Lihat Detail Lengkap Desa
+                    </button>
                   </div>
                 `;
                 showDesaDetails(matchedDesa.properties);
-                if (window.innerWidth > 768 && typeof window.ensureGmapsDrawerOpen === 'function') {
+                if (typeof window.ensureGmapsDrawerOpen === 'function') {
                   window.ensureGmapsDrawerOpen();
                 }
               } else {
@@ -3674,7 +3870,11 @@
               }
 
               userLocationMarker = L.marker([lat, lng], { icon: gpsIcon }).addTo(map);
-              userLocationMarker.bindPopup(popupContent).openPopup();
+              if (window.innerWidth > 768) {
+                userLocationMarker.bindPopup(popupContent).openPopup();
+              } else {
+                map.closePopup();
+              }
 
               userAccuracyCircle = L.circle([lat, lng], {
                 radius: accuracy,
@@ -3814,6 +4014,15 @@
           });
         });
 
+        // Status Filter Dropdown Listener inside Command Panel
+        const statusFilterSelect = document.getElementById('statusFilterSelect');
+        if (statusFilterSelect) {
+          statusFilterSelect.addEventListener('change', (e) => {
+            const statusKey = e.target.value || '';
+            filterByKpiStatus(statusKey);
+          });
+        }
+
         function populatePclFilterList() {
           const pclSelect = document.getElementById('pclFilter');
           if (!pclSelect || !slsStats || !slsStats.length) return;
@@ -3843,10 +4052,21 @@
           });
         }
 
-        // Toggle Tools Expand / Collapse
+        // Toggle Tools Expand / Collapse (Tutup otomatis di Mobile saat halaman dibuka, terbuka di Desktop)
         const btnToggleToolsExpand = document.getElementById('btnToggleToolsExpand');
         const gmapsToolsPanel = document.getElementById('gmapsToolsPanel');
         const toolsExpandIcon = document.getElementById('toolsExpandIcon');
+
+        if (gmapsToolsPanel) {
+          if (window.innerWidth <= 768) {
+            gmapsToolsPanel.classList.add('is-collapsed');
+            if (toolsExpandIcon) toolsExpandIcon.className = 'bi bi-sliders';
+          } else {
+            gmapsToolsPanel.classList.remove('is-collapsed');
+            if (toolsExpandIcon) toolsExpandIcon.className = 'bi bi-chevron-bar-up';
+          }
+        }
+
         if (btnToggleToolsExpand && gmapsToolsPanel) {
           btnToggleToolsExpand.addEventListener('click', () => {
             gmapsToolsPanel.classList.toggle('is-collapsed');
@@ -3933,13 +4153,22 @@
           desaFilter.addEventListener('change', (e) => {
             currentFilteredDesa = e.target.value;
             
-            // Auto match kecamatan if desa selected without prior kecamatan
-            if (currentFilteredDesa && !currentFilteredKec && desaStats) {
+            // Auto match & update kecamatan whenever a desa is selected
+            if (currentFilteredDesa && desaStats) {
               const matchedDesa = desaStats.find(d => d.desa && d.desa.toUpperCase() === currentFilteredDesa.toUpperCase());
               if (matchedDesa && matchedDesa.kecamatan) {
-                currentFilteredKec = matchedDesa.kecamatan;
-                if (kecFilter) kecFilter.value = currentFilteredKec;
+                currentFilteredKec = matchedDesa.kecamatan.toUpperCase();
+                if (kecFilter) {
+                  const opt = Array.from(kecFilter.options).find(o => o.value.toUpperCase() === currentFilteredKec);
+                  if (opt) kecFilter.value = opt.value;
+                  else kecFilter.value = currentFilteredKec;
+                }
+                populateDesaFilterList(currentFilteredKec);
               }
+            } else if (!currentFilteredDesa && currentFilteredKec) {
+              populateDesaFilterList(currentFilteredKec);
+            } else if (!currentFilteredDesa && !currentFilteredKec) {
+              populateDesaFilterList('');
             }
 
             updateActiveLayerStyles();
