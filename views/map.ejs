@@ -2914,8 +2914,8 @@
                 ` : ''}
               </div>
               ${(pcl && pcl !== 'Belum Ditentukan') ? `
-                <button type="button" class="btn btn-sm btn-highlight-pcl" onclick="highlightPclTerritory('${pcl.replace(/'/g, "\\'")}')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7.5px 10px; font-size: 11.5px; font-weight: 700; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.20); color: #000000; cursor: pointer;">
-                  <i class="bi bi-funnel-fill" style="color: #000000;"></i> Sorot Wilayah PCL (${pcl})
+                <button type="button" class="btn btn-sm btn-highlight-pcl" onclick="highlightPclTerritory('${pcl.replace(/'/g, "\\'")}')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7.5px 10px; font-size: 11.5px; font-weight: 700; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.20); color: #fbbf24; cursor: pointer;">
+                  <i class="bi bi-funnel-fill" style="color: #fbbf24;"></i> Sorot Wilayah PCL (${pcl})
                 </button>
               ` : ''}
             </div>
@@ -3643,7 +3643,7 @@
                     <div style="background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; margin: 8px 0 6px 0; font-size: 11px;">
                       <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
                         <span style="color: var(--text-muted);">Status:</span>
-                        <strong style="color: ${isSelesai ? '#10b981' : '#000000'}; font-weight: 700;">${isSelesai ? '🟢 Selesai Resmi' : '🟡 Sedang Berjalan'}</strong>
+                        <strong style="color: ${isSelesai ? '#10b981' : '#f59e0b'}; font-weight: 700;">${isSelesai ? '🟢 Selesai Resmi' : '🟡 Sedang Berjalan'}</strong>
                       </div>
                       <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
                         <span style="color: var(--text-muted);">Progres FASIH:</span>
