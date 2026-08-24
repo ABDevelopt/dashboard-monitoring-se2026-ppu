@@ -431,17 +431,17 @@
           <span class="nav-icon icon-purple"><i class="bi bi-grid-fill"></i></span>
           <span class="nav-label">Menu Utama Admin</span>
         </a>
-        <a href="<%= navPrefix %>/admin/upload?tab=muatan" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'muatan') || activePage === 'upload-muatan' ? 'active' : '' %>">
-          <span class="nav-icon icon-cyan"><i class="bi bi-people-fill"></i></span>
-          <span class="nav-label">1. Progres Muatan</span>
-        </a>
         <a href="<%= navPrefix %>/admin/upload?tab=fasih" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'fasih') || activePage === 'upload-fasih' ? 'active' : '' %>">
           <span class="nav-icon icon-purple"><i class="bi bi-file-earmark-code-fill"></i></span>
-          <span class="nav-label">2. Status FASIH</span>
+          <span class="nav-label">Status FASIH</span>
+        </a>
+        <a href="<%= navPrefix %>/admin/upload?tab=muatan" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'muatan') || activePage === 'upload-muatan' ? 'active' : '' %>">
+          <span class="nav-icon icon-cyan"><i class="bi bi-people-fill"></i></span>
+          <span class="nav-label">Progres Muatan</span>
         </a>
         <a href="<%= navPrefix %>/admin/upload?tab=sls" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'sls') || activePage === 'upload-sls' ? 'active' : '' %>">
           <span class="nav-icon icon-emerald"><i class="bi bi-check2-square"></i></span>
-          <span class="nav-label">3. Status SLS Selesai</span>
+          <span class="nav-label">Status SLS Selesai</span>
         </a>
         <a href="<%= navPrefix %>/admin/master" class="nav-item <%= activePage === 'master' ? 'active' : '' %>">
           <span class="nav-icon icon-cyan"><i class="bi bi-database-fill-gear"></i></span>
