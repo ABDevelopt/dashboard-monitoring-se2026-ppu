@@ -329,6 +329,12 @@
     opacity: 1;
   }
 
+  @media (min-width: 769px) {
+    .gmaps-status-filter-mobile-only {
+      display: none !important;
+    }
+  }
+
   /* Breadcrumb Navigation */
   .gmaps-breadcrumb-bar {
     display: flex;
@@ -1397,12 +1403,7 @@
       padding: 6px 9px 8px 9px;
     }
     .gmaps-floating-kpi-bar {
-      top: 86px;
-      left: 8px;
-      right: 8px;
-      max-width: calc(100% - 16px);
-      padding: 3px 4px;
-      gap: 4px;
+      display: none !important;
     }
     .gmaps-kpi-pill {
       padding: 3.5px 8px;
@@ -1452,14 +1453,6 @@
       right: 6px;
       max-width: calc(100% - 12px);
       padding: 5px 8px 7px 8px;
-    }
-    .gmaps-floating-kpi-bar {
-      top: 82px;
-      left: 6px;
-      right: 6px;
-      max-width: calc(100% - 12px);
-      padding: 2.5px 4px;
-      gap: 3.5px;
     }
     .gmaps-kpi-pill {
       padding: 3px 7px;
@@ -1528,6 +1521,17 @@
           
           <select id="desaFilter" class="gmaps-select-pill" title="Filter Berdasarkan Desa / Kelurahan" style="width: 100%;">
             <option value="">-- Semua Desa / Kel --</option>
+          </select>
+        </div>
+
+        <!-- Section 2: Filter Status Target SLS (Hanya Tampil di Layar Mobile) -->
+        <div class="gmaps-section-label gmaps-status-filter-mobile-only"><i class="bi bi-funnel-fill"></i> Filter Status Target SLS</div>
+        <div class="gmaps-control-row gmaps-status-filter-mobile-only" style="margin-bottom: 6px;">
+          <select id="statusFilterSelect" class="gmaps-select-pill" title="Filter Berdasarkan Status Target SLS" style="width: 100%;">
+            <option value="" id="optStatusAll">-- Semua Status SLS --</option>
+            <option value="done" id="optStatusDone">🟢 SLS Selesai</option>
+            <option value="in_progress" id="optStatusInProgress">🟡 SLS Sedang Progres</option>
+            <option value="not_started" id="optStatusNotStarted">🔴 SLS Belum Dimulai</option>
           </select>
         </div>
         <!-- Section 1: Filter Petugas PCL -->
@@ -2506,6 +2510,17 @@
           if (kpiSelesai) kpiSelesai.textContent = `${selesaiCount.toLocaleString('id-ID')} (${selesaiPct}%)`;
           if (kpiBelum) kpiBelum.textContent = inProgressCount.toLocaleString('id-ID');
           if (kpiNotStarted) kpiNotStarted.textContent = notStartedCount.toLocaleString('id-ID');
+
+          // Synchronize statusFilterSelect dropdown options
+          const optAll = document.getElementById('optStatusAll');
+          const optDone = document.getElementById('optStatusDone');
+          const optInProgress = document.getElementById('optStatusInProgress');
+          const optNotStarted = document.getElementById('optStatusNotStarted');
+
+          if (optAll) optAll.textContent = `-- Semua Status SLS (${totalSls.toLocaleString('id-ID')} SLS) --`;
+          if (optDone) optDone.textContent = `🟢 SLS Selesai (${selesaiCount.toLocaleString('id-ID')} SLS - ${selesaiPct}%)`;
+          if (optInProgress) optInProgress.textContent = `🟡 SLS Sedang Progres (${inProgressCount.toLocaleString('id-ID')} SLS)`;
+          if (optNotStarted) optNotStarted.textContent = `🔴 SLS Belum Dimulai (${notStartedCount.toLocaleString('id-ID')} SLS)`;
         }
 
         function filterByKpiStatus(statusKey) {
@@ -2519,6 +2534,11 @@
               pill.classList.remove('active-filter');
             }
           });
+
+          const statusSelect = document.getElementById('statusFilterSelect');
+          if (statusSelect && statusSelect.value !== (statusKey || '')) {
+            statusSelect.value = statusKey || '';
+          }
 
           if (activeLayerName !== 'sls') {
             switchToSlsLayer();
@@ -3993,6 +4013,15 @@
             filterByKpiStatus(statusKey);
           });
         });
+
+        // Status Filter Dropdown Listener inside Command Panel
+        const statusFilterSelect = document.getElementById('statusFilterSelect');
+        if (statusFilterSelect) {
+          statusFilterSelect.addEventListener('change', (e) => {
+            const statusKey = e.target.value || '';
+            filterByKpiStatus(statusKey);
+          });
+        }
 
         function populatePclFilterList() {
           const pclSelect = document.getElementById('pclFilter');
