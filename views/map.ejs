@@ -1920,6 +1920,14 @@
         const mapContainerEl = document.getElementById('map');
         if (!mapContainerEl) return;
 
+        // Clean previous map instance if any to prevent duplicate pane bindings
+        if (window._leafletMapInstance) {
+          try {
+            window._leafletMapInstance.remove();
+          } catch (_) {}
+          window._leafletMapInstance = null;
+        }
+
         // Initial setup
         const centerCoords = [-1.30, 116.65];
         const defaultZoom = 10;
@@ -1930,6 +1938,7 @@
         if (mapContainerEl._leaflet_id) {
           mapContainerEl._leaflet_id = null;
         }
+        mapContainerEl.innerHTML = '';
 
         const map = L.map('map', {
           zoomControl: false,
@@ -3375,6 +3384,11 @@
             desaGeoJson = await desaGeoRes.json();
             kecGeoJson = await kecGeoRes.json();
 
+            // Guard against unmounted/destroyed map after async fetches
+            if (!map || !map._container || !map._mapPane) {
+              return;
+            }
+
             // Build O(1) indexed maps for instant lookup and smooth rendering
             buildStatsLookupMaps();
 
@@ -3389,10 +3403,12 @@
             setupKecLayer();
             setupDesaLayer();
 
-            if (activeLayerName === 'kec' && kecLayer) {
-              kecLayer.addTo(map);
-            } else if (desaLayer) {
-              desaLayer.addTo(map);
+            if (map && map._mapPane) {
+              if (activeLayerName === 'kec' && kecLayer) {
+                kecLayer.addTo(map);
+              } else if (desaLayer) {
+                desaLayer.addTo(map);
+              }
             }
 
             // Position tile layer at back & recalculate map bounds
