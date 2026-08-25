@@ -256,8 +256,8 @@ a:hover {
   right: 0;
   z-index: 50;
   min-width: 0;
-  transition: left 0.35s cubic-bezier(0.16, 1, 0.3, 1), padding 0.35s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease;
-  will-change: left;
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), left 0.35s cubic-bezier(0.16, 1, 0.3, 1), padding 0.35s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease;
+  will-change: transform, left;
 }
 .topbar::before {
   content: '';
@@ -1130,6 +1130,94 @@ th.sortable.sort-desc::before { content: '\f229'; font-family: 'bootstrap-icons'
 .pjax-animate-enter {
   animation: pjaxContainerEnter 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
   will-change: opacity, transform;
+}
+
+/* ====== PETUGAS NAVIGATION TABS ====== */
+.petugas-tabs-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 2px 6px 2px;
+}
+.petugas-tabs-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.petugas-tab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.petugas-tab-item i {
+  font-size: 14px;
+  color: var(--text-muted);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.petugas-tab-item:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-blue);
+  background: var(--bg-card-hover);
+  transform: translateY(-1px);
+}
+
+.petugas-tab-item:hover i {
+  color: var(--accent-blue);
+}
+
+.petugas-tab-item.active {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, var(--accent-blue) 0%, rgba(var(--accent-rgb), 0.88) 100%) !important;
+  border-color: var(--accent-blue) !important;
+  box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.35) !important;
+}
+
+.petugas-tab-item.active i {
+  color: #ffffff !important;
+}
+
+.petugas-tab-badge {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.22);
+  color: inherit;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.petugas-tab-item:not(.active) .petugas-tab-badge {
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+@media (max-width: 768px) {
+  .petugas-tabs-wrapper {
+    margin-bottom: 12px;
+    gap: 6px;
+  }
+  .petugas-tab-item {
+    padding: 6px 12px;
+    font-size: 12.5px;
+  }
 }
 
 /* ====== DRILLDOWN & COMPARISON GRID LAYOUTS ====== */
@@ -4352,15 +4440,36 @@ th:has(.filter-header-wrapper) {
   #sidebarToggle {
     display: none !important;
   }
-}
 
-@media (max-width: 640px) {
-
-  /* Topbar layout spacing */
+  /* Seamless glassmorphic topbar (tanpa border bawah) */
   .topbar {
-    padding: 0 10px;
+    padding: 0 14px;
     gap: 8px;
     left: 0 !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    background: rgba(15, 15, 18, 0.85) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  }
+
+  body.light-mode .topbar {
+    background: rgba(245, 239, 230, 0.90) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Remove gradient stripe on mobile for clean seamless edge */
+  .topbar::before {
+    display: none !important;
+  }
+
+  /* Auto-hide topbar on scroll down */
+  body.topbar-hidden .topbar,
+  .topbar.topbar-hidden {
+    transform: translateY(-100%) !important;
   }
 
   /* Left: hide horizontal logo on small screens, show clear page title */
@@ -4374,8 +4483,9 @@ th:has(.filter-header-wrapper) {
   }
 
   .topbar-title {
-    font-size: 14px !important;
+    font-size: 15px !important;
     font-weight: 700 !important;
+    letter-spacing: -0.01em !important;
   }
   .topbar-subtitle { display: none !important; }
 
@@ -4391,36 +4501,29 @@ th:has(.filter-header-wrapper) {
     gap: 6px !important;
   }
 
-  /* Touch-friendly 38px icon buttons */
+  /* Touch-friendly 36px circular icon buttons */
   .topbar-action-btn {
     padding: 0 !important;
-    width: 38px !important;
-    height: 38px !important;
+    width: 36px !important;
+    height: 36px !important;
     justify-content: center !important;
     align-items: center !important;
     gap: 0 !important;
-    border-radius: 10px !important;
+    border-radius: 50% !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06) !important;
   }
 
   .topbar-action-btn i {
-    font-size: 16px !important;
+    font-size: 15px !important;
   }
 
-  /* Admin upload: icon-only button */
+  /* Hide Admin upload button on mobile topbar */
   .topbar-admin-btn {
-    padding: 0 !important;
-    width: 38px !important;
-    height: 38px !important;
-    justify-content: center !important;
-    align-items: center !important;
-    border-radius: 10px !important;
+    display: none !important;
   }
-  .topbar-admin-btn i {
-    font-size: 16px !important;
-  }
-  .topbar-admin-btn .topbar-action-label { display: none !important; }
 
-@media (max-width: 768px) {
   .topbar-dropdown-wrapper {
     position: static !important;
   }
@@ -4441,7 +4544,6 @@ th:has(.filter-header-wrapper) {
   }
 
   .topbar-dropdown--right { right: 12px !important; }
-}
 }
 
 /* Fullscreen AI Chat View (Keep Sidebar, Hide Topbar & Breadcrumb) */

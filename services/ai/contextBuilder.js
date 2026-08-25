@@ -77,6 +77,13 @@ function buildLiveContext(surveyId = 'se2026') {
       }
     } catch (_) {}
 
+    const { getSurveyConfigById } = require('../surveyRegistry');
+    const surveyConfig = getSurveyConfigById(surveyId);
+    const officerRole = (surveyConfig && surveyConfig.officerRole) || 'PCL';
+    const unitName = (surveyConfig && surveyConfig.unitName) || 'dokumen';
+    const surveyName = (surveyConfig && surveyConfig.name) || 'Sensus/Survei PPU';
+    const isCensus = surveyConfig && surveyConfig.category === 'sensus';
+
     // Build context block
     const pctFasih   = fmtPct(summary.pct);
     const pctMuatan  = fmtPct(summary.pct_muatan);
@@ -92,17 +99,18 @@ function buildLiveContext(surveyId = 'se2026') {
     const activePcl  = fmt(summary.active_pcl);
 
     let topKecText = topKec.map(k =>
-      `  - **${k.kecamatan}**: ${fmtPct(k.pct)} FASIH, ${fmtPct(k.pct_muatan)} Muatan`
+      `  - **${k.kecamatan}**: ${fmtPct(k.pct)} Capaian Utama, ${fmtPct(k.pct_muatan)} Muatan`
     ).join('\n') || '  _Data tidak tersedia_';
 
     let botKecText = botKec.map(k =>
-      `  - **${k.kecamatan}**: ${fmtPct(k.pct)} FASIH, ${fmtPct(k.pct_muatan)} Muatan`
+      `  - **${k.kecamatan}**: ${fmtPct(k.pct)} Capaian Utama, ${fmtPct(k.pct_muatan)} Muatan`
     ).join('\n') || '  _Data tidak tersedia_';
 
     return `
 ## Konteks Data Ringkasan Terkini (Live Context)
 
-> Data di bawah ini adalah snapshot ringkasan database saat ini.
+> Data di bawah ini adalah snapshot ringkasan database saat ini untuk kegiatan **${surveyName}**.
+> Karakteristik Kegiatan: ${surveyConfig ? `${surveyConfig.categoryLabel || 'Survei'} | Satuan: ${unitName} | Petugas: ${officerRole}` : 'Pemantauan BPS'}
 > Jika pertanyaan pengguna berkaitan langsung dengan metrik agregat di bawah, Anda dapat menggunakannya langsung.
 > Namun jika pertanyaan menanyakan analisis spesifik, peringkat lengkap, atau data petugas individual, jalankan fungsi tool yang sesuai.
 
@@ -111,25 +119,25 @@ function buildLiveContext(surveyId = 'se2026') {
 - **File**: ${upload.filename || 'N/A'}
 - **Upload ID**: ${upload.id}
 
-### Ringkasan Progres Kabupaten PPU
+### Ringkasan Progres Kabupaten PPU (${surveyName})
 | Indikator | Nilai |
 |:---|---:|
-| SLS Selesai / Total | ${selesai} / ${total} |
-| % Progres FASIH | **${pctFasih}** |
-| % Progres Muatan | **${pctMuatan}** |
-| Target FASIH | ${targetFasih} |
-| Realisasi FASIH | ${realFasih} |
+| ${isCensus ? 'SLS Selesai / Total' : 'Blok Sensus Selesai / Total Sampel'} | ${selesai} / ${total} |
+| % Capaian Utama (${unitName}) | **${pctFasih}** |
+| % Progres Muatan / Listing | **${pctMuatan}** |
+| Target ${unitName} | ${targetFasih} |
+| Realisasi ${unitName} Terdata | ${realFasih} |
 | Dokumen Approved | ${approved} |
 | Dokumen Draft | ${draft} |
 | Muatan Selesai / Target | ${muatanSel} / ${muatanTot} |
-| PCL Aktif / Total PCL | ${activePcl} / ${totalPcl} |
-| PCL dengan Anomali | ${anomaliCount} |
+| ${officerRole} Aktif / Total ${officerRole} | ${activePcl} / ${totalPcl} |
+| ${officerRole} dengan Anomali / Perhatian | ${anomaliCount} |
 | Item Early Warning | ${ewCount} |
 
-### Kecamatan Progres FASIH Terbaik
+### Kecamatan Progres Tertinggi
 ${topKecText}
 
-### Kecamatan Progres FASIH Terendah
+### Kecamatan Progres Terendah
 ${botKecText}
 `;
   } catch (err) {

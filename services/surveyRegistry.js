@@ -207,5 +207,6 @@ function invalidateCache() {
 module.exports = {
   getSurveysConfig,
   getSurveyById,
+  getSurveyConfigById: getSurveyById,
   invalidateCache,
 };

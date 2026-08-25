@@ -59,12 +59,18 @@
     }
     
     .chat-header {
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: rgba(255, 255, 255, 0.01);
+      background: transparent;
+      transition: border-color 0.2s ease;
+      z-index: 10;
+      flex-shrink: 0;
+    }
+    body.light-mode .chat-header {
+      border-bottom-color: rgba(0, 0, 0, 0.06);
     }
     .chat-header-title {
       font-size: 15px;
@@ -76,12 +82,12 @@
     }
     .chat-header-title i {
       color: var(--accent-blue);
-      font-size: 20px;
+      font-size: 18px;
     }
     .chat-header-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
       justify-content: flex-end;
     }
@@ -104,7 +110,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 10px;
+      padding: 5px 10px;
       border-radius: 999px;
       font-size: 11px;
       font-weight: 600;
@@ -141,13 +147,13 @@
     
     .chat-messages {
       flex: 1;
-      padding: 20px 24px;
+      padding: 16px 24px;
       overflow-y: auto;
       overflow-x: hidden;
       display: flex;
       flex-direction: column;
       gap: 16px;
-      background: rgba(0, 0, 0, 0.1);
+      background: transparent;
       min-width: 0;
       width: 100%;
       box-sizing: border-box;
@@ -155,12 +161,12 @@
     }
     @media (max-width: 768px) {
       .chat-messages {
-        padding: 16px 12px;
+        padding: 12px 12px;
       }
     }
 
     body.light-mode .chat-messages {
-      background: rgba(0, 0, 0, 0.02);
+      background: transparent;
     }
     
     .message {
@@ -183,39 +189,19 @@
 
     .message-body {
       display: flex;
-      gap: 10px;
-      align-items: flex-end;
       max-width: 100%;
+      width: 100%;
     }
     .message.user .message-body {
-      flex-direction: row-reverse;
+      justify-content: flex-end;
       max-width: 85%;
     }
     .message.agent .message-body {
-      flex-direction: row;
+      justify-content: flex-start;
       max-width: 100%;
     }
-    
     .message-avatar {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 15px;
-      flex-shrink: 0;
-      font-weight: 600;
-    }
-    .message.user .message-avatar {
-      background: linear-gradient(135deg, var(--accent-blue), rgba(var(--accent-rgb), 0.7));
-      color: white;
-      border: 2px solid rgba(var(--accent-rgb), 0.3);
-    }
-    .message.agent .message-avatar {
-      background: linear-gradient(135deg, var(--accent-cyan), rgba(6, 182, 212, 0.7));
-      color: white;
-      border: 2px solid rgba(6, 182, 212, 0.3);
+      display: none !important;
     }
     
     .message-bubble {
@@ -349,16 +335,17 @@
     .message-bubble a {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 3px 9px;
-      margin: 2px 3px;
-      background: rgba(var(--accent-rgb, 59, 130, 246), 0.12);
-      border: 1px solid rgba(var(--accent-rgb, 59, 130, 246), 0.3);
-      border-radius: 6px;
+      gap: 3px;
+      padding: 2px 7px;
+      margin: 1px 2px;
+      background: rgba(var(--accent-rgb, 59, 130, 246), 0.1);
+      border: 1px solid rgba(var(--accent-rgb, 59, 130, 246), 0.25);
+      border-radius: 5px;
       color: var(--accent-primary, #3b82f6);
       text-decoration: none;
-      font-weight: 600;
-      font-size: 0.9em;
+      font-weight: 500;
+      font-size: 12px;
+      line-height: 1.4;
       transition: all 0.2s ease;
       vertical-align: middle;
     }
@@ -368,9 +355,10 @@
       border-color: var(--accent-primary, #3b82f6);
       color: #ffffff !important;
       transform: translateY(-1px);
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
     }
     .message-bubble a i {
+      font-size: 11px;
       transition: transform 0.2s ease;
     }
     .message-bubble a:hover i {
@@ -519,8 +507,8 @@
       color: white;
       border: none;
       border-radius: 50%;
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -528,10 +516,11 @@
       transition: all 0.2s;
       flex-shrink: 0;
       box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+      margin-bottom: 0px;
     }
 
     .gemini-stop-btn:hover {
-      transform: scale(1.08);
+      transform: scale(1.06);
       box-shadow: 0 4px 14px rgba(239, 68, 68, 0.6);
     }
 
@@ -736,12 +725,14 @@
     }
     
     .chat-footer-wrapper {
-      padding: 14px 24px 18px 24px;
-      background: var(--bg-card);
-      border-top: 1px solid var(--border);
+      padding: 6px 20px 18px 20px;
+      background: transparent !important;
+      border: none !important;
+      border-top: none !important;
+      box-shadow: none !important;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       z-index: 20;
       flex-shrink: 0;
       width: 100%;
@@ -750,7 +741,7 @@
     }
     @media (max-width: 768px) {
       .chat-footer-wrapper {
-        padding: 10px 12px 14px 12px;
+        padding: 4px 12px 12px 12px !important;
       }
     }
 
@@ -898,44 +889,46 @@
       line-height: 1.4;
     }
 
-    /* Gemini Pill Input Box */
+    /* Grok Style Card Input Box */
     .gemini-input-bar {
       background: var(--bg-secondary);
       border: 1.5px solid var(--border);
-      border-radius: 30px;
-      padding: 4px 6px 4px 18px;
+      border-radius: 24px;
+      padding: 12px 14px 10px 18px;
       display: flex;
-      align-items: center;
-      gap: 10px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       box-sizing: border-box;
       max-width: 860px;
       width: 100%;
+      min-height: 102px;
       margin-left: auto;
       margin-right: auto;
     }
 
     .gemini-input-bar:focus-within {
       border-color: #4285F4;
-      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.2), 0 8px 24px rgba(0, 0, 0, 0.18);
+      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.18), 0 8px 24px rgba(0, 0, 0, 0.14);
       background: var(--bg-card);
     }
 
     .gemini-input {
-      flex: 1;
+      width: 100%;
       background: transparent;
       border: none;
       color: var(--text-primary);
-      padding: 9px 0 7px 0;
+      padding: 0;
       margin: 0;
-      font-size: 14px;
-      line-height: 1.35;
+      font-size: 15px;
+      line-height: 1.5;
       outline: none;
       resize: none;
-      height: 38px;
-      min-height: 38px;
-      max-height: 120px;
+      height: 42px;
+      min-height: 42px;
+      max-height: 180px;
       font-family: inherit;
       box-sizing: border-box;
     }
@@ -944,9 +937,66 @@
       color: var(--text-muted);
     }
 
+    .gemini-input-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: 10px;
+      box-sizing: border-box;
+    }
+
+    .gemini-input-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .grok-tool-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 15px;
+      padding: 5px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      line-height: 1;
+    }
+    .grok-tool-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .grok-mode-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: rgba(var(--accent-rgb), 0.08);
+      border: 1px solid rgba(var(--accent-rgb), 0.15);
+      cursor: default;
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .gemini-input-buttons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+    }
+
     .gemini-send-btn {
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       border: none;
       background: linear-gradient(135deg, #4285F4 0%, #9b72cb 100%);
@@ -962,11 +1012,11 @@
     }
 
     .gemini-send-btn i {
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1;
       display: inline-block;
-      margin-top: 2px;
-      margin-left: -1px;
+      margin-top: 1px;
+      margin-left: 1px;
     }
 
     .gemini-send-btn:hover {
@@ -976,6 +1026,37 @@
 
     .gemini-send-btn:active {
       transform: scale(0.94);
+    }
+
+    .gemini-stop-btn {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+      margin-bottom: 0px;
+    }
+
+    .gemini-stop-btn:hover {
+      transform: scale(1.06);
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.6);
+    }
+
+    .chat-footer-disclaimer {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+      margin: 2px 0 0 0;
+      user-select: none;
+      letter-spacing: 0.01em;
     }
     .chat-input::placeholder {
       color: var(--text-muted);
@@ -1045,11 +1126,6 @@
         max-width: 88% !important;
         gap: 6px !important;
       }
-      .message-avatar {
-        width: 24px !important;
-        height: 24px !important;
-        font-size: 12px !important;
-      }
       .message-bubble {
         padding: 10px 12px !important;
         font-size: 14px !important;
@@ -1117,7 +1193,12 @@
         align-items: center !important;
         justify-content: space-between !important;
         gap: 6px !important;
-        padding: 8px 10px !important;
+        padding: 8px 12px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        background: transparent !important;
+      }
+      body.light-mode .chat-header {
+        border-bottom-color: rgba(0, 0, 0, 0.05) !important;
       }
       .chat-header-title {
         font-size: 15px !important;
@@ -1189,31 +1270,31 @@
       }
       
       .chat-footer-wrapper {
-        padding: 10px 14px 12px 14px !important;
-        gap: 6px !important;
-        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2) !important;
+        padding: 4px 10px 10px 10px !important;
+        gap: 4px !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        border-top: none !important;
       }
       
-      .chat-input-area {
-        padding: 4px 6px 4px 10px !important;
-        gap: 6px !important;
-        margin: 0 !important;
-        border-radius: 12px !important;
+      .gemini-input-bar {
+        padding: 10px 12px 8px 14px !important;
+        min-height: 94px !important;
+        border-radius: 20px !important;
+        gap: 4px !important;
       }
-      .chat-input {
-        padding: 6px 0 !important;
-        font-size: 14px !important;
-        min-height: 36px !important;
-        box-sizing: border-box !important;
+      .gemini-input {
+        padding: 0 !important;
+        font-size: 14.5px !important;
+        min-height: 38px !important;
       }
-      .chat-input-area button {
-        height: 36px !important;
-        padding: 0 12px !important;
-        font-size: 13px !important;
-        border-radius: 8px !important;
+      .gemini-send-btn, .gemini-stop-btn {
+        width: 34px !important;
+        height: 34px !important;
       }
-      .btn-send-text {
-        display: none !important;
+      .chat-footer-disclaimer {
+        font-size: 10.5px !important;
+        margin-top: 2px !important;
       }
       .agent-step-text {
         font-size: 0.8rem !important;
@@ -1228,21 +1309,14 @@
   <div class="chat-wrapper">
     <div class="chat-header">
       <div class="chat-header-title">
-        <button class="btn btn-secondary btn-sm" id="sidebarToggleAgent" onclick="document.body.classList.toggle('sidebar-collapsed'); if(typeof window.dispatchEvent==='function') window.dispatchEvent(new Event('resize'));" style="padding: 4px 8px; font-size: 13px; margin-right: 6px; display: inline-flex; align-items: center; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer;" title="Sembunyikan / Tampilkan Sidebar">
-          <i class="bi bi-layout-sidebar-inset"></i>
-        </button>
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <i class="bi bi-robot" style="font-size: 20px; color: var(--accent-cyan);"></i>
+        <div style="display: flex; align-items: center; gap: 8px;">
           <i class="bi bi-sparkles gemini-sparkle-icon" style="font-size: 18px;"></i>
-        </div>
-        <div>
-          <span style="font-weight: 700; font-size: 15.5px;" class="gemini-gradient-text">Pananyo Taka</span>
-          <p style="margin: 2px 0 0 0; font-size: 10px; font-weight: 500; color: var(--text-muted);">Asisten AI Pintar <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.name : 'Sensus Ekonomi 2026') %> Penajam Paser Utara</p>
+          <span style="font-weight: 700; font-size: 16px; letter-spacing: -0.01em;" class="gemini-gradient-text">Pananyo Taka</span>
         </div>
       </div>
       <div class="chat-header-actions">
-        <button class="btn btn-secondary btn-sm" onclick="clearChatHistory()" style="padding: 6px 12px; font-size: 11px; height: 32px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; border-radius: 99px;" title="Hapus riwayat obrolan">
-          <i class="bi bi-plus-lg"></i> Percakapan Baru
+        <button class="btn btn-secondary btn-sm" onclick="clearChatHistory()" style="padding: 6px 14px; font-size: 12px; height: 32px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; border-radius: 99px;" title="Hapus riwayat obrolan">
+          <i class="bi bi-plus-lg"></i> <span class="btn-text-mobile">Percakapan Baru</span>
         </button>
 
         <!-- Notification Bell -->
@@ -1267,7 +1341,6 @@
           <i class="bi bi-moon-fill theme-icon" style="font-size: 13px;"></i>
         </button>
 
-        <span id="agentStatus" class="status-badge ready" style="border-radius: 99px;"><span class="status-dot"></span><span class="status-text">Pananyo Taka Active</span></span>
         <input type="hidden" id="agentProvider" value="<%= typeof provider !== 'undefined' && provider ? provider : 'gemini' %>">
         <input type="hidden" id="agentModel" value="<%= typeof selectedGeminiModel !== 'undefined' && selectedGeminiModel ? selectedGeminiModel : (typeof model !== 'undefined' && model ? model : 'gemini-3.5-flash') %>">
       </div>
@@ -1285,29 +1358,53 @@
           <p class="gemini-hero-subtitle">Asisten Pintar <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.name : 'Sensus Ekonomi 2026') %> Penajam Paser Utara. Apa yang ingin Anda analisis atau tanyakan hari ini?</p>
         </div>
 
+        <%
+          const cfg = typeof surveyConfig !== 'undefined' ? surveyConfig : {};
+          const isCensus = cfg.category === 'sensus';
+          const sName = cfg.shortName || cfg.name || 'Kegiatan Lapangan';
+          const sUnit = cfg.unitName || (isCensus ? 'dokumen' : 'sampel');
+          const sOfficer = cfg.officerRole || (isCensus ? 'PCL' : 'PPL');
+
+          const card1Prompt = `Bagaimana ringkasan progres ${isCensus ? 'sensus' : 'survei ' + sName} di Kabupaten PPU saat ini?`;
+          const card1Title = 'Ringkasan Progres';
+          const card1Desc = `Cek capaian realisasi ${sUnit} per kecamatan secara otomatis`;
+
+          const card2Prompt = `Siapa petugas (${sOfficer}) dengan realisasi ${sUnit} terbanyak?`;
+          const card2Title = `Kinerja ${sOfficer}`;
+          const card2Desc = `Peringkat capaian dan evaluasi progres ${sOfficer} lapangan`;
+
+          const card3Prompt = `Kecamatan mana yang memiliki persentase capaian tertinggi?`;
+          const card3Title = 'Peringkat Wilayah';
+          const card3Desc = `Bandingkan persentase progres capaian ${sUnit} antar kecamatan`;
+
+          const card4Prompt = `Apakah ada petugas yang stagnan pada upload data terbaru?`;
+          const card4Title = 'Deteksi & Evaluasi';
+          const card4Desc = `Identifikasi petugas atau wilayah yang memerlukan percepatan data`;
+        %>
+
         <div class="gemini-suggestion-grid">
-          <div class="gemini-card" onclick="sendQuickPrompt('Bagaimana ringkasan progres <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'SE2026') %> Kabupaten Penajam Paser Utara saat ini?')">
+          <div class="gemini-card" onclick="sendQuickPrompt('<%= card1Prompt %>')">
             <div class="gemini-card-icon blue"><i class="bi bi-bar-chart-line-fill"></i></div>
-            <div class="gemini-card-title">Ringkasan Progres <%= (typeof surveyConfig !== 'undefined' ? surveyConfig.shortName : 'SE2026') %></div>
-            <div class="gemini-card-desc"><%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'Cek capaian realisasi dokumen FASIH per kecamatan secara otomatis' : 'Cek capaian realisasi muatan & FASIH per kecamatan secara otomatis' %></div>
+            <div class="gemini-card-title"><%= card1Title %></div>
+            <div class="gemini-card-desc"><%= card1Desc %></div>
           </div>
 
-          <div class="gemini-card" onclick="sendQuickPrompt('Identifikasi <%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'PPL' : 'PCL' %> dan PML dengan performa terendah atau membutuhkan evaluasi')">
-            <div class="gemini-card-icon red"><i class="bi bi-exclamation-triangle-fill"></i></div>
-            <div class="gemini-card-title">Evaluasi Kinerja Petugas</div>
-            <div class="gemini-card-desc">Temukan <%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'PPL/PML' : 'PCL/PML' %> dengan tingkat reject tinggi atau progres terlambat</div>
+          <div class="gemini-card" onclick="sendQuickPrompt('<%= card2Prompt %>')">
+            <div class="gemini-card-icon red"><i class="bi bi-people-fill"></i></div>
+            <div class="gemini-card-title"><%= card2Title %></div>
+            <div class="gemini-card-desc"><%= card2Desc %></div>
           </div>
 
-          <div class="gemini-card" onclick="sendQuickPrompt('Tampilkan deteksi anomali data, petugas tidak aktif, dan potensi data ganda')">
-            <div class="gemini-card-icon purple"><i class="bi bi-shield-exclamation"></i></div>
-            <div class="gemini-card-title">Deteksi Anomali Data</div>
-            <div class="gemini-card-desc">Analisis potensi kesalahan entri data dan beban SLS tidak seimbang</div>
+          <div class="gemini-card" onclick="sendQuickPrompt('<%= card3Prompt %>')">
+            <div class="gemini-card-icon purple"><i class="bi bi-trophy-fill"></i></div>
+            <div class="gemini-card-title"><%= card3Title %></div>
+            <div class="gemini-card-desc"><%= card3Desc %></div>
           </div>
 
-          <div class="gemini-card" onclick="sendQuickPrompt('Berapa rincian target prelist SLS dan realisasi per kecamatan?')">
-            <div class="gemini-card-icon green"><i class="bi bi-geo-alt-fill"></i></div>
-            <div class="gemini-card-title">Analisis Drilldown Wilayah</div>
-            <div class="gemini-card-desc"><%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'Bandingkan statistik SLS dan progres FASIH antar kecamatan di PPU' : 'Bandingkan statistik SLS dan muatan antar 4 kecamatan di PPU' %></div>
+          <div class="gemini-card" onclick="sendQuickPrompt('<%= card4Prompt %>')">
+            <div class="gemini-card-icon green"><i class="bi bi-shield-exclamation"></i></div>
+            <div class="gemini-card-title"><%= card4Title %></div>
+            <div class="gemini-card-desc"><%= card4Desc %></div>
           </div>
         </div>
       </div>
@@ -1315,14 +1412,27 @@
     
     <div class="chat-footer-wrapper">
       <form id="chatForm" class="gemini-input-bar" onsubmit="handleChatSubmit(event)">
-        <textarea id="chatInput" class="gemini-input" rows="1" placeholder="Tanyakan sesuatu pada Pananyo Taka..." required autocomplete="off"></textarea>
-        <button type="button" id="chatStopBtn" class="gemini-stop-btn" title="Hentikan Jawaban (Esc)" style="display: none;" onclick="stopCurrentGeneration()">
-          <i class="bi bi-stop-fill" style="font-size: 15px;"></i>
-        </button>
-        <button type="submit" id="chatSendBtn" class="gemini-send-btn" title="Kirim Pesan">
-          <i class="bi bi-send-fill" style="font-size: 15px;"></i>
-        </button>
+        <textarea id="chatInput" class="gemini-input" rows="2" placeholder="Tanya apa saja pada Pananyo Taka..." required autocomplete="off"></textarea>
+        <div class="gemini-input-actions">
+          <div class="gemini-input-tools">
+            <button type="button" class="grok-tool-btn" title="Fokus input" onclick="document.getElementById('chatInput').focus()">
+              <i class="bi bi-paperclip"></i>
+            </button>
+            <span class="grok-mode-badge" title="Mode Analisis Cepat">
+              <i class="bi bi-lightning-charge-fill" style="color: #f59e0b; font-size: 11px;"></i> Cepat
+            </span>
+          </div>
+          <div class="gemini-input-buttons">
+            <button type="button" id="chatStopBtn" class="gemini-stop-btn" title="Hentikan Jawaban (Esc)" style="display: none;" onclick="stopCurrentGeneration()">
+              <i class="bi bi-stop-fill" style="font-size: 15px;"></i>
+            </button>
+            <button type="submit" id="chatSendBtn" class="gemini-send-btn" title="Kirim Pesan">
+              <i class="bi bi-send-fill" style="font-size: 14px;"></i>
+            </button>
+          </div>
+        </div>
       </form>
+      <div class="chat-footer-disclaimer">Pananyo Taka dapat membuat kesalahan. Harap periksa info penting.</div>
     </div>
   </div>
 </div>
@@ -1409,6 +1519,48 @@
       .replace(/'/g, '&#039;');
   }
 
+  function getLinkIcon(href, label) {
+    const cleanHref = String(href || '').toLowerCase().replace(/^\/[^/]+(?=\/)/, '');
+    const norm = cleanHref.split('?')[0].split('#')[0];
+    const lbl = String(label || '').toLowerCase();
+
+    // 1. Path Matching (Highest Priority)
+    if (norm === '' || norm === '/' || norm === '/overview') return 'bi-house-door';
+    if (norm.includes('leaderboard')) return 'bi-trophy';
+    if (norm.includes('performa')) return 'bi-graph-down';
+    if (norm.includes('early')) return 'bi-exclamation-octagon';
+    if (norm.includes('anomali')) return 'bi-shield-exclamation';
+    if (norm.includes('harian')) return 'bi-calendar3';
+    if (norm.includes('map')) return 'bi-map';
+    if (norm.includes('kecamatan')) return 'bi-geo-alt';
+    if (norm.includes('subsls') || norm.includes('sls')) return 'bi-box-seam';
+    if (norm.includes('pcl')) return 'bi-person-workspace';
+    if (norm.includes('pml')) return 'bi-clipboard2-data';
+    if (norm.includes('korlap')) return 'bi-person-gear';
+    if (norm.includes('export') || norm.includes('unduh')) return 'bi-download';
+    if (norm.includes('upload')) return 'bi-cloud-arrow-up';
+    if (norm.includes('table')) return 'bi-table';
+    if (norm.includes('agent')) return 'bi-robot';
+
+    // 2. Label Keyword Fallback
+    if (lbl.includes('leaderboard') || lbl.includes('prestasi') || lbl.includes('peringkat')) return 'bi-trophy';
+    if (lbl.includes('terendah') || lbl.includes('lambat')) return 'bi-graph-down';
+    if (lbl.includes('early warning') || lbl.includes('peringatan')) return 'bi-exclamation-octagon';
+    if (lbl.includes('anomali') || lbl.includes('ganda') || lbl.includes('reject')) return 'bi-shield-exclamation';
+    if (lbl.includes('harian') || lbl.includes('tren') || lbl.includes('kecepatan')) return 'bi-calendar3';
+    if (lbl.includes('peta') || lbl.includes('spasial')) return 'bi-map';
+    if (lbl.includes('kecamatan')) return 'bi-geo-alt';
+    if (lbl.includes('sls') || lbl.includes('blok sensus') || lbl.includes('wilayah')) return 'bi-box-seam';
+    if (lbl.includes('pengawas') || lbl.includes('pml')) return 'bi-clipboard2-data';
+    if (lbl.includes('korlap') || lbl.includes('koordinator')) return 'bi-person-gear';
+    if (lbl.includes('pcl') || lbl.includes('ppl') || lbl.includes('petugas')) return 'bi-person-workspace';
+    if (lbl.includes('unduh') || lbl.includes('export') || lbl.includes('laporan')) return 'bi-download';
+    if (lbl.includes('beranda') || lbl.includes('ringkasan')) return 'bi-house-door';
+    if (lbl.includes('tabel')) return 'bi-table';
+
+    return 'bi-arrow-right-circle';
+  }
+
   function formatInline(text) {
     const navPrefix = '<%= typeof navPrefix !== "undefined" ? navPrefix : "" %>';
     return escapeHtml(text)
@@ -1422,7 +1574,8 @@
         }
         const isInternal = finalHref.startsWith('/') || finalHref.startsWith('#');
         const targetAttr = isInternal ? '' : ' target="_blank" rel="noopener"';
-        return `<a href="${finalHref}" class="ai-chat-link"${targetAttr}>${label} <i class="bi bi-arrow-right-short" style="font-size: 1.1em; margin-left: 1px;"></i></a>`;
+        const iconClass = getLinkIcon(href, label);
+        return `<a href="${finalHref}" class="ai-chat-link"${targetAttr}><i class="bi ${iconClass}" style="font-size: 11.5px; opacity: 0.85; margin-right: 2px;"></i><span>${label}</span> <i class="bi bi-arrow-right-short" style="font-size: 13px; margin-left: 1px; opacity: 0.7;"></i></a>`;
       })
       .replace(/&lt;br&gt;/g, '<br>');
   }
@@ -1750,7 +1903,7 @@
     if (chatInput) {
       chatInput.value = text.trim();
       chatInput.style.height = 'auto';
-      chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 180) + 'px';
       chatInput.focus();
       chatInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
@@ -1763,13 +1916,6 @@
     
     const bodyDiv = document.createElement('div');
     bodyDiv.className = 'message-body';
-    
-    if (sender === 'agent') {
-      const avatar = document.createElement('div');
-      avatar.className = 'message-avatar';
-      avatar.innerHTML = '<i class="bi bi-robot"></i>';
-      bodyDiv.appendChild(avatar);
-    }
     
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
@@ -1923,11 +2069,6 @@
     
     const bodyDiv = document.createElement('div');
     bodyDiv.className = 'message-body';
-    
-    const avatar = document.createElement('div');
-    avatar.className = 'message-avatar';
-    avatar.innerHTML = '<i class="bi bi-robot"></i>';
-    bodyDiv.appendChild(avatar);
 
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble';
@@ -2407,7 +2548,7 @@
       });
       chatInput.addEventListener('input', () => {
         chatInput.style.height = 'auto';
-        chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + 'px';
+        chatInput.style.height = Math.min(chatInput.scrollHeight, 180) + 'px';
       });
     }
 

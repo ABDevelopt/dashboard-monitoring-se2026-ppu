@@ -187,8 +187,8 @@
                   Kec. <strong><%= item.kecamatan %></strong> · PML: <strong><%= item.pml %></strong> · Korlap: <strong><%= item.korlap %></strong>
                 </div>
                 <div class="warning-stats">
-                  <span class="warning-stat">SLS: <strong><%= item.total_subsls %></strong> (<%= settings.target_fasih_mode === 'fasih-sm' ? 'Target FASIH-SM' : 'Target Statis' %>: <strong><%= item.target_fasih_total %></strong>)</span>
-                  <span class="warning-stat">Selesai: <strong class="text-yellow"><%= item.selesai %> SLS</strong> (FASIH dikerjakan: <strong><%= item.muatan_realisasi %></strong>)</span>
+                  <% const isMuatanActive = (typeof hideMuatanGlobal === 'undefined' || !hideMuatanGlobal) && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0'); %>
+                  <span class="warning-stat">Selesai: <strong class="text-yellow"><%= item.selesai %> SLS</strong> (<%= isMuatanActive ? 'Muatan dikerjakan: ' : 'Dokumen dikerjakan: ' %><strong><%= isMuatanActive ? item.muatan_realisasi : (item.submitted_total || item.approved_total || 0) %></strong>)</span>
                   <span class="warning-stat text-yellow">Rata-rata: <strong><%= item.rata_rata %> dokumen/hari</strong> (Progres: <%= item.pct %>%)</span>
                 </div>
                     <div class="fasih-grid-container">

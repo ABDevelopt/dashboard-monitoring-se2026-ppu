@@ -1543,18 +1543,21 @@
         </div>
 
         <!-- Section 2: Layer Peta & Metrik -->
-        <div class="gmaps-section-label"><i class="bi bi-layers-fill"></i> Tampilan Layer &amp; Metrik</div>
-        <div class="gmaps-control-row" style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 7px;">
+        <% const hideMuatanMap = (typeof hideMuatanGlobal !== 'undefined' && hideMuatanGlobal) || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') || (typeof isSakernas !== 'undefined' && isSakernas) || (typeof activeSurvey !== 'undefined' && activeSurvey.startsWith('sakernas')) || (typeof surveyConfig !== 'undefined' && !surveyConfig.showMuatanUsaha); %>
+        <div class="gmaps-section-label"><i class="bi bi-layers-fill"></i> <%= hideMuatanMap ? 'Tampilan Layer Wilayah' : 'Tampilan Layer & Metrik' %></div>
+        <div class="gmaps-control-row" style="display: grid; grid-template-columns: <%= hideMuatanMap ? '1fr' : '1.25fr 1fr' %>; gap: 7px;">
           <div class="gmaps-pill-group" style="display: flex; width: 100%;">
             <button id="btnLayerKec" class="gmaps-pill-btn" title="Tingkat Kecamatan" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-diagram-3"></i> Kec</button>
             <button id="btnLayerDesa" class="gmaps-pill-btn active" title="Tingkat Desa / Kelurahan" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-geo"></i> Desa</button>
             <button id="btnLayerSls" class="gmaps-pill-btn" title="Tingkat SubSLS / RT" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-pin-map"></i> SLS</button>
           </div>
 
+          <% if (!hideMuatanMap) { %>
           <div class="gmaps-pill-group" style="display: flex; width: 100%;">
             <button id="btnMetricFasih" class="gmaps-pill-btn active" title="Pewarnaan Capaian FASIH" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-phone"></i> FASIH</button>
             <button id="btnMetricMuatan" class="gmaps-pill-btn" title="Pewarnaan Capaian Muatan" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-pie-chart"></i> Muatan</button>
           </div>
+          <% } %>
         </div>
 
         <!-- Section 2: Saklar Fitur Peta -->
@@ -3034,6 +3037,13 @@
         function setupKecLayer() {
           if (!kecGeoJson) return;
           kecLayer = L.geoJSON(kecGeoJson, {
+            filter: (feature) => {
+              if (isSakernasMap) {
+                const stat = getKecStat(feature.properties.nmkec);
+                return stat !== null && (stat.total_subsls > 0 || (stat.target_fasih_total || 0) > 0);
+              }
+              return true;
+            },
             style: kecStyle,
             onEachFeature: (feature, layer) => {
               layer._searchKey = (feature.properties.nmkec || '').toLowerCase();
@@ -3095,6 +3105,13 @@
         function setupDesaLayer() {
           if (!desaGeoJson) return;
           desaLayer = L.geoJSON(desaGeoJson, {
+            filter: (feature) => {
+              if (isSakernasMap) {
+                const stat = getDesaStat(feature.properties.iddesa);
+                return stat !== null && (stat.total_subsls > 0 || (stat.target_fasih_total || 0) > 0);
+              }
+              return true;
+            },
             style: desaStyle,
             onEachFeature: (feature, layer) => {
               layer._searchKey = `${feature.properties.nmdesa || ''} ${feature.properties.nmkec || ''} ${feature.properties.iddesa || ''}`.toLowerCase();
@@ -3163,6 +3180,13 @@
         function setupSlsLayer() {
           if (!slsGeoJson) return;
           slsLayer = L.geoJSON(slsGeoJson, {
+            filter: (feature) => {
+              if (isSakernasMap) {
+                const stat = getSlsStat(feature.properties.kode);
+                return stat !== null;
+              }
+              return true;
+            },
             style: slsStyle,
             smoothFactor: 1.0,
             onEachFeature: (feature, layer) => {
@@ -3271,6 +3295,13 @@
             // Position tile layer at back & recalculate map bounds
             updateBasemap();
             invalidateMapSize();
+
+            if (isSakernasMap && desaLayer && !window.location.search) {
+              const sampleBounds = desaLayer.getBounds();
+              if (sampleBounds && sampleBounds.isValid()) {
+                map.fitBounds(sampleBounds, { padding: [30, 30] });
+              }
+            }
 
             // Hide initial loading screen
             if (loadingOverlay) {
@@ -4210,7 +4241,16 @@
             if (typeof window.updateMapBreadcrumbs === 'function') {
               window.updateMapBreadcrumbs('kab');
             }
-            map.setView(centerCoords, defaultZoom);
+            if (isSakernasMap && desaLayer) {
+              const sampleBounds = desaLayer.getBounds();
+              if (sampleBounds && sampleBounds.isValid()) {
+                map.fitBounds(sampleBounds, { padding: [30, 30] });
+              } else {
+                map.setView(centerCoords, defaultZoom);
+              }
+            } else {
+              map.setView(centerCoords, defaultZoom);
+            }
             updateActiveLayerStyles();
             updateTopStats();
           });

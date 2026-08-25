@@ -1194,15 +1194,9 @@ function updateTime() {
     // This ensures buttons remain clickable even after PJAX page swaps them
     document.addEventListener('click', (e) => {
       // 0. Mobile Bottom Nav & Sidebar Toggle Clicks
-      const petugasBtn = e.target.closest('#bottomNavPetugasBtn');
       const bottomNavMenuBtn = e.target.closest('#bottomNavMenuBtn');
       const toggleBtn = e.target.closest('#sidebarToggle');
 
-      if (petugasBtn) {
-        e.preventDefault();
-        openSidebarDrawer('petugas');
-        return;
-      }
       if (bottomNavMenuBtn) {
         e.preventDefault();
         openSidebarDrawer();
@@ -2835,4 +2829,59 @@ function updateTime() {
         actionBtn.classList.add('btn-loading');
       }
     });
+
+    // 3. Smart Auto-Hide Topbar on Mobile Scroll (Down = Hide, Up = Show)
+    (function initSmartTopbar() {
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const scrollThreshold = 8;
+      const minScrollToShow = 45;
+
+      function handleScroll() {
+        if (window.innerWidth > 768) {
+          document.body.classList.remove('topbar-hidden');
+          ticking = false;
+          return;
+        }
+
+        const currentScrollY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || 0);
+        const scrollDiff = currentScrollY - lastScrollY;
+
+        // Auto close open dropdowns when scrolling
+        if (Math.abs(scrollDiff) > 12) {
+          document.querySelectorAll('.topbar-dropdown.is-open').forEach(dd => dd.classList.remove('is-open'));
+        }
+
+        if (currentScrollY <= minScrollToShow) {
+          // At the top of page -> always show
+          document.body.classList.remove('topbar-hidden');
+        } else if (scrollDiff > scrollThreshold) {
+          // Scrolling DOWN -> Hide topbar
+          document.body.classList.add('topbar-hidden');
+        } else if (scrollDiff < -scrollThreshold) {
+          // Scrolling UP -> Show topbar
+          document.body.classList.remove('topbar-hidden');
+        }
+
+        lastScrollY = currentScrollY;
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(handleScroll);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      // Always restore topbar on PJAX page load / transitions
+      window.addEventListener('pjax:start', () => {
+        document.body.classList.remove('topbar-hidden');
+        lastScrollY = 0;
+      });
+      window.addEventListener('popstate', () => {
+        document.body.classList.remove('topbar-hidden');
+        lastScrollY = 0;
+      });
+    })();
   });

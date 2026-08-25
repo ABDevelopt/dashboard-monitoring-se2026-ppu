@@ -18,9 +18,40 @@
       <div class="empty-state-text">Silakan upload data terlebih dahulu di menu <a href="<%= navPrefix %>/admin/upload">Upload Data</a>.</div>
     </div>
   <% } else { %>
+    <!-- PETUGAS NAVIGATION TABS -->
+    <div class="petugas-tabs-wrapper">
+      <a href="<%= navPrefix %>/pcl" class="petugas-tab-item <%= activePage === 'pcl' ? 'active' : '' %>">
+        <i class="bi bi-person-gear"></i>
+        <span><%= isSakernas ? 'PPL' : 'PCL' %></span>
+      </a>
+      <a href="<%= navPrefix %>/pml" class="petugas-tab-item <%= activePage === 'pml' ? 'active' : '' %>">
+        <i class="bi bi-clipboard2-data"></i>
+        <span>PML</span>
+      </a>
+      <% if (!isSakernas) { %>
+        <% if (typeof settings === 'undefined' || settings.page_korlap !== '0') { %>
+        <a href="<%= navPrefix %>/korlap" class="petugas-tab-item <%= activePage === 'korlap' ? 'active' : '' %>">
+          <i class="bi bi-person-workspace"></i>
+          <span>Korlap</span>
+        </a>
+        <% } %>
+      <% } %>
+      <% if (typeof settings === 'undefined' || settings.page_performa !== '0') { %>
+      <a href="<%= navPrefix %>/performa" class="petugas-tab-item <%= activePage === 'performa' ? 'active' : '' %>">
+        <i class="bi bi-speedometer2"></i>
+        <span>Performa</span>
+      </a>
+      <% } %>
+      <% if (typeof settings === 'undefined' || settings.page_leaderboard !== '0') { %>
+      <a href="<%= navPrefix %>/leaderboard" class="petugas-tab-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
+        <i class="bi bi-trophy"></i>
+        <span>Leaderboard</span>
+      </a>
+      <% } %>
+    </div>
 
     <!-- TWO-COLUMN GRID FOR DRILLDOWN -->
-    <div class="drilldown-grid <%= filterPml ? 'has-selection' : 'no-selection' %> mt-4">
+    <div class="drilldown-grid <%= filterPml ? 'has-selection' : 'no-selection' %> mt-2">
       
       <!-- PML LIST TABLE -->
       <div class="card" style="margin-bottom: 0;">
@@ -209,8 +240,7 @@
                   </div>
                 </div>
 
-                <!-- Progress Muatan -->
-                <% if (settings.show_progres_muatan === '1') { %>
+                <% if (settings.show_progres_muatan === '1' && (typeof hideMuatanGlobal === 'undefined' || !hideMuatanGlobal)) { %>
                 <div style="margin-bottom: 14px;" class="muatan-col">
                   <div class="bar-label" style="font-size: 11.5px; margin-bottom: 4px;">
                     <span><i class="bi bi-briefcase"></i> Progres Muatan Tim</span>

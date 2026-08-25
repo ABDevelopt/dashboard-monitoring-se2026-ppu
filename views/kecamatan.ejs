@@ -67,7 +67,7 @@
               </div>
             </div>
 
-            <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '1') { %>
+            <% if (typeof settings !== 'undefined' && settings.show_progres_muatan === '1' && (typeof hideMuatanGlobal === 'undefined' || !hideMuatanGlobal)) { %>
             <!-- BAR 2: MUATAN -->
             <div>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 11.5px;">

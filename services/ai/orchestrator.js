@@ -143,8 +143,43 @@ Setiap jawaban yang memuat data statistik, petugas, atau wilayah diakhiri dengan
 Sertakan 2–4 tautan yang PALING RELEVAN dengan konteks pertanyaan dan jawaban di atas.
 `;
 
-function buildSystemInstruction(liveCtx = '') {
-  return dbSchemaDescription + liveCtx + SYSTEM_INSTRUCTION_STATIC.slice(dbSchemaDescription.length);
+function buildSystemInstruction(liveCtx = '', surveyId = 'se2026') {
+  const { getSurveyConfigById } = require('../surveyRegistry');
+  const cfg = getSurveyConfigById(surveyId) || {};
+  const surveyName = cfg.name || 'Sensus/Survei PPU';
+  const officerRole = cfg.officerRole || 'PCL';
+  const unitName = cfg.unitName || 'dokumen';
+  const isCensus = cfg.category === 'sensus';
+  const enabledPages = Array.isArray(cfg.enabledPages) ? cfg.enabledPages : [];
+
+  let dynamicActionLinks = '\n\n## Tautan Navigasi Dashboard (Action Links)\nSetiap jawaban yang memuat data statistik, petugas, atau wilayah diakhiri dengan 2–4 tautan navigasi dashboard yang relevan:\n\n**Tautan Navigasi Dashboard:**\n';
+  if (enabledPages.includes('pcl')) dynamicActionLinks += `- Jika membahas Petugas ${officerRole} / Beban / Kinerja: \`[Lihat Detail Monitoring ${officerRole}](/pcl)\`\n`;
+  if (enabledPages.includes('pml')) dynamicActionLinks += `- Jika membahas Pengawas PML / Verifikasi Dokumen: \`[Lihat Detail Monitoring PML](/pml)\`\n`;
+  if (enabledPages.includes('korlap') && cfg.hasKorlap) dynamicActionLinks += `- Jika membahas Koordinator Lapangan: \`[Buka Monitoring Korlap](/korlap)\`\n`;
+  if (enabledPages.includes('kecamatan')) dynamicActionLinks += `- Jika membahas Kecamatan / Desa: \`[Buka Rekap Progres Kecamatan](/kecamatan)\`\n`;
+  if (enabledPages.includes('deteksi-anomali')) dynamicActionLinks += `- Jika membahas Anomali / Ganda / Dokumen Reject: \`[Buka Deteksi Anomali Lapangan](/deteksi-anomali)\`\n`;
+  if (enabledPages.includes('performa')) dynamicActionLinks += `- Jika membahas Progres Lambat / Beban Berat / Evaluasi: \`[Buka Daftar Performa Terendah](/performa-terendah)\`\n`;
+  if (enabledPages.includes('earlywarning')) dynamicActionLinks += `- Jika membahas Peringatan Dini Wilayah: \`[Buka Early Warning System](/early-warning)\`\n`;
+  if (enabledPages.includes('leaderboard')) dynamicActionLinks += `- Jika membahas Prestasi / Top Kinerja: \`[Buka Leaderboard Petugas](/leaderboard)\`\n`;
+  if (enabledPages.includes('harian')) dynamicActionLinks += `- Jika membahas Tren Harian / Rata-rata Harian: \`[Buka Tren Progres Harian](/harian)\`\n`;
+  if (enabledPages.includes('subsls')) dynamicActionLinks += `- Jika membahas Wilayah ${isCensus ? 'SLS / SubSLS' : 'Blok Sensus / SLS'}: \`[Buka Daftar Wilayah](/subsls)\`\n`;
+  if (enabledPages.includes('map')) dynamicActionLinks += `- Jika membahas Spasial / Sebaran Peta: \`[Buka Peta Sebaran Wilayah](/map)\`\n`;
+  if (enabledPages.includes('export')) dynamicActionLinks += `- Jika membahas Unduh Data / Laporan: \`[Buka Halaman Unduh / Export](/export)\`\n`;
+  dynamicActionLinks += `- Jika membahas Ringkasan Umum Kabupaten: \`[Buka Ringkasan Beranda](/)\`\n`;
+
+  const surveyDirectives = `
+## Karakteristik Khusus Kegiatan: ${surveyName}
+- **Kategori Kegiatan**: ${cfg.categoryLabel || (isCensus ? 'Sensus Lengkap' : 'Survei Sampel')}
+- **Metodologi**: ${cfg.coverageDesc || (isCensus ? 'Sensus Lengkap (Cakupan 100%)' : 'Hanya SLS/Blok Sensus Sampel Terpilih')}
+- **Unit Observasi / Pengukuran**: **${unitName}**
+- **Sebutan Petugas Lapangan**: Petugas Pendata/Pencacah disebut **${officerRole}**, Pengawas Lapangan disebut **PML**${cfg.hasKorlap ? ', Koordinator Lapangan disebut **Korlap**' : ''}.
+- **Interpretasi Kolom Target & Realisasi**:
+  - Kolom \`target_fasih\` mengukur target **${unitName}**.
+  - Kolom \`submitted_by_pcl + approved + rejected\` mengukur realisasi **${unitName}** yang telah selesai didata/disubmit oleh ${officerRole}.
+  ${!cfg.showUsahaColumns ? '- Kegiatan ini BUKAN sensus usaha/ekonomi, jadi JANGAN gunakan istilah "unit usaha" atau "sektor ekonomi", melainkan fokus pada ' + unitName + '.' : ''}
+`;
+
+  return dbSchemaDescription + surveyDirectives + liveCtx + SYSTEM_INSTRUCTION_STATIC.slice(dbSchemaDescription.length) + dynamicActionLinks;
 }
 
 // ─────────────────────────────────────────────
@@ -373,8 +408,10 @@ async function streamSimulation(userMessage, chatHistory, onEvent, abortSignal) 
 //  FACADE FUNCTIONS: BACA/TULIS MEMORY & API CALL
 // ─────────────────────────────────────────────
 async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, userId = null) {
+  const currentSurveyId = (options && options.surveyId) || resolveSurveyId();
+
   // 0. FAST-PATH: Tangani prompt generik (sapaan, testing, ucapan terima kasih) secara instan (0ms latency, hemat kuota)
-  const fastPathText = fastPathHandler.getFastPathResponse(userMessage);
+  const fastPathText = fastPathHandler.getFastPathResponse(userMessage, currentSurveyId);
   if (fastPathText) {
     const result = { role: 'model', content: fastPathText, isSimulation: false, isFastPath: true };
     if (userId) {
@@ -386,9 +423,9 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
     return result;
   }
 
-  const settings = getSettings();
-  const liveCtx = contextBuilder.buildLiveContext('se2026');
-  const dynInstruction = buildSystemInstruction(liveCtx);
+  const settings = getSettings(currentSurveyId);
+  const liveCtx = contextBuilder.buildLiveContext(currentSurveyId);
+  const dynInstruction = buildSystemInstruction(liveCtx, currentSurveyId);
   const initialSelection = llmGateway.resolveAgentSelection(settings, options);
 
   // Jika riwayat di database ada dan user id dikirim, sinkronkan
@@ -482,8 +519,10 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
 }
 
 async function streamMessageToAgent(userMessage, chatHistory = [], options = {}, onEvent = () => {}, abortSignal = null, userId = null) {
+  const currentSurveyId = (options && options.surveyId) || resolveSurveyId();
+
   // 0. FAST-PATH: Tangani prompt generik secara instan dengan respons secepat kilat (0ms TTFT)
-  const fastPathText = fastPathHandler.getFastPathResponse(userMessage);
+  const fastPathText = fastPathHandler.getFastPathResponse(userMessage, currentSurveyId);
   if (fastPathText) {
     onEvent('status', { text: 'Menghubungkan ke Pananyo Taka AI...', step: 'model_call' });
     const words = fastPathText.split(' ');
@@ -503,9 +542,9 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
     return result;
   }
 
-  const settings = getSettings();
-  const liveCtx = contextBuilder.buildLiveContext('se2026');
-  const dynInstruction = buildSystemInstruction(liveCtx);
+  const settings = getSettings(currentSurveyId);
+  const liveCtx = contextBuilder.buildLiveContext(currentSurveyId);
+  const dynInstruction = buildSystemInstruction(liveCtx, currentSurveyId);
   const initialSelection = llmGateway.resolveAgentSelection(settings, options);
 
   let mergedHistory = chatHistory;

@@ -261,6 +261,48 @@
       .replace(/'/g, '&#039;');
   }
 
+  function getLinkIcon(href, label) {
+    const cleanHref = String(href || '').toLowerCase().replace(/^\/[^/]+(?=\/)/, '');
+    const norm = cleanHref.split('?')[0].split('#')[0];
+    const lbl = String(label || '').toLowerCase();
+
+    // 1. Path Matching (Highest Priority)
+    if (norm === '' || norm === '/' || norm === '/overview') return 'bi-house-door';
+    if (norm.includes('leaderboard')) return 'bi-trophy';
+    if (norm.includes('performa')) return 'bi-graph-down';
+    if (norm.includes('early')) return 'bi-exclamation-octagon';
+    if (norm.includes('anomali')) return 'bi-shield-exclamation';
+    if (norm.includes('harian')) return 'bi-calendar3';
+    if (norm.includes('map')) return 'bi-map';
+    if (norm.includes('kecamatan')) return 'bi-geo-alt';
+    if (norm.includes('subsls') || norm.includes('sls')) return 'bi-box-seam';
+    if (norm.includes('pcl')) return 'bi-person-workspace';
+    if (norm.includes('pml')) return 'bi-clipboard2-data';
+    if (norm.includes('korlap')) return 'bi-person-gear';
+    if (norm.includes('export') || norm.includes('unduh')) return 'bi-download';
+    if (norm.includes('upload')) return 'bi-cloud-arrow-up';
+    if (norm.includes('table')) return 'bi-table';
+    if (norm.includes('agent')) return 'bi-robot';
+
+    // 2. Label Keyword Fallback
+    if (lbl.includes('leaderboard') || lbl.includes('prestasi') || lbl.includes('peringkat')) return 'bi-trophy';
+    if (lbl.includes('terendah') || lbl.includes('lambat')) return 'bi-graph-down';
+    if (lbl.includes('early warning') || lbl.includes('peringatan')) return 'bi-exclamation-octagon';
+    if (lbl.includes('anomali') || lbl.includes('ganda') || lbl.includes('reject')) return 'bi-shield-exclamation';
+    if (lbl.includes('harian') || lbl.includes('tren') || lbl.includes('kecepatan')) return 'bi-calendar3';
+    if (lbl.includes('peta') || lbl.includes('spasial')) return 'bi-map';
+    if (lbl.includes('kecamatan')) return 'bi-geo-alt';
+    if (lbl.includes('sls') || lbl.includes('blok sensus') || lbl.includes('wilayah')) return 'bi-box-seam';
+    if (lbl.includes('pengawas') || lbl.includes('pml')) return 'bi-clipboard2-data';
+    if (lbl.includes('korlap') || lbl.includes('koordinator')) return 'bi-person-gear';
+    if (lbl.includes('pcl') || lbl.includes('ppl') || lbl.includes('petugas')) return 'bi-person-workspace';
+    if (lbl.includes('unduh') || lbl.includes('export') || lbl.includes('laporan')) return 'bi-download';
+    if (lbl.includes('beranda') || lbl.includes('ringkasan')) return 'bi-house-door';
+    if (lbl.includes('tabel')) return 'bi-table';
+
+    return 'bi-arrow-right-circle';
+  }
+
   function formatInline(text) {
     const navPrefix = window.location.pathname.split('/')[1] && ['sakernas-pemutakhiran', 'sakernas-pendataan'].includes(window.location.pathname.split('/')[1])
       ? '/' + window.location.pathname.split('/')[1]
@@ -276,7 +318,8 @@
         }
         const isInternal = finalHref.startsWith('/') || finalHref.startsWith('#');
         const targetAttr = isInternal ? '' : ' target="_blank" rel="noopener"';
-        return `<a href="${finalHref}" class="ai-widget-link"${targetAttr}>${label} <i class="bi bi-arrow-right-short" style="font-size: 1.1em; margin-left: 1px;"></i></a>`;
+        const iconClass = getLinkIcon(href, label);
+        return `<a href="${finalHref}" class="ai-widget-link"${targetAttr}><i class="bi ${iconClass}" style="font-size: 11.5px; opacity: 0.85; margin-right: 2px;"></i><span>${label}</span> <i class="bi bi-arrow-right-short" style="font-size: 12px; margin-left: 1px; opacity: 0.7;"></i></a>`;
       })
       .replace(/&lt;br&gt;/g, '<br>');
   }

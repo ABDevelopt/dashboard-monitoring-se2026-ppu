@@ -73,9 +73,9 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin=""></script>
   <style>
     <%- typeof customStyles !== 'undefined' ? customStyles : '' %>
-    <% const hideMuatanGlobal = (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') || (typeof isSakernas !== 'undefined' && isSakernas) || (typeof activeSurvey !== 'undefined' && activeSurvey.startsWith('sakernas')); %>
+    <% const hideMuatanGlobal = (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') || (typeof isSakernas !== 'undefined' && isSakernas) || (typeof activeSurvey !== 'undefined' && activeSurvey.startsWith('sakernas')) || (typeof surveyConfig !== 'undefined' && !surveyConfig.showMuatanUsaha); %>
     <% if (hideMuatanGlobal) { %>
-      .muatan-col { display: none !important; }
+      .muatan-col, .muatan-only, [data-metric="muatan"] { display: none !important; }
     <% } %>
     @media (max-width: 992px) {
       .topbar-weather-widget { display: none !important; }
@@ -84,6 +84,7 @@
 </head>
 <body class="survey-theme-<%= (typeof surveyConfig !== 'undefined' ? (surveyConfig.theme || surveyConfig.id) : 'orange') %> <%= (typeof activePage !== 'undefined' && activePage === 'login') ? 'page-login' : '' %> <%= (typeof activePage !== 'undefined' && activePage === 'agent') ? 'page-agent' : '' %> <%= (typeof activePage !== 'undefined' && activePage === 'map') ? 'page-map' : '' %>">
 <script>
+  window.hideMuatanGlobal = <%= hideMuatanGlobal ? 'true' : 'false' %>;
   window.navPrefix = '<%= typeof navPrefix !== "undefined" ? navPrefix : "" %>';
   window.activeSurveyId = '<%= typeof activeSurvey !== "undefined" ? activeSurvey : (typeof surveyConfig !== "undefined" ? surveyConfig.id : "se2026") %>';
   // Apply saved theme immediately to prevent flashing
@@ -568,10 +569,10 @@
     <i class="bi bi-robot"></i>
     <span>AI Agent</span>
   </a>
-  <button id="bottomNavPetugasBtn" class="bottom-nav-item <%= ['pcl', 'pml', 'korlap', 'performa', 'leaderboard', 'performa-terendah'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Petugas">
+  <a href="<%= navPrefix %>/pcl" id="bottomNavPetugasBtn" class="bottom-nav-item <%= ['pcl', 'pml', 'korlap', 'performa', 'leaderboard', 'performa-terendah'].includes(activePage) ? 'active' : '' %>" aria-label="Halaman Petugas">
     <i class="bi bi-people"></i>
     <span>Petugas</span>
-  </button>
+  </a>
   <button id="bottomNavMenuBtn" class="bottom-nav-item <%= ['earlywarning', 'deteksi-anomali', 'harian', 'help', 'admin-menu', 'export'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Lengkap">
     <i class="bi bi-grid"></i>
     <span>Menu</span>

@@ -62,15 +62,29 @@ router.get('/', (req, res) => {
       diffTotal = summary ? ((summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0)) : 0;
     }
 
-    // Hitung distribusi bucket distLast dalam satu perulangan memori O(N) tanpa query join duplikat
-    const buckets = { bucket_0: 0, bucket_1_4: 0, bucket_5_7: 0, bucket_8_12: 0, bucket_13_plus: 0 };
-    for (let i = 0; i < pclDeltas.length; i++) {
-      const d = pclDeltas[i].diff || 0;
-      if (d <= 0) buckets.bucket_0++;
-      else if (d <= 4) buckets.bucket_1_4++;
-      else if (d <= 7) buckets.bucket_5_7++;
-      else if (d <= 12) buckets.bucket_8_12++;
-      else buckets.bucket_13_plus++;
+    // Hitung distribusi bucket distLast berdasarkan jenis kegiatan (survei sampel vs sensus)
+    const isSakernas = surveyId.startsWith('sakernas');
+    let buckets;
+    if (isSakernas) {
+      buckets = { bucket_0: 0, bucket_1: 0, bucket_2: 0, bucket_3_4: 0, bucket_5_plus: 0 };
+      for (let i = 0; i < pclDeltas.length; i++) {
+        const d = pclDeltas[i].diff || 0;
+        if (d <= 0) buckets.bucket_0++;
+        else if (d === 1) buckets.bucket_1++;
+        else if (d === 2) buckets.bucket_2++;
+        else if (d <= 4) buckets.bucket_3_4++;
+        else buckets.bucket_5_plus++;
+      }
+    } else {
+      buckets = { bucket_0: 0, bucket_1_4: 0, bucket_5_7: 0, bucket_8_12: 0, bucket_13_plus: 0 };
+      for (let i = 0; i < pclDeltas.length; i++) {
+        const d = pclDeltas[i].diff || 0;
+        if (d <= 0) buckets.bucket_0++;
+        else if (d <= 4) buckets.bucket_1_4++;
+        else if (d <= 7) buckets.bucket_5_7++;
+        else if (d <= 12) buckets.bucket_8_12++;
+        else buckets.bucket_13_plus++;
+      }
     }
     distLast = buckets;
 

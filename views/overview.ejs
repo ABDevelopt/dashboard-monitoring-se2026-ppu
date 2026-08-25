@@ -1,13 +1,28 @@
 <%
   const isSakernas = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
+  const isSakernasPendataan = typeof surveyConfig !== 'undefined' && surveyConfig.id === 'sakernas-pendataan';
+  const hideMuatanOverview = (typeof hideMuatanGlobal !== 'undefined' && hideMuatanGlobal)
+    || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0')
+    || isSakernas
+    || (typeof activeSurvey !== 'undefined' && activeSurvey.startsWith('sakernas'))
+    || (typeof surveyConfig !== 'undefined' && !surveyConfig.showMuatanUsaha);
   const officerLabel = isSakernas ? 'PPL' : 'PCL';
+  // Satuan unit untuk survei: Sakernas = RT, SE2026 = dokumen
+  const unitLabel = isSakernas ? 'RT' : 'dok';
+  const unitLabelFull = isSakernas ? 'Rumah Tangga' : 'dokumen FASIH';
 
-  let activeTargetPct = 25;
-  let targetMonthName = '30 Juni';
+  // Milestone target (25% & 40%) hanya relevan untuk SE2026, bukan survei sampel
+  let activeTargetPct = null;
+  let targetMonthName = '';
   const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
-  if (currentDate >= new Date('2026-07-01')) {
-    activeTargetPct = 40;
-    targetMonthName = '15 Juli';
+  if (!isSakernas) {
+    if (currentDate >= new Date('2026-07-01')) {
+      activeTargetPct = 40;
+      targetMonthName = '15 Juli';
+    } else {
+      activeTargetPct = 25;
+      targetMonthName = '30 Juni';
+    }
   }
 %>
 <div class="fade-in">
@@ -29,50 +44,6 @@
       <a href="<%= navPrefix %>/admin/upload" class="btn btn-primary"><i class="bi bi-lightning-charge-fill"></i> Upload Data Rekap Pertama</a>
     </div>
   <% } else { %>
-    <!-- BANNER PEMBERITAHUAN UPDATE (DISMISSIBLE) -->
-    <div id="updateNotificationBanner" style="display: none; background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%); border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px 20px; margin-top: 12px; margin-bottom: 12px; position: relative; backdrop-filter: blur(8px);">
-      <button onclick="dismissUpdateBanner()" style="position: absolute; top: 12px; right: 16px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 4px; display: flex; align-items: center; justify-content: center; transition: var(--transition);" title="Tutup">
-        <i class="bi bi-x-lg"></i>
-      </button>
-      <div style="display: flex; gap: 14px; align-items: flex-start; padding-right: 24px;">
-        <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);">
-          <i class="bi bi-patch-check-fill"></i>
-        </div>
-        <div style="min-width: 0; flex: 1;">
-          <h4 style="margin: 0 0 6px 0; font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-            <span>Pembaruan Dashboard Sistem (v2.1)</span>
-            <span style="font-size: 9px; font-weight: 700; background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%); color: white; padding: 2px 6px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">Baru</span>
-          </h4>
-          <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.6;">
-            Kami telah menambahkan beberapa fitur baru untuk mempermudah monitoring sensus Anda:
-            <ul style="margin: 6px 0 0 0; padding-left: 18px; list-style-type: disc; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 16px;">
-              <li><strong>Target FASIH-SM</strong>: Model target baru dari kolom total pivot Excel.</li>
-              <li><strong>Filter Kolom ala Excel</strong>: Live search &amp; filter langsung pada header tabel.</li>
-              <li><strong>Grafik Tren Harian PML</strong>: Visualisasi historis progres tim pada detail PML.</li>
-              <li><strong>Optimasi Mobile Viewport</strong>: Layout menu bottom-sheet &amp; transisi responsif.</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-    <script>
-      (function() {
-        const dismissed = localStorage.getItem('dismissed_update_v2.1');
-        if (!dismissed) {
-          document.getElementById('updateNotificationBanner').style.display = 'block';
-        }
-      })();
-      function dismissUpdateBanner() {
-        localStorage.setItem('dismissed_update_v2.1', 'true');
-        document.getElementById('updateNotificationBanner').style.opacity = '0';
-        document.getElementById('updateNotificationBanner').style.transform = 'translateY(-10px)';
-        document.getElementById('updateNotificationBanner').style.transition = 'all 0.3s ease';
-        setTimeout(() => {
-          document.getElementById('updateNotificationBanner').style.display = 'none';
-        }, 300);
-      }
-    </script>
-
     <!-- HEADER GRID: WEATHER WIDGET -->
     <div class="overview-top-grid" style="margin-top: 12px; margin-bottom: 4px; align-items: start;">
  
@@ -472,7 +443,7 @@
       var totalPengerjaan = (summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0);
       let fasihPct = summary.fasih_pct_str;
       
-      var startSensusDate = new Date(settings.speedometer_start_date || '2026-06-15');
+      var startSensusDate = new Date(settings.speedometer_start_date || (isSakernas ? '2026-08-08' : '2026-06-15'));
       var uploadDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
       
       // Calculate diffDays (days since startSensusDate)
@@ -480,7 +451,7 @@
       var diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
       
       // Calculate daysRemaining (days until deadline) & totalDays
-      var deadline = new Date(settings.speedometer_target_date || '2026-08-31');
+      var deadline = new Date(settings.speedometer_target_date || (isSakernas ? '2026-08-27' : '2026-08-31'));
       var totalDays = Math.max(1, Math.ceil((deadline - startSensusDate) / (1000 * 60 * 60 * 24)));
       var daysRemaining = Math.max(0, Math.ceil((deadline - uploadDate) / (1000 * 60 * 60 * 24)));
 
@@ -585,15 +556,17 @@
             <% } %>
           </div>
 
-          <!-- Marker 25% (30 Juni) -->
+          <% if (!isSakernas) { %>
+          <!-- Marker 25% (30 Juni) — SE2026 only -->
           <div class="target-marker absolute pointer-events-none" style="left: 25%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 25 ? 'var(--accent-purple)' : 'var(--border)' %>; z-index: 2;">
             <span class="target-marker-text absolute whitespace-nowrap" style="top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 25 ? 'var(--accent-purple)' : 'var(--text-muted)' %>;">Target 30 Jun: 25%</span>
           </div>
 
-          <!-- Marker 40% (15 Juli) -->
+          <!-- Marker 40% (15 Juli) — SE2026 only -->
           <div class="target-marker absolute pointer-events-none" style="left: 40%; top: -3px; height: 34px; border-left: 2px dashed <%= activeTargetPct === 40 ? 'var(--accent-purple)' : 'var(--border)' %>; z-index: 2;">
             <span class="target-marker-text absolute whitespace-nowrap" style="bottom: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: <%= activeTargetPct === 40 ? 'var(--accent-purple)' : 'var(--text-muted)' %>;">Target 15 Jul: 40%</span>
           </div>
+          <% } %>
         </div>
 
           <!-- Ringkasan Capaian / Target / Sisa -->
@@ -821,7 +794,7 @@
                 <div class="bg-info-subtle border-info-subtle rounded-sm py-2 px-2-5 text-center">
                   <div class="fs-caption text-muted fw-medium">Kecepatan Ideal</div>
                   <div class="fs-caption fw-bold text-primary mt-1 d-flex items-center justify-center gap-1 flex-wrap">
-                    <i class="bi bi-lightning-charge-fill text-blue"></i><span id="speedometerIdealSpeedField"><%= reqSpeedPerPclText %> dok/<%= officerLabel %>/hari</span>
+                    <i class="bi bi-lightning-charge-fill text-blue"></i><span id="speedometerIdealSpeedField"><%= reqSpeedPerPclText %> <%= unitLabel %>/<%= officerLabel %>/hari</span>
                   </div>
                 </div>
 
@@ -835,7 +808,7 @@
                 <div class="bg-danger-subtle border-danger-subtle rounded-sm py-2 px-2-5 text-center">
                   <div class="fs-caption text-muted fw-medium">Deadline Target</div>
                   <div class="fs-caption fw-bold text-primary mt-1 d-flex items-center justify-center gap-1 flex-wrap">
-                    <i class="bi bi-calendar-x-fill text-red"></i><span><%= formatIndonesianDateShort(settings.speedometer_target_date || '2026-08-31') %></span>
+                    <i class="bi bi-calendar-x-fill text-red"></i><span><%= formatIndonesianDateShort(settings.speedometer_target_date || (isSakernas ? '2026-08-27' : '2026-08-31')) %></span>
                   </div>
                 </div>
               </div>
@@ -843,26 +816,26 @@
               <!-- Narrative Speed Analysis Text -->
               <div id="speedometerAnalysisText" class="fs-sm lh-relaxed text-secondary border-default rounded-sm py-2-5 px-3 bg-white-subtle">
                 <% if (remainingFasih === 0) { %>
-                  Pendataan secara global telah menyelesaikan seluruh target pengisian dokumen FASIH sebanyak <strong><%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></strong> dokumen. Kinerja luar biasa!
+                  Pendataan secara global telah menyelesaikan seluruh target pengisian <strong><%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></strong> <%= unitLabelFull %>. Kinerja luar biasa!
                 <% } else { %>
-                  Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak <%= formatIndonesianDate(settings.speedometer_start_date || (isSakernas ? '2026-08-01' : '2026-06-15')) %>). Sisa hari menuju deadline (<%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>): <strong><%= daysRemaining %> hari</strong>.<br>
-                  Sisa beban kerja: <strong><%= remainingFasih.toLocaleString('id-ID') %> dokumen</strong>. 
-                  Dengan kecepatan rata-rata harian (<strong><%= speedPerPclText %> dok/<%= officerLabel %>/hari</strong> atau <strong><%= currentSpeedText %> dok/hari total</strong>), 
+                  Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak <%= formatIndonesianDate(settings.speedometer_start_date || (isSakernas ? '2026-08-08' : '2026-06-15')) %>). Sisa hari menuju deadline (<%= formatIndonesianDate(settings.speedometer_target_date || (isSakernas ? '2026-08-27' : '2026-08-31')) %>): <strong><%= daysRemaining %> hari</strong>.<br>
+                  Sisa beban kerja: <strong><%= remainingFasih.toLocaleString('id-ID') %> <%= unitLabelFull %></strong>. 
+                  Dengan kecepatan rata-rata harian (<strong><%= speedPerPclText %> <%= unitLabel %>/<%= officerLabel %>/hari</strong> atau <strong><%= currentSpeedText %> <%= unitLabel %>/hari total</strong>), 
                   <% if (currentSpeed === 0) { %>
-                    pendataan belum merealisasikan dokumen FASIH sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.
+                    pendataan belum merealisasikan <%= unitLabelFull %> sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.
                   <% } else { %>
-                    pendataan secara global diprediksi akan menyelesaikan sisa dokumen dalam waktu sekitar <strong><%= Math.ceil(estDaysToFinish) %> hari</strong>.
+                    pendataan secara global diprediksi akan menyelesaikan sisa <%= unitLabelFull %> dalam waktu sekitar <strong><%= Math.ceil(estDaysToFinish) %> hari</strong>.
                   <% } %>
                   
                   <% if (isOfftrack) { %>
                     <div class="alert-danger-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
                       <i class="bi bi-exclamation-triangle-fill text-red fs-md mt-0-5"></i>
-                      <div><strong>Off-Track:</strong> Kecepatan saat ini (Laju Akumulatif <%= speedPerPclText %> dok/<%= officerLabel %>/hari) di bawah target normal <%= targetNormalPerPclText %> dok/hari/<%= officerLabel %>. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeedPerPclText %> dok/<%= officerLabel %>/hari</strong> (atau <strong><%= reqSpeed.toFixed(2) %> dok/hari total</strong>) agar selesai sesuai target pada <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>.</div>
+                      <div><strong>Off-Track:</strong> Kecepatan saat ini (Laju Akumulatif <%= speedPerPclText %> <%= unitLabel %>/<%= officerLabel %>/hari) di bawah target normal <%= targetNormalPerPclText %> <%= unitLabel %>/hari/<%= officerLabel %>. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeedPerPclText %> <%= unitLabel %>/<%= officerLabel %>/hari</strong> (atau <strong><%= reqSpeed.toFixed(2) %> <%= unitLabel %>/hari total</strong>) agar selesai sesuai target pada <%= formatIndonesianDate(settings.speedometer_target_date || (isSakernas ? '2026-08-27' : '2026-08-31')) %>.</div>
                     </div>
                   <% } else { %>
                     <div class="alert-success-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
                       <i class="bi bi-check-circle-fill text-green fs-md mt-0-5"></i>
-                      <div><strong>On-Track:</strong> Kecepatan kerja saat ini sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>).</div>
+                      <div><strong>On-Track:</strong> Kecepatan kerja saat ini sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum <%= formatIndonesianDate(settings.speedometer_target_date || (isSakernas ? '2026-08-27' : '2026-08-31')) %>).</div>
                     </div>
                   <% } %>
                 <% } %>
@@ -873,8 +846,8 @@
           <!-- Daily Rate Line Chart Box (Sports Dashboard Style - Full Width Underneath) -->
           <div class="w-full bg-white-subtle border-default rounded-lg p-4 mt-4" style="min-height: 220px; display: flex; flex-direction: column;">
             <div class="fs-xs fw-bold text-muted mb-2 text-uppercase d-flex items-center justify-between" style="letter-spacing: 0.05em;">
-              <span class="d-flex items-center gap-1"><i class="bi bi-speedometer text-red" style="font-size: 13px;"></i> Tren Laju Harian Petugas (dok/<%= officerLabel %>/hari)</span>
-              <span class="badge badge-green-subtle" style="font-size: 9px; font-weight: 700;">Target Standar: <%= targetNormalPerPclText %> dok/<%= officerLabel %>/hari</span>
+              <span class="d-flex items-center gap-1"><i class="bi bi-speedometer text-red" style="font-size: 13px;"></i> Tren Laju Harian Petugas (<%= unitLabel %>/<%= officerLabel %>/hari)</span>
+              <span class="badge badge-green-subtle" style="font-size: 9px; font-weight: 700;">Target Standar: <%= targetNormalPerPclText %> <%= unitLabel %>/<%= officerLabel %>/hari</span>
             </div>
             <div style="flex: 1; min-height: 150px; position: relative;">
               <canvas id="dailyRateLineChartCanvas"></canvas>
@@ -895,9 +868,9 @@
                 <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em;">
                   Analisis & Kekurangan Target Harian (Agregat Kabupaten)
                 </h4>                <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <span>Monitoring defisit laju pengumpulan dokumen FASIH tingkat kabupaten se-PPU</span>
+                  <span>Monitoring defisit laju pengumpulan <%= unitLabelFull %> tingkat kabupaten se-PPU</span>
                   <span class="badge badge-purple-subtle" style="font-size: 10.5px; padding: 2px 8px; font-weight: 700; border: 1px solid rgba(139, 92, 246, 0.3);">
-                    <i class="bi bi-clock-history" style="color: var(--accent-purple);"></i> Laju Update Terakhir: <strong>+<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %> dok</strong> (<%= (typeof latestUpdateSpeedPerPcl !== 'undefined' ? latestUpdateSpeedPerPcl : 0).toLocaleString('id-ID', {maximumFractionDigits: 1}) %> dok/<%= officerLabel %>)
+                    <i class="bi bi-clock-history" style="color: var(--accent-purple);"></i> Laju Update Terakhir: <strong>+<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %> <%= unitLabel %></strong> (<%= (typeof latestUpdateSpeedPerPcl !== 'undefined' ? latestUpdateSpeedPerPcl : 0).toLocaleString('id-ID', {maximumFractionDigits: 1}) %> <%= unitLabel %>/<%= officerLabel %>)
                   </span>
                 </p>
               </div>
@@ -907,19 +880,19 @@
               <i class="bi bi-question-circle help-tooltip-icon"></i>
               <div class="help-tooltip-box">
                 <strong style="color: var(--text-primary); display: block; margin-bottom: 4px;">Panduan Analisis Target Harian Kabupaten:</strong>
-                Blok ini menyajikan analisis laju pengumpulan dokumen FASIH dalam skala agregat (total se-kabupaten per hari). 
+                Blok ini menyajikan analisis laju pengumpulan <%= unitLabelFull %> dalam skala agregat (total se-kabupaten per hari). 
                 <br><br>
-                <strong>Laju Update Terakhir:</strong> Realisasi penambahan dokumen FASIH se-kabupaten pada pengunggahan data/hari paling baru (last update).
+                <strong>Laju Update Terakhir:</strong> Realisasi penambahan <%= unitLabelFull %> se-kabupaten pada pengunggahan data/hari paling baru (last update).
                 <br><br>
-                <strong>Realisasi Laju (Rata-Rata):</strong> Kecepatan nyata rata-rata pengisian dokumen per hari secara kumulatif kabupaten.
+                <strong>Realisasi Laju (Rata-Rata):</strong> Kecepatan nyata rata-rata penyelesaian per hari secara kumulatif kabupaten.
                 <br><br>
                 <strong>Target Normal:</strong> Rata-rata laju harian berdasarkan opsi yang aktif di menu Pengaturan (misal: total target dibagi total hari alokasi pendataan).
                 <br><br>
                 <strong>Target Aktual (Laju Aman):</strong> Kecepatan minimal harian yang diperlukan untuk menyelesaikan sisa beban kerja tepat waktu sebelum deadline (menyesuaikan sisa beban dan hari tersisa).
                 <br><br>
-                <strong>Target Tetap:</strong> Standar rancangan kegiatan awal flat yaitu <%= isSakernas ? '2' : '13' %> dokumen per petugas (<%= officerLabel %>) per hari secara kumulatif kabupaten (<%= isSakernas ? '2' : '13' %> × <%= totalPcl %> <%= officerLabel %>).
+                <strong>Target Tetap:</strong> Standar target awal flat yaitu <%= isSakernas ? '2' : '13' %> <%= unitLabel %> per petugas (<%= officerLabel %>) per hari secara kumulatif kabupaten (<%= isSakernas ? '2' : '13' %> × <%= totalPcl %> <%= officerLabel %>).
                 <br><br>
-                <strong>Defisit Laju:</strong> Angka kekurangan dokumen per hari terhadap target minimal agar pendataan tetap on-track.
+                <strong>Defisit Laju:</strong> Angka kekurangan <%= unitLabel %> per hari terhadap target minimal agar pendataan tetap on-track.
               </div>
             </div>
           </div>
@@ -955,10 +928,10 @@
                   <span style="color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.03em;">Realisasi Laju Pendataan Harian</span>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="badge badge-purple" style="font-size: 10px; font-weight: 700; padding: 2px 7px;">
-                      Hari Terakhir: +<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %> dok
+                      Hari Terakhir: +<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %> <%= unitLabel %>
                     </span>
                     <span style="color: <%= isOfftrackHarian ? 'var(--accent-cyan)' : 'var(--accent-green)' %>; font-size: 13px; font-weight: 800;">
-                      <%= currentSpeed.toLocaleString('id-ID', {maximumFractionDigits: 1}) %> <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);">dok/hari (rata-rata)</span>
+                      <%= currentSpeed.toLocaleString('id-ID', {maximumFractionDigits: 1}) %> <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);"><%= unitLabel %>/hari (rata-rata)</span>
                     </span>
                   </div>
                 </div>
@@ -972,7 +945,7 @@
                     <!-- Realisasi Fill Bar -->
                     <div class="progress-bar" data-width="<%= realisasiBarPct.toFixed(1) %>" style="background: <%= isOfftrackHarian ? 'linear-gradient(90deg, #ef4444 0%, #f87171 100%)' : 'linear-gradient(90deg, #10b981 0%, #34d399 100%)' %>; height: 20px; width: 0%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; min-width: 24px; box-shadow: 0 2px 8px <%= isOfftrackHarian ? 'rgba(239, 68, 68, 0.25)' : 'rgba(16, 185, 129, 0.25)' %>;">
                       <span style="font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap;">
-                        <%= Math.round(realisasiCount).toLocaleString('id-ID') %> dok/hari
+                        <%= Math.round(realisasiCount).toLocaleString('id-ID') %> <%= unitLabel %>/hari
                       </span>
                     </div>
 
@@ -980,17 +953,17 @@
 
                   <!-- Marker Target Normal -->
                   <div class="target-marker" style="position: absolute; left: <%= targetNormalPct.toFixed(1) %>%; top: -3px; height: 34px; border-left: 2px dashed #60a5fa; z-index: 5; pointer-events: none;">
-                    <span class="target-marker-text" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: #60a5fa; white-space: nowrap;">Target Normal: <%= Math.round(targetNormal).toLocaleString('id-ID') %> dok/hari</span>
+                    <span class="target-marker-text" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: #60a5fa; white-space: nowrap;">Target Normal: <%= Math.round(targetNormal).toLocaleString('id-ID') %> <%= unitLabel %>/hari</span>
                   </div>
 
-                  <!-- Marker Target Tetap (13 * Petugas) -->
+                  <!-- Marker Target Tetap -->
                   <div class="target-marker" style="position: absolute; left: <%= targetTetapPct.toFixed(1) %>%; top: -13px; height: 44px; border-left: 2px dashed #f59e0b; z-index: 7; pointer-events: none;">
-                    <span class="target-marker-text" style="position: absolute; top: -26px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: #f59e0b; white-space: nowrap;">Target Tetap: <%= Math.round(targetTetap).toLocaleString('id-ID') %> dok/hari</span>
+                    <span class="target-marker-text" style="position: absolute; top: -26px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: #f59e0b; white-space: nowrap;">Target Tetap: <%= Math.round(targetTetap).toLocaleString('id-ID') %> <%= unitLabel %>/hari</span>
                   </div>
 
                   <!-- Marker Target Aktual (Laju Aman Deadline) -->
                   <div class="target-marker" style="position: absolute; left: <%= targetAktualPct.toFixed(1) %>%; top: -3px; height: 34px; border-left: 2px dashed var(--accent-purple); z-index: 6; pointer-events: none;">
-                    <span class="target-marker-text" style="position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: var(--accent-purple); white-space: nowrap;">Target Aktual: <%= Math.round(targetAktual).toLocaleString('id-ID') %> dok/hari</span>
+                    <span class="target-marker-text" style="position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: var(--accent-purple); white-space: nowrap;">Target Aktual: <%= Math.round(targetAktual).toLocaleString('id-ID') %> <%= unitLabel %>/hari</span>
                   </div>
 
                 </div>
@@ -1002,16 +975,16 @@
                     <span style="font-size: 8.5px; font-weight: 800; color: var(--accent-purple); text-transform: uppercase;">Laju Terakhir</span>
                     <span style="font-size: 13px; font-weight: 800; color: var(--accent-purple);">
                       +<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %>
-                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);">dok</span>
+                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);"><%= unitLabel %></span>
                     </span>
-                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;"><%= (typeof latestUpdateSpeedPerPcl !== 'undefined' ? latestUpdateSpeedPerPcl : 0).toLocaleString('id-ID', {maximumFractionDigits: 1}) %> dok/<%= officerLabel %></span>
+                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;"><%= (typeof latestUpdateSpeedPerPcl !== 'undefined' ? latestUpdateSpeedPerPcl : 0).toLocaleString('id-ID', {maximumFractionDigits: 1}) %> <%= unitLabel %>/<%= officerLabel %></span>
                   </div>
                   <!-- Realisasi Rata-Rata -->
                   <div style="display: flex; flex-direction: column; gap: 2px; padding: 6px 8px;">
                     <span style="font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Laju Rata-Rata</span>
                     <span style="font-size: 13px; font-weight: 800; color: <%= isOfftrackHarian ? 'var(--accent-cyan)' : 'var(--accent-green)' %>;">
                       <%= currentSpeed.toLocaleString('id-ID', {maximumFractionDigits: 1}) %>
-                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
+                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);"><%= unitLabel %>/hari</span>
                     </span>
                     <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Akumulatif</span>
                   </div>
@@ -1020,7 +993,7 @@
                     <span style="font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Target Normal</span>
                     <span style="font-size: 13px; font-weight: 800; color: #60a5fa;">
                       <%= Math.round(targetNormal).toLocaleString('id-ID') %>
-                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
+                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);"><%= unitLabel %>/hari</span>
                     </span>
                     <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Standar Alokasi</span>
                   </div>
@@ -1029,7 +1002,7 @@
                     <span style="font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Target Aktual</span>
                     <span style="font-size: 13px; font-weight: 800; color: var(--accent-purple);">
                       <%= reqSpeed.toLocaleString('id-ID', {maximumFractionDigits: 1}) %>
-                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
+                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);"><%= unitLabel %>/hari</span>
                     </span>
                     <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Aman Deadline</span>
                   </div>
@@ -1038,9 +1011,9 @@
                     <span style="font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Target Tetap</span>
                     <span style="font-size: 13px; font-weight: 800; color: #f59e0b;">
                       <%= Math.round(targetTetap).toLocaleString('id-ID') %>
-                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);">dok/hari</span>
+                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);"><%= unitLabel %>/hari</span>
                     </span>
-                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;"><%= isSakernas ? '2' : '13' %> dok × <%= totalPcl %> <%= officerLabel %></span>
+                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;"><%= isSakernas ? '2' : '13' %> <%= unitLabel %> × <%= totalPcl %> <%= officerLabel %></span>
                   </div>
                 </div>
 
@@ -1066,7 +1039,7 @@
                   
                   <% if (maxDeficit > 0) { %>
                     <div class="target-harian-hero-unit" style="color: var(--accent-red);">
-                      dokumen / hari
+                      <%= unitLabelFull %> / hari
                     </div>
                   <% } %>
 
@@ -1084,7 +1057,7 @@
             <div class="county-increment-chart-panel" style="margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--border); width: 100%;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 6px;">
                   <span style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
-                    <i class="bi bi-bar-chart-fill" style="color: var(--accent-purple);"></i> Grafik Tren Penambahan Dokumen Harian FASIH
+                    <i class="bi bi-bar-chart-fill" style="color: var(--accent-purple);"></i> Grafik Tren Penambahan <%= unitLabelFull %> Harian
                   </span>
                   <span style="font-size: 10px; color: var(--text-muted);">Sesi Upload Terakhir</span>
                 </div>
@@ -1106,10 +1079,10 @@
             </div>
             <div>
               <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em;">
-                Sebaran Penambahan Dokumen Petugas (<span id="distDateLabel">Update Ini</span>)
+                Sebaran Penambahan <%= unitLabelFull %> Petugas (<span id="distDateLabel">Update Ini</span>)
               </h4>
               <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">
-                Distribusi penambahan realisasi dokumen FASIH per petugas (<%= officerLabel %>) pada tanggal <span id="distDateSub"><%= latestUpload ? formatIndonesianDate(latestUpload.tanggal) : 'sesi upload terbaru' %></span>
+                Distribusi penambahan realisasi <%= unitLabelFull %> per petugas (<%= officerLabel %>) pada tanggal <span id="distDateSub"><%= latestUpload ? formatIndonesianDate(latestUpload.tanggal) : 'sesi upload terbaru' %></span>
               </p>
             </div>
           </div>
@@ -1133,14 +1106,26 @@
         </div>
 
         <% 
-          const totalDistPcl = (distLast.bucket_0 || 0) + (distLast.bucket_1_4 || 0) + (distLast.bucket_5_7 || 0) + (distLast.bucket_8_12 || 0) + (distLast.bucket_13_plus || 0) || 1;
-          const rows = [
-            { id: 'bucket_0', label: '0 Dokumen (Stagnan)', count: distLast.bucket_0 || 0, color: 'var(--accent-red)' },
-            { id: 'bucket_1_4', label: '1 - 4 Dokumen (Rendah)', count: distLast.bucket_1_4 || 0, color: '#f59e0b' },
-            { id: 'bucket_5_7', label: '5 - 7 Dokumen (Sedang)', count: distLast.bucket_5_7 || 0, color: 'var(--accent-cyan)' },
-            { id: 'bucket_8_12', label: '8 - 12 Dokumen (Tinggi)', count: distLast.bucket_8_12 || 0, color: 'var(--accent-purple)' },
-            { id: 'bucket_13_plus', label: '>= 13 Dokumen (Target)', count: distLast.bucket_13_plus || 0, color: 'var(--accent-green)' }
-          ];
+          let totalDistPcl, rows;
+          if (isSakernas) {
+            totalDistPcl = (distLast.bucket_0 || 0) + (distLast.bucket_1 || 0) + (distLast.bucket_2 || 0) + (distLast.bucket_3_4 || 0) + (distLast.bucket_5_plus || 0) || 1;
+            rows = [
+              { id: 'bucket_0', label: `0 ${unitLabel} (Stagnan)`, count: distLast.bucket_0 || 0, color: 'var(--accent-red)' },
+              { id: 'bucket_1', label: `1 ${unitLabel} (Rendah)`, count: distLast.bucket_1 || 0, color: '#f59e0b' },
+              { id: 'bucket_2', label: `2 ${unitLabel} (Target Standar)`, count: distLast.bucket_2 || 0, color: 'var(--accent-green)' },
+              { id: 'bucket_3_4', label: `3 - 4 ${unitLabel} (Tinggi)`, count: distLast.bucket_3_4 || 0, color: 'var(--accent-cyan)' },
+              { id: 'bucket_5_plus', label: `>= 5 ${unitLabel} (Sangat Cepat)`, count: distLast.bucket_5_plus || 0, color: 'var(--accent-purple)' }
+            ];
+          } else {
+            totalDistPcl = (distLast.bucket_0 || 0) + (distLast.bucket_1_4 || 0) + (distLast.bucket_5_7 || 0) + (distLast.bucket_8_12 || 0) + (distLast.bucket_13_plus || 0) || 1;
+            rows = [
+              { id: 'bucket_0', label: '0 Dokumen (Stagnan)', count: distLast.bucket_0 || 0, color: 'var(--accent-red)' },
+              { id: 'bucket_1_4', label: '1 - 4 Dokumen (Rendah)', count: distLast.bucket_1_4 || 0, color: '#f59e0b' },
+              { id: 'bucket_5_7', label: '5 - 7 Dokumen (Sedang)', count: distLast.bucket_5_7 || 0, color: 'var(--accent-cyan)' },
+              { id: 'bucket_8_12', label: '8 - 12 Dokumen (Tinggi)', count: distLast.bucket_8_12 || 0, color: 'var(--accent-purple)' },
+              { id: 'bucket_13_plus', label: '>= 13 Dokumen (Target)', count: distLast.bucket_13_plus || 0, color: 'var(--accent-green)' }
+            ];
+          }
         %>
 
         <div id="distTableContainer" style="overflow-x: auto; transition: opacity 0.2s ease;">
@@ -1231,7 +1216,7 @@
       </div>
       <% } %>
 
-      <% if (!isSakernas && settings.overview_muatan === '1' && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) { %>
+      <% if (!hideMuatanOverview && settings.overview_muatan === '1') { %>
       <!-- Progres Realisasi Pencacahan Muatan (Opsional - Sensus Only) -->
       <div class="card muatan-col lazy-section" style="margin: 0; position: relative; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); padding: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px;">
@@ -1457,7 +1442,7 @@
       </div>
       <% } %>
 
-      <% if (!isSakernas && settings.overview_tren_muatan === '1' && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) { %>
+      <% if (!hideMuatanOverview && settings.overview_tren_muatan === '1') { %>
       <!-- TREN HARIAN MUATAN -->
       <div class="card muatan-col lazy-section" style="margin: 0;">
         <div class="card-header">
@@ -1575,12 +1560,12 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 20px; width: 100%; margin-top: 16px;">
-          <% if (!isSakernas && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) { %>
+          <% if (!hideMuatanOverview && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) { %>
           <div class="muatan-col" style="height: 280px; position: relative;">
             <canvas id="kecBarChartCanvas"></canvas>
           </div>
           <% } %>
-          <div style="height: 280px; position: relative; <%= (!isSakernas && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) ? 'border-top: 1px dashed var(--border); padding-top: 16px;' : '' %>">
+          <div style="height: 280px; position: relative; <%= (!hideMuatanOverview && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) ? 'border-top: 1px dashed var(--border); padding-top: 16px;' : '' %>">
             <canvas id="kecFasihBarChartCanvas"></canvas>
           </div>
         </div>
@@ -2124,7 +2109,10 @@
         };
 
         const targetNormalFormatted = formatTargetDisplayClient(targetNormalPerPcl);
-        const officerLabelStr = (typeof window !== 'undefined' && window.activeSurveyId && window.activeSurveyId.startsWith('sakernas')) ? 'PPL' : 'PCL';
+        const isSakernasClient = (typeof window !== 'undefined' && window.activeSurveyId && window.activeSurveyId.startsWith('sakernas'));
+        const officerLabelStr = isSakernasClient ? 'PPL' : 'PCL';
+        const unitLabelStr = isSakernasClient ? 'RT' : 'dok';
+        const unitLabelFullStr = isSakernasClient ? 'Rumah Tangga' : 'dokumen FASIH';
 
         // Re-create Speedometer Gauge (Accumulative & Last Update)
         createSpeedometerChart('speedometerChartCanvas', speedPerPcl, targetNormalPerPcl, currentSpeed, targetSpeedTotal);
@@ -2132,9 +2120,9 @@
         
         // Update header sub-text fields
         const normalSpeedEl = document.getElementById('speedometerTargetNormalField');
-        if (normalSpeedEl) normalSpeedEl.textContent = `${targetNormalFormatted} dok/${officerLabelStr}/hari`;
+        if (normalSpeedEl) normalSpeedEl.textContent = `${targetNormalFormatted} ${unitLabelStr}/${officerLabelStr}/hari`;
         const reqSpeedEl = document.getElementById('speedometerReqSpeedField');
-        if (reqSpeedEl) reqSpeedEl.textContent = `${reqSpeedPerPcl.toFixed(2)} dok/${officerLabelStr}/hari`;
+        if (reqSpeedEl) reqSpeedEl.textContent = `${reqSpeedPerPcl.toFixed(2)} ${unitLabelStr}/${officerLabelStr}/hari`;
         
         // Update Status Badge
         const statusField = document.getElementById('speedometerStatusField');
@@ -2151,7 +2139,7 @@
         // Update Kecepatan Ideal Card
         const idealSpeedField = document.getElementById('speedometerIdealSpeedField');
         if (idealSpeedField) {
-          idealSpeedField.textContent = `${reqSpeedPerPcl.toFixed(2)} dok/${officerLabelStr}/hari`;
+          idealSpeedField.textContent = `${reqSpeedPerPcl.toFixed(2)} ${unitLabelStr}/${officerLabelStr}/hari`;
         }
         
         // Update Est. Selesai 100% Card
@@ -2172,22 +2160,22 @@
         const analysisText = document.getElementById('speedometerAnalysisText');
         if (analysisText) {
           if (remainingFasih === 0) {
-            analysisText.innerHTML = `Pendataan secara global telah menyelesaikan seluruh target pengisian dokumen FASIH sebanyak <strong>${target_fasih_total.toLocaleString('id-ID')}</strong> dokumen. Kinerja luar biasa!`;
+            analysisText.innerHTML = `Pendataan secara global telah menyelesaikan seluruh target pengisian <strong>${target_fasih_total.toLocaleString('id-ID')}</strong> ${unitLabelFullStr}. Kinerja luar biasa!`;
           } else {
             let inner = `Hari berjalan pendataan: <strong>${diffDays} hari</strong> (sejak ${clientFormatIndonesianDate(sensorStartDateStr)}). Sisa hari menuju deadline (${clientFormatIndonesianDate(sensorDeadlineDateStr)}): <strong>${daysRemaining} hari</strong>.<br>
-            Sisa beban kerja: <strong>${remainingFasih.toLocaleString('id-ID')} dokumen</strong>. 
-            Dengan kecepatan rata-rata harian (<strong>${speedPerPcl.toFixed(2)} dok/${officerLabelStr}/hari</strong> atau <strong>${currentSpeed.toFixed(2)} dok/hari total</strong>), `;
+            Sisa beban kerja: <strong>${remainingFasih.toLocaleString('id-ID')} ${unitLabelFullStr}</strong>. 
+            Dengan kecepatan rata-rata harian (<strong>${speedPerPcl.toFixed(2)} ${unitLabelStr}/${officerLabelStr}/hari</strong> atau <strong>${currentSpeed.toFixed(2)} ${unitLabelStr}/hari total</strong>), `;
             
             if (currentSpeed === 0) {
-              inner += `pendataan belum merealisasikan dokumen FASIH sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.`;
+              inner += `pendataan belum merealisasikan ${unitLabelFullStr} sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.`;
             } else {
-              inner += `pendataan secara global diprediksi akan menyelesaikan sisa dokumen dalam waktu sekitar <strong>${Math.ceil(estDaysToFinish)} hari</strong>.`;
+              inner += `pendataan secara global diprediksi akan menyelesaikan sisa ${unitLabelFullStr} dalam waktu sekitar <strong>${Math.ceil(estDaysToFinish)} hari</strong>.`;
             }
             
             if (isOfftrack) {
               inner += `<div class="alert-danger-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
                 <i class="bi bi-exclamation-triangle-fill text-red fs-md mt-0-5"></i>
-                <div><strong>Off-Track:</strong> Kecepatan saat ini (Laju Akumulatif ${speedPerPcl.toFixed(2)} dok/${officerLabelStr}/hari) di bawah target normal ${targetNormalFormatted} dok/hari/${officerLabelStr}. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong>${reqSpeedPerPcl.toFixed(2)} dok/${officerLabelStr}/hari</strong> (atau <strong>${reqSpeed.toFixed(2)} dok/hari total</strong>) agar selesai sesuai target pada ${clientFormatIndonesianDate(sensorDeadlineDateStr)}.</div>
+                <div><strong>Off-Track:</strong> Kecepatan saat ini (Laju Akumulatif ${speedPerPcl.toFixed(2)} ${unitLabelStr}/${officerLabelStr}/hari) di bawah target normal ${targetNormalFormatted} ${unitLabelStr}/hari/${officerLabelStr}. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong>${reqSpeedPerPcl.toFixed(2)} ${unitLabelStr}/${officerLabelStr}/hari</strong> (atau <strong>${reqSpeed.toFixed(2)} ${unitLabelStr}/hari total</strong>) agar selesai sesuai target pada ${clientFormatIndonesianDate(sensorDeadlineDateStr)}.</div>
               </div>`;
             } else {
               inner += `<div class="alert-success-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
@@ -2351,7 +2339,7 @@
       );
 
       // Initialize tren line chart
-      <% if (!isSakernas && settings.overview_tren_muatan === '1' && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) { %>
+      <% if (!hideMuatanOverview && settings.overview_tren_muatan === '1') { %>
       lazyInitChart('trenChartCanvas', () => createTrenChart('trenChartCanvas', rawTrenData));
       <% } %>
 
@@ -2411,7 +2399,7 @@
         kecFasihTotal.push(<%= k.target_fasih_total || 0 %>);
       <% }) %>
 
-      <% if (!isSakernas && (typeof settings === 'undefined' || settings.show_progres_muatan !== '0')) { %>
+      <% if (!hideMuatanOverview) { %>
       lazyInitChart('kecBarChartCanvas', () =>
         createBarChart('kecBarChartCanvas', kecLabels, kecSelesai, kecTotal, 'Progres Per Kecamatan (Muatan)')
       );
@@ -2506,21 +2494,39 @@
             allPclDeltas = data.pclDeltas || [];
             
             // Re-render table body
-            const bucket_0 = data.dist.bucket_0 || 0;
-            const bucket_1_4 = data.dist.bucket_1_4 || 0;
-            const bucket_5_7 = data.dist.bucket_5_7 || 0;
-            const bucket_8_12 = data.dist.bucket_8_12 || 0;
-            const bucket_13_plus = data.dist.bucket_13_plus || 0;
-
-            const total = bucket_0 + bucket_1_4 + bucket_5_7 + bucket_8_12 + bucket_13_plus || 1;
+            const isSakernasClient = (typeof window !== 'undefined' && window.activeSurveyId && window.activeSurveyId.startsWith('sakernas'));
+            const unitLabelStr = isSakernasClient ? 'RT' : 'Dokumen';
             
-            const rowsConfig = [
-              { id: 'bucket_0', label: '0 Dokumen (Stagnan)', count: bucket_0, color: 'var(--accent-red)' },
-              { id: 'bucket_1_4', label: '1 - 4 Dokumen (Rendah)', count: bucket_1_4, color: '#f59e0b' },
-              { id: 'bucket_5_7', label: '5 - 7 Dokumen (Sedang)', count: bucket_5_7, color: 'var(--accent-cyan)' },
-              { id: 'bucket_8_12', label: '8 - 12 Dokumen (Tinggi)', count: bucket_8_12, color: 'var(--accent-purple)' },
-              { id: 'bucket_13_plus', label: '>= 13 Dokumen (Target)', count: bucket_13_plus, color: 'var(--accent-green)' }
-            ];
+            let total, rowsConfig;
+            if (isSakernasClient) {
+              const bucket_0 = data.dist.bucket_0 || 0;
+              const bucket_1 = data.dist.bucket_1 || 0;
+              const bucket_2 = data.dist.bucket_2 || 0;
+              const bucket_3_4 = data.dist.bucket_3_4 || 0;
+              const bucket_5_plus = data.dist.bucket_5_plus || 0;
+              total = bucket_0 + bucket_1 + bucket_2 + bucket_3_4 + bucket_5_plus || 1;
+              rowsConfig = [
+                { id: 'bucket_0', label: `0 ${unitLabelStr} (Stagnan)`, count: bucket_0, color: 'var(--accent-red)' },
+                { id: 'bucket_1', label: `1 ${unitLabelStr} (Rendah)`, count: bucket_1, color: '#f59e0b' },
+                { id: 'bucket_2', label: `2 ${unitLabelStr} (Target Standar)`, count: bucket_2, color: 'var(--accent-green)' },
+                { id: 'bucket_3_4', label: `3 - 4 ${unitLabelStr} (Tinggi)`, count: bucket_3_4, color: 'var(--accent-cyan)' },
+                { id: 'bucket_5_plus', label: `>= 5 ${unitLabelStr} (Sangat Cepat)`, count: bucket_5_plus, color: 'var(--accent-purple)' }
+              ];
+            } else {
+              const bucket_0 = data.dist.bucket_0 || 0;
+              const bucket_1_4 = data.dist.bucket_1_4 || 0;
+              const bucket_5_7 = data.dist.bucket_5_7 || 0;
+              const bucket_8_12 = data.dist.bucket_8_12 || 0;
+              const bucket_13_plus = data.dist.bucket_13_plus || 0;
+              total = bucket_0 + bucket_1_4 + bucket_5_7 + bucket_8_12 + bucket_13_plus || 1;
+              rowsConfig = [
+                { id: 'bucket_0', label: '0 Dokumen (Stagnan)', count: bucket_0, color: 'var(--accent-red)' },
+                { id: 'bucket_1_4', label: '1 - 4 Dokumen (Rendah)', count: bucket_1_4, color: '#f59e0b' },
+                { id: 'bucket_5_7', label: '5 - 7 Dokumen (Sedang)', count: bucket_5_7, color: 'var(--accent-cyan)' },
+                { id: 'bucket_8_12', label: '8 - 12 Dokumen (Tinggi)', count: bucket_8_12, color: 'var(--accent-purple)' },
+                { id: 'bucket_13_plus', label: '>= 13 Dokumen (Target)', count: bucket_13_plus, color: 'var(--accent-green)' }
+              ];
+            }
 
             const tbody = document.getElementById('distTableBody');
             if (tbody) {
@@ -2619,14 +2625,24 @@
         const modal = document.getElementById('pclDistModal');
         if (!modal) return;
 
+        const isSakernasClient = (typeof window !== 'undefined' && window.activeSurveyId && window.activeSurveyId.startsWith('sakernas'));
+
         // Filter the PCLs into the active bucket
         activePclBucket = allPclDeltas.filter(item => {
           const diff = item.diff || 0;
-          if (bucketId === 'bucket_0') return diff <= 0;
-          if (bucketId === 'bucket_1_4') return diff >= 1 && diff <= 4;
-          if (bucketId === 'bucket_5_7') return diff >= 5 && diff <= 7;
-          if (bucketId === 'bucket_8_12') return diff >= 8 && diff <= 12;
-          if (bucketId === 'bucket_13_plus') return diff >= 13;
+          if (isSakernasClient) {
+            if (bucketId === 'bucket_0') return diff <= 0;
+            if (bucketId === 'bucket_1') return diff === 1;
+            if (bucketId === 'bucket_2') return diff === 2;
+            if (bucketId === 'bucket_3_4') return diff >= 3 && diff <= 4;
+            if (bucketId === 'bucket_5_plus') return diff >= 5;
+          } else {
+            if (bucketId === 'bucket_0') return diff <= 0;
+            if (bucketId === 'bucket_1_4') return diff >= 1 && diff <= 4;
+            if (bucketId === 'bucket_5_7') return diff >= 5 && diff <= 7;
+            if (bucketId === 'bucket_8_12') return diff >= 8 && diff <= 12;
+            if (bucketId === 'bucket_13_plus') return diff >= 13;
+          }
           return false;
         });
 

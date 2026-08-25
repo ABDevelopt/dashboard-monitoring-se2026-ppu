@@ -28,6 +28,37 @@
     </div>
   <% } else { %>
     <div id="ajax-container">
+      <!-- PETUGAS NAVIGATION TABS -->
+      <div class="petugas-tabs-wrapper">
+        <a href="<%= navPrefix %>/pcl" class="petugas-tab-item <%= activePage === 'pcl' ? 'active' : '' %>">
+          <i class="bi bi-person-gear"></i>
+          <span><%= isSakernas ? 'PPL' : 'PCL' %></span>
+        </a>
+        <a href="<%= navPrefix %>/pml" class="petugas-tab-item <%= activePage === 'pml' ? 'active' : '' %>">
+          <i class="bi bi-clipboard2-data"></i>
+          <span>PML</span>
+        </a>
+        <% if (!isSakernas) { %>
+          <% if (typeof settings === 'undefined' || settings.page_korlap !== '0') { %>
+          <a href="<%= navPrefix %>/korlap" class="petugas-tab-item <%= activePage === 'korlap' ? 'active' : '' %>">
+            <i class="bi bi-person-workspace"></i>
+            <span>Korlap</span>
+          </a>
+          <% } %>
+        <% } %>
+        <% if (typeof settings === 'undefined' || settings.page_performa !== '0') { %>
+        <a href="<%= navPrefix %>/performa" class="petugas-tab-item <%= activePage === 'performa' ? 'active' : '' %>">
+          <i class="bi bi-speedometer2"></i>
+          <span>Performa</span>
+        </a>
+        <% } %>
+        <% if (typeof settings === 'undefined' || settings.page_leaderboard !== '0') { %>
+        <a href="<%= navPrefix %>/leaderboard" class="petugas-tab-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
+          <i class="bi bi-trophy"></i>
+          <span>Leaderboard</span>
+        </a>
+        <% } %>
+      </div>
 
 
     <% if (pclStats && pclStats.length > 0) { %>

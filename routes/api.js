@@ -769,14 +769,28 @@ router.get('/pcl-distribution', (req, res) => {
     let distLast = null;
     let pclDeltas = [];
 
+    const surveyId = res.locals.activeSurvey || 'se2026';
+    const isSakernas = surveyId.startsWith('sakernas');
+
     if (prevUpload) {
-      distLast = db.prepare(`
+      const bucketSql = isSakernas ? `
+        SELECT 
+          COALESCE(SUM(CASE WHEN diff <= 0 THEN 1 ELSE 0 END), 0) AS bucket_0,
+          COALESCE(SUM(CASE WHEN diff = 1 THEN 1 ELSE 0 END), 0) AS bucket_1,
+          COALESCE(SUM(CASE WHEN diff = 2 THEN 1 ELSE 0 END), 0) AS bucket_2,
+          COALESCE(SUM(CASE WHEN diff BETWEEN 3 AND 4 THEN 1 ELSE 0 END), 0) AS bucket_3_4,
+          COALESCE(SUM(CASE WHEN diff >= 5 THEN 1 ELSE 0 END), 0) AS bucket_5_plus
+      ` : `
         SELECT 
           COALESCE(SUM(CASE WHEN diff <= 0 THEN 1 ELSE 0 END), 0) AS bucket_0,
           COALESCE(SUM(CASE WHEN diff BETWEEN 1 AND 4 THEN 1 ELSE 0 END), 0) AS bucket_1_4,
           COALESCE(SUM(CASE WHEN diff BETWEEN 5 AND 7 THEN 1 ELSE 0 END), 0) AS bucket_5_7,
           COALESCE(SUM(CASE WHEN diff BETWEEN 8 AND 12 THEN 1 ELSE 0 END), 0) AS bucket_8_12,
           COALESCE(SUM(CASE WHEN diff >= 13 THEN 1 ELSE 0 END), 0) AS bucket_13_plus
+      `;
+
+      distLast = db.prepare(`
+        ${bucketSql}
         FROM (
           SELECT 
             m.pcl,
@@ -803,13 +817,24 @@ router.get('/pcl-distribution', (req, res) => {
         ORDER BY m.pcl ASC
       `).all(targetUploadId, prevUpload.id);
     } else {
-      distLast = db.prepare(`
+      const bucketSql = isSakernas ? `
+        SELECT 
+          COALESCE(SUM(CASE WHEN diff <= 0 THEN 1 ELSE 0 END), 0) AS bucket_0,
+          COALESCE(SUM(CASE WHEN diff = 1 THEN 1 ELSE 0 END), 0) AS bucket_1,
+          COALESCE(SUM(CASE WHEN diff = 2 THEN 1 ELSE 0 END), 0) AS bucket_2,
+          COALESCE(SUM(CASE WHEN diff BETWEEN 3 AND 4 THEN 1 ELSE 0 END), 0) AS bucket_3_4,
+          COALESCE(SUM(CASE WHEN diff >= 5 THEN 1 ELSE 0 END), 0) AS bucket_5_plus
+      ` : `
         SELECT 
           COALESCE(SUM(CASE WHEN diff <= 0 THEN 1 ELSE 0 END), 0) AS bucket_0,
           COALESCE(SUM(CASE WHEN diff BETWEEN 1 AND 4 THEN 1 ELSE 0 END), 0) AS bucket_1_4,
           COALESCE(SUM(CASE WHEN diff BETWEEN 5 AND 7 THEN 1 ELSE 0 END), 0) AS bucket_5_7,
           COALESCE(SUM(CASE WHEN diff BETWEEN 8 AND 12 THEN 1 ELSE 0 END), 0) AS bucket_8_12,
           COALESCE(SUM(CASE WHEN diff >= 13 THEN 1 ELSE 0 END), 0) AS bucket_13_plus
+      `;
+
+      distLast = db.prepare(`
+        ${bucketSql}
         FROM (
           SELECT 
             m.pcl,

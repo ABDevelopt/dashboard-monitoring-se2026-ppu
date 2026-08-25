@@ -48,14 +48,15 @@
           <div>
             <label for="exportScope" class="ui-label-upper">Skope / Cakupan Kolom</label>
             <select id="exportScope" class="w-full" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
-              <% if (!isSakernas) { %>
+              <% const hideMuatanExport = (typeof hideMuatanGlobal !== 'undefined' && hideMuatanGlobal) || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') || (typeof isSakernas !== 'undefined' && isSakernas) || (typeof surveyConfig !== 'undefined' && !surveyConfig.showMuatanUsaha); %>
+              <% if (!hideMuatanExport) { %>
               <option value="all" selected>Muatan + FASIH (Semua Kolom)</option>
               <option value="assignment">Assignment FASIH (Tugas Petugas)</option>
               <option value="fasih">Hanya FASIH (Tanpa Muatan/Usaha/Keluarga)</option>
               <option value="muatan">Hanya Muatan (Tanpa Status Pengerjaan FASIH)</option>
               <% } else { %>
-              <option value="fasih" selected>Rekap Progres FASIH (Semua Status)</option>
-              <option value="assignment">Assignment FASIH (Tugas Petugas)</option>
+              <option value="fasih" selected>Rekap Progres Utama (Semua Status)</option>
+              <option value="assignment">Assignment Petugas</option>
               <% } %>
             </select>
           </div>
@@ -378,7 +379,7 @@
 
     const updateScopeOptions = () => {
       const dataset = exportDataset.value;
-      <% if (!isSakernas) { %>
+      <% if (!hideMuatanExport) { %>
       if (dataset === 'petugas') {
         exportScope.innerHTML = `
           <option value="all" selected>Metrik Lengkap (FASIH + Muatan)</option>
@@ -399,13 +400,13 @@
       <% } else { %>
       if (dataset === 'petugas') {
         exportScope.innerHTML = `
-          <option value="fasih" selected>Hanya FASIH (Kinerja Dokumen)</option>
+          <option value="fasih" selected>Kinerja Dokumen Petugas</option>
         `;
         filterStatus.parentElement.style.display = 'none';
       } else {
         exportScope.innerHTML = `
-          <option value="fasih" selected>Rekap Progres FASIH (Semua Status)</option>
-          <option value="assignment">Assignment FASIH (Tugas Petugas)</option>
+          <option value="fasih" selected>Rekap Progres Utama (Semua Status)</option>
+          <option value="assignment">Assignment Petugas</option>
         `;
         filterStatus.parentElement.style.display = 'block';
       }

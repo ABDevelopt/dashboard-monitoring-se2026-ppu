@@ -209,7 +209,7 @@ router.post('/chat/stream', async (req, res) => {
     await streamMessageToAgent(
       message.trim(),
       safeHistory,
-      { provider: safeProvider, model },
+      { provider: safeProvider, model, surveyId: res.locals.activeSurvey || 'se2026' },
       sendEvent,
       controller.signal,
       userId
@@ -260,7 +260,7 @@ router.post('/chat', async (req, res) => {
     const result = await sendMessageToAgent(
       message.trim(),
       safeHistory,
-      { provider: safeProvider, model },
+      { provider: safeProvider, model, surveyId: res.locals.activeSurvey || 'se2026' },
       userId
     );
 

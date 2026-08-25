@@ -18,9 +18,10 @@ const DOMAIN_KEYWORDS = [
 /**
  * Memeriksa apakah pesan pengguna adalah prompt generik (sapaan, cek koneksi, dll)
  * @param {string} userMessage 
+ * @param {string} [surveyId='se2026']
  * @returns {string|null} Teks respons instan jika cocok, atau null jika perlu diteruskan ke AI.
  */
-function getFastPathResponse(userMessage) {
+function getFastPathResponse(userMessage, surveyId = 'se2026') {
   if (!userMessage || typeof userMessage !== 'string') return null;
 
   const raw = userMessage.trim();
@@ -71,15 +72,25 @@ function getFastPathResponse(userMessage) {
     /^(halo|hai|helo|hi|hei|hey|p|ping|pagi|siang|sore|malam|assalamu'?alaikum)\b/.test(clean) && clean.split(' ').length <= 4;
 
 
-  if (isGreeting) {
-    return `Halo! 👋 Saya **Pananyo Taka AI**, asisten cerdas pemantauan sensus dan survei BPS Kabupaten Penajam Paser Utara.
+  const { getSurveyConfigById } = require('../surveyRegistry');
+  const surveyConfig = getSurveyConfigById(surveyId);
+  const surveyName = (surveyConfig && surveyConfig.name) || 'Sensus dan Survei BPS';
+  const shortName = (surveyConfig && surveyConfig.shortName) || surveyName;
+  const isCensus = surveyConfig && surveyConfig.category === 'sensus';
+  const unitName = (surveyConfig && surveyConfig.unitName) || (isCensus ? 'dokumen FASIH' : 'sampel');
+  const officerRole = (surveyConfig && surveyConfig.officerRole) || (isCensus ? 'PCL' : 'PPL');
+  const hasKorlap = surveyConfig && surveyConfig.hasKorlap;
+  const officerTeam = hasKorlap ? `${officerRole}/PML/Korlap` : `${officerRole}/PML`;
 
-Ada yang bisa saya bantu terkait progres data lapangan, evaluasi petugas, atau analisis wilayah?
+  if (isGreeting) {
+    return `Halo! 👋 Saya **Pananyo Taka AI**, asisten cerdas pemantauan **${surveyName}** BPS Kabupaten Penajam Paser Utara.
+
+Ada yang bisa saya bantu terkait progres data ${unitName}, evaluasi petugas (${officerTeam}), atau analisis wilayah?
 
 💡 **Contoh pertanyaan yang bisa Anda ajukan:**
-* 📊 *"Bagaimana ringkasan progres sensus di Kabupaten PPU saat ini?"*
-* 👥 *"Siapa petugas dengan rata-rata penambahan harian terbanyak?"*
-* 🏆 *"Kecamatan mana yang memiliki persentase capaian FASIH tertinggi?"*
+* 📊 *"Bagaimana ringkasan progres ${isCensus ? 'sensus' : 'survei ' + shortName} di Kabupaten PPU saat ini?"*
+* 👥 *"Siapa petugas (${officerRole}) dengan realisasi ${unitName} terbanyak?"*
+* 🏆 *"Kecamatan mana yang memiliki persentase capaian tertinggi?"*
 * ⚠️ *"Apakah ada petugas yang stagnan pada upload data terbaru?"*`;
   }
 
@@ -90,9 +101,9 @@ Ada yang bisa saya bantu terkait progres data lapangan, evaluasi petugas, atau a
   if (isTest) {
     return `✅ **Sistem Aktif & Terhubung!**
 
-Layanan **Pananyo Taka AI** dan basis data pemantauan Kabupaten Penajam Paser Utara berjalan dengan normal dan siap melayani Anda.
+Layanan **Pananyo Taka AI** dan basis data pemantauan **${surveyName}** Kabupaten Penajam Paser Utara berjalan dengan normal dan siap melayani Anda.
 
-Silakan ketik pertanyaan Anda seputar progres sensus/survei, kinerja petugas, atau analisis data wilayah.`;
+Silakan ketik pertanyaan Anda seputar progres lapangan, kinerja petugas (${officerTeam}), atau analisis data wilayah.`;
   }
 
   // 3. Ucapan Terima Kasih & Konfirmasi (Gratitude / Acknowledgment)
@@ -111,14 +122,14 @@ Jika masih ada data, peringkat petugas, atau analisis wilayah lain yang ingin di
     clean.includes('apa fungsi') || clean.includes('apa fitur') || clean === 'help' || clean === 'bantuan';
 
   if (isHelp) {
-    return `Saya adalah **Pananyo Taka AI**, asisten pemantauan data sensus dan survei resmi BPS Kabupaten Penajam Paser Utara.
+    return `Saya adalah **Pananyo Taka AI**, asisten pemantauan data resmi BPS Kabupaten Penajam Paser Utara untuk **${surveyName}**.
 
 ### 🚀 Kemampuan Utama Saya:
-1. 📊 **Ringkasan Agregat Wilayah**: Menampilkan capaian FASIH & Muatan se-Kabupaten, per Kecamatan, per Desa, hingga detail SubSLS.
-2. 👥 **Kinerja Petugas (PCL/PML/Korlap)**: Peringkat capaian, analisis laju penambahan harian ($$\\text{Realisasi}/\\text{Hari}$$), beban kerja, dan estimasi waktu penyelesaian.
-3. ⚠️ **Deteksi Anomali & Early Warning**: Mendeteksi usaha ganda, tingkat keluarga/usaha tidak ditemukan, kematian tinggi, serta petugas stagnan.
-4. 🌦️ **Tren Waktu & Korelasi Cuaca**: Menganalisis pergerakan status dokumen harian serta pengaruh kondisi cuaca lapangan.
-5. 🔎 **Pencarian Spesifik**: Pencarian instan data berdasarkan 16-digit kode SLS atau nama petugas.
+1. 📊 **Ringkasan Agregat Wilayah**: Menampilkan capaian ${unitName} se-Kabupaten, per Kecamatan, per Desa, hingga detail ${isCensus ? 'SLS/SubSLS' : 'Blok Sensus / SLS Sampel'}.
+2. 👥 **Kinerja Petugas (${officerTeam})**: Peringkat capaian, analisis laju penambahan harian, beban kerja, dan estimasi waktu penyelesaian.
+3. ⚠️ **Deteksi Anomali & Early Warning**: Mendeteksi potensi kesalahan entri, keterlambatan progres, serta petugas stagnan.
+4. 🌦️ **Tren Waktu & Arsip Harian**: Menganalisis pergerakan status data harian dan sebaran distribusi penambahan.
+5. 🔎 **Pencarian Spesifik**: Pencarian instan data berdasarkan kode wilayah atau nama petugas.
 
 Ketik pertanyaan Anda secara bebas, dan saya akan langsung menganalisis datanya untuk Anda!`;
   }
