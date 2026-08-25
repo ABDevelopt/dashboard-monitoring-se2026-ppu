@@ -620,7 +620,19 @@
   body.light-mode .status-1   { background: #ef4444 !important; color: #ffffff !important; }
   body.light-mode .status-0   { background: #64748b !important; color: #ffffff !important; }
 
-  /* Floating KPI Bar (Top Right) - iPhone Liquid Glass Capsule */
+  /* KPI Indicator Dots */
+  .kpi-dot {
+    width: 6.5px;
+    height: 6.5px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .kpi-dot.dot-done { background: #10b981; }
+  .kpi-dot.dot-progress { background: #f59e0b; }
+  .kpi-dot.dot-notstarted { background: #ef4444; }
+
+  /* Floating KPI Bar (Top Right on Desktop) */
   .gmaps-floating-kpi-bar {
     position: absolute;
     top: 14px;
@@ -628,14 +640,14 @@
     z-index: 1000;
     display: inline-flex;
     align-items: center;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(15, 23, 42, 0.52) 80%, rgba(255, 255, 255, 0.08) 100%);
-    backdrop-filter: blur(32px) saturate(220%) brightness(108%);
-    -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(108%);
-    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--border);
     border-radius: 999px;
     padding: 3px;
     gap: 3px;
-    box-shadow: 0 14px 40px 0 rgba(0, 0, 0, 0.42), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.48), inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.25);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
     max-width: calc(100% - 28px);
     overflow-x: auto;
     scrollbar-width: none;
@@ -643,18 +655,16 @@
   .gmaps-floating-kpi-bar::-webkit-scrollbar { display: none; }
 
   body.light-mode .gmaps-floating-kpi-bar {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(241, 245, 249, 0.65) 100%);
-    backdrop-filter: blur(32px) saturate(200%) brightness(103%);
-    -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(103%);
-    border: 1px solid rgba(255, 255, 255, 0.90);
-    box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.08), inset 0 1.5px 2.5px 0 rgba(255, 255, 255, 0.98), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.04);
+    background: rgba(255, 255, 255, 0.90);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
   }
 
   .gmaps-kpi-pill {
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     border-radius: 999px;
-    padding: 5px 11px;
+    padding: 4px 10px;
     font-size: 11.5px;
     font-weight: 500;
     color: var(--text-secondary);
@@ -662,34 +672,41 @@
     align-items: center;
     gap: 5px;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.2s ease;
     user-select: none;
     white-space: nowrap;
   }
 
   .gmaps-kpi-pill:hover {
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.08);
   }
 
   body.light-mode .gmaps-kpi-pill:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(0, 0, 0, 0.04);
   }
 
   .gmaps-kpi-pill strong {
     font-weight: 700;
+    color: var(--text-primary);
   }
 
   .gmaps-kpi-pill.active-filter {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.08) 100%) !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
     color: var(--text-primary) !important;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.30), inset 0 1px 1.5px rgba(255, 255, 255, 0.60), inset 0 -1px 1px rgba(0, 0, 0, 0.20) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20) !important;
   }
 
   body.light-mode .gmaps-kpi-pill.active-filter {
-    background: #ffffff !important;
-    color: #0f172a !important;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08), inset 0 1.5px 2px rgba(255, 255, 255, 1) !important;
+    background: #0f172a !important;
+    border-color: #0f172a !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  body.light-mode .gmaps-kpi-pill.active-filter strong {
+    color: #ffffff !important;
   }
 
   /* Fullscreen Presentation / Command Center Mode */
@@ -1319,47 +1336,60 @@
       z-index: 1005;
     }
     .gmaps-floating-kpi-bar {
-      top: 90px;
-      left: 10px;
-      right: 10px;
-      bottom: auto;
-      width: auto;
-      max-width: calc(100% - 20px);
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      padding: 3px 5px;
-      gap: 4.5px;
-      border-radius: 999px;
+      position: static !important;
+      top: auto !important;
+      left: auto !important;
+      right: auto !important;
+      bottom: auto !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      flex-wrap: nowrap !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      padding: 6px 0 0 0 !important;
+      margin-top: 6px !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+      gap: 4px !important;
+      overflow-x: hidden !important;
       z-index: 1000;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+    body.light-mode .gmaps-floating-kpi-bar {
+      border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
     }
     .gmaps-floating-kpi-bar::-webkit-scrollbar {
       display: none;
     }
     .gmaps-kpi-pill {
-      flex: 0 0 auto;
-      padding: 4px 9px;
-      font-size: 11.5px;
-      gap: 4px;
-      border-radius: 999px;
+      flex: 1 1 0 !important;
+      min-width: 0 !important;
+      padding: 5px 3px !important;
+      font-size: 11px !important;
+      justify-content: center !important;
+      text-align: center !important;
+      border-radius: 8px !important;
+      background: rgba(255, 255, 255, 0.04) !important;
+      border: 1px solid var(--border) !important;
+      gap: 3.5px !important;
       user-select: none;
       touch-action: manipulation;
     }
-    .gmaps-kpi-pill i {
-      font-size: 12px;
+    body.light-mode .gmaps-kpi-pill {
+      background: rgba(0, 0, 0, 0.03) !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
     }
     .gmaps-kpi-pill span {
-      font-size: 11px;
-      font-weight: 500;
+      font-size: 10.5px !important;
+      font-weight: 500 !important;
     }
     .gmaps-kpi-pill strong {
-      font-size: 11.5px;
-      font-weight: 700;
+      font-size: 11px !important;
+      font-weight: 700 !important;
     }
     .gmaps-floating-right-stack {
       top: 50%;
@@ -1403,12 +1433,15 @@
       padding: 6px 9px 8px 9px;
     }
     .gmaps-floating-kpi-bar {
-      display: none !important;
+      display: flex !important;
+      padding: 5px 0 0 0 !important;
+      margin-top: 5px !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
     .gmaps-kpi-pill {
-      padding: 3.5px 8px;
-      font-size: 11px;
-      gap: 4px;
+      padding: 4.5px 2px !important;
+      font-size: 10.5px !important;
+      gap: 3px !important;
     }
     .gmaps-floating-right-stack {
       top: 50%;
@@ -1454,10 +1487,21 @@
       max-width: calc(100% - 12px);
       padding: 5px 8px 7px 8px;
     }
+    .gmaps-floating-kpi-bar {
+      display: flex !important;
+      padding: 4px 0 0 0 !important;
+      margin-top: 4px !important;
+    }
     .gmaps-kpi-pill {
-      padding: 3px 7px;
-      font-size: 10.5px;
-      gap: 3.5px;
+      padding: 4px 2px !important;
+      font-size: 10px !important;
+      gap: 2.5px !important;
+    }
+    .gmaps-kpi-pill span {
+      font-size: 10px !important;
+    }
+    .gmaps-kpi-pill strong {
+      font-size: 10.5px !important;
     }
     .gmaps-floating-right-stack {
       top: 50%;
@@ -1505,6 +1549,29 @@
           <i class="bi bi-chevron-bar-up" id="toolsExpandIcon"></i>
         </button>
       </div>
+
+      <!-- KPI STATUS FILTER BAR (Directly below search bar) -->
+      <div class="gmaps-floating-kpi-bar" id="kpiBarContainer">
+        <button type="button" class="gmaps-kpi-pill active-filter" id="kpiFilterAll" data-status="" title="Tampilkan Semua SLS">
+          <span>Semua</span>
+          <strong id="kpiTotalSls">--</strong>
+        </button>
+        <button type="button" class="gmaps-kpi-pill" id="kpiFilterDone" data-status="done" title="Hanya SLS Selesai">
+          <span class="kpi-dot dot-done"></span>
+          <span>Selesai</span>
+          <strong id="kpiSlsSelesai">--</strong>
+        </button>
+        <button type="button" class="gmaps-kpi-pill" id="kpiFilterInProgress" data-status="in_progress" title="Hanya SLS Progres">
+          <span class="kpi-dot dot-progress"></span>
+          <span>Progres</span>
+          <strong id="kpiSlsBelum">--</strong>
+        </button>
+        <button type="button" class="gmaps-kpi-pill" id="kpiFilterNotStarted" data-status="not_started" title="Hanya SLS Belum">
+          <span class="kpi-dot dot-notstarted"></span>
+          <span>Belum</span>
+          <strong id="kpiSlsNotStarted">--</strong>
+        </button>
+      </div>
       
       <!-- Collapsible Filter & Options Section -->
       <div class="gmaps-controls-collapsible" id="toolsExtraRows">
@@ -1524,16 +1591,6 @@
           </select>
         </div>
 
-        <!-- Section 2: Filter Status Target SLS (Hanya Tampil di Layar Mobile) -->
-        <div class="gmaps-section-label gmaps-status-filter-mobile-only"><i class="bi bi-funnel-fill"></i> Filter Status Target SLS</div>
-        <div class="gmaps-control-row gmaps-status-filter-mobile-only" style="margin-bottom: 6px;">
-          <select id="statusFilterSelect" class="gmaps-select-pill" title="Filter Berdasarkan Status Target SLS" style="width: 100%;">
-            <option value="" id="optStatusAll">-- Semua Status SLS --</option>
-            <option value="done" id="optStatusDone">🟢 SLS Selesai</option>
-            <option value="in_progress" id="optStatusInProgress">🟡 SLS Sedang Progres</option>
-            <option value="not_started" id="optStatusNotStarted">🔴 SLS Belum Dimulai</option>
-          </select>
-        </div>
         <!-- Section 1: Filter Petugas PCL -->
         <div class="gmaps-section-label"><i class="bi bi-person-badge"></i> Filter Petugas PCL</div>
         <div class="gmaps-control-row" style="margin-bottom: 8px;">
@@ -1577,30 +1634,6 @@
           </button>
         </div>
       </div>
-    </div>
-
-    <!-- 3. FLOATING TOP RIGHT KPI BAR (COMMAND CENTER STATUS CAPSULE) -->
-    <div class="gmaps-floating-kpi-bar">
-      <button type="button" class="gmaps-kpi-pill active-filter" id="kpiFilterAll" data-status="" title="Tampilkan Semua SLS">
-        <i class="bi bi-grid-fill" style="color: var(--accent-blue);"></i>
-        <span>Semua</span>
-        <strong id="kpiTotalSls">--</strong>
-      </button>
-      <button type="button" class="gmaps-kpi-pill" id="kpiFilterDone" data-status="done" title="Hanya SLS Selesai">
-        <i class="bi bi-check-circle-fill" style="color: #10b981;"></i>
-        <span>Selesai</span>
-        <strong id="kpiSlsSelesai" style="color: #10b981;">--</strong>
-      </button>
-      <button type="button" class="gmaps-kpi-pill" id="kpiFilterInProgress" data-status="in_progress" title="Hanya SLS Progres">
-        <i class="bi bi-hourglass-split" style="color: #f59e0b;"></i>
-        <span>Progres</span>
-        <strong id="kpiSlsBelum" style="color: #f59e0b;">--</strong>
-      </button>
-      <button type="button" class="gmaps-kpi-pill" id="kpiFilterNotStarted" data-status="not_started" title="Hanya SLS Belum">
-        <i class="bi bi-dash-circle-fill" style="color: #ef4444;"></i>
-        <span>Belum</span>
-        <strong id="kpiSlsNotStarted" style="color: #ef4444;">--</strong>
-      </button>
     </div>
 
     <!-- 4. FLOATING RIGHT VERTICAL ACTION STACK (FULLSCREEN, GPS, RESET) -->
