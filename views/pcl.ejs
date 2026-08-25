@@ -137,10 +137,6 @@
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header flex-between" style="gap: 8px;">
           <div class="card-title"><i class="bi bi-person-gear"></i> Progres Kinerja per <%= officerLabel %> (<%= isSakernas ? 'Petugas Pendataan' : 'Pencacah' %>) <span class="badge badge-blue" id="pclCountBadge"><%= pclStats.length %> <%= officerLabel %></span></div>
-          <div class="card-actions flex-start" style="gap: 6px;">
-            <a href="<%= navPrefix %>/pcl/export-daily-assignments" class="btn btn-xs" style="background: #06b6d4; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Rekap Count Assignment Harian Seluruh Petugas"><i class="bi bi-calendar3-range"></i><span class="btn-text-desktop"> Export Assignment Harian</span></a>
-            <a href="<%= navPrefix %>/pcl/export-excel" class="btn btn-xs" style="background: #22c55e; color: white; border: none; font-size: 11px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" download title="Unduh Progres Kinerja Terbaru"><i class="bi bi-file-earmark-excel"></i><span class="btn-text-desktop"> Export Excel Petugas</span></a>
-          </div>
         </div>
 
         <div class="search-wrap mb-4">

@@ -93,7 +93,7 @@
           </div>
           
           <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
-            Peringkat PCL ditentukan dengan prioritas utama <strong>jumlah assignment FASIH total</strong> terbanyak, diikuti oleh persentase progres capaian dan realisasi dokumen selesai (submitted + approved + rejected).
+            Peringkat PCL ditentukan dengan prioritas utama <strong>persentase progres capaian FASIH</strong> tertinggi, diikuti oleh realisasi dokumen selesai (submitted + approved + rejected) dan jumlah target FASIH total.
           </p>
 
           <% if (performers.topPcl && performers.topPcl.length > 0) { %>
@@ -180,7 +180,7 @@
           </div>
 
           <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
-            Peringkat PML ditentukan dengan prioritas utama <strong>jumlah assignment FASIH total</strong> terbanyak di bawah pengawasannya, diikuti oleh persentase progres capaian dan realisasi dokumen selesai.
+            Peringkat PML ditentukan dengan prioritas utama <strong>persentase progres capaian FASIH</strong> tertinggi di bawah pengawasannya, diikuti oleh realisasi dokumen selesai dan jumlah target FASIH total.
           </p>
 
           <% if (performers.topPml && performers.topPml.length > 0) { %>
@@ -281,11 +281,11 @@
           Peringkat petugas dengan performa terbaik dihitung dan diurutkan menggunakan kriteria berikut:
         </p>
         <ul style="margin: 8px 0 0 0; padding-left: 20px; font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
-          <li><strong>Prioritas Utama:</strong> Diurutkan berdasarkan <strong>jumlah assignment FASIH total (<code style="background: var(--bg-warning-stat); border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; font-family: monospace;">target_fasih_total</code>)</strong> terbanyak yang diemban oleh petugas.</li>
-          <li><strong>Prioritas Lanjutan & Pemecah Seri (Tie-Breaker):</strong> Jika petugas memiliki jumlah assignment FASIH total yang sama, peringkat ditentukan berturut-turut berdasarkan:
+          <li><strong>Prioritas Utama:</strong> Diurutkan berdasarkan <strong>persentase progres capaian dokumen FASIH (<code style="background: var(--bg-warning-stat); border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; font-family: monospace;">pct</code>)</strong> tertinggi.</li>
+          <li><strong>Prioritas Lanjutan & Pemecah Seri (Tie-Breaker):</strong> Jika petugas memiliki persentase progres capaian yang sama, peringkat ditentukan berturut-turut berdasarkan:
             <ol style="margin-top: 4px; padding-left: 16px; list-style-type: decimal;">
-              <li>Persentase progres capaian dokumen FASIH (<code style="background: var(--bg-warning-stat); border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; font-family: monospace;">pct</code>) tertinggi.</li>
               <li>Jumlah volume dokumen FASIH selesai dikerjakan (<code style="background: var(--bg-warning-stat); border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; font-family: monospace;">Submitted + Approved + Rejected</code>) terbanyak.</li>
+              <li>Jumlah assignment FASIH total (<code style="background: var(--bg-warning-stat); border: 1px solid var(--border); padding: 2px 4px; border-radius: 4px; font-family: monospace;">target_fasih_total</code>) terbanyak yang diemban oleh petugas.</li>
             </ol>
           </li>
           <li><strong>Konsolidasi Petugas:</strong> Pengelompokan data petugas bersifat <em>case-insensitive</em> (mengabaikan perbedaan huruf besar/kecil) untuk memastikan data petugas dengan variasi penulisan nama tetap teragregasi menjadi satu.</li>
