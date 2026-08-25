@@ -143,29 +143,8 @@
           </div>
         </div>
 
-        <!-- SEARCH & MOBILE QUICK STATUS FILTER PILLS -->
-        <div class="search-and-filter-bar mb-3" style="display: flex; flex-direction: column; gap: 8px;">
-          <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
-            <div class="search-wrap" style="flex: 1; min-width: 200px; margin-bottom: 0;">
-              <input type="search" id="pclSearch" placeholder="Cari nama <%= officerLabel %>, PML, Kecamatan..." aria-label="Cari nama <%= officerLabel %>" style="width: 100%;">
-            </div>
-            <button type="button" class="btn btn-secondary btn-sm show-sm-inline" onclick="togglePclFilterForm()" style="display: none; padding: 6px 12px; font-size: 12px; gap: 5px; align-items: center;">
-              <i class="bi bi-sliders"></i> Filter Wilayah
-            </button>
-          </div>
-
-          <!-- Quick Filter Pills for Instant Mobile & Desktop Status Toggles -->
-          <div class="pcl-quick-filter-pills" id="pclQuickFilterPills">
-            <button type="button" class="pcl-pill-btn active" data-filter="all">Semua (<%= pclStats.length %>)</button>
-            <button type="button" class="pcl-pill-btn pill-done" data-filter="done"><i class="bi bi-check-circle-fill"></i> 100% Selesai</button>
-            <button type="button" class="pcl-pill-btn pill-ontrack" data-filter="ontrack"><i class="bi bi-graph-up-arrow"></i> On-Track (&ge;<%= activeTargetPct %>%)</button>
-            <button type="button" class="pcl-pill-btn pill-critical" data-filter="critical"><i class="bi bi-exclamation-triangle-fill"></i> Kritis (&lt;40%)</button>
-            <button type="button" class="pcl-pill-btn pill-zero" data-filter="zero"><i class="bi bi-circle"></i> 0% (Belum)</button>
-            <% if (!isSakernas) { %>
-            <button type="button" class="pcl-pill-btn pill-kipp" data-filter="kipp">KIPP</button>
-            <button type="button" class="pcl-pill-btn pill-nonkipp" data-filter="nonkipp">Non-KIPP</button>
-            <% } %>
-          </div>
+        <div class="search-wrap mb-4">
+          <input type="search" id="pclSearch" placeholder="Cari nama <%= officerLabel %>, PML, Kecamatan..." aria-label="Cari nama <%= officerLabel %>" style="width: 100%; max-width: 280px;">
         </div>
 
         <% if (pclStats && pclStats.length > 0) { %>
@@ -738,91 +717,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  window.togglePclFilterForm = function() {
-    const filterCard = document.getElementById('pclFilterCard');
-    const icon = document.getElementById('iconTogglePclFilter');
-    if (!filterCard) return;
-    filterCard.classList.toggle('is-collapsed');
-    if (icon) {
-      icon.className = filterCard.classList.contains('is-collapsed') ? 'bi bi-chevron-right' : 'bi bi-chevron-down';
-    }
-  };
-
-  function initPclFiltering() {
-    const searchInput = document.getElementById('pclSearch');
-    const pillContainer = document.getElementById('pclQuickFilterPills');
-    const table = document.getElementById('pclTable');
-    const countBadge = document.getElementById('pclCountBadge');
-    if (!table) return;
-
-    let activeFilter = 'all';
-
-    function applyFilter() {
-      const q = (searchInput ? searchInput.value : '').toLowerCase().trim();
-      const rows = table.querySelectorAll('tbody tr');
-      let visibleCount = 0;
-
-      rows.forEach(row => {
-        const searchKeywords = (row.getAttribute('data-search') || row.innerText || '').toLowerCase();
-        const matchesSearch = !q || searchKeywords.includes(q);
-
-        let matchesPill = true;
-        if (activeFilter === 'done') {
-          matchesPill = row.getAttribute('data-selesai') === '1';
-        } else if (activeFilter === 'ontrack') {
-          matchesPill = row.getAttribute('data-ontrack') === '1';
-        } else if (activeFilter === 'critical') {
-          matchesPill = row.getAttribute('data-critical') === '1';
-        } else if (activeFilter === 'zero') {
-          matchesPill = row.getAttribute('data-zero') === '1';
-        } else if (activeFilter === 'kipp') {
-          matchesPill = row.getAttribute('data-kipp') === '1';
-        } else if (activeFilter === 'nonkipp') {
-          matchesPill = row.getAttribute('data-kipp') === '0';
-        }
-
-        if (matchesSearch && matchesPill) {
-          row.style.display = '';
-          visibleCount++;
-          const idxCell = row.querySelector('.td-index');
-          if (idxCell) idxCell.textContent = visibleCount;
-        } else {
-          row.style.display = 'none';
-        }
-      });
-
-      if (countBadge) {
-        countBadge.textContent = visibleCount + ' <%= officerLabel %>';
-      }
-    }
-
-    if (searchInput) {
-      searchInput.addEventListener('input', applyFilter);
-    }
-
-    if (pillContainer) {
-      const pillBtns = pillContainer.querySelectorAll('.pcl-pill-btn');
-      pillBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          pillBtns.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          activeFilter = btn.getAttribute('data-filter') || 'all';
-          applyFilter();
-        });
-      });
-    }
-  }
-
   function attachListeners() {
     // Initialize expand buttons for AJAX loaded content
     if (window.initExpandButtons) {
       window.initExpandButtons(container);
     }
 
-    // 1. Re-bind sorting and searching/filtering on the table
+    // 1. Re-bind sorting and searching on the table
     makeTableSortable('pclTable');
-    initPclFiltering();
+    makeTableSearchable('pclSearch', 'pclTable');
 
     // 2. Re-bind search utility for detail items
     makeListSearchable('detailSubslsSearch', 'detailSubslsList', '.detail-item');
