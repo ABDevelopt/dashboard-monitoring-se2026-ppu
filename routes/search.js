@@ -26,6 +26,16 @@ router.get('/', (req, res) => {
   const query = q.trim();
 
   try {
+    function calculateBoost(mainLabel, qStr) {
+      if (!mainLabel || !qStr) return 0;
+      const m = mainLabel.toLowerCase().trim();
+      const qClean = qStr.toLowerCase().trim();
+      if (m === qClean) return 15.0; // exact match
+      if (m.startsWith(qClean)) return 8.0; // starts with query
+      if (m.includes(qClean)) return 4.0; // contains query
+      return 0.0;
+    }
+
     // 1. Search PCLs
     const pclsRaw = db.prepare(`
       SELECT DISTINCT pcl, pml, korlap, kecamatan 
@@ -38,7 +48,21 @@ router.get('/', (req, res) => {
       ref: p
     }));
     const pclBM25 = new FuzzyBM25(pclDocs);
-    const pclResults = pclBM25.search(query, 0.1).slice(0, 5);
+    const pclResults = pclBM25.search(query, 0.1).slice(0, 8);
+
+    const pclFormatted = pclResults.map(r => ({
+      type: 'pcl',
+      category: 'pcl',
+      categoryLabel: officerLabel,
+      badge: 'badge-purple',
+      icon: 'bi-person-badge-fill',
+      label: r.doc.ref.pcl,
+      sublabel: isSakernas 
+        ? `PML: ${r.doc.ref.pml || '-'} (${r.doc.ref.kecamatan || '-'})`
+        : `PML: ${r.doc.ref.pml || '-'} · Korlap: ${r.doc.ref.korlap || '-'} (${r.doc.ref.kecamatan || '-'})`,
+      href: `${navPrefix}/pcl?pcl=${encodeURIComponent(r.doc.ref.pcl)}`,
+      score: (r.score || 0) + calculateBoost(r.doc.ref.pcl, query)
+    }));
 
     // 2. Search PMLs
     const pmlsRaw = db.prepare(`
@@ -52,10 +76,24 @@ router.get('/', (req, res) => {
       ref: p
     }));
     const pmlBM25 = new FuzzyBM25(pmlDocs);
-    const pmlResults = pmlBM25.search(query, 0.1).slice(0, 5);
+    const pmlResults = pmlBM25.search(query, 0.1).slice(0, 8);
+
+    const pmlFormatted = pmlResults.map(r => ({
+      type: 'pml',
+      category: 'pml',
+      categoryLabel: 'PML',
+      badge: 'badge-blue',
+      icon: 'bi-person-gear',
+      label: r.doc.ref.pml,
+      sublabel: isSakernas
+        ? `Kecamatan: ${r.doc.ref.kecamatan || '-'}`
+        : `Korlap: ${r.doc.ref.korlap || '-'} (${r.doc.ref.kecamatan || '-'})`,
+      href: `${navPrefix}/pml?pml=${encodeURIComponent(r.doc.ref.pml)}`,
+      score: (r.score || 0) + calculateBoost(r.doc.ref.pml, query)
+    }));
 
     // 3. Search Korlaps
-    let korlapResults = [];
+    let korlapFormatted = [];
     if (!isSakernas) {
       const korlapsRaw = db.prepare(`
         SELECT DISTINCT korlap, kecamatan 
@@ -68,7 +106,19 @@ router.get('/', (req, res) => {
         ref: k
       }));
       const korlapBM25 = new FuzzyBM25(korlapDocs);
-      korlapResults = korlapBM25.search(query, 0.1).slice(0, 5);
+      const korlapResults = korlapBM25.search(query, 0.1).slice(0, 8);
+
+      korlapFormatted = korlapResults.map(r => ({
+        type: 'korlap',
+        category: 'korlap',
+        categoryLabel: 'Korlap',
+        badge: 'badge-orange',
+        icon: 'bi-person-workspace',
+        label: r.doc.ref.korlap,
+        sublabel: `Kecamatan: ${r.doc.ref.kecamatan || '-'}`,
+        href: `${navPrefix}/korlap?korlap=${encodeURIComponent(r.doc.ref.korlap)}`,
+        score: (r.score || 0) + calculateBoost(r.doc.ref.korlap, query)
+      }));
     }
 
     // 4. Search Kecamatan
@@ -83,7 +133,19 @@ router.get('/', (req, res) => {
       ref: k
     }));
     const kecamatanBM25 = new FuzzyBM25(kecamatanDocs);
-    const kecamatanResults = kecamatanBM25.search(query, 0.1).slice(0, 5);
+    const kecamatanResults = kecamatanBM25.search(query, 0.1).slice(0, 8);
+
+    const kecamatanFormatted = kecamatanResults.map(r => ({
+      type: 'kecamatan',
+      category: 'wilayah',
+      categoryLabel: 'Kecamatan',
+      badge: 'badge-cyan',
+      icon: 'bi-geo-alt-fill',
+      label: r.doc.ref.kecamatan,
+      sublabel: `Kecamatan di Penajam Paser Utara`,
+      href: `${navPrefix}/kecamatan?kec=${encodeURIComponent(r.doc.ref.kecamatan)}`,
+      score: (r.score || 0) + calculateBoost(r.doc.ref.kecamatan, query)
+    }));
 
     // 5. Search Desa/Kelurahan
     const desasRaw = db.prepare(`
@@ -97,7 +159,19 @@ router.get('/', (req, res) => {
       ref: d
     }));
     const desaBM25 = new FuzzyBM25(desaDocs);
-    const desaResults = desaBM25.search(query, 0.1).slice(0, 5);
+    const desaResults = desaBM25.search(query, 0.1).slice(0, 8);
+
+    const desaFormatted = desaResults.map(r => ({
+      type: 'desa',
+      category: 'wilayah',
+      categoryLabel: 'Desa',
+      badge: 'badge-green',
+      icon: 'bi-geo-fill',
+      label: r.doc.ref.desa,
+      sublabel: `Kecamatan: ${r.doc.ref.kecamatan || '-'}`,
+      href: `${navPrefix}/subsls?kec=${encodeURIComponent(r.doc.ref.kecamatan)}&desa=${encodeURIComponent(r.doc.ref.desa)}`,
+      score: (r.score || 0) + calculateBoost(r.doc.ref.desa, query)
+    }));
 
     // 6. Search SLS
     const slsRaw = db.prepare(`
@@ -111,43 +185,39 @@ router.get('/', (req, res) => {
       ref: s
     }));
     const slsBM25 = new FuzzyBM25(slsDocs);
-    const slsResults = slsBM25.search(query, 0.1).slice(0, 10);
+    const slsResults = slsBM25.search(query, 0.1).slice(0, 15);
+
+    const slsFormatted = slsResults.map(r => ({
+      type: 'sls',
+      category: 'sls',
+      categoryLabel: 'SLS',
+      badge: 'badge-gray',
+      icon: 'bi-box-seam',
+      label: r.doc.ref.nama_sls,
+      sublabel: `${r.doc.ref.desa || '-'}, ${r.doc.ref.kecamatan || '-'} (${officerLabel}: ${r.doc.ref.pcl || '-'}) · Kode: ${r.doc.ref.kode}`,
+      href: `${navPrefix}/subsls?kode=${encodeURIComponent(r.doc.ref.kode)}`,
+      score: (r.score || 0) + calculateBoost(r.doc.ref.nama_sls, query) + calculateBoost(r.doc.ref.kode, query)
+    }));
+
+    // Unified globally ranked items sorted by score descending
+    const all = [
+      ...pclFormatted,
+      ...pmlFormatted,
+      ...korlapFormatted,
+      ...kecamatanFormatted,
+      ...desaFormatted,
+      ...slsFormatted
+    ].sort((a, b) => b.score - a.score);
 
     return res.json({
-      pcl: pclResults.map(r => ({
-        label: r.doc.ref.pcl,
-        sublabel: isSakernas 
-          ? `PML: ${r.doc.ref.pml || '-'} (${r.doc.ref.kecamatan || '-'})`
-          : `PML: ${r.doc.ref.pml || '-'} · Korlap: ${r.doc.ref.korlap || '-'} (${r.doc.ref.kecamatan || '-'})`,
-        href: `${navPrefix}/pcl?pcl=${encodeURIComponent(r.doc.ref.pcl)}`
-      })),
-      pml: pmlResults.map(r => ({
-        label: r.doc.ref.pml,
-        sublabel: isSakernas
-          ? `Kecamatan: ${r.doc.ref.kecamatan || '-'}`
-          : `Korlap: ${r.doc.ref.korlap || '-'} (${r.doc.ref.kecamatan || '-'})`,
-        href: `${navPrefix}/pml?pml=${encodeURIComponent(r.doc.ref.pml)}`
-      })),
-      korlap: korlapResults.map(r => ({
-        label: r.doc.ref.korlap,
-        sublabel: `Kecamatan: ${r.doc.ref.kecamatan || '-'}`,
-        href: `${navPrefix}/korlap?korlap=${encodeURIComponent(r.doc.ref.korlap)}`
-      })),
-      kecamatan: kecamatanResults.map(r => ({
-        label: r.doc.ref.kecamatan,
-        sublabel: `Kecamatan di PPU`,
-        href: `${navPrefix}/kecamatan?kec=${encodeURIComponent(r.doc.ref.kecamatan)}`
-      })),
-      desa: desaResults.map(r => ({
-        label: r.doc.ref.desa,
-        sublabel: `Kecamatan: ${r.doc.ref.kecamatan || '-'}`,
-        href: `${navPrefix}/subsls?kec=${encodeURIComponent(r.doc.ref.kecamatan)}&desa=${encodeURIComponent(r.doc.ref.desa)}`
-      })),
-      sls: slsResults.map(r => ({
-        label: r.doc.ref.nama_sls,
-        sublabel: `${r.doc.ref.desa || '-'}, ${r.doc.ref.kecamatan || '-'} (${officerLabel}: ${r.doc.ref.pcl || '-'}) · Kode: ${r.doc.ref.kode}`,
-        href: `${navPrefix}/subsls?kode=${encodeURIComponent(r.doc.ref.kode)}`
-      }))
+      all,
+      pcl: pclFormatted.sort((a, b) => b.score - a.score),
+      pml: pmlFormatted.sort((a, b) => b.score - a.score),
+      korlap: korlapFormatted.sort((a, b) => b.score - a.score),
+      wilayah: [...kecamatanFormatted, ...desaFormatted].sort((a, b) => b.score - a.score),
+      kecamatan: kecamatanFormatted.sort((a, b) => b.score - a.score),
+      desa: desaFormatted.sort((a, b) => b.score - a.score),
+      sls: slsFormatted.sort((a, b) => b.score - a.score)
     });
   } catch (err) {
     console.error('Error executing global search query:', err);

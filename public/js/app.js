@@ -896,44 +896,44 @@ function updateTime() {
         let html = '';
         let totalItems = 0;
 
-        const categories = [
-          { key: 'pcl', group: 'pcl', label: 'Petugas PCL', icon: 'bi-person-badge-fill', badge: 'badge-purple' },
-          { key: 'pml', group: 'pml', label: 'Pengawas PML', icon: 'bi-person-gear', badge: 'badge-blue' },
-          { key: 'korlap', group: 'korlap', label: 'Koordinator Lapangan', icon: 'bi-person-workspace', badge: 'badge-orange' },
-          { key: 'kecamatan', group: 'wilayah', label: 'Kecamatan', icon: 'bi-geo-alt-fill', badge: 'badge-cyan' },
-          { key: 'desa', group: 'wilayah', label: 'Desa / Kelurahan', icon: 'bi-geo-fill', badge: 'badge-green' },
-          { key: 'sls', group: 'sls', label: 'Satuan Lingkungan Setempat (SLS)', icon: 'bi-box-seam', badge: 'badge-gray' }
-        ];
+        let itemsToRender = [];
+        if (currentSearchCategory === 'all') {
+          itemsToRender = data.all || [];
+        } else if (data[currentSearchCategory]) {
+          itemsToRender = data[currentSearchCategory] || [];
+        } else {
+          itemsToRender = (data.all || []).filter(item => item.category === currentSearchCategory);
+        }
 
-        categories.forEach(cat => {
-          if (currentSearchCategory !== 'all' && currentSearchCategory !== cat.group) {
-            return;
-          }
+        // Sort items strictly by score descending (highest score first)
+        itemsToRender.sort((a, b) => (b.score || 0) - (a.score || 0));
 
-          const items = data[cat.key] || [];
-          if (items.length > 0) {
+        if (itemsToRender.length > 0) {
+          html += `<div class="search-group">`;
+          itemsToRender.forEach((item) => {
+            const badgeTag = item.categoryLabel 
+              ? `<span class="badge ${item.badge || 'badge-gray'}" style="font-size: 10px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 700; flex-shrink: 0;">${item.categoryLabel}</span>`
+              : '';
+
             html += `
-              <div class="search-group" data-group="${cat.group}">
-                <div class="search-group-title"><i class="bi ${cat.icon}"></i> ${cat.label}</div>
+              <a href="${item.href}" class="search-result-item" data-index="${totalItems}" data-score="${item.score || 0}">
+                <div class="search-result-item-icon"><i class="bi ${item.icon || 'bi-search'}"></i></div>
+                <div class="search-result-item-content">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span class="search-result-item-title">${item.label}</span>
+                    ${badgeTag}
+                  </div>
+                  <div class="search-result-item-sub">${item.sublabel}</div>
+                </div>
+                <div class="search-result-item-jump">
+                  <span>Buka</span> <i class="bi bi-arrow-right-short"></i>
+                </div>
+              </a>
             `;
-            items.forEach(item => {
-              html += `
-                <a href="${item.href}" class="search-result-item" data-index="${totalItems}">
-                  <div class="search-result-item-icon"><i class="bi ${cat.icon}"></i></div>
-                  <div class="search-result-item-content">
-                    <div class="search-result-item-title">${item.label}</div>
-                    <div class="search-result-item-sub">${item.sublabel}</div>
-                  </div>
-                  <div class="search-result-item-jump">
-                    <span>Buka</span> <i class="bi bi-arrow-right-short"></i>
-                  </div>
-                </a>
-              `;
-              totalItems++;
-            });
-            html += `</div>`;
-          }
-        });
+            totalItems++;
+          });
+          html += `</div>`;
+        }
 
         if (totalItems === 0) {
           resultsContainer.innerHTML = `
