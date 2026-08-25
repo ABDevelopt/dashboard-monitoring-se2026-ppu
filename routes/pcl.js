@@ -122,22 +122,11 @@ router.get('/', (req, res) => {
     }
   }
 
-  // Get filter lists
-  const kecList = db.prepare('SELECT DISTINCT kecamatan FROM subsls_master WHERE kecamatan IS NOT NULL ORDER BY kecamatan').all();
-  
-  let korlapSql = "SELECT DISTINCT korlap FROM subsls_master WHERE korlap IS NOT NULL AND TRIM(korlap) != ''";
-  let pmlSql = "SELECT DISTINCT pml FROM subsls_master WHERE pml IS NOT NULL AND TRIM(pml) != ''";
-  let pclSql = "SELECT DISTINCT pcl FROM subsls_master WHERE pcl IS NOT NULL AND TRIM(pcl) != ''";
-  const listParams = [];
-  if (filterKec) {
-    korlapSql += ' AND kecamatan = ?';
-    pmlSql += ' AND kecamatan = ?';
-    pclSql += ' AND kecamatan = ?';
-    listParams.push(filterKec);
-  }
-  const korlapList = db.prepare(korlapSql + ' ORDER BY korlap').all(...listParams);
-  const pmlList = db.prepare(pmlSql + ' ORDER BY pml').all(...listParams);
-  const pclList = db.prepare(pclSql + ' ORDER BY pcl').all(...listParams);
+  // Get filter lists (matching performa)
+  const kecList = db.prepare("SELECT DISTINCT kecamatan FROM subsls_master WHERE kecamatan IS NOT NULL AND TRIM(kecamatan) != '' ORDER BY kecamatan").all();
+  const korlapList = db.prepare("SELECT DISTINCT korlap FROM subsls_master WHERE korlap IS NOT NULL AND TRIM(korlap) != '' ORDER BY korlap").all();
+  const pmlList = db.prepare("SELECT DISTINCT pml FROM subsls_master WHERE pml IS NOT NULL AND TRIM(pml) != '' ORDER BY pml").all();
+  const pclList = db.prepare("SELECT DISTINCT pcl FROM subsls_master WHERE pcl IS NOT NULL AND TRIM(pcl) != '' ORDER BY pcl").all();
 
   // Get historical progress of selected PCL
   let pclHistory = [];
