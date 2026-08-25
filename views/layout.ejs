@@ -557,23 +557,23 @@
 
 <%# MODERN MOBILE BOTTOM QUICK-DOCK %>
 <nav class="bottom-nav" aria-label="Mobile Navigation">
-  <a href="/" class="bottom-nav-item <%= activePage === 'overview' ? 'active' : '' %>">
+  <a href="/" id="bottomNavHomeBtn" class="bottom-nav-item <%= (typeof activePage !== 'undefined' && (activePage === 'overview' || activePage === 'home')) ? 'active' : '' %>">
     <i class="bi bi-house-door"></i>
     <span>Home</span>
   </a>
-  <a href="<%= navPrefix %>/map" class="bottom-nav-item <%= activePage === 'map' ? 'active' : '' %>">
+  <a href="<%= navPrefix %>/map" id="bottomNavMapBtn" class="bottom-nav-item <%= (typeof activePage !== 'undefined' && activePage === 'map') ? 'active' : '' %>">
     <i class="bi bi-map"></i>
     <span>Peta</span>
   </a>
-  <a href="<%= navPrefix %>/agent" class="bottom-nav-item <%= activePage === 'agent' ? 'active' : '' %>">
+  <a href="<%= navPrefix %>/agent" id="bottomNavAgentBtn" class="bottom-nav-item <%= (typeof activePage !== 'undefined' && activePage === 'agent') ? 'active' : '' %>">
     <i class="bi bi-robot"></i>
     <span>AI Agent</span>
   </a>
-  <a href="<%= navPrefix %>/pcl" id="bottomNavPetugasBtn" class="bottom-nav-item <%= ['pcl', 'pml', 'korlap', 'performa', 'leaderboard', 'performa-terendah'].includes(activePage) ? 'active' : '' %>" aria-label="Halaman Petugas">
+  <a href="<%= navPrefix %>/pcl" id="bottomNavPetugasBtn" class="bottom-nav-item <%= (typeof activePage !== 'undefined' && ['pcl', 'pml', 'korlap', 'performa', 'leaderboard', 'performa-terendah'].includes(activePage)) ? 'active' : '' %>" aria-label="Halaman Petugas">
     <i class="bi bi-people"></i>
     <span>Petugas</span>
   </a>
-  <button id="bottomNavMenuBtn" class="bottom-nav-item <%= ['earlywarning', 'deteksi-anomali', 'harian', 'help', 'admin-menu', 'export'].includes(activePage) ? 'active' : '' %>" aria-label="Buka Menu Lengkap">
+  <button id="bottomNavMenuBtn" class="bottom-nav-item <%= (typeof activePage !== 'undefined' && ['earlywarning', 'deteksi-anomali', 'harian', 'help', 'admin-menu', 'export', 'kecamatan', 'subsls', 'kipp', 'pbi', 'master', 'settings'].includes(activePage)) ? 'active' : '' %>" aria-label="Buka Menu Lengkap">
     <i class="bi bi-grid"></i>
     <span>Menu</span>
   </button>

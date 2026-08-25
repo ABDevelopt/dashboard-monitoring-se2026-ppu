@@ -1155,6 +1155,9 @@ function updateTime() {
 
     // Initialize breadcrumb for the current page on first load
     updateBreadcrumbs(window.location.href);
+    if (typeof updateBottomNavActiveState === 'function') {
+      updateBottomNavActiveState(window.location.pathname);
+    }
 
     const sidebar = document.getElementById('sidebar');
     const toggleBtn = document.getElementById('sidebarToggle');
@@ -2706,32 +2709,38 @@ function updateTime() {
         ? (targetPath.slice(prefix.length).replace(/\/$/, '') || '/') 
         : targetPath;
 
-      const homeBtn = document.querySelector('.bottom-nav-item[href="' + (prefix || '') + '/"]') || document.querySelector('.bottom-nav-item[href="/"]');
-      const wilayahBtn = document.getElementById('bottomNavWilayahBtn');
-      const petugasBtn = document.getElementById('bottomNavPetugasBtn');
-      const agentBtn = document.querySelector('.bottom-nav-item[href*="/agent"]');
+      const homeBtn = document.getElementById('bottomNavHomeBtn') || document.querySelector('.bottom-nav .bottom-nav-item[href="' + (prefix || '') + '/"]') || document.querySelector('.bottom-nav .bottom-nav-item[href="/"]');
+      const mapBtn = document.getElementById('bottomNavMapBtn') || document.querySelector('.bottom-nav .bottom-nav-item[href*="/map"]');
+      const agentBtn = document.getElementById('bottomNavAgentBtn') || document.querySelector('.bottom-nav .bottom-nav-item[href*="/agent"]');
+      const petugasBtn = document.getElementById('bottomNavPetugasBtn') || document.querySelector('.bottom-nav .bottom-nav-item[href*="/pcl"]');
+      const menuBtn = document.getElementById('bottomNavMenuBtn');
 
-      const wilayahPaths = ['/kecamatan', '/subsls', '/map', '/kipp', '/pbi'];
       const petugasPaths = ['/pcl', '/pml', '/korlap', '/performa', '/leaderboard', '/performa-terendah'];
+      const menuPaths = ['/earlywarning', '/early-warning', '/deteksi-anomali', '/deteksianomali', '/harian', '/help', '/admin', '/export', '/kecamatan', '/subsls', '/kipp', '/pbi', '/master', '/settings'];
 
       if (homeBtn) {
         if (normalizedPath === '/' || normalizedPath === '') homeBtn.classList.add('active');
         else homeBtn.classList.remove('active');
       }
 
+      if (mapBtn) {
+        if (normalizedPath === '/map' || normalizedPath.startsWith('/map')) mapBtn.classList.add('active');
+        else mapBtn.classList.remove('active');
+      }
+
       if (agentBtn) {
-        if (normalizedPath === '/agent') agentBtn.classList.add('active');
+        if (normalizedPath === '/agent' || normalizedPath.startsWith('/agent')) agentBtn.classList.add('active');
         else agentBtn.classList.remove('active');
       }
 
-      if (wilayahBtn) {
-        if (wilayahPaths.includes(normalizedPath)) wilayahBtn.classList.add('active');
-        else wilayahBtn.classList.remove('active');
+      if (petugasBtn) {
+        if (petugasPaths.some(p => normalizedPath === p || normalizedPath.startsWith(p))) petugasBtn.classList.add('active');
+        else petugasBtn.classList.remove('active');
       }
 
-      if (petugasBtn) {
-        if (petugasPaths.includes(normalizedPath)) petugasBtn.classList.add('active');
-        else petugasBtn.classList.remove('active');
+      if (menuBtn) {
+        if (menuPaths.some(p => normalizedPath === p || normalizedPath.startsWith(p))) menuBtn.classList.add('active');
+        else menuBtn.classList.remove('active');
       }
 
       // Sync active state for popover sheet items
