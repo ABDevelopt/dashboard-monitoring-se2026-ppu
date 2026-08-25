@@ -1883,12 +1883,14 @@
 
         // Helper to force Leaflet to recalculate canvas size and redraw tiles
         const invalidateMapSize = () => {
-          if (map && typeof map.invalidateSize === 'function') {
-            map.invalidateSize({ animate: false });
-          }
-          if (currentBasemapLayer && typeof currentBasemapLayer.redraw === 'function') {
-            currentBasemapLayer.redraw();
-          }
+          try {
+            if (map && map._container && map._mapPane && typeof map.invalidateSize === 'function') {
+              map.invalidateSize({ animate: false });
+            }
+            if (currentBasemapLayer && typeof currentBasemapLayer.redraw === 'function') {
+              currentBasemapLayer.redraw();
+            }
+          } catch (_) {}
         };
 
         // Staggered invalidations to guarantee tile grid recalculation after load & PJAX enter animation
@@ -1901,19 +1903,22 @@
         window.addEventListener('load', invalidateMapSize);
 
         // Use ResizeObserver for automatic sizing adjustment when sidebar or window container resizes
+        let ro = null;
         if (window.ResizeObserver && mapContainerEl) {
-          const ro = new ResizeObserver(() => {
+          ro = new ResizeObserver(() => {
+            if (!mapContainerEl || !mapContainerEl.isConnected) return;
             invalidateMapSize();
           });
           ro.observe(mapContainerEl);
           if (window._pjaxCleanups) {
-            window._pjaxCleanups.push({ type: 'pjax:start', listener: () => ro.disconnect() });
+            window._pjaxCleanups.push({ type: 'pjax:start', listener: () => { if (ro) ro.disconnect(); } });
           }
         }
 
         // Clean up map instance safely when navigating away via PJAX
         const onPjaxStart = () => {
           try {
+            if (ro) ro.disconnect();
             if (map) map.remove();
           } catch (_) {}
         };
@@ -4015,7 +4020,7 @@
             }
           }
 
-          setTimeout(() => { map.invalidateSize(); }, 200);
+          setTimeout(() => { invalidateMapSize(); }, 200);
         }
 
         if (btnFullscreenMap) btnFullscreenMap.addEventListener('click', toggleFullscreenMap);
@@ -4026,9 +4031,7 @@
           if (btnFullscreenMap) {
             btnFullscreenMap.innerHTML = isFull ? '<i class="bi bi-fullscreen-exit"></i>' : '<i class="bi bi-arrows-fullscreen"></i>';
           }
-          if (map) {
-            setTimeout(() => { map.invalidateSize(); }, 150);
-          }
+          setTimeout(() => { invalidateMapSize(); }, 150);
         }
 
         document.addEventListener('fullscreenchange', () => {
@@ -4052,7 +4055,7 @@
             if (btnFullscreenMap) {
               btnFullscreenMap.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
             }
-            setTimeout(() => { map.invalidateSize(); }, 200);
+            setTimeout(() => { invalidateMapSize(); }, 200);
 
             // Attempt native fullscreen on first user interaction if not already active
             const autoNativeFullscreenOnInteraction = () => {
