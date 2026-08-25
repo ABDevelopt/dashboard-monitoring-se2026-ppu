@@ -43,15 +43,17 @@ const chatbotSettingKeys = [
 // GENERAL DISPLAY SETTINGS
 // ─────────────────────────────────────────────
 router.get('/', (req, res) => {
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
   res.render('settings', {
     title: 'Pengaturan Tampilan',
     activePage: 'settings',
-    settings: getSettings()
+    settings: getSettings(activeSurvey)
   });
 });
 
 router.post('/', (req, res) => {
-  const settings = getSettings();
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const settings = getSettings(activeSurvey);
   const updatedSettings = { ...settings };
 
   for (const key of generalSettingKeys) {
@@ -91,7 +93,7 @@ router.post('/', (req, res) => {
   }
 
   try {
-    updateSettings(updatedSettings);
+    updateSettings(updatedSettings, activeSurvey);
     req.flash('success', 'Pengaturan tampilan berhasil diperbarui.');
   } catch (err) {
     req.flash('error', `Gagal memperbarui pengaturan: ${err.message}`);

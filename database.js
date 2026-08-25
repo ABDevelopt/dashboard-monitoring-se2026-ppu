@@ -2047,7 +2047,7 @@ function getTopPerformers(uploadId, filters = {}, settings = null, surveyId = 's
       SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    WHERE 1=1 ${where}
+    WHERE m.pcl IS NOT NULL AND TRIM(m.pcl) != '' ${where}
     GROUP BY m.pcl COLLATE NOCASE
     ORDER BY target_fasih_total DESC, pct DESC, (submitted_total + approved_total + rejected_total) DESC
     LIMIT ?
@@ -2072,7 +2072,7 @@ function getTopPerformers(uploadId, filters = {}, settings = null, surveyId = 's
       SUM(COALESCE(p.target_upload, 0)) AS target_upload_total
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-    WHERE 1=1 ${where}
+    WHERE m.pml IS NOT NULL AND TRIM(m.pml) != '' ${where}
     GROUP BY m.pml COLLATE NOCASE
     ORDER BY target_fasih_total DESC, pct DESC, (submitted_total + approved_total + rejected_total) DESC
     LIMIT ?

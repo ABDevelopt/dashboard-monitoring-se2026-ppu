@@ -1026,13 +1026,27 @@ function buildNotificationMessage(template, uploadData, summary, kecStats, pmlSt
     rincianKecamatan = '_Data per kecamatan belum tersedia_';
   }
 
-  // Top 5 PCL
+  // Top 5 PCL (Berdasarkan Target Assignment Terbanyak, kemudian Progres & Approved)
   let topPclList = '';
   if (Array.isArray(pclStats) && pclStats.length > 0) {
-    const sortedPcl = [...pclStats].sort((a, b) => (b.approved_total || b.approved || 0) - (a.approved_total || a.approved || 0)).slice(0, 5);
+    const sortedPcl = [...pclStats].sort((a, b) => {
+      const targetA = a.target_fasih_total || a.target_fasih || 0;
+      const targetB = b.target_fasih_total || b.target_fasih || 0;
+      if (targetB !== targetA) return targetB - targetA;
+      const pctA = parseFloat(a.fasih_pct || a.pct || 0);
+      const pctB = parseFloat(b.fasih_pct || b.pct || 0);
+      if (pctB !== pctA) return pctB - pctA;
+      const realA = (a.approved_total || 0) + (a.submitted_total || 0) + (a.rejected_total || 0);
+      const realB = (b.approved_total || 0) + (b.submitted_total || 0) + (b.rejected_total || 0);
+      return realB - realA;
+    }).slice(0, 5);
+
     topPclList = sortedPcl.map((p, i) => {
       const badge = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-      return `${badge} *${p.pcl || p.nama_pcl || p.nama || '-'}*: ${formatNumber(p.approved_total || p.approved || 0)} approved (${p.kecamatan || '-'})`;
+      const target = formatNumber(p.target_fasih_total || p.target_fasih || 0);
+      const app = formatNumber(p.approved_total || p.approved || 0);
+      const pct = p.fasih_pct_str || (p.target_fasih_total > 0 ? ((( (p.approved_total || 0) + (p.submitted_total || 0) + (p.rejected_total || 0) ) / p.target_fasih_total) * 100).toFixed(1) : '0.0');
+      return `${badge} *${p.pcl || p.nama_pcl || p.nama || '-'}*: ${target} target (${pct}% / ${app} approved) - Kec. ${p.kecamatan || '-'}`;
     }).join('\n');
   } else {
     topPclList = '_Data petugas belum tersedia_';

@@ -53,6 +53,35 @@ Maka entitas tersebut WAJIB dijadikan filter PENGEQUALIAN (NOT LIKE / NOT IN / !
    - "petugas dengan progres bukan 0 (selain yang 0)" -> \`HAVING realisasi > 0\`
    - "data tanpa anomali / non-anomali" -> \`WHERE COALESCE(p.usaha_ganda,0) = 0 AND COALESCE(p.rejected,0) = 0\`
 
+### ATURAN MUTLAK: Pemisahan Data FASIH vs MUATAN
+1. **Pertanyaan FASIH / Assignment FASIH / Dokumen FASIH / Progres 100% FASIH**:
+   - Jika pertanyaan menyebut "FASIH", "assignment", "dokumen", "progres assignment", atau "selesai 100%":
+     - Kolom Target: \`m.target_fasih\` / \`SUM(m.target_fasih)\` (atau \`target_fasih_total\` di \`summary_cache\`).
+     - Kolom Realisasi: \`SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0))\` (atau \`submitted_total + approved_total + rejected_total\`).
+     - Persentase Capaian (%): \`ROUND(CAST(SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS FLOAT) / NULLIF(SUM(m.target_fasih), 0) * 100, 2)\`.
+     - Kriteria Selesai 100%: \`HAVING SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) >= SUM(m.target_fasih)\`.
+     - **DILARANG KERAS MENGGUNAKAN KOLOM MUATAN / TOTAL_MUATAN / MUATAN_SELESAI / USAHA_DITEMUKAN** ketika pertanyaan menanyakan FASIH / Dokumen / Assignment!
+2. **Pertanyaan MUATAN / Beban Muatan / Usaha / Keluarga**:
+   - Kolom Target: \`m.muatan\` / \`SUM(m.muatan)\` (atau \`total_muatan\` di \`summary_cache\`).
+   - Kolom Realisasi: \`SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0) + COALESCE(p.ditemukan+p.keluarga_baru,0))\` (atau \`muatan_selesai\` di \`summary_cache\`).
+
+- **Query Petugas Selesai 100% Progres FASIH (Termasuk / Selain KIPP)**:
+  - Gunakan query berikut:
+    \`\`\`sql
+    SELECT 
+      m.pcl AS "Nama Petugas",
+      MAX(m.kecamatan) AS "Kecamatan",
+      SUM(m.target_fasih) AS "Target FASIH",
+      SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS "Realisasi Dokumen",
+      ROUND(CAST(SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS FLOAT) / NULLIF(SUM(m.target_fasih), 0) * 100, 2) AS "Persentase FASIH (%)"
+    FROM subsls_master m
+    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = (SELECT id FROM uploads ORDER BY id DESC LIMIT 1)
+    WHERE m.pcl IS NOT NULL AND m.pcl != ''
+      [AND m.nama_sls NOT LIKE '%KIPP%' AND m.pcl NOT IN (SELECT DISTINCT pcl FROM subsls_master WHERE nama_sls LIKE '%KIPP%' AND pcl IS NOT NULL AND pcl != '')]
+    GROUP BY m.pcl
+    HAVING SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) >= SUM(m.target_fasih)
+    ORDER BY "Persentase FASIH (%)" DESC
+    \`\`\`
 - **Kinerja & Rangking Petugas (PCL/PML/Korlap)**:
   - UTAMAKAN tool \`get_petugas\` (role: 'pcl'|'pml'|'korlap', kecamatan: optional) untuk pertanyaan seperti siapa submit terbanyak, target tertinggi, progres terendah, dsb.
   - Jika query manual via \`query_data\`, gunakan tabel \`summary_cache\` (kolom: pcl, submitted_total, approved_total, draft_total, target_fasih_total) ATAU tabel \`progres\` yang di-\`LEFT JOIN subsls_master m ON progres.kode = m.kode\` (karena kolom \`progres.pcl_name\` sering NULL, nama resmi petugas ada di \`m.pcl\`).
@@ -61,7 +90,7 @@ Maka entitas tersebut WAJIB dijadikan filter PENGEQUALIAN (NOT LIKE / NOT IN / !
   - Realisasi FASIH adalah \`SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0))\`.
   - Target muatan adalah \`m.muatan\` / \`SUM(m.muatan)\`.
   - Realisasi muatan adalah \`SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0) + COALESCE(p.ditemukan+p.keluarga_baru,0))\`.
-  - Gunakan \`query_data\` pada tabel \`subsls_master m LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ? GROUP BY m.pcl ORDER BY "Realisasi FASIH" DESC, "Realisasi Muatan" DESC\`.
+  - Gunakan \`query_data\` pada tabel \`subsls_master m LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ? GROUP BY m.pcl ORDER BY SUM(m.target_fasih) DESC, SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0)) DESC, SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0)+COALESCE(p.ditemukan+p.keluarga_baru,0)) DESC\` (atau GROUP BY m.pml untuk PML).
 - **Rata-rata Penambahan Harian per Petugas (PCL/PML/Korlap)**:
   - Jika pertanyaan menanyakan *"Siapa petugas dengan rata-rata penambahan harian terbanyak / tertinggi..."*:
     - WAJIB gunakan query yang mengelompokkan data per petugas (\`GROUP BY m.pcl\`), BUKAN mengueri tabel \`uploads\`!

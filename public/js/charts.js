@@ -677,26 +677,34 @@ function createDailyBarChart(canvasId, labels, data, title = '', color = '#7c3ae
   return chart;
 }
 
-// ===== DAILY INCREMENT BAR CHART =====
-function createDailyIncrementBarChart(canvasId, labels, data, targetNormalVal, targetAktualVal, rawTrenData = []) {
+// ===== DAILY INCREMENT LINE CHART =====
+function createDailyIncrementLineChart(canvasId, labels, data, targetNormalVal, targetAktualVal, rawTrenData = []) {
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
+  const existingChart = Chart.getChart(ctx);
+  if (existingChart) existingChart.destroy();
   const theme = getThemeColors();
+
   const chart = new Chart(ctx, {
-    type: 'bar',
+    type: 'line',
     data: {
       labels,
       datasets: [
         {
           label: 'Penambahan Riil',
           data: data,
-          backgroundColor: 'rgba(16, 185, 129, 0.8)',
           borderColor: '#10b981',
-          borderWidth: 1,
-          borderRadius: 4
+          backgroundColor: 'rgba(16, 185, 129, 0.12)',
+          fill: true,
+          tension: 0.35,
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#10b981',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 1.5
         },
         {
-          type: 'line',
           label: 'Target Normal',
           data: Array(labels.length).fill(targetNormalVal),
           borderColor: '#60a5fa',
@@ -707,8 +715,7 @@ function createDailyIncrementBarChart(canvasId, labels, data, targetNormalVal, t
           tension: 0
         },
         {
-          type: 'line',
-          label: 'Target Aktual',
+          label: 'Target Aktual (Aman)',
           data: Array(labels.length).fill(targetAktualVal),
           borderColor: '#8b5cf6',
           borderWidth: 1.5,
@@ -722,11 +729,23 @@ function createDailyIncrementBarChart(canvasId, labels, data, targetNormalVal, t
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
       plugins: {
         legend: {
           display: true,
           position: 'top',
-          labels: { color: theme.text, font: { size: 10, family: 'Inter' } }
+          align: 'end',
+          labels: { 
+            color: theme.text, 
+            boxWidth: 10,
+            boxHeight: 10,
+            usePointStyle: true,
+            pointStyle: 'circle',
+            font: { size: 11, family: 'Inter' } 
+          }
         },
         tooltip: {
           backgroundColor: theme.bgCard,
@@ -751,7 +770,8 @@ function createDailyIncrementBarChart(canvasId, labels, data, targetNormalVal, t
         },
         y: {
           ticks: { color: theme.text, font: { size: 10 } },
-          grid: { color: theme.grid }
+          grid: { color: theme.grid },
+          beginAtZero: true
         }
       }
     }
@@ -760,6 +780,8 @@ function createDailyIncrementBarChart(canvasId, labels, data, targetNormalVal, t
   window.activeCharts.push(chart);
   return chart;
 }
+
+const createDailyIncrementBarChart = createDailyIncrementLineChart;
 
 // ===== DAILY INCREMENT STATUS BAR CHART =====
 function createDailyFasihStatusChart(canvasId, labels, datasetsData, title = '', rawTrenData = []) {

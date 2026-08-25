@@ -856,215 +856,141 @@
       </div>
       <% } %>
 
-      <!-- ANALISIS & KEKURANGAN TARGET HARIAN (STANDALONE CARD) -->
+      <!-- ANALISIS & TARGET HARIAN AGREGAT KABUPATEN (STANDALONE CARD) -->
       <% if (settings.overview_fasih === '1') { %>
-      <div class="card" style="margin: 0; position: relative; overflow: visible; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(139, 92, 246, 0.12); color: var(--accent-purple); display: flex; align-items: center; justify-content: center; font-size: 16px;">
-                <i class="bi bi-bar-chart-fill"></i>
+      <div class="card" style="margin: 0; position: relative; overflow: visible; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 22px;">
+          
+          <!-- Card Header -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; width: 100%; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(139, 92, 246, 0.12); color: var(--accent-purple); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;">
+                <i class="bi bi-graph-up-arrow"></i>
               </div>
               <div>
-                <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em;">
-                  Analisis & Kekurangan Target Harian (Agregat Kabupaten)
-                </h4>                <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <span>Monitoring defisit laju pengumpulan <%= unitLabelFull %> tingkat kabupaten se-PPU</span>
-                  <span class="badge badge-purple-subtle" style="font-size: 10.5px; padding: 2px 8px; font-weight: 700; border: 1px solid rgba(139, 92, 246, 0.3);">
-                    <i class="bi bi-clock-history" style="color: var(--accent-purple);"></i> Laju Update Terakhir: <strong>+<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %> <%= unitLabel %></strong> (<%= (typeof latestUpdateSpeedPerPcl !== 'undefined' ? latestUpdateSpeedPerPcl : 0).toLocaleString('id-ID', {maximumFractionDigits: 1}) %> <%= unitLabel %>/<%= officerLabel %>)
-                  </span>
+                <h4 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em;">
+                  Analisis &amp; Target Laju Harian (Agregat Kabupaten)
+                </h4>
+                <p style="margin: 3px 0 0 0; font-size: 12px; color: var(--text-secondary);">
+                  Monitoring laju pengumpulan <%= unitLabelFull %> se-kabupaten dan defisit terhadap target deadline
                 </p>
               </div>
             </div>
-            <!-- Help Tooltip Icon in Corner -->
-            <div class="help-tooltip-container">
-              <i class="bi bi-question-circle help-tooltip-icon"></i>
-              <div class="help-tooltip-box">
-                <strong style="color: var(--text-primary); display: block; margin-bottom: 4px;">Panduan Analisis Target Harian Kabupaten:</strong>
-                Blok ini menyajikan analisis laju pengumpulan <%= unitLabelFull %> dalam skala agregat (total se-kabupaten per hari). 
-                <br><br>
-                <strong>Laju Update Terakhir:</strong> Realisasi penambahan <%= unitLabelFull %> se-kabupaten pada pengunggahan data/hari paling baru (last update).
-                <br><br>
-                <strong>Realisasi Laju (Rata-Rata):</strong> Kecepatan nyata rata-rata penyelesaian per hari secara kumulatif kabupaten.
-                <br><br>
-                <strong>Target Normal:</strong> Rata-rata laju harian berdasarkan opsi yang aktif di menu Pengaturan (misal: total target dibagi total hari alokasi pendataan).
-                <br><br>
-                <strong>Target Aktual (Laju Aman):</strong> Kecepatan minimal harian yang diperlukan untuk menyelesaikan sisa beban kerja tepat waktu sebelum deadline (menyesuaikan sisa beban dan hari tersisa).
-                <br><br>
-                <strong>Target Tetap:</strong> Standar target awal flat yaitu <%= isSakernas ? '2' : '13' %> <%= unitLabel %> per petugas (<%= officerLabel %>) per hari secara kumulatif kabupaten (<%= isSakernas ? '2' : '13' %> × <%= totalPcl %> <%= officerLabel %>).
-                <br><br>
-                <strong>Defisit Laju:</strong> Angka kekurangan <%= unitLabel %> per hari terhadap target minimal agar pendataan tetap on-track.
+
+            <!-- Header Badges -->
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span class="badge badge-purple-subtle" style="font-size: 11px; padding: 4px 10px; font-weight: 600; border: 1px solid rgba(139, 92, 246, 0.25);">
+                <i class="bi bi-clock-history" style="color: var(--accent-purple);"></i> Update Terakhir: <strong>+<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %> <%= unitLabel %></strong> (<%= (typeof latestUpdateSpeedPerPcl !== 'undefined' ? latestUpdateSpeedPerPcl : 0).toLocaleString('id-ID', {maximumFractionDigits: 1}) %> <%= unitLabel %>/<%= officerLabel %>)
+              </span>
+              <!-- Help Tooltip Icon -->
+              <div class="help-tooltip-container">
+                <i class="bi bi-question-circle help-tooltip-icon"></i>
+                <div class="help-tooltip-box">
+                  <strong style="color: var(--text-primary); display: block; margin-bottom: 4px;">Panduan Target Laju Harian:</strong>
+                  • <strong>Laju Rata-Rata:</strong> Realisasi rata-rata dokumen terkumpul per hari se-kabupaten.<br>
+                  • <strong>Target Normal:</strong> Rata-rata standar target harian kabupaten.<br>
+                  • <strong>Target Aktual:</strong> Kecepatan minimal yang wajib dicapai agar selesai sebelum deadline.<br>
+                  • <strong>Defisit Laju:</strong> Kekurangan dokumen harian dari target aman.
+                </div>
               </div>
             </div>
           </div>
             
-            <% 
-              const defaultPerOfficer = isSakernas ? 2 : 13;
-              const targetTetap = defaultPerOfficer * totalPcl;
-              const stdDeficit = Math.max(0, targetSpeedTotal - currentSpeed);
-              const reqDeficit = Math.max(0, reqSpeed - currentSpeed);
-              const isOfftrackHarian = stdDeficit > 0 || reqDeficit > 0;
-              
-              // Nilai-nilai laju harian
-              const realisasiCount = currentSpeed;
-              const targetNormal = targetSpeedTotal; // Berdasarkan kalkulasi mode terpilih
-              const targetAktual = reqSpeed;          // Target Aktual / Laju Aman Deadline
+          <% 
+            const defaultPerOfficer = isSakernas ? 2 : 13;
+            const targetTetap = defaultPerOfficer * totalPcl;
+            const stdDeficit = Math.max(0, targetSpeedTotal - currentSpeed);
+            const reqDeficit = Math.max(0, reqSpeed - currentSpeed);
+            const maxDeficit = Math.max(stdDeficit, reqDeficit);
+            const isOfftrackHarian = maxDeficit > 0;
+            const targetNormal = targetSpeedTotal;
+            const targetAktual = reqSpeed;
+          %>
 
-              // Skala maksimum grafik agar semua titik (realisasi, target normal, target aktual, target tetap) muat dalam 100% track
-              const maxScaleVal = Math.max(targetNormal, targetAktual, targetTetap, realisasiCount, 1) * 1.15;
-
-              const realisasiBarPct = Math.min(100, (realisasiCount / maxScaleVal) * 100);
-              const targetNormalPct = Math.min(100, (targetNormal / maxScaleVal) * 100);
-              const targetAktualPct = Math.min(100, (targetAktual / maxScaleVal) * 100);
-              const targetTetapPct = Math.min(100, (targetTetap / maxScaleVal) * 100);
-            %>
-
-            <div class="target-harian-flex-wrap">
-              
-              <!-- SISI KIRI: Diagram Batang Jumlah Realisasi & Line-Marks Target -->
-              <div class="target-harian-left-panel">
-                
-                <!-- Label Header & Angka Realisasi Nyata -->
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; flex-wrap: wrap; gap: 6px;">
-                  <span style="color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.03em;">Realisasi Laju Pendataan Harian</span>
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <span class="badge badge-purple" style="font-size: 10px; font-weight: 700; padding: 2px 7px;">
-                      Hari Terakhir: +<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %> <%= unitLabel %>
-                    </span>
-                    <span style="color: <%= isOfftrackHarian ? 'var(--accent-cyan)' : 'var(--accent-green)' %>; font-size: 13px; font-weight: 800;">
-                      <%= currentSpeed.toLocaleString('id-ID', {maximumFractionDigits: 1}) %> <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);"><%= unitLabel %>/hari (rata-rata)</span>
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Progress Bar Container dengan Line-Marks (Target Normal, Target Aktual, Target Tetap) -->
-                <div class="progress-timeline-container" style="position: relative; height: 28px; margin-top: 32px; margin-bottom: 32px; width: 100%;">
-                  
-                  <!-- Track & Progress Bar (Gaya FASIH Assignment) -->
-                  <div style="background: var(--bg-progress-wrap); height: 28px; border-radius: 14px; overflow: hidden; position: relative; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 4px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15); width: 100%;">
-                    
-                    <!-- Realisasi Fill Bar -->
-                    <div class="progress-bar" data-width="<%= realisasiBarPct.toFixed(1) %>" style="background: <%= isOfftrackHarian ? 'linear-gradient(90deg, #ef4444 0%, #f87171 100%)' : 'linear-gradient(90deg, #10b981 0%, #34d399 100%)' %>; height: 20px; width: 0%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; min-width: 24px; box-shadow: 0 2px 8px <%= isOfftrackHarian ? 'rgba(239, 68, 68, 0.25)' : 'rgba(16, 185, 129, 0.25)' %>;">
-                      <span style="font-size: 11px; font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap;">
-                        <%= Math.round(realisasiCount).toLocaleString('id-ID') %> <%= unitLabel %>/hari
-                      </span>
-                    </div>
-
-                  </div>
-
-                  <!-- Marker Target Normal -->
-                  <div class="target-marker" style="position: absolute; left: <%= targetNormalPct.toFixed(1) %>%; top: -3px; height: 34px; border-left: 2px dashed #60a5fa; z-index: 5; pointer-events: none;">
-                    <span class="target-marker-text" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: #60a5fa; white-space: nowrap;">Target Normal: <%= Math.round(targetNormal).toLocaleString('id-ID') %> <%= unitLabel %>/hari</span>
-                  </div>
-
-                  <!-- Marker Target Tetap -->
-                  <div class="target-marker" style="position: absolute; left: <%= targetTetapPct.toFixed(1) %>%; top: -13px; height: 44px; border-left: 2px dashed #f59e0b; z-index: 7; pointer-events: none;">
-                    <span class="target-marker-text" style="position: absolute; top: -26px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: #f59e0b; white-space: nowrap;">Target Tetap: <%= Math.round(targetTetap).toLocaleString('id-ID') %> <%= unitLabel %>/hari</span>
-                  </div>
-
-                  <!-- Marker Target Aktual (Laju Aman Deadline) -->
-                  <div class="target-marker" style="position: absolute; left: <%= targetAktualPct.toFixed(1) %>%; top: -3px; height: 34px; border-left: 2px dashed var(--accent-purple); z-index: 6; pointer-events: none;">
-                    <span class="target-marker-text" style="position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 900; color: var(--accent-purple); white-space: nowrap;">Target Aktual: <%= Math.round(targetAktual).toLocaleString('id-ID') %> <%= unitLabel %>/hari</span>
-                  </div>
-
-                </div>
-
-                <!-- Detail Legend (5 Kolom: Laju Terakhir, Realisasi Rata-rata, Target Normal, Target Aktual, Target Tetap) -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-top: 2px;">
-                  <!-- Laju Hari / Update Terakhir -->
-                  <div style="display: flex; flex-direction: column; gap: 2px; background: rgba(139, 92, 246, 0.08); padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.2);">
-                    <span style="font-size: 8.5px; font-weight: 800; color: var(--accent-purple); text-transform: uppercase;">Laju Terakhir</span>
-                    <span style="font-size: 13px; font-weight: 800; color: var(--accent-purple);">
-                      +<%= (typeof diffTotal !== 'undefined' ? diffTotal : 0).toLocaleString('id-ID') %>
-                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);"><%= unitLabel %></span>
-                    </span>
-                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;"><%= (typeof latestUpdateSpeedPerPcl !== 'undefined' ? latestUpdateSpeedPerPcl : 0).toLocaleString('id-ID', {maximumFractionDigits: 1}) %> <%= unitLabel %>/<%= officerLabel %></span>
-                  </div>
-                  <!-- Realisasi Rata-Rata -->
-                  <div style="display: flex; flex-direction: column; gap: 2px; padding: 6px 8px;">
-                    <span style="font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Laju Rata-Rata</span>
-                    <span style="font-size: 13px; font-weight: 800; color: <%= isOfftrackHarian ? 'var(--accent-cyan)' : 'var(--accent-green)' %>;">
-                      <%= currentSpeed.toLocaleString('id-ID', {maximumFractionDigits: 1}) %>
-                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);"><%= unitLabel %>/hari</span>
-                    </span>
-                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Akumulatif</span>
-                  </div>
-                  <!-- Target Normal -->
-                  <div style="display: flex; flex-direction: column; gap: 2px; padding: 6px 8px;">
-                    <span style="font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Target Normal</span>
-                    <span style="font-size: 13px; font-weight: 800; color: #60a5fa;">
-                      <%= Math.round(targetNormal).toLocaleString('id-ID') %>
-                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);"><%= unitLabel %>/hari</span>
-                    </span>
-                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Standar Alokasi</span>
-                  </div>
-                  <!-- Target Aktual -->
-                  <div style="display: flex; flex-direction: column; gap: 2px; padding: 6px 8px;">
-                    <span style="font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Target Aktual</span>
-                    <span style="font-size: 13px; font-weight: 800; color: var(--accent-purple);">
-                      <%= reqSpeed.toLocaleString('id-ID', {maximumFractionDigits: 1}) %>
-                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);"><%= unitLabel %>/hari</span>
-                    </span>
-                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;">Aman Deadline</span>
-                  </div>
-                  <!-- Target Tetap -->
-                  <div style="display: flex; flex-direction: column; gap: 2px; padding: 6px 8px;">
-                    <span style="font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Target Tetap</span>
-                    <span style="font-size: 13px; font-weight: 800; color: #f59e0b;">
-                      <%= Math.round(targetTetap).toLocaleString('id-ID') %>
-                      <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted);"><%= unitLabel %>/hari</span>
-                    </span>
-                    <span style="font-size: 9px; color: var(--text-muted); font-weight: 600;"><%= isSakernas ? '2' : '13' %> <%= unitLabel %> × <%= totalPcl %> <%= officerLabel %></span>
-                  </div>
-                </div>
-
+          <!-- 4 Ringkasan Metrik Laju Utama (Sederhana, Bersih & Rapi) -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
+            
+            <!-- 1. Realisasi Laju Rata-Rata -->
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em;">
+                <i class="bi bi-speedometer2" style="color: var(--accent-cyan);"></i> Laju Rata-Rata Riil
+              </span>
+              <div style="display: flex; align-items: baseline; gap: 4px; margin-top: 2px;">
+                <span style="font-size: 22px; font-weight: 800; color: <%= isOfftrackHarian ? 'var(--accent-cyan)' : 'var(--accent-green)' %>; font-family: 'Outfit', sans-serif;">
+                  <%= currentSpeed.toLocaleString('id-ID', {maximumFractionDigits: 1}) %>
+                </span>
+                <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);"><%= unitLabel %>/hari</span>
               </div>
-
-              <!-- SISI KANAN: Highlight Defisit Harian (Responsif Hero Card) -->
-              <div class="target-harian-right-panel">
-                
-                <% 
-                  const maxDeficit = Math.max(stdDeficit, reqDeficit);
-                %>
-
-                <!-- Highlight Defisit Kecepatan Harian (Hero Card) -->
-                <div class="target-harian-hero-card" style="background: linear-gradient(135deg, <%= maxDeficit > 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(34, 197, 94, 0.12)' %> 0%, <%= maxDeficit > 0 ? 'rgba(239, 68, 68, 0.03)' : 'rgba(34, 197, 94, 0.03)' %> 100%); border: 1px solid <%= maxDeficit > 0 ? 'rgba(239, 68, 68, 0.35)' : 'rgba(34, 197, 94, 0.35)' %>; box-shadow: 0 4px 16px <%= maxDeficit > 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(34, 197, 94, 0.12)' %>;">
-                  
-                  <div style="font-size: 10px; font-weight: 800; color: <%= maxDeficit > 0 ? 'var(--accent-red)' : 'var(--accent-green)' %>; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;">
-                    Defisit Laju Harian
-                  </div>
-                  
-                  <div class="target-harian-hero-number" style="color: <%= maxDeficit > 0 ? 'var(--accent-red)' : 'var(--accent-green)' %>; display: flex; align-items: baseline; justify-content: center; gap: 4px;">
-                    <%= maxDeficit > 0 ? '-' + Math.ceil(maxDeficit).toLocaleString('id-ID') : 'Terpenuhi' %>
-                  </div>
-                  
-                  <% if (maxDeficit > 0) { %>
-                    <div class="target-harian-hero-unit" style="color: var(--accent-red);">
-                      <%= unitLabelFull %> / hari
-                    </div>
-                  <% } %>
-
-                  <div class="target-harian-hero-desc">
-                    Kekurangan laju pengumpulan harian se-kabupaten dari target minimal agar pendataan on-track.
-                  </div>
-
-                </div>
-
-              </div>
-
+              <span style="font-size: 11px; color: var(--text-muted);">
+                Akumulatif <%= diffDays %> hari pendataan
+              </span>
             </div>
 
-            <!-- BAR CHART: Tren Penambahan Harian -->
-            <div class="county-increment-chart-panel" style="margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--border); width: 100%;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 6px;">
-                  <span style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
-                    <i class="bi bi-bar-chart-fill" style="color: var(--accent-purple);"></i> Grafik Tren Penambahan <%= unitLabelFull %> Harian
-                  </span>
-                  <span style="font-size: 10px; color: var(--text-muted);">Sesi Upload Terakhir</span>
-                </div>
-                <div style="height: 180px; position: relative; width: 100%;">
-                  <canvas id="dailyCountyIncrementChartCanvas"></canvas>
-                </div>
+            <!-- 2. Target Normal -->
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em;">
+                <i class="bi bi-bullseye" style="color: #60a5fa;"></i> Target Normal
+              </span>
+              <div style="display: flex; align-items: baseline; gap: 4px; margin-top: 2px;">
+                <span style="font-size: 22px; font-weight: 800; color: #60a5fa; font-family: 'Outfit', sans-serif;">
+                  <%= Math.round(targetNormal).toLocaleString('id-ID') %>
+                </span>
+                <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);"><%= unitLabel %>/hari</span>
+              </div>
+              <span style="font-size: 11px; color: var(--text-muted);">
+                Standar alokasi harian
+              </span>
             </div>
+
+            <!-- 3. Target Aktual (Aman Deadline) -->
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em;">
+                <i class="bi bi-shield-check" style="color: var(--accent-purple);"></i> Target Aman Deadline
+              </span>
+              <div style="display: flex; align-items: baseline; gap: 4px; margin-top: 2px;">
+                <span style="font-size: 22px; font-weight: 800; color: var(--accent-purple); font-family: 'Outfit', sans-serif;">
+                  <%= reqSpeed.toLocaleString('id-ID', {maximumFractionDigits: 1}) %>
+                </span>
+                <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);"><%= unitLabel %>/hari</span>
+              </div>
+              <span style="font-size: 11px; color: var(--text-muted);">
+                Sisa <%= daysRemaining %> hari tersisa
+              </span>
+            </div>
+
+            <!-- 4. Defisit / Status Kinerja -->
+            <div style="background: <%= maxDeficit > 0 ? 'rgba(239, 68, 68, 0.08)' : 'rgba(34, 197, 94, 0.08)' %>; border: 1px solid <%= maxDeficit > 0 ? 'rgba(239, 68, 68, 0.25)' : 'rgba(34, 197, 94, 0.25)' %>; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 11px; font-weight: 700; color: <%= maxDeficit > 0 ? 'var(--accent-red)' : 'var(--accent-green)' %>; text-transform: uppercase; letter-spacing: 0.03em;">
+                <i class="bi <%= maxDeficit > 0 ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill' %>"></i> <%= maxDeficit > 0 ? 'Defisit Laju Harian' : 'Status Target' %>
+              </span>
+              <div style="display: flex; align-items: baseline; gap: 4px; margin-top: 2px;">
+                <span style="font-size: 22px; font-weight: 800; color: <%= maxDeficit > 0 ? 'var(--accent-red)' : 'var(--accent-green)' %>; font-family: 'Outfit', sans-serif;">
+                  <%= maxDeficit > 0 ? '-' + Math.ceil(maxDeficit).toLocaleString('id-ID') : 'On-Track' %>
+                </span>
+                <% if (maxDeficit > 0) { %>
+                  <span style="font-size: 12px; font-weight: 600; color: var(--accent-red);"><%= unitLabel %>/hari</span>
+                <% } %>
+              </div>
+              <span style="font-size: 11px; color: var(--text-muted);">
+                <%= maxDeficit > 0 ? 'Perlu percepatan laju harian' : 'Target harian terpenuhi' %>
+              </span>
+            </div>
+
+          </div>
+
+          <!-- LINE CHART: Tren Penambahan Harian Kabupaten -->
+          <div style="background: rgba(255, 255, 255, 0.015); border: 1px solid var(--border); border-radius: 12px; padding: 16px; width: 100%;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <span style="font-size: 12px; font-weight: 700; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px;">
+                <i class="bi bi-graph-up text-green" style="font-size: 14px;"></i> Grafik Tren Penambahan <%= unitLabelFull %> Harian
+              </span>
+              <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
+                Riwayat Penambahan Dokumen per Tanggal Upload
+              </span>
+            </div>
+            <div style="height: 200px; position: relative; width: 100%;">
+              <canvas id="dailyCountyIncrementChartCanvas"></canvas>
+            </div>
+          </div>
 
       </div>
       <% } %>
@@ -2328,7 +2254,7 @@
       }
 
       lazyInitChart('dailyCountyIncrementChartCanvas', () =>
-        createDailyIncrementBarChart(
+        createDailyIncrementLineChart(
           'dailyCountyIncrementChartCanvas',
           countyIncrementLabels,
           countyIncrements,

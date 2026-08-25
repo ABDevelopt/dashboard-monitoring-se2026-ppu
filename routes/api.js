@@ -320,7 +320,9 @@ router.get('/weather/history', (req, res) => {
 
 // Ubah mode target utama progres secara dinamis per-user session dan global database
 router.post('/settings/target-mode', (req, res) => {
-  const { target_fasih_mode, target_muatan_mode } = req.body;
+  const { target_fasih_mode, target_muatan_mode, surveyId } = req.body;
+  const activeSurveyId = surveyId || res.locals.activeSurvey || req.session.activeSurvey || 'se2026';
+
   if (!req.session.settings) {
     req.session.settings = {};
   }
@@ -328,7 +330,7 @@ router.post('/settings/target-mode', (req, res) => {
   let changed = false;
   const dbUpdates = {};
 
-  if (target_fasih_mode && ['static', 'fasih-sm'].includes(target_fasih_mode)) {
+  if (target_fasih_mode && ['static', 'fasih-sm', 'dynamic'].includes(target_fasih_mode)) {
     req.session.settings.target_fasih_mode = target_fasih_mode;
     dbUpdates.target_fasih_mode = target_fasih_mode;
     changed = true;
@@ -342,7 +344,7 @@ router.post('/settings/target-mode', (req, res) => {
   if (changed) {
     try {
       // Perbarui di database global agar memicu rebuild cache dan sinkron dengan WA
-      updateSettings(dbUpdates);
+      updateSettings(dbUpdates, activeSurveyId);
       
       req.session.save((err) => {
         if (err) {

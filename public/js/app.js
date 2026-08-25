@@ -2550,12 +2550,26 @@ function updateTime() {
     }
     window.loadPage = loadPage;
 
+    // ⚡ 0ms Pointerdown/Touchstart Feedback on Sidebar Menu Items
+    document.addEventListener('pointerdown', (e) => {
+      const navItem = e.target.closest('.sidebar .nav-item, .bottom-nav .bottom-nav-item, .bottom-sheet-item');
+      if (navItem) {
+        const href = navItem.getAttribute('href');
+        if (href && !href.startsWith('#') && !href.startsWith('javascript:') && !href.includes('/export') && !href.includes('/download') && !href.includes('/logout') && (href.startsWith('/') || href.startsWith(window.location.origin))) {
+          if (typeof window.setInstantMenuActive === 'function') {
+            window.setInstantMenuActive(href, navItem);
+          }
+        }
+      }
+    }, { passive: true });
+
     // Intercept clicks on internal links
     document.addEventListener('click', (e) => {
       if (e.defaultPrevented) return;
       const a = e.target.closest('a');
       if (!a) return;
 
+      const href = a.getAttribute('href');
       // Skip hashes, JS calls, blank target, external targets, downloads, export, or portal page separation
       if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.getAttribute('target') === '_blank' || a.hasAttribute('download') || href.includes('/export') || href.includes('/download') || href === '/surveys' || href.startsWith('/surveys') || window.location.pathname === '/surveys') {
         return;
@@ -2579,7 +2593,7 @@ function updateTime() {
       
       // ⚡ INSTANT FEEDBACK (0ms): Langsung ubah warna menu yang diklik menjadi active tanpa menunggu load halaman!
       if (typeof window.setInstantMenuActive === 'function') {
-        window.setInstantMenuActive(href);
+        window.setInstantMenuActive(href, a);
       }
       
       const sidebarItem = a.closest('.sidebar .nav-item, .bottom-nav .bottom-nav-item');
@@ -2639,14 +2653,17 @@ function updateTime() {
       });
     }
 
-    window.setInstantMenuActive = function(targetUrl) {
+    window.setInstantMenuActive = function(targetUrl, clickedEl) {
       if (!targetUrl) return;
       try {
-        const targetPath = new URL(targetUrl, window.location.origin).pathname;
-        if (targetPath === '/agent') {
+        const targetUrlObj = new URL(targetUrl, window.location.origin);
+        const targetPath = targetUrlObj.pathname;
+        const targetSearch = targetUrlObj.search;
+
+        if (targetPath === '/agent' || targetPath.endsWith('/agent')) {
           document.body.classList.add('page-agent');
           document.body.classList.remove('page-map');
-        } else if (targetPath === '/map') {
+        } else if (targetPath === '/map' || targetPath.endsWith('/map')) {
           document.body.classList.add('page-map');
           document.body.classList.remove('page-agent');
         } else {
@@ -2654,15 +2671,54 @@ function updateTime() {
           document.body.classList.remove('page-map');
         }
 
+        const directItem = clickedEl ? clickedEl.closest('.nav-item, .bottom-nav-item, .bottom-sheet-item') : null;
+
+        // Instantly update sidebar nav items (0ms)
         document.querySelectorAll('.sidebar .nav-item').forEach(item => {
           const itemHref = item.getAttribute('href');
-          if (itemHref) {
-            const itemPath = new URL(itemHref, window.location.origin).pathname;
-            if (itemPath === targetPath || (targetPath === '/' && itemPath === '/')) {
-              item.classList.add('active');
+          let isActive = false;
+
+          if (directItem && item === directItem) {
+            isActive = true;
+          } else if (itemHref) {
+            const itemUrl = new URL(itemHref, window.location.origin);
+            const itemPath = itemUrl.pathname;
+            const itemSearch = itemUrl.search;
+
+            if (itemSearch) {
+              isActive = (itemPath === targetPath && itemSearch === targetSearch);
             } else {
-              item.classList.remove('active');
+              isActive = (itemPath === targetPath || (targetPath === '/' && itemPath === '/'));
             }
+          }
+
+          if (isActive) {
+            item.classList.add('active');
+            // Ensure parent section is opened and highlighted
+            const parentSection = item.closest('.nav-section-wrapper');
+            if (parentSection) {
+              parentSection.classList.add('has-active', 'is-open');
+              parentSection.classList.remove('is-collapsed');
+            }
+            // Ensure upload sub-wrapper is opened if active
+            const parentSubWrapper = item.closest('.nav-sub-wrapper');
+            if (parentSubWrapper) {
+              parentSubWrapper.classList.add('is-open');
+              parentSubWrapper.classList.remove('is-collapsed');
+              const subContent = parentSubWrapper.querySelector('.nav-sub-content');
+              if (subContent) subContent.style.display = 'block';
+              const subChevron = parentSubWrapper.querySelector('.nav-sub-chevron');
+              if (subChevron) subChevron.style.transform = 'rotate(0deg)';
+            }
+          } else {
+            item.classList.remove('active');
+          }
+        });
+
+        // Clean up has-active on section wrappers that no longer contain an active item
+        document.querySelectorAll('.sidebar .nav-section-wrapper').forEach(sec => {
+          if (!sec.querySelector('.nav-item.active')) {
+            sec.classList.remove('has-active');
           }
         });
 

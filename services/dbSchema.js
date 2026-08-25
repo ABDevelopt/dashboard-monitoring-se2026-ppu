@@ -79,12 +79,13 @@ You have read-only access to a SQLite database with the following schema:
 Relationships & Calculations:
 - Connect "progres" to "subsls_master" on "kode".
 - Connect "progres" to "uploads" on "upload_id".
-- Realisasi Muatan Selesai = (usaha_ditemukan + usaha_baru + ditemukan + keluarga_baru).
-- Total Target Muatan = muatan.
-- Persentase Realisasi Muatan = 100 * (usaha_ditemukan + usaha_baru + ditemukan + keluarga_baru) / muatan.
 - Realisasi FASIH = (submitted_by_pcl + approved + rejected). Note that approved = completed/final.
 - Target FASIH = target_fasih.
 - Persentase FASIH = 100 * (submitted_by_pcl + approved + rejected) / target_fasih.
+- Petugas Selesai 100% FASIH = (submitted_by_pcl + approved + rejected) >= target_fasih. (ALWAYS use FASIH metrics when question asks about assignment/dokumen/FASIH!).
+- Realisasi Muatan Selesai = (usaha_ditemukan + usaha_baru + ditemukan + keluarga_baru).
+- Total Target Muatan = muatan.
+- Persentase Realisasi Muatan = 100 * (usaha_ditemukan + usaha_baru + ditemukan + keluarga_baru) / muatan.
 - SubSLS is considered "Selesai" (Completed) when target_fasih > 0 AND (submitted_by_pcl + approved + rejected) >= target_fasih.
 - Anomalies include: usaha_ganda > 0, tidak_dapat_ditemui > 0, rejected > 0.
 - Performa Rendah indicators:
