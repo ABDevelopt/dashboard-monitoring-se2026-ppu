@@ -784,11 +784,13 @@ function updateTime() {
   // ===== GLOBAL FUZZY SEARCH (Ctrl+K) =====
   let currentSearchFocusIndex = -1;
   let searchDebounceTimeout = null;
+  let currentSearchCategory = 'all';
 
   window.toggleGlobalSearchModal = function(show) {
     const modal = document.getElementById('globalSearchModal');
     const input = document.getElementById('globalSearchInput');
     const results = document.getElementById('globalSearchResults');
+    const clearBtn = document.getElementById('clearSearchInputBtn');
     
     if (!modal) return;
     
@@ -796,6 +798,16 @@ function updateTime() {
       modal.classList.remove('hidden');
       modal.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
+      currentSearchCategory = 'all';
+      
+      // Reset chips
+      const chips = document.querySelectorAll('.search-chip');
+      chips.forEach(chip => {
+        chip.classList.toggle('active', chip.getAttribute('data-category') === 'all');
+      });
+
+      if (clearBtn) clearBtn.classList.add('hidden');
+
       setTimeout(() => {
         if (input) {
           input.value = '';
@@ -806,8 +818,19 @@ function updateTime() {
       if (results) {
         results.innerHTML = `
           <div class="search-welcome-state">
-            <i class="bi bi-search" style="font-size: 24px; opacity: 0.5; margin-bottom: 8px;"></i>
-            <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">Ketik minimal 2 karakter untuk memulai pencarian global...</p>
+            <div class="search-welcome-glow">
+              <i class="bi bi-stars"></i>
+            </div>
+            <div class="search-welcome-title">Pencarian Cepat & Cerdas</div>
+            <div class="search-welcome-desc">Ketik nama petugas, kode SLS, desa, atau kecamatan untuk langsung menuju data yang Anda inginkan.</div>
+            
+            <div class="search-quick-tags">
+              <span class="search-quick-tag-label">Pencarian Cepat:</span>
+              <button type="button" class="search-tag-btn" onclick="window.setGlobalSearchQuery('Penajam')">Penajam</button>
+              <button type="button" class="search-tag-btn" onclick="window.setGlobalSearchQuery('Sepaku')">Sepaku</button>
+              <button type="button" class="search-tag-btn" onclick="window.setGlobalSearchQuery('Babulu')">Babulu</button>
+              <button type="button" class="search-tag-btn" onclick="window.setGlobalSearchQuery('Waru')">Waru</button>
+            </div>
           </div>
         `;
       }
@@ -819,15 +842,40 @@ function updateTime() {
     }
   };
 
+  window.setGlobalSearchQuery = function(text) {
+    const input = document.getElementById('globalSearchInput');
+    if (input) {
+      input.value = text;
+      input.focus();
+      window.performGlobalSearch(text);
+    }
+  };
+
   window.performGlobalSearch = function(query) {
     const resultsContainer = document.getElementById('globalSearchResults');
+    const clearBtn = document.getElementById('clearSearchInputBtn');
     if (!resultsContainer) return;
+
+    if (clearBtn) {
+      clearBtn.classList.toggle('hidden', !query || query.trim().length === 0);
+    }
 
     if (!query || query.trim().length < 2) {
       resultsContainer.innerHTML = `
         <div class="search-welcome-state">
-          <i class="bi bi-search" style="font-size: 24px; opacity: 0.5; margin-bottom: 8px;"></i>
-          <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">Ketik minimal 2 karakter untuk memulai pencarian global...</p>
+          <div class="search-welcome-glow">
+            <i class="bi bi-stars"></i>
+          </div>
+          <div class="search-welcome-title">Pencarian Cepat & Cerdas</div>
+          <div class="search-welcome-desc">Ketik minimal 2 karakter untuk mencari petugas, SLS, desa, atau kecamatan...</div>
+          
+          <div class="search-quick-tags">
+            <span class="search-quick-tag-label">Pencarian Cepat:</span>
+            <button type="button" class="search-tag-btn" onclick="window.setGlobalSearchQuery('Penajam')">Penajam</button>
+            <button type="button" class="search-tag-btn" onclick="window.setGlobalSearchQuery('Sepaku')">Sepaku</button>
+            <button type="button" class="search-tag-btn" onclick="window.setGlobalSearchQuery('Babulu')">Babulu</button>
+            <button type="button" class="search-tag-btn" onclick="window.setGlobalSearchQuery('Waru')">Waru</button>
+          </div>
         </div>
       `;
       currentSearchFocusIndex = -1;
@@ -835,9 +883,9 @@ function updateTime() {
     }
 
     resultsContainer.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: center; padding: 40px 20px; color: var(--text-muted); gap: 8px; font-size: 13px;">
-        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 1rem; height: 1rem; border-width: 0.15em; border-color: var(--accent-blue) transparent transparent transparent;"></span>
-        Mencari data...
+      <div style="display: flex; align-items: center; justify-content: center; padding: 48px 20px; color: var(--text-muted); gap: 10px; font-size: 13.5px;">
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="width: 1.1rem; height: 1.1rem; border-width: 0.15em; border-color: var(--accent-purple) transparent transparent transparent;"></span>
+        Mencari data ke seluruh database...
       </div>
     `;
 
@@ -849,20 +897,24 @@ function updateTime() {
         let totalItems = 0;
 
         const categories = [
-          { key: 'pcl', label: 'Petugas PCL', icon: 'bi-person-badge-fill' },
-          { key: 'pml', label: 'Pengawas PML', icon: 'bi-person-gear' },
-          { key: 'korlap', label: 'Koordinator Lapangan', icon: 'bi-person-workspace' },
-          { key: 'kecamatan', label: 'Kecamatan', icon: 'bi-geo-alt-fill' },
-          { key: 'desa', label: 'Desa/Kelurahan', icon: 'bi-geo-fill' },
-          { key: 'sls', label: 'Satuan Lingkungan Setempat (SLS)', icon: 'bi-grid-3x3-gap-fill' }
+          { key: 'pcl', group: 'pcl', label: 'Petugas PCL', icon: 'bi-person-badge-fill', badge: 'badge-purple' },
+          { key: 'pml', group: 'pml', label: 'Pengawas PML', icon: 'bi-person-gear', badge: 'badge-blue' },
+          { key: 'korlap', group: 'korlap', label: 'Koordinator Lapangan', icon: 'bi-person-workspace', badge: 'badge-orange' },
+          { key: 'kecamatan', group: 'wilayah', label: 'Kecamatan', icon: 'bi-geo-alt-fill', badge: 'badge-cyan' },
+          { key: 'desa', group: 'wilayah', label: 'Desa / Kelurahan', icon: 'bi-geo-fill', badge: 'badge-green' },
+          { key: 'sls', group: 'sls', label: 'Satuan Lingkungan Setempat (SLS)', icon: 'bi-box-seam', badge: 'badge-gray' }
         ];
 
         categories.forEach(cat => {
+          if (currentSearchCategory !== 'all' && currentSearchCategory !== cat.group) {
+            return;
+          }
+
           const items = data[cat.key] || [];
           if (items.length > 0) {
             html += `
-              <div class="search-group">
-                <div class="search-group-title">${cat.label}</div>
+              <div class="search-group" data-group="${cat.group}">
+                <div class="search-group-title"><i class="bi ${cat.icon}"></i> ${cat.label}</div>
             `;
             items.forEach(item => {
               html += `
@@ -871,6 +923,9 @@ function updateTime() {
                   <div class="search-result-item-content">
                     <div class="search-result-item-title">${item.label}</div>
                     <div class="search-result-item-sub">${item.sublabel}</div>
+                  </div>
+                  <div class="search-result-item-jump">
+                    <span>Buka</span> <i class="bi bi-arrow-right-short"></i>
                   </div>
                 </a>
               `;
@@ -883,8 +938,9 @@ function updateTime() {
         if (totalItems === 0) {
           resultsContainer.innerHTML = `
             <div class="search-welcome-state">
-              <i class="bi bi-exclamation-circle" style="font-size: 24px; opacity: 0.5; margin-bottom: 8px; color: var(--accent-red);"></i>
-              <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">Tidak ada hasil ditemukan untuk <strong>"${query}"</strong></p>
+              <i class="bi bi-search" style="font-size: 28px; opacity: 0.4; margin-bottom: 12px; color: var(--accent-red);"></i>
+              <div class="search-welcome-title">Tidak Ditemukan</div>
+              <div class="search-welcome-desc">Tidak ada hasil cocok untuk <strong>"${query}"</strong>${currentSearchCategory !== 'all' ? ` pada kategori ${currentSearchCategory.toUpperCase()}` : ''}. Coba kata kunci lain atau pilih tab Semua.</div>
             </div>
           `;
           currentSearchFocusIndex = -1;
@@ -904,8 +960,9 @@ function updateTime() {
         console.error('Error in global search API:', err);
         resultsContainer.innerHTML = `
           <div class="search-welcome-state">
-            <i class="bi bi-x-circle" style="font-size: 24px; opacity: 0.5; margin-bottom: 8px; color: var(--accent-red);"></i>
-            <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">Terjadi kesalahan koneksi saat mencari.</p>
+            <i class="bi bi-exclamation-circle" style="font-size: 28px; opacity: 0.5; margin-bottom: 12px; color: var(--accent-red);"></i>
+            <div class="search-welcome-title">Kesalahan Koneksi</div>
+            <div class="search-welcome-desc">Gagal memuat hasil pencarian. Silakan periksa koneksi atau coba beberapa saat lagi.</div>
           </div>
         `;
         currentSearchFocusIndex = -1;
@@ -968,11 +1025,49 @@ function updateTime() {
       }
     });
 
-    // Global Search trigger button
+    // Global Search trigger buttons
     const globalSearchBtn = document.getElementById('globalSearchBtn');
     if (globalSearchBtn) {
       globalSearchBtn.addEventListener('click', () => {
         window.toggleGlobalSearchModal(true);
+      });
+    }
+
+    const globalSearchBtnMobile = document.getElementById('globalSearchBtnMobile');
+    if (globalSearchBtnMobile) {
+      globalSearchBtnMobile.addEventListener('click', () => {
+        window.toggleGlobalSearchModal(true);
+      });
+    }
+
+    // Clear search input button
+    const clearSearchInputBtn = document.getElementById('clearSearchInputBtn');
+    if (clearSearchInputBtn) {
+      clearSearchInputBtn.addEventListener('click', () => {
+        const input = document.getElementById('globalSearchInput');
+        if (input) {
+          input.value = '';
+          input.focus();
+          window.performGlobalSearch('');
+        }
+      });
+    }
+
+    // Category filter chips
+    const searchCategoryChips = document.getElementById('searchCategoryChips');
+    if (searchCategoryChips) {
+      searchCategoryChips.addEventListener('click', (e) => {
+        const chip = e.target.closest('.search-chip');
+        if (!chip) return;
+        
+        searchCategoryChips.querySelectorAll('.search-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        currentSearchCategory = chip.getAttribute('data-category') || 'all';
+
+        const input = document.getElementById('globalSearchInput');
+        if (input && input.value.trim().length >= 2) {
+          window.performGlobalSearch(input.value.trim());
+        }
       });
     }
 

@@ -603,12 +603,20 @@
       </div>
     </div>
 
+    <!-- CENTER: Prominent Global Search Command Bar -->
+    <div class="topbar-search-wrapper" id="globalSearchWrapper">
+      <button type="button" class="topbar-search-bar" id="globalSearchBtn" title="Pencarian Cepat (Ctrl+K)" aria-label="Pencarian Global">
+        <i class="bi bi-search topbar-search-icon"></i>
+        <span class="topbar-search-placeholder">Cari PCL, PML, SLS, wilayah...</span>
+        <span class="topbar-search-shortcut"><kbd>Ctrl</kbd><kbd>K</kbd></span>
+      </button>
+    </div>
+
     <!-- RIGHT: Action Buttons -->
     <div class="topbar-actions">
-      <!-- Search -->
-      <button class="btn btn-secondary topbar-action-btn" id="globalSearchBtn" title="Cari... (Ctrl+K)" aria-label="Pencarian Global">
+      <!-- Mobile Search Icon Button (visible only on small screens) -->
+      <button class="btn btn-secondary topbar-action-btn show-sm-inline" id="globalSearchBtnMobile" title="Cari... (Ctrl+K)" aria-label="Pencarian Global" style="display: none;">
         <i class="bi bi-search"></i>
-        <span class="topbar-action-label">Ctrl K</span>
       </button>
 
       <!-- Notification Bell -->
@@ -717,22 +725,54 @@
 <div id="globalSearchModal" class="search-modal-backdrop hidden" aria-hidden="true" role="dialog">
   <div class="search-modal-card">
     <div class="search-modal-header">
-      <i class="bi bi-search search-modal-icon"></i>
-      <input type="text" id="globalSearchInput" placeholder="Cari PCL, SLS, desa, kecamatan..." autocomplete="off" aria-label="Cari PCL, SLS, desa, kecamatan...">
+      <div class="search-input-wrapper">
+        <i class="bi bi-search search-modal-icon"></i>
+        <input type="text" id="globalSearchInput" placeholder="Cari nama PCL, PML, Korlap, SLS, Desa, Kecamatan..." autocomplete="off" spellcheck="false" aria-label="Pencarian Global">
+        <button type="button" id="clearSearchInputBtn" class="search-modal-clear hidden" title="Hapus teks"><i class="bi bi-x-circle-fill"></i></button>
+      </div>
       <button id="closeSearchModalBtn" class="search-modal-close" title="Tutup (Esc)" aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
     </div>
+
+    <!-- Category Filter Chips -->
+    <div class="search-category-chips" id="searchCategoryChips">
+      <button type="button" class="search-chip active" data-category="all"><i class="bi bi-grid-fill"></i> Semua</button>
+      <button type="button" class="search-chip" data-category="pcl"><i class="bi bi-person-badge-fill"></i> PCL</button>
+      <button type="button" class="search-chip" data-category="pml"><i class="bi bi-person-gear"></i> PML</button>
+      <button type="button" class="search-chip" data-category="korlap"><i class="bi bi-person-workspace"></i> Korlap</button>
+      <button type="button" class="search-chip" data-category="sls"><i class="bi bi-box-seam"></i> SLS / Blok</button>
+      <button type="button" class="search-chip" data-category="wilayah"><i class="bi bi-geo-alt-fill"></i> Wilayah</button>
+    </div>
+
     <div class="search-modal-body" id="globalSearchBody">
       <div class="search-modal-results" id="globalSearchResults">
+        <!-- Initial / Welcome State -->
         <div class="search-welcome-state">
-          <i class="bi bi-search" style="font-size: 24px; opacity: 0.5; margin-bottom: 8px;"></i>
-          <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">Ketik minimal 2 karakter untuk memulai pencarian global...</p>
+          <div class="search-welcome-glow">
+            <i class="bi bi-stars"></i>
+          </div>
+          <div class="search-welcome-title">Pencarian Cepat & Cerdas</div>
+          <div class="search-welcome-desc">Ketik nama petugas, kode SLS, desa, atau kecamatan untuk langsung menuju data yang Anda inginkan.</div>
+          
+          <div class="search-quick-tags">
+            <span class="search-quick-tag-label">Pencarian Cepat:</span>
+            <button type="button" class="search-tag-btn" onclick="window.setGlobalSearchQuery('Penajam')">Penajam</button>
+            <button type="button" class="search-tag-btn" onclick="window.setGlobalSearchQuery('Sepaku')">Sepaku</button>
+            <button type="button" class="search-tag-btn" onclick="window.setGlobalSearchQuery('Babulu')">Babulu</button>
+            <button type="button" class="search-tag-btn" onclick="window.setGlobalSearchQuery('Waru')">Waru</button>
+          </div>
         </div>
       </div>
     </div>
+
     <div class="search-modal-footer">
-      <span><kbd>↑↓</kbd> Navigasi</span>
-      <span><kbd>Enter</kbd> Pilih</span>
-      <span><kbd>Esc</kbd> Tutup</span>
+      <div class="search-footer-hints">
+        <span><kbd>↑</kbd><kbd>↓</kbd> Navigasi</span>
+        <span><kbd>↵ Enter</kbd> Buka</span>
+        <span><kbd>Esc</kbd> Tutup</span>
+      </div>
+      <div class="search-footer-brand">
+        <span><i class="bi bi-lightning-charge-fill" style="color: #fbbf24;"></i> Spotlight Search</span>
+      </div>
     </div>
   </div>
 </div>
