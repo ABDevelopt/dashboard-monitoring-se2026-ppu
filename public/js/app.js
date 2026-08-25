@@ -1025,42 +1025,35 @@ function updateTime() {
       }
     });
 
-    // Global Search trigger buttons
-    const globalSearchBtn = document.getElementById('globalSearchBtn');
-    if (globalSearchBtn) {
-      globalSearchBtn.addEventListener('click', () => {
+    // Delegated Global Search Triggers and Modal Controls (immune to PJAX DOM replacements)
+    document.addEventListener('click', (e) => {
+      // 1. Open search modal triggers (desktop search bar, mobile button, or any data-action)
+      const searchTrigger = e.target.closest('#globalSearchBtn, #globalSearchBtnMobile, .topbar-search-bar, [data-action="open-global-search"]');
+      if (searchTrigger) {
+        e.preventDefault();
         window.toggleGlobalSearchModal(true);
-      });
-    }
+        return;
+      }
 
-    const globalSearchBtnMobile = document.getElementById('globalSearchBtnMobile');
-    if (globalSearchBtnMobile) {
-      globalSearchBtnMobile.addEventListener('click', () => {
-        window.toggleGlobalSearchModal(true);
-      });
-    }
-
-    // Clear search input button
-    const clearSearchInputBtn = document.getElementById('clearSearchInputBtn');
-    if (clearSearchInputBtn) {
-      clearSearchInputBtn.addEventListener('click', () => {
+      // 2. Clear search input button
+      const clearBtn = e.target.closest('#clearSearchInputBtn');
+      if (clearBtn) {
+        e.preventDefault();
         const input = document.getElementById('globalSearchInput');
         if (input) {
           input.value = '';
           input.focus();
           window.performGlobalSearch('');
         }
-      });
-    }
+        return;
+      }
 
-    // Category filter chips
-    const searchCategoryChips = document.getElementById('searchCategoryChips');
-    if (searchCategoryChips) {
-      searchCategoryChips.addEventListener('click', (e) => {
-        const chip = e.target.closest('.search-chip');
-        if (!chip) return;
-        
-        searchCategoryChips.querySelectorAll('.search-chip').forEach(c => c.classList.remove('active'));
+      // 3. Category filter chips
+      const chip = e.target.closest('.search-chip');
+      if (chip && chip.closest('#searchCategoryChips')) {
+        e.preventDefault();
+        const chipsContainer = chip.closest('#searchCategoryChips');
+        chipsContainer.querySelectorAll('.search-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         currentSearchCategory = chip.getAttribute('data-category') || 'all';
 
@@ -1068,40 +1061,40 @@ function updateTime() {
         if (input && input.value.trim().length >= 2) {
           window.performGlobalSearch(input.value.trim());
         }
-      });
-    }
+        return;
+      }
 
-    // Close search modal button
-    const closeSearchModalBtn = document.getElementById('closeSearchModalBtn');
-    if (closeSearchModalBtn) {
-      closeSearchModalBtn.addEventListener('click', () => {
+      // 4. Close search modal button
+      const closeBtn = e.target.closest('#closeSearchModalBtn');
+      if (closeBtn) {
+        e.preventDefault();
         window.toggleGlobalSearchModal(false);
-      });
-    }
+        return;
+      }
 
-    // Click backdrop to close search modal
-    const globalSearchModal = document.getElementById('globalSearchModal');
-    if (globalSearchModal) {
-      globalSearchModal.addEventListener('click', (e) => {
-        if (e.target === globalSearchModal) {
-          window.toggleGlobalSearchModal(false);
-        }
-      });
-    }
+      // 5. Click backdrop to close search modal
+      const modalBackdrop = document.getElementById('globalSearchModal');
+      if (modalBackdrop && e.target === modalBackdrop) {
+        e.preventDefault();
+        window.toggleGlobalSearchModal(false);
+        return;
+      }
+    });
 
-    // Input debounce search
-    const globalSearchInput = document.getElementById('globalSearchInput');
-    if (globalSearchInput) {
-      globalSearchInput.addEventListener('input', (e) => {
+    // Delegated Input Search listener on document
+    document.addEventListener('input', (e) => {
+      if (e.target && e.target.id === 'globalSearchInput') {
         clearTimeout(searchDebounceTimeout);
         const val = e.target.value;
         searchDebounceTimeout = setTimeout(() => {
           window.performGlobalSearch(val);
         }, 250);
-      });
+      }
+    });
 
-      // Key navigation inside input
-      globalSearchInput.addEventListener('keydown', (e) => {
+    // Key navigation inside search input (delegated)
+    document.addEventListener('keydown', (e) => {
+      if (e.target && e.target.id === 'globalSearchInput') {
         const items = document.querySelectorAll('.search-result-item');
         const max = items.length;
 
@@ -1122,8 +1115,8 @@ function updateTime() {
             target.click();
           }
         }
-      });
-    }
+      }
+    });
 
     // Keyboard Shortcuts: Ctrl+K / Cmd+K and Escape
     window.addEventListener('keydown', (e) => {

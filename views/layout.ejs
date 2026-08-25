@@ -605,7 +605,7 @@
 
     <!-- CENTER: Prominent Global Search Command Bar -->
     <div class="topbar-search-wrapper" id="globalSearchWrapper">
-      <button type="button" class="topbar-search-bar" id="globalSearchBtn" title="Pencarian Cepat (Ctrl+K)" aria-label="Pencarian Global">
+      <button type="button" class="topbar-search-bar" id="globalSearchBtn" onclick="window.toggleGlobalSearchModal(true)" title="Pencarian Cepat (Ctrl+K)" aria-label="Pencarian Global">
         <i class="bi bi-search topbar-search-icon"></i>
         <span class="topbar-search-placeholder">Cari PCL, PML, SLS, wilayah...</span>
         <span class="topbar-search-shortcut"><kbd>Ctrl</kbd><kbd>K</kbd></span>
@@ -615,7 +615,7 @@
     <!-- RIGHT: Action Buttons -->
     <div class="topbar-actions">
       <!-- Mobile Search Icon Button (visible only on small screens) -->
-      <button class="btn btn-secondary topbar-action-btn show-sm-inline" id="globalSearchBtnMobile" title="Cari... (Ctrl+K)" aria-label="Pencarian Global" style="display: none;">
+      <button type="button" class="btn btn-secondary topbar-action-btn show-sm-inline" id="globalSearchBtnMobile" onclick="window.toggleGlobalSearchModal(true)" title="Cari... (Ctrl+K)" aria-label="Pencarian Global" style="display: none;">
         <i class="bi bi-search"></i>
       </button>
 
@@ -730,7 +730,7 @@
         <input type="text" id="globalSearchInput" placeholder="Cari nama PCL, PML, Korlap, SLS, Desa, Kecamatan..." autocomplete="off" spellcheck="false" aria-label="Pencarian Global">
         <button type="button" id="clearSearchInputBtn" class="search-modal-clear hidden" title="Hapus teks"><i class="bi bi-x-circle-fill"></i></button>
       </div>
-      <button id="closeSearchModalBtn" class="search-modal-close" title="Tutup (Esc)" aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
+      <button type="button" id="closeSearchModalBtn" class="search-modal-close" onclick="window.toggleGlobalSearchModal(false)" title="Tutup (Esc)" aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
     </div>
 
     <!-- Category Filter Chips -->
