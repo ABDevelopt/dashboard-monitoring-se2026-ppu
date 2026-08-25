@@ -1336,31 +1336,33 @@
       z-index: 1005;
     }
     .gmaps-floating-kpi-bar {
-      position: static !important;
-      top: auto !important;
-      left: auto !important;
-      right: auto !important;
+      position: absolute !important;
+      top: 60px !important;
+      left: 10px !important;
+      right: 10px !important;
       bottom: auto !important;
-      width: 100% !important;
-      max-width: 100% !important;
+      width: auto !important;
+      max-width: calc(100% - 20px) !important;
       display: flex !important;
       align-items: center !important;
       justify-content: space-between !important;
       flex-wrap: nowrap !important;
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      padding: 6px 0 0 0 !important;
-      margin-top: 6px !important;
-      border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+      background: rgba(15, 23, 42, 0.82) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 12px !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+      padding: 3px 4px !important;
+      margin-top: 0 !important;
       gap: 4px !important;
       overflow-x: hidden !important;
-      z-index: 1000;
+      z-index: 1000 !important;
     }
     body.light-mode .gmaps-floating-kpi-bar {
-      border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
+      background: rgba(255, 255, 255, 0.92) !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
     }
     .gmaps-floating-kpi-bar::-webkit-scrollbar {
       display: none;
@@ -1368,7 +1370,7 @@
     .gmaps-kpi-pill {
       flex: 1 1 0 !important;
       min-width: 0 !important;
-      padding: 5px 3px !important;
+      padding: 5px 2px !important;
       font-size: 11px !important;
       justify-content: center !important;
       text-align: center !important;
@@ -1433,10 +1435,12 @@
       padding: 6px 9px 8px 9px;
     }
     .gmaps-floating-kpi-bar {
+      top: 54px !important;
+      left: 8px !important;
+      right: 8px !important;
+      max-width: calc(100% - 16px) !important;
       display: flex !important;
-      padding: 5px 0 0 0 !important;
-      margin-top: 5px !important;
-      border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+      padding: 3px 4px !important;
     }
     .gmaps-kpi-pill {
       padding: 4.5px 2px !important;
@@ -1488,9 +1492,12 @@
       padding: 5px 8px 7px 8px;
     }
     .gmaps-floating-kpi-bar {
+      top: 50px !important;
+      left: 6px !important;
+      right: 6px !important;
+      max-width: calc(100% - 12px) !important;
       display: flex !important;
-      padding: 4px 0 0 0 !important;
-      margin-top: 4px !important;
+      padding: 2.5px 3px !important;
     }
     .gmaps-kpi-pill {
       padding: 4px 2px !important;
@@ -1550,29 +1557,6 @@
         </button>
       </div>
 
-      <!-- KPI STATUS FILTER BAR (Directly below search bar) -->
-      <div class="gmaps-floating-kpi-bar" id="kpiBarContainer">
-        <button type="button" class="gmaps-kpi-pill active-filter" id="kpiFilterAll" data-status="" title="Tampilkan Semua SLS">
-          <span>Semua</span>
-          <strong id="kpiTotalSls">--</strong>
-        </button>
-        <button type="button" class="gmaps-kpi-pill" id="kpiFilterDone" data-status="done" title="Hanya SLS Selesai">
-          <span class="kpi-dot dot-done"></span>
-          <span>Selesai</span>
-          <strong id="kpiSlsSelesai">--</strong>
-        </button>
-        <button type="button" class="gmaps-kpi-pill" id="kpiFilterInProgress" data-status="in_progress" title="Hanya SLS Progres">
-          <span class="kpi-dot dot-progress"></span>
-          <span>Progres</span>
-          <strong id="kpiSlsBelum">--</strong>
-        </button>
-        <button type="button" class="gmaps-kpi-pill" id="kpiFilterNotStarted" data-status="not_started" title="Hanya SLS Belum">
-          <span class="kpi-dot dot-notstarted"></span>
-          <span>Belum</span>
-          <strong id="kpiSlsNotStarted">--</strong>
-        </button>
-      </div>
-      
       <!-- Collapsible Filter & Options Section -->
       <div class="gmaps-controls-collapsible" id="toolsExtraRows">
         <!-- Section 1: Filter Wilayah (Kecamatan & Desa) -->
@@ -1634,6 +1618,29 @@
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- 3. FLOATING KPI STATUS BAR (KANAN ATAS PADA LAYAR LEBAR / DI BAWAH SEARCH BAR PADA MOBILE) -->
+    <div class="gmaps-floating-kpi-bar" id="kpiBarContainer">
+      <button type="button" class="gmaps-kpi-pill active-filter" id="kpiFilterAll" data-status="" title="Tampilkan Semua SLS">
+        <span>Semua</span>
+        <strong id="kpiTotalSls">--</strong>
+      </button>
+      <button type="button" class="gmaps-kpi-pill" id="kpiFilterDone" data-status="done" title="Hanya SLS Selesai">
+        <span class="kpi-dot dot-done"></span>
+        <span>Selesai</span>
+        <strong id="kpiSlsSelesai">--</strong>
+      </button>
+      <button type="button" class="gmaps-kpi-pill" id="kpiFilterInProgress" data-status="in_progress" title="Hanya SLS Progres">
+        <span class="kpi-dot dot-progress"></span>
+        <span>Progres</span>
+        <strong id="kpiSlsBelum">--</strong>
+      </button>
+      <button type="button" class="gmaps-kpi-pill" id="kpiFilterNotStarted" data-status="not_started" title="Hanya SLS Belum">
+        <span class="kpi-dot dot-notstarted"></span>
+        <span>Belum</span>
+        <strong id="kpiSlsNotStarted">--</strong>
+      </button>
     </div>
 
     <!-- 4. FLOATING RIGHT VERTICAL ACTION STACK (FULLSCREEN, GPS, RESET) -->
