@@ -46,13 +46,17 @@
     </div>
     
     <!-- FILTER BAR -->
-    <div class="card">
+    <div class="card" style="margin-bottom: 20px;">
+      <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
+        <div class="card-title"><i class="bi bi-funnel"></i> Filter Data SubSLS</div>
+        <a href="<%= navPrefix %>/subsls" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset</a>
+      </div>
       <form method="GET" action="<%= navPrefix %>/subsls" id="filterForm">
-        <div class="filter-grid">
+        <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           <div>
-            <label for="filterKec" class="ui-label">Kecamatan</label>
-            <select id="filterKec" name="kec" onchange="this.form.submit()" class="w-full">
-              <option value="">-- Semua Kecamatan --</option>
+            <label for="filterKec" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
+            <select id="filterKec" name="kec" onchange="this.form.submit()" style="width:100%;">
+              <option value="">-- Semua --</option>
               <% kecList.forEach(k => { %>
                 <option value="<%= k.kecamatan %>" <%= (filterKec && filterKec.toUpperCase() === k.kecamatan.toUpperCase()) ? 'selected' : '' %>><%= k.kecamatan %></option>
               <% }) %>
@@ -60,9 +64,9 @@
           </div>
 
           <div>
-            <label for="filterDesa" class="ui-label">Desa/Kelurahan</label>
-            <select id="filterDesa" name="desa"  class="w-full" <%= !filterKec ? 'disabled' : '' %>>
-              <option value="">-- Semua Desa --</option>
+            <label for="filterDesa" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Desa / Kelurahan</label>
+            <select id="filterDesa" name="desa" style="width:100%;" <%= !filterKec ? 'disabled' : '' %>>
+              <option value="">-- Semua --</option>
               <% desaList.forEach(d => { %>
                 <option value="<%= d.desa %>" <%= (filterDesa && filterDesa.toUpperCase() === d.desa.toUpperCase()) ? 'selected' : '' %>><%= d.desa %></option>
               <% }) %>
@@ -71,9 +75,9 @@
 
           <% if (!isSakernas) { %>
           <div>
-            <label for="filterKorlap" class="ui-label">Koordinator Lapangan</label>
-            <select id="filterKorlap" name="korlap"  class="w-full">
-              <option value="">-- Semua Korlap --</option>
+            <label for="filterKorlap" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
+            <select id="filterKorlap" name="korlap" style="width:100%;">
+              <option value="">-- Semua --</option>
               <% korlapList.forEach(k => { %>
                 <option value="<%= k.korlap %>" <%= (filterKorlap && filterKorlap.toUpperCase() === k.korlap.toUpperCase()) ? 'selected' : '' %>><%= k.korlap %></option>
               <% }) %>
@@ -82,9 +86,9 @@
           <% } %>
 
           <div>
-            <label for="filterPml" class="ui-label">PML (Pengawas)</label>
-            <select id="filterPml" name="pml"  class="w-full">
-              <option value="">-- Semua PML --</option>
+            <label for="filterPml" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
+            <select id="filterPml" name="pml" style="width:100%;">
+              <option value="">-- Semua --</option>
               <% pmlList.forEach(p => { %>
                 <option value="<%= p.pml %>" <%= (filterPml && filterPml.toUpperCase() === p.pml.toUpperCase()) ? 'selected' : '' %>><%= p.pml %></option>
               <% }) %>
@@ -92,9 +96,9 @@
           </div>
 
           <div>
-            <label for="filterPcl" class="ui-label"><%= officerLabel %> (<%= isSakernas ? 'Petugas Pendataan' : 'Pencacah' %>)</label>
-            <select id="filterPcl" name="pcl"  class="w-full">
-              <option value="">-- Semua <%= officerLabel %> --</option>
+            <label for="filterPcl" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);"><%= officerLabel %> (<%= isSakernas ? 'Petugas' : 'Pencacah' %>)</label>
+            <select id="filterPcl" name="pcl" style="width:100%;">
+              <option value="">-- Semua --</option>
               <% pclList.forEach(p => { %>
                 <option value="<%= p.pcl %>" <%= (filterPcl && filterPcl.toUpperCase() === p.pcl.toUpperCase()) ? 'selected' : '' %>><%= p.pcl %></option>
               <% }) %>
@@ -102,12 +106,11 @@
           </div>
 
           <div>
-            <label id="statusLabel" for="filterStatus" class="ui-label">
+            <label for="filterStatus" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">
               Status Progres
-              <span title="Kriteria Status:&#10;- Belum Mulai: belum mulai mengisi dokumen&#10;- Sedang Didata: sedang dalam proses pengisian dokumen&#10;- Memenuhi Target: progres dokumen >= target, belum dinyatakan selesai resmi&#10;- Selesai: SLS/Sub-SLS dinyatakan selesai resmi dari berkas status BPS" style="cursor: help; margin-left: 4px;"><i class="bi bi-info-circle"></i></span>
             </label>
-            <select id="filterStatus" name="status" class="w-full">
-              <option value="">-- Semua Status --</option>
+            <select id="filterStatus" name="status" style="width:100%;">
+              <option value="">-- Semua --</option>
               <option value="belum_mulai" <%= filterStatus === 'belum_mulai' ? 'selected' : '' %>>Belum Mulai</option>
               <option value="sedang_didata" <%= filterStatus === 'sedang_didata' ? 'selected' : '' %>>Sedang Didata</option>
               <option value="memenuhi_target" <%= filterStatus === 'memenuhi_target' ? 'selected' : '' %>>Memenuhi Target</option>
@@ -167,7 +170,7 @@
                 </tr>
                 <tr>
                   <% if (settings.show_status_open === '1' || settings.show_status_open === undefined) { %>
-                    <th class="text-right bg-orange-soft">Open</th>
+                    <th class="text-right bg-gray-soft status-open-text">Open</th>
                   <% } %>
                   <% if (settings.show_status_draft === '1' || settings.show_status_draft === undefined) { %>
                     <th class="text-right bg-yellow-soft">Draft</th>
@@ -286,7 +289,7 @@
                     </td>
                     
                     <% if (settings.show_status_open === '1' || settings.show_status_open === undefined) { %>
-                      <td class="text-right bg-orange-soft status-open-text" data-sort="<%= row.open %>"><%= (row.open || 0).toLocaleString('id-ID') %></td>
+                      <td class="text-right bg-gray-soft status-open-text" data-sort="<%= row.open %>"><%= (row.open || 0).toLocaleString('id-ID') %></td>
                     <% } %>
                     <% if (settings.show_status_draft === '1' || settings.show_status_draft === undefined) { %>
                       <td class="text-right bg-yellow-soft status-draft-text" data-sort="<%= row.draft %>"><%= (row.draft || 0).toLocaleString('id-ID') %></td>
