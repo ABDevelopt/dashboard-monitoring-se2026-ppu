@@ -185,10 +185,33 @@
         <!-- SEARCH & MOBILE QUICK STATUS FILTER PILLS -->
         <div class="search-and-filter-bar mb-3" style="display: flex; flex-direction: column; gap: 8px;">
           <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
-            <div class="search-wrap" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+            <div class="search-wrap" style="flex: 2; min-width: 180px; margin-bottom: 0;">
               <input type="search" id="pclSearch" placeholder="Cari nama <%= officerLabel %>, PML, Kecamatan..." aria-label="Cari nama <%= officerLabel %>" style="width: 100%;">
             </div>
-            <button type="button" class="btn btn-secondary btn-sm show-sm-inline" onclick="togglePclFilterForm()" style="display: none; padding: 6px 12px; font-size: 12px; gap: 5px; align-items: center;">
+
+            <% if (!isSakernas && typeof korlapList !== 'undefined' && korlapList && korlapList.length > 0) { %>
+              <div class="quick-select-wrap" style="flex: 1; min-width: 130px;">
+                <select id="quickFilterKorlap" class="quick-filter-select" style="width: 100%; padding: 7px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 12px; font-weight: 500; height: 36px;">
+                  <option value="">-- Semua Korlap --</option>
+                  <% korlapList.forEach(k => { %>
+                    <option value="<%= k.korlap %>" <%= (filterKorlap && filterKorlap.toUpperCase() === k.korlap.toUpperCase()) ? 'selected' : '' %>><%= k.korlap %></option>
+                  <% }) %>
+                </select>
+              </div>
+            <% } %>
+
+            <% if (typeof pmlList !== 'undefined' && pmlList && pmlList.length > 0) { %>
+              <div class="quick-select-wrap" style="flex: 1; min-width: 130px;">
+                <select id="quickFilterPml" class="quick-filter-select" style="width: 100%; padding: 7px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 12px; font-weight: 500; height: 36px;">
+                  <option value="">-- Semua PML --</option>
+                  <% pmlList.forEach(p => { %>
+                    <option value="<%= p.pml %>" <%= (filterPml && filterPml.toUpperCase() === p.pml.toUpperCase()) ? 'selected' : '' %>><%= p.pml %></option>
+                  <% }) %>
+                </select>
+              </div>
+            <% } %>
+
+            <button type="button" class="btn btn-secondary btn-sm show-sm-inline" onclick="togglePclFilterForm()" style="display: none; padding: 6px 12px; font-size: 12px; gap: 5px; align-items: center; height: 36px;">
               <i class="bi bi-sliders"></i> Filter Wilayah
             </button>
           </div>
@@ -283,6 +306,9 @@
                   %>
                   <tr class="<%= filterPcl === p.pcl ? 'active' : '' %>" 
                       data-search="<%= searchKeywords %>"
+                      data-korlap="<%= (p.korlap || '').toUpperCase().trim() %>"
+                      data-pml="<%= (p.pml || '').toUpperCase().trim() %>"
+                      data-kec="<%= (p.kecamatan || '').toUpperCase().trim() %>"
                       data-pct="<%= parseFloat(fasihPct) || 0 %>"
                       data-kipp="<%= isKippPcl ? '1' : '0' %>"
                       data-selesai="<%= isSelesaiPcl ? '1' : '0' %>"
@@ -790,6 +816,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function initPclFiltering() {
     const searchInput = document.getElementById('pclSearch');
     const pillContainer = document.getElementById('pclQuickFilterPills');
+    const quickKorlapSelect = document.getElementById('quickFilterKorlap');
+    const quickPmlSelect = document.getElementById('quickFilterPml');
     const table = document.getElementById('pclTable');
     const countBadge = document.getElementById('pclCountBadge');
     if (!table) return;
@@ -798,12 +826,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function applyFilter() {
       const q = (searchInput ? searchInput.value : '').toLowerCase().trim();
+      const selectedKorlap = (quickKorlapSelect ? quickKorlapSelect.value : '').toUpperCase().trim();
+      const selectedPml = (quickPmlSelect ? quickPmlSelect.value : '').toUpperCase().trim();
       const rows = table.querySelectorAll('tbody tr');
       let visibleCount = 0;
 
       rows.forEach(row => {
         const searchKeywords = (row.getAttribute('data-search') || row.innerText || '').toLowerCase();
         const matchesSearch = !q || searchKeywords.includes(q);
+
+        const rowKorlap = (row.getAttribute('data-korlap') || '').toUpperCase().trim();
+        const matchesKorlap = !selectedKorlap || rowKorlap === selectedKorlap;
+
+        const rowPml = (row.getAttribute('data-pml') || '').toUpperCase().trim();
+        const matchesPml = !selectedPml || rowPml === selectedPml;
 
         let matchesPill = true;
         if (activeFilter === 'done') {
@@ -820,7 +856,7 @@ document.addEventListener('DOMContentLoaded', () => {
           matchesPill = row.getAttribute('data-kipp') === '0';
         }
 
-        if (matchesSearch && matchesPill) {
+        if (matchesSearch && matchesKorlap && matchesPml && matchesPill) {
           row.style.display = '';
           visibleCount++;
           const idxCell = row.querySelector('.td-index');
@@ -837,6 +873,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (searchInput) {
       searchInput.addEventListener('input', applyFilter);
+    }
+
+    if (quickKorlapSelect) {
+      quickKorlapSelect.addEventListener('change', applyFilter);
+    }
+
+    if (quickPmlSelect) {
+      quickPmlSelect.addEventListener('change', applyFilter);
     }
 
     if (pillContainer) {
