@@ -1,17 +1,23 @@
 <div class="fade-in">
   <style>
+    :root {
+      --agent-viewport-height: 100dvh;
+    }
     /* Lock layout to viewport height specifically for the chatbot page */
     html, body {
       height: 100% !important;
+      height: var(--agent-viewport-height, 100dvh) !important;
       overflow: hidden !important;
     }
     .main-wrapper {
-      height: 100vh !important;
+      height: 100% !important;
+      height: var(--agent-viewport-height, 100dvh) !important;
       overflow: hidden !important;
     }
     body.page-agent .page-content,
     .page-content {
-      height: 100vh !important;
+      height: 100% !important;
+      height: var(--agent-viewport-height, 100dvh) !important;
       display: flex !important;
       flex-direction: column !important;
       overflow: hidden !important;
@@ -23,11 +29,13 @@
     
     @media (max-width: 768px) {
       body.page-agent .page-content,
+      body.page-agent.has-breadcrumb .page-content,
       .page-content {
-        height: calc(100dvh - 56px - env(safe-area-inset-bottom, 0px)) !important;
-        max-height: calc(100dvh - 56px - env(safe-area-inset-bottom, 0px)) !important;
+        height: calc(var(--agent-viewport-height, 100dvh) - 60px - env(safe-area-inset-bottom, 0px)) !important;
+        max-height: calc(var(--agent-viewport-height, 100dvh) - 60px - env(safe-area-inset-bottom, 0px)) !important;
         padding: 0 !important;
         margin: 0 !important;
+        overflow: hidden !important;
       }
     }
     
@@ -1270,31 +1278,36 @@
       }
       
       .chat-footer-wrapper {
-        padding: 4px 10px 10px 10px !important;
-        gap: 4px !important;
+        padding: 4px 10px 4px 10px !important;
+        gap: 3px !important;
         box-shadow: none !important;
         background: transparent !important;
         border-top: none !important;
+        margin-bottom: 0 !important;
       }
       
       .gemini-input-bar {
-        padding: 10px 12px 8px 14px !important;
-        min-height: 94px !important;
-        border-radius: 20px !important;
-        gap: 4px !important;
+        padding: 8px 12px 6px 14px !important;
+        min-height: unset !important;
+        border-radius: 18px !important;
+        gap: 3px !important;
+        margin-bottom: 0 !important;
       }
       .gemini-input {
         padding: 0 !important;
-        font-size: 14.5px !important;
-        min-height: 38px !important;
+        font-size: 14px !important;
+        min-height: 34px !important;
       }
       .gemini-send-btn, .gemini-stop-btn {
-        width: 34px !important;
-        height: 34px !important;
+        width: 32px !important;
+        height: 32px !important;
       }
       .chat-footer-disclaimer {
-        font-size: 10.5px !important;
-        margin-top: 2px !important;
+        font-size: 9.5px !important;
+        margin-top: 1px !important;
+        margin-bottom: 0 !important;
+        line-height: 1.15 !important;
+        opacity: 0.75;
       }
       .agent-step-text {
         font-size: 0.8rem !important;
@@ -1439,6 +1452,21 @@
 
 <script>
 (function() {
+  // Mobile dynamic viewport tracker to keep input dock flush above bottom-nav / virtual keyboard
+  if (window.visualViewport) {
+    const updateAgentViewport = () => {
+      if (window.innerWidth <= 768) {
+        document.documentElement.style.setProperty('--agent-viewport-height', `${window.visualViewport.height}px`);
+      } else {
+        document.documentElement.style.removeProperty('--agent-viewport-height');
+      }
+    };
+    window.visualViewport.addEventListener('resize', updateAgentViewport);
+    window.visualViewport.addEventListener('scroll', updateAgentViewport);
+    window.addEventListener('resize', updateAgentViewport);
+    updateAgentViewport();
+  }
+
   const VALID_GEMINI_MODELS = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'];
   
   // Sanitize localStorage selected AI model

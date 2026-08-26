@@ -4928,8 +4928,10 @@ body.page-agent #breadcrumb-bar {
 body.page-agent .main-wrapper {
   margin-top: 0 !important;
   padding-top: 0 !important;
-  height: 100vh !important;
-  max-height: 100vh !important;
+  height: 100% !important;
+  height: var(--agent-viewport-height, 100dvh) !important;
+  max-height: var(--agent-viewport-height, 100dvh) !important;
+  overflow: hidden !important;
 }
 
 body.page-agent .page-content,
@@ -4938,11 +4940,36 @@ body.page-agent.has-breadcrumb .page-content {
   padding-top: 0 !important;
   margin: 0 !important;
   margin-top: 0 !important;
-  height: 100vh !important;
-  max-height: 100vh !important;
+  height: 100% !important;
+  height: var(--agent-viewport-height, 100dvh) !important;
+  max-height: var(--agent-viewport-height, 100dvh) !important;
   overflow: hidden !important;
   max-width: 100% !important;
   width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  body.page-agent,
+  body.page-agent html {
+    height: 100% !important;
+    height: var(--agent-viewport-height, 100dvh) !important;
+    overflow: hidden !important;
+  }
+
+  body.page-agent .main-wrapper {
+    height: var(--agent-viewport-height, 100dvh) !important;
+    max-height: var(--agent-viewport-height, 100dvh) !important;
+    overflow: hidden !important;
+  }
+
+  body.page-agent .page-content,
+  body.page-agent.has-breadcrumb .page-content {
+    height: calc(var(--agent-viewport-height, 100dvh) - 60px - env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(var(--agent-viewport-height, 100dvh) - 60px - env(safe-area-inset-bottom, 0px)) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
 }
 
 body.page-agent .sidebar {
