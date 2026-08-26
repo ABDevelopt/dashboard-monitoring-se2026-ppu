@@ -4,21 +4,13 @@ const { sendMessageToAgent, streamMessageToAgent } = require('../services/agentS
 const { getSettings, getAgentQueryById, executeAgentQueryById, getLatestUpload } = require('../database');
 const logger = require('../services/logger');
 
-// Auth Middleware for Agent chatbot (allows any authenticated accounts)
-function requireLogin(req, res, next) {
-  if (req.session && req.session.user) {
+// Middleware untuk membatasi endpoint sensitif internal log hanya untuk Admin
+function requireAdminOnly(req, res, next) {
+  if (req.session && req.session.isAdmin) {
     return next();
   }
-  
-  if (req.xhr || (req.headers.accept && req.headers.accept.includes('json')) || req.path === '/chat' || req.path === '/chat/stream') {
-    return res.status(401).json({ error: 'Akses ditolak. Silakan login terlebih dahulu untuk mengakses Asisten AI.' });
-  }
-  
-  req.flash('error', 'Silakan login terlebih dahulu untuk mengakses Asisten AI.');
-  res.redirect('/login');
+  return res.status(403).json({ success: false, error: 'Akses ditolak. Hanya administrator yang dapat mengakses log sistem.' });
 }
-
-router.use(requireLogin);
 
 // ─────────────────────────────────────────────────────────────────
 //  GET / — render halaman agent
@@ -203,8 +195,8 @@ router.post('/chat/stream', async (req, res) => {
   try {
     sendEvent('status', { text: 'Menyiapkan asisten...', step: 'init' });
     
-    // Melewatkan req.session.user.id untuk memori session di SQLite
-    const userId = req.session?.user?.id || null;
+    // Melewatkan user ID (atau ID sesi guest) untuk memori session di SQLite
+    const userId = req.session?.user?.id ? String(req.session.user.id) : (req.sessionID ? `guest_${req.sessionID}` : null);
 
     await streamMessageToAgent(
       message.trim(),
@@ -256,7 +248,7 @@ router.post('/chat', async (req, res) => {
   const startTime = Date.now();
 
   try {
-    const userId = req.session?.user?.id || null;
+    const userId = req.session?.user?.id ? String(req.session.user.id) : (req.sessionID ? `guest_${req.sessionID}` : null);
     const result = await sendMessageToAgent(
       message.trim(),
       safeHistory,
@@ -320,9 +312,9 @@ router.post('/chat', async (req, res) => {
 //  GET /history — Ambil riwayat chat persisten dari SQLite
 // ─────────────────────────────────────────────────────────────────
 router.get('/history', (req, res) => {
-  const userId = req.session?.user?.id;
+  const userId = req.session?.user?.id ? String(req.session.user.id) : (req.sessionID ? `guest_${req.sessionID}` : null);
   if (!userId) {
-    return res.status(401).json({ error: 'Sesi Anda tidak valid.' });
+    return res.json({ history: [] });
   }
   const memoryManager = require('../services/ai/memoryManager');
   const history = memoryManager.getChatHistory(userId);
@@ -330,9 +322,9 @@ router.get('/history', (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────
-//  GET /logs — Ambil log sistem chatbot terkini
+//  GET /logs — Ambil log sistem chatbot terkini (Admin Only)
 // ─────────────────────────────────────────────────────────────────
-router.get('/logs', (req, res) => {
+router.get('/logs', requireAdminOnly, (req, res) => {
   try {
     const fs = require('fs');
     const path = require('path');
@@ -373,9 +365,9 @@ router.get('/logs', (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────
-//  POST /logs/clear — Bersihkan file log sistem
+//  POST /logs/clear — Bersihkan file log sistem (Admin Only)
 // ─────────────────────────────────────────────────────────────────
-router.post('/logs/clear', (req, res) => {
+router.post('/logs/clear', requireAdminOnly, (req, res) => {
   try {
     const fs = require('fs');
     const path = require('path');

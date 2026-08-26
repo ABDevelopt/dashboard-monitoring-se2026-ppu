@@ -195,6 +195,7 @@ router.get('/data', (req, res) => {
         selectFields.push(`
           CASE 
             WHEN COALESCE(p.sls_selesai, 0) = 1 THEN 'Selesai'
+            WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 'Memenuhi Target'
             WHEN p.kode IS NOT NULL AND (
               COALESCE(p.draft, 0) > 0 OR 
               COALESCE(p.submitted_by_pcl, 0) > 0 OR 

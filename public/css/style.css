@@ -802,7 +802,7 @@ select:focus, input:focus {
   transition: var(--transition);
 }
 .fasih-grid-item-label {
-  font-size: 9px;
+  font-size: 10px;
   text-transform: uppercase;
   font-weight: 500;
   margin-bottom: 2px;
@@ -4388,7 +4388,7 @@ th:has(.filter-header-wrapper) {
 
 /* --- Typography --- */
 .text-xs       { font-size: 10px; }
-.text-2xs      { font-size: 9px; }
+.text-2xs      { font-size: 10px; }
 .text-sm       { font-size: 11px; }
 .text-base     { font-size: 13px; }
 .fw-500        { font-weight: 500; }
@@ -4417,7 +4417,7 @@ th:has(.filter-header-wrapper) {
   letter-spacing: 0.04em;
 }
 .ui-label-xs {
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -4504,7 +4504,7 @@ th:has(.filter-header-wrapper) {
 }
 
 /* --- Badge Sizes --- */
-.badge-xs { font-size: 8px !important; padding: 1px 4px !important; }
+.badge-xs { font-size: 10px !important; padding: 1px 4px !important; }
 .badge-sm { font-size: 10px; padding: 2px 6px; }
 
 /* --- Icon Circle (icon bulat berwarna) --- */
@@ -4644,7 +4644,7 @@ th:has(.filter-header-wrapper) {
 }
 
 .topbar-target-icon { color: var(--accent-purple); }
-.topbar-chevron { font-size: 9px; opacity: 0.7; }
+.topbar-chevron { font-size: 10px; opacity: 0.7; }
 
 .topbar-admin-btn {
   display: inline-flex;
@@ -4754,7 +4754,7 @@ th:has(.filter-header-wrapper) {
 }
 
 .topbar-dropdown-action {
-  font-size: 9px;
+  font-size: 10px;
   text-transform: none;
   cursor: pointer;
   color: var(--accent-cyan);

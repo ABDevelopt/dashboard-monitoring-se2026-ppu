@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getPclStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
+const { getPclStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSubslsStatusFormula } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -84,16 +84,7 @@ router.get('/', (req, res) => {
           ${targetFormula} AS target_fasih,
           COALESCE(m.target_fasih, 0) AS target_static,
           COALESCE(p.target_upload, 0) AS target_upload,
-          CASE 
-            WHEN COALESCE(p.sls_selesai, 0) = 1 THEN 'memenuhi_target'
-            WHEN p.kode IS NOT NULL AND (
-              COALESCE(p.draft, 0) > 0 OR 
-              COALESCE(p.submitted_by_pcl, 0) > 0 OR 
-              COALESCE(p.approved, 0) > 0 OR 
-              COALESCE(p.rejected, 0) > 0
-            ) THEN 'sedang_didata'
-            ELSE 'belum_mulai'
-          END AS sudah_diisi,
+          ${getSubslsStatusFormula(targetFormula, 'p')} AS sudah_diisi,
           ${usahaTotalFormula} AS usaha_total,
           ${keluargaTotalFormula} AS keluarga_total
         FROM subsls_master m

@@ -522,7 +522,7 @@ app.use((req, res, next) => {
   }
 });
 
-// Route Guard Middleware based on Page Display settings
+// Route Guard Middleware based on Page Display settings & Authentication Requirements
 const routeSettingsMap = {
   '/map': 'page_map',
   '/early-warning': 'page_earlywarning',
@@ -542,6 +542,28 @@ const routeSettingsMap = {
   '/agent': 'page_aiagent'
 };
 
+const routeAuthMap = {
+  '/agent': 'auth_req_agent',
+  '/map': 'auth_req_map',
+  '/early-warning': 'auth_req_earlywarning',
+  '/deteksi-anomali': 'auth_req_deteksianomali',
+  '/leaderboard': 'auth_req_leaderboard',
+  '/performa-terendah': 'auth_req_performatrendah',
+  '/performa': 'auth_req_performa',
+  '/kecamatan': 'auth_req_kecamatan',
+  '/subsls': 'auth_req_subsls',
+  '/pbi': 'auth_req_subsls',
+  '/kipp': 'auth_req_subsls',
+  '/subsls/export': 'auth_req_export',
+  '/export': 'auth_req_export',
+  '/korlap': 'auth_req_korlap',
+  '/pml': 'auth_req_pml',
+  '/pcl': 'auth_req_pcl',
+  '/harian': 'auth_req_harian',
+  '/help': 'auth_req_help',
+  '/': 'auth_req_overview'
+};
+
 app.use((req, res, next) => {
   const path = req.path;
   let settingKey = null;
@@ -557,8 +579,10 @@ app.use((req, res, next) => {
     }
   }
 
+  const settings = res.locals.settings || {};
+
+  // 1. Cek apakah fitur/halaman dinonaktifkan secara total
   if (settingKey) {
-    const settings = res.locals.settings || {};
     if (settings[settingKey] === '0') {
       res.status(403);
       return res.render('error', {
@@ -568,6 +592,38 @@ app.use((req, res, next) => {
       });
     }
   }
+
+  // 2. Cek apakah halaman/fitur memerlukan autentikasi login (Pengaturan Keamanan)
+  let authKey = null;
+  if (path === '/subsls/export') {
+    authKey = 'auth_req_export';
+  } else if (path === '/') {
+    authKey = 'auth_req_overview';
+  } else {
+    for (const [routePrefix, key] of Object.entries(routeAuthMap)) {
+      if (routePrefix !== '/' && routePrefix !== '/subsls/export' && (path === routePrefix || path.startsWith(routePrefix + '/'))) {
+        authKey = key;
+        break;
+      }
+    }
+  }
+
+  if (authKey && settings[authKey] === '1') {
+    const isLoggedIn = !!(req.session && (req.session.user || req.session.isAdmin));
+    if (!isLoggedIn) {
+      const isAjaxOrApi = req.xhr || 
+                          (req.headers.accept && req.headers.accept.includes('json')) ||
+                          req.path.includes('/chat') ||
+                          req.path.includes('/stream') ||
+                          req.path.startsWith('/api/');
+      if (isAjaxOrApi) {
+        return res.status(401).json({ error: 'Halaman atau fitur ini memerlukan login terlebih dahulu.', redirectUrl: '/login' });
+      }
+      req.flash('error', 'Silakan login terlebih dahulu untuk mengakses halaman ini.');
+      return res.redirect('/login');
+    }
+  }
+
   next();
 });
 

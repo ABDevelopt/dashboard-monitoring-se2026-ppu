@@ -649,8 +649,12 @@
                         <span class="badge badge-gray btn-xs" style="font-size: 8px; padding: 1px 4px;">Belum Mulai</span>
                       <% } else if (s.sudah_diisi === 'sedang_didata') { %>
                         <span class="badge badge-orange btn-xs" style="font-size: 8px; padding: 1px 4px;">Sedang Didata</span>
-                      <% } else { %>
+                      <% } else if (s.sudah_diisi === 'memenuhi_target') { %>
+                        <span class="badge badge-purple btn-xs" style="font-size: 8px; padding: 1px 4px;">Memenuhi Target</span>
+                      <% } else if (s.sudah_diisi === 'selesai') { %>
                         <span class="badge badge-green btn-xs" style="font-size: 8px; padding: 1px 4px;">Selesai</span>
+                      <% } else { %>
+                        <span class="badge badge-gray btn-xs" style="font-size: 8px; padding: 1px 4px;">-</span>
                       <% } %>
                     </div>
                     

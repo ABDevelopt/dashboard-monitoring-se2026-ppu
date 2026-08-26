@@ -44,6 +44,17 @@ Direktori khusus yang mengelompokkan seluruh berkas luaran (*deliverables & evid
   - `Tahapan_2.3_Arsitektur_Modul_AI/Dokumen_Rancangan_Arsitektur_Modul_AI_RAG_Pipeline.docx` + `07_sequence_diagram_rag_ai.png`
   - `Tahapan_2.4_Review_Desain_Teknis_Tim_IT/Berita_Acara_Review_Desain_Teknis_bersama_Tim_IT.docx`
   - `Master_Laporan_Phase_2/Laporan_Perancangan_Sistem_Monitoring_SE2026_PPU_Phase2_Lengkap.docx` + `.md`
-- **`Kegiatan_3_System_Implementation_and_Coding/`** (Tahapan 3.1 s.d. 3.4)
-- **`Kegiatan_4_System_Testing_and_Verification/`** (Tahapan 4.1 s.d. 4.4)
+- **`Kegiatan_3_System_Implementation_and_Coding/`** (Tahapan 3.1 s.d. 3.4):
+  - `Tahapan_3.1_Pengembangan_Basis_Data_dan_Agregasi/Dokumen_Basis_Data_Lokal_Terstruktur_dan_Skrip_Agregasi_Data.docx` + `.md`
+  - `Tahapan_3.2_Coding_Frontend_dan_Backend/Dokumen_Source_Code_Program_Dasbor_Pemantauan_Lokal.docx` + `.md`
+  - `Tahapan_3.3_Integrasi_Fitur_AI/Dokumen_Kode_Program_Modul_AI_Terintegrasi.docx` + `.md`
+  - `Tahapan_3.4_Code_Review_dan_Debugging/Dokumen_Log_Debugging_dan_Catatan_Optimasi_Kode.docx` + `.md`
+  - `Master_Laporan_Phase_3/Laporan_Implementasi_dan_Coding_SE2026_PPU_Phase3.docx` + `.md`
+- **`Kegiatan_4_System_Testing_and_Verification/`** (Tahapan 4.1 s.d. 4.4):
+  - `Tahapan_4.1_Pengujian_Internal_BlackBox_dan_Sinkronisasi/Catatan_Hasil_Uji_Coba_Performa_BlackBox_dan_Sinkronisasi.docx` + `.md`
+  - `Tahapan_4.2_Pengujian_Performa_LoadSpeed_dan_Lighthouse/Laporan_Hasil_Pengujian_Performa_Dasbor_LoadSpeed_dan_Lighthouse.docx` + `.md`
+  - `Tahapan_4.3_Uji_Coba_Terbatas_UAT_dan_Bug_Fixing/Berita_Acara_UAT_dan_Catatan_Perbaikan_Bug.docx` + `.md`
+  - `Tahapan_4.4_Berita_Acara_Pengujian_dan_Lembar_Persetujuan/Laporan_Akhir_Hasil_Pengujian_dan_Lembar_Persetujuan_Kelayakan.docx` + `.md`
+  - `Master_Laporan_Phase_4/Laporan_Pengujian_dan_Verifikasi_Sistem_SE2026_PPU_Phase4.docx` + `.md`
+  - `RAW_OUTPUT_PENGUJIAN_PHASE_4/` (12 berkas data mentah JSON, CSV, dan execution log)
 - **`Kegiatan_5_Deployment_Education_and_Evaluation/`** (Tahapan 5.1 s.d. 5.4)

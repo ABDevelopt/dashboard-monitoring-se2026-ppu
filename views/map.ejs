@@ -2313,15 +2313,11 @@
         // Helper to check if SLS matches KPI status filter
         function isSlsMatchingKpiStatus(stat, statusKey) {
           if (!statusKey) return true;
-          const real = stat ? ((stat.submitted_by_pcl || 0) + (stat.approved || 0) + (stat.rejected || 0)) : 0;
-          const draft = stat ? (stat.draft || 0) : 0;
-          const isDone = stat ? stat.selesai === 1 : false;
-          const isInProgress = !isDone && (real > 0 || draft > 0);
-          const isNotStarted = !isDone && !isInProgress;
-
-          if (statusKey === 'done') return isDone;
-          if (statusKey === 'in_progress') return isInProgress;
-          if (statusKey === 'not_started') return isNotStarted;
+          const status = stat ? (stat.sudah_diisi || (stat.selesai === 1 ? 'selesai' : (((stat.submitted_by_pcl || 0) + (stat.approved || 0) + (stat.rejected || 0) + (stat.draft || 0)) > 0 ? 'sedang_didata' : 'belum_mulai'))) : 'belum_mulai';
+          if (statusKey === 'done' || statusKey === 'selesai') return status === 'selesai' || (stat && stat.selesai === 1);
+          if (statusKey === 'target_reached' || statusKey === 'memenuhi_target') return status === 'memenuhi_target';
+          if (statusKey === 'in_progress' || statusKey === 'sedang_didata') return status === 'sedang_didata';
+          if (statusKey === 'not_started' || statusKey === 'belum_mulai') return status === 'belum_mulai';
           return true;
         }
 

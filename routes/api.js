@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getTrenHarian, getKecamatanStats, getPclStats, getDb, getSettings, updateSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
+const { getTrenHarian, getKecamatanStats, getPclStats, getDb, getSettings, updateSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSubslsStatusFormula } = require('../database');
 
 // Tren harian (untuk Chart.js)
 router.get('/tren', (req, res) => {
@@ -25,7 +25,7 @@ router.get('/search', (req, res) => {
 
   const results = getDb().prepare(`
     SELECT m.kode, m.kecamatan, m.desa, m.pcl, m.pml, m.korlap,
-           COALESCE(p.sls_selesai, 0) AS sudah_diisi
+           ${getSubslsStatusFormula(targetFormula, 'p')} AS sudah_diisi
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
     WHERE m.kode LIKE ? OR m.desa LIKE ? OR m.pcl LIKE ?
@@ -97,6 +97,7 @@ router.get('/map-stats', (req, res) => {
       (${targetMuatanFormula}) AS total_muatan,
       (${realFormula}) AS muatan_selesai,
       (${singleSelesaiFormula}) AS selesai,
+      ${getSubslsStatusFormula(singleTargetFormula, 'p')} AS sudah_diisi,
       (${usahaTotalFormula}) AS usaha_total,
       (${keluargaTotalFormula}) AS keluarga_total,
       COALESCE(p.draft, 0) AS draft,
@@ -223,7 +224,8 @@ router.get('/detail/pcl', (req, res) => {
       (${singleTargetFormula}) AS target_fasih,
       COALESCE(m.target_fasih, 0) AS target_static,
       COALESCE(p.target_upload, 0) AS target_upload,
-      COALESCE(p.sls_selesai, 0) AS sudah_diisi,
+      ${getSubslsStatusFormula(singleTargetFormula, 'p')} AS sudah_diisi,
+      (${singleSelesaiFormula}) AS selesai,
       (${usahaTotalFormula}) AS usaha_total,
       (${keluargaTotalFormula}) AS keluarga_total
     FROM subsls_master m

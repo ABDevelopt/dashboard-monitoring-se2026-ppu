@@ -1239,6 +1239,47 @@ function runMigrations(dbConn, surveyId = 'se2026') {
           `);
         } catch (_) {}
       }
+    },
+    {
+      // ── MIGRASI 20260826010000: AGENT SESSIONS & QUERIES TEXT ID ───────────────
+      // Tujuan: Mengubah kolom user_id pada tabel agent_sessions menjadi TEXT PRIMARY KEY
+      // dan agent_queries menjadi TEXT agar mendukung sesi tamu (guest_<sessionID>).
+      version: '20260826010000_agent_sessions_text_pk',
+      up: (dbConn) => {
+        try {
+          dbConn.exec(`
+            CREATE TABLE IF NOT EXISTS agent_sessions_new (
+              user_id TEXT PRIMARY KEY,
+              history TEXT,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            INSERT OR IGNORE INTO agent_sessions_new (user_id, history, updated_at)
+            SELECT CAST(user_id AS TEXT), history, updated_at FROM agent_sessions;
+            DROP TABLE agent_sessions;
+            ALTER TABLE agent_sessions_new RENAME TO agent_sessions;
+          `);
+        } catch (_) {}
+        try {
+          dbConn.exec(`
+            CREATE TABLE IF NOT EXISTS agent_queries_new (
+              id TEXT PRIMARY KEY,
+              user_id TEXT,
+              prompt TEXT,
+              tool_name TEXT,
+              query_sql TEXT,
+              query_params TEXT,
+              columns_json TEXT,
+              row_count INTEGER,
+              analysis_text TEXT,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            INSERT OR IGNORE INTO agent_queries_new (id, user_id, prompt, tool_name, query_sql, query_params, columns_json, row_count, analysis_text, created_at)
+            SELECT id, CAST(user_id AS TEXT), prompt, tool_name, query_sql, query_params, columns_json, row_count, analysis_text, created_at FROM agent_queries;
+            DROP TABLE agent_queries;
+            ALTER TABLE agent_queries_new RENAME TO agent_queries;
+          `);
+        } catch (_) {}
+      }
     }
   ];
 
@@ -1395,6 +1436,20 @@ function getAdaptiveMuatanFormula(mode, progresAlias = 'p', masterAlias = 'm') {
   return `COALESCE(${masterAlias}.muatan, 0)`;
 }
 
+function getSubslsStatusFormula(targetFormula, progresAlias = 'p') {
+  return `CASE 
+    WHEN COALESCE(${progresAlias}.sls_selesai, 0) = 1 THEN 'selesai'
+    WHEN ${progresAlias}.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(${progresAlias}.submitted_by_pcl, 0) + COALESCE(${progresAlias}.approved, 0) + COALESCE(${progresAlias}.rejected, 0)) >= (${targetFormula}) THEN 'memenuhi_target'
+    WHEN ${progresAlias}.kode IS NOT NULL AND (
+      COALESCE(${progresAlias}.draft, 0) > 0 OR 
+      COALESCE(${progresAlias}.submitted_by_pcl, 0) > 0 OR 
+      COALESCE(${progresAlias}.approved, 0) > 0 OR 
+      COALESCE(${progresAlias}.rejected, 0) > 0
+    ) THEN 'sedang_didata'
+    ELSE 'belum_mulai'
+  END`;
+}
+
 
 // Ambil data progres gabungan dengan master untuk upload tertentu
 function getProgresWithMaster(uploadId, surveyId) {
@@ -1425,7 +1480,8 @@ function getProgresWithMaster(uploadId, surveyId) {
       COALESCE(p.rejected, 0) AS rejected,
       CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END AS open,
       (${singleTargetFormula}) AS target_fasih,
-      (${singleSelesaiFormula}) AS sudah_diisi,
+      ${getSubslsStatusFormula(singleTargetFormula, 'p')} AS sudah_diisi,
+      (${singleSelesaiFormula}) AS selesai,
       (${targetMuatanFormula}) AS muatan,
       (${realFormula}) AS muatan_selesai,
       (${usahaTotalFormula}) AS usaha_total,
@@ -2286,7 +2342,23 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`;
     'page_pml': '1',
     'page_pcl': '1',
     'page_export': '1',
-    'page_aiagent': '0',
+    'page_aiagent': '1',
+    'auth_req_overview': '0',
+    'auth_req_agent': '0',
+    'auth_req_map': '0',
+    'auth_req_earlywarning': '0',
+    'auth_req_deteksianomali': '0',
+    'auth_req_leaderboard': '0',
+    'auth_req_performatrendah': '0',
+    'auth_req_performa': '0',
+    'auth_req_kecamatan': '0',
+    'auth_req_subsls': '0',
+    'auth_req_korlap': '0',
+    'auth_req_pml': '0',
+    'auth_req_pcl': '0',
+    'auth_req_export': '0',
+    'auth_req_harian': '0',
+    'auth_req_help': '0',
     'agent_provider': 'gemini',
     'gemini_api_key': '',
     'gemini_backup_api_keys': '[]',
@@ -3493,7 +3565,7 @@ module.exports = {
   getBottomPerformers, getAnomalyStats,
   getSettings, updateSettings, getUserByUsername, hashPassword, rebuildSummaryCache, rebuildAllSummaryCaches,
   getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages, getTargetFormula,
-  getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula,
+  getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSubslsStatusFormula,
   getAllUsers, createUser, updateUser, deleteUser,
   saveRememberToken, getUserByRememberToken, deleteRememberToken, getIntradayUploadsByDate,
   logVisit, getVisitorStats,

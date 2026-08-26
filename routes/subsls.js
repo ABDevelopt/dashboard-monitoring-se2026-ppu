@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
+const { getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSubslsStatusFormula } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -88,17 +88,7 @@ router.get('/', (req, res) => {
         ${targetFormula} AS target_fasih,
         COALESCE(m.target_fasih, 0) AS target_static,
         COALESCE(p.target_upload, 0) AS target_upload,
-        CASE 
-          WHEN COALESCE(p.sls_selesai, 0) = 1 THEN 'selesai'
-          WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 'memenuhi_target'
-          WHEN p.kode IS NOT NULL AND (
-            COALESCE(p.draft, 0) > 0 OR 
-            COALESCE(p.submitted_by_pcl, 0) > 0 OR 
-            COALESCE(p.approved, 0) > 0 OR 
-            COALESCE(p.rejected, 0) > 0
-          ) THEN 'sedang_didata'
-          ELSE 'belum_mulai'
-        END AS sudah_diisi,
+        ${getSubslsStatusFormula(targetFormula, 'p')} AS sudah_diisi,
         COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
         COALESCE(p.usaha_ditemukan, 0) AS usaha_ditemukan,
         COALESCE(p.usaha_baru, 0) AS usaha_baru,
@@ -144,17 +134,7 @@ router.get('/', (req, res) => {
           ${targetFormula} AS target_fasih,
           COALESCE(m.target_fasih, 0) AS target_static,
           COALESCE(p.target_upload, 0) AS target_upload,
-          CASE 
-            WHEN COALESCE(p.sls_selesai, 0) = 1 THEN 'selesai'
-            WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 'memenuhi_target'
-            WHEN p.kode IS NOT NULL AND (
-              COALESCE(p.draft, 0) > 0 OR 
-              COALESCE(p.submitted_by_pcl, 0) > 0 OR 
-              COALESCE(p.approved, 0) > 0 OR 
-              COALESCE(p.rejected, 0) > 0
-            ) THEN 'sedang_didata'
-            ELSE 'belum_mulai'
-          END AS sudah_diisi,
+          ${getSubslsStatusFormula(targetFormula, 'p')} AS sudah_diisi,
           COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
           COALESCE(p.usaha_ditemukan, 0) AS usaha_ditemukan,
           COALESCE(p.usaha_baru, 0) AS usaha_baru,
@@ -343,16 +323,15 @@ router.get('/export', (req, res) => {
 
       (${targetMuatanFormula}) AS target_muatan,
       CASE 
-        WHEN p.kode IS NULL OR (
-          (${realFormula}) = 0 AND 
-          COALESCE(p.draft, 0) = 0 AND 
-          COALESCE(p.submitted_by_pcl, 0) = 0 AND 
-          COALESCE(p.approved, 0) = 0 AND 
-          COALESCE(p.rejected, 0) = 0
-        ) THEN 'Belum Mulai'
-        WHEN (${targetMuatanFormula}) > 0 AND (${realFormula}) < (${targetMuatanFormula}) THEN 'Sedang Didata'
-        WHEN (${realFormula}) = (${targetMuatanFormula}) THEN 'Memenuhi Target'
-        ELSE 'Melebihi Target'
+        WHEN COALESCE(p.sls_selesai, 0) = 1 THEN 'Selesai'
+        WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 'Memenuhi Target'
+        WHEN p.kode IS NOT NULL AND (
+          COALESCE(p.draft, 0) > 0 OR 
+          COALESCE(p.submitted_by_pcl, 0) > 0 OR 
+          COALESCE(p.approved, 0) > 0 OR 
+          COALESCE(p.rejected, 0) > 0
+        ) THEN 'Sedang Didata'
+        ELSE 'Belum Mulai'
       END AS status,
       COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
       COALESCE(p.usaha_ditemukan, 0) AS usaha_ditemukan,

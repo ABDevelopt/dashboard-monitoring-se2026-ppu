@@ -31,6 +31,25 @@ const generalSettingKeys = [
   'show_status_rejected'
 ];
 
+const securitySettingKeys = [
+  'auth_req_overview',
+  'auth_req_agent',
+  'auth_req_map',
+  'auth_req_earlywarning',
+  'auth_req_deteksianomali',
+  'auth_req_leaderboard',
+  'auth_req_performatrendah',
+  'auth_req_performa',
+  'auth_req_kecamatan',
+  'auth_req_subsls',
+  'auth_req_korlap',
+  'auth_req_pml',
+  'auth_req_pcl',
+  'auth_req_export',
+  'auth_req_harian',
+  'auth_req_help'
+];
+
 const chatbotSettingKeys = [
   'agent_provider',
   'gemini_api_key',
@@ -57,6 +76,10 @@ router.post('/', (req, res) => {
   const updatedSettings = { ...settings };
 
   for (const key of generalSettingKeys) {
+    updatedSettings[key] = req.body[key] === '1' ? '1' : '0';
+  }
+
+  for (const key of securitySettingKeys) {
     updatedSettings[key] = req.body[key] === '1' ? '1' : '0';
   }
 

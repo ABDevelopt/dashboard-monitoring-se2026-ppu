@@ -436,7 +436,374 @@
 
         </div>
 
+        <!-- GROUP: PENGATURAN KEAMANAN & HAK AKSES (WAJIB LOGIN) -->
+        <div class="settings-group" style="border: 1px solid rgba(var(--accent-rgb), 0.25); position: relative; overflow: hidden;">
+          <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--survey-gradient, linear-gradient(90deg, #3b82f6, #8b5cf6));"></div>
+          <div class="settings-group-title" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <i class="bi bi-shield-lock-fill" style="color: var(--accent-blue);"></i> Pengaturan Keamanan &amp; Hak Akses
+            </div>
+            <span class="badge" style="background: rgba(var(--accent-rgb), 0.12); color: var(--accent-primary); font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px;">
+              Wajib Login vs Publik
+            </span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-top: -6px; margin-bottom: 16px;">
+            Aktifkan sakelar jika halaman/fitur di bawah ini <strong>wajib login</strong> (hanya pengguna terdaftar yang dapat mengakses). Jika nonaktif, halaman dapat diakses oleh <strong>publik tanpa login</strong>.
+          </p>
 
+          <!-- Asisten AI Chat (Pananyo Taka) -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #8b5cf6;"><i class="bi bi-robot"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_agent" class="switch-label-text">Asisten AI Chat (Pananyo Taka)</label>
+                  <% if (settings.auth_req_agent === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk mengakses halaman &amp; konsultasi AI</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_agent" name="auth_req_agent" value="1" <%= settings.auth_req_agent === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Ekspor Data -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #10b981;"><i class="bi bi-download"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_export" class="switch-label-text">Ekspor Data (CSV / Excel)</label>
+                  <% if (settings.auth_req_export === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk mengunduh dataset agregasi / mentah</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_export" name="auth_req_export" value="1" <%= settings.auth_req_export === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Deteksi Anomali -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #f59e0b;"><i class="bi bi-shield-exclamation"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_deteksianomali" class="switch-label-text">Deteksi Anomali</label>
+                  <% if (settings.auth_req_deteksianomali === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk melihat anomali &amp; catatan evaluasi</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_deteksianomali" name="auth_req_deteksianomali" value="1" <%= settings.auth_req_deteksianomali === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Early Warning System -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #ef4444;"><i class="bi bi-exclamation-octagon"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_earlywarning" class="switch-label-text">Early Warning System</label>
+                  <% if (settings.auth_req_earlywarning === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk melihat proyeksi &amp; status kritis</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_earlywarning" name="auth_req_earlywarning" value="1" <%= settings.auth_req_earlywarning === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Performa Petugas -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #06b6d4;"><i class="bi bi-speedometer2"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_performa" class="switch-label-text">Performa Petugas (Gabungan)</label>
+                  <% if (settings.auth_req_performa === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk mengakses matriks performa petugas</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_performa" name="auth_req_performa" value="1" <%= settings.auth_req_performa === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Leaderboard (Performa Terbaik) -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #f59e0b;"><i class="bi bi-trophy"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_leaderboard" class="switch-label-text">Leaderboard (Performa Terbaik)</label>
+                  <% if (settings.auth_req_leaderboard === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk melihat peringkat capaian petugas</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_leaderboard" name="auth_req_leaderboard" value="1" <%= settings.auth_req_leaderboard === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Performa Terendah -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #ef4444;"><i class="bi bi-graph-down"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_performatrendah" class="switch-label-text">Performa Terendah</label>
+                  <% if (settings.auth_req_performatrendah === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk melihat daftar petugas performa rendah</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_performatrendah" name="auth_req_performatrendah" value="1" <%= settings.auth_req_performatrendah === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Peta Progres GIS -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #06b6d4;"><i class="bi bi-map"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_map" class="switch-label-text">Peta Progres GIS</label>
+                  <% if (settings.auth_req_map === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk melihat peta sebaran spasial</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_map" name="auth_req_map" value="1" <%= settings.auth_req_map === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Drilldown Kecamatan -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #3b82f6;"><i class="bi bi-geo-alt"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_kecamatan" class="switch-label-text">Drilldown Kecamatan</label>
+                  <% if (settings.auth_req_kecamatan === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk melihat rincian per kecamatan</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_kecamatan" name="auth_req_kecamatan" value="1" <%= settings.auth_req_kecamatan === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Detail SubSLS & KIPP -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #8b5cf6;"><i class="bi bi-box-seam"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_subsls" class="switch-label-text">Detail SubSLS &amp; KIPP</label>
+                  <% if (settings.auth_req_subsls === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk tabel rinci SLS, PBI, &amp; KIPP</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_subsls" name="auth_req_subsls" value="1" <%= settings.auth_req_subsls === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Drilldown Petugas PCL -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #3b82f6;"><i class="bi bi-person-gear"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_pcl" class="switch-label-text">Drilldown Petugas PCL</label>
+                  <% if (settings.auth_req_pcl === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk melihat profil &amp; capaian PCL</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_pcl" name="auth_req_pcl" value="1" <%= settings.auth_req_pcl === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Drilldown Pengawas PML -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #06b6d4;"><i class="bi bi-clipboard2-data"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_pml" class="switch-label-text">Drilldown Pengawas PML</label>
+                  <% if (settings.auth_req_pml === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk melihat beban &amp; approval PML</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_pml" name="auth_req_pml" value="1" <%= settings.auth_req_pml === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Drilldown Korlap -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #f59e0b;"><i class="bi bi-person-workspace"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_korlap" class="switch-label-text">Drilldown Korlap</label>
+                  <% if (settings.auth_req_korlap === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk melihat rekap Koordinator Lapangan</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_korlap" name="auth_req_korlap" value="1" <%= settings.auth_req_korlap === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Tren Harian -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #3b82f6;"><i class="bi bi-graph-up-arrow"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_harian" class="switch-label-text">Tren Harian</label>
+                  <% if (settings.auth_req_harian === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk grafik tren historis harian</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_harian" name="auth_req_harian" value="1" <%= settings.auth_req_harian === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Panduan & Bantuan -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #3b82f6;"><i class="bi bi-life-preserver"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_help" class="switch-label-text">Panduan &amp; Bantuan</label>
+                  <% if (settings.auth_req_help === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk membaca dokumentasi &amp; FAQ</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_help" name="auth_req_help" value="1" <%= settings.auth_req_help === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Overview Dashboard -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #3b82f6;"><i class="bi bi-house-door"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_overview" class="switch-label-text">Overview Dashboard Utama</label>
+                  <% if (settings.auth_req_overview === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login bahkan untuk melihat ringkasan dashboard</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_overview" name="auth_req_overview" value="1" <%= settings.auth_req_overview === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+        </div>
 
         <% if (!isSakernas) { %>
         <!-- GROUP 2: VISIBILITAS DATA GLOBAL -->

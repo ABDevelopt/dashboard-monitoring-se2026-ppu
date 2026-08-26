@@ -320,7 +320,18 @@ function getSurveySubslsList(uploadId, queryParams, surveyId) {
       COALESCE(p.approved, 0) AS approved,
       COALESCE(p.rejected, 0) AS rejected,
       COALESCE(p.target_upload, 0) AS target_upload,
-      CASE WHEN (COALESCE(p.approved, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.rejected, 0)) >= COALESCE(m.target_fasih, 0) AND COALESCE(m.target_fasih, 0) > 0 THEN 1 ELSE 0 END AS sudah_diisi
+      COALESCE(p.sls_selesai, 0) AS selesai,
+      CASE 
+        WHEN COALESCE(p.sls_selesai, 0) = 1 THEN 'selesai'
+        WHEN p.kode IS NOT NULL AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= COALESCE(m.target_fasih, 0) THEN 'memenuhi_target'
+        WHEN p.kode IS NOT NULL AND (
+          COALESCE(p.draft, 0) > 0 OR 
+          COALESCE(p.submitted_by_pcl, 0) > 0 OR 
+          COALESCE(p.approved, 0) > 0 OR 
+          COALESCE(p.rejected, 0) > 0
+        ) THEN 'sedang_didata'
+        ELSE 'belum_mulai'
+      END AS sudah_diisi
     FROM ${mTable} m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
   `;
@@ -350,9 +361,13 @@ function getSurveySubslsList(uploadId, queryParams, surveyId) {
   }
   if (queryParams.status) {
     if (queryParams.status === 'selesai') {
-      conditions.push("sudah_diisi = 1");
-    } else if (queryParams.status === 'belum') {
-      conditions.push("sudah_diisi = 0");
+      conditions.push("(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 1)");
+    } else if (queryParams.status === 'memenuhi_target') {
+      conditions.push("(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND COALESCE(m.target_fasih, 0) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= COALESCE(m.target_fasih, 0))");
+    } else if (queryParams.status === 'sedang_didata') {
+      conditions.push("(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0) AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) < COALESCE(m.target_fasih, 0))");
+    } else if (queryParams.status === 'belum_mulai' || queryParams.status === 'belum') {
+      conditions.push("(p.kode IS NULL OR (COALESCE(p.sls_selesai, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))");
     }
   }
   if (queryParams.q) {

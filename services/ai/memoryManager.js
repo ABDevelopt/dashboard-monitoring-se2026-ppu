@@ -17,7 +17,7 @@ function getChatHistory(userId) {
   if (!userId) return [];
   try {
     const db = getDb('se2026');
-    const row = db.prepare('SELECT history FROM agent_sessions WHERE user_id = ?').get(userId);
+    const row = db.prepare('SELECT history FROM agent_sessions WHERE user_id = ?').get(String(userId));
     if (row && row.history) {
       return JSON.parse(row.history);
     }
@@ -43,7 +43,7 @@ function saveChatHistory(userId, history) {
     db.prepare(`
       INSERT OR REPLACE INTO agent_sessions (user_id, history, updated_at)
       VALUES (?, ?, CURRENT_TIMESTAMP)
-    `).run(userId, jsonStr);
+    `).run(String(userId), jsonStr);
   } catch (err) {
     _logger.error(`[MemoryManager] Gagal menyimpan riwayat chat untuk user ${userId}: ${err.message}`);
   }
@@ -57,7 +57,7 @@ function clearChatHistory(userId) {
   if (!userId) return;
   try {
     const db = getDb('se2026');
-    db.prepare('DELETE FROM agent_sessions WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM agent_sessions WHERE user_id = ?').run(String(userId));
   } catch (err) {
     _logger.error(`[MemoryManager] Gagal menghapus riwayat chat untuk user ${userId}: ${err.message}`);
   }
