@@ -2425,6 +2425,10 @@ function updateTime() {
       }
 
       if (targetDoc) {
+        // Preserve current sidebar scroll position across PJAX swaps
+        const sNav = document.querySelector('.sidebar-nav');
+        const prevSidebarNavScroll = sNav ? sNav.scrollTop : null;
+
         // Sync page-specific body layout classes (page-agent, page-map, page-login)
         const pageClasses = ['page-agent', 'page-map', 'page-login'];
         pageClasses.forEach(cls => {
@@ -2639,12 +2643,22 @@ function updateTime() {
 
         // Trigger window resize event so Leaflet maps, canvas charts, etc. recalculate container dimensions
         window.dispatchEvent(new Event('resize'));
+
+        // Restore sidebar scroll position after PJAX DOM updates
+        if (sNav && prevSidebarNavScroll !== null) {
+          sNav.scrollTop = prevSidebarNavScroll;
+        } else if (typeof restoreSidebarNavScroll === 'function') {
+          restoreSidebarNavScroll();
+        }
       }
 
       } catch (err) {
         console.error('AJAX page navigation error:', err);
         window.location.href = url;
       } finally {
+        if (typeof restoreSidebarNavScroll === 'function') {
+          restoreSidebarNavScroll();
+        }
         if (skeletonTimer) {
           clearTimeout(skeletonTimer);
         }
@@ -2668,7 +2682,7 @@ function updateTime() {
       const navItem = e.target.closest('.sidebar .nav-item, .bottom-nav .bottom-nav-item, .bottom-sheet-item');
       if (navItem) {
         const href = navItem.getAttribute('href');
-        if (href && !href.startsWith('#') && !href.startsWith('javascript:') && !href.includes('/export') && !href.includes('/download') && !href.includes('/logout') && (href.startsWith('/') || href.startsWith(window.location.origin))) {
+        if (href && !href.startsWith('#') && !href.startsWith('javascript:') && !href.includes('/export/data') && !href.includes('/api/export') && !href.includes('/download') && !href.includes('/logout') && (href.startsWith('/') || href.startsWith(window.location.origin))) {
           if (typeof window.setInstantMenuActive === 'function') {
             window.setInstantMenuActive(href, navItem);
           }
@@ -2683,8 +2697,8 @@ function updateTime() {
       if (!a) return;
 
       const href = a.getAttribute('href');
-      // Skip hashes, JS calls, blank target, external targets, downloads, export, or portal page separation
-      if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.getAttribute('target') === '_blank' || a.hasAttribute('download') || href.includes('/export') || href.includes('/download') || href === '/surveys' || href.startsWith('/surveys') || window.location.pathname === '/surveys') {
+      // Skip hashes, JS calls, blank target, external targets, downloads, export data API, or portal page separation
+      if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.getAttribute('target') === '_blank' || a.hasAttribute('download') || href.includes('/export/data') || href.includes('/api/export') || href.includes('/download') || href === '/surveys' || href.startsWith('/surveys') || window.location.pathname === '/surveys') {
         return;
       }
       
@@ -2892,6 +2906,56 @@ function updateTime() {
         }
       });
     } catch (_) {}
+
+    // ====== SIDEBAR SCROLL POSITION PERSISTENCE ======
+    // Ensures sidebar never unexpectedly jumps or resets to top across interactions, navigations, or reloads
+    function restoreSidebarNavScroll() {
+      try {
+        const savedPos = sessionStorage.getItem('sidebar_nav_scroll_top');
+        if (savedPos !== null) {
+          const sNav = document.querySelector('.sidebar-nav');
+          if (sNav) {
+            const targetPos = parseInt(savedPos, 10);
+            if (!isNaN(targetPos) && targetPos >= 0) {
+              sNav.scrollTop = targetPos;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+    window.restoreSidebarNavScroll = restoreSidebarNavScroll;
+
+    function initSidebarScrollPersistence() {
+      const sNav = document.querySelector('.sidebar-nav');
+      if (!sNav) return;
+
+      // Restore immediately and with slight delays to accommodate layout shifts
+      restoreSidebarNavScroll();
+      requestAnimationFrame(restoreSidebarNavScroll);
+      setTimeout(restoreSidebarNavScroll, 80);
+      setTimeout(restoreSidebarNavScroll, 250);
+
+      // Continuously save scroll position on scroll event
+      sNav.addEventListener('scroll', () => {
+        try {
+          sessionStorage.setItem('sidebar_nav_scroll_top', String(sNav.scrollTop));
+        } catch (_) {}
+      }, { passive: true });
+
+      // Save before page unload / navigation / form submit
+      window.addEventListener('beforeunload', () => {
+        try {
+          if (sNav) sessionStorage.setItem('sidebar_nav_scroll_top', String(sNav.scrollTop));
+        } catch (_) {}
+      });
+      window.addEventListener('pagehide', () => {
+        try {
+          if (sNav) sessionStorage.setItem('sidebar_nav_scroll_top', String(sNav.scrollTop));
+        } catch (_) {}
+      });
+    }
+
+    initSidebarScrollPersistence();
 
     // Haptic Feedback API helper
     function triggerHaptic(duration = 15) {

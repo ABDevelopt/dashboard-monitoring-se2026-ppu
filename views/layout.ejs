@@ -528,8 +528,19 @@
         </a>
       <% } %>
     </div>
-  </div>
 </aside>
+<script>
+  // Immediate restore of sidebar scroll position on initial HTML parse to prevent jump/flicker
+  (function() {
+    try {
+      var saved = sessionStorage.getItem('sidebar_nav_scroll_top');
+      if (saved) {
+        var sNav = document.querySelector('.sidebar-nav');
+        if (sNav) sNav.scrollTop = parseInt(saved, 10);
+      }
+    } catch (_) {}
+  })();
+</script>
 <script>
   window.toggleUploadSubMenu = function(e) {
     if (e) {
