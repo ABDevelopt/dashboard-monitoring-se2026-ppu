@@ -1407,6 +1407,31 @@ function parseAndSaveJsonStatusOnly(filePath, originalFilename, storedFilename, 
   }
 
   // CASE B: File contains PPL (and optionally PML)
+  // Ensure progres_petugas table exists
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS progres_petugas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      upload_id INTEGER NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
+      kode TEXT NOT NULL,
+      pcl_email TEXT NOT NULL,
+      pcl_name TEXT,
+      pcl_sobat_id TEXT,
+      role TEXT DEFAULT 'Pencacah',
+      draft INTEGER DEFAULT 0,
+      open INTEGER DEFAULT 0,
+      submitted_by_pcl INTEGER DEFAULT 0,
+      approved INTEGER DEFAULT 0,
+      rejected INTEGER DEFAULT 0,
+      target_upload INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(upload_id, kode, pcl_email)
+    );
+    CREATE INDEX IF NOT EXISTS idx_progres_petugas_upload ON progres_petugas(upload_id);
+    CREATE INDEX IF NOT EXISTS idx_progres_petugas_kode ON progres_petugas(kode);
+    CREATE INDEX IF NOT EXISTS idx_progres_petugas_email ON progres_petugas(pcl_email);
+    CREATE INDEX IF NOT EXISTS idx_progres_petugas_name ON progres_petugas(pcl_name);
+  `);
+
   // 5. Create upload record
   const uploadResult = db.prepare(`
     INSERT INTO uploads (filename, stored_filename, tanggal, total_subsls_terisi, status_filename, stored_status_filename)
@@ -1414,9 +1439,21 @@ function parseAndSaveJsonStatusOnly(filePath, originalFilename, storedFilename, 
   `).run('', null, tanggal, 0, safeNullableStr(originalFilename), safeNullableStr(storedFilename));
   const uploadId = uploadResult.lastInsertRowid;
 
-  // 6. Prepared statements for master and progres
+  // Find previous upload that has progress muatan data to carry forward
+  const prevMuatanRow = db.prepare(`
+    SELECT u.id FROM uploads u
+    JOIN progres p ON u.id = p.upload_id
+    WHERE u.tanggal <= ? AND u.id != ?
+    GROUP BY u.id
+    HAVING SUM(COALESCE(p.usaha_ditemukan, 0) + COALESCE(p.usaha_baru, 0) + COALESCE(p.ditemukan, 0) + COALESCE(p.keluarga_baru, 0)) > 0
+    ORDER BY u.tanggal DESC, u.id DESC LIMIT 1
+  `).get(tanggal, uploadId);
+  const prevMuatanId = prevMuatanRow ? prevMuatanRow.id : null;
+  const getPrevMuatanRecord = prevMuatanId ? db.prepare('SELECT * FROM progres WHERE upload_id = ? AND kode = ?') : null;
+
+  // 6. Prepared statements for master, progres, and progres_petugas
   const insertSubslsMaster = db.prepare(`
-    INSERT OR REPLACE INTO subsls_master (
+    INSERT INTO subsls_master (
       kode, kecamatan, desa, nama_sls, korlap, pml, pml_email, pml_sobat_id, pcl, pcl_email, pcl_sobat_id, target_fasih
     ) VALUES (
       ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
@@ -1429,13 +1466,23 @@ function parseAndSaveJsonStatusOnly(filePath, originalFilename, storedFilename, 
       draft, open, submitted_by_pcl, approved, rejected, target_upload,
       usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
       tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
-      rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya
+      rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya, keluarga_khusus, sls_selesai
     ) VALUES (
       ?, ?, ?, ?, ?,
       ?, ?, ?, ?, ?, ?,
-      0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0
+      ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?, ?
+    )
+  `);
+
+  const insertProgresPetugasStmt = db.prepare(`
+    INSERT OR REPLACE INTO progres_petugas (
+      upload_id, kode, pcl_email, pcl_name, pcl_sobat_id, role,
+      draft, open, submitted_by_pcl, approved, rejected, target_upload
+    ) VALUES (
+      ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?
     )
   `);
 
@@ -1443,48 +1490,116 @@ function parseAndSaveJsonStatusOnly(filePath, originalFilename, storedFilename, 
   const uniqueEmailsSeen = new Set();
   const uniqueCodesSeen = new Set();
 
-  db.transaction(() => {
-    pplItems.forEach(item => {
-      const officerStr = item.officer || '';
-      const emailMatch = officerStr.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-      if (!emailMatch) return;
-      const rawEmail = emailMatch[0].toLowerCase();
-      uniqueEmailsSeen.add(rawEmail);
+  // First pass: collect officer assignments & aggregate per SLS to support multi-officer territories (like KIPP)
+  const officerAssignments = [];
+  const slsAggregates = new Map(); // kodeClean -> { draft, open, submitted, approved, rejected, target, officers: [] }
 
-      let namaLengkap = '';
-      let sobatId = '';
-      if (emailMap[rawEmail]) {
-        namaLengkap = emailMap[rawEmail].nama_lengkap;
-        sobatId = emailMap[rawEmail].sobat_id;
-      } else {
-        let username = rawEmail.split('@')[0].replace('-pppk', '').replace(/^\d{4}\./, '');
-        namaLengkap = username.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  pplItems.forEach(item => {
+    const officerStr = item.officer || '';
+    const emailMatch = officerStr.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    if (!emailMatch) return;
+    const rawEmail = emailMatch[0].toLowerCase();
+    uniqueEmailsSeen.add(rawEmail);
+
+    let namaLengkap = '';
+    let sobatId = '';
+    if (emailMap[rawEmail]) {
+      namaLengkap = emailMap[rawEmail].nama_lengkap;
+      sobatId = emailMap[rawEmail].sobat_id;
+    } else {
+      let username = rawEmail.split('@')[0].replace('-pppk', '').replace(/^\d{4}\./, '');
+      namaLengkap = username.replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    const regions = item.regions || [];
+    regions.forEach(r => {
+      const rawKode = r.code || '';
+      if (!rawKode) return;
+      const kodeClean = rawKode.padStart(16, '0');
+      uniqueCodesSeen.add(kodeClean);
+
+      let openVal = 0, draftVal = 0, submittedVal = 0, approvedVal = 0, rejectedVal = 0;
+      const statuses = r.statuses || [];
+      statuses.forEach(st => {
+        const sName = (st.status || '').toUpperCase();
+        const cnt = parseInt(st.count || 0, 10);
+        if (isNaN(cnt)) return;
+
+        if (sName.includes('OPEN')) openVal += cnt;
+        else if (sName.includes('DRAFT')) draftVal += cnt;
+        else if (sName.includes('SUBMITTED') || sName.includes('SUBMIT')) submittedVal += cnt;
+        else if (sName.includes('APPROVED') || sName.includes('COMPLETED') || sName.includes('EDITED')) approvedVal += cnt;
+        else if (sName.includes('REJECTED') || sName.includes('REVOKED')) rejectedVal += cnt;
+      });
+
+      const targetVal = openVal + draftVal + submittedVal + approvedVal + rejectedVal;
+
+      officerAssignments.push({
+        kode: kodeClean,
+        email: rawEmail,
+        name: namaLengkap,
+        sobatId,
+        openVal,
+        draftVal,
+        submittedVal,
+        approvedVal,
+        rejectedVal,
+        targetVal
+      });
+
+      if (!slsAggregates.has(kodeClean)) {
+        slsAggregates.set(kodeClean, {
+          draft: 0,
+          open: 0,
+          submitted: 0,
+          approved: 0,
+          rejected: 0,
+          target: 0,
+          officers: []
+        });
       }
 
-      const regions = item.regions || [];
-      regions.forEach(r => {
-        const rawKode = r.code || '';
-        if (!rawKode) return;
-        const kodeClean = rawKode.padStart(16, '0');
-        uniqueCodesSeen.add(kodeClean);
+      const agg = slsAggregates.get(kodeClean);
+      agg.draft += draftVal;
+      agg.open += openVal;
+      agg.submitted += submittedVal;
+      agg.approved += approvedVal;
+      agg.rejected += rejectedVal;
+      agg.target += targetVal;
+      agg.officers.push({ email: rawEmail, name: namaLengkap, sobatId, approved: approvedVal, target: targetVal });
+    });
+  });
 
-        let openVal = 0, draftVal = 0, submittedVal = 0, approvedVal = 0, rejectedVal = 0;
-        const statuses = r.statuses || [];
-        statuses.forEach(st => {
-          const sName = (st.status || '').toUpperCase();
-          const cnt = parseInt(st.count || 0, 10);
-          if (isNaN(cnt)) return;
+  // Second pass: save within transaction
+  db.transaction(() => {
+    // 1. Save detailed individual officer assignments
+    officerAssignments.forEach(a => {
+      insertProgresPetugasStmt.run(
+        uploadId, a.kode, a.email, a.name, a.sobatId, 'Pencacah',
+        a.draftVal, a.openVal, a.submittedVal, a.approvedVal, a.rejectedVal, a.targetVal
+      );
+    });
 
-          if (sName.includes('OPEN')) openVal += cnt;
-          else if (sName.includes('DRAFT')) draftVal += cnt;
-          else if (sName.includes('SUBMITTED') || sName.includes('SUBMIT')) submittedVal += cnt;
-          else if (sName.includes('APPROVED')) approvedVal += cnt;
-          else if (sName.includes('REJECTED') || sName.includes('REVOKED')) rejectedVal += cnt;
-        });
+    // 2. Save combined SLS progress into progres & protect subsls_master integrity
+    for (const [kodeClean, agg] of slsAggregates.entries()) {
+      const existingMaster = db.prepare('SELECT kode, korlap, pml, pcl, pcl_email, pcl_sobat_id, muatan, target_fasih FROM subsls_master WHERE kode = ?').get(kodeClean);
 
-        const targetVal = openVal + draftVal + submittedVal + approvedVal + rejectedVal;
+      let repName = '';
+      let repEmail = '';
+      let repSobatId = '';
 
-        // Wilayah resolution
+      if (existingMaster && existingMaster.pcl) {
+        repName = existingMaster.pcl;
+        repEmail = existingMaster.pcl_email || (agg.officers.length > 0 ? agg.officers[0].email : null);
+        repSobatId = existingMaster.pcl_sobat_id || (agg.officers.length > 0 ? agg.officers[0].sobatId : null);
+      } else if (agg.officers.length > 0) {
+        agg.officers.sort((x, y) => y.approved - x.approved);
+        repName = agg.officers[0].name;
+        repEmail = agg.officers[0].email;
+        repSobatId = agg.officers[0].sobatId || null;
+      }
+
+      if (!existingMaster) {
         let kecName = 'Kecamatan Lain';
         let desaName = 'Desa Lain';
         let slsName = kodeClean;
@@ -1498,59 +1613,90 @@ function parseAndSaveJsonStatusOnly(filePath, originalFilename, storedFilename, 
           }
         }
 
-        // PML Resolution: priority: pmlMap in this file > existing subsls_master PML > default
-        const existingMaster = db.prepare('SELECT pml, pml_email, pml_sobat_id FROM subsls_master WHERE kode = ?').get(kodeClean);
         let assignedPml = 'PML Belum Dialokasikan';
         let assignedPmlEmail = null;
         let assignedPmlSobatId = null;
-
         if (pmlMap[kodeClean]) {
           assignedPml = pmlMap[kodeClean].pmlName;
           assignedPmlEmail = pmlMap[kodeClean].pmlEmail;
           assignedPmlSobatId = pmlMap[kodeClean].sobatId;
-        } else if (existingMaster && existingMaster.pml && existingMaster.pml !== 'PML Belum Dialokasikan') {
-          assignedPml = existingMaster.pml;
-          assignedPmlEmail = existingMaster.pml_email;
-          assignedPmlSobatId = existingMaster.pml_sobat_id;
         }
 
-        // Auto-seed / update subsls_master
         insertSubslsMaster.run(
           kodeClean,
           kecName,
           desaName,
           slsName,
-          'Lainnya',                // Korlap
-          assignedPml,             // PML
+          'Lainnya',
+          assignedPml,
           assignedPmlEmail,
           assignedPmlSobatId,
-          namaLengkap,             // PCL
-          rawEmail,
-          sobatId,
-          targetVal
+          repName,
+          repEmail,
+          repSobatId,
+          agg.target
         );
+      } else if (!existingMaster.target_fasih || existingMaster.target_fasih === 0) {
+        try {
+          db.prepare('UPDATE subsls_master SET target_fasih = ? WHERE kode = ?').run(agg.target, kodeClean);
+        } catch (_) {}
+      }
 
-        // Insert into progres
-        insertProgresStmt.run(
-          uploadId,
-          kodeClean,
-          rawEmail,
-          namaLengkap,
-          sobatId,
-          draftVal,
-          openVal,
-          submittedVal,
-          approvedVal,
-          rejectedVal,
-          targetVal
-        );
+      // Preserve previous muatan columns
+      let uTd = 0, uDit = 0, uBaru = 0, uTut = 0, uGan = 0;
+      let kTd = 0, kDit = 0, kBaru = 0, kMeng = 0, kTe = 0, kTdd = 0;
+      let rTunggal = 0, rDeret = 0, rSusun = 0, apart = 0, lain = 0, kKhus = 0;
 
-        processedRegions++;
-      });
-    });
+      if (getPrevMuatanRecord) {
+        const prevM = getPrevMuatanRecord.get(prevMuatanId, kodeClean);
+        if (prevM) {
+          uTd = prevM.usaha_tidak_ditemukan || 0;
+          uDit = prevM.usaha_ditemukan || 0;
+          uBaru = prevM.usaha_baru || 0;
+          uTut = prevM.usaha_tutup || 0;
+          uGan = prevM.usaha_ganda || 0;
+          kTd = prevM.tidak_ditemukan || 0;
+          kDit = prevM.ditemukan || 0;
+          kBaru = prevM.keluarga_baru || 0;
+          kMeng = prevM.meninggal || 0;
+          kTe = prevM.tidak_eligible || 0;
+          kTdd = prevM.tidak_dapat_ditemui || 0;
+          rTunggal = prevM.rumah_tunggal || 0;
+          rDeret = prevM.rumah_deret || 0;
+          rSusun = prevM.rumah_susun || 0;
+          apart = prevM.apartemen || 0;
+          lain = prevM.lainnya || 0;
+          kKhus = prevM.keluarga_khusus || 0;
+        }
+      }
+
+      const slsSelesai = (agg.target > 0 && agg.approved >= agg.target) ? 1 : 0;
+
+      insertProgresStmt.run(
+        uploadId,
+        kodeClean,
+        repEmail,
+        repName,
+        repSobatId,
+        agg.draft,
+        agg.open,
+        agg.submitted,
+        agg.approved,
+        agg.rejected,
+        agg.target,
+        uTd, uDit, uBaru, uTut, uGan,
+        kTd, kDit, kBaru, kMeng, kTe, kTdd,
+        rTunggal, rDeret, rSusun, apart, lain,
+        kKhus,
+        slsSelesai
+      );
+
+      processedRegions++;
+    }
   })();
 
-  // Synchronize and rebuild summary cache
+  // Synchronize chronological data, fill missing SubSLS and rebuild summary cache
+  resyncChronologicalData();
   ensureAllSubslsInUpload(uploadId, surveyId);
   const actualCount = db.prepare('SELECT COUNT(*) as n FROM progres WHERE upload_id = ?').get(uploadId).n;
   db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(actualCount, uploadId);

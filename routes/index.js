@@ -89,7 +89,15 @@ router.get('/', (req, res) => {
     distLast = buckets;
 
     const totalPcl = summary ? (summary.total_pcl || 1) : 1;
-    latestUpdateSpeedPerPcl = totalPcl > 0 ? (diffTotal / totalPcl) : 0;
+    let daysBetween = 1;
+    if (prevUpload && currentUpload && prevUpload.tanggal && currentUpload.tanggal) {
+      const dCur = new Date(currentUpload.tanggal);
+      const dPrv = new Date(prevUpload.tanggal);
+      const diffTime = dCur - dPrv;
+      daysBetween = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)));
+    }
+    const latestDailySpeedTotal = diffTotal / daysBetween;
+    latestUpdateSpeedPerPcl = totalPcl > 0 ? (latestDailySpeedTotal / totalPcl) : 0;
   }
 
   res.render('overview', {

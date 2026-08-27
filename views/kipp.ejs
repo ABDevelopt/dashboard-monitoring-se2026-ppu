@@ -281,6 +281,11 @@
                       <% } else { %>
                         -
                       <% } %>
+                      <% if (row.officer_count && row.officer_count > 1) { %>
+                        <span class="badge badge-purple" style="padding: 1px 5px; font-size: 9px; vertical-align: middle; margin-left: 4px;" title="Tim Kolaboratif: <%= row.officer_names || '' %>">
+                          <i class="bi bi-people-fill"></i> <%= row.officer_count %> Petugas
+                        </span>
+                      <% } %>
                     </div>
                     <div style="font-size: 11px; color: var(--text-muted);" class="hide-md">PML: <%= row.pml %> · Krl: <%= row.korlap %></div>
                   </td>

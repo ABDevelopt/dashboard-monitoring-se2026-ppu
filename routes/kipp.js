@@ -35,6 +35,24 @@ router.get('/', (req, res) => {
 
     const where = cond.length ? 'AND ' + cond.join(' AND ') : '';
 
+    let hasProgresPetugas = false;
+    try {
+      const ppCount = getDb().prepare("SELECT count(*) as c FROM progres_petugas WHERE upload_id = ?").get(uploadId);
+      hasProgresPetugas = ppCount && ppCount.c > 0;
+    } catch (_) {}
+
+    const ppJoin = hasProgresPetugas
+      ? `LEFT JOIN (
+           SELECT kode, COUNT(DISTINCT pcl_name) AS officer_count, GROUP_CONCAT(DISTINCT pcl_name) AS officer_names
+           FROM progres_petugas
+           WHERE upload_id = ${Number(uploadId)}
+           GROUP BY kode
+         ) pp_agg ON m.kode = pp_agg.kode`
+      : '';
+    const ppSelect = hasProgresPetugas
+      ? `, COALESCE(pp_agg.officer_count, 1) AS officer_count, COALESCE(pp_agg.officer_names, m.pcl) AS officer_names`
+      : `, 1 AS officer_count, m.pcl AS officer_names`;
+
     total = getDb().prepare(`
       SELECT COUNT(*) as n
       FROM subsls_master m
@@ -70,8 +88,10 @@ router.get('/', (req, res) => {
         COALESCE(p.rumah_susun, 0) AS rumah_susun,
         COALESCE(p.apartemen, 0) AS apartemen,
         COALESCE(p.lainnya, 0) AS lainnya
+        ${ppSelect}
       FROM subsls_master m
       LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+      ${ppJoin}
       WHERE 1=1 ${where}
       ORDER BY m.kecamatan, m.desa, m.kode
     `).all(...params));
@@ -118,21 +138,45 @@ router.get('/', (req, res) => {
   const KIPP_DEADLINE = new Date('2026-07-06');
 
   if (uploadId) {
-    kippPclStats = getDb().prepare(`
-      SELECT 
-        m.pcl AS nama_petugas,
-        COUNT(m.kode) AS total_subsls,
-        SUM(COALESCE(p.draft, 0)) AS draft,
-        SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted,
-        SUM(COALESCE(p.approved, 0)) AS approved,
-        SUM(COALESCE(p.rejected, 0)) AS rejected,
-        SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS realisasi
-      FROM subsls_master m
-      LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-      WHERE m.nama_sls = 'KIPP IKN' AND m.pcl IS NOT NULL AND m.pcl != ''
-      GROUP BY m.pcl
-      ORDER BY realisasi DESC
-    `).all(uploadId);
+    let hasProgresPetugas = false;
+    try {
+      const ppCount = getDb().prepare("SELECT count(*) as c FROM progres_petugas WHERE upload_id = ?").get(uploadId);
+      hasProgresPetugas = ppCount && ppCount.c > 0;
+    } catch (_) {}
+
+    if (hasProgresPetugas) {
+      kippPclStats = getDb().prepare(`
+        SELECT 
+          pp.pcl_name AS nama_petugas,
+          COUNT(DISTINCT pp.kode) AS total_subsls,
+          SUM(COALESCE(pp.draft, 0)) AS draft,
+          SUM(COALESCE(pp.submitted_by_pcl, 0)) AS submitted,
+          SUM(COALESCE(pp.approved, 0)) AS approved,
+          SUM(COALESCE(pp.rejected, 0)) AS rejected,
+          SUM(COALESCE(pp.submitted_by_pcl, 0) + COALESCE(pp.approved, 0) + COALESCE(pp.rejected, 0)) AS realisasi
+        FROM progres_petugas pp
+        JOIN subsls_master m ON pp.kode = m.kode
+        WHERE pp.upload_id = ? AND m.nama_sls = 'KIPP IKN' AND pp.pcl_name IS NOT NULL AND pp.pcl_name != ''
+        GROUP BY pp.pcl_name
+        ORDER BY realisasi DESC, approved DESC
+      `).all(uploadId);
+    } else {
+      kippPclStats = getDb().prepare(`
+        SELECT 
+          m.pcl AS nama_petugas,
+          COUNT(m.kode) AS total_subsls,
+          SUM(COALESCE(p.draft, 0)) AS draft,
+          SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted,
+          SUM(COALESCE(p.approved, 0)) AS approved,
+          SUM(COALESCE(p.rejected, 0)) AS rejected,
+          SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS realisasi
+        FROM subsls_master m
+        LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+        WHERE m.nama_sls = 'KIPP IKN' AND m.pcl IS NOT NULL AND m.pcl != ''
+        GROUP BY m.pcl
+        ORDER BY realisasi DESC
+      `).all(uploadId);
+    }
 
     const currentUpload = getDb().prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
     if (currentUpload) {

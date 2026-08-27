@@ -1280,6 +1280,39 @@ function runMigrations(dbConn, surveyId = 'se2026') {
           `);
         } catch (_) {}
       }
+    },
+    {
+      // ── MIGRASI 20260827000000: TABEL PROGRES PETUGAS (MULTI-OFFICER / KIPP) ──
+      // Mendukung pencatatan progres per-petugas per-SLS tanpa tertimpa / hilang,
+      // khususnya untuk wilayah kolaboratif seperti KIPP IKN dan tim bantuan lapangan.
+      version: '20260827000000_add_progres_petugas_table',
+      up: (dbConn) => {
+        try {
+          dbConn.exec(`
+            CREATE TABLE IF NOT EXISTS progres_petugas (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              upload_id INTEGER NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
+              kode TEXT NOT NULL,
+              pcl_email TEXT NOT NULL,
+              pcl_name TEXT,
+              pcl_sobat_id TEXT,
+              role TEXT DEFAULT 'Pencacah',
+              draft INTEGER DEFAULT 0,
+              open INTEGER DEFAULT 0,
+              submitted_by_pcl INTEGER DEFAULT 0,
+              approved INTEGER DEFAULT 0,
+              rejected INTEGER DEFAULT 0,
+              target_upload INTEGER DEFAULT 0,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              UNIQUE(upload_id, kode, pcl_email)
+            );
+            CREATE INDEX IF NOT EXISTS idx_progres_petugas_upload ON progres_petugas(upload_id);
+            CREATE INDEX IF NOT EXISTS idx_progres_petugas_kode ON progres_petugas(kode);
+            CREATE INDEX IF NOT EXISTS idx_progres_petugas_email ON progres_petugas(pcl_email);
+            CREATE INDEX IF NOT EXISTS idx_progres_petugas_name ON progres_petugas(pcl_name);
+          `);
+        } catch (_) {}
+      }
     }
   ];
 
@@ -2532,7 +2565,7 @@ function rebuildSummaryCache(uploadId, surveyId) {
       MAX(m.desa) AS desa,
       MAX(m.korlap) AS korlap,
       MAX(m.pml) AS pml,
-      COALESCE(p.pcl_name, m.pcl) AS pcl,
+      COALESCE(NULLIF(p.pcl_name, ''), m.pcl) AS pcl,
       COUNT(DISTINCT p.kode) AS total_sls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
@@ -2566,14 +2599,24 @@ function rebuildSummaryCache(uploadId, surveyId) {
     FROM progres p
     LEFT JOIN ${masterTable} m ON p.kode = m.kode
     WHERE p.upload_id = ?
-    GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), m.kecamatan, m.desa
+    GROUP BY COALESCE(NULLIF(p.pcl_email, ''), NULLIF(m.pcl_email, ''), NULLIF(p.pcl_name, ''), m.pcl), m.kecamatan, m.desa
   `).run(uploadId, uploadId);
 }
 
 function getKippOfficers() {
   try {
     const db = getDb();
-    const pcls = db.prepare("SELECT DISTINCT pcl_name FROM progres WHERE kode IN (SELECT kode FROM subsls_master WHERE nama_sls = 'KIPP IKN') AND pcl_name IS NOT NULL AND pcl_name != ''").all().map(r => r.pcl_name.toUpperCase());
+    let pcls = [];
+    try {
+      const pclsFromPP = db.prepare("SELECT DISTINCT pcl_name FROM progres_petugas WHERE kode IN (SELECT kode FROM subsls_master WHERE nama_sls = 'KIPP IKN') AND pcl_name IS NOT NULL AND pcl_name != ''").all().map(r => r.pcl_name.toUpperCase());
+      if (pclsFromPP.length > 0) {
+        pcls = pclsFromPP;
+      }
+    } catch (_) {}
+
+    if (pcls.length === 0) {
+      pcls = db.prepare("SELECT DISTINCT pcl FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pcl IS NOT NULL AND pcl != ''").all().map(r => r.pcl.toUpperCase());
+    }
     const pmls = db.prepare("SELECT DISTINCT pml FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pml IS NOT NULL").all().map(r => r.pml.toUpperCase());
     const korlaps = db.prepare("SELECT DISTINCT korlap FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND korlap IS NOT NULL").all().map(r => r.korlap.toUpperCase());
     return { pcls, pmls, korlaps };

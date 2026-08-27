@@ -830,7 +830,13 @@
                   <% if (isOfftrack) { %>
                     <div class="alert-danger-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
                       <i class="bi bi-exclamation-triangle-fill text-red fs-md mt-0-5"></i>
-                      <div><strong>Off-Track:</strong> Kecepatan saat ini (Laju Akumulatif <%= speedPerPclText %> <%= unitLabel %>/<%= officerLabel %>/hari) di bawah target normal <%= targetNormalPerPclText %> <%= unitLabel %>/hari/<%= officerLabel %>. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeedPerPclText %> <%= unitLabel %>/<%= officerLabel %>/hari</strong> (atau <strong><%= reqSpeed.toFixed(2) %> <%= unitLabel %>/hari total</strong>) agar selesai sesuai target pada <%= formatIndonesianDate(settings.speedometer_target_date || (isSakernas ? '2026-08-27' : '2026-08-31')) %>.</div>
+                      <% if (daysRemaining <= 0) { %>
+                        <div><strong>Off-Track:</strong> Batas waktu target telah terlewati (<%= formatIndonesianDate(settings.speedometer_target_date || (isSakernas ? '2026-08-27' : '2026-08-31')) %>), namun masih tersisa <strong><%= remainingFasih.toLocaleString('id-ID') %> <%= unitLabelFull %></strong>. Diperlukan akselerasi untuk menyelesaikan seluruh sisa dokumen secepatnya.</div>
+                      <% } else if (parseFloat(speedPerPcl) < parseFloat(targetNormalPerPcl)) { %>
+                        <div><strong>Off-Track:</strong> Kecepatan saat ini (Laju Akumulatif <%= speedPerPclText %> <%= unitLabel %>/<%= officerLabel %>/hari) di bawah target normal <%= targetNormalPerPclText %> <%= unitLabel %>/<%= officerLabel %>/hari. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeedPerPclText %> <%= unitLabel %>/<%= officerLabel %>/hari</strong> (atau <strong><%= reqSpeed.toFixed(2) %> <%= unitLabel %>/hari total</strong>) agar selesai sesuai target pada <%= formatIndonesianDate(settings.speedometer_target_date || (isSakernas ? '2026-08-27' : '2026-08-31')) %>.</div>
+                      <% } else { %>
+                        <div><strong>Off-Track:</strong> Meskipun kecepatan saat ini (<%= speedPerPclText %> <%= unitLabel %>/<%= officerLabel %>/hari) di atas target standar (<%= targetNormalPerPclText %> <%= unitLabel %>/<%= officerLabel %>/hari), sisa waktu menuju deadline hanya <strong><%= daysRemaining %> hari</strong>. Kecepatan perlu ditingkatkan menjadi minimal <strong><%= reqSpeedPerPclText %> <%= unitLabel %>/<%= officerLabel %>/hari</strong> agar seluruh beban tuntas tepat waktu.</div>
+                      <% } %>
                     </div>
                   <% } else { %>
                     <div class="alert-success-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
@@ -2015,7 +2021,17 @@
         const totalPcl = current.total_pcl || 1;
         const speedPerPcl = totalPcl > 0 ? (currentSpeed / totalPcl) : 0;
         const reqSpeedPerPcl = totalPcl > 0 ? (reqSpeed / totalPcl) : 0;
-        const latestUpdateSpeedPerPcl = totalPcl > 0 ? (diffTotal / totalPcl) : 0;
+
+        // Calculate days between previous and current date to normalize to daily rate
+        let daysBetween = 1;
+        if (prev && prev.tanggal && current.tanggal) {
+          const dCur = new Date(current.tanggal);
+          const dPrv = new Date(prev.tanggal);
+          const diffTime = dCur - dPrv;
+          daysBetween = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)));
+        }
+        const latestDailySpeedTotal = diffTotal / daysBetween;
+        const latestUpdateSpeedPerPcl = totalPcl > 0 ? (latestDailySpeedTotal / totalPcl) : 0;
         
         let targetSpeedTotal = 0;
         let targetNormalPerPcl = 0;
@@ -2042,7 +2058,7 @@
 
         // Re-create Speedometer Gauge (Accumulative & Last Update)
         createSpeedometerChart('speedometerChartCanvas', speedPerPcl, targetNormalPerPcl, currentSpeed, targetSpeedTotal);
-        createSpeedometerChart('speedometerLastUpdateCanvas', latestUpdateSpeedPerPcl, targetNormalPerPcl, diffTotal, targetSpeedTotal);
+        createSpeedometerChart('speedometerLastUpdateCanvas', latestUpdateSpeedPerPcl, targetNormalPerPcl, latestDailySpeedTotal, targetSpeedTotal);
         
         // Update header sub-text fields
         const normalSpeedEl = document.getElementById('speedometerTargetNormalField');
@@ -2099,9 +2115,17 @@
             }
             
             if (isOfftrack) {
+              let offTrackReason = '';
+              if (daysRemaining <= 0) {
+                offTrackReason = `Batas waktu target telah terlewati (${clientFormatIndonesianDate(sensorDeadlineDateStr)}), namun masih tersisa <strong>${remainingFasih.toLocaleString('id-ID')} ${unitLabelFullStr}</strong>. Diperlukan akselerasi untuk menyelesaikan seluruh sisa dokumen secepatnya.`;
+              } else if (speedPerPcl < targetNormalPerPcl) {
+                offTrackReason = `Kecepatan saat ini (Laju Akumulatif ${speedPerPcl.toFixed(2)} ${unitLabelStr}/${officerLabelStr}/hari) di bawah target normal ${targetNormalFormatted} ${unitLabelStr}/${officerLabelStr}/hari. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong>${reqSpeedPerPcl.toFixed(2)} ${unitLabelStr}/${officerLabelStr}/hari</strong> (atau <strong>${reqSpeed.toFixed(2)} ${unitLabelStr}/hari total</strong>) agar selesai sesuai target pada ${clientFormatIndonesianDate(sensorDeadlineDateStr)}.`;
+              } else {
+                offTrackReason = `Meskipun kecepatan saat ini (${speedPerPcl.toFixed(2)} ${unitLabelStr}/${officerLabelStr}/hari) di atas target standar (${targetNormalFormatted} ${unitLabelStr}/${officerLabelStr}/hari), sisa waktu menuju deadline hanya <strong>${daysRemaining} hari</strong>. Kecepatan perlu ditingkatkan menjadi minimal <strong>${reqSpeedPerPcl.toFixed(2)} ${unitLabelStr}/${officerLabelStr}/hari</strong> agar tuntas sebelum ${clientFormatIndonesianDate(sensorDeadlineDateStr)}.`;
+              }
               inner += `<div class="alert-danger-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
                 <i class="bi bi-exclamation-triangle-fill text-red fs-md mt-0-5"></i>
-                <div><strong>Off-Track:</strong> Kecepatan saat ini (Laju Akumulatif ${speedPerPcl.toFixed(2)} ${unitLabelStr}/${officerLabelStr}/hari) di bawah target normal ${targetNormalFormatted} ${unitLabelStr}/hari/${officerLabelStr}. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong>${reqSpeedPerPcl.toFixed(2)} ${unitLabelStr}/${officerLabelStr}/hari</strong> (atau <strong>${reqSpeed.toFixed(2)} ${unitLabelStr}/hari total</strong>) agar selesai sesuai target pada ${clientFormatIndonesianDate(sensorDeadlineDateStr)}.</div>
+                <div><strong>Off-Track:</strong> ${offTrackReason}</div>
               </div>`;
             } else {
               inner += `<div class="alert-success-subtle mt-2 py-2 px-2-5 text-primary d-flex items-start gap-1-5">
