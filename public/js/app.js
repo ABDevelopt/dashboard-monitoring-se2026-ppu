@@ -2477,18 +2477,40 @@ function updateTime() {
         }
 
         // Update Sidebar/Bottomnav Active Classes
-        const targetPath = new URL(url, window.location.origin).pathname;
+        const targetUrlObj = new URL(url, window.location.href);
+        const targetPath = targetUrlObj.pathname;
         
         // Sidebar items
         document.querySelectorAll('.sidebar .nav-item').forEach(item => {
           const itemHref = item.getAttribute('href');
           if (itemHref) {
-            const itemPath = new URL(itemHref, window.location.origin).pathname;
-            if (itemPath === targetPath || (targetPath === '/' && itemPath === '/')) {
+            if (isSidebarItemActive(itemHref, url)) {
               item.classList.add('active');
             } else {
               item.classList.remove('active');
             }
+          }
+        });
+
+        // Ensure parent section & upload sub-wrapper is opened if active child exists
+        document.querySelectorAll('.sidebar .nav-sub-wrapper').forEach(wrapper => {
+          const hasActiveChild = !!wrapper.querySelector('.nav-item.active');
+          if (hasActiveChild) {
+            wrapper.classList.add('is-open');
+            wrapper.classList.remove('is-collapsed');
+            const subContent = wrapper.querySelector('.nav-sub-content');
+            if (subContent) subContent.style.display = 'block';
+            const subChevron = wrapper.querySelector('.nav-sub-chevron');
+            if (subChevron) subChevron.style.transform = 'rotate(0deg)';
+          }
+        });
+
+        document.querySelectorAll('.sidebar .nav-section-wrapper').forEach(sec => {
+          if (sec.querySelector('.nav-item.active')) {
+            sec.classList.add('has-active', 'is-open');
+            sec.classList.remove('is-collapsed');
+          } else {
+            sec.classList.remove('has-active');
           }
         });
 
@@ -2695,6 +2717,42 @@ function updateTime() {
       loadPage(href);
     });
 
+    function isSidebarItemActive(itemHref, targetUrl) {
+      if (!itemHref || !targetUrl) return false;
+      try {
+        const targetUrlObj = new URL(targetUrl, window.location.href);
+        const itemUrlObj = new URL(itemHref, window.location.href);
+
+        const targetPath = targetUrlObj.pathname.replace(/\/$/, '') || '/';
+        const itemPath = itemUrlObj.pathname.replace(/\/$/, '') || '/';
+
+        // 1. Khusus sub-menu Upload Data admin (/admin/upload)
+        if (itemPath.endsWith('/admin/upload')) {
+          if (!targetPath.endsWith('/admin/upload')) {
+            return false;
+          }
+          const activeTab = targetUrlObj.searchParams.get('tab') || 'fasih';
+          const itemTab = itemUrlObj.searchParams.get('tab') || 'fasih';
+          return itemTab === activeTab;
+        }
+
+        // 2. Jika link memiliki query param spesifik (misal ?tab=...)
+        if (itemUrlObj.search) {
+          const itemTab = itemUrlObj.searchParams.get('tab');
+          const targetTab = targetUrlObj.searchParams.get('tab');
+          if (itemTab && targetTab) {
+            return itemPath === targetPath && itemTab === targetTab;
+          }
+          return itemPath === targetPath && itemUrlObj.search === targetUrlObj.search;
+        }
+
+        // 3. Standar matching berdasarkan pathname
+        return itemPath === targetPath || (targetPath === '/' && itemPath === '/');
+      } catch (_) {
+        return false;
+      }
+    }
+
     function updateBottomNavActiveState(targetPath) {
       if (!targetPath) return;
       const prefix = window.navPrefix || '';
@@ -2753,9 +2811,8 @@ function updateTime() {
     window.setInstantMenuActive = function(targetUrl, clickedEl) {
       if (!targetUrl) return;
       try {
-        const targetUrlObj = new URL(targetUrl, window.location.origin);
+        const targetUrlObj = new URL(targetUrl, window.location.href);
         const targetPath = targetUrlObj.pathname;
-        const targetSearch = targetUrlObj.search;
 
         if (targetPath === '/agent' || targetPath.endsWith('/agent')) {
           document.body.classList.add('page-agent');
@@ -2775,18 +2832,10 @@ function updateTime() {
           const itemHref = item.getAttribute('href');
           let isActive = false;
 
-          if (directItem && item === directItem) {
+          if (itemHref) {
+            isActive = isSidebarItemActive(itemHref, targetUrl);
+          } else if (directItem && item === directItem) {
             isActive = true;
-          } else if (itemHref) {
-            const itemUrl = new URL(itemHref, window.location.origin);
-            const itemPath = itemUrl.pathname;
-            const itemSearch = itemUrl.search;
-
-            if (itemSearch) {
-              isActive = (itemPath === targetPath && itemSearch === targetSearch);
-            } else {
-              isActive = (itemPath === targetPath || (targetPath === '/' && itemPath === '/'));
-            }
           }
 
           if (isActive) {
@@ -2828,6 +2877,21 @@ function updateTime() {
       const url = (e.state && e.state.url) ? e.state.url : window.location.pathname + window.location.search;
       loadPage(url, false);
     });
+
+    // Initial sync of sidebar active states on script load
+    try {
+      const currentInitialUrl = window.location.href;
+      document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+        const itemHref = item.getAttribute('href');
+        if (itemHref) {
+          if (isSidebarItemActive(itemHref, currentInitialUrl)) {
+            item.classList.add('active');
+          } else {
+            item.classList.remove('active');
+          }
+        }
+      });
+    } catch (_) {}
 
     // Haptic Feedback API helper
     function triggerHaptic(duration = 15) {
