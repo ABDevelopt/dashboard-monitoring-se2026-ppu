@@ -2425,6 +2425,10 @@ function updateTime() {
       }
 
       if (targetDoc) {
+        // Preserve current sidebar scroll position across PJAX swaps
+        const sNav = document.querySelector('.sidebar-nav');
+        const prevSidebarNavScroll = sNav ? sNav.scrollTop : null;
+
         // Sync page-specific body layout classes (page-agent, page-map, page-login)
         const pageClasses = ['page-agent', 'page-map', 'page-login'];
         pageClasses.forEach(cls => {
@@ -2477,18 +2481,40 @@ function updateTime() {
         }
 
         // Update Sidebar/Bottomnav Active Classes
-        const targetPath = new URL(url, window.location.origin).pathname;
+        const targetUrlObj = new URL(url, window.location.href);
+        const targetPath = targetUrlObj.pathname;
         
         // Sidebar items
         document.querySelectorAll('.sidebar .nav-item').forEach(item => {
           const itemHref = item.getAttribute('href');
           if (itemHref) {
-            const itemPath = new URL(itemHref, window.location.origin).pathname;
-            if (itemPath === targetPath || (targetPath === '/' && itemPath === '/')) {
+            if (isSidebarItemActive(itemHref, url)) {
               item.classList.add('active');
             } else {
               item.classList.remove('active');
             }
+          }
+        });
+
+        // Ensure parent section & upload sub-wrapper is opened if active child exists
+        document.querySelectorAll('.sidebar .nav-sub-wrapper').forEach(wrapper => {
+          const hasActiveChild = !!wrapper.querySelector('.nav-item.active');
+          if (hasActiveChild) {
+            wrapper.classList.add('is-open');
+            wrapper.classList.remove('is-collapsed');
+            const subContent = wrapper.querySelector('.nav-sub-content');
+            if (subContent) subContent.style.display = 'block';
+            const subChevron = wrapper.querySelector('.nav-sub-chevron');
+            if (subChevron) subChevron.style.transform = 'rotate(0deg)';
+          }
+        });
+
+        document.querySelectorAll('.sidebar .nav-section-wrapper').forEach(sec => {
+          if (sec.querySelector('.nav-item.active')) {
+            sec.classList.add('has-active', 'is-open');
+            sec.classList.remove('is-collapsed');
+          } else {
+            sec.classList.remove('has-active');
           }
         });
 
@@ -2617,12 +2643,22 @@ function updateTime() {
 
         // Trigger window resize event so Leaflet maps, canvas charts, etc. recalculate container dimensions
         window.dispatchEvent(new Event('resize'));
+
+        // Restore sidebar scroll position after PJAX DOM updates
+        if (sNav && prevSidebarNavScroll !== null) {
+          sNav.scrollTop = prevSidebarNavScroll;
+        } else if (typeof restoreSidebarNavScroll === 'function') {
+          restoreSidebarNavScroll();
+        }
       }
 
       } catch (err) {
         console.error('AJAX page navigation error:', err);
         window.location.href = url;
       } finally {
+        if (typeof restoreSidebarNavScroll === 'function') {
+          restoreSidebarNavScroll();
+        }
         if (skeletonTimer) {
           clearTimeout(skeletonTimer);
         }
@@ -2646,7 +2682,7 @@ function updateTime() {
       const navItem = e.target.closest('.sidebar .nav-item, .bottom-nav .bottom-nav-item, .bottom-sheet-item');
       if (navItem) {
         const href = navItem.getAttribute('href');
-        if (href && !href.startsWith('#') && !href.startsWith('javascript:') && !href.includes('/export') && !href.includes('/download') && !href.includes('/logout') && (href.startsWith('/') || href.startsWith(window.location.origin))) {
+        if (href && !href.startsWith('#') && !href.startsWith('javascript:') && !href.includes('/export/data') && !href.includes('/api/export') && !href.includes('/download') && !href.includes('/logout') && (href.startsWith('/') || href.startsWith(window.location.origin))) {
           if (typeof window.setInstantMenuActive === 'function') {
             window.setInstantMenuActive(href, navItem);
           }
@@ -2661,8 +2697,8 @@ function updateTime() {
       if (!a) return;
 
       const href = a.getAttribute('href');
-      // Skip hashes, JS calls, blank target, external targets, downloads, export, or portal page separation
-      if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.getAttribute('target') === '_blank' || a.hasAttribute('download') || href.includes('/export') || href.includes('/download') || href === '/surveys' || href.startsWith('/surveys') || window.location.pathname === '/surveys') {
+      // Skip hashes, JS calls, blank target, external targets, downloads, export data API, or portal page separation
+      if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.getAttribute('target') === '_blank' || a.hasAttribute('download') || href.includes('/export/data') || href.includes('/api/export') || href.includes('/download') || href === '/surveys' || href.startsWith('/surveys') || window.location.pathname === '/surveys') {
         return;
       }
       
@@ -2694,6 +2730,42 @@ function updateTime() {
       
       loadPage(href);
     });
+
+    function isSidebarItemActive(itemHref, targetUrl) {
+      if (!itemHref || !targetUrl) return false;
+      try {
+        const targetUrlObj = new URL(targetUrl, window.location.href);
+        const itemUrlObj = new URL(itemHref, window.location.href);
+
+        const targetPath = targetUrlObj.pathname.replace(/\/$/, '') || '/';
+        const itemPath = itemUrlObj.pathname.replace(/\/$/, '') || '/';
+
+        // 1. Khusus sub-menu Upload Data admin (/admin/upload)
+        if (itemPath.endsWith('/admin/upload')) {
+          if (!targetPath.endsWith('/admin/upload')) {
+            return false;
+          }
+          const activeTab = targetUrlObj.searchParams.get('tab') || 'fasih';
+          const itemTab = itemUrlObj.searchParams.get('tab') || 'fasih';
+          return itemTab === activeTab;
+        }
+
+        // 2. Jika link memiliki query param spesifik (misal ?tab=...)
+        if (itemUrlObj.search) {
+          const itemTab = itemUrlObj.searchParams.get('tab');
+          const targetTab = targetUrlObj.searchParams.get('tab');
+          if (itemTab && targetTab) {
+            return itemPath === targetPath && itemTab === targetTab;
+          }
+          return itemPath === targetPath && itemUrlObj.search === targetUrlObj.search;
+        }
+
+        // 3. Standar matching berdasarkan pathname
+        return itemPath === targetPath || (targetPath === '/' && itemPath === '/');
+      } catch (_) {
+        return false;
+      }
+    }
 
     function updateBottomNavActiveState(targetPath) {
       if (!targetPath) return;
@@ -2753,9 +2825,8 @@ function updateTime() {
     window.setInstantMenuActive = function(targetUrl, clickedEl) {
       if (!targetUrl) return;
       try {
-        const targetUrlObj = new URL(targetUrl, window.location.origin);
+        const targetUrlObj = new URL(targetUrl, window.location.href);
         const targetPath = targetUrlObj.pathname;
-        const targetSearch = targetUrlObj.search;
 
         if (targetPath === '/agent' || targetPath.endsWith('/agent')) {
           document.body.classList.add('page-agent');
@@ -2775,18 +2846,10 @@ function updateTime() {
           const itemHref = item.getAttribute('href');
           let isActive = false;
 
-          if (directItem && item === directItem) {
+          if (itemHref) {
+            isActive = isSidebarItemActive(itemHref, targetUrl);
+          } else if (directItem && item === directItem) {
             isActive = true;
-          } else if (itemHref) {
-            const itemUrl = new URL(itemHref, window.location.origin);
-            const itemPath = itemUrl.pathname;
-            const itemSearch = itemUrl.search;
-
-            if (itemSearch) {
-              isActive = (itemPath === targetPath && itemSearch === targetSearch);
-            } else {
-              isActive = (itemPath === targetPath || (targetPath === '/' && itemPath === '/'));
-            }
           }
 
           if (isActive) {
@@ -2828,6 +2891,71 @@ function updateTime() {
       const url = (e.state && e.state.url) ? e.state.url : window.location.pathname + window.location.search;
       loadPage(url, false);
     });
+
+    // Initial sync of sidebar active states on script load
+    try {
+      const currentInitialUrl = window.location.href;
+      document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+        const itemHref = item.getAttribute('href');
+        if (itemHref) {
+          if (isSidebarItemActive(itemHref, currentInitialUrl)) {
+            item.classList.add('active');
+          } else {
+            item.classList.remove('active');
+          }
+        }
+      });
+    } catch (_) {}
+
+    // ====== SIDEBAR SCROLL POSITION PERSISTENCE ======
+    // Ensures sidebar never unexpectedly jumps or resets to top across interactions, navigations, or reloads
+    function restoreSidebarNavScroll() {
+      try {
+        const savedPos = sessionStorage.getItem('sidebar_nav_scroll_top');
+        if (savedPos !== null) {
+          const sNav = document.querySelector('.sidebar-nav');
+          if (sNav) {
+            const targetPos = parseInt(savedPos, 10);
+            if (!isNaN(targetPos) && targetPos >= 0) {
+              sNav.scrollTop = targetPos;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+    window.restoreSidebarNavScroll = restoreSidebarNavScroll;
+
+    function initSidebarScrollPersistence() {
+      const sNav = document.querySelector('.sidebar-nav');
+      if (!sNav) return;
+
+      // Restore immediately and with slight delays to accommodate layout shifts
+      restoreSidebarNavScroll();
+      requestAnimationFrame(restoreSidebarNavScroll);
+      setTimeout(restoreSidebarNavScroll, 80);
+      setTimeout(restoreSidebarNavScroll, 250);
+
+      // Continuously save scroll position on scroll event
+      sNav.addEventListener('scroll', () => {
+        try {
+          sessionStorage.setItem('sidebar_nav_scroll_top', String(sNav.scrollTop));
+        } catch (_) {}
+      }, { passive: true });
+
+      // Save before page unload / navigation / form submit
+      window.addEventListener('beforeunload', () => {
+        try {
+          if (sNav) sessionStorage.setItem('sidebar_nav_scroll_top', String(sNav.scrollTop));
+        } catch (_) {}
+      });
+      window.addEventListener('pagehide', () => {
+        try {
+          if (sNav) sessionStorage.setItem('sidebar_nav_scroll_top', String(sNav.scrollTop));
+        } catch (_) {}
+      });
+    }
+
+    initSidebarScrollPersistence();
 
     // Haptic Feedback API helper
     function triggerHaptic(duration = 15) {

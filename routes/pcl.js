@@ -31,6 +31,7 @@ router.get('/', (req, res) => {
     pclStats = attachProgressPercentages(db.prepare(`
       SELECT 
         m.pcl, m.pml, m.korlap, m.kecamatan,
+        MAX(COALESCE(p.pcl_email, m.pcl_email)) AS email,
         COUNT(m.kode) AS total_subsls,
         SUM(COALESCE(p.sls_selesai, 0)) AS selesai,
         SUM(${targetMuatanFormula}) AS total_muatan,
@@ -61,8 +62,25 @@ router.get('/', (req, res) => {
       LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
       ${where}
       GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
-      ORDER BY selesai ASC
-    `).all(...params));
+      ORDER BY pct DESC, (SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) DESC, SUM(${targetFormula}) DESC, m.pcl ASC
+    `).all(...params), settings);
+
+    // Ranking pengurutan: FASIH % tertinggi di atas, tie-breaker realisasi dokumen, target dokumen, dan nama
+    pclStats.sort((a, b) => {
+      const aPct = typeof a.fasih_pct === 'number' ? a.fasih_pct : parseFloat(a.fasih_pct_str || a.pct || 0);
+      const bPct = typeof b.fasih_pct === 'number' ? b.fasih_pct : parseFloat(b.fasih_pct_str || b.pct || 0);
+      if (bPct !== aPct) return bPct - aPct;
+
+      const aReal = (a.submitted_total || 0) + (a.approved_total || 0) + (a.rejected_total || 0);
+      const bReal = (b.submitted_total || 0) + (b.approved_total || 0) + (b.rejected_total || 0);
+      if (bReal !== aReal) return bReal - aReal;
+
+      const aTarget = a.target_fasih_total || 0;
+      const bTarget = b.target_fasih_total || 0;
+      if (bTarget !== aTarget) return bTarget - aTarget;
+
+      return (a.pcl || '').localeCompare(b.pcl || '', 'id');
+    });
 
     if (filterPcl) {
       const settings = res.locals.settings;

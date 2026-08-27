@@ -5,13 +5,13 @@
 <div class="fade-in">
   <!-- TAB NAVIGATION -->
   <div style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; flex-wrap: wrap;">
-    <a href="?tab=fasih" class="btn <%= uploadType === 'fasih' ? 'btn-primary' : 'btn-secondary' %>" style="border-radius: 24px; padding: 8px 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s;">
+    <a href="<%= navPrefix %>/admin/upload?tab=fasih" class="btn <%= uploadType === 'fasih' ? 'btn-primary' : 'btn-secondary' %>" style="border-radius: 24px; padding: 8px 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s;">
       <i class="bi bi-file-earmark-code-fill <%= uploadType === 'fasih' ? '' : 'text-purple' %>"></i> Status FASIH
     </a>
-    <a href="?tab=muatan" class="btn <%= uploadType === 'muatan' ? 'btn-primary' : 'btn-secondary' %>" style="border-radius: 24px; padding: 8px 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s;">
+    <a href="<%= navPrefix %>/admin/upload?tab=muatan" class="btn <%= uploadType === 'muatan' ? 'btn-primary' : 'btn-secondary' %>" style="border-radius: 24px; padding: 8px 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s;">
       <i class="bi bi-people-fill <%= uploadType === 'muatan' ? '' : 'text-cyan' %>"></i> Progres Muatan
     </a>
-    <a href="?tab=sls" class="btn <%= uploadType === 'sls' ? 'btn-primary' : 'btn-secondary' %>" style="border-radius: 24px; padding: 8px 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s;">
+    <a href="<%= navPrefix %>/admin/upload?tab=sls" class="btn <%= uploadType === 'sls' ? 'btn-primary' : 'btn-secondary' %>" style="border-radius: 24px; padding: 8px 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s;">
       <i class="bi bi-check2-square <%= uploadType === 'sls' ? '' : 'text-green' %>"></i> Status SLS Selesai
     </a>
   </div>
