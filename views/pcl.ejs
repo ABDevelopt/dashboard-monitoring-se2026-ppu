@@ -148,7 +148,7 @@
             <table id="pclTable">
               <thead class="hide-sm">
                 <tr>
-                  <th rowspan="2" class="text-center th-no">No</th>
+                  <th rowspan="2" class="text-center th-no" title="Nomor Ranking (Peringkat FASIH tertinggi)">No</th>
                   <th rowspan="2">Nama <%= officerLabel %></th>
                   <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">FASIH %</th>
                   <th rowspan="2" class="text-right bg-cyan-soft muatan-col" style="min-width: 140px;">Muatan %</th>
@@ -196,7 +196,7 @@
               </thead>
               <thead class="show-sm-table-header">
                 <tr>
-                  <th class="text-center th-no">No</th>
+                  <th class="text-center th-no" title="Nomor Ranking (Peringkat FASIH tertinggi)">No</th>
                   <th>Nama <%= officerLabel %></th>
                   <!-- <th class="text-right">Selesai</th> -->
                   <th class="text-right bg-purple-soft" data-column-idx="2">FASIH %</th>
@@ -226,7 +226,17 @@
                       data-critical="<%= isCriticalPcl ? '1' : '0' %>"
                       data-zero="<%= isZeroPcl ? '1' : '0' %>"
                       style="<%= filterPcl === p.pcl ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
-                    <td class="text-center td-index"><%= index + 1 %></td>
+                    <td class="text-center td-index" data-sort="<%= index + 1 %>">
+                      <% if (index === 0) { %>
+                        <span style="color: #fbbf24; font-weight: 700;" title="Peringkat 1 (Tertinggi)"><%= index + 1 %></span>
+                      <% } else if (index === 1) { %>
+                        <span style="color: #cbd5e1; font-weight: 700;" title="Peringkat 2"><%= index + 1 %></span>
+                      <% } else if (index === 2) { %>
+                        <span style="color: #f97316; font-weight: 700;" title="Peringkat 3"><%= index + 1 %></span>
+                      <% } else { %>
+                        <%= index + 1 %>
+                      <% } %>
+                    </td>
                     <td class="td-primary">
                       <a href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(p.pcl) %>&kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="link-plain" style="display: inline-block;">
                         <i class="bi bi-person"></i> <%= p.pcl %>
