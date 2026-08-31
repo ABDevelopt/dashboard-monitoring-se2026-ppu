@@ -16,6 +16,31 @@ const safeNullableStr = (val) => {
   return s.toLowerCase() === 'null' ? null : s;
 };
 
+// Helper RFC-4180 CSV line parser: menangani nilai dengan tanda kutip yang mengandung delimiter
+function parseCsvLine(text, delimiter = ';') {
+  const result = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (inQuotes && text[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === delimiter && !inQuotes) {
+      result.push(cur.trim());
+      cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
 
 // Load master data dari JSON (dijalankan sekali saat startup)
 function loadMasterFromJson(jsonPath, surveyId = 'se2026') {
@@ -41,8 +66,13 @@ function loadMasterFromJson(jsonPath, surveyId = 'se2026') {
       for (const sls of desa.sls || []) {
         const slsNama = sls.nama_sls || '';
         for (const subsls of sls.subsls || []) {
+          if (!subsls || !subsls.id_subsls) continue;
+          const cleanIdSubsls = String(subsls.id_subsls).trim();
+          const cleanIdSubsls2025 = subsls.id_subsls_2025 ? String(subsls.id_subsls_2025).trim() : cleanIdSubsls;
+          const muatanVal = parseInt(subsls.total_muatan_assignment, 10) || 0;
+
           rows.push([
-            subsls.id_subsls,
+            cleanIdSubsls,
             kecKode,
             toTitleCase(kecNama),
             toTitleCase(desaNama),
@@ -50,10 +80,10 @@ function loadMasterFromJson(jsonPath, surveyId = 'se2026') {
             normalizeName(subsls.nama_korlap || ''),
             normalizeName(subsls.nama_pml || ''),
             normalizeName(subsls.nama_pcl || ''),
-            subsls.total_muatan_assignment || 0,
-            subsls.id_subsls_2025 || subsls.id_subsls,
-            subsls.total_muatan_assignment || 0, // Default target_fasih to muatan
-            subsls.total_muatan_assignment || 0  // muatan_original
+            muatanVal,
+            cleanIdSubsls2025,
+            muatanVal, // Default target_fasih to muatan
+            muatanVal  // muatan_original
           ]);
         }
       }
@@ -1820,7 +1850,7 @@ function parseRekapPetugasWilayah(filePath) {
     const totalIdx = header.findIndex(h => h.includes('total') || h.includes('assignment'));
 
     for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(sep).map(c => c.replace(/^["']|["']$/g, '').trim());
+      const cols = parseCsvLine(lines[i], sep).map(c => c.replace(/^["']|["']$/g, '').trim());
       if (cols.length <= Math.max(kodeIdx, emailIdx)) continue;
       
       const draftVal = draftIdx !== -1 ? parseInt(cols[draftIdx] || 0, 10) : 0;
@@ -1875,15 +1905,25 @@ function parseRekapPetugasWilayah(filePath) {
   `).get(uploadId);
   const prevUploadId = prevUploadRow ? prevUploadRow.id : null;
 
-  const getPrevMuatan = db.prepare(`
-    SELECT 
-      usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
-      tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
-      rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya, submitted_by_pcl
-    FROM progres
-    WHERE upload_id = ? AND kode = ? AND COALESCE(pcl_email, '') = COALESCE(?, '')
-    LIMIT 1
-  `);
+  // Optimalisasi: Pre-fetch seluruh record muatan sebelumnya ke dalam In-Memory Map (O(1) lookup)
+  // Menghilangkan masalah N+1 query SELECT di dalam perulangan ribuan baris
+  const prevMuatanMap = new Map();
+  if (prevUploadId) {
+    const prevMuatanRows = db.prepare(`
+      SELECT 
+        kode, COALESCE(pcl_email, '') AS pcl_email,
+        usaha_tidak_ditemukan, usaha_ditemukan, usaha_baru, usaha_tutup, usaha_ganda,
+        tidak_ditemukan, ditemukan, keluarga_baru, meninggal, tidak_eligible, tidak_dapat_ditemui,
+        rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya, submitted_by_pcl
+      FROM progres
+      WHERE upload_id = ?
+    `).all(prevUploadId);
+
+    for (const r of prevMuatanRows) {
+      const key = `${r.kode}_${r.pcl_email.toLowerCase()}`;
+      prevMuatanMap.set(key, r);
+    }
+  }
 
   const insertProgresStmt = db.prepare(`
     INSERT INTO progres (
@@ -1979,7 +2019,8 @@ function parseRekapPetugasWilayah(filePath) {
       let submitted_by_pcl = item.submitted !== -1 ? item.submitted : 0;
 
       if (prevUploadId) {
-        const prev = getPrevMuatan.get(prevUploadId, kodeClean, rawEmail);
+        const prevKey = `${kodeClean}_${rawEmail.toLowerCase()}`;
+        const prev = prevMuatanMap.get(prevKey);
         if (prev) {
           usaha_tidak_ditemukan = prev.usaha_tidak_ditemukan || 0;
           usaha_ditemukan = prev.usaha_ditemukan || 0;
