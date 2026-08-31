@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const XLSX = require('xlsx');
 const PDFDocument = require('pdfkit-table');
-const { getPmlStats, getDb, getSettings, attachProgressPercentages, getAllUploads, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
+const { getPmlStats, getDb, getSettings, attachProgressPercentages, getAllUploads, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula } = require('../database');
 
 // Heatmap color generator (HSL to RGB conversion)
 function getHeatmapColor(pct) {
@@ -203,7 +203,7 @@ router.get('/', (req, res) => {
         SELECT 
           COALESCE(p.pcl_name, m.pcl) AS pcl, m.pml, m.korlap, m.kecamatan,
           COUNT(DISTINCT p.kode) AS total_subsls,
-          SUM(COALESCE(p.sls_selesai, 0)) AS selesai,
+          SUM(${getSingleSelesaiFormula(targetFormula, 'p')}) AS selesai,
           SUM(${targetMuatanFormula}) AS total_muatan,
           SUM(${realFormula}) AS muatan_selesai,
           SUM(${usahaTotalFormula}) AS usaha_total,

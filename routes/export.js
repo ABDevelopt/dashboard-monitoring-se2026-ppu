@@ -8,7 +8,9 @@ const {
   getRealizationFormula,
   getAdaptiveMuatanFormula,
   getUsahaTotalFormula,
-  getKeluargaTotalFormula
+  getKeluargaTotalFormula,
+  getSingleSelesaiFormula,
+  getSubslsStatusFormula
 } = require('../database');
 
 // GET /export - Halaman Utama Ekspor Terpadu
@@ -121,13 +123,13 @@ router.get('/data', (req, res) => {
 
     if (status) {
       if (status === 'belum_mulai') {
-        cond.push('(p.kode IS NULL OR (COALESCE(p.sls_selesai, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
+        cond.push(`(p.kode IS NULL OR ((${getSingleSelesaiFormula(targetFormula, 'p')}) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))`);
       } else if (status === 'sedang_didata') {
-        cond.push(`(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0) AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) < (${targetFormula}))`);
+        cond.push(`(p.kode IS NOT NULL AND (${getSingleSelesaiFormula(targetFormula, 'p')}) = 0 AND (COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0) AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) < (${targetFormula}))`);
       } else if (status === 'memenuhi_target') {
-        cond.push(`(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}))`);
+        cond.push(`(p.kode IS NOT NULL AND (${getSingleSelesaiFormula(targetFormula, 'p')}) = 0 AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}))`);
       } else if (status === 'selesai') {
-        cond.push('(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 1)');
+        cond.push(`(p.kode IS NOT NULL AND (${getSingleSelesaiFormula(targetFormula, 'p')}) = 1)`);
       }
     }
 
@@ -193,15 +195,10 @@ router.get('/data', (req, res) => {
       // Status progres SLS
       if (scope === 'all') {
         selectFields.push(`
-          CASE 
-            WHEN COALESCE(p.sls_selesai, 0) = 1 THEN 'Selesai'
-            WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 'Memenuhi Target'
-            WHEN p.kode IS NOT NULL AND (
-              COALESCE(p.draft, 0) > 0 OR 
-              COALESCE(p.submitted_by_pcl, 0) > 0 OR 
-              COALESCE(p.approved, 0) > 0 OR 
-              COALESCE(p.rejected, 0) > 0
-            ) THEN 'Sedang Didata'
+          CASE ${getSubslsStatusFormula(targetFormula, 'p')}
+            WHEN 'selesai' THEN 'Selesai'
+            WHEN 'memenuhi_target' THEN 'Memenuhi Target'
+            WHEN 'sedang_didata' THEN 'Sedang Didata'
             ELSE 'Belum Mulai'
           END AS "Status Progres"
         `);

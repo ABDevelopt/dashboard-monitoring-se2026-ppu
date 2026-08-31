@@ -24,7 +24,9 @@ Folder ini berisi seluruh dokumen laporan teknis pengembangan sistem **Pananyo T
 ### **3. `03_Laporan_Mingguan_Latsar/`**
 - **`M1 - Laporan Mingguan Pelaksanaan Aktualisasi Pelatihan Dasar CPNS BPS Tahun 2026.docx`**: Laporan Mingguan Minggu ke-1 (M1) Pelaksanaan Aktualisasi Latsar CPNS BPS 2026 (Kegiatan 1 & Tahapan 1.1 - 1.4 beserta nilai BerAKHLAK).
 - **`M2 - Laporan Mingguan Pelaksanaan Aktualisasi Pelatihan Dasar CPNS BPS Tahun 2026.docx`**: Laporan Mingguan Minggu ke-2 (M2) Pelaksanaan Aktualisasi Latsar CPNS BPS 2026 (Kegiatan 2 & Tahapan 2.1 - 2.4 beserta nilai BerAKHLAK).
-- **`FINAL_YAHYA ABDURROHMAN_LAPORAN RANCANGAN AKTUALISASI.pdf`**: Dokumen acuan Rancangan Aktualisasi Yahya Abdurrohman
+- **`M3 - Laporan Mingguan Pelaksanaan Aktualisasi Pelatihan Dasar CPNS BPS Tahun 2026.docx`**: Laporan Mingguan Minggu ke-3 (M3) Pelaksanaan Aktualisasi Latsar CPNS BPS 2026 (Kegiatan 3 & Tahapan 3.1 - 3.4 beserta nilai BerAKHLAK).
+- **`M4 - Laporan Mingguan Pelaksanaan Aktualisasi Pelatihan Dasar CPNS BPS Tahun 2026.docx`**: Laporan Mingguan Minggu ke-4 (M4) Pelaksanaan Aktualisasi Latsar CPNS BPS 2026 (Kegiatan 4 & Tahapan 4.1 - 4.4 beserta nilai BerAKHLAK).
+- **`FINAL_YAHYA ABDURROHMAN_LAPORAN RANCANGAN AKTUALISASI.pdf`**: Dokumen acuan Rancangan Aktualisasi Yahya Abdurrohman.
 
 ### **4. `04_Dokumen_Pendukung/`**
 - **`Overview — Dashboard SE2026 PPU.pdf`**: Dokumen cetak ringkasan executive overview.

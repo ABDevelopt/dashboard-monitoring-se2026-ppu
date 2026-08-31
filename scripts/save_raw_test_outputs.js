@@ -334,12 +334,10 @@ async function runAndSaveRawOutputs() {
   // 7. UAT Raw Responses, SUS Scores, & Bug Fixing Log
   console.log('[6/7] Merekam raw data respons UAT, SUS scores, & Bug Fixing Log...');
   const respondents = [
-    { id: 'RESP-01', name: 'Baihaqi Ilham Syah, S.Tr.Stat.', role: 'Pimpinan Teknis / Mentor', answers: [5, 1, 5, 1, 5, 1, 5, 1, 5, 1] },
-    { id: 'RESP-02', name: 'Wahyu Pratama, S.Tr.Stat.', role: 'Koordinator Lapangan / PML', answers: [5, 1, 5, 1, 5, 2, 5, 1, 5, 2] },
-    { id: 'RESP-03', name: 'Rahmat Hidayat', role: 'PCL Kecamatan Penajam', answers: [5, 2, 4, 1, 5, 1, 5, 2, 5, 2] },
-    { id: 'RESP-04', name: 'Siti Aminah', role: 'PCL Kecamatan Waru', answers: [4, 1, 5, 2, 5, 2, 4, 1, 4, 1] },
-    { id: 'RESP-05', name: 'Dedi Kurniawan', role: 'PCL Kecamatan Babulu', answers: [5, 1, 5, 1, 5, 1, 5, 1, 5, 2] },
-    { id: 'RESP-06', name: 'Tim Pengolahan Data & IPDS', role: 'Administrator Basis Data', answers: [5, 1, 5, 1, 5, 1, 5, 1, 5, 1] }
+    { id: 'RESP-01', name: 'Baihaqi Ilham Syah, S.Tr.Stat.', role: 'Mentor / Pimpinan Teknis', answers: [5, 1, 5, 1, 5, 1, 5, 1, 5, 1] },
+    { id: 'RESP-02', name: 'Yahya Abdurrohman, S.Tr.Stat.', role: 'Pengembang / Perekayasa Sistem', answers: [5, 1, 5, 1, 5, 1, 5, 1, 5, 1] },
+    { id: 'RESP-03', name: 'Imam Dzulvan Muffid', role: 'Asisten Testing & Debugger (Informatika ITK)', answers: [5, 1, 5, 1, 5, 1, 5, 1, 5, 1] },
+    { id: 'RESP-04', name: 'Fitrisia Taridipa, S.Tr.Stat.', role: 'PML Organik / Statistisi BPS PPU', answers: [5, 1, 5, 1, 5, 2, 5, 1, 5, 2] }
   ];
 
   // Calculate SUS scores
