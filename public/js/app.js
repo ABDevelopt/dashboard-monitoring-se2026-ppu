@@ -2400,6 +2400,14 @@ function updateTime() {
       if (targetDoc) {
         const newContent = targetDoc.getElementById('pjax-container');
         if (newContent) {
+          // Clear skeleton threshold timer immediately to prevent skeleton from flashing or lingering
+          if (skeletonTimer) {
+            clearTimeout(skeletonTimer);
+            skeletonTimer = null;
+          }
+          const overlay = document.getElementById('pjax-loading-overlay');
+          if (overlay) overlay.classList.remove('active');
+
           if (window._pjaxCleanups && window._pjaxCleanups.length) {
             window._pjaxCleanups.forEach(item => {
               window.removeEventListener(item.type, item.listener, item.options);
@@ -2568,15 +2576,28 @@ function updateTime() {
 
             const promise = new Promise((resolve) => {
               if (newScript.src) {
-                newScript.onload = () => resolve();
-                newScript.onerror = () => resolve(); // continue on error
+                let resolved = false;
+                const done = () => {
+                  if (!resolved) {
+                    resolved = true;
+                    resolve();
+                  }
+                };
+                newScript.onload = done;
+                newScript.onerror = done;
+                // Safety timeout: prevent slow/stalled external scripts from hanging PJAX navigation
+                setTimeout(done, 2500);
               } else {
                 resolve();
               }
             });
 
-            script.parentNode.insertBefore(newScript, script.nextSibling);
-            script.remove();
+            try {
+              script.parentNode.insertBefore(newScript, script.nextSibling);
+              script.remove();
+            } catch (err) {
+              console.warn('Failed to insert script during PJAX transition:', err);
+            }
 
             await promise;
             await executeScriptsSequentially(index + 1);
@@ -2584,6 +2605,8 @@ function updateTime() {
 
           try {
             await executeScriptsSequentially(0);
+          } catch (err) {
+            console.error('Error in executeScriptsSequentially:', err);
           } finally {
             // Always restore original addEventListener
             document.addEventListener = originalDocAddEventListener;
