@@ -9,18 +9,11 @@ const {
   deleteRememberToken 
 } = require('../database');
 
-// Helper to parse cookies from request headers
+const cookie = require('cookie');
+
+// Helper to parse cookies from request headers safely
 function parseCookies(req) {
-  const cookies = {};
-  if (req.headers.cookie) {
-    req.headers.cookie.split(';').forEach(c => {
-      const parts = c.split('=');
-      const name = parts.shift().trim();
-      const val = parts.join('=');
-      cookies[name] = decodeURIComponent(val);
-    });
-  }
-  return cookies;
+  return req.headers.cookie ? cookie.parse(req.headers.cookie) : {};
 }
 
 // GET /login

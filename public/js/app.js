@@ -301,7 +301,10 @@ function updateTime() {
     crumbs.push({ label: 'Home', icon: 'bi-house-door', href: prefix + '/' });
 
     // Resolve the current page info
-    const pageInfo = PAGE_MAP[normalizedPath] || { label: decodeURIComponent(normalizedPath.replace(/^\//, '').replace(/-/g, ' ')).replace(/\b\w/g, c => c.toUpperCase()), icon: 'bi-file-earmark' };
+    let fallbackLabel = normalizedPath.replace(/^\//, '').replace(/-/g, ' ');
+    try { fallbackLabel = decodeURIComponent(fallbackLabel); } catch (e) {}
+    fallbackLabel = fallbackLabel.replace(/\b\w/g, c => c.toUpperCase());
+    const pageInfo = PAGE_MAP[normalizedPath] || { label: fallbackLabel, icon: 'bi-file-earmark' };
     const pageHref = prefix + (normalizedPath === '/' ? '' : normalizedPath);
 
     // Check for drill-down filter params that indicate sub-level navigation

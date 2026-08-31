@@ -190,16 +190,9 @@ app.use((req, res, next) => {
 
 
 // Auto-login from Remember Me cookie (Instagram Style)
+const cookie = require('cookie');
 app.use((req, res, next) => {
-  const cookies = {};
-  if (req.headers.cookie) {
-    req.headers.cookie.split(';').forEach(c => {
-      const parts = c.split('=');
-      const name = parts.shift().trim();
-      const val = parts.join('=');
-      cookies[name] = decodeURIComponent(val);
-    });
-  }
+  const cookies = req.headers.cookie ? cookie.parse(req.headers.cookie) : {};
 
   if (!req.session.user && cookies.remember_token && !req.session.loggedOut) {
     try {
