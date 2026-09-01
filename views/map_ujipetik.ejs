@@ -814,21 +814,22 @@
     }
   }
 
-  /* Scope Selector Modal */
+  /* Scope Selector Modal (Centered precisely within Map Canvas Container) */
   .ujipetik-modal-overlay {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 99999;
-    background: rgba(10, 15, 29, 0.78);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    width: 100%;
+    height: 100%;
+    z-index: 1100;
+    background: rgba(10, 15, 29, 0.72);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 16px;
+    box-sizing: border-box;
     animation: fadeInModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
   @keyframes fadeInModal {
@@ -837,14 +838,17 @@
   }
 
   .ujipetik-modal-card {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.96) 0%, rgba(15, 23, 42, 0.98) 100%);
     backdrop-filter: blur(28px) saturate(200%);
     -webkit-backdrop-filter: blur(28px) saturate(200%);
     border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 22px;
-    padding: 22px 24px;
+    padding: 20px 22px;
     width: 100%;
-    max-width: 520px;
+    max-width: 640px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
     box-shadow: 0 25px 65px rgba(0, 0, 0, 0.65), inset 0 1.5px 2px rgba(255, 255, 255, 0.35);
     color: #f8fafc;
     box-sizing: border-box;
@@ -864,71 +868,172 @@
     gap: 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     padding-bottom: 12px;
+    flex-shrink: 0;
   }
   body.light-mode .ujipetik-modal-header {
     border-bottom-color: rgba(0, 0, 0, 0.08);
   }
 
   .ujipetik-modal-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
     background: rgba(245, 158, 11, 0.18);
     border: 1px solid rgba(245, 158, 11, 0.35);
     color: #f59e0b;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 18px;
     flex-shrink: 0;
   }
 
-  .scope-kec-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-
-  .scope-kec-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 14px;
-    padding: 12px 14px;
+  /* Kecamatan Tabs Filter */
+  .modal-kec-tabs {
     display: flex;
-    flex-direction: column;
-    gap: 3px;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-bottom: 10px;
+    padding-bottom: 2px;
+    flex-shrink: 0;
+  }
+  .modal-kec-tabs::-webkit-scrollbar { display: none; }
+
+  .modal-kec-tab {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 999px;
     cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
-
-  .scope-kec-card:hover {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(245, 158, 11, 0.08) 100%);
-    border-color: rgba(245, 158, 11, 0.5);
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 8px 24px rgba(245, 158, 11, 0.25);
+  .modal-kec-tab:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+  }
+  .modal-kec-tab.active {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.35) 0%, rgba(245, 158, 11, 0.18) 100%);
+    border-color: #f59e0b;
+    color: #f59e0b;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
   }
 
-  body.light-mode .scope-kec-card {
-    background: rgba(0, 0, 0, 0.03);
+  body.light-mode .modal-kec-tab {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #64748b;
+  }
+  body.light-mode .modal-kec-tab.active {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: #f59e0b;
+    color: #b45309;
+  }
+
+  /* Live Search Box */
+  .modal-search-box {
+    position: relative;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .modal-search-box input {
+    width: 100%;
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: var(--text-primary);
+    font-size: 12px;
+    padding: 7px 12px 7px 32px;
+    border-radius: 10px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+  body.light-mode .modal-search-box input {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(0, 0, 0, 0.12);
+    color: #0f172a;
+  }
+  .modal-search-box input:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.25);
+  }
+  .modal-search-box .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  /* Desa Grid Cards (Scrollable) */
+  .modal-desa-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+    gap: 8px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 3px;
+    scrollbar-width: thin;
+  }
+
+  .modal-desa-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 12px;
+    padding: 9px 11px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+  }
+  .modal-desa-card:hover {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.18) 0%, rgba(6, 182, 212, 0.05) 100%);
+    border-color: rgba(6, 182, 212, 0.45);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(6, 182, 212, 0.16);
+  }
+  body.light-mode .modal-desa-card {
+    background: rgba(0, 0, 0, 0.025);
     border-color: rgba(0, 0, 0, 0.08);
   }
-  body.light-mode .scope-kec-card:hover {
-    background: rgba(245, 158, 11, 0.12);
-    border-color: #f59e0b;
+  body.light-mode .modal-desa-card:hover {
+    background: rgba(6, 182, 212, 0.08);
+    border-color: #0284c7;
   }
 
-  .scope-kec-icon {
-    font-size: 18px;
-    margin-bottom: 2px;
-  }
-  .scope-kec-name {
-    font-size: 14px;
-    color: inherit;
+  .modal-desa-title {
+    font-size: 12px;
     font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .scope-kec-count {
+  .modal-desa-subtitle {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .modal-desa-count {
     font-size: 11px;
-    opacity: 0.75;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    margin-top: 1px;
+    display: inline-block;
   }
 </style>
 
@@ -1007,16 +1112,16 @@
       <span class="gmaps-section-label"><i class="bi bi-tags"></i> Kategori Bangunan</span>
       <div class="gmaps-pill-group" id="categoryFilterGroup">
         <button type="button" class="gmaps-pill-btn active" data-cat="">Semua (<span id="countTotalPill">0</span>)</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="1">🟠 Usaha</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="2">🟣 Campuran</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="3">🔵 Tinggal</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="6">⚫ Kosong</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="lainnya">🏛️ Fasum/Lainnya</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="1"><span style="color: #f59e0b;">●</span> Usaha</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="2"><span style="color: #a855f7;">●</span> Campuran</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="3"><span style="color: #0284c7;">●</span> Tinggal</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="6"><span style="color: #64748b;">●</span> Kosong</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="lainnya"><span style="color: #10b981;">●</span> Fasum / Lainnya</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal Dialog: Pilih Wilayah Titik Uji Petik -->
+  <!-- Modal Dialog: Pilih Wilayah Titik Uji Petik (Tingkat Desa/Kelurahan) -->
   <div id="ujipetikScopeModal" class="ujipetik-modal-overlay" style="display: none;">
     <div class="ujipetik-modal-card">
       <div class="ujipetik-modal-header">
@@ -1025,9 +1130,9 @@
             <i class="bi bi-pin-map-fill"></i>
           </div>
           <div>
-            <h3 style="margin: 0; font-size: 15.5px; font-weight: 700; color: inherit;">Pilih Wilayah Uji Petik</h3>
+            <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: inherit;">Pilih Desa / Kelurahan Uji Petik</h3>
             <p style="margin: 2px 0 0 0; font-size: 11.5px; opacity: 0.8;">
-              Pilih wilayah kerja yang ingin dipantau untuk performa peta yang super cepat &amp; terfokus.
+              Pilih desa atau kelurahan untuk menampilkan sebaran titik secara terfokus dan bebas lag.
             </p>
           </div>
         </div>
@@ -1036,56 +1141,47 @@
         </button>
       </div>
 
-      <!-- Quick Select 4 Kecamatan Grid -->
-      <div style="margin: 14px 0 12px 0;">
-        <span style="font-size: 10.5px; font-weight: 700; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 8px;">
-          <i class="bi bi-grid-fill" style="color: var(--accent-cyan);"></i> Pilih Berdasarkan Kecamatan:
-        </span>
-        <div class="scope-kec-grid">
-          <div class="scope-kec-card" data-kec="BABULU" onclick="selectScopeKecamatan('BABULU')">
-            <div class="scope-kec-icon">🌾</div>
-            <strong class="scope-kec-name">Babulu</strong>
-            <span class="scope-kec-count" id="modalCountBabulu">Memuat data...</span>
-          </div>
-          <div class="scope-kec-card" data-kec="PENAJAM" onclick="selectScopeKecamatan('PENAJAM')">
-            <div class="scope-kec-icon">🏙️</div>
-            <strong class="scope-kec-name">Penajam</strong>
-            <span class="scope-kec-count" id="modalCountPenajam">Memuat data...</span>
-          </div>
-          <div class="scope-kec-card" data-kec="SEPAKU" onclick="selectScopeKecamatan('SEPAKU')">
-            <div class="scope-kec-icon">🌲</div>
-            <strong class="scope-kec-name">Sepaku</strong>
-            <span class="scope-kec-count" id="modalCountSepaku">Memuat data...</span>
-          </div>
-          <div class="scope-kec-card" data-kec="WARU" onclick="selectScopeKecamatan('WARU')">
-            <div class="scope-kec-icon">🌊</div>
-            <strong class="scope-kec-name">Waru</strong>
-            <span class="scope-kec-count" id="modalCountWaru">Memuat data...</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Or Select Specific Desa -->
-      <div style="margin-bottom: 16px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 12px 14px;">
-        <span style="font-size: 11px; font-weight: 700; opacity: 0.85; display: block; margin-bottom: 6px;">
-          <i class="bi bi-geo-alt-fill" style="color: #0284c7;"></i> Atau Pilih Desa / Kelurahan Spesifik:
-        </span>
-        <div style="display: flex; gap: 8px;">
-          <select id="modalDesaSelect" class="gmaps-select-pill" style="flex: 1; height: 35px; border-radius: 10px;">
-            <option value="">-- Pilih Desa / Kelurahan --</option>
-          </select>
-          <button type="button" class="btn btn-primary btn-sm" onclick="selectScopeDesaFromModal()" style="border-radius: 10px; font-weight: 700; padding: 0 16px; font-size: 11.5px;">
-            Tampilkan
+      <!-- Step 1: Filter Tab Kecamatan (Clean Professional Icons, No Emojis) -->
+      <div style="margin-top: 12px;">
+        <div class="modal-kec-tabs" id="modalKecTabs">
+          <button type="button" class="modal-kec-tab active" data-kec="" onclick="filterModalDesaByKec('', this)">
+            <i class="bi bi-grid-fill"></i> Semua Desa
+          </button>
+          <button type="button" class="modal-kec-tab" data-kec="BABULU" onclick="filterModalDesaByKec('BABULU', this)">
+            <i class="bi bi-geo-alt-fill"></i> Babulu
+          </button>
+          <button type="button" class="modal-kec-tab" data-kec="PENAJAM" onclick="filterModalDesaByKec('PENAJAM', this)">
+            <i class="bi bi-geo-alt-fill"></i> Penajam
+          </button>
+          <button type="button" class="modal-kec-tab" data-kec="SEPAKU" onclick="filterModalDesaByKec('SEPAKU', this)">
+            <i class="bi bi-geo-alt-fill"></i> Sepaku
+          </button>
+          <button type="button" class="modal-kec-tab" data-kec="WARU" onclick="filterModalDesaByKec('WARU', this)">
+            <i class="bi bi-geo-alt-fill"></i> Waru
           </button>
         </div>
       </div>
 
+      <!-- Step 2: Live Search Desa -->
+      <div class="modal-search-box">
+        <i class="bi bi-search search-icon"></i>
+        <input type="text" id="modalDesaSearchInput" placeholder="Cari nama desa / kelurahan..." autocomplete="off">
+      </div>
+
+      <!-- Step 3: Grid Kartu Desa / Kelurahan -->
+      <div class="modal-desa-grid" id="modalDesaGrid">
+        <div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: var(--text-muted);">
+          <div class="spinner-border spinner-border-sm text-cyan" role="status"></div>
+          <span style="margin-left: 8px; font-size: 12px;">Memuat daftar desa...</span>
+        </div>
+      </div>
+
       <!-- Modal Footer -->
-      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 12px;">
-        <button type="button" class="btn btn-secondary btn-sm" onclick="selectAllPoints()" style="font-size: 11px; opacity: 0.85; padding: 5px 10px;">
-          <i class="bi bi-globe"></i> Tampilkan Seluruh PPU
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 12px; margin-top: 12px;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="selectAllPoints()" style="font-size: 11px; opacity: 0.85; padding: 5px 12px; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="bi bi-layers"></i> Tampilkan Seluruh Kabupaten
         </button>
-        <button type="button" class="btn btn-secondary btn-sm" onclick="closeScopeModal()" style="font-size: 11px; padding: 5px 12px;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeScopeModal()" style="font-size: 11px; padding: 5px 14px;">
           Tutup
         </button>
       </div>
@@ -1646,9 +1742,16 @@
         if (elKosong) elKosong.textContent = kosong.toLocaleString('id-ID');
       }
 
-      // Scope Selector Modal Logic
+      // Scope Selector Modal Logic (Desa / Kelurahan Level)
+      let modalActiveKec = '';
+      let modalDesaSearchQuery = '';
+
       window.openScopeModal = function() {
         const modal = document.getElementById('ujipetikScopeModal');
+        const searchInput = document.getElementById('modalDesaSearchInput');
+        if (searchInput) searchInput.value = '';
+        modalDesaSearchQuery = '';
+        renderModalDesaGrid();
         if (modal) modal.style.display = 'flex';
       };
 
@@ -1667,7 +1770,7 @@
         } else if (filteredPoints && filteredPoints.length === allPoints.length && allPoints.length > 0) {
           btnText.textContent = `Seluruh PPU (${Math.round(allPoints.length / 1000)}K)`;
         } else {
-          btnText.textContent = 'Pilih Wilayah';
+          btnText.textContent = 'Pilih Desa';
         }
       }
 
@@ -1719,32 +1822,67 @@
         }
       }
 
-      window.selectScopeKecamatan = function(kecName) {
-        currentKec = kecName;
-        currentDesa = '';
-        const kecSelect = document.getElementById('kecFilter');
-        const desaSelect = document.getElementById('desaFilter');
-        if (kecSelect) kecSelect.value = kecName;
-        if (desaSelect) {
-          populateDesaDropdown(kecName);
-          desaSelect.value = '';
-        }
-        applyFilters();
-        zoomToKecamatan(kecName);
-        updateScopeButtonLabel();
-        closeScopeModal();
+      window.filterModalDesaByKec = function(kecName, btnEl) {
+        modalActiveKec = kecName;
+        document.querySelectorAll('#modalKecTabs .modal-kec-tab').forEach(b => b.classList.remove('active'));
+        if (btnEl) btnEl.classList.add('active');
+        renderModalDesaGrid();
       };
 
-      window.selectScopeDesaFromModal = function() {
-        const modalDesa = document.getElementById('modalDesaSelect');
-        if (!modalDesa || !modalDesa.value) {
-          alert('Silakan pilih salah satu desa terlebih dahulu.');
+      function renderModalDesaGrid() {
+        const grid = document.getElementById('modalDesaGrid');
+        if (!grid || !summaryStats || !summaryStats.desaStats) return;
+
+        let desas = summaryStats.desaStats;
+        if (modalActiveKec) {
+          desas = desas.filter(d => d.kecamatan && d.kecamatan.toUpperCase() === modalActiveKec.toUpperCase());
+        }
+        if (modalDesaSearchQuery) {
+          const q = modalDesaSearchQuery.toLowerCase().trim();
+          desas = desas.filter(d => (d.desa && d.desa.toLowerCase().includes(q)) || (d.kecamatan && d.kecamatan.toLowerCase().includes(q)));
+        }
+
+        if (desas.length === 0) {
+          grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 24px 10px; color: var(--text-muted);">
+              <i class="bi bi-search" style="font-size: 20px; display: block; margin-bottom: 6px; opacity: 0.6;"></i>
+              <span style="font-size: 12px;">Tidak ditemukan desa yang sesuai pencarian.</span>
+            </div>
+          `;
           return;
         }
-        const desaName = modalDesa.value;
+
+        let html = '';
+        desas.forEach(d => {
+          const count = d.total_titik !== undefined ? d.total_titik : (d.count || 0);
+          const safeDesa = (d.desa || '').replace(/'/g, "\\'");
+          const safeKec = (d.kecamatan || '').replace(/'/g, "\\'");
+          html += `
+            <div class="modal-desa-card" onclick="selectScopeDesaDirect('${safeDesa}', '${safeKec}')">
+              <div class="modal-desa-title">
+                <i class="bi bi-geo-alt-fill text-cyan" style="font-size: 11px;"></i>
+                <span>${d.desa}</span>
+              </div>
+              <div class="modal-desa-subtitle">Kec. ${d.kecamatan || '-'}</div>
+              <div>
+                <span class="modal-desa-count">${count.toLocaleString('id-ID')} Titik</span>
+              </div>
+            </div>
+          `;
+        });
+        grid.innerHTML = html;
+      }
+
+      window.selectScopeDesaDirect = function(desaName, kecName) {
         currentDesa = desaName;
+        currentKec = kecName || '';
+        const kecSelect = document.getElementById('kecFilter');
         const desaSelect = document.getElementById('desaFilter');
-        if (desaSelect) desaSelect.value = desaName;
+        if (kecSelect) kecSelect.value = kecName || '';
+        if (desaSelect) {
+          populateDesaDropdown(kecName || '');
+          desaSelect.value = desaName;
+        }
         applyFilters();
         zoomToDesa(desaName);
         updateScopeButtonLabel();
@@ -2217,36 +2355,32 @@
           populateDesaDropdown('');
           populateOfficerDropdowns();
           setupBoundaryLayers();
+          renderModalDesaGrid();
 
-          // Populate modal counts for each kecamatan
-          if (summaryStats && summaryStats.kecStats) {
-            const getKecTotal = (kName) => {
-              const k = summaryStats.kecStats.find(item => item.kecamatan && item.kecamatan.toUpperCase() === kName.toUpperCase());
-              if (!k) return '0 Titik';
-              const c = k.total_titik !== undefined ? k.total_titik : (k.count || 0);
-              return c.toLocaleString('id-ID') + ' Titik';
-            };
-            const elBabulu = document.getElementById('modalCountBabulu');
-            const elPenajam = document.getElementById('modalCountPenajam');
-            const elSepaku = document.getElementById('modalCountSepaku');
-            const elWaru = document.getElementById('modalCountWaru');
-            if (elBabulu) elBabulu.textContent = getKecTotal('BABULU');
-            if (elPenajam) elPenajam.textContent = getKecTotal('PENAJAM');
-            if (elSepaku) elSepaku.textContent = getKecTotal('SEPAKU');
-            if (elWaru) elWaru.textContent = getKecTotal('WARU');
+          // Setup Modal Live Search Listener
+          const modalSearchInput = document.getElementById('modalDesaSearchInput');
+          if (modalSearchInput) {
+            modalSearchInput.addEventListener('input', (e) => {
+              modalDesaSearchQuery = e.target.value;
+              renderModalDesaGrid();
+            });
           }
 
-          // Check URL query parameters (e.g. ?kec=BABULU or ?desa=WARU)
+          // Check URL query parameters (e.g. ?desa=WARU or ?kec=BABULU)
           const urlParams = new URLSearchParams(window.location.search);
           const initialKec = urlParams.get('kec');
           const initialDesa = urlParams.get('desa');
 
-          if (initialKec) {
-            selectScopeKecamatan(initialKec);
-          } else if (initialDesa) {
-            const modalDesa = document.getElementById('modalDesaSelect');
-            if (modalDesa) modalDesa.value = initialDesa;
-            selectScopeDesaFromModal();
+          if (initialDesa) {
+            selectScopeDesaDirect(initialDesa, initialKec || '');
+          } else if (initialKec) {
+            currentKec = initialKec;
+            const kecSelect = document.getElementById('kecFilter');
+            if (kecSelect) kecSelect.value = initialKec;
+            populateDesaDropdown(initialKec);
+            applyFilters();
+            zoomToKecamatan(initialKec);
+            updateScopeButtonLabel();
           } else {
             // Default: do NOT draw all 69k points automatically (prevents initial lag)
             filteredPoints = [];
