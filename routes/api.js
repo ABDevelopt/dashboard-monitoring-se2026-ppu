@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getTrenHarian, getKecamatanStats, getPclStats, getDb, getSettings, updateSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSubslsStatusFormula } = require('../database');
+const { getTrenHarian, getKecamatanStats, getPclStats, getDb, getSettings, updateSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSubslsStatusFormula, getTitikUjiPetikStats, getTitikUjiPetikPoints, getTitikUjiPetikCompact } = require('../database');
 
 // Tren harian (untuk Chart.js)
 router.get('/tren', (req, res) => {
@@ -115,6 +115,63 @@ router.get('/map-stats', (req, res) => {
   const { getKecamatanStats } = require('../database');
   const kecStats = getKecamatanStats(uploadId, settings);
   res.json({ kecStats: attachProgressPercentages(kecStats, settings), desaStats: attachProgressPercentages(desaStats, settings), slsStats: attachProgressPercentages(slsStats, settings) });
+});
+
+// Titik Uji Petik Statistics Summary API
+router.get('/ujipetik-stats', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+  try {
+    const stats = getTitikUjiPetikStats(res.locals.activeSurvey);
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Titik Uji Petik Filtered Points API (Compact & Cached for Ultra-High Performance)
+router.get('/ujipetik-points', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
+  try {
+    const compactPoints = getTitikUjiPetikCompact(res.locals.activeSurvey);
+    res.json(compactPoints);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Titik Uji Petik GeoJSON FeatureCollection API
+router.get('/ujipetik-geojson', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+  try {
+    const points = getTitikUjiPetikPoints(req.query, res.locals.activeSurvey);
+    const features = points.map(p => ({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [p.longitude, p.latitude]
+      },
+      properties: {
+        id: p.id,
+        kode_sls: p.kode_sls,
+        label: p.label,
+        no_bang: p.no_bang,
+        kode_bang_label: p.kode_bang_label,
+        is_kosong: p.is_kosong,
+        pcl: p.pcl,
+        pml: p.pml,
+        korlap: p.korlap,
+        nama_sls: p.nama_sls,
+        desa: p.desa,
+        kecamatan: p.kecamatan
+      }
+    }));
+    res.json({
+      type: 'FeatureCollection',
+      features
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Detail Korlap
