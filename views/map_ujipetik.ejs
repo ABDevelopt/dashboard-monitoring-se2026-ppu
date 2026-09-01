@@ -118,15 +118,18 @@
   .gmaps-search-box {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(15, 23, 42, 0.35) 100%);
     backdrop-filter: blur(20px) saturate(190%);
     -webkit-backdrop-filter: blur(20px) saturate(190%);
     border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 999px;
-    padding: 6px 14px;
+    padding: 5px 10px;
     box-shadow: inset 0 1.5px 2px rgba(0, 0, 0, 0.35), inset 0 0.5px 1px rgba(255, 255, 255, 0.35), 0 2px 8px rgba(0, 0, 0, 0.15);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   body.light-mode .gmaps-search-box {
@@ -143,16 +146,19 @@
 
   .gmaps-search-box .search-icon {
     color: var(--text-muted);
-    font-size: 13px;
+    font-size: 12px;
+    flex-shrink: 0;
   }
 
   .gmaps-search-box input {
     flex: 1;
+    min-width: 0;
+    width: 100%;
     background: transparent;
     border: none;
     outline: none;
     color: var(--text-primary);
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 500;
   }
 
@@ -1064,13 +1070,13 @@
     </div>
 
     <!-- Search Input & Quick Scope Button Row -->
-    <div style="display: flex; gap: 6px; align-items: center;">
-      <button type="button" class="gmaps-pill-btn" id="btnOpenScopeModal" onclick="openScopeModal()" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0.12) 100%); border: 1px solid rgba(245, 158, 11, 0.45); color: #f59e0b; font-weight: 700; padding: 6px 12px; height: 34px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;" title="Klik untuk mengganti wilayah yang ditampilkan">
-        <i class="bi bi-geo-alt-fill"></i> <span id="currentScopeBtnText">Pilih Wilayah</span>
+    <div style="display: flex; gap: 6px; align-items: center; width: 100%; min-width: 0;">
+      <button type="button" class="gmaps-pill-btn" id="btnOpenScopeModal" onclick="openScopeModal()" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0.12) 100%); border: 1px solid rgba(245, 158, 11, 0.45); color: #f59e0b; font-weight: 700; padding: 5px 10px; height: 32px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; flex-shrink: 0; max-width: 155px;" title="Klik untuk mengganti desa/wilayah yang dipantau">
+        <i class="bi bi-geo-alt-fill" style="flex-shrink: 0;"></i> <span id="currentScopeBtnText" style="max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle;">Pilih Desa</span>
       </button>
-      <div class="gmaps-search-box" style="flex: 1;">
+      <div class="gmaps-search-box">
         <i class="bi bi-search search-icon"></i>
-        <input type="text" id="mapSearchInput" placeholder="Cari No. Bangunan, SLS, PCL..." autocomplete="off">
+        <input type="text" id="mapSearchInput" placeholder="Cari Bangunan, SLS, PCL..." autocomplete="off">
         <button type="button" class="gmaps-icon-btn" id="btnResetView" title="Reset View &amp; Filter">
           <i class="bi bi-arrow-counterclockwise"></i>
         </button>
@@ -1087,10 +1093,10 @@
       <div class="gmaps-control-row">
         <select class="gmaps-select-pill" id="kecFilter">
           <option value="">-- Semua Kecamatan --</option>
-          <option value="BABULU">Babulu</option>
-          <option value="PENAJAM">Penajam</option>
-          <option value="SEPAKU">Sepaku</option>
-          <option value="WARU">Waru</option>
+          <option value="Babulu">Babulu</option>
+          <option value="Penajam">Penajam</option>
+          <option value="Sepaku">Sepaku</option>
+          <option value="Waru">Waru</option>
         </select>
         <select class="gmaps-select-pill" id="desaFilter">
           <option value="">-- Semua Desa / Kel --</option>
@@ -1875,14 +1881,33 @@
 
       window.selectScopeDesaDirect = function(desaName, kecName) {
         currentDesa = desaName;
+        if (!kecName && summaryStats && summaryStats.desaStats) {
+          const match = summaryStats.desaStats.find(d => d.desa && d.desa.toUpperCase() === desaName.toUpperCase());
+          if (match && match.kecamatan) kecName = match.kecamatan;
+        }
         currentKec = kecName || '';
+
         const kecSelect = document.getElementById('kecFilter');
         const desaSelect = document.getElementById('desaFilter');
-        if (kecSelect) kecSelect.value = kecName || '';
+
+        if (kecSelect) {
+          const targetKec = (currentKec || '').toUpperCase();
+          let matched = false;
+          for (let i = 0; i < kecSelect.options.length; i++) {
+            if (kecSelect.options[i].value.toUpperCase() === targetKec) {
+              kecSelect.selectedIndex = i;
+              matched = true;
+              break;
+            }
+          }
+          if (!matched) kecSelect.value = '';
+        }
+
         if (desaSelect) {
-          populateDesaDropdown(kecName || '');
+          populateDesaDropdown(currentKec || '');
           desaSelect.value = desaName;
         }
+
         applyFilters();
         zoomToDesa(desaName);
         updateScopeButtonLabel();
@@ -2110,6 +2135,21 @@
       if (desaFilter) {
         desaFilter.addEventListener('change', (e) => {
           currentDesa = e.target.value;
+          if (currentDesa && summaryStats && summaryStats.desaStats) {
+            const match = summaryStats.desaStats.find(d => d.desa && d.desa.toUpperCase() === currentDesa.toUpperCase());
+            if (match && match.kecamatan) {
+              currentKec = match.kecamatan;
+              if (kecFilter) {
+                const targetKec = match.kecamatan.toUpperCase();
+                for (let i = 0; i < kecFilter.options.length; i++) {
+                  if (kecFilter.options[i].value.toUpperCase() === targetKec) {
+                    kecFilter.selectedIndex = i;
+                    break;
+                  }
+                }
+              }
+            }
+          }
           applyFilters();
 
           if (currentDesa) {
