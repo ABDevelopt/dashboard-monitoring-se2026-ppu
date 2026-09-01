@@ -382,80 +382,7 @@
     padding-left: 3px;
   }
 
-  /* Floating KPI Bar (Top Right on Desktop) */
-  .gmaps-floating-kpi-bar {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    z-index: 1000;
-    display: inline-flex;
-    align-items: center;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(15, 23, 42, 0.55) 80%, rgba(255, 255, 255, 0.08) 100%);
-    backdrop-filter: blur(32px) saturate(220%) brightness(108%);
-    -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(108%);
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    border-radius: 999px;
-    padding: 3.5px;
-    gap: 3.5px;
-    box-shadow: 0 14px 40px 0 rgba(0, 0, 0, 0.42), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.48), inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.25);
-    max-width: calc(100% - 28px);
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .gmaps-floating-kpi-bar::-webkit-scrollbar { display: none; }
-
-  body.light-mode .gmaps-floating-kpi-bar {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.58) 50%, rgba(241, 245, 249, 0.70) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.90);
-    box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.08), inset 0 1.5px 2.5px 0 rgba(255, 255, 255, 0.98);
-  }
-
-  .gmaps-kpi-pill {
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 999px;
-    padding: 4px 11px;
-    font-size: 11.5px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
-    white-space: nowrap;
-  }
-
-  .gmaps-kpi-pill:hover {
-    color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.10);
-  }
-
-  body.light-mode .gmaps-kpi-pill:hover {
-    background: rgba(0, 0, 0, 0.05);
-  }
-
-  .gmaps-kpi-pill strong {
-    font-weight: 700;
-    color: var(--text-primary);
-  }
-
-  .gmaps-kpi-pill.active-filter {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.10) 100%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.38) !important;
-    color: var(--text-primary) !important;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.30), inset 0 1px 1.5px rgba(255, 255, 255, 0.60) !important;
-  }
-
-  body.light-mode .gmaps-kpi-pill.active-filter {
-    background: #0f172a !important;
-    border: 1px solid #0f172a !important;
-    color: #ffffff !important;
-  }
-  body.light-mode .gmaps-kpi-pill.active-filter strong {
-    color: #ffffff !important;
-  }
+  /* Category Pill Group & Button Styling */
 
   /* Floating Right Action Controls */
   .gmaps-floating-right-stack {
@@ -1117,12 +1044,12 @@
       <!-- Kategori Bangunan Toggle Pills -->
       <span class="gmaps-section-label"><i class="bi bi-tags"></i> Kategori Bangunan</span>
       <div class="gmaps-pill-group" id="categoryFilterGroup">
-        <button type="button" class="gmaps-pill-btn active" data-cat="">Semua (<span id="countTotalPill">0</span>)</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="1"><span style="color: #f59e0b;">●</span> Usaha</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="2"><span style="color: #a855f7;">●</span> Campuran</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="3"><span style="color: #0284c7;">●</span> Tinggal</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="6"><span style="color: #64748b;">●</span> Kosong</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="lainnya"><span style="color: #10b981;">●</span> Fasum / Lainnya</button>
+        <button type="button" class="gmaps-pill-btn active" data-cat="">Semua (<span id="countCatAll">0</span>)</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="1"><span style="color: #f59e0b;">●</span> Usaha (<span id="countCatUsaha">0</span>)</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="2"><span style="color: #a855f7;">●</span> Campuran (<span id="countCatCampuran">0</span>)</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="3"><span style="color: #0284c7;">●</span> Tinggal (<span id="countCatTinggal">0</span>)</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="6"><span style="color: #64748b;">●</span> Kosong (<span id="countCatKosong">0</span>)</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="lainnya"><span style="color: #10b981;">●</span> Lainnya (<span id="countCatLainnya">0</span>)</button>
       </div>
     </div>
   </div>
@@ -1191,22 +1118,6 @@
           Tutup
         </button>
       </div>
-    </div>
-  </div>
-
-  <!-- Floating KPI Bar (Top Right) -->
-  <div class="gmaps-floating-kpi-bar" id="kpiBarContainer">
-    <div class="gmaps-kpi-pill active-filter" data-kpi="" id="kpiPillTotal" title="Klik untuk tampilkan semua">
-      <span style="color: var(--accent-cyan);">●</span> Total: <strong id="kpiTotalPoints">0</strong>
-    </div>
-    <div class="gmaps-kpi-pill" data-kpi="usaha" id="kpiPillUsaha" title="Bangunan Khusus Usaha &amp; Campuran">
-      <span style="color: #f59e0b;">●</span> Usaha: <strong id="kpiTotalUsaha">0</strong>
-    </div>
-    <div class="gmaps-kpi-pill" data-kpi="tinggal" id="kpiPillTinggal" title="Bangunan Tempat Tinggal">
-      <span style="color: #0284c7;">●</span> Tinggal: <strong id="kpiTotalTinggal">0</strong>
-    </div>
-    <div class="gmaps-kpi-pill" data-kpi="kosong" id="kpiPillKosong" title="Bangunan Kosong">
-      <span style="color: #64748b;">●</span> Kosong: <strong id="kpiTotalKosong">0</strong>
     </div>
   </div>
 
@@ -1683,40 +1594,31 @@
       let currentSearch = '';
 
       function applyFilters() {
-        let res = allPoints;
+        let scoped = allPoints || [];
 
         if (currentKec) {
           const kecUpper = currentKec.toUpperCase();
-          res = res.filter(p => p[12] && p[12].toUpperCase() === kecUpper);
+          scoped = scoped.filter(p => p[12] && p[12].toUpperCase() === kecUpper);
         }
 
         if (currentDesa) {
           const desaUpper = currentDesa.toUpperCase();
-          res = res.filter(p => (p[11] && p[11].toUpperCase() === desaUpper) || (p[13] && p[13].startsWith(currentDesa)));
+          scoped = scoped.filter(p => (p[11] && p[11].toUpperCase() === desaUpper) || (p[13] && p[13].startsWith(currentDesa)));
         }
 
         if (currentPcl) {
           const pclLower = currentPcl.toLowerCase().trim();
-          res = res.filter(p => p[7] && p[7].toLowerCase().trim() === pclLower);
+          scoped = scoped.filter(p => p[7] && p[7].toLowerCase().trim() === pclLower);
         }
 
         if (currentPml) {
           const pmlLower = currentPml.toLowerCase().trim();
-          res = res.filter(p => p[8] && p[8].toLowerCase().trim() === pmlLower);
-        }
-
-        if (currentCatCode !== '') {
-          if (currentCatCode === 'lainnya') {
-            res = res.filter(p => [4, 5, 8, 9, 0].includes(p[3]));
-          } else {
-            const cCode = parseInt(currentCatCode, 10);
-            res = res.filter(p => p[3] === cCode);
-          }
+          scoped = scoped.filter(p => p[8] && p[8].toLowerCase().trim() === pmlLower);
         }
 
         if (currentSearch) {
           const q = currentSearch.toLowerCase().trim();
-          res = res.filter(p => {
+          scoped = scoped.filter(p => {
             return (p[5] && p[5].toLowerCase().includes(q)) ||
                    (p[6] && p[6].toLowerCase().includes(q)) ||
                    (p[7] && p[7].toLowerCase().includes(q)) ||
@@ -1726,26 +1628,45 @@
           });
         }
 
+        // Update category counts on panel pills based on currently scoped region
+        updateCategoryPillCounts(scoped);
+
+        // Apply category filter to get final points to render
+        let res = scoped;
+        if (currentCatCode !== '') {
+          if (currentCatCode === 'lainnya') {
+            res = res.filter(p => [4, 5, 8, 9, 0].includes(p[3]));
+          } else {
+            const cCode = parseInt(currentCatCode, 10);
+            res = res.filter(p => p[3] === cCode);
+          }
+        }
+
         filteredPoints = res;
         renderCanvas();
-        updateTopKpi(filteredPoints);
       }
 
-      function updateTopKpi(pts) {
-        const total = pts.length;
-        const usaha = pts.filter(p => p[3] === 1 || p[3] === 2).length;
-        const tinggal = pts.filter(p => p[3] === 3).length;
-        const kosong = pts.filter(p => p[4] === 1 || p[3] === 6).length;
+      function updateCategoryPillCounts(pts) {
+        const total = pts ? pts.length : 0;
+        const usaha = pts ? pts.filter(p => p[3] === 1).length : 0;
+        const campuran = pts ? pts.filter(p => p[3] === 2).length : 0;
+        const tinggal = pts ? pts.filter(p => p[3] === 3).length : 0;
+        const kosong = pts ? pts.filter(p => p[4] === 1 || p[3] === 6).length : 0;
+        const lainnya = pts ? pts.filter(p => [4, 5, 8, 9, 0].includes(p[3])).length : 0;
 
-        const elTotal = document.getElementById('kpiTotalPoints');
-        const elUsaha = document.getElementById('kpiTotalUsaha');
-        const elTinggal = document.getElementById('kpiTotalTinggal');
-        const elKosong = document.getElementById('kpiTotalKosong');
+        const elAll = document.getElementById('countCatAll');
+        const elUsaha = document.getElementById('countCatUsaha');
+        const elCampuran = document.getElementById('countCatCampuran');
+        const elTinggal = document.getElementById('countCatTinggal');
+        const elKosong = document.getElementById('countCatKosong');
+        const elLainnya = document.getElementById('countCatLainnya');
 
-        if (elTotal) elTotal.textContent = total.toLocaleString('id-ID');
+        if (elAll) elAll.textContent = total.toLocaleString('id-ID');
         if (elUsaha) elUsaha.textContent = usaha.toLocaleString('id-ID');
+        if (elCampuran) elCampuran.textContent = campuran.toLocaleString('id-ID');
         if (elTinggal) elTinggal.textContent = tinggal.toLocaleString('id-ID');
         if (elKosong) elKosong.textContent = kosong.toLocaleString('id-ID');
+        if (elLainnya) elLainnya.textContent = lainnya.toLocaleString('id-ID');
       }
 
       // Scope Selector Modal Logic (Desa / Kelurahan Level)
@@ -1926,7 +1847,7 @@
         }
         filteredPoints = allPoints || [];
         renderCanvas();
-        updateTopKpi(filteredPoints);
+        updateCategoryPillCounts(filteredPoints);
         map.setView(centerCoords, defaultZoom);
         updateScopeButtonLabel();
         closeScopeModal();
@@ -2212,10 +2133,6 @@
             if (i === 0) b.classList.add('active');
             else b.classList.remove('active');
           });
-          document.querySelectorAll('.gmaps-floating-kpi-bar .gmaps-kpi-pill').forEach((p, i) => {
-            if (i === 0) p.classList.add('active-filter');
-            else p.classList.remove('active-filter');
-          });
           map.setView(centerCoords, defaultZoom);
           updateScopeButtonLabel();
           openScopeModal();
@@ -2425,7 +2342,7 @@
             // Default: do NOT draw all 69k points automatically (prevents initial lag)
             filteredPoints = [];
             renderCanvas();
-            updateTopKpi(filteredPoints);
+            updateCategoryPillCounts(allPoints || []);
             updateScopeButtonLabel();
 
             if (allPoints && allPoints.length > 0) {
