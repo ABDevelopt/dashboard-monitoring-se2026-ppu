@@ -197,7 +197,11 @@ app.use((req, res, next) => {
       const parts = c.split('=');
       const name = parts.shift().trim();
       const val = parts.join('=');
-      cookies[name] = decodeURIComponent(val);
+      try {
+        cookies[name] = decodeURIComponent(val);
+      } catch (_) {
+        cookies[name] = val;
+      }
     });
   }
 
@@ -526,6 +530,8 @@ app.use((req, res, next) => {
 // Route Guard Middleware based on Page Display settings & Authentication Requirements
 const routeSettingsMap = {
   '/map': 'page_map',
+  '/map-ujipetik': 'page_map_ujipetik',
+  '/ujipetik': 'page_map_ujipetik',
   '/early-warning': 'page_earlywarning',
   '/deteksi-anomali': 'page_deteksianomali',
   '/leaderboard': 'page_leaderboard',
@@ -546,6 +552,8 @@ const routeSettingsMap = {
 const routeAuthMap = {
   '/agent': 'auth_req_agent',
   '/map': 'auth_req_map',
+  '/map-ujipetik': 'auth_req_map_ujipetik',
+  '/ujipetik': 'auth_req_map_ujipetik',
   '/early-warning': 'auth_req_earlywarning',
   '/deteksi-anomali': 'auth_req_deteksianomali',
   '/leaderboard': 'auth_req_leaderboard',
@@ -632,6 +640,8 @@ app.use((req, res, next) => {
 app.use('/', require('./routes/index'));
 app.use('/', require('./routes/auth'));
 app.use('/map', require('./routes/map'));
+app.use('/map-ujipetik', require('./routes/map_ujipetik'));
+app.get('/ujipetik', (req, res) => res.redirect('/map-ujipetik'));
 app.use('/kecamatan', require('./routes/kecamatan'));
 app.use('/korlap', require('./routes/korlap'));
 app.use('/pml', require('./routes/pml'));
@@ -712,8 +722,19 @@ if (process.env.SENTRY_DSN) {
 
 // Error handler
 app.use((err, req, res, next) => {
+  if (err instanceof URIError) {
+    logger.warn(`URIError caught on URL "${req.originalUrl || req.url}": ${err.message}`);
+    if (req.xhr || (req.headers.accept && req.headers.accept.includes('json'))) {
+      return res.status(400).json({ error: 'URL atau parameter tidak valid (URI malformed).' });
+    }
+    return res.status(400).render('error', {
+      title: 'Permintaan Tidak Valid (400)',
+      message: 'Format URL atau karakter khusus pada tautan tidak valid. Silakan kembali ke halaman utama.',
+      activePage: ''
+    });
+  }
   logger.error('Unhandled request error:', err);
-  res.status(500).render('error', { title: 'Server Error', message: err.message });
+  res.status(500).render('error', { title: 'Server Error', message: err.message, activePage: '' });
 });
 
 // Init DB & load master data

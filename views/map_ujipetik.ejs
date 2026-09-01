@@ -1,0 +1,3013 @@
+<style>
+  /* Prevent window vertical scroll on map page */
+  html, body, .main-wrapper, #pjax-container {
+    overflow: hidden !important;
+  }
+
+  /* Google Maps Style Floating Overlay Layout */
+  .gmaps-container-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border-radius: 0;
+    overflow: hidden;
+    border: none;
+    box-shadow: none;
+  }
+
+  .gmaps-container-wrap .map-canvas-container {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+  }
+
+  .gmaps-container-wrap #map {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    border-radius: 0;
+    border: none;
+    background: var(--bg-secondary);
+    z-index: 10;
+  }
+
+  /* Canvas Layer */
+  .ujipetik-canvas-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 400;
+  }
+
+  /* Floating Search & Unified Command Bar (Top Left) - Apple Liquid Glass */
+  .gmaps-floating-search-panel {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 1000;
+    width: 440px;
+    max-width: calc(100% - 28px);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(15, 23, 42, 0.52) 80%, rgba(255, 255, 255, 0.08) 100%);
+    backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 20px;
+    padding: 8px 12px 10px 12px;
+    box-shadow: 0 16px 45px 0 rgba(0, 0, 0, 0.45), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.50), inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .gmaps-floating-search-panel.is-dragging {
+    user-select: none !important;
+    cursor: grabbing !important;
+    transform: scale(1.02) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), inset 0 1.5px 2px rgba(255, 255, 255, 0.65) !important;
+    transition: none !important;
+    opacity: 0.97;
+    z-index: 1050;
+  }
+
+  .gmaps-panel-drag-header {
+    width: 100%;
+    height: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    margin-top: -2px;
+    margin-bottom: 2px;
+  }
+
+  .drag-pill-indicator {
+    width: 36px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.40);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+    transition: all 0.2s ease;
+  }
+
+  .gmaps-panel-drag-header:hover .drag-pill-indicator {
+    background: var(--accent-cyan);
+    width: 48px;
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+  }
+
+  body.light-mode .drag-pill-indicator {
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  body.light-mode .gmaps-floating-search-panel {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(241, 245, 249, 0.65) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: 0 14px 36px 0 rgba(0, 0, 0, 0.10), inset 0 1.5px 2.5px 0 rgba(255, 255, 255, 0.98), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.04);
+  }
+
+  .gmaps-search-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(15, 23, 42, 0.35) 100%);
+    backdrop-filter: blur(20px) saturate(190%);
+    -webkit-backdrop-filter: blur(20px) saturate(190%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    padding: 5px 10px;
+    box-shadow: inset 0 1.5px 2px rgba(0, 0, 0, 0.35), inset 0 0.5px 1px rgba(255, 255, 255, 0.35), 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  body.light-mode .gmaps-search-box {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(241, 245, 249, 0.60) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: inset 0 1.5px 2px rgba(0, 0, 0, 0.05), inset 0 0.5px 1px rgba(255, 255, 255, 0.95), 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .gmaps-search-box:focus-within {
+    border-color: var(--accent-cyan);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(6, 182, 212, 0.12) 100%);
+    box-shadow: 0 0 0 2.5px rgba(6, 182, 212, 0.40), inset 0 1.5px 2px rgba(0, 0, 0, 0.25), inset 0 0.5px 1px rgba(255, 255, 255, 0.50);
+  }
+
+  .gmaps-search-box .search-icon {
+    color: var(--text-muted);
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .gmaps-search-box input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-size: 11.5px;
+    font-weight: 500;
+  }
+
+  .gmaps-icon-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body.light-mode .gmaps-icon-btn {
+    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8);
+  }
+
+  .gmaps-icon-btn:hover {
+    color: var(--accent-cyan);
+    background: rgba(6, 182, 212, 0.20);
+    border-color: rgba(6, 182, 212, 0.45);
+    transform: scale(1.08);
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  }
+
+  .gmaps-control-row {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 7px;
+    width: 100%;
+  }
+
+  .gmaps-select-pill {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: rgba(15, 23, 42, 0.40);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: var(--text-primary);
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 4px 22px 4px 10px;
+    cursor: pointer;
+    height: 31px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    outline: none;
+    box-sizing: border-box;
+    backdrop-filter: blur(20px) saturate(190%);
+    -webkit-backdrop-filter: blur(20px) saturate(190%);
+    box-shadow: inset 0 1.5px 2px rgba(0, 0, 0, 0.30), inset 0 0.5px 1px rgba(255, 255, 255, 0.30), 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body.light-mode .gmaps-select-pill {
+    background-color: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: inset 0 1px 1.5px rgba(0, 0, 0, 0.04), inset 0 0.5px 1px rgba(255, 255, 255, 0.95), 0 2px 6px rgba(0, 0, 0, 0.04);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+
+  .gmaps-select-pill:hover, .gmaps-select-pill:focus {
+    border-color: var(--accent-cyan);
+    background-color: rgba(15, 23, 42, 0.50);
+    box-shadow: 0 0 0 2.5px rgba(6, 182, 212, 0.40), inset 0 1.5px 2px rgba(0, 0, 0, 0.25), inset 0 0.5px 1px rgba(255, 255, 255, 0.50);
+  }
+
+  .gmaps-select-pill option {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+  }
+  body.light-mode .gmaps-select-pill option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  /* Leaflet Popups Glassmorphism Styling (Crystal Clear in Dark & Light Modes) */
+  .leaflet-popup-content-wrapper {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%) !important;
+    backdrop-filter: blur(24px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 1.5px rgba(255, 255, 255, 0.3) !important;
+    color: #f8fafc !important;
+    padding: 6px 8px !important;
+  }
+
+  .leaflet-popup-tip {
+    background: rgba(15, 23, 42, 0.98) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  }
+
+  .leaflet-popup-close-button {
+    color: #94a3b8 !important;
+    top: 8px !important;
+    right: 8px !important;
+    font-size: 16px !important;
+  }
+  .leaflet-popup-close-button:hover {
+    color: #38bdf8 !important;
+  }
+
+  body.light-mode .leaflet-popup-content-wrapper {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(241, 245, 249, 0.98) 100%) !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15), inset 0 1px 1.5px rgba(255, 255, 255, 0.9) !important;
+    color: #0f172a !important;
+  }
+  body.light-mode .leaflet-popup-tip {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  }
+  body.light-mode .leaflet-popup-close-button {
+    color: #64748b !important;
+  }
+
+  .gmaps-pill-group {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(15, 23, 42, 0.35) 100%);
+    backdrop-filter: blur(20px) saturate(190%);
+    -webkit-backdrop-filter: blur(20px) saturate(190%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    padding: 2.5px;
+    gap: 2px;
+    box-shadow: inset 0 1.5px 2px rgba(0, 0, 0, 0.30), inset 0 0.5px 1px rgba(255, 255, 255, 0.30), 0 3px 10px rgba(0, 0, 0, 0.20);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .gmaps-pill-group::-webkit-scrollbar { display: none; }
+
+  body.light-mode .gmaps-pill-group {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.82) 0%, rgba(241, 245, 249, 0.55) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: inset 0 1px 1.5px rgba(0, 0, 0, 0.04), inset 0 0.5px 1px rgba(255, 255, 255, 0.95), 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .gmaps-pill-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    user-select: none;
+  }
+
+  .gmaps-pill-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.10);
+  }
+
+  body.light-mode .gmaps-pill-btn:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  .gmaps-pill-btn.active {
+    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    box-shadow: 0 3px 12px rgba(37, 99, 235, 0.45), inset 0 1px 1.5px rgba(255, 255, 255, 0.55), inset 0 -1px 1px rgba(0, 0, 0, 0.25) !important;
+  }
+
+  .gmaps-controls-collapsible {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    max-height: 500px;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  }
+
+  .gmaps-floating-search-panel.is-collapsed .gmaps-controls-collapsible {
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+    margin: 0;
+  }
+
+  .gmaps-section-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-top: 4px;
+    margin-bottom: -2px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding-left: 3px;
+  }
+
+  /* Point Hover Visual Cue Tooltip */
+  .map-point-hover-tooltip {
+    position: absolute;
+    z-index: 1200;
+    pointer-events: none;
+    background: rgba(15, 23, 42, 0.90);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+    padding: 5px 11px;
+    border-radius: 8px;
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    transform: translate3d(0, 0, 0);
+  }
+  body.light-mode .map-point-hover-tooltip {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    color: #0f172a;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Leaflet Popup Stacking & Glass Theme */
+  .leaflet-popup-pane {
+    z-index: 1100 !important;
+  }
+  .leaflet-popup {
+    z-index: 1100 !important;
+  }
+  .leaflet-popup-content-wrapper {
+    background: rgba(15, 23, 42, 0.94) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    border-radius: 14px !important;
+    color: #ffffff !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
+  }
+  .leaflet-popup-tip {
+    background: rgba(15, 23, 42, 0.94) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  }
+  body.light-mode .leaflet-popup-content-wrapper {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    color: #0f172a !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15) !important;
+  }
+  body.light-mode .leaflet-popup-tip {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  }
+
+  /* Floating Right Action Controls */
+  .gmaps-floating-right-stack {
+    position: absolute;
+    top: 66px;
+    right: 14px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .gmaps-floating-square-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(15, 23, 42, 0.50) 80%, rgba(255, 255, 255, 0.08) 100%);
+    backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.42), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.50), inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.25);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .gmaps-floating-square-btn:hover {
+    color: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    transform: translateY(-2px) scale(1.06);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.26) 0%, rgba(6, 182, 212, 0.22) 100%);
+  }
+
+  body.light-mode .gmaps-floating-square-btn {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.50) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: 0 10px 28px 0 rgba(0, 0, 0, 0.08), inset 0 1.5px 2.5px 0 rgba(255, 255, 255, 0.98);
+  }
+
+  /* Floating Basemap Switcher (Bottom Right) */
+  .gmaps-floating-basemap-pill {
+    position: absolute;
+    bottom: 30px;
+    right: 56px;
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(15, 23, 42, 0.50) 80%, rgba(255, 255, 255, 0.08) 100%);
+    backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 3px;
+    box-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.42), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.48);
+  }
+
+  body.light-mode .gmaps-floating-basemap-pill {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(241, 245, 249, 0.65) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.08);
+  }
+
+  /* Floating Info & Legend Drawer Card (Bottom Left) */
+  .gmaps-floating-drawer-card {
+    position: absolute;
+    bottom: 30px;
+    left: 14px;
+    z-index: 1000;
+    width: 440px;
+    max-width: calc(100% - 28px);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(15, 23, 42, 0.55) 80%, rgba(255, 255, 255, 0.06) 100%);
+    backdrop-filter: blur(36px) saturate(220%) brightness(108%);
+    -webkit-backdrop-filter: blur(36px) saturate(220%) brightness(108%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 22px;
+    box-shadow: 0 24px 60px 0 rgba(0, 0, 0, 0.52), inset 0 1.5px 2.5px 0 rgba(255, 255, 255, 0.45);
+    overflow: hidden;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body.light-mode .gmaps-floating-drawer-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(241, 245, 249, 0.65) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: 0 22px 50px 0 rgba(0, 0, 0, 0.14);
+  }
+
+  .gmaps-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  }
+
+  body.light-mode .gmaps-drawer-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .gmaps-drawer-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .gmaps-tab-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .gmaps-tab-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.10);
+  }
+
+  .gmaps-tab-btn.active {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.35) 0%, rgba(37, 99, 235, 0.20) 100%);
+    color: var(--accent-blue);
+    border: 1px solid rgba(59, 130, 246, 0.45);
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25), inset 0 1px 1.5px rgba(255, 255, 255, 0.40);
+  }
+
+  .gmaps-drawer-content {
+    padding: 12px 14px;
+    height: 320px;
+    min-height: 180px;
+    max-height: 320px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    box-sizing: border-box;
+  }
+
+  .gmaps-floating-drawer-card.collapsed .gmaps-drawer-content {
+    display: none !important;
+  }
+
+  /* Metric Cards Grid Inside Drawer */
+  .map-card-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 7px;
+    margin-bottom: 10px;
+  }
+
+  .map-card-stat-item {
+    background: rgba(var(--bg-primary-rgb, 15, 23, 42), 0.38);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 8px;
+    padding: 7px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  body.light-mode .map-card-stat-item {
+    background: rgba(255, 255, 255, 0.50);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .map-card-stat-item.full-width {
+    grid-column: span 2;
+  }
+
+  .map-card-stat-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    line-height: 1.2;
+  }
+
+  .map-card-stat-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Color Category Legend Chips */
+  .category-legend-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 11px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .category-legend-chip:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .category-legend-chip.active-cat {
+    border-color: var(--accent-cyan);
+    background: rgba(6, 182, 212, 0.15);
+  }
+
+  .category-color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  /* Fullscreen Presentation / Command Center Mode */
+  .gmaps-container-wrap.is-fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 999999 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Loading Overlay */
+  .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1500;
+    background: rgba(var(--bg-card-rgb, 24, 24, 30), 0.88);
+    backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition: opacity 0.3s ease;
+  }
+  body.light-mode .loading-overlay {
+    background: rgba(255, 255, 255, 0.90);
+  }
+
+  .spinner {
+    border: 4px solid rgba(255,255,255,0.1);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border-left-color: var(--accent-blue);
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Mobile Layout Adjustments */
+  @media (max-width: 992px) {
+    .gmaps-floating-search-panel {
+      width: calc(100% - 20px);
+      left: 10px;
+      right: 10px;
+      top: 10px;
+      padding: 7px 10px 8px 10px;
+      z-index: 1005;
+    }
+    .gmaps-floating-kpi-bar {
+      position: static !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      background: rgba(255, 255, 255, 0.08) !important;
+      backdrop-filter: blur(16px) !important;
+      border-radius: 999px;
+      padding: 3px 6px;
+      margin-top: 4px;
+    }
+    .gmaps-floating-drawer-card {
+      width: calc(100% - 20px);
+      left: 10px;
+      right: 10px;
+      bottom: 20px;
+      max-height: 220px;
+    }
+    .gmaps-floating-basemap-pill {
+      bottom: 74px;
+      right: 14px;
+    }
+    .gmaps-floating-right-stack {
+      top: auto;
+      bottom: 120px;
+      right: 14px;
+    }
+  }
+
+  /* Scope Selector Modal (Centered precisely within Map Canvas Container) */
+  .ujipetik-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1100;
+    background: rgba(10, 15, 29, 0.72);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+    animation: fadeInModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes fadeInModal {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .ujipetik-modal-card {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.96) 0%, rgba(15, 23, 42, 0.98) 100%);
+    backdrop-filter: blur(28px) saturate(200%);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 22px;
+    padding: 20px 22px;
+    width: 100%;
+    max-width: 640px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 65px rgba(0, 0, 0, 0.65), inset 0 1.5px 2px rgba(255, 255, 255, 0.35);
+    color: #f8fafc;
+    box-sizing: border-box;
+  }
+
+  body.light-mode .ujipetik-modal-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(241, 245, 249, 0.98) 100%);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+    color: #0f172a;
+  }
+
+  .ujipetik-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    padding-bottom: 12px;
+    flex-shrink: 0;
+  }
+  body.light-mode .ujipetik-modal-header {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+  }
+
+  .ujipetik-modal-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(245, 158, 11, 0.18);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #f59e0b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  /* Kecamatan Tabs Filter */
+  .modal-kec-tabs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-bottom: 10px;
+    padding-bottom: 2px;
+    flex-shrink: 0;
+  }
+  .modal-kec-tabs::-webkit-scrollbar { display: none; }
+
+  .modal-kec-tab {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .modal-kec-tab:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+  }
+  .modal-kec-tab.active {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.35) 0%, rgba(245, 158, 11, 0.18) 100%);
+    border-color: #f59e0b;
+    color: #f59e0b;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+  }
+
+  body.light-mode .modal-kec-tab {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #64748b;
+  }
+  body.light-mode .modal-kec-tab.active {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: #f59e0b;
+    color: #b45309;
+  }
+
+  /* Live Search Box */
+  .modal-search-box {
+    position: relative;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .modal-search-box input {
+    width: 100%;
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: var(--text-primary);
+    font-size: 12px;
+    padding: 7px 12px 7px 32px;
+    border-radius: 10px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+  body.light-mode .modal-search-box input {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(0, 0, 0, 0.12);
+    color: #0f172a;
+  }
+  .modal-search-box input:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.25);
+  }
+  .modal-search-box .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  /* Desa Grid Cards (Scrollable) */
+  .modal-desa-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+    gap: 8px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 3px;
+    scrollbar-width: thin;
+  }
+
+  .modal-desa-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 12px;
+    padding: 9px 11px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+  }
+  .modal-desa-card:hover {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.18) 0%, rgba(6, 182, 212, 0.05) 100%);
+    border-color: rgba(6, 182, 212, 0.45);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(6, 182, 212, 0.16);
+  }
+  body.light-mode .modal-desa-card {
+    background: rgba(0, 0, 0, 0.025);
+    border-color: rgba(0, 0, 0, 0.08);
+  }
+  body.light-mode .modal-desa-card:hover {
+    background: rgba(6, 182, 212, 0.08);
+    border-color: #0284c7;
+  }
+
+  .modal-desa-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .modal-desa-subtitle {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .modal-desa-count {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    margin-top: 1px;
+    display: inline-block;
+  }
+</style>
+
+<div class="gmaps-container-wrap" id="gmapsWrapper">
+  <!-- Map Canvas -->
+  <div class="map-canvas-container">
+    <div id="map"></div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-overlay" id="mapLoading">
+    <div class="spinner"></div>
+    <div id="loadingStatusText" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
+      Memuat 69.626 Titik Uji Petik Spasial...
+    </div>
+  </div>
+
+  <!-- Floating Unified Command Bar & Filter (Top Left) -->
+  <div class="gmaps-floating-search-panel" id="gmapsToolsPanel">
+    <div class="gmaps-panel-drag-header" id="toolsPanelDragHandle" title="Geser Panel">
+      <div class="drag-pill-indicator"></div>
+    </div>
+
+    <!-- Search Input & Quick Scope Button Row -->
+    <div style="display: flex; gap: 6px; align-items: center; width: 100%; min-width: 0;">
+      <button type="button" class="gmaps-pill-btn" id="btnOpenScopeModal" onclick="openScopeModal()" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0.12) 100%); border: 1px solid rgba(245, 158, 11, 0.45); color: #f59e0b; font-weight: 700; padding: 5px 10px; height: 32px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; flex-shrink: 0; max-width: 155px;" title="Klik untuk mengganti desa/wilayah yang dipantau">
+        <i class="bi bi-geo-alt-fill" style="flex-shrink: 0;"></i> <span id="currentScopeBtnText" style="max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle;">Pilih Desa</span>
+      </button>
+      <div class="gmaps-search-box">
+        <i class="bi bi-search search-icon"></i>
+        <input type="text" id="mapSearchInput" placeholder="Cari Bangunan, SLS, PCL..." autocomplete="off">
+        <button type="button" class="gmaps-icon-btn" id="btnResetView" title="Reset View &amp; Filter">
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
+        <button type="button" class="gmaps-icon-btn" id="btnToggleToolsExpand" title="Sembunyikan/Buka Filter">
+          <i class="bi bi-chevron-bar-up" id="toolsExpandIcon"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Collapsible Advanced Filters -->
+    <div class="gmaps-controls-collapsible" id="toolsExtraRows">
+      <!-- Wilayah Filters -->
+      <span class="gmaps-section-label"><i class="bi bi-geo-alt"></i> Filter Wilayah &amp; Batas</span>
+      <div class="gmaps-control-row">
+        <select class="gmaps-select-pill" id="kecFilter">
+          <option value="">-- Semua Kecamatan --</option>
+          <option value="Babulu">Babulu</option>
+          <option value="Penajam">Penajam</option>
+          <option value="Sepaku">Sepaku</option>
+          <option value="Waru">Waru</option>
+        </select>
+        <select class="gmaps-select-pill" id="desaFilter">
+          <option value="">-- Semua Desa / Kel --</option>
+        </select>
+      </div>
+
+      <!-- Petugas Filters -->
+      <span class="gmaps-section-label"><i class="bi bi-people"></i> Filter Petugas</span>
+      <div class="gmaps-control-row">
+        <select class="gmaps-select-pill" id="pclFilter">
+          <option value="">-- Semua Petugas PCL --</option>
+        </select>
+        <select class="gmaps-select-pill" id="pmlFilter">
+          <option value="">-- Semua Pengawas PML --</option>
+        </select>
+      </div>
+
+      <!-- Kategori Bangunan Toggle Pills -->
+      <span class="gmaps-section-label"><i class="bi bi-tags"></i> Kategori Bangunan</span>
+      <div class="gmaps-pill-group" id="categoryFilterGroup">
+        <button type="button" class="gmaps-pill-btn active" data-cat="">Semua (<span id="countCatAll">0</span>)</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="1"><span style="color: #f59e0b;">●</span> Usaha (<span id="countCatUsaha">0</span>)</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="2"><span style="color: #a855f7;">●</span> Campuran (<span id="countCatCampuran">0</span>)</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="3"><span style="color: #0284c7;">●</span> Tinggal (<span id="countCatTinggal">0</span>)</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="6"><span style="color: #64748b;">●</span> Kosong (<span id="countCatKosong">0</span>)</button>
+        <button type="button" class="gmaps-pill-btn" data-cat="lainnya"><span style="color: #10b981;">●</span> Lainnya (<span id="countCatLainnya">0</span>)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Dialog: Pilih Wilayah Titik Uji Petik (Tingkat Desa/Kelurahan) -->
+  <div id="ujipetikScopeModal" class="ujipetik-modal-overlay" style="display: none;">
+    <div class="ujipetik-modal-card">
+      <div class="ujipetik-modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="ujipetik-modal-icon">
+            <i class="bi bi-pin-map-fill"></i>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: inherit;">Pilih Desa / Kelurahan Uji Petik</h3>
+            <p style="margin: 2px 0 0 0; font-size: 11.5px; opacity: 0.8;">
+              Pilih desa atau kelurahan untuk menampilkan sebaran titik secara terfokus dan bebas lag.
+            </p>
+          </div>
+        </div>
+        <button type="button" class="gmaps-icon-btn" onclick="closeScopeModal()" title="Tutup Modal" style="font-size: 14px;">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <!-- Step 1: Filter Tab Kecamatan (Clean Professional Icons, No Emojis) -->
+      <div style="margin-top: 12px;">
+        <div class="modal-kec-tabs" id="modalKecTabs">
+          <button type="button" class="modal-kec-tab active" data-kec="" onclick="filterModalDesaByKec('', this)">
+            <i class="bi bi-grid-fill"></i> Semua Desa
+          </button>
+          <button type="button" class="modal-kec-tab" data-kec="BABULU" onclick="filterModalDesaByKec('BABULU', this)">
+            <i class="bi bi-geo-alt-fill"></i> Babulu
+          </button>
+          <button type="button" class="modal-kec-tab" data-kec="PENAJAM" onclick="filterModalDesaByKec('PENAJAM', this)">
+            <i class="bi bi-geo-alt-fill"></i> Penajam
+          </button>
+          <button type="button" class="modal-kec-tab" data-kec="SEPAKU" onclick="filterModalDesaByKec('SEPAKU', this)">
+            <i class="bi bi-geo-alt-fill"></i> Sepaku
+          </button>
+          <button type="button" class="modal-kec-tab" data-kec="WARU" onclick="filterModalDesaByKec('WARU', this)">
+            <i class="bi bi-geo-alt-fill"></i> Waru
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Live Search Desa -->
+      <div class="modal-search-box">
+        <i class="bi bi-search search-icon"></i>
+        <input type="text" id="modalDesaSearchInput" placeholder="Cari nama desa / kelurahan..." autocomplete="off">
+      </div>
+
+      <!-- Step 3: Grid Kartu Desa / Kelurahan -->
+      <div class="modal-desa-grid" id="modalDesaGrid">
+        <div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: var(--text-muted);">
+          <div class="spinner-border spinner-border-sm text-cyan" role="status"></div>
+          <span style="margin-left: 8px; font-size: 12px;">Memuat daftar desa...</span>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 12px; margin-top: 12px;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="selectAllPoints()" style="font-size: 11px; opacity: 0.85; padding: 5px 12px; display: inline-flex; align-items: center; gap: 6px;">
+          <i class="bi bi-layers"></i> Tampilkan Seluruh Kabupaten
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeScopeModal()" style="font-size: 11px; padding: 5px 14px;">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Action Buttons (Fullscreen) -->
+  <div class="gmaps-floating-right-stack">
+    <button type="button" class="gmaps-floating-square-btn" id="btnFullscreenMap" title="Mode Layar Penuh (Command Center)">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+
+  <!-- Floating Basemap Switcher (Bottom Right) -->
+  <div class="gmaps-floating-basemap-pill">
+    <button type="button" class="gmaps-pill-btn" id="btnBasemapDefault" title="Peta Standar (OSM)">
+      <i class="bi bi-map"></i> Standar
+    </button>
+    <button type="button" class="gmaps-pill-btn active" id="btnBasemapSatellite" title="Citra Satelit ESRI">
+      <i class="bi bi-globe-americas"></i> Satelit
+    </button>
+  </div>
+
+  <!-- Floating Info & Legend Drawer Card (Bottom Left) - Default Collapsed -->
+  <div class="gmaps-floating-drawer-card collapsed" id="gmapsDrawerCard">
+    <div class="gmaps-drawer-header" onclick="toggleDrawerCollapse(event)" style="cursor: pointer;" title="Klik untuk membuka/menutup panel">
+      <div class="gmaps-drawer-tabs">
+        <button type="button" class="gmaps-tab-btn active" id="tabBtnInfo" onclick="switchDrawerTab('info', event)">
+          <i class="bi bi-info-circle"></i> Detail Titik / Wilayah
+        </button>
+        <button type="button" class="gmaps-tab-btn" id="tabBtnLegend" onclick="switchDrawerTab('legend', event)">
+          <i class="bi bi-palette"></i> Legenda
+        </button>
+      </div>
+      <button type="button" class="gmaps-icon-btn" id="btnCollapseDrawer" onclick="toggleDrawerCollapse(event)" title="Buka / Tutup Panel">
+        <i class="bi bi-chevron-up" id="drawerCollapseIcon"></i>
+      </button>
+    </div>
+
+    <!-- Drawer Content: Detail Info -->
+    <div class="gmaps-drawer-content" id="drawerContentInfo">
+      <div id="drawerPlaceholder" style="text-align: center; color: var(--text-muted); padding: 24px 10px;">
+        <i class="bi bi-pin-map" style="font-size: 28px; color: var(--accent-cyan); display: block; margin-bottom: 8px;"></i>
+        <strong style="font-size: 13px; color: var(--text-primary); display: block;">Pilih Titik atau Wilayah</strong>
+        <span style="font-size: 11.5px;">Klik salah satu titik bangunan atau polygon desa untuk melihat rincian uji petik lengkap.</span>
+      </div>
+      <div id="drawerDetailsBody" style="display: none;"></div>
+    </div>
+
+    <!-- Drawer Content: Legenda -->
+    <div class="gmaps-drawer-content" id="drawerContentLegend" style="display: none;">
+      <div style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">
+        <i class="bi bi-palette-fill" style="color: var(--accent-cyan);"></i> Klasifikasi Bangunan Fisik
+      </div>
+      <div class="category-legend-chip" onclick="filterByCategoryCode(1)">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="category-color-dot" style="background: #f59e0b;"></span>
+          <span>1. Bangunan Khusus Usaha</span>
+        </div>
+        <strong id="legendCountUsaha">0</strong>
+      </div>
+      <div class="category-legend-chip" onclick="filterByCategoryCode(2)">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="category-color-dot" style="background: #8b5cf6;"></span>
+          <span>2. Bangunan Campuran</span>
+        </div>
+        <strong id="legendCountCampuran">0</strong>
+      </div>
+      <div class="category-legend-chip" onclick="filterByCategoryCode(3)">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="category-color-dot" style="background: #0284c7;"></span>
+          <span>3. Bangunan Tempat Tinggal</span>
+        </div>
+        <strong id="legendCountTinggal">0</strong>
+      </div>
+      <div class="category-legend-chip" onclick="filterByCategoryCode(4)">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="category-color-dot" style="background: #10b981;"></span>
+          <span>4. Tempat Ibadah &amp; Organisasi</span>
+        </div>
+        <strong id="legendCountIbadah">0</strong>
+      </div>
+      <div class="category-legend-chip" onclick="filterByCategoryCode(5)">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="category-color-dot" style="background: #3b82f6;"></span>
+          <span>5. Kantor Pemerintah / Dinas</span>
+        </div>
+        <strong id="legendCountPemerintah">0</strong>
+      </div>
+      <div class="category-legend-chip" onclick="filterByCategoryCode(6)">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="category-color-dot" style="background: #64748b;"></span>
+          <span>6. Bangunan Lainnya / Kosong / Rusak</span>
+        </div>
+        <strong id="legendCountLainnya">0</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    function initUjiPetikMapPage() {
+      if (typeof L === 'undefined') {
+        setTimeout(initUjiPetikMapPage, 50);
+        return;
+      }
+
+      const mapContainerEl = document.getElementById('map');
+      if (!mapContainerEl) return;
+
+      // Clean previous map instance
+      if (window._leafletUjiPetikMapInstance) {
+        try { window._leafletUjiPetikMapInstance.remove(); } catch (_) {}
+        window._leafletUjiPetikMapInstance = null;
+      }
+
+      const centerCoords = [-1.30, 116.65];
+      const defaultZoom = 10;
+
+      if (mapContainerEl._leaflet_id) {
+        mapContainerEl._leaflet_id = null;
+      }
+      mapContainerEl.innerHTML = '';
+
+      const map = L.map('map', {
+        zoomControl: false,
+        maxZoom: 20,
+        minZoom: 9
+      }).setView(centerCoords, defaultZoom);
+      window._leafletUjiPetikMapInstance = map;
+
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+      // Robust tile creation helper with fallback and overzoom protection
+      const createRobustTileLayer = (primaryUrl, options = {}, fallbackUrl = null, fallbackMaxNativeZoom = 18) => {
+        const layer = L.tileLayer(primaryUrl, options);
+        if (fallbackUrl) {
+          layer.on('tileerror', (e) => {
+            if (e.tile && !e.tile.dataset.fallbackTried) {
+              e.tile.dataset.fallbackTried = 'true';
+              const coords = e.coords;
+              if (coords) {
+                let z = coords.z;
+                let x = coords.x;
+                let y = coords.y;
+                if (z > fallbackMaxNativeZoom) {
+                  const factor = Math.pow(2, z - fallbackMaxNativeZoom);
+                  x = Math.floor(x / factor);
+                  y = Math.floor(y / factor);
+                  z = fallbackMaxNativeZoom;
+                }
+                e.tile.src = fallbackUrl
+                  .replace('{z}', z)
+                  .replace('{x}', x)
+                  .replace('{y}', y);
+              }
+            }
+          });
+        }
+        return layer;
+      };
+
+      const cartoKey = (typeof window.CARTO_API_KEY !== 'undefined' && window.CARTO_API_KEY) ? window.CARTO_API_KEY : ('<%= typeof cartoApiKey !== "undefined" ? cartoApiKey : "" %>');
+      const cartoParam = cartoKey ? `?key=${encodeURIComponent(cartoKey)}` : '';
+
+      const lightBasemap = createRobustTileLayer(
+        `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png${cartoParam}`,
+        {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 20,
+          maxNativeZoom: 19,
+          keepBuffer: 6,
+          crossOrigin: true
+        },
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        19
+      );
+
+      const darkBasemap = createRobustTileLayer(
+        `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png${cartoParam}`,
+        {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 20,
+          maxNativeZoom: 19,
+          keepBuffer: 6,
+          crossOrigin: true
+        },
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        19
+      );
+
+      // Satellite Basemap with maxNativeZoom: 18 (ensures smooth digital overzoom up to zoom 20 without "Map data not yet available" tiles!)
+      const satelliteBasemap = createRobustTileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+          maxZoom: 20,
+          maxNativeZoom: 18,
+          keepBuffer: 6,
+          crossOrigin: true
+        }
+      );
+
+      const satelliteLabels = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+        {
+          maxZoom: 20,
+          maxNativeZoom: 18,
+          keepBuffer: 6,
+          crossOrigin: true
+        }
+      );
+
+      let currentBasemapType = 'satellite';
+
+      function updateBasemap() {
+        const isLight = document.body.classList.contains('light-mode');
+        let targetLayer = null;
+
+        if (currentBasemapType === 'satellite') {
+          targetLayer = satelliteBasemap;
+          if (!map.hasLayer(satelliteLabels)) satelliteLabels.addTo(map);
+          if (map.hasLayer(lightBasemap)) map.removeLayer(lightBasemap);
+          if (map.hasLayer(darkBasemap)) map.removeLayer(darkBasemap);
+        } else {
+          if (map.hasLayer(satelliteLabels)) map.removeLayer(satelliteLabels);
+          if (map.hasLayer(satelliteBasemap)) map.removeLayer(satelliteBasemap);
+
+          if (isLight) {
+            targetLayer = lightBasemap;
+            if (map.hasLayer(darkBasemap)) map.removeLayer(darkBasemap);
+          } else {
+            targetLayer = darkBasemap;
+            if (map.hasLayer(lightBasemap)) map.removeLayer(lightBasemap);
+          }
+        }
+
+        if (!map.hasLayer(targetLayer)) targetLayer.addTo(map);
+        targetLayer.bringToBack();
+      }
+      updateBasemap();
+
+      window.addEventListener('themechange', updateBasemap);
+
+      // Basemap buttons
+      const btnBasemapDefault = document.getElementById('btnBasemapDefault');
+      const btnBasemapSatellite = document.getElementById('btnBasemapSatellite');
+
+      if (btnBasemapDefault && btnBasemapSatellite) {
+        btnBasemapDefault.addEventListener('click', () => {
+          btnBasemapSatellite.classList.remove('active');
+          btnBasemapDefault.classList.add('active');
+          currentBasemapType = 'default';
+          updateBasemap();
+        });
+        btnBasemapSatellite.addEventListener('click', () => {
+          btnBasemapDefault.classList.remove('active');
+          btnBasemapSatellite.classList.add('active');
+          currentBasemapType = 'satellite';
+          updateBasemap();
+        });
+      }
+
+      // Invalidate map size
+      const invalidateSize = () => {
+        try { if (map) map.invalidateSize(); } catch (_) {}
+      };
+      [50, 150, 300, 600].forEach(d => setTimeout(invalidateSize, d));
+      window.addEventListener('resize', invalidateSize);
+
+      // Data holders
+      let allPoints = [];
+      let filteredPoints = [];
+      let summaryStats = null;
+      let desaGeoJson = null;
+      let kecGeoJson = null;
+      let desaLayer = null;
+      let kecLayer = null;
+
+      // Color mapping
+      const categoryColors = {
+        1: '#f59e0b', // Usaha
+        2: '#8b5cf6', // Campuran
+        3: '#0284c7', // Tempat Tinggal
+        4: '#10b981', // Ibadah / Organisasi
+        5: '#3b82f6', // Pemerintah / Dinas
+        6: '#64748b', // Bangunan Kosong / Rusak / Lainnya
+        8: '#a855f7', // Panti / Lapas
+        9: '#ef4444', // Non Respon
+        0: '#94a3b8'  // Lainnya
+      };
+
+      const categoryLabels = {
+        1: '1. Bangunan Khusus Usaha',
+        2: '2. Bangunan Campuran',
+        3: '3. Bangunan Tempat Tinggal',
+        4: '4. Tempat Ibadah & Organisasi',
+        5: '5. Kantor Pemerintah / Dinas',
+        6: '6. Bangunan Kosong / Rusak / Lainnya',
+        8: '8. Panti / Lapas / Barak',
+        9: '9. Non Respon',
+        0: 'Lainnya'
+      };
+
+      // ── ULTRA-FAST HARDWARE-ACCELERATED HTML5 CANVAS LAYER ─────────
+      // Dedicated Leaflet Pane (z-index 450): Guaranteed strictly BELOW popups (z-index 1100) and markers
+      map.createPane('ujipetikPointsPane');
+      const pointsPane = map.getPane('ujipetikPointsPane');
+      pointsPane.style.zIndex = '450';
+      pointsPane.style.pointerEvents = 'none';
+
+      const canvas = document.createElement('canvas');
+      canvas.className = 'ujipetik-canvas-layer';
+      pointsPane.appendChild(canvas);
+      const ctx = canvas.getContext('2d', { alpha: true });
+
+      // Floating Tooltip for Hover Visual Cue
+      const hoverTooltipEl = document.createElement('div');
+      hoverTooltipEl.id = 'mapPointHoverTooltip';
+      hoverTooltipEl.className = 'map-point-hover-tooltip';
+      hoverTooltipEl.style.display = 'none';
+      map.getContainer().appendChild(hoverTooltipEl);
+
+      const CLUSTER_ZOOM_THRESHOLD = 14; // Zoom < 14: Macro Clusters, Zoom >= 14: Direct Clean Individual Building Points
+      let cachedClusters = [];
+      let cachedClusterZoom = -1;
+      let cachedClusterPointsRef = null;
+      let currentClusters = [];
+      let visiblePointsCache = []; // Viewport-scoped points cache for instantaneous hit testing
+      let hoveredPoint = null;
+      let hoveredCluster = null;
+
+      // Fixed World-Projection Geographical Grid Clustering (Zero movement/jumping during pan)
+      function getClustersForCurrentView(pts, zoom) {
+        if (!pts || pts.length === 0) {
+          cachedClusters = [];
+          cachedClusterZoom = -1;
+          cachedClusterPointsRef = null;
+          return [];
+        }
+
+        const intZoom = Math.round(zoom);
+        // Only recompute when points array or integer zoom changes
+        if (cachedClusterZoom === intZoom && cachedClusterPointsRef === pts && cachedClusters.length > 0) {
+          return cachedClusters;
+        }
+
+        cachedClusterZoom = intZoom;
+        cachedClusterPointsRef = pts;
+
+        let gridSize = 75;
+        if (intZoom <= 10) gridSize = 110;
+        else if (intZoom <= 12) gridSize = 90;
+        else if (intZoom === 13) gridSize = 75;
+
+        const cells = {};
+
+        for (let i = 0; i < pts.length; i++) {
+          const p = pts[i];
+          const lat = p[1];
+          const lng = p[2];
+          // Pure world Mercator projection: 100% stable regardless of map pan position
+          const worldPt = map.project([lat, lng], intZoom);
+          const gx = Math.floor(worldPt.x / gridSize);
+          const gy = Math.floor(worldPt.y / gridSize);
+          const key = gx + '_' + gy;
+
+          if (!cells[key]) {
+            cells[key] = {
+              points: [],
+              sumLat: 0,
+              sumLng: 0,
+              catCounts: {}
+            };
+          }
+          cells[key].points.push(p);
+          cells[key].sumLat += lat;
+          cells[key].sumLng += lng;
+          const cat = p[3] || 0;
+          cells[key].catCounts[cat] = (cells[key].catCounts[cat] || 0) + 1;
+        }
+
+        const clusters = [];
+        for (const k in cells) {
+          const c = cells[k];
+          const count = c.points.length;
+          const avgLat = c.sumLat / count;
+          const avgLng = c.sumLng / count;
+
+          // Dominant category in cluster
+          let maxCat = 0;
+          let maxCatCount = -1;
+          for (const cat in c.catCounts) {
+            if (c.catCounts[cat] > maxCatCount) {
+              maxCatCount = c.catCounts[cat];
+              maxCat = cat;
+            }
+          }
+
+          clusters.push({
+            lat: avgLat,
+            lng: avgLng,
+            latLng: L.latLng(avgLat, avgLng),
+            count: count,
+            points: c.points,
+            dominantCat: maxCat,
+            dominantColor: categoryColors[maxCat] || '#0284c7'
+          });
+        }
+
+        cachedClusters = clusters;
+        return clusters;
+      }
+
+      function drawClusterBubble(c, cx, cy, isHovered) {
+        const count = c.count;
+
+        let r = 14;
+        if (count >= 500) r = 24;
+        else if (count >= 100) r = 20;
+        else if (count >= 30) r = 17;
+        else if (count >= 10) r = 15;
+
+        if (isHovered) r += 3;
+
+        const baseColor = c.dominantColor || '#0284c7';
+
+        // Outer glow halo
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 5, 0, Math.PI * 2);
+        ctx.fillStyle = isHovered ? 'rgba(255, 255, 255, 0.40)' : 'rgba(2, 132, 199, 0.22)';
+        ctx.fill();
+
+        // Main solid circle with dominant category color
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = baseColor;
+        ctx.fill();
+        ctx.lineWidth = isHovered ? 2.5 : 1.8;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+
+        // Count Text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `700 ${r >= 20 ? 11.5 : (r >= 15 ? 10.5 : 9.5)}px 'Inter', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        let displayCount = count.toString();
+        if (count >= 1000) {
+          displayCount = (count / 1000).toFixed(1).replace('.0', '') + 'K';
+        }
+        ctx.fillText(displayCount, cx, cy);
+      }
+
+      function renderCanvas() {
+        if (!map || !filteredPoints) return;
+        const size = map.getSize();
+        if (size.x === 0 || size.y === 0) return;
+
+        const dpr = window.devicePixelRatio || 1;
+        const w = size.x;
+        const h = size.y;
+
+        if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+          canvas.width = Math.round(w * dpr);
+          canvas.height = Math.round(h * dpr);
+          canvas.style.width = w + 'px';
+          canvas.style.height = h + 'px';
+        }
+
+        const topLeft = map.containerPointToLayerPoint([0, 0]);
+        L.DomUtil.setPosition(canvas, topLeft);
+
+        ctx.save();
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, w, h);
+
+        const zoom = map.getZoom();
+
+        // Geographical Viewport Bounding Box for Pre-Projection Culling
+        const b = map.getBounds().pad(0.08);
+        const minLat = b.getSouth();
+        const maxLat = b.getNorth();
+        const minLng = b.getWest();
+        const maxLng = b.getEast();
+
+        if (zoom < CLUSTER_ZOOM_THRESHOLD) {
+          // ── MACRO CLUSTER MODE (Clean, Grouped & 100% Pan-Stable) ──
+          visiblePointsCache = [];
+          currentClusters = getClustersForCurrentView(filteredPoints, zoom);
+
+          for (let i = 0; i < currentClusters.length; i++) {
+            const c = currentClusters[i];
+            // Skip clusters far outside viewport
+            if (c.lat < minLat || c.lat > maxLat || c.lng < minLng || c.lng > maxLng) continue;
+
+            const pt = map.latLngToContainerPoint(c.latLng);
+            if (pt.x < -35 || pt.x > w + 35 || pt.y < -35 || pt.y > h + 35) continue;
+            const isHovered = hoveredCluster === c;
+
+            if (c.count === 1) {
+              const p = c.points[0];
+              const cat = p[3] || 0;
+              const col = categoryColors[cat] || '#94a3b8';
+              ctx.beginPath();
+              ctx.arc(pt.x, pt.y, isHovered ? 6 : 4, 0, Math.PI * 2);
+              ctx.fillStyle = col;
+              ctx.fill();
+              ctx.lineWidth = 1.5;
+              ctx.strokeStyle = '#ffffff';
+              ctx.stroke();
+            } else {
+              drawClusterBubble(c, pt.x, pt.y, isHovered);
+            }
+          }
+        } else {
+          // ── INDIVIDUAL BUILDING POINTS MODE (With Pre-Projection Geographical Viewport Culling) ──
+          currentClusters = [];
+          visiblePointsCache = []; // Viewport-scoped cache for fast hit testing
+
+          let radius = 3.5;
+          if (zoom >= 17) radius = 6.0;
+          else if (zoom >= 16) radius = 5.0;
+          else if (zoom >= 15) radius = 4.2;
+          else if (zoom >= 14) radius = 3.4;
+
+          const twoPi = Math.PI * 2;
+          const len = filteredPoints.length;
+          const buckets = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 8: [], 9: [], 0: [] };
+
+          for (let i = 0; i < len; i++) {
+            const p = filteredPoints[i];
+            const lat = p[1];
+            const lng = p[2];
+
+            // ⚡ FAST ARITHMETIC CULLING: Skip 95% of points outside camera before doing trigonometry/projection
+            if (lat < minLat || lat > maxLat || lng < minLng || lng > maxLng) continue;
+
+            const pt = map.latLngToContainerPoint([lat, lng]);
+            if (pt.x < -15 || pt.x > w + 15 || pt.y < -15 || pt.y > h + 15) continue;
+
+            visiblePointsCache.push(p);
+
+            const cat = p[3] || 0;
+            if (!buckets[cat]) buckets[cat] = [];
+            buckets[cat].push(pt.x, pt.y);
+          }
+
+          for (const cat in buckets) {
+            const coords = buckets[cat];
+            if (!coords || coords.length === 0) continue;
+
+            ctx.fillStyle = categoryColors[cat] || '#94a3b8';
+            ctx.beginPath();
+            const clen = coords.length;
+            for (let j = 0; j < clen; j += 2) {
+              const cx = coords[j];
+              const cy = coords[j + 1];
+              ctx.moveTo(cx + radius, cy);
+              ctx.arc(cx, cy, radius, 0, twoPi);
+            }
+            ctx.fill();
+          }
+
+          if (hoveredPoint) {
+            const hpt = map.latLngToContainerPoint([hoveredPoint[1], hoveredPoint[2]]);
+            if (hpt.x >= -20 && hpt.x <= w + 20 && hpt.y >= -20 && hpt.y <= h + 20) {
+              const hCat = hoveredPoint[3] || 0;
+              const hColor = categoryColors[hCat] || '#0284c7';
+              const hRad = radius + 3;
+
+              ctx.beginPath();
+              ctx.arc(hpt.x, hpt.y, hRad + 5, 0, twoPi);
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+              ctx.fill();
+
+              ctx.beginPath();
+              ctx.arc(hpt.x, hpt.y, hRad + 2, 0, twoPi);
+              ctx.lineWidth = 2.5;
+              ctx.strokeStyle = '#ffffff';
+              ctx.stroke();
+
+              ctx.beginPath();
+              ctx.arc(hpt.x, hpt.y, hRad, 0, twoPi);
+              ctx.fillStyle = hColor;
+              ctx.fill();
+            }
+          }
+        }
+
+        ctx.restore();
+      }
+
+      // Continuous Real-Time Animation Rendering during Zoom
+      function onZoomAnim(e) {
+        if (!map || !filteredPoints || filteredPoints.length === 0) return;
+        const size = map.getSize();
+        const dpr = window.devicePixelRatio || 1;
+        const w = size.x;
+        const h = size.y;
+
+        const newTopLeft = map._latLngToNewLayerPoint(map.containerPointToLatLng([0, 0]), e.zoom, e.center);
+        L.DomUtil.setPosition(canvas, newTopLeft);
+
+        ctx.save();
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, w, h);
+
+        const animBounds = map.getBounds().pad(0.18);
+        const aMinLat = animBounds.getSouth();
+        const aMaxLat = animBounds.getNorth();
+        const aMinLng = animBounds.getWest();
+        const aMaxLng = animBounds.getEast();
+
+        const zoom = e.zoom;
+        if (zoom < CLUSTER_ZOOM_THRESHOLD) {
+          const clusters = getClustersForCurrentView(filteredPoints, zoom);
+          for (let i = 0; i < clusters.length; i++) {
+            const c = clusters[i];
+            if (c.lat < aMinLat || c.lat > aMaxLat || c.lng < aMinLng || c.lng > aMaxLng) continue;
+
+            const layerPt = map._latLngToNewLayerPoint(c.latLng, e.zoom, e.center);
+            const containerPt = map.layerPointToContainerPoint(layerPt);
+            if (containerPt.x < -35 || containerPt.x > w + 35 || containerPt.y < -35 || containerPt.y > h + 35) continue;
+            if (c.count === 1) {
+              const p = c.points[0];
+              const cat = p[3] || 0;
+              const col = categoryColors[cat] || '#94a3b8';
+              ctx.beginPath();
+              ctx.arc(containerPt.x, containerPt.y, 4, 0, Math.PI * 2);
+              ctx.fillStyle = col;
+              ctx.fill();
+              ctx.lineWidth = 1.5;
+              ctx.strokeStyle = '#ffffff';
+              ctx.stroke();
+            } else {
+              drawClusterBubble(c, containerPt.x, containerPt.y, false);
+            }
+          }
+        } else {
+          let radius = 3.5;
+          if (zoom >= 17) radius = 6.0;
+          else if (zoom >= 16) radius = 5.0;
+          else if (zoom >= 15) radius = 4.2;
+          else if (zoom >= 14) radius = 3.4;
+
+          const twoPi = Math.PI * 2;
+          const len = filteredPoints.length;
+          const buckets = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 8: [], 9: [], 0: [] };
+
+          for (let i = 0; i < len; i++) {
+            const p = filteredPoints[i];
+            const lat = p[1];
+            const lng = p[2];
+
+            // Geographical Viewport Culling during animation
+            if (lat < aMinLat || lat > aMaxLat || lng < aMinLng || lng > aMaxLng) continue;
+
+            const latLng = L.latLng(lat, lng);
+            const layerPt = map._latLngToNewLayerPoint(latLng, e.zoom, e.center);
+            const containerPt = map.layerPointToContainerPoint(layerPt);
+            if (containerPt.x < -15 || containerPt.x > w + 15 || containerPt.y < -15 || containerPt.y > h + 15) continue;
+
+            const cat = p[3] || 0;
+            if (!buckets[cat]) buckets[cat] = [];
+            buckets[cat].push(containerPt.x, containerPt.y);
+          }
+
+          for (const cat in buckets) {
+            const coords = buckets[cat];
+            if (!coords || coords.length === 0) continue;
+
+            ctx.fillStyle = categoryColors[cat] || '#94a3b8';
+            ctx.beginPath();
+            const clen = coords.length;
+            for (let j = 0; j < clen; j += 2) {
+              const cx = coords[j];
+              const cy = coords[j + 1];
+              ctx.moveTo(cx + radius, cy);
+              ctx.arc(cx, cy, radius, 0, twoPi);
+            }
+            ctx.fill();
+          }
+        }
+
+        ctx.restore();
+      }
+
+      map.on('move viewreset resize zoom', renderCanvas);
+      map.on('zoomanim', onZoomAnim);
+
+      // Smart Click Detection: Click on Cluster = Smooth Fly-To Zoom, Click on Point = Details Drawer
+      map.on('click', (e) => {
+        if (!filteredPoints || filteredPoints.length === 0) return;
+        const clickPt = e.containerPoint;
+        const zoom = map.getZoom();
+
+        if (zoom < CLUSTER_ZOOM_THRESHOLD) {
+          let clickedCluster = null;
+          let minClusterDistSq = Infinity;
+
+          for (let i = 0; i < currentClusters.length; i++) {
+            const c = currentClusters[i];
+            const pt = map.latLngToContainerPoint(c.latLng);
+            const dx = pt.x - clickPt.x;
+            const dy = pt.y - clickPt.y;
+            const distSq = dx * dx + dy * dy;
+            let hitR = c.count >= 100 ? 26 : (c.count >= 30 ? 22 : 18);
+            if (distSq <= hitR * hitR && distSq < minClusterDistSq) {
+              minClusterDistSq = distSq;
+              clickedCluster = c;
+            }
+          }
+
+          if (clickedCluster) {
+            if (clickedCluster.count === 1) {
+              showPointDetails(clickedCluster.points[0]);
+            } else {
+              const bounds = L.latLngBounds(clickedCluster.points.map(p => [p[1], p[2]]));
+              if (bounds.isValid() && bounds.getNorthEast().distanceTo(bounds.getSouthWest()) > 10) {
+                map.flyToBounds(bounds, { maxZoom: 18, padding: [60, 60], duration: 0.8 });
+              } else {
+                map.flyTo([clickedCluster.points[0][1], clickedCluster.points[0][2]], Math.min(zoom + 3, 18), { duration: 0.8 });
+              }
+            }
+            return;
+          }
+        } else {
+          // Viewport-Scoped Individual Point Click Detection (Instantaneous O(k) testing on visible points)
+          const clickRadius = zoom >= 16 ? 24 : (zoom >= 14 ? 18 : 14);
+          const clickRadiusSq = clickRadius * clickRadius;
+
+          let closest = null;
+          let minDistSq = clickRadiusSq;
+
+          const ptsToTest = visiblePointsCache.length > 0 ? visiblePointsCache : filteredPoints;
+          for (let i = 0; i < ptsToTest.length; i++) {
+            const p = ptsToTest[i];
+            const pt = map.latLngToContainerPoint([p[1], p[2]]);
+            const dx = pt.x - clickPt.x;
+            const dy = pt.y - clickPt.y;
+            const distSq = dx * dx + dy * dy;
+            if (distSq <= minDistSq) {
+              minDistSq = distSq;
+              closest = p;
+            }
+          }
+
+          if (closest) {
+            showPointDetails(closest);
+          }
+        }
+      });
+
+      // Interactive Hover Visual Cue & Instant Floating Tooltip
+      let hoverTimer = null;
+      map.on('mousemove', (e) => {
+        if (hoverTimer) return;
+        hoverTimer = setTimeout(() => {
+          hoverTimer = null;
+          if (!filteredPoints || filteredPoints.length === 0) {
+            if (hoveredPoint || hoveredCluster) {
+              hoveredPoint = null;
+              hoveredCluster = null;
+              hoverTooltipEl.style.display = 'none';
+              map.getContainer().style.cursor = '';
+              renderCanvas();
+            }
+            return;
+          }
+
+          const mousePt = e.containerPoint;
+          const zoom = map.getZoom();
+
+          if (zoom < CLUSTER_ZOOM_THRESHOLD) {
+            let closestCluster = null;
+            let minClusterDistSq = Infinity;
+
+            for (let i = 0; i < currentClusters.length; i++) {
+              const c = currentClusters[i];
+              const pt = map.latLngToContainerPoint(c.latLng);
+              const dx = pt.x - mousePt.x;
+              const dy = pt.y - mousePt.y;
+              const distSq = dx * dx + dy * dy;
+              let hitR = c.count >= 100 ? 24 : (c.count >= 30 ? 20 : 16);
+              if (distSq <= hitR * hitR && distSq < minClusterDistSq) {
+                minClusterDistSq = distSq;
+                closestCluster = c;
+              }
+            }
+
+            if (closestCluster !== hoveredCluster) {
+              hoveredCluster = closestCluster;
+              renderCanvas();
+            }
+
+            if (hoveredCluster) {
+              map.getContainer().style.cursor = 'pointer';
+              if (hoveredCluster.count === 1) {
+                const p = hoveredCluster.points[0];
+                const catCode = p[3] || 0;
+                const catName = categoryLabels[catCode] || 'Lainnya';
+                const color = categoryColors[catCode] || '#94a3b8';
+                const noBang = p[6] ? `No. ${p[6]}` : 'Bangunan';
+                const label = p[5] || '';
+                hoverTooltipEl.innerHTML = `
+                  <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${color}; margin-right: 6px; flex-shrink: 0;"></span>
+                  <strong>${noBang}</strong> ${label ? '&bull; ' + label : ''} <span style="opacity: 0.8; font-size: 10px; margin-left: 4px;">(${catName})</span>
+                `;
+              } else {
+                hoverTooltipEl.innerHTML = `
+                  <i class="bi bi-grid-fill text-cyan" style="margin-right: 6px;"></i>
+                  <strong>${hoveredCluster.count.toLocaleString('id-ID')} Titik Uji Petik</strong>
+                  <span style="opacity: 0.8; font-size: 10px; margin-left: 6px;">(Klik untuk perbesar wilayah)</span>
+                `;
+              }
+              hoverTooltipEl.style.display = 'flex';
+              hoverTooltipEl.style.left = (mousePt.x + 14) + 'px';
+              hoverTooltipEl.style.top = (mousePt.y - 12) + 'px';
+            } else {
+              map.getContainer().style.cursor = '';
+              hoverTooltipEl.style.display = 'none';
+            }
+          } else {
+            // Viewport-Scoped Individual Points Hover Testing (Zero CPU overhead)
+            const hoverRadius = zoom >= 16 ? 22 : (zoom >= 14 ? 16 : 12);
+            const hoverRadiusSq = hoverRadius * hoverRadius;
+
+            let closest = null;
+            let minDistSq = hoverRadiusSq;
+
+            const ptsToTest = visiblePointsCache.length > 0 ? visiblePointsCache : filteredPoints;
+            for (let i = 0; i < ptsToTest.length; i++) {
+              const p = ptsToTest[i];
+              const pt = map.latLngToContainerPoint([p[1], p[2]]);
+              const dx = pt.x - mousePt.x;
+              const dy = pt.y - mousePt.y;
+              const distSq = dx * dx + dy * dy;
+              if (distSq <= minDistSq) {
+                minDistSq = distSq;
+                closest = p;
+              }
+            }
+
+            if (closest !== hoveredPoint) {
+              hoveredPoint = closest;
+              renderCanvas();
+            }
+
+            if (hoveredPoint) {
+              map.getContainer().style.cursor = 'pointer';
+              const catCode = hoveredPoint[3] || 0;
+              const catName = categoryLabels[catCode] || 'Lainnya';
+              const color = categoryColors[catCode] || '#94a3b8';
+              const noBang = hoveredPoint[6] ? `No. ${hoveredPoint[6]}` : 'Bangunan';
+              const label = hoveredPoint[5] || '';
+
+              hoverTooltipEl.innerHTML = `
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${color}; margin-right: 6px; flex-shrink: 0;"></span>
+                <strong>${noBang}</strong> ${label ? '&bull; ' + label : ''} <span style="opacity: 0.8; font-size: 10px; margin-left: 4px;">(${catName})</span>
+              `;
+              hoverTooltipEl.style.display = 'flex';
+              hoverTooltipEl.style.left = (mousePt.x + 14) + 'px';
+              hoverTooltipEl.style.top = (mousePt.y - 12) + 'px';
+            } else {
+              map.getContainer().style.cursor = '';
+              hoverTooltipEl.style.display = 'none';
+            }
+          }
+        }, 16);
+      });
+
+      map.on('mouseout', () => {
+        if (hoveredPoint || hoveredCluster) {
+          hoveredPoint = null;
+          hoveredCluster = null;
+          hoverTooltipEl.style.display = 'none';
+          map.getContainer().style.cursor = '';
+          renderCanvas();
+        }
+      });
+
+      // Show Point Details in Drawer & Popup
+      function showPointDetails(p) {
+        // Schema: [0:id, 1:lat, 2:lng, 3:catCode, 4:isKosong, 5:label, 6:noBang, 7:pcl, 8:pml, 9:korlap, 10:namaSls, 11:desa, 12:kec, 13:kodeSls]
+        const id = p[0];
+        const lat = p[1];
+        const lng = p[2];
+        const catCode = p[3];
+        const isKosong = p[4];
+        const label = p[5];
+        const noBang = p[6];
+        const pcl = p[7];
+        const pml = p[8];
+        const korlap = p[9];
+        const namaSls = p[10];
+        const desa = p[11];
+        const kec = p[12];
+        const kodeSls = p[13];
+
+        const catName = categoryLabels[catCode] || 'Lainnya';
+        const color = categoryColors[catCode] || '#94a3b8';
+        const statusBadge = isKosong === 1
+          ? '<span class="badge" style="background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); font-size: 10px; padding: 2px 7px;">Bangunan Kosong</span>'
+          : '<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.35); font-size: 10px; padding: 2px 7px;">Berpenghuni / Berisi</span>';
+
+        const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
+        const detailsHtml = `
+          <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); padding: 10px 12px; border-radius: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 4px;">
+              <div>
+                <span style="font-size: 10px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase;">No. Bangunan: ${noBang || '-'}</span>
+                <strong style="font-size: 14px; color: var(--text-primary); display: block;">${label ? label : 'Bangunan Fisik'}</strong>
+              </div>
+              ${statusBadge}
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-secondary);">
+              <span class="category-color-dot" style="background: ${color}; width: 8px; height: 8px;"></span>
+              <strong>${catName}</strong>
+            </div>
+          </div>
+
+          <div class="map-card-stat-grid">
+            <div class="map-card-stat-item full-width">
+              <span class="map-card-stat-label"><i class="bi bi-pin-map"></i> Wilayah SLS</span>
+              <span class="map-card-stat-value">${namaSls ? namaSls : 'SLS ' + (kodeSls || '')}</span>
+            </div>
+            <div class="map-card-stat-item">
+              <span class="map-card-stat-label"><i class="bi bi-geo-alt"></i> Desa / Kel</span>
+              <span class="map-card-stat-value">${desa || '-'}</span>
+            </div>
+            <div class="map-card-stat-item">
+              <span class="map-card-stat-label"><i class="bi bi-diagram-3"></i> Kecamatan</span>
+              <span class="map-card-stat-value">${kec || '-'}</span>
+            </div>
+            <div class="map-card-stat-item">
+              <span class="map-card-stat-label"><i class="bi bi-person-badge"></i> Petugas PCL</span>
+              <span class="map-card-stat-value" title="${pcl || '-'}">${pcl || '-'}</span>
+            </div>
+            <div class="map-card-stat-item">
+              <span class="map-card-stat-label"><i class="bi bi-person-check"></i> Pengawas PML</span>
+              <span class="map-card-stat-value" title="${pml || '-'}">${pml || '-'}</span>
+            </div>
+            <div class="map-card-stat-item full-width">
+              <span class="map-card-stat-label"><i class="bi bi-crosshair"></i> Koordinat GPS</span>
+              <span class="map-card-stat-value" style="font-family: monospace; font-size: 11.5px;">${lat.toFixed(6)}, ${lng.toFixed(6)}</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px;">
+            <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="display: flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 12px; font-weight: 700; border-radius: 8px; text-decoration: none;">
+              <i class="bi bi-compass"></i> Buka Navigasi Rute (Google Maps)
+            </a>
+          </div>
+        `;
+
+        const placeholder = document.getElementById('drawerPlaceholder');
+        const body = document.getElementById('drawerDetailsBody');
+        if (placeholder) placeholder.style.display = 'none';
+        if (body) {
+          body.style.display = 'block';
+          body.innerHTML = detailsHtml;
+        }
+
+        const popupHtml = `
+          <div style="font-family: 'Inter', sans-serif; min-width: 220px; padding: 2px;">
+            <div style="font-size: 10px; font-weight: 700; color: ${color}; text-transform: uppercase; margin-bottom: 3px; letter-spacing: 0.04em;">
+              ${catName}
+            </div>
+            <strong style="font-size: 13.5px; color: inherit; display: block; line-height: 1.25; margin-bottom: 4px;">
+              No. ${noBang || '-'}: ${label || 'Bangunan Fisik'}
+            </strong>
+            <span style="font-size: 11.5px; opacity: 0.85; display: block; margin-bottom: 6px;">
+              <i class="bi bi-geo-alt-fill" style="color: var(--accent-cyan);"></i> ${desa || ''}, Kec. ${kec || ''}
+            </span>
+            <div style="font-size: 11px; opacity: 0.8; margin-bottom: 9px; line-height: 1.4;">
+              PCL: <strong style="opacity: 1;">${pcl || '-'}</strong> | PML: <strong style="opacity: 1;">${pml || '-'}</strong>
+            </div>
+            <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-xs" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px; font-size: 11px; font-weight: 700; border-radius: 8px; text-decoration: none;">
+              <i class="bi bi-compass"></i> Petunjuk Rute Google Maps
+            </a>
+          </div>
+        `;
+
+        if (window.innerWidth > 768) {
+          L.popup().setLatLng([lat, lng]).setContent(popupHtml).openOn(map);
+        }
+      }
+
+      // Filter Logic
+      let currentKec = '';
+      let currentDesa = '';
+      let currentPcl = '';
+      let currentPml = '';
+      let currentCatCode = '';
+      let currentSearch = '';
+
+      function applyFilters() {
+        let scoped = allPoints || [];
+
+        if (currentKec) {
+          const kecUpper = currentKec.toUpperCase();
+          scoped = scoped.filter(p => p[12] && p[12].toUpperCase() === kecUpper);
+        }
+
+        if (currentDesa) {
+          const desaUpper = currentDesa.toUpperCase();
+          scoped = scoped.filter(p => (p[11] && p[11].toUpperCase() === desaUpper) || (p[13] && p[13].startsWith(currentDesa)));
+        }
+
+        if (currentPcl) {
+          const pclLower = currentPcl.toLowerCase().trim();
+          scoped = scoped.filter(p => p[7] && p[7].toLowerCase().trim() === pclLower);
+        }
+
+        if (currentPml) {
+          const pmlLower = currentPml.toLowerCase().trim();
+          scoped = scoped.filter(p => p[8] && p[8].toLowerCase().trim() === pmlLower);
+        }
+
+        if (currentSearch) {
+          const q = currentSearch.toLowerCase().trim();
+          scoped = scoped.filter(p => {
+            return (p[5] && p[5].toLowerCase().includes(q)) ||
+                   (p[6] && p[6].toLowerCase().includes(q)) ||
+                   (p[7] && p[7].toLowerCase().includes(q)) ||
+                   (p[8] && p[8].toLowerCase().includes(q)) ||
+                   (p[10] && p[10].toLowerCase().includes(q)) ||
+                   (p[11] && p[11].toLowerCase().includes(q));
+          });
+        }
+
+        // Update category counts on panel pills based on currently scoped region
+        updateCategoryPillCounts(scoped);
+
+        // Apply category filter to get final points to render
+        let res = scoped;
+        if (currentCatCode !== '') {
+          if (currentCatCode === 'lainnya') {
+            res = res.filter(p => [4, 5, 8, 9, 0].includes(p[3]));
+          } else {
+            const cCode = parseInt(currentCatCode, 10);
+            res = res.filter(p => p[3] === cCode);
+          }
+        }
+
+        filteredPoints = res;
+        renderCanvas();
+      }
+
+      function updateCategoryPillCounts(pts) {
+        const total = pts ? pts.length : 0;
+        const usaha = pts ? pts.filter(p => p[3] === 1).length : 0;
+        const campuran = pts ? pts.filter(p => p[3] === 2).length : 0;
+        const tinggal = pts ? pts.filter(p => p[3] === 3).length : 0;
+        const kosong = pts ? pts.filter(p => p[4] === 1 || p[3] === 6).length : 0;
+        const lainnya = pts ? pts.filter(p => [4, 5, 8, 9, 0].includes(p[3])).length : 0;
+
+        const elAll = document.getElementById('countCatAll');
+        const elUsaha = document.getElementById('countCatUsaha');
+        const elCampuran = document.getElementById('countCatCampuran');
+        const elTinggal = document.getElementById('countCatTinggal');
+        const elKosong = document.getElementById('countCatKosong');
+        const elLainnya = document.getElementById('countCatLainnya');
+
+        if (elAll) elAll.textContent = total.toLocaleString('id-ID');
+        if (elUsaha) elUsaha.textContent = usaha.toLocaleString('id-ID');
+        if (elCampuran) elCampuran.textContent = campuran.toLocaleString('id-ID');
+        if (elTinggal) elTinggal.textContent = tinggal.toLocaleString('id-ID');
+        if (elKosong) elKosong.textContent = kosong.toLocaleString('id-ID');
+        if (elLainnya) elLainnya.textContent = lainnya.toLocaleString('id-ID');
+      }
+
+      // Scope Selector Modal Logic (Desa / Kelurahan Level)
+      let modalActiveKec = '';
+      let modalDesaSearchQuery = '';
+
+      window.openScopeModal = function() {
+        const modal = document.getElementById('ujipetikScopeModal');
+        const searchInput = document.getElementById('modalDesaSearchInput');
+        if (searchInput) searchInput.value = '';
+        modalDesaSearchQuery = '';
+        renderModalDesaGrid();
+        if (modal) modal.style.display = 'flex';
+      };
+
+      window.closeScopeModal = function() {
+        const modal = document.getElementById('ujipetikScopeModal');
+        if (modal) modal.style.display = 'none';
+      };
+
+      function updateScopeButtonLabel() {
+        const btnText = document.getElementById('currentScopeBtnText');
+        if (!btnText) return;
+        if (currentDesa) {
+          btnText.textContent = `Desa: ${currentDesa}`;
+        } else if (currentKec) {
+          btnText.textContent = `Kec. ${currentKec}`;
+        } else if (filteredPoints && filteredPoints.length === allPoints.length && allPoints.length > 0) {
+          btnText.textContent = `Seluruh PPU (${Math.round(allPoints.length / 1000)}K)`;
+        } else {
+          btnText.textContent = 'Pilih Desa';
+        }
+      }
+
+      function zoomToKecamatan(kecName) {
+        let matchedBounds = null;
+        if (kecLayer) {
+          kecLayer.eachLayer(l => {
+            if (l.feature && l.feature.properties) {
+              const p = l.feature.properties;
+              const name = (p.nmkec || p.kecamatan || p.WADMKC || p.nama || '').toUpperCase();
+              if (name === kecName.toUpperCase() || name.includes(kecName.toUpperCase())) {
+                if (l.getBounds) matchedBounds = l.getBounds();
+              }
+            }
+          });
+        }
+        if (matchedBounds) {
+          map.fitBounds(matchedBounds, { padding: [35, 35] });
+        } else if (filteredPoints && filteredPoints.length > 0) {
+          const lats = filteredPoints.map(p => p[1]);
+          const lngs = filteredPoints.map(p => p[2]);
+          const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+          const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+          map.fitBounds([[minLat, minLng], [maxLat, maxLng]], { padding: [35, 35] });
+        }
+      }
+
+      function zoomToDesa(desaName) {
+        let matchedBounds = null;
+        if (desaLayer) {
+          desaLayer.eachLayer(l => {
+            if (l.feature && l.feature.properties) {
+              const p = l.feature.properties;
+              const name = (p.nmdesa || p.desa || p.NAMOBJ || p.WADMKD || p.nama || '').toUpperCase();
+              if (name === desaName.toUpperCase() || name.includes(desaName.toUpperCase())) {
+                if (l.getBounds) matchedBounds = l.getBounds();
+              }
+            }
+          });
+        }
+        if (matchedBounds) {
+          map.fitBounds(matchedBounds, { padding: [35, 35] });
+        } else if (filteredPoints && filteredPoints.length > 0) {
+          const lats = filteredPoints.map(p => p[1]);
+          const lngs = filteredPoints.map(p => p[2]);
+          const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+          const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+          map.fitBounds([[minLat, minLng], [maxLat, maxLng]], { padding: [35, 35] });
+        }
+      }
+
+      window.filterModalDesaByKec = function(kecName, btnEl) {
+        modalActiveKec = kecName;
+        document.querySelectorAll('#modalKecTabs .modal-kec-tab').forEach(b => b.classList.remove('active'));
+        if (btnEl) btnEl.classList.add('active');
+        renderModalDesaGrid();
+      };
+
+      function renderModalDesaGrid() {
+        const grid = document.getElementById('modalDesaGrid');
+        if (!grid || !summaryStats || !summaryStats.desaStats) return;
+
+        let desas = summaryStats.desaStats;
+        if (modalActiveKec) {
+          desas = desas.filter(d => d.kecamatan && d.kecamatan.toUpperCase() === modalActiveKec.toUpperCase());
+        }
+        if (modalDesaSearchQuery) {
+          const q = modalDesaSearchQuery.toLowerCase().trim();
+          desas = desas.filter(d => (d.desa && d.desa.toLowerCase().includes(q)) || (d.kecamatan && d.kecamatan.toLowerCase().includes(q)));
+        }
+
+        if (desas.length === 0) {
+          grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 24px 10px; color: var(--text-muted);">
+              <i class="bi bi-search" style="font-size: 20px; display: block; margin-bottom: 6px; opacity: 0.6;"></i>
+              <span style="font-size: 12px;">Tidak ditemukan desa yang sesuai pencarian.</span>
+            </div>
+          `;
+          return;
+        }
+
+        let html = '';
+        desas.forEach(d => {
+          const count = d.total_titik !== undefined ? d.total_titik : (d.count || 0);
+          const safeDesa = (d.desa || '').replace(/'/g, "\\'");
+          const safeKec = (d.kecamatan || '').replace(/'/g, "\\'");
+          html += `
+            <div class="modal-desa-card" onclick="selectScopeDesaDirect('${safeDesa}', '${safeKec}')">
+              <div class="modal-desa-title">
+                <i class="bi bi-geo-alt-fill text-cyan" style="font-size: 11px;"></i>
+                <span>${d.desa}</span>
+              </div>
+              <div class="modal-desa-subtitle">Kec. ${d.kecamatan || '-'}</div>
+              <div>
+                <span class="modal-desa-count">${count.toLocaleString('id-ID')} Titik</span>
+              </div>
+            </div>
+          `;
+        });
+        grid.innerHTML = html;
+      }
+
+      window.selectScopeDesaDirect = function(desaName, kecName) {
+        currentDesa = desaName;
+        if (!kecName && summaryStats && summaryStats.desaStats) {
+          const match = summaryStats.desaStats.find(d => d.desa && d.desa.toUpperCase() === desaName.toUpperCase());
+          if (match && match.kecamatan) kecName = match.kecamatan;
+        }
+        currentKec = kecName || '';
+
+        const kecSelect = document.getElementById('kecFilter');
+        const desaSelect = document.getElementById('desaFilter');
+
+        if (kecSelect) {
+          const targetKec = (currentKec || '').toUpperCase();
+          let matched = false;
+          for (let i = 0; i < kecSelect.options.length; i++) {
+            if (kecSelect.options[i].value.toUpperCase() === targetKec) {
+              kecSelect.selectedIndex = i;
+              matched = true;
+              break;
+            }
+          }
+          if (!matched) kecSelect.value = '';
+        }
+
+        if (desaSelect) {
+          populateDesaDropdown(currentKec || '');
+          desaSelect.value = desaName;
+        }
+
+        populateOfficerDropdowns(currentKec, currentDesa, '');
+        applyFilters();
+        zoomToDesa(desaName);
+        updateScopeButtonLabel();
+        closeScopeModal();
+      };
+
+      window.selectAllPoints = function() {
+        currentKec = '';
+        currentDesa = '';
+        currentPcl = '';
+        currentPml = '';
+        const kecSelect = document.getElementById('kecFilter');
+        const desaSelect = document.getElementById('desaFilter');
+        if (kecSelect) kecSelect.value = '';
+        if (desaSelect) {
+          populateDesaDropdown('');
+          desaSelect.value = '';
+        }
+        populateOfficerDropdowns('', '', '');
+        filteredPoints = allPoints || [];
+        renderCanvas();
+        updateCategoryPillCounts(filteredPoints);
+        map.setView(centerCoords, defaultZoom);
+        updateScopeButtonLabel();
+        closeScopeModal();
+      };
+
+      // Populate Desa dropdown based on selected Kecamatan
+      function populateDesaDropdown(kecName) {
+        const desaSelect = document.getElementById('desaFilter');
+        const modalDesaSelect = document.getElementById('modalDesaSelect');
+        if (!summaryStats || !summaryStats.desaStats) return;
+
+        let desas = summaryStats.desaStats;
+        if (kecName) {
+          desas = desas.filter(d => d.kecamatan && d.kecamatan.toUpperCase() === kecName.toUpperCase());
+        }
+
+        let html = '<option value="">-- Semua Desa / Kel --</option>';
+        desas.forEach(d => {
+          const countVal = d.total_titik !== undefined ? d.total_titik : (d.count || 0);
+          const label = kecName ? `${d.desa} (${countVal.toLocaleString('id-ID')})` : `${d.desa} [${d.kecamatan}] (${countVal.toLocaleString('id-ID')})`;
+          html += `<option value="${d.desa}">${label}</option>`;
+        });
+        if (desaSelect) desaSelect.innerHTML = html;
+
+        if (modalDesaSelect) {
+          let mHtml = '<option value="">-- Pilih Desa / Kelurahan --</option>';
+          summaryStats.desaStats.forEach(d => {
+            const countVal = d.total_titik !== undefined ? d.total_titik : (d.count || 0);
+            mHtml += `<option value="${d.desa}">${d.desa} [Kec. ${d.kecamatan}] (${countVal.toLocaleString('id-ID')} titik)</option>`;
+          });
+          modalDesaSelect.innerHTML = mHtml;
+        }
+      }
+
+      // Populate PCL & PML dropdowns with dynamic cascading scope filtering
+      function populateOfficerDropdowns(scopedKec, scopedDesa, scopedPml) {
+        const pclSelect = document.getElementById('pclFilter');
+        const pmlSelect = document.getElementById('pmlFilter');
+        if (!allPoints || allPoints.length === 0) return;
+
+        let pts = allPoints;
+        if (scopedKec) {
+          const kUpper = scopedKec.toUpperCase();
+          pts = pts.filter(p => p[12] && p[12].toUpperCase() === kUpper);
+        }
+        if (scopedDesa) {
+          const dUpper = scopedDesa.toUpperCase();
+          pts = pts.filter(p => (p[11] && p[11].toUpperCase() === dUpper) || (p[13] && p[13].startsWith(scopedDesa)));
+        }
+
+        // Extract unique PMLs in this area
+        const pmlsInScope = new Set();
+        pts.forEach(p => {
+          if (p[8] && p[8].trim() !== '') pmlsInScope.add(p[8].trim());
+        });
+        const sortedPmls = Array.from(pmlsInScope).sort((a, b) => a.localeCompare(b));
+
+        // If a specific PML is selected, narrow PCLs to that PML's points
+        let pclPts = pts;
+        if (scopedPml) {
+          const pmlLower = scopedPml.toLowerCase().trim();
+          pclPts = pclPts.filter(p => p[8] && p[8].toLowerCase().trim() === pmlLower);
+        }
+
+        // Extract unique PCLs in this area (and under this PML if selected)
+        const pclsInScope = new Set();
+        pclPts.forEach(p => {
+          if (p[7] && p[7].trim() !== '') pclsInScope.add(p[7].trim());
+        });
+        const sortedPcls = Array.from(pclsInScope).sort((a, b) => a.localeCompare(b));
+
+        // Rebuild PML dropdown
+        if (pmlSelect) {
+          const prevPml = pmlSelect.value;
+          let html = '<option value="">-- Semua Pengawas PML --</option>';
+          sortedPmls.forEach(p => {
+            html += `<option value="${p}">${p}</option>`;
+          });
+          pmlSelect.innerHTML = html;
+          if (prevPml && pmlsInScope.has(prevPml)) {
+            pmlSelect.value = prevPml;
+          } else {
+            pmlSelect.value = '';
+            currentPml = '';
+          }
+        }
+
+        // Rebuild PCL dropdown
+        if (pclSelect) {
+          const prevPcl = pclSelect.value;
+          let html = '<option value="">-- Semua Petugas PCL --</option>';
+          sortedPcls.forEach(p => {
+            html += `<option value="${p}">${p}</option>`;
+          });
+          pclSelect.innerHTML = html;
+          if (prevPcl && pclsInScope.has(prevPcl)) {
+            pclSelect.value = prevPcl;
+          } else {
+            pclSelect.value = '';
+            currentPcl = '';
+          }
+        }
+      }
+
+      // Setup Boundary Layers (Kecamatan & Desa)
+      function setupBoundaryLayers() {
+        if (kecGeoJson) {
+          kecLayer = L.geoJSON(kecGeoJson, {
+            interactive: false,
+            style: {
+              color: '#0284c7',
+              weight: 1.2,
+              opacity: 0.6,
+              fillColor: 'transparent',
+              fillOpacity: 0
+            }
+          }).addTo(map);
+        }
+
+        if (desaGeoJson) {
+          desaLayer = L.geoJSON(desaGeoJson, {
+            interactive: false,
+            style: {
+              color: '#64748b',
+              weight: 0.7,
+              opacity: 0.45,
+              fillColor: 'transparent',
+              fillOpacity: 0
+            }
+          }).addTo(map);
+        }
+      }
+
+      function showDesaSummaryDrawer(nmdesa, nmkec, iddesa) {
+        const ptsInDesa = allPoints.filter(p => (p[11] && p[11].toUpperCase() === (nmdesa || '').toUpperCase()) || (p[13] && p[13].startsWith(iddesa || '')));
+        const total = ptsInDesa.length;
+        const usaha = ptsInDesa.filter(p => p[3] === 1 || p[3] === 2).length;
+        const tinggal = ptsInDesa.filter(p => p[3] === 3).length;
+        const kosong = ptsInDesa.filter(p => p[4] === 1 || p[3] === 6).length;
+
+        const html = `
+          <div style="background: rgba(2, 132, 199, 0.12); border: 1px solid rgba(2, 132, 199, 0.3); padding: 10px 12px; border-radius: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <span style="font-size: 10px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase;">Ringkasan Wilayah Uji Petik</span>
+                <strong style="font-size: 14.5px; color: var(--text-primary); display: block;"><i class="bi bi-geo-alt-fill" style="color: #0284c7;"></i> Desa ${nmdesa}</strong>
+                <span style="font-size: 11px; color: var(--text-secondary);">Kecamatan ${nmkec}</span>
+              </div>
+              <span class="badge" style="background: rgba(2,132,199,0.2); color: #0284c7; font-size: 11px; font-weight: 700; padding: 3px 8px;">
+                ${total.toLocaleString('id-ID')} Titik
+              </span>
+            </div>
+          </div>
+
+          <div class="map-card-stat-grid">
+            <div class="map-card-stat-item">
+              <span class="map-card-stat-label"><i class="bi bi-shop"></i> Usaha &amp; Campuran</span>
+              <span class="map-card-stat-value" style="color: #f59e0b;">${usaha.toLocaleString('id-ID')}</span>
+            </div>
+            <div class="map-card-stat-item">
+              <span class="map-card-stat-label"><i class="bi bi-house"></i> Tempat Tinggal</span>
+              <span class="map-card-stat-value" style="color: #0284c7;">${tinggal.toLocaleString('id-ID')}</span>
+            </div>
+            <div class="map-card-stat-item">
+              <span class="map-card-stat-label"><i class="bi bi-door-closed"></i> Bangunan Kosong</span>
+              <span class="map-card-stat-value" style="color: #64748b;">${kosong.toLocaleString('id-ID')}</span>
+            </div>
+            <div class="map-card-stat-item">
+              <span class="map-card-stat-label"><i class="bi bi-building"></i> Fasum &amp; Lainnya</span>
+              <span class="map-card-stat-value" style="color: #10b981;">${(total - usaha - tinggal - kosong).toLocaleString('id-ID')}</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 8px;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="filterByDesaDirect('${nmdesa}')" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; font-weight: 700; border-radius: 8px;">
+              <i class="bi bi-funnel-fill"></i> Tampilkan Titik Desa Ini Saja
+            </button>
+          </div>
+        `;
+
+        const placeholder = document.getElementById('drawerPlaceholder');
+        const body = document.getElementById('drawerDetailsBody');
+        if (placeholder) placeholder.style.display = 'none';
+        if (body) {
+          body.style.display = 'block';
+          body.innerHTML = html;
+        }
+      }
+
+      window.filterByDesaDirect = function(desaName) {
+        const desaSelect = document.getElementById('desaFilter');
+        if (desaSelect) desaSelect.value = desaName;
+        currentDesa = desaName;
+        applyFilters();
+        zoomToDesa(desaName);
+        updateScopeButtonLabel();
+      };
+
+      // Category filter buttons listener
+      document.querySelectorAll('#categoryFilterGroup .gmaps-pill-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#categoryFilterGroup .gmaps-pill-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentCatCode = btn.getAttribute('data-cat') || '';
+          applyFilters();
+        });
+      });
+
+      // KPI Pills Filter Listener
+      document.querySelectorAll('.gmaps-floating-kpi-bar .gmaps-kpi-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          document.querySelectorAll('.gmaps-floating-kpi-bar .gmaps-kpi-pill').forEach(p => p.classList.remove('active-filter'));
+          pill.classList.add('active-filter');
+          const kpi = pill.getAttribute('data-kpi');
+          if (!kpi) currentCatCode = '';
+          else if (kpi === 'usaha') currentCatCode = '1';
+          else if (kpi === 'tinggal') currentCatCode = '3';
+          else if (kpi === 'kosong') currentCatCode = '6';
+          applyFilters();
+        });
+      });
+
+      // Kecamatan Filter Listener
+      const kecFilter = document.getElementById('kecFilter');
+      if (kecFilter) {
+        kecFilter.addEventListener('change', (e) => {
+          currentKec = e.target.value;
+          currentDesa = '';
+          currentPcl = '';
+          currentPml = '';
+          populateDesaDropdown(currentKec);
+          populateOfficerDropdowns(currentKec, '', '');
+          applyFilters();
+
+          if (currentKec) {
+            zoomToKecamatan(currentKec);
+          } else {
+            map.setView(centerCoords, defaultZoom);
+          }
+          updateScopeButtonLabel();
+        });
+      }
+
+      // Desa Filter Listener
+      const desaFilter = document.getElementById('desaFilter');
+      if (desaFilter) {
+        desaFilter.addEventListener('change', (e) => {
+          currentDesa = e.target.value;
+          currentPcl = '';
+          currentPml = '';
+          if (currentDesa && summaryStats && summaryStats.desaStats) {
+            const match = summaryStats.desaStats.find(d => d.desa && d.desa.toUpperCase() === currentDesa.toUpperCase());
+            if (match && match.kecamatan) {
+              currentKec = match.kecamatan;
+              if (kecFilter) {
+                const targetKec = match.kecamatan.toUpperCase();
+                for (let i = 0; i < kecFilter.options.length; i++) {
+                  if (kecFilter.options[i].value.toUpperCase() === targetKec) {
+                    kecFilter.selectedIndex = i;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+          populateOfficerDropdowns(currentKec, currentDesa, '');
+          applyFilters();
+
+          if (currentDesa) {
+            zoomToDesa(currentDesa);
+          }
+          updateScopeButtonLabel();
+        });
+      }
+
+      // PCL Filter Listener
+      const pclFilter = document.getElementById('pclFilter');
+      if (pclFilter) {
+        pclFilter.addEventListener('change', (e) => {
+          currentPcl = e.target.value;
+          if (currentPcl && allPoints) {
+            const pMatch = allPoints.find(p => p[7] && p[7].toLowerCase().trim() === currentPcl.toLowerCase().trim());
+            if (pMatch && pMatch[8]) {
+              const pmlVal = pMatch[8].trim();
+              if (pmlFilter && (!currentPml || currentPml !== pmlVal)) {
+                currentPml = pmlVal;
+                pmlFilter.value = pmlVal;
+              }
+            }
+          }
+          applyFilters();
+        });
+      }
+
+      // PML Filter Listener
+      const pmlFilter = document.getElementById('pmlFilter');
+      if (pmlFilter) {
+        pmlFilter.addEventListener('change', (e) => {
+          currentPml = e.target.value;
+          populateOfficerDropdowns(currentKec, currentDesa, currentPml);
+          applyFilters();
+        });
+      }
+
+      // Search Input Listener
+      const mapSearchInput = document.getElementById('mapSearchInput');
+      let searchTimer = null;
+      if (mapSearchInput) {
+        mapSearchInput.addEventListener('input', (e) => {
+          clearTimeout(searchTimer);
+          searchTimer = setTimeout(() => {
+            currentSearch = e.target.value;
+            applyFilters();
+          }, 150);
+        });
+      }
+
+      // Reset View Button
+      const btnResetView = document.getElementById('btnResetView');
+      if (btnResetView) {
+        btnResetView.addEventListener('click', () => {
+          currentKec = '';
+          currentDesa = '';
+          currentPcl = '';
+          currentPml = '';
+          currentCatCode = '';
+          currentSearch = '';
+          if (kecFilter) kecFilter.value = '';
+          if (desaFilter) {
+            populateDesaDropdown('');
+            desaFilter.value = '';
+          }
+          populateOfficerDropdowns('', '', '');
+          if (mapSearchInput) mapSearchInput.value = '';
+          document.querySelectorAll('#categoryFilterGroup .gmaps-pill-btn').forEach((b, i) => {
+            if (i === 0) b.classList.add('active');
+            else b.classList.remove('active');
+          });
+          map.setView(centerCoords, defaultZoom);
+          updateScopeButtonLabel();
+          openScopeModal();
+        });
+      }
+
+      // Fullscreen / Command Center Presentation Mode (Matches map.ejs)
+      function toggleFullscreenMap() {
+        const wrapper = document.getElementById('gmapsWrapper');
+        if (!wrapper) return;
+
+        const isCurrentlyFullscreen = !!document.fullscreenElement || wrapper.classList.contains('is-fullscreen');
+
+        if (!isCurrentlyFullscreen) {
+          localStorage.setItem('se2026_ujipetik_fullscreen', 'true');
+          if (wrapper.requestFullscreen) {
+            wrapper.requestFullscreen().catch(() => {
+              wrapper.classList.add('is-fullscreen');
+            });
+          } else if (wrapper.webkitRequestFullscreen) {
+            wrapper.webkitRequestFullscreen();
+          } else if (wrapper.msRequestFullscreen) {
+            wrapper.msRequestFullscreen();
+          } else {
+            wrapper.classList.add('is-fullscreen');
+          }
+          if (btnFullscreenMap) {
+            btnFullscreenMap.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+          }
+        } else {
+          localStorage.setItem('se2026_ujipetik_fullscreen', 'false');
+          wrapper.classList.remove('is-fullscreen');
+          if (document.fullscreenElement) {
+            if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+          }
+          if (btnFullscreenMap) {
+            btnFullscreenMap.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+          }
+        }
+
+        setTimeout(() => { invalidateSize(); }, 200);
+      }
+
+      const btnFullscreenMap = document.getElementById('btnFullscreenMap');
+      if (btnFullscreenMap) btnFullscreenMap.addEventListener('click', toggleFullscreenMap);
+
+      function updateFullscreenUiState() {
+        const wrapper = document.getElementById('gmapsWrapper');
+        const isFull = !!document.fullscreenElement || (wrapper && wrapper.classList.contains('is-fullscreen'));
+        if (btnFullscreenMap) {
+          btnFullscreenMap.innerHTML = isFull ? '<i class="bi bi-fullscreen-exit"></i>' : '<i class="bi bi-arrows-fullscreen"></i>';
+        }
+        setTimeout(() => { invalidateSize(); }, 150);
+      }
+
+      document.addEventListener('fullscreenchange', () => {
+        const isFull = !!document.fullscreenElement;
+        const wrapper = document.getElementById('gmapsWrapper');
+        if (!isFull && wrapper && !wrapper.classList.contains('is-fullscreen')) {
+          localStorage.setItem('se2026_ujipetik_fullscreen', 'false');
+        }
+        updateFullscreenUiState();
+      });
+      document.addEventListener('webkitfullscreenchange', updateFullscreenUiState);
+      document.addEventListener('mozfullscreenchange', updateFullscreenUiState);
+      document.addEventListener('MSFullscreenChange', updateFullscreenUiState);
+
+      // Auto-restore Fullscreen state on page load / refresh
+      function restoreFullscreenState() {
+        const savedFullscreen = localStorage.getItem('se2026_ujipetik_fullscreen');
+        const wrapper = document.getElementById('gmapsWrapper');
+        if (savedFullscreen === 'true' && wrapper) {
+          wrapper.classList.add('is-fullscreen');
+          if (btnFullscreenMap) {
+            btnFullscreenMap.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+          }
+          setTimeout(() => { invalidateSize(); }, 200);
+
+          const autoNativeFullscreenOnInteraction = () => {
+            if (localStorage.getItem('se2026_ujipetik_fullscreen') === 'true' && !document.fullscreenElement) {
+              if (wrapper.requestFullscreen) {
+                wrapper.requestFullscreen().catch(() => {});
+              }
+            }
+            document.removeEventListener('click', autoNativeFullscreenOnInteraction);
+            document.removeEventListener('keydown', autoNativeFullscreenOnInteraction);
+            document.removeEventListener('touchstart', autoNativeFullscreenOnInteraction);
+          };
+
+          document.addEventListener('click', autoNativeFullscreenOnInteraction, { once: true });
+          document.addEventListener('keydown', autoNativeFullscreenOnInteraction, { once: true });
+          document.addEventListener('touchstart', autoNativeFullscreenOnInteraction, { once: true });
+        }
+      }
+
+      restoreFullscreenState();
+
+      // Drawer Tab & Collapse Functions (Manual user control only)
+      window.switchDrawerTab = function(tabName, e) {
+        if (e) e.stopPropagation();
+
+        const card = document.getElementById('gmapsDrawerCard');
+        const icon = document.getElementById('drawerCollapseIcon');
+        
+        // If user manually clicks a tab while the drawer is collapsed, expand it
+        if (card && card.classList.contains('collapsed')) {
+          card.classList.remove('collapsed');
+          if (icon) icon.className = 'bi bi-chevron-down';
+        }
+
+        const tabInfo = document.getElementById('tabBtnInfo');
+        const tabLegend = document.getElementById('tabBtnLegend');
+        const contentInfo = document.getElementById('drawerContentInfo');
+        const contentLegend = document.getElementById('drawerContentLegend');
+
+        if (tabName === 'info') {
+          if (tabInfo) tabInfo.classList.add('active');
+          if (tabLegend) tabLegend.classList.remove('active');
+          if (contentInfo) contentInfo.style.display = 'block';
+          if (contentLegend) contentLegend.style.display = 'none';
+        } else {
+          if (tabLegend) tabLegend.classList.add('active');
+          if (tabInfo) tabInfo.classList.remove('active');
+          if (contentLegend) contentLegend.style.display = 'block';
+          if (contentInfo) contentInfo.style.display = 'none';
+        }
+      };
+
+      window.toggleDrawerCollapse = function(e) {
+        if (e) e.stopPropagation();
+        const card = document.getElementById('gmapsDrawerCard');
+        const icon = document.getElementById('drawerCollapseIcon');
+        if (!card) return;
+        card.classList.toggle('collapsed');
+        if (icon) {
+          icon.className = card.classList.contains('collapsed') ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+        }
+      };
+
+      window.filterByCategoryCode = function(catCode) {
+        currentCatCode = String(catCode);
+        document.querySelectorAll('#categoryFilterGroup .gmaps-pill-btn').forEach(b => {
+          if (b.getAttribute('data-cat') === String(catCode)) b.classList.add('active');
+          else b.classList.remove('active');
+        });
+        applyFilters();
+      };
+
+      // Toggle Tools Expand / Collapse
+      const btnToggleToolsExpand = document.getElementById('btnToggleToolsExpand');
+      const gmapsToolsPanel = document.getElementById('gmapsToolsPanel');
+      const toolsExpandIcon = document.getElementById('toolsExpandIcon');
+
+      if (gmapsToolsPanel && window.innerWidth <= 768) {
+        gmapsToolsPanel.classList.add('is-collapsed');
+        if (toolsExpandIcon) toolsExpandIcon.className = 'bi bi-sliders';
+      }
+
+      if (btnToggleToolsExpand && gmapsToolsPanel) {
+        btnToggleToolsExpand.addEventListener('click', () => {
+          gmapsToolsPanel.classList.toggle('is-collapsed');
+          if (toolsExpandIcon) {
+            toolsExpandIcon.className = gmapsToolsPanel.classList.contains('is-collapsed') ? 'bi bi-sliders' : 'bi bi-chevron-bar-up';
+          }
+        });
+      }
+
+      // Bootstrap & Load Data
+      async function bootstrap() {
+        const loading = document.getElementById('mapLoading');
+        try {
+          const [statsRes, pointsRes, desaGeoRes, kecGeoRes] = await Promise.all([
+            fetch('/api/ujipetik-stats'),
+            fetch('/api/ujipetik-points'),
+            fetch('/data/desa_boundaries.geojson'),
+            fetch('/data/kecamatan_boundaries.geojson')
+          ]);
+
+          summaryStats = await statsRes.json();
+          allPoints = await pointsRes.json();
+          desaGeoJson = await desaGeoRes.json();
+          kecGeoJson = await kecGeoRes.json();
+
+          populateDesaDropdown('');
+          populateOfficerDropdowns('', '', '');
+          setupBoundaryLayers();
+          renderModalDesaGrid();
+
+          // Setup Modal Live Search Listener
+          const modalSearchInput = document.getElementById('modalDesaSearchInput');
+          if (modalSearchInput) {
+            modalSearchInput.addEventListener('input', (e) => {
+              modalDesaSearchQuery = e.target.value;
+              renderModalDesaGrid();
+            });
+          }
+
+          // Check URL query parameters (e.g. ?desa=WARU or ?kec=BABULU)
+          const urlParams = new URLSearchParams(window.location.search);
+          const initialKec = urlParams.get('kec');
+          const initialDesa = urlParams.get('desa');
+
+          if (initialDesa) {
+            selectScopeDesaDirect(initialDesa, initialKec || '');
+          } else if (initialKec) {
+            currentKec = initialKec;
+            const kecSelect = document.getElementById('kecFilter');
+            if (kecSelect) kecSelect.value = initialKec;
+            populateDesaDropdown(initialKec);
+            populateOfficerDropdowns(initialKec, '', '');
+            applyFilters();
+            zoomToKecamatan(initialKec);
+            updateScopeButtonLabel();
+          } else {
+            // Default: do NOT draw all 69k points automatically (prevents initial lag)
+            filteredPoints = [];
+            renderCanvas();
+            updateCategoryPillCounts(allPoints || []);
+            updateScopeButtonLabel();
+
+            if (allPoints && allPoints.length > 0) {
+              setTimeout(openScopeModal, 300);
+            }
+          }
+
+          // Update dynamic legend numbers
+          if (summaryStats) {
+            const findCatCount = (keyword) => {
+              if (!summaryStats.kategoriStats) return 0;
+              const found = summaryStats.kategoriStats.find(k => (k.kategori || '').toLowerCase().includes(keyword.toLowerCase()));
+              return found ? found.count : 0;
+            };
+
+            const elUsaha = document.getElementById('legendCountUsaha');
+            const elCampuran = document.getElementById('legendCountCampuran');
+            const elTinggal = document.getElementById('legendCountTinggal');
+            const elIbadah = document.getElementById('legendCountIbadah');
+            const elPem = document.getElementById('legendCountPemerintah');
+            const elLainnya = document.getElementById('legendCountLainnya');
+
+            if (elUsaha) elUsaha.textContent = findCatCount('Khusus Usaha').toLocaleString('id-ID');
+            if (elCampuran) elCampuran.textContent = findCatCount('Campuran').toLocaleString('id-ID');
+            if (elTinggal) elTinggal.textContent = findCatCount('Tempat Tinggal').toLocaleString('id-ID');
+            if (elIbadah) elIbadah.textContent = findCatCount('Ibadah').toLocaleString('id-ID');
+            if (elPem) elPem.textContent = findCatCount('Pemerintah').toLocaleString('id-ID');
+            if (elLainnya) elLainnya.textContent = (summaryStats.kosong || findCatCount('Kosong') || findCatCount('Lainnya')).toLocaleString('id-ID');
+          }
+
+          // Handle Empty Database State
+          if (!allPoints || allPoints.length === 0) {
+            const placeholder = document.getElementById('drawerPlaceholder');
+            if (placeholder) {
+              placeholder.innerHTML = `
+                <div style="padding: 10px 4px;">
+                  <i class="bi bi-inbox" style="font-size: 32px; color: var(--accent-amber); display: block; margin-bottom: 8px;"></i>
+                  <strong style="font-size: 13.5px; color: var(--text-primary); display: block; margin-bottom: 4px;">Belum Ada Data Titik Uji Petik</strong>
+                  <span style="font-size: 11.5px; color: var(--text-muted); display: block; margin-bottom: 14px; line-height: 1.4;">
+                    Peta ini secara default kosong. Admin dapat mengunggah file data CSV Titik Uji Petik melalui halaman Upload Data.
+                  </span>
+                  <a href="/admin/upload?tab=ujipetik" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; font-weight: 600; text-decoration: none; border-radius: 8px; font-size: 11.5px;">
+                    <i class="bi bi-upload"></i> Upload File CSV Titik Uji Petik
+                  </a>
+                </div>
+              `;
+            }
+          }
+
+          if (loading) {
+            loading.style.opacity = '0';
+            setTimeout(() => loading.style.display = 'none', 300);
+          }
+        } catch (err) {
+          console.error('Error bootstrapping Uji Petik Map:', err);
+          if (loading) {
+            loading.style.opacity = '0';
+            setTimeout(() => loading.style.display = 'none', 300);
+          }
+        }
+      }
+
+      bootstrap();
+    }
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      initUjiPetikMapPage();
+    } else {
+      document.addEventListener('DOMContentLoaded', initUjiPetikMapPage);
+    }
+  })();
+</script>

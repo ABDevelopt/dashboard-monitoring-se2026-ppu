@@ -17,7 +17,11 @@ function parseCookies(req) {
       const parts = c.split('=');
       const name = parts.shift().trim();
       const val = parts.join('=');
-      cookies[name] = decodeURIComponent(val);
+      try {
+        cookies[name] = decodeURIComponent(val);
+      } catch (_) {
+        cookies[name] = val;
+      }
     });
   }
   return cookies;
