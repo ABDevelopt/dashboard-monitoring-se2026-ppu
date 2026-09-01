@@ -1301,41 +1301,117 @@
 
       const map = L.map('map', {
         zoomControl: false,
-        maxZoom: 19,
+        maxZoom: 20,
         minZoom: 9
       }).setView(centerCoords, defaultZoom);
       window._leafletUjiPetikMapInstance = map;
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      // Basemap layers
-      const osmBasemap = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
-      });
+      // Robust tile creation helper with fallback and overzoom protection
+      const createRobustTileLayer = (primaryUrl, options = {}, fallbackUrl = null, fallbackMaxNativeZoom = 18) => {
+        const layer = L.tileLayer(primaryUrl, options);
+        if (fallbackUrl) {
+          layer.on('tileerror', (e) => {
+            if (e.tile && !e.tile.dataset.fallbackTried) {
+              e.tile.dataset.fallbackTried = 'true';
+              const coords = e.coords;
+              if (coords) {
+                let z = coords.z;
+                let x = coords.x;
+                let y = coords.y;
+                if (z > fallbackMaxNativeZoom) {
+                  const factor = Math.pow(2, z - fallbackMaxNativeZoom);
+                  x = Math.floor(x / factor);
+                  y = Math.floor(y / factor);
+                  z = fallbackMaxNativeZoom;
+                }
+                e.tile.src = fallbackUrl
+                  .replace('{z}', z)
+                  .replace('{x}', x)
+                  .replace('{y}', y);
+              }
+            }
+          });
+        }
+        return layer;
+      };
 
-      const satelliteBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
-        maxZoom: 19
-      });
+      const cartoKey = (typeof window.CARTO_API_KEY !== 'undefined' && window.CARTO_API_KEY) ? window.CARTO_API_KEY : ('<%= typeof cartoApiKey !== "undefined" ? cartoApiKey : "" %>');
+      const cartoParam = cartoKey ? `?key=${encodeURIComponent(cartoKey)}` : '';
 
-      const satelliteLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19
-      });
+      const lightBasemap = createRobustTileLayer(
+        `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png${cartoParam}`,
+        {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 20,
+          maxNativeZoom: 19,
+          keepBuffer: 6,
+          crossOrigin: true
+        },
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        19
+      );
+
+      const darkBasemap = createRobustTileLayer(
+        `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png${cartoParam}`,
+        {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 20,
+          maxNativeZoom: 19,
+          keepBuffer: 6,
+          crossOrigin: true
+        },
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        19
+      );
+
+      // Satellite Basemap with maxNativeZoom: 18 (ensures smooth digital overzoom up to zoom 20 without "Map data not yet available" tiles!)
+      const satelliteBasemap = createRobustTileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+          maxZoom: 20,
+          maxNativeZoom: 18,
+          keepBuffer: 6,
+          crossOrigin: true
+        }
+      );
+
+      const satelliteLabels = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+        {
+          maxZoom: 20,
+          maxNativeZoom: 18,
+          keepBuffer: 6,
+          crossOrigin: true
+        }
+      );
 
       let currentBasemapType = 'satellite';
 
       function updateBasemap() {
+        const isLight = document.body.classList.contains('light-mode');
         let targetLayer = null;
 
         if (currentBasemapType === 'satellite') {
           targetLayer = satelliteBasemap;
           if (!map.hasLayer(satelliteLabels)) satelliteLabels.addTo(map);
-          if (map.hasLayer(osmBasemap)) map.removeLayer(osmBasemap);
+          if (map.hasLayer(lightBasemap)) map.removeLayer(lightBasemap);
+          if (map.hasLayer(darkBasemap)) map.removeLayer(darkBasemap);
         } else {
           if (map.hasLayer(satelliteLabels)) map.removeLayer(satelliteLabels);
           if (map.hasLayer(satelliteBasemap)) map.removeLayer(satelliteBasemap);
-          targetLayer = osmBasemap;
+
+          if (isLight) {
+            targetLayer = lightBasemap;
+            if (map.hasLayer(darkBasemap)) map.removeLayer(darkBasemap);
+          } else {
+            targetLayer = darkBasemap;
+            if (map.hasLayer(lightBasemap)) map.removeLayer(lightBasemap);
+          }
         }
 
         if (!map.hasLayer(targetLayer)) targetLayer.addTo(map);
