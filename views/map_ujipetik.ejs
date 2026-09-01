@@ -1829,6 +1829,7 @@
           desaSelect.value = desaName;
         }
 
+        populateOfficerDropdowns(currentKec, currentDesa, '');
         applyFilters();
         zoomToDesa(desaName);
         updateScopeButtonLabel();
@@ -1838,6 +1839,8 @@
       window.selectAllPoints = function() {
         currentKec = '';
         currentDesa = '';
+        currentPcl = '';
+        currentPml = '';
         const kecSelect = document.getElementById('kecFilter');
         const desaSelect = document.getElementById('desaFilter');
         if (kecSelect) kecSelect.value = '';
@@ -1845,6 +1848,7 @@
           populateDesaDropdown('');
           desaSelect.value = '';
         }
+        populateOfficerDropdowns('', '', '');
         filteredPoints = allPoints || [];
         renderCanvas();
         updateCategoryPillCounts(filteredPoints);
@@ -1882,25 +1886,73 @@
         }
       }
 
-      // Populate PCL & PML dropdowns
-      function populateOfficerDropdowns() {
+      // Populate PCL & PML dropdowns with dynamic cascading scope filtering
+      function populateOfficerDropdowns(scopedKec, scopedDesa, scopedPml) {
         const pclSelect = document.getElementById('pclFilter');
         const pmlSelect = document.getElementById('pmlFilter');
+        if (!allPoints || allPoints.length === 0) return;
 
-        if (pclSelect && summaryStats && summaryStats.pcls) {
-          let html = '<option value="">-- Semua Petugas PCL --</option>';
-          summaryStats.pcls.forEach(p => {
-            html += `<option value="${p}">${p}</option>`;
-          });
-          pclSelect.innerHTML = html;
+        let pts = allPoints;
+        if (scopedKec) {
+          const kUpper = scopedKec.toUpperCase();
+          pts = pts.filter(p => p[12] && p[12].toUpperCase() === kUpper);
+        }
+        if (scopedDesa) {
+          const dUpper = scopedDesa.toUpperCase();
+          pts = pts.filter(p => (p[11] && p[11].toUpperCase() === dUpper) || (p[13] && p[13].startsWith(scopedDesa)));
         }
 
-        if (pmlSelect && summaryStats && summaryStats.pmls) {
+        // Extract unique PMLs in this area
+        const pmlsInScope = new Set();
+        pts.forEach(p => {
+          if (p[8] && p[8].trim() !== '') pmlsInScope.add(p[8].trim());
+        });
+        const sortedPmls = Array.from(pmlsInScope).sort((a, b) => a.localeCompare(b));
+
+        // If a specific PML is selected, narrow PCLs to that PML's points
+        let pclPts = pts;
+        if (scopedPml) {
+          const pmlLower = scopedPml.toLowerCase().trim();
+          pclPts = pclPts.filter(p => p[8] && p[8].toLowerCase().trim() === pmlLower);
+        }
+
+        // Extract unique PCLs in this area (and under this PML if selected)
+        const pclsInScope = new Set();
+        pclPts.forEach(p => {
+          if (p[7] && p[7].trim() !== '') pclsInScope.add(p[7].trim());
+        });
+        const sortedPcls = Array.from(pclsInScope).sort((a, b) => a.localeCompare(b));
+
+        // Rebuild PML dropdown
+        if (pmlSelect) {
+          const prevPml = pmlSelect.value;
           let html = '<option value="">-- Semua Pengawas PML --</option>';
-          summaryStats.pmls.forEach(p => {
+          sortedPmls.forEach(p => {
             html += `<option value="${p}">${p}</option>`;
           });
           pmlSelect.innerHTML = html;
+          if (prevPml && pmlsInScope.has(prevPml)) {
+            pmlSelect.value = prevPml;
+          } else {
+            pmlSelect.value = '';
+            currentPml = '';
+          }
+        }
+
+        // Rebuild PCL dropdown
+        if (pclSelect) {
+          const prevPcl = pclSelect.value;
+          let html = '<option value="">-- Semua Petugas PCL --</option>';
+          sortedPcls.forEach(p => {
+            html += `<option value="${p}">${p}</option>`;
+          });
+          pclSelect.innerHTML = html;
+          if (prevPcl && pclsInScope.has(prevPcl)) {
+            pclSelect.value = prevPcl;
+          } else {
+            pclSelect.value = '';
+            currentPcl = '';
+          }
         }
       }
 
@@ -2039,7 +2091,10 @@
         kecFilter.addEventListener('change', (e) => {
           currentKec = e.target.value;
           currentDesa = '';
+          currentPcl = '';
+          currentPml = '';
           populateDesaDropdown(currentKec);
+          populateOfficerDropdowns(currentKec, '', '');
           applyFilters();
 
           if (currentKec) {
@@ -2056,6 +2111,8 @@
       if (desaFilter) {
         desaFilter.addEventListener('change', (e) => {
           currentDesa = e.target.value;
+          currentPcl = '';
+          currentPml = '';
           if (currentDesa && summaryStats && summaryStats.desaStats) {
             const match = summaryStats.desaStats.find(d => d.desa && d.desa.toUpperCase() === currentDesa.toUpperCase());
             if (match && match.kecamatan) {
@@ -2071,6 +2128,7 @@
               }
             }
           }
+          populateOfficerDropdowns(currentKec, currentDesa, '');
           applyFilters();
 
           if (currentDesa) {
@@ -2085,6 +2143,16 @@
       if (pclFilter) {
         pclFilter.addEventListener('change', (e) => {
           currentPcl = e.target.value;
+          if (currentPcl && allPoints) {
+            const pMatch = allPoints.find(p => p[7] && p[7].toLowerCase().trim() === currentPcl.toLowerCase().trim());
+            if (pMatch && pMatch[8]) {
+              const pmlVal = pMatch[8].trim();
+              if (pmlFilter && (!currentPml || currentPml !== pmlVal)) {
+                currentPml = pmlVal;
+                pmlFilter.value = pmlVal;
+              }
+            }
+          }
           applyFilters();
         });
       }
@@ -2094,6 +2162,7 @@
       if (pmlFilter) {
         pmlFilter.addEventListener('change', (e) => {
           currentPml = e.target.value;
+          populateOfficerDropdowns(currentKec, currentDesa, currentPml);
           applyFilters();
         });
       }
@@ -2126,8 +2195,7 @@
             populateDesaDropdown('');
             desaFilter.value = '';
           }
-          if (pclFilter) pclFilter.value = '';
-          if (pmlFilter) pmlFilter.value = '';
+          populateOfficerDropdowns('', '', '');
           if (mapSearchInput) mapSearchInput.value = '';
           document.querySelectorAll('#categoryFilterGroup .gmaps-pill-btn').forEach((b, i) => {
             if (i === 0) b.classList.add('active');
@@ -2310,7 +2378,7 @@
           kecGeoJson = await kecGeoRes.json();
 
           populateDesaDropdown('');
-          populateOfficerDropdowns();
+          populateOfficerDropdowns('', '', '');
           setupBoundaryLayers();
           renderModalDesaGrid();
 
@@ -2335,6 +2403,7 @@
             const kecSelect = document.getElementById('kecFilter');
             if (kecSelect) kecSelect.value = initialKec;
             populateDesaDropdown(initialKec);
+            populateOfficerDropdowns(initialKec, '', '');
             applyFilters();
             zoomToKecamatan(initialKec);
             updateScopeButtonLabel();
