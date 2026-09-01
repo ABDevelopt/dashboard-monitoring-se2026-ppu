@@ -382,7 +382,32 @@
     padding-left: 3px;
   }
 
-  /* Category Pill Group & Button Styling */
+  /* Point Hover Visual Cue Tooltip */
+  .map-point-hover-tooltip {
+    position: absolute;
+    z-index: 1200;
+    pointer-events: none;
+    background: rgba(15, 23, 42, 0.90);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+    padding: 5px 11px;
+    border-radius: 8px;
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    transform: translate3d(0, 0, 0);
+  }
+  body.light-mode .map-point-hover-tooltip {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    color: #0f172a;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  }
 
   /* Floating Right Action Controls */
   .gmaps-floating-right-stack {
@@ -1350,11 +1375,27 @@
       };
 
       // ── ULTRA-FAST HARDWARE-ACCELERATED HTML5 CANVAS LAYER ─────────
-      // Single Canvas overlay inside overlayPane: 0 DOM markers, ~4ms 60 FPS GPU draw
+      // Attached directly to map container: Zero pane-transform distortion, seamless 60 FPS zoom & pan
       const canvas = document.createElement('canvas');
       canvas.className = 'ujipetik-canvas-layer';
-      map.getPanes().overlayPane.appendChild(canvas);
+      canvas.style.position = 'absolute';
+      canvas.style.top = '0';
+      canvas.style.left = '0';
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      canvas.style.pointerEvents = 'none';
+      canvas.style.zIndex = '450';
+      map.getContainer().appendChild(canvas);
       const ctx = canvas.getContext('2d', { alpha: true });
+
+      // Floating Tooltip for Hover Visual Cue
+      const hoverTooltipEl = document.createElement('div');
+      hoverTooltipEl.id = 'mapPointHoverTooltip';
+      hoverTooltipEl.className = 'map-point-hover-tooltip';
+      hoverTooltipEl.style.display = 'none';
+      map.getContainer().appendChild(hoverTooltipEl);
+
+      let hoveredPoint = null;
 
       function renderCanvas() {
         if (!map || !filteredPoints) return;
@@ -1371,9 +1412,6 @@
           canvas.style.width = w + 'px';
           canvas.style.height = h + 'px';
         }
-
-        const topLeft = map.containerPointToLayerPoint([0, 0]);
-        L.DomUtil.setPosition(canvas, topLeft);
 
         ctx.save();
         ctx.scale(dpr, dpr);
@@ -1396,7 +1434,7 @@
           const lat = p[1];
           const lng = p[2];
           const pt = map.latLngToContainerPoint([lat, lng]);
-          if (pt.x < -10 || pt.x > w + 10 || pt.y < -10 || pt.y > h + 10) continue;
+          if (pt.x < -15 || pt.x > w + 15 || pt.y < -15 || pt.y > h + 15) continue;
 
           const cat = p[3] || 0;
           if (!buckets[cat]) buckets[cat] = [];
@@ -1420,16 +1458,100 @@
           ctx.fill();
         }
 
+        // Highlight hovered point with high-visibility glowing ring
+        if (hoveredPoint) {
+          const hpt = map.latLngToContainerPoint([hoveredPoint[1], hoveredPoint[2]]);
+          if (hpt.x >= -20 && hpt.x <= w + 20 && hpt.y >= -20 && hpt.y <= h + 20) {
+            const hCat = hoveredPoint[3] || 0;
+            const hColor = categoryColors[hCat] || '#0284c7';
+            const hRad = radius + 3;
+
+            // Outer glowing halo
+            ctx.beginPath();
+            ctx.arc(hpt.x, hpt.y, hRad + 5, 0, twoPi);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.fill();
+
+            // Crisp white border ring
+            ctx.beginPath();
+            ctx.arc(hpt.x, hpt.y, hRad + 2, 0, twoPi);
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+
+            // Inner solid core
+            ctx.beginPath();
+            ctx.arc(hpt.x, hpt.y, hRad, 0, twoPi);
+            ctx.fillStyle = hColor;
+            ctx.fill();
+          }
+        }
+
+        ctx.restore();
+      }
+
+      // Continuous Real-Time Animation Rendering during Zoom
+      function onZoomAnim(e) {
+        if (!map || !filteredPoints || filteredPoints.length === 0) return;
+        const size = map.getSize();
+        const dpr = window.devicePixelRatio || 1;
+        const w = size.x;
+        const h = size.y;
+
+        ctx.save();
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, w, h);
+
+        const zoom = e.zoom;
+        let radius = 2.5;
+        if (zoom >= 16) radius = 6.0;
+        else if (zoom >= 14) radius = 4.5;
+        else if (zoom >= 12) radius = 3.5;
+
+        const twoPi = Math.PI * 2;
+        const len = filteredPoints.length;
+        const buckets = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 8: [], 9: [], 0: [] };
+
+        for (let i = 0; i < len; i++) {
+          const p = filteredPoints[i];
+          const latLng = L.latLng(p[1], p[2]);
+          const layerPt = map._latLngToNewLayerPoint(latLng, e.zoom, e.center);
+          const containerPt = map.layerPointToContainerPoint(layerPt);
+          if (containerPt.x < -15 || containerPt.x > w + 15 || containerPt.y < -15 || containerPt.y > h + 15) continue;
+
+          const cat = p[3] || 0;
+          if (!buckets[cat]) buckets[cat] = [];
+          buckets[cat].push(containerPt.x, containerPt.y);
+        }
+
+        for (const cat in buckets) {
+          const coords = buckets[cat];
+          if (!coords || coords.length === 0) continue;
+
+          ctx.fillStyle = categoryColors[cat] || '#94a3b8';
+          ctx.beginPath();
+          const clen = coords.length;
+          for (let j = 0; j < clen; j += 2) {
+            const cx = coords[j];
+            const cy = coords[j + 1];
+            ctx.moveTo(cx + radius, cy);
+            ctx.arc(cx, cy, radius, 0, twoPi);
+          }
+          ctx.fill();
+        }
+
         ctx.restore();
       }
 
       map.on('move viewreset resize zoom', renderCanvas);
+      map.on('zoomanim', onZoomAnim);
 
-      // Fast Click Proximity Detection (< 1.5ms)
+      // Effortless Proximity Click Detection (High Tolerance Radius)
       map.on('click', (e) => {
         if (!filteredPoints || filteredPoints.length === 0) return;
         const clickPt = e.containerPoint;
-        const clickRadius = map.getZoom() >= 14 ? 14 : 9;
+        const zoom = map.getZoom();
+        const clickRadius = zoom >= 15 ? 24 : (zoom >= 13 ? 18 : 14);
         const clickRadiusSq = clickRadius * clickRadius;
 
         let closest = null;
@@ -1452,29 +1574,76 @@
         }
       });
 
-      // Hover Cursor feedback
+      // Interactive Hover Visual Cue & Instant Floating Tooltip
       let hoverTimer = null;
       map.on('mousemove', (e) => {
         if (hoverTimer) return;
         hoverTimer = setTimeout(() => {
           hoverTimer = null;
+          if (!filteredPoints || filteredPoints.length === 0) {
+            if (hoveredPoint) {
+              hoveredPoint = null;
+              hoverTooltipEl.style.display = 'none';
+              map.getContainer().style.cursor = '';
+              renderCanvas();
+            }
+            return;
+          }
+
           const mousePt = e.containerPoint;
-          const hoverRadius = 8;
+          const zoom = map.getZoom();
+          const hoverRadius = zoom >= 15 ? 22 : (zoom >= 13 ? 18 : 14);
           const hoverRadiusSq = hoverRadius * hoverRadius;
-          let found = false;
+
+          let closest = null;
+          let minDistSq = hoverRadiusSq;
 
           for (let i = 0; i < filteredPoints.length; i++) {
             const p = filteredPoints[i];
             const pt = map.latLngToContainerPoint([p[1], p[2]]);
             const dx = pt.x - mousePt.x;
             const dy = pt.y - mousePt.y;
-            if (dx * dx + dy * dy <= hoverRadiusSq) {
-              found = true;
-              break;
+            const distSq = dx * dx + dy * dy;
+            if (distSq <= minDistSq) {
+              minDistSq = distSq;
+              closest = p;
             }
           }
-          map.getContainer().style.cursor = found ? 'pointer' : '';
-        }, 35);
+
+          if (closest !== hoveredPoint) {
+            hoveredPoint = closest;
+            renderCanvas();
+          }
+
+          if (hoveredPoint) {
+            map.getContainer().style.cursor = 'pointer';
+            const catCode = hoveredPoint[3] || 0;
+            const catName = categoryLabels[catCode] || 'Lainnya';
+            const color = categoryColors[catCode] || '#94a3b8';
+            const noBang = hoveredPoint[6] ? `No. ${hoveredPoint[6]}` : 'Bangunan';
+            const label = hoveredPoint[5] || '';
+
+            hoverTooltipEl.innerHTML = `
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${color}; margin-right: 6px; flex-shrink: 0;"></span>
+              <strong>${noBang}</strong> ${label ? '&bull; ' + label : ''} <span style="opacity: 0.8; font-size: 10px; margin-left: 4px;">(${catName})</span>
+            `;
+            hoverTooltipEl.style.display = 'flex';
+            hoverTooltipEl.style.left = (mousePt.x + 14) + 'px';
+            hoverTooltipEl.style.top = (mousePt.y - 12) + 'px';
+          } else {
+            map.getContainer().style.cursor = '';
+            hoverTooltipEl.style.display = 'none';
+          }
+        }, 16);
+      });
+
+      map.on('mouseout', () => {
+        if (hoveredPoint) {
+          hoveredPoint = null;
+          hoverTooltipEl.style.display = 'none';
+          map.getContainer().style.cursor = '';
+          renderCanvas();
+        }
       });
 
       // Show Point Details in Drawer & Popup
@@ -1960,6 +2129,7 @@
       function setupBoundaryLayers() {
         if (kecGeoJson) {
           kecLayer = L.geoJSON(kecGeoJson, {
+            interactive: false,
             style: {
               color: '#0284c7',
               weight: 1.2,
@@ -1972,25 +2142,13 @@
 
         if (desaGeoJson) {
           desaLayer = L.geoJSON(desaGeoJson, {
+            interactive: false,
             style: {
               color: '#64748b',
               weight: 0.7,
               opacity: 0.45,
               fillColor: 'transparent',
               fillOpacity: 0
-            },
-            onEachFeature: (feature, layer) => {
-              layer.on('click', () => {
-                const nmdesa = feature.properties.nmdesa;
-                const nmkec = feature.properties.nmkec;
-                const iddesa = feature.properties.iddesa;
-
-                if (layer.getBounds) {
-                  map.fitBounds(layer.getBounds(), { padding: [30, 30] });
-                }
-
-                showDesaSummaryDrawer(nmdesa, nmkec, iddesa);
-              });
             }
           }).addTo(map);
         }
