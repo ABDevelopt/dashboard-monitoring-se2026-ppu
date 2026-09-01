@@ -409,6 +409,37 @@
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   }
 
+  /* Leaflet Popup Stacking & Glass Theme */
+  .leaflet-popup-pane {
+    z-index: 1100 !important;
+  }
+  .leaflet-popup {
+    z-index: 1100 !important;
+  }
+  .leaflet-popup-content-wrapper {
+    background: rgba(15, 23, 42, 0.94) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    border-radius: 14px !important;
+    color: #ffffff !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
+  }
+  .leaflet-popup-tip {
+    background: rgba(15, 23, 42, 0.94) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  }
+  body.light-mode .leaflet-popup-content-wrapper {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    color: #0f172a !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15) !important;
+  }
+  body.light-mode .leaflet-popup-tip {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  }
+
   /* Floating Right Action Controls */
   .gmaps-floating-right-stack {
     position: absolute;
@@ -1375,17 +1406,15 @@
       };
 
       // ── ULTRA-FAST HARDWARE-ACCELERATED HTML5 CANVAS LAYER ─────────
-      // Attached directly to map container: Zero pane-transform distortion, seamless 60 FPS zoom & pan
+      // Dedicated Leaflet Pane (z-index 450): Guaranteed strictly BELOW popups (z-index 1100) and markers
+      map.createPane('ujipetikPointsPane');
+      const pointsPane = map.getPane('ujipetikPointsPane');
+      pointsPane.style.zIndex = '450';
+      pointsPane.style.pointerEvents = 'none';
+
       const canvas = document.createElement('canvas');
       canvas.className = 'ujipetik-canvas-layer';
-      canvas.style.position = 'absolute';
-      canvas.style.top = '0';
-      canvas.style.left = '0';
-      canvas.style.width = '100%';
-      canvas.style.height = '100%';
-      canvas.style.pointerEvents = 'none';
-      canvas.style.zIndex = '450';
-      map.getContainer().appendChild(canvas);
+      pointsPane.appendChild(canvas);
       const ctx = canvas.getContext('2d', { alpha: true });
 
       // Floating Tooltip for Hover Visual Cue
@@ -1412,6 +1441,9 @@
           canvas.style.width = w + 'px';
           canvas.style.height = h + 'px';
         }
+
+        const topLeft = map.containerPointToLayerPoint([0, 0]);
+        L.DomUtil.setPosition(canvas, topLeft);
 
         ctx.save();
         ctx.scale(dpr, dpr);
@@ -1497,6 +1529,9 @@
         const dpr = window.devicePixelRatio || 1;
         const w = size.x;
         const h = size.y;
+
+        const newTopLeft = map._latLngToNewLayerPoint(map.containerPointToLatLng([0, 0]), e.zoom, e.center);
+        L.DomUtil.setPosition(canvas, newTopLeft);
 
         ctx.save();
         ctx.scale(dpr, dpr);
