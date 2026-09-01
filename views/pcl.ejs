@@ -89,17 +89,35 @@
 
     <% } %>
 
+    <script>
+      window.submitPclFilter = function() {
+        const filterForm = document.getElementById('filterForm');
+        if (!filterForm) return;
+        const formData = new FormData(filterForm);
+        const params = new URLSearchParams();
+        for (const [k, v] of formData.entries()) {
+          if (v) params.append(k, v);
+        }
+        const targetUrl = '<%= navPrefix %>/pcl' + (params.toString() ? '?' + params.toString() : '');
+        if (typeof window.loadPage === 'function') {
+          window.loadPage(targetUrl);
+        } else {
+          filterForm.submit();
+        }
+      };
+    </script>
+
     <!-- FILTER BAR -->
     <div class="card" style="margin-bottom: 20px;">
       <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
         <div class="card-title"><i class="bi bi-search"></i> Filter Petugas</div>
         <a href="<%= navPrefix %>/pcl" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset</a>
       </div>
-      <form action="<%= navPrefix %>/pcl" method="GET" id="filterForm">
+      <form action="<%= navPrefix %>/pcl" method="GET" id="filterForm" onsubmit="event.preventDefault(); submitPclFilter();">
         <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           <div>
             <label for="filterKec" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Kecamatan</label>
-            <select id="filterKec" name="kec" onchange="this.form.submit();" style="width:100%;">
+            <select id="filterKec" name="kec" onchange="submitPclFilter();" style="width:100%;">
               <option value="">-- Semua --</option>
               <% kecList.forEach(k => { %>
                 <option value="<%= k.kecamatan %>" <%= (filterKec && filterKec.toUpperCase() === k.kecamatan.toUpperCase()) ? 'selected' : '' %>><%= k.kecamatan %></option>
@@ -109,7 +127,7 @@
           <% if (!isSakernas) { %>
           <div>
             <label for="filterKorlap" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">Koordinator Lapangan</label>
-            <select id="filterKorlap" name="korlap" onchange="this.form.submit();" style="width:100%;">
+            <select id="filterKorlap" name="korlap" onchange="submitPclFilter();" style="width:100%;">
               <option value="">-- Semua --</option>
               <% korlapList.forEach(k => { %>
                 <option value="<%= k.korlap %>" <%= (filterKorlap && filterKorlap.toUpperCase() === k.korlap.toUpperCase()) ? 'selected' : '' %>><%= k.korlap %></option>
@@ -119,7 +137,7 @@
           <% } %>
           <div>
             <label for="filterPml" style="display:block; font-size:11px; margin-bottom:4px; color:var(--text-muted);">PML (Pengawas)</label>
-            <select id="filterPml" name="pml" onchange="this.form.submit();" style="width:100%;">
+            <select id="filterPml" name="pml" onchange="submitPclFilter();" style="width:100%;">
               <option value="">-- Semua --</option>
               <% pmlList.forEach(p => { %>
                 <option value="<%= p.pml %>" <%= (filterPml && filterPml.toUpperCase() === p.pml.toUpperCase()) ? 'selected' : '' %>><%= p.pml %></option>
@@ -148,7 +166,7 @@
             <table id="pclTable">
               <thead class="hide-sm">
                 <tr>
-                  <th rowspan="2" class="text-center th-no">No</th>
+                  <th rowspan="2" class="text-center th-no" title="Nomor Ranking (Peringkat FASIH tertinggi)">No</th>
                   <th rowspan="2">Nama <%= officerLabel %></th>
                   <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">FASIH %</th>
                   <th rowspan="2" class="text-right bg-cyan-soft muatan-col" style="min-width: 140px;">Muatan %</th>
@@ -196,7 +214,7 @@
               </thead>
               <thead class="show-sm-table-header">
                 <tr>
-                  <th class="text-center th-no">No</th>
+                  <th class="text-center th-no" title="Nomor Ranking (Peringkat FASIH tertinggi)">No</th>
                   <th>Nama <%= officerLabel %></th>
                   <!-- <th class="text-right">Selesai</th> -->
                   <th class="text-right bg-purple-soft" data-column-idx="2">FASIH %</th>
@@ -226,7 +244,17 @@
                       data-critical="<%= isCriticalPcl ? '1' : '0' %>"
                       data-zero="<%= isZeroPcl ? '1' : '0' %>"
                       style="<%= filterPcl === p.pcl ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
-                    <td class="text-center td-index"><%= index + 1 %></td>
+                    <td class="text-center td-index" data-sort="<%= index + 1 %>">
+                      <% if (index === 0) { %>
+                        <span style="color: #fbbf24; font-weight: 700;" title="Peringkat 1 (Tertinggi)"><%= index + 1 %></span>
+                      <% } else if (index === 1) { %>
+                        <span style="color: #cbd5e1; font-weight: 700;" title="Peringkat 2"><%= index + 1 %></span>
+                      <% } else if (index === 2) { %>
+                        <span style="color: #f97316; font-weight: 700;" title="Peringkat 3"><%= index + 1 %></span>
+                      <% } else { %>
+                        <%= index + 1 %>
+                      <% } %>
+                    </td>
                     <td class="td-primary">
                       <a href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(p.pcl) %>&kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="link-plain" style="display: inline-block;">
                         <i class="bi bi-person"></i> <%= p.pcl %>
@@ -731,21 +759,23 @@ document.addEventListener('DOMContentLoaded', () => {
     makeListSearchable('detailSubslsSearch', 'detailSubslsList', '.detail-item');
     initPclHistoryChart();
 
-    // 3. Filter form submits (updates the whole container)
+    // 3. Filter form submits (updates smoothly via PJAX without full page reload or sidebar shift)
     const filterForm = document.getElementById('filterForm');
     if (filterForm) {
-      const selects = filterForm.querySelectorAll('select');
-      selects.forEach(sel => {
-        sel.addEventListener('change', () => {
-          fetchAndReplace(new URLSearchParams(new FormData(filterForm)).toString());
-        });
+      filterForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        window.submitPclFilter();
       });
       
-      const resetBtn = container.querySelector('a[href*="/pcl"]');
+      const resetBtn = filterForm.closest('.card')?.querySelector('a[href*="/pcl"]');
       if (resetBtn) {
         resetBtn.addEventListener('click', (e) => {
           e.preventDefault();
-          fetchAndReplace('');
+          if (typeof window.loadPage === 'function') {
+            window.loadPage('<%= navPrefix %>/pcl');
+          } else {
+            window.location.href = '<%= navPrefix %>/pcl';
+          }
         });
       }
     }
@@ -955,39 +985,34 @@ document.addEventListener('DOMContentLoaded', () => {
     bindCloseDetail();
   }
 
+  window.submitPclFilter = function() {
+    const filterForm = document.getElementById('filterForm');
+    if (!filterForm) return;
+    const formData = new FormData(filterForm);
+    const params = new URLSearchParams();
+    for (const [k, v] of formData.entries()) {
+      if (v) params.append(k, v);
+    }
+    const targetUrl = '<%= navPrefix %>/pcl' + (params.toString() ? '?' + params.toString() : '');
+    if (typeof window.loadPage === 'function') {
+      window.loadPage(targetUrl);
+    } else {
+      filterForm.submit();
+    }
+  };
+
   function fetchAndReplace(queryString) {
-    // Clear cache on filter updates to avoid stale state
     if (window.detailHtmlCache) {
       for (let key in window.detailHtmlCache) delete window.detailHtmlCache[key];
     }
     const url = '<%= navPrefix %>/pcl' + (queryString ? (queryString.startsWith('?') ? queryString : '?' + queryString) : '');
-    const ajaxContainer = document.getElementById('ajax-container');
-    ajaxContainer.style.opacity = '0.5';
-    ajaxContainer.style.pointerEvents = 'none';
-    
-    fetch(url)
-      .then(res => res.text())
-      .then(html => {
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        const newContainer = doc.getElementById('ajax-container');
-        if (newContainer) {
-          ajaxContainer.innerHTML = newContainer.innerHTML;
-          history.pushState(null, '', url);
-          attachListeners();
-          if (window.initProgressBars) window.initProgressBars(ajaxContainer);
-        }
-      })
-      .catch(err => console.error(err))
-      .finally(() => {
-        ajaxContainer.style.opacity = '1';
-        ajaxContainer.style.pointerEvents = 'auto';
-      });
+    if (typeof window.loadPage === 'function') {
+      window.loadPage(url);
+    } else {
+      window.location.href = url;
+    }
   }
 
   attachListeners();
-  
-  window.addEventListener('popstate', () => {
-    fetchAndReplace(window.location.search);
-  });
 });
 </script>

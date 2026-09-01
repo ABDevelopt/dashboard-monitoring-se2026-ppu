@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getKorlapStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
+const { getKorlapStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -26,7 +26,7 @@ router.get('/', (req, res) => {
           m.pml, m.korlap,
           COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
           COUNT(DISTINCT p.kode) AS total_subsls,
-          SUM(COALESCE(p.sls_selesai, 0)) AS selesai,
+          SUM(${getSingleSelesaiFormula(targetFormula, 'p')}) AS selesai,
           SUM(${targetMuatanFormula}) AS total_muatan,
           SUM(${realFormula}) AS muatan_selesai,
           SUM(${usahaTotalFormula}) AS usaha_total,

@@ -1465,9 +1465,31 @@ function getAdaptiveMuatanFormula(mode, progresAlias = 'p', masterAlias = 'm') {
   return `COALESCE(${masterAlias}.muatan, 0)`;
 }
 
+function getSingleSelesaiFormula(targetFormula, progresAlias = 'p') {
+  return `(CASE WHEN (
+    COALESCE(${progresAlias}.sls_selesai, 0) = 1 OR (
+      COALESCE(${progresAlias}.open, 0) = 0 AND 
+      COALESCE(${progresAlias}.draft, 0) = 0 AND 
+      COALESCE(${progresAlias}.submitted_by_pcl, 0) = 0 AND 
+      COALESCE(${progresAlias}.rejected, 0) = 0 AND 
+      COALESCE(${progresAlias}.approved, 0) > 0 AND 
+      COALESCE(${progresAlias}.approved, 0) >= (${targetFormula})
+    )
+  ) THEN 1 ELSE 0 END)`;
+}
+
 function getSubslsStatusFormula(targetFormula, progresAlias = 'p') {
+  const isSelesaiSql = `(COALESCE(${progresAlias}.sls_selesai, 0) = 1 OR (
+    COALESCE(${progresAlias}.open, 0) = 0 AND 
+    COALESCE(${progresAlias}.draft, 0) = 0 AND 
+    COALESCE(${progresAlias}.submitted_by_pcl, 0) = 0 AND 
+    COALESCE(${progresAlias}.rejected, 0) = 0 AND 
+    COALESCE(${progresAlias}.approved, 0) > 0 AND 
+    COALESCE(${progresAlias}.approved, 0) >= (${targetFormula})
+  ))`;
+
   return `CASE 
-    WHEN COALESCE(${progresAlias}.sls_selesai, 0) = 1 THEN 'selesai'
+    WHEN ${isSelesaiSql} THEN 'selesai'
     WHEN ${progresAlias}.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(${progresAlias}.submitted_by_pcl, 0) + COALESCE(${progresAlias}.approved, 0) + COALESCE(${progresAlias}.rejected, 0)) >= (${targetFormula}) THEN 'memenuhi_target'
     WHEN ${progresAlias}.kode IS NOT NULL AND (
       COALESCE(${progresAlias}.draft, 0) > 0 OR 
@@ -1487,7 +1509,7 @@ function getProgresWithMaster(uploadId, surveyId) {
   const settings = getSettings(sId);
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
-  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+  const singleSelesaiFormula = getSingleSelesaiFormula(singleTargetFormula, 'p');
 
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
@@ -1527,7 +1549,7 @@ function getKecamatanStats(uploadId, settings, surveyId) {
   const masterTable = getMasterTableSql(sId);
   const effSettings = settings || getSettings(sId);
   const singleTargetFormula = getTargetFormula(effSettings.target_fasih_mode);
-  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+  const singleSelesaiFormula = getSingleSelesaiFormula(singleTargetFormula, 'p');
   const realFormula = getRealizationFormula(effSettings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(effSettings.target_muatan_mode, 'p', 'm');
   const usahaTotalFormula = getUsahaTotalFormula(effSettings.target_muatan_mode, 'p');
@@ -1565,7 +1587,7 @@ function getKorlapStats(uploadId, settings, surveyId) {
   const masterTable = getMasterTableSql(sId);
   const effSettings = settings || getSettings(sId);
   const singleTargetFormula = getTargetFormula(effSettings.target_fasih_mode);
-  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+  const singleSelesaiFormula = getSingleSelesaiFormula(singleTargetFormula, 'p');
   const realFormula = getRealizationFormula(effSettings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(effSettings.target_muatan_mode, 'p', 'm');
   const usahaTotalFormula = getUsahaTotalFormula(effSettings.target_muatan_mode, 'p');
@@ -1606,7 +1628,7 @@ function getPmlStats(uploadId, settings, surveyId) {
   const masterTable = getMasterTableSql(sId);
   const effSettings = settings || getSettings(sId);
   const singleTargetFormula = getTargetFormula(effSettings.target_fasih_mode);
-  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+  const singleSelesaiFormula = getSingleSelesaiFormula(singleTargetFormula, 'p');
   const realFormula = getRealizationFormula(effSettings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(effSettings.target_muatan_mode, 'p', 'm');
   const usahaTotalFormula = getUsahaTotalFormula(effSettings.target_muatan_mode, 'p');
@@ -1647,7 +1669,7 @@ function getPclStats(uploadId, settings, surveyId) {
   const masterTable = getMasterTableSql(sId);
   const effSettings = settings || getSettings(sId);
   const singleTargetFormula = getTargetFormula(effSettings.target_fasih_mode);
-  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+  const singleSelesaiFormula = getSingleSelesaiFormula(singleTargetFormula, 'p');
   const realFormula = getRealizationFormula(effSettings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(effSettings.target_muatan_mode, 'p', 'm');
   const usahaTotalFormula = getUsahaTotalFormula(effSettings.target_muatan_mode, 'p');
@@ -1734,7 +1756,7 @@ function getOverviewSummary(uploadId, settings = getSettings(), surveyId = 'se20
   const target_awal_total = db.prepare(`SELECT SUM(target_fasih) AS n FROM ${masterTable}`).get().n || 0;
 
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
-  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+  const singleSelesaiFormula = getSingleSelesaiFormula(singleTargetFormula, 'p');
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
   const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
@@ -1846,7 +1868,7 @@ function getEarlyWarning(uploadId, filters = {}, settings = null, surveyId = 'se
 
   const singleTargetFormula = getTargetFormula(currentSettings.target_fasih_mode);
 
-  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+  const singleSelesaiFormula = getSingleSelesaiFormula(singleTargetFormula, 'p');
 
   let where = '';
   const paramsZeroPcl = [uploadId];
@@ -2105,7 +2127,7 @@ function getTopPerformers(uploadId, filters = {}, settings = null, surveyId = 's
 
   const singleTargetFormula = getTargetFormula(currentSettings.target_fasih_mode);
 
-  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+  const singleSelesaiFormula = getSingleSelesaiFormula(singleTargetFormula, 'p');
 
   const targetMuatanFormula = getAdaptiveMuatanFormula(currentSettings.target_muatan_mode, 'p', 'm');
   const usahaTotalFormula = getUsahaTotalFormula(currentSettings.target_muatan_mode, 'p');
@@ -2197,7 +2219,7 @@ function getBottomPerformers(uploadId, filters = {}, settings = null, surveyId =
 
   const singleTargetFormula = getTargetFormula(currentSettings.target_fasih_mode);
 
-  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+  const singleSelesaiFormula = getSingleSelesaiFormula(singleTargetFormula, 'p');
 
   const targetMuatanFormula = getAdaptiveMuatanFormula(currentSettings.target_muatan_mode, 'p', 'm');
   const usahaTotalFormula = getUsahaTotalFormula(currentSettings.target_muatan_mode, 'p');
@@ -2540,7 +2562,7 @@ function rebuildSummaryCache(uploadId, surveyId) {
   const settings = getSettings(surveyId);
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
-  const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+  const singleSelesaiFormula = getSingleSelesaiFormula(singleTargetFormula, 'p');
 
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
@@ -2548,7 +2570,7 @@ function rebuildSummaryCache(uploadId, surveyId) {
   const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
   db.prepare(`
-    INSERT INTO summary_cache (
+    INSERT OR REPLACE INTO summary_cache (
       upload_id, kecamatan, desa, korlap, pml, pcl,
       total_sls, selesai, total_muatan, muatan_selesai,
       usaha_total, keluarga_total, draft_total, open_total, submitted_total, approved_total, rejected_total, target_fasih_total,
@@ -3946,7 +3968,7 @@ module.exports = {
   getBottomPerformers, getAnomalyStats,
   getSettings, updateSettings, getUserByUsername, hashPassword, rebuildSummaryCache, rebuildAllSummaryCaches,
   getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages, getTargetFormula,
-  getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSubslsStatusFormula,
+  getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, getSubslsStatusFormula,
   getAllUsers, createUser, updateUser, deleteUser,
   saveRememberToken, getUserByRememberToken, deleteRememberToken, getIntradayUploadsByDate,
   logVisit, getVisitorStats,

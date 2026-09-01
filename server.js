@@ -267,6 +267,7 @@ app.use((req, res, next) => {
   res.locals.appVersion = APP_VERSION;
   res.locals.packageVersion = require('./package.json').version;
   res.locals.sentryDsn = process.env.SENTRY_DSN || '';
+  res.locals.cartoApiKey = process.env.CARTO_API_KEY || '';
 
   // Inject upload info globally
   try {

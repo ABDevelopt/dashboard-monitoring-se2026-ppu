@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getKecamatanStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
+const { getKecamatanStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -20,7 +20,7 @@ router.get('/', (req, res) => {
       const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
       const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
       const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
-      const singleSelesaiFormula = `COALESCE(p.sls_selesai, 0)`;
+      const singleSelesaiFormula = getSingleSelesaiFormula(targetFormula, 'p');
 
       desaStats = attachProgressPercentages(db.prepare(`
         SELECT 

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getTrenHarian, getKecamatanStats, getPclStats, getDb, getSettings, updateSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSubslsStatusFormula, getTitikUjiPetikStats, getTitikUjiPetikPoints, getTitikUjiPetikCompact } = require('../database');
+const { getTrenHarian, getKecamatanStats, getPclStats, getDb, getSettings, updateSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, getSubslsStatusFormula, getTitikUjiPetikStats, getTitikUjiPetikPoints, getTitikUjiPetikCompact } = require('../database');
 
 // Tren harian (untuk Chart.js)
 router.get('/tren', (req, res) => {
@@ -54,7 +54,7 @@ router.get('/map-stats', (req, res) => {
   const settings = res.locals.settings;
   const singleTargetFormula = getTargetFormula(settings.target_fasih_mode);
 
-  const singleSelesaiFormula = 'COALESCE(p.sls_selesai, 0)';
+  const singleSelesaiFormula = getSingleSelesaiFormula(singleTargetFormula, 'p');
 
   const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
   const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
@@ -192,7 +192,7 @@ router.get('/detail/korlap', (req, res) => {
       m.pml, m.korlap,
       COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
       COUNT(DISTINCT p.kode) AS total_subsls,
-      SUM(COALESCE(p.sls_selesai, 0)) AS selesai,
+      SUM(${getSingleSelesaiFormula(singleTargetFormula, 'p')}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
       SUM(${usahaTotalFormula}) AS usaha_total,
@@ -232,7 +232,7 @@ router.get('/detail/pml', (req, res) => {
     SELECT 
       COALESCE(p.pcl_name, m.pcl) AS pcl, m.pml, m.korlap, m.kecamatan,
       COUNT(DISTINCT p.kode) AS total_subsls,
-      SUM(COALESCE(p.sls_selesai, 0)) AS selesai,
+      SUM(${getSingleSelesaiFormula(singleTargetFormula, 'p')}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
       SUM(${usahaTotalFormula}) AS usaha_total,

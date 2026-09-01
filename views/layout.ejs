@@ -472,15 +472,16 @@
             <i class="bi bi-chevron-down nav-sub-chevron" id="uploadSubChevron" style="font-size: 11px; transition: transform 0.25s ease; color: var(--text-muted); <%= isUploadActive ? 'transform: rotate(0deg);' : 'transform: rotate(-90deg);' %>"></i>
           </div>
           <div class="nav-sub-content" id="uploadSubContent" style="<%= isUploadActive ? 'display: block;' : 'display: none;' %> padding-left: 14px; margin-top: 2px; margin-bottom: 4px; border-left: 2px solid rgba(255, 255, 255, 0.1); margin-left: 16px;">
-            <a href="<%= navPrefix %>/admin/upload?tab=fasih" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'fasih') || activePage === 'upload-fasih' ? 'active' : '' %>" style="font-size: 12.5px; padding: 7px 10px; margin-bottom: 2px;">
+            <% const currentUploadTab = (typeof activeTab !== 'undefined' && activeTab) ? activeTab : 'fasih'; %>
+            <a href="<%= navPrefix %>/admin/upload?tab=fasih" class="nav-item <%= (activePage === 'upload' && currentUploadTab === 'fasih') || activePage === 'upload-fasih' ? 'active' : '' %>" style="font-size: 12.5px; padding: 7px 10px; margin-bottom: 2px;">
               <span class="nav-icon icon-purple"><i class="bi bi-file-earmark-code-fill"></i></span>
               <span class="nav-label">Status FASIH</span>
             </a>
-            <a href="<%= navPrefix %>/admin/upload?tab=muatan" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'muatan') || activePage === 'upload-muatan' ? 'active' : '' %>" style="font-size: 12.5px; padding: 7px 10px; margin-bottom: 2px;">
+            <a href="<%= navPrefix %>/admin/upload?tab=muatan" class="nav-item <%= (activePage === 'upload' && currentUploadTab === 'muatan') || activePage === 'upload-muatan' ? 'active' : '' %>" style="font-size: 12.5px; padding: 7px 10px; margin-bottom: 2px;">
               <span class="nav-icon icon-cyan"><i class="bi bi-people-fill"></i></span>
               <span class="nav-label">Progres Muatan</span>
             </a>
-            <a href="<%= navPrefix %>/admin/upload?tab=sls" class="nav-item <%= (activePage === 'upload' && typeof activeTab !== 'undefined' && activeTab === 'sls') || activePage === 'upload-sls' ? 'active' : '' %>" style="font-size: 12.5px; padding: 7px 10px; margin-bottom: 2px;">
+            <a href="<%= navPrefix %>/admin/upload?tab=sls" class="nav-item <%= (activePage === 'upload' && currentUploadTab === 'sls') || activePage === 'upload-sls' ? 'active' : '' %>" style="font-size: 12.5px; padding: 7px 10px; margin-bottom: 2px;">
               <span class="nav-icon icon-emerald"><i class="bi bi-check2-square"></i></span>
               <span class="nav-label">Status SLS Selesai</span>
             </a>
@@ -560,9 +561,19 @@
         </a>
       <% } %>
     </div>
-  </div>
 </aside>
 <script>
+  // Immediate restore of sidebar scroll position on initial HTML parse to prevent jump/flicker
+  (function() {
+    try {
+      var saved = sessionStorage.getItem('sidebar_nav_scroll_top');
+      if (saved) {
+        var sNav = document.querySelector('.sidebar-nav');
+        if (sNav) sNav.scrollTop = parseInt(saved, 10);
+      }
+    } catch (_) {}
+  })();
+
   window.toggleMapSubMenu = function(e) {
     if (e) {
       e.preventDefault();
@@ -586,7 +597,6 @@
       if (chevron) chevron.style.transform = 'rotate(-90deg)';
     }
   };
-
   window.toggleUploadSubMenu = function(e) {
     if (e) {
       e.preventDefault();
