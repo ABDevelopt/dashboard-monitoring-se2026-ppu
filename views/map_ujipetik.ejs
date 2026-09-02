@@ -1047,6 +1047,16 @@
         </select>
       </div>
 
+      <!-- Tampilan Garis Batas Wilayah (Kecamatan, Desa, SLS) -->
+      <span class="gmaps-section-label"><i class="bi bi-bounding-box-circles"></i> Tampilan Garis Batas</span>
+      <div class="gmaps-control-row">
+        <div class="gmaps-pill-group" style="display: flex; width: 100%;">
+          <button id="btnLayerKec" class="gmaps-pill-btn" title="Tingkat Kecamatan" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-diagram-3"></i> Kec</button>
+          <button id="btnLayerDesa" class="gmaps-pill-btn active" title="Tingkat Desa / Kelurahan" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-geo"></i> Desa</button>
+          <button id="btnLayerSls" class="gmaps-pill-btn" title="Tingkat SubSLS / RT" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-pin-map"></i> SLS</button>
+        </div>
+      </div>
+
       <!-- Kategori Bangunan Toggle Pills -->
       <span class="gmaps-section-label"><i class="bi bi-tags"></i> Kategori Bangunan</span>
       <div class="gmaps-pill-group" id="categoryFilterGroup">
@@ -1363,6 +1373,7 @@
 
         if (!map.hasLayer(targetLayer)) targetLayer.addTo(map);
         targetLayer.bringToBack();
+        if (typeof refreshBoundaryStyles === 'function') refreshBoundaryStyles();
       }
       updateBasemap();
 
@@ -1400,8 +1411,12 @@
       let summaryStats = null;
       let desaGeoJson = null;
       let kecGeoJson = null;
+      let slsGeoJson = null;
       let desaLayer = null;
       let kecLayer = null;
+      let slsLayer = null;
+      let activeBoundaryLayer = 'desa'; // Default: Desa (matching Peta Progres)
+      let isSlsLoading = false;
 
       // Color mapping
       const categoryColors = {
@@ -2174,6 +2189,7 @@
 
         filteredPoints = res;
         renderCanvas();
+        refreshBoundaryStyles();
       }
 
       function updateCategoryPillCounts(pts) {
@@ -2384,6 +2400,7 @@
         updateCategoryPillCounts(filteredPoints);
         map.setView(centerCoords, defaultZoom);
         updateScopeButtonLabel();
+        refreshBoundaryStyles();
         closeScopeModal();
       };
 
@@ -2486,34 +2503,186 @@
         }
       }
 
-      // Setup Boundary Layers (Kecamatan & Desa)
+      // Glowing Neon Boundary Style Functions (Always Glowing like Peta Progres)
+      function kecBoundaryStyle(feature) {
+        const isSat = currentBasemapType === 'satellite';
+        const isLight = document.body.classList.contains('light-mode');
+        const p = (feature && feature.properties) || {};
+        const name = (p.nmkec || p.kecamatan || p.WADMKC || p.nama || '').toUpperCase();
+        const isSelected = !currentKec || name === currentKec.toUpperCase();
+
+        const baseColor = isSat ? '#38bdf8' : (isLight ? '#0284c7' : '#38bdf8');
+        const activeColor = isSat ? '#ffffff' : (isLight ? '#0f172a' : '#ffffff');
+
+        return {
+          fillColor: 'transparent',
+          fillOpacity: 0,
+          color: (isSelected && currentKec) ? activeColor : baseColor,
+          weight: isSelected ? (currentKec ? 2.8 : 1.8) : 0.8,
+          opacity: isSelected ? 0.95 : 0.40,
+          fillRule: 'nonzero'
+        };
+      }
+
+      function desaBoundaryStyle(feature) {
+        const isSat = currentBasemapType === 'satellite';
+        const isLight = document.body.classList.contains('light-mode');
+        const p = (feature && feature.properties) || {};
+        const dName = (p.nmdesa || p.desa || p.NAMOBJ || p.WADMKD || p.nama || '').toUpperCase();
+        const kName = (p.nmkec || p.kecamatan || p.WADMKC || '').toUpperCase();
+        const idDesa = p.iddesa || '';
+
+        const isSelectedKec = !currentKec || kName === currentKec.toUpperCase();
+        const isSelectedDesa = !currentDesa || dName === currentDesa.toUpperCase() || idDesa === currentDesa;
+        const isMatch = isSelectedKec && isSelectedDesa;
+
+        const baseColor = isSat ? '#38bdf8' : (isLight ? '#0284c7' : '#38bdf8');
+        const activeColor = isSat ? '#ffffff' : (isLight ? '#0f172a' : '#ffffff');
+
+        return {
+          fillColor: 'transparent',
+          fillOpacity: 0,
+          color: (isMatch && currentDesa) ? activeColor : baseColor,
+          weight: isMatch ? (currentDesa ? 2.5 : 1.3) : 0.6,
+          opacity: isMatch ? 0.95 : 0.35,
+          fillRule: 'nonzero'
+        };
+      }
+
+      function slsBoundaryStyle(feature) {
+        const isSat = currentBasemapType === 'satellite';
+        const isLight = document.body.classList.contains('light-mode');
+        const p = (feature && feature.properties) || {};
+        const kName = (p.nmkec || '').toUpperCase();
+        const dName = (p.nmdesa || '').toUpperCase();
+
+        const isSelectedKec = !currentKec || kName === currentKec.toUpperCase();
+        const isSelectedDesa = !currentDesa || dName === currentDesa.toUpperCase();
+        const isMatch = isSelectedKec && isSelectedDesa;
+
+        const baseColor = isSat ? '#38bdf8' : (isLight ? '#0284c7' : '#38bdf8');
+
+        return {
+          fillColor: 'transparent',
+          fillOpacity: 0,
+          color: baseColor,
+          weight: isMatch ? 1.4 : 0.6,
+          opacity: isMatch ? 0.90 : 0.30,
+          fillRule: 'nonzero'
+        };
+      }
+
+      // Boundary Layers Management (Kecamatan, Desa, SLS)
       function setupBoundaryLayers() {
-        if (kecGeoJson) {
+        if (kecGeoJson && !kecLayer) {
           kecLayer = L.geoJSON(kecGeoJson, {
             interactive: false,
-            style: {
-              color: '#0284c7',
-              weight: 1.2,
-              opacity: 0.6,
-              fillColor: 'transparent',
-              fillOpacity: 0
-            }
-          }).addTo(map);
+            style: kecBoundaryStyle
+          });
         }
-
-        if (desaGeoJson) {
+        if (desaGeoJson && !desaLayer) {
           desaLayer = L.geoJSON(desaGeoJson, {
             interactive: false,
-            style: {
-              color: '#64748b',
-              weight: 0.7,
-              opacity: 0.45,
-              fillColor: 'transparent',
-              fillOpacity: 0
-            }
-          }).addTo(map);
+            style: desaBoundaryStyle
+          });
+        }
+        updateBoundaryLayerVisibility();
+      }
+
+      function setupSlsLayer() {
+        if (slsGeoJson && !slsLayer) {
+          slsLayer = L.geoJSON(slsGeoJson, {
+            interactive: false,
+            style: slsBoundaryStyle
+          });
         }
       }
+
+      async function lazyLoadSlsGeoJSON() {
+        if (slsGeoJson) {
+          if (!slsLayer) setupSlsLayer();
+          if (activeBoundaryLayer === 'sls' && slsLayer && !map.hasLayer(slsLayer)) {
+            slsLayer.addTo(map);
+            slsLayer.setStyle(slsBoundaryStyle);
+          }
+          return;
+        }
+
+        if (isSlsLoading) return;
+        isSlsLoading = true;
+
+        const btnLayerSls = document.getElementById('btnLayerSls');
+        if (btnLayerSls) btnLayerSls.innerHTML = '<span class="spinner-border spinner-border-sm" style="width: 11px; height: 11px;"></span> SLS...';
+
+        try {
+          const res = await fetch('/data/sls_boundaries.geojson');
+          slsGeoJson = await res.json();
+          setupSlsLayer();
+          if (activeBoundaryLayer === 'sls' && slsLayer && !map.hasLayer(slsLayer)) {
+            slsLayer.addTo(map);
+            slsLayer.setStyle(slsBoundaryStyle);
+          }
+        } catch (err) {
+          console.error('Error loading SLS geojson:', err);
+        } finally {
+          isSlsLoading = false;
+          if (btnLayerSls) btnLayerSls.innerHTML = '<i class="bi bi-pin-map"></i> SLS';
+        }
+      }
+
+      function updateBoundaryLayerVisibility() {
+        if (!map) return;
+        if (kecLayer && map.hasLayer(kecLayer)) map.removeLayer(kecLayer);
+        if (desaLayer && map.hasLayer(desaLayer)) map.removeLayer(desaLayer);
+        if (slsLayer && map.hasLayer(slsLayer)) map.removeLayer(slsLayer);
+
+        if (activeBoundaryLayer === 'kec') {
+          if (kecLayer) {
+            kecLayer.addTo(map);
+            kecLayer.setStyle(kecBoundaryStyle);
+          }
+        } else if (activeBoundaryLayer === 'sls') {
+          if (slsLayer) {
+            slsLayer.addTo(map);
+            slsLayer.setStyle(slsBoundaryStyle);
+          } else {
+            lazyLoadSlsGeoJSON();
+          }
+        } else {
+          // Default 'desa'
+          if (desaLayer) {
+            desaLayer.addTo(map);
+            desaLayer.setStyle(desaBoundaryStyle);
+          }
+        }
+      }
+
+      function refreshBoundaryStyles() {
+        if (kecLayer && map && map.hasLayer(kecLayer)) kecLayer.setStyle(kecBoundaryStyle);
+        if (desaLayer && map && map.hasLayer(desaLayer)) desaLayer.setStyle(desaBoundaryStyle);
+        if (slsLayer && map && map.hasLayer(slsLayer)) slsLayer.setStyle(slsBoundaryStyle);
+      }
+
+      // Boundary Layer Button Listeners
+      const btnLayerKec = document.getElementById('btnLayerKec');
+      const btnLayerDesa = document.getElementById('btnLayerDesa');
+      const btnLayerSls = document.getElementById('btnLayerSls');
+
+      function setBoundaryLayer(type) {
+        activeBoundaryLayer = type;
+        [btnLayerKec, btnLayerDesa, btnLayerSls].forEach(b => {
+          if (b) b.classList.remove('active');
+        });
+        if (type === 'kec' && btnLayerKec) btnLayerKec.classList.add('active');
+        else if (type === 'desa' && btnLayerDesa) btnLayerDesa.classList.add('active');
+        else if (type === 'sls' && btnLayerSls) btnLayerSls.classList.add('active');
+
+        updateBoundaryLayerVisibility();
+      }
+
+      if (btnLayerKec) btnLayerKec.addEventListener('click', () => setBoundaryLayer('kec'));
+      if (btnLayerDesa) btnLayerDesa.addEventListener('click', () => setBoundaryLayer('desa'));
+      if (btnLayerSls) btnLayerSls.addEventListener('click', () => setBoundaryLayer('sls'));
 
       function showDesaSummaryDrawer(nmdesa, nmkec, iddesa) {
         const ptsInDesa = allPoints.filter(p => (p[11] && p[11].toUpperCase() === (nmdesa || '').toUpperCase()) || (p[13] && p[13].startsWith(iddesa || '')));
@@ -2722,6 +2891,7 @@
           });
           map.setView(centerCoords, defaultZoom);
           updateScopeButtonLabel();
+          refreshBoundaryStyles();
           openScopeModal();
         });
       }
@@ -2908,6 +3078,7 @@
           populateOfficerDropdowns('', '', '');
           setupBoundaryLayers();
           renderModalDesaGrid();
+          setTimeout(lazyLoadSlsGeoJSON, 800);
 
           // Setup Modal Live Search Listener
           const modalSearchInput = document.getElementById('modalDesaSearchInput');
