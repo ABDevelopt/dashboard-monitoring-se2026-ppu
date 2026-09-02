@@ -482,6 +482,54 @@
     box-shadow: 0 10px 28px 0 rgba(0, 0, 0, 0.08), inset 0 1.5px 2.5px 0 rgba(255, 255, 255, 0.98);
   }
 
+  /* Floating Boundary Layer Switcher (Bottom Right, above Basemap) */
+  .gmaps-floating-boundary-pill {
+    position: absolute;
+    bottom: 74px;
+    right: 56px;
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(15, 23, 42, 0.50) 80%, rgba(255, 255, 255, 0.08) 100%);
+    backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(108%);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 3px;
+    box-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.42), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.48);
+  }
+
+  body.light-mode .gmaps-floating-boundary-pill {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(241, 245, 249, 0.65) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.08);
+  }
+
+  .gmaps-floating-boundary-pill .gmaps-pill-btn {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid transparent;
+  }
+  .gmaps-floating-boundary-pill .gmaps-pill-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.10);
+  }
+  .gmaps-floating-boundary-pill .gmaps-pill-btn.active {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.35) 0%, rgba(2, 132, 199, 0.20) 100%);
+    border: 1px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    box-shadow: 0 4px 14px rgba(6, 182, 212, 0.25);
+  }
+  body.light-mode .gmaps-floating-boundary-pill .gmaps-pill-btn.active {
+    background: rgba(2, 132, 199, 0.14);
+    border-color: #0284c7;
+    color: #0369a1;
+  }
+
   /* Floating Basemap Switcher (Bottom Right) */
   .gmaps-floating-basemap-pill {
     position: absolute;
@@ -504,6 +552,64 @@
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.55) 50%, rgba(241, 245, 249, 0.65) 100%);
     border: 1px solid rgba(255, 255, 255, 0.90);
     box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.08);
+  }
+
+  /* Horizontal Category Quick-Pills Bar (Always Visible) */
+  .gmaps-category-scroll-bar {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 0 2px 0;
+    margin-top: 5px;
+    width: 100%;
+  }
+  .gmaps-category-scroll-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .gmaps-category-scroll-bar .gmaps-pill-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 4.5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: var(--text-secondary);
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .gmaps-category-scroll-bar .gmaps-pill-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  body.light-mode .gmaps-category-scroll-bar .gmaps-pill-btn {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #475569;
+  }
+  body.light-mode .gmaps-category-scroll-bar .gmaps-pill-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #0f172a;
+  }
+  .gmaps-category-scroll-bar .gmaps-pill-btn.active {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.35) 0%, rgba(2, 132, 199, 0.22) 100%);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.25);
+  }
+  body.light-mode .gmaps-category-scroll-bar .gmaps-pill-btn.active {
+    background: rgba(2, 132, 199, 0.14);
+    border-color: #0284c7;
+    color: #0369a1;
   }
 
   /* Floating Info & Legend Drawer Card (Bottom Left) */
@@ -757,9 +863,13 @@
       bottom: 74px;
       right: 14px;
     }
+    .gmaps-floating-boundary-pill {
+      bottom: 118px;
+      right: 14px;
+    }
     .gmaps-floating-right-stack {
       top: auto;
-      bottom: 120px;
+      bottom: 164px;
       right: 14px;
     }
   }
@@ -794,11 +904,15 @@
       padding: 12px 14px calc(32px + env(safe-area-inset-bottom, 0px)) 14px !important;
     }
     .gmaps-floating-basemap-pill {
-      bottom: 60px;
+      bottom: 56px;
+      right: 10px;
+    }
+    .gmaps-floating-boundary-pill {
+      bottom: 96px;
       right: 10px;
     }
     .gmaps-floating-right-stack {
-      bottom: 110px;
+      bottom: 142px;
       right: 10px;
     }
   }
@@ -1098,16 +1212,26 @@
         <button type="button" class="gmaps-icon-btn" id="btnResetView" title="Reset View &amp; Filter">
           <i class="bi bi-arrow-counterclockwise"></i>
         </button>
-        <button type="button" class="gmaps-icon-btn" id="btnToggleToolsExpand" title="Sembunyikan/Buka Filter">
+        <button type="button" class="gmaps-icon-btn" id="btnToggleToolsExpand" title="Sembunyikan/Buka Filter Petugas &amp; Wilayah">
           <i class="bi bi-chevron-bar-up" id="toolsExpandIcon"></i>
         </button>
       </div>
     </div>
 
+    <!-- Horizontal Category Quick-Pills Bar (Always Visible Under Search Bar) -->
+    <div class="gmaps-category-scroll-bar" id="categoryFilterGroup">
+      <button type="button" class="gmaps-pill-btn active" data-cat="">Semua (<span id="countCatAll">0</span>)</button>
+      <button type="button" class="gmaps-pill-btn" data-cat="1"><span style="color: #f59e0b;">●</span> Usaha (<span id="countCatUsaha">0</span>)</button>
+      <button type="button" class="gmaps-pill-btn" data-cat="2"><span style="color: #a855f7;">●</span> Campuran (<span id="countCatCampuran">0</span>)</button>
+      <button type="button" class="gmaps-pill-btn" data-cat="3"><span style="color: #0284c7;">●</span> Tinggal (<span id="countCatTinggal">0</span>)</button>
+      <button type="button" class="gmaps-pill-btn" data-cat="6"><span style="color: #64748b;">●</span> Kosong (<span id="countCatKosong">0</span>)</button>
+      <button type="button" class="gmaps-pill-btn" data-cat="lainnya"><span style="color: #10b981;">●</span> Lainnya (<span id="countCatLainnya">0</span>)</button>
+    </div>
+
     <!-- Collapsible Advanced Filters -->
     <div class="gmaps-controls-collapsible" id="toolsExtraRows">
       <!-- Wilayah Filters -->
-      <span class="gmaps-section-label"><i class="bi bi-geo-alt"></i> Filter Wilayah &amp; Batas</span>
+      <span class="gmaps-section-label"><i class="bi bi-geo-alt"></i> Filter Wilayah</span>
       <div class="gmaps-control-row">
         <select class="gmaps-select-pill" id="kecFilter">
           <option value="">-- Semua Kecamatan --</option>
@@ -1130,27 +1254,6 @@
         <select class="gmaps-select-pill" id="pmlFilter">
           <option value="">-- Semua Pengawas PML --</option>
         </select>
-      </div>
-
-      <!-- Tampilan Garis Batas Wilayah (Kecamatan, Desa, SLS) -->
-      <span class="gmaps-section-label"><i class="bi bi-bounding-box-circles"></i> Tampilan Garis Batas</span>
-      <div class="gmaps-control-row">
-        <div class="gmaps-pill-group" style="display: flex; width: 100%;">
-          <button id="btnLayerKec" class="gmaps-pill-btn" title="Tingkat Kecamatan" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-diagram-3"></i> Kec</button>
-          <button id="btnLayerDesa" class="gmaps-pill-btn active" title="Tingkat Desa / Kelurahan" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-geo"></i> Desa</button>
-          <button id="btnLayerSls" class="gmaps-pill-btn" title="Tingkat SubSLS / RT" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-pin-map"></i> SLS</button>
-        </div>
-      </div>
-
-      <!-- Kategori Bangunan Toggle Pills -->
-      <span class="gmaps-section-label"><i class="bi bi-tags"></i> Kategori Bangunan</span>
-      <div class="gmaps-pill-group" id="categoryFilterGroup">
-        <button type="button" class="gmaps-pill-btn active" data-cat="">Semua (<span id="countCatAll">0</span>)</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="1"><span style="color: #f59e0b;">●</span> Usaha (<span id="countCatUsaha">0</span>)</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="2"><span style="color: #a855f7;">●</span> Campuran (<span id="countCatCampuran">0</span>)</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="3"><span style="color: #0284c7;">●</span> Tinggal (<span id="countCatTinggal">0</span>)</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="6"><span style="color: #64748b;">●</span> Kosong (<span id="countCatKosong">0</span>)</button>
-        <button type="button" class="gmaps-pill-btn" data-cat="lainnya"><span style="color: #10b981;">●</span> Lainnya (<span id="countCatLainnya">0</span>)</button>
       </div>
     </div>
   </div>
@@ -1227,6 +1330,13 @@
     <button type="button" class="gmaps-floating-square-btn" id="btnFullscreenMap" title="Mode Layar Penuh (Command Center)">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
+  </div>
+
+  <!-- Floating Boundary Layer Switcher (Bottom Right) -->
+  <div class="gmaps-floating-boundary-pill" title="Tampilkan Garis Batas Wilayah">
+    <button id="btnLayerKec" class="gmaps-pill-btn" title="Garis Batas Kecamatan" type="button"><i class="bi bi-diagram-3"></i> Kec</button>
+    <button id="btnLayerDesa" class="gmaps-pill-btn active" title="Garis Batas Desa / Kelurahan" type="button"><i class="bi bi-geo"></i> Desa</button>
+    <button id="btnLayerSls" class="gmaps-pill-btn" title="Garis Batas SubSLS / RT" type="button"><i class="bi bi-pin-map"></i> SLS</button>
   </div>
 
   <!-- Floating Basemap Switcher (Bottom Right) -->
