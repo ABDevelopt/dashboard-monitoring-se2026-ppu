@@ -146,8 +146,8 @@
   }
 
   .gmaps-search-box .search-icon {
-    color: var(--text-muted);
-    font-size: 12px;
+    color: #38bdf8;
+    font-size: 13px;
     flex-shrink: 0;
   }
 
@@ -158,15 +158,28 @@
     background: transparent;
     border: none;
     outline: none;
-    color: var(--text-primary);
-    font-size: 11.5px;
+    color: #ffffff !important;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .gmaps-search-box input::placeholder {
+    color: rgba(255, 255, 255, 0.70) !important;
     font-weight: 500;
   }
 
+  body.light-mode .gmaps-search-box input {
+    color: #0f172a !important;
+  }
+
+  body.light-mode .gmaps-search-box input::placeholder {
+    color: #64748b !important;
+  }
+
   .gmaps-icon-btn {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
     cursor: pointer;
     padding: 4px;
     width: 24px;
@@ -181,8 +194,9 @@
   }
 
   body.light-mode .gmaps-icon-btn {
-    background: rgba(0, 0, 0, 0.04);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    color: #334155;
     box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8);
   }
 
@@ -206,12 +220,12 @@
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    background-color: rgba(15, 23, 42, 0.40);
+    background-color: rgba(15, 23, 42, 0.65);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: #ffffff;
     font-size: 11.5px;
     font-weight: 600;
     border-radius: 999px;
@@ -370,17 +384,22 @@
   }
 
   .gmaps-section-label {
-    font-size: 9.5px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-muted);
-    margin-top: 4px;
-    margin-bottom: -2px;
+    letter-spacing: 0.05em;
+    color: #ffffff;
+    opacity: 0.95;
+    margin-top: 5px;
+    margin-bottom: -1px;
     display: flex;
     align-items: center;
     gap: 5px;
     padding-left: 3px;
+  }
+
+  body.light-mode .gmaps-section-label {
+    color: #334155;
   }
 
   /* Point Hover Visual Cue Tooltip */
@@ -658,7 +677,7 @@
   .gmaps-tab-btn {
     background: transparent;
     border: 1px solid transparent;
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.85);
     font-size: 11.5px;
     font-weight: 600;
     padding: 5px 12px;
@@ -671,15 +690,24 @@
   }
 
   .gmaps-tab-btn:hover {
-    color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.10);
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.14);
   }
 
   .gmaps-tab-btn.active {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.35) 0%, rgba(37, 99, 235, 0.20) 100%);
-    color: var(--accent-blue);
-    border: 1px solid rgba(59, 130, 246, 0.45);
-    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25), inset 0 1px 1.5px rgba(255, 255, 255, 0.40);
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.40) 0%, rgba(2, 132, 199, 0.25) 100%);
+    color: #ffffff;
+    border: 1px solid rgba(6, 182, 212, 0.55);
+    box-shadow: 0 4px 14px rgba(6, 182, 212, 0.25), inset 0 1px 1.5px rgba(255, 255, 255, 0.40);
+  }
+
+  body.light-mode .gmaps-tab-btn {
+    color: #475569;
+  }
+  body.light-mode .gmaps-tab-btn.active {
+    background: rgba(2, 132, 199, 0.15);
+    border-color: #0284c7;
+    color: #0369a1;
   }
 
   .gmaps-drawer-content {
@@ -705,10 +733,10 @@
   }
 
   .map-card-stat-item {
-    background: rgba(var(--bg-primary-rgb, 15, 23, 42), 0.38);
+    background: rgba(var(--bg-primary-rgb, 15, 23, 42), 0.50);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
     padding: 7px 10px;
     display: flex;
@@ -718,8 +746,8 @@
   }
 
   body.light-mode .map-card-stat-item {
-    background: rgba(255, 255, 255, 0.50);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(0, 0, 0, 0.10);
   }
 
   .map-card-stat-item.full-width {
@@ -728,21 +756,29 @@
 
   .map-card-stat-label {
     font-size: 11px;
-    font-weight: 500;
-    color: var(--text-muted);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
     display: flex;
     align-items: center;
     gap: 5px;
     line-height: 1.2;
   }
 
+  body.light-mode .map-card-stat-label {
+    color: #475569;
+  }
+
   .map-card-stat-value {
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #ffffff;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  body.light-mode .map-card-stat-value {
+    color: #0f172a;
   }
 
   /* Color Category Legend Chips */
@@ -753,16 +789,24 @@
     padding: 6px 10px;
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.10);
     font-size: 11px;
+    color: #ffffff;
+    font-weight: 500;
     margin-bottom: 5px;
     cursor: pointer;
     transition: all 0.2s ease;
   }
 
+  body.light-mode .category-legend-chip {
+    color: #0f172a;
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.06);
+  }
+
   .category-legend-chip:hover {
-    background: rgba(255, 255, 255, 0.09);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.25);
   }
 
   .category-legend-chip.active-cat {
@@ -1003,9 +1047,9 @@
     width: 38px;
     height: 38px;
     border-radius: 10px;
-    background: rgba(245, 158, 11, 0.18);
-    border: 1px solid rgba(245, 158, 11, 0.35);
-    color: #f59e0b;
+    background: rgba(6, 182, 212, 0.18);
+    border: 1px solid rgba(6, 182, 212, 0.38);
+    color: #38bdf8;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1046,21 +1090,21 @@
     color: var(--text-primary);
   }
   .modal-kec-tab.active {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.35) 0%, rgba(245, 158, 11, 0.18) 100%);
-    border-color: #f59e0b;
-    color: #f59e0b;
-    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.35) 0%, rgba(2, 132, 199, 0.18) 100%);
+    border-color: #38bdf8;
+    color: #38bdf8;
+    box-shadow: 0 4px 14px rgba(6, 182, 212, 0.25);
   }
 
   body.light-mode .modal-kec-tab {
     background: rgba(0, 0, 0, 0.04);
     border-color: rgba(0, 0, 0, 0.08);
-    color: #64748b;
+    color: #475569;
   }
   body.light-mode .modal-kec-tab.active {
-    background: rgba(245, 158, 11, 0.15);
-    border-color: #f59e0b;
-    color: #b45309;
+    background: rgba(2, 132, 199, 0.15);
+    border-color: #0284c7;
+    color: #0369a1;
   }
 
   /* Live Search Box */
@@ -1204,7 +1248,7 @@
 
     <!-- Search Input & Quick Scope Button Row -->
     <div style="display: flex; gap: 6px; align-items: center; width: 100%; min-width: 0;">
-      <button type="button" class="gmaps-pill-btn" id="btnOpenScopeModal" onclick="openScopeModal()" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0.12) 100%); border: 1px solid rgba(245, 158, 11, 0.45); color: #f59e0b; font-weight: 700; padding: 5px 10px; height: 32px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; flex-shrink: 0; max-width: 155px;" title="Klik untuk mengganti desa/wilayah yang dipantau">
+      <button type="button" class="gmaps-pill-btn" id="btnOpenScopeModal" onclick="openScopeModal()" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.28) 0%, rgba(2, 132, 199, 0.16) 100%); border: 1px solid rgba(6, 182, 212, 0.55); color: #38bdf8; font-weight: 700; padding: 5px 10px; height: 32px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; flex-shrink: 0; max-width: 155px;" title="Klik untuk mengganti desa/wilayah yang dipantau">
         <i class="bi bi-geo-alt-fill" style="flex-shrink: 0;"></i> <span id="currentScopeBtnText" style="max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle;">Pilih Desa</span>
       </button>
       <div class="gmaps-search-box">
@@ -1223,7 +1267,7 @@
     <div class="gmaps-category-scroll-bar" id="categoryFilterGroup">
       <button type="button" class="gmaps-pill-btn active" data-cat="">Semua (<span id="countCatAll">0</span>)</button>
       <button type="button" class="gmaps-pill-btn" data-cat="1"><span style="color: #f59e0b;">●</span> Usaha (<span id="countCatUsaha">0</span>)</button>
-      <button type="button" class="gmaps-pill-btn" data-cat="2"><span style="color: #a855f7;">●</span> Campuran (<span id="countCatCampuran">0</span>)</button>
+      <button type="button" class="gmaps-pill-btn" data-cat="2"><span style="color: #8b5cf6;">●</span> Campuran (<span id="countCatCampuran">0</span>)</button>
       <button type="button" class="gmaps-pill-btn" data-cat="3"><span style="color: #0284c7;">●</span> Tinggal (<span id="countCatTinggal">0</span>)</button>
       <button type="button" class="gmaps-pill-btn" data-cat="6"><span style="color: #64748b;">●</span> Kosong (<span id="countCatKosong">0</span>)</button>
       <button type="button" class="gmaps-pill-btn" data-cat="lainnya"><span style="color: #10b981;">●</span> Lainnya (<span id="countCatLainnya">0</span>)</button>
@@ -1269,7 +1313,7 @@
           </div>
           <div>
             <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: inherit;">Pilih Desa / Kelurahan Uji Petik</h3>
-            <p style="margin: 2px 0 0 0; font-size: 11.5px; opacity: 0.8;">
+            <p style="margin: 2px 0 0 0; font-size: 11.5px; color: var(--text-secondary); opacity: 0.95;">
               Pilih desa atau kelurahan untuk menampilkan sebaran titik secara terfokus dan bebas lag.
             </p>
           </div>
@@ -1386,42 +1430,42 @@
           <span class="category-color-dot" style="background: #f59e0b;"></span>
           <span>1. Bangunan Khusus Usaha</span>
         </div>
-        <strong id="legendCountUsaha">0</strong>
+        <strong id="legendCountUsaha" style="color: #ffffff;">0</strong>
       </div>
       <div class="category-legend-chip" onclick="filterByCategoryCode(2)">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="category-color-dot" style="background: #8b5cf6;"></span>
           <span>2. Bangunan Campuran</span>
         </div>
-        <strong id="legendCountCampuran">0</strong>
+        <strong id="legendCountCampuran" style="color: #ffffff;">0</strong>
       </div>
       <div class="category-legend-chip" onclick="filterByCategoryCode(3)">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="category-color-dot" style="background: #0284c7;"></span>
           <span>3. Bangunan Tempat Tinggal</span>
         </div>
-        <strong id="legendCountTinggal">0</strong>
+        <strong id="legendCountTinggal" style="color: #ffffff;">0</strong>
       </div>
       <div class="category-legend-chip" onclick="filterByCategoryCode(4)">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="category-color-dot" style="background: #10b981;"></span>
           <span>4. Tempat Ibadah &amp; Organisasi</span>
         </div>
-        <strong id="legendCountIbadah">0</strong>
+        <strong id="legendCountIbadah" style="color: #ffffff;">0</strong>
       </div>
       <div class="category-legend-chip" onclick="filterByCategoryCode(5)">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="category-color-dot" style="background: #3b82f6;"></span>
           <span>5. Kantor Pemerintah / Dinas</span>
         </div>
-        <strong id="legendCountPemerintah">0</strong>
+        <strong id="legendCountPemerintah" style="color: #ffffff;">0</strong>
       </div>
       <div class="category-legend-chip" onclick="filterByCategoryCode(6)">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="category-color-dot" style="background: #64748b;"></span>
           <span>6. Bangunan Lainnya / Kosong / Rusak</span>
         </div>
-        <strong id="legendCountLainnya">0</strong>
+        <strong id="legendCountLainnya" style="color: #ffffff;">0</strong>
       </div>
     </div>
   </div>
@@ -2167,52 +2211,52 @@
         const kodeSls = p[13];
 
         const catName = categoryLabels[catCode] || 'Lainnya';
-        const color = categoryColors[catCode] || '#94a3b8';
+        const color = categoryColors[catCode] || '#38bdf8';
         const statusBadge = isKosong === 1
-          ? '<span class="badge" style="background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); font-size: 10px; padding: 2px 7px;">Bangunan Kosong</span>'
-          : '<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.35); font-size: 10px; padding: 2px 7px;">Berpenghuni / Berisi</span>';
+          ? '<span class="badge" style="background: rgba(148, 163, 184, 0.22); color: #f1f5f9; border: 1px solid rgba(148,163,184,0.45); font-size: 10px; padding: 2px 8px; font-weight: 600;">Bangunan Kosong</span>'
+          : '<span class="badge" style="background: rgba(16, 185, 129, 0.20); color: #34d399; border: 1px solid rgba(16,185,129,0.45); font-size: 10px; padding: 2px 8px; font-weight: 600;">Berpenghuni / Berisi</span>';
 
         const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 
         const detailsHtml = `
-          <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); padding: 10px 12px; border-radius: 10px; margin-bottom: 10px;">
+          <div style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.16); padding: 10px 12px; border-radius: 10px; margin-bottom: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 4px;">
               <div>
-                <span style="font-size: 10px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase;">No. Bangunan: ${noBang || '-'}</span>
-                <strong style="font-size: 14px; color: var(--text-primary); display: block;">${label ? label : 'Bangunan Fisik'}</strong>
+                <span style="font-size: 10px; font-weight: 700; color: #38bdf8; text-transform: uppercase;">No. Bangunan: ${noBang || '-'}</span>
+                <strong style="font-size: 14.5px; color: #ffffff; display: block; margin-top: 2px;">${label ? label : 'Bangunan Fisik'}</strong>
               </div>
               ${statusBadge}
             </div>
-            <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-secondary);">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #f1f5f9;">
               <span class="category-color-dot" style="background: ${color}; width: 8px; height: 8px;"></span>
-              <strong>${catName}</strong>
+              <strong style="color: #ffffff;">${catName}</strong>
             </div>
           </div>
 
           <div class="map-card-stat-grid">
             <div class="map-card-stat-item full-width">
-              <span class="map-card-stat-label"><i class="bi bi-pin-map"></i> Wilayah SLS</span>
-              <span class="map-card-stat-value">${namaSls ? namaSls : 'SLS ' + (kodeSls || '')}</span>
+              <span class="map-card-stat-label"><i class="bi bi-pin-map text-cyan"></i> Wilayah SLS</span>
+              <span class="map-card-stat-value" style="color: #ffffff;">${namaSls ? namaSls : 'SLS ' + (kodeSls || '')}</span>
             </div>
             <div class="map-card-stat-item">
-              <span class="map-card-stat-label"><i class="bi bi-geo-alt"></i> Desa / Kel</span>
-              <span class="map-card-stat-value">${desa || '-'}</span>
+              <span class="map-card-stat-label"><i class="bi bi-geo-alt text-cyan"></i> Desa / Kel</span>
+              <span class="map-card-stat-value" style="color: #ffffff;">${desa || '-'}</span>
             </div>
             <div class="map-card-stat-item">
-              <span class="map-card-stat-label"><i class="bi bi-diagram-3"></i> Kecamatan</span>
-              <span class="map-card-stat-value">${kec || '-'}</span>
+              <span class="map-card-stat-label"><i class="bi bi-diagram-3 text-cyan"></i> Kecamatan</span>
+              <span class="map-card-stat-value" style="color: #ffffff;">${kec || '-'}</span>
             </div>
             <div class="map-card-stat-item">
-              <span class="map-card-stat-label"><i class="bi bi-person-badge"></i> Petugas PCL</span>
-              <span class="map-card-stat-value" title="${pcl || '-'}">${pcl || '-'}</span>
+              <span class="map-card-stat-label"><i class="bi bi-person-badge text-cyan"></i> Petugas PCL</span>
+              <span class="map-card-stat-value" style="color: #ffffff;" title="${pcl || '-'}">${pcl || '-'}</span>
             </div>
             <div class="map-card-stat-item">
-              <span class="map-card-stat-label"><i class="bi bi-person-check"></i> Pengawas PML</span>
-              <span class="map-card-stat-value" title="${pml || '-'}">${pml || '-'}</span>
+              <span class="map-card-stat-label"><i class="bi bi-person-check text-cyan"></i> Pengawas PML</span>
+              <span class="map-card-stat-value" style="color: #ffffff;" title="${pml || '-'}">${pml || '-'}</span>
             </div>
             <div class="map-card-stat-item full-width">
-              <span class="map-card-stat-label"><i class="bi bi-crosshair"></i> Koordinat GPS</span>
-              <span class="map-card-stat-value" style="font-family: monospace; font-size: 11.5px;">${lat.toFixed(6)}, ${lng.toFixed(6)}</span>
+              <span class="map-card-stat-label"><i class="bi bi-crosshair text-cyan"></i> Koordinat GPS</span>
+              <span class="map-card-stat-value" style="font-family: monospace; font-size: 11.5px; color: #ffffff;">${lat.toFixed(6)}, ${lng.toFixed(6)}</span>
             </div>
           </div>
 
@@ -2239,19 +2283,20 @@
         const drawerContentInfo = document.getElementById('drawerContentInfo');
         if (drawerContentInfo) drawerContentInfo.scrollTop = 0;
 
+        const headerColor = catCode === 6 ? '#cbd5e1' : color;
         const popupHtml = `
           <div style="font-family: 'Inter', sans-serif; min-width: 220px; padding: 2px;">
-            <div style="font-size: 10px; font-weight: 700; color: ${color}; text-transform: uppercase; margin-bottom: 3px; letter-spacing: 0.04em;">
+            <div style="font-size: 10px; font-weight: 700; color: ${headerColor}; text-transform: uppercase; margin-bottom: 3px; letter-spacing: 0.04em;">
               ${catName}
             </div>
             <strong style="font-size: 13.5px; color: inherit; display: block; line-height: 1.25; margin-bottom: 4px;">
               No. ${noBang || '-'}: ${label || 'Bangunan Fisik'}
             </strong>
-            <span style="font-size: 11.5px; opacity: 0.85; display: block; margin-bottom: 6px;">
+            <span style="font-size: 11.5px; color: var(--text-secondary); display: block; margin-bottom: 6px;">
               <i class="bi bi-geo-alt-fill" style="color: var(--accent-cyan);"></i> ${desa || ''}, Kec. ${kec || ''}
             </span>
-            <div style="font-size: 11px; opacity: 0.8; margin-bottom: 9px; line-height: 1.4;">
-              PCL: <strong style="opacity: 1;">${pcl || '-'}</strong> | PML: <strong style="opacity: 1;">${pml || '-'}</strong>
+            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 9px; line-height: 1.4;">
+              PCL: <strong style="color: var(--text-primary);">${pcl || '-'}</strong> | PML: <strong style="color: var(--text-primary);">${pml || '-'}</strong>
             </div>
             <a href="${gmapsUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-xs" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px; font-size: 11px; font-weight: 700; border-radius: 8px; text-decoration: none;">
               <i class="bi bi-compass"></i> Petunjuk Rute Google Maps
@@ -2832,7 +2877,7 @@
                 <strong style="font-size: 14.5px; color: var(--text-primary); display: block;"><i class="bi bi-geo-alt-fill" style="color: #0284c7;"></i> Desa ${nmdesa}</strong>
                 <span style="font-size: 11px; color: var(--text-secondary);">Kecamatan ${nmkec}</span>
               </div>
-              <span class="badge" style="background: rgba(2,132,199,0.2); color: #0284c7; font-size: 11px; font-weight: 700; padding: 3px 8px;">
+              <span class="badge" style="background: rgba(6, 182, 212, 0.25); color: #38bdf8; border: 1px solid rgba(6, 182, 212, 0.45); font-size: 11px; font-weight: 700; padding: 3px 8px;">
                 ${total.toLocaleString('id-ID')} Titik
               </span>
             </div>
@@ -2840,20 +2885,20 @@
 
           <div class="map-card-stat-grid">
             <div class="map-card-stat-item">
-              <span class="map-card-stat-label"><i class="bi bi-shop"></i> Usaha &amp; Campuran</span>
-              <span class="map-card-stat-value" style="color: #f59e0b;">${usaha.toLocaleString('id-ID')}</span>
+              <span class="map-card-stat-label"><i class="bi bi-shop text-cyan"></i> Usaha &amp; Campuran</span>
+              <span class="map-card-stat-value" style="color: #ffffff;">${usaha.toLocaleString('id-ID')}</span>
             </div>
             <div class="map-card-stat-item">
-              <span class="map-card-stat-label"><i class="bi bi-house"></i> Tempat Tinggal</span>
-              <span class="map-card-stat-value" style="color: #0284c7;">${tinggal.toLocaleString('id-ID')}</span>
+              <span class="map-card-stat-label"><i class="bi bi-house text-cyan"></i> Tempat Tinggal</span>
+              <span class="map-card-stat-value" style="color: #ffffff;">${tinggal.toLocaleString('id-ID')}</span>
             </div>
             <div class="map-card-stat-item">
-              <span class="map-card-stat-label"><i class="bi bi-door-closed"></i> Bangunan Kosong</span>
-              <span class="map-card-stat-value" style="color: #64748b;">${kosong.toLocaleString('id-ID')}</span>
+              <span class="map-card-stat-label"><i class="bi bi-door-closed text-cyan"></i> Bangunan Kosong</span>
+              <span class="map-card-stat-value" style="color: #ffffff;">${kosong.toLocaleString('id-ID')}</span>
             </div>
             <div class="map-card-stat-item">
-              <span class="map-card-stat-label"><i class="bi bi-building"></i> Fasum &amp; Lainnya</span>
-              <span class="map-card-stat-value" style="color: #10b981;">${(total - usaha - tinggal - kosong).toLocaleString('id-ID')}</span>
+              <span class="map-card-stat-label"><i class="bi bi-building text-cyan"></i> Fasum &amp; Lainnya</span>
+              <span class="map-card-stat-value" style="color: #ffffff;">${(total - usaha - tinggal - kosong).toLocaleString('id-ID')}</span>
             </div>
           </div>
 
