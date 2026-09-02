@@ -746,7 +746,12 @@
       left: 10px;
       right: 10px;
       bottom: 20px;
-      max-height: 220px;
+      max-height: 55vh;
+    }
+    .gmaps-drawer-content {
+      height: auto;
+      max-height: calc(55vh - 55px);
+      padding-bottom: 24px;
     }
     .gmaps-floating-basemap-pill {
       bottom: 74px;
@@ -756,6 +761,66 @@
       top: auto;
       bottom: 120px;
       right: 14px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .gmaps-floating-search-panel {
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      width: auto;
+      max-width: calc(100% - 16px);
+      padding: 6px 9px 8px 9px;
+    }
+    .gmaps-floating-drawer-card {
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      max-height: 75vh !important;
+      border-radius: 20px 20px 0 0 !important;
+      border-bottom: none !important;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5) !important;
+      z-index: 1050 !important;
+    }
+    .gmaps-drawer-content {
+      height: auto !important;
+      min-height: 140px !important;
+      max-height: calc(75vh - 55px) !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      padding: 12px 14px calc(32px + env(safe-area-inset-bottom, 0px)) 14px !important;
+    }
+    .gmaps-floating-basemap-pill {
+      bottom: 60px;
+      right: 10px;
+    }
+    .gmaps-floating-right-stack {
+      bottom: 110px;
+      right: 10px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .gmaps-floating-search-panel {
+      top: 6px;
+      left: 6px;
+      right: 6px;
+      max-width: calc(100% - 12px);
+      padding: 5px 8px 7px 8px;
+    }
+    .gmaps-floating-drawer-card {
+      max-height: 80vh !important;
+    }
+    .gmaps-drawer-content {
+      max-height: calc(80vh - 50px) !important;
+      padding: 10px 12px calc(40px + env(safe-area-inset-bottom, 0px)) 12px !important;
+    }
+    .map-card-stat-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
     }
   }
 
@@ -927,8 +992,28 @@
     gap: 8px;
     max-height: 280px;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding-right: 3px;
+    padding-bottom: 8px;
     scrollbar-width: thin;
+  }
+
+  @media (max-width: 768px) {
+    .ujipetik-modal-overlay {
+      padding: 6px !important;
+      align-items: flex-end !important;
+    }
+    .ujipetik-modal-card {
+      max-height: 88vh !important;
+      padding: 16px 14px !important;
+      border-radius: 20px 20px 0 0 !important;
+    }
+    .modal-desa-grid {
+      grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)) !important;
+      max-height: calc(65vh - 140px) !important;
+      min-height: 180px !important;
+      padding-bottom: 24px !important;
+    }
   }
 
   .modal-desa-card {
@@ -1254,6 +1339,7 @@
       let slsLayer = null;
       let activeBoundaryLayer = 'desa'; // Default: Desa (matching Peta Progres)
       let isSlsLoading = false;
+      let selectedPoint = null;
       let currentBasemapType = 'satellite';
       let currentKec = '';
       let currentDesa = '';
@@ -1709,21 +1795,22 @@
             ctx.fill();
           }
 
-          if (hoveredPoint) {
-            const hpt = map.latLngToContainerPoint([hoveredPoint[1], hoveredPoint[2]]);
-            if (hpt.x >= -20 && hpt.x <= w + 20 && hpt.y >= -20 && hpt.y <= h + 20) {
-              const hCat = hoveredPoint[3] || 0;
+          const highlightPt = selectedPoint || hoveredPoint;
+          if (highlightPt) {
+            const hpt = map.latLngToContainerPoint([highlightPt[1], highlightPt[2]]);
+            if (hpt.x >= -25 && hpt.x <= w + 25 && hpt.y >= -25 && hpt.y <= h + 25) {
+              const hCat = highlightPt[3] || 0;
               const hColor = categoryColors[hCat] || '#0284c7';
               const hRad = radius + 3;
 
               ctx.beginPath();
-              ctx.arc(hpt.x, hpt.y, hRad + 5, 0, twoPi);
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+              ctx.arc(hpt.x, hpt.y, hRad + 6, 0, twoPi);
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.40)';
               ctx.fill();
 
               ctx.beginPath();
-              ctx.arc(hpt.x, hpt.y, hRad + 2, 0, twoPi);
-              ctx.lineWidth = 2.5;
+              ctx.arc(hpt.x, hpt.y, hRad + 2.5, 0, twoPi);
+              ctx.lineWidth = 3;
               ctx.strokeStyle = '#ffffff';
               ctx.stroke();
 
@@ -1836,15 +1923,33 @@
       map.on('move viewreset resize zoom', renderCanvas);
       map.on('zoomanim', onZoomAnim);
 
-      // Smart Click Detection: Click on Cluster = Smooth Fly-To Zoom, Click on Point = Details Drawer
+      const hideHoverTooltip = () => {
+        if (hoverTooltipEl) hoverTooltipEl.style.display = 'none';
+        if (hoveredPoint || hoveredCluster) {
+          hoveredPoint = null;
+          hoveredCluster = null;
+          if (map) map.getContainer().style.cursor = '';
+          renderCanvas();
+        }
+      };
+
+      map.on('movestart zoomstart dragstart', hideHoverTooltip);
+      map.on('mouseout', hideHoverTooltip);
+
+      // Fast Click & Tap Detection with Viewport Culling & Touch Calibration
       map.on('click', (e) => {
+        hideHoverTooltip();
         if (!filteredPoints || filteredPoints.length === 0) return;
+
         const clickPt = e.containerPoint;
         const zoom = map.getZoom();
+        const isTouch = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
         if (zoom < CLUSTER_ZOOM_THRESHOLD) {
+          // Macro Cluster Tap Detection
           let clickedCluster = null;
           let minClusterDistSq = Infinity;
+          const touchPadding = isTouch ? 10 : 0;
 
           for (let i = 0; i < currentClusters.length; i++) {
             const c = currentClusters[i];
@@ -1852,7 +1957,7 @@
             const dx = pt.x - clickPt.x;
             const dy = pt.y - clickPt.y;
             const distSq = dx * dx + dy * dy;
-            let hitR = c.count >= 100 ? 26 : (c.count >= 30 ? 22 : 18);
+            let hitR = (c.count >= 100 ? 26 : (c.count >= 30 ? 22 : 18)) + touchPadding;
             if (distSq <= hitR * hitR && distSq < minClusterDistSq) {
               minClusterDistSq = distSq;
               clickedCluster = c;
@@ -1871,10 +1976,13 @@
               }
             }
             return;
+          } else {
+            selectedPoint = null;
+            renderCanvas();
           }
         } else {
           // Viewport-Scoped Individual Point Click Detection (Instantaneous O(k) testing on visible points)
-          const clickRadius = zoom >= 16 ? 24 : (zoom >= 14 ? 18 : 14);
+          const clickRadius = isTouch ? (zoom >= 16 ? 36 : (zoom >= 14 ? 28 : 22)) : (zoom >= 16 ? 24 : (zoom >= 14 ? 18 : 14));
           const clickRadiusSq = clickRadius * clickRadius;
 
           let closest = null;
@@ -1895,24 +2003,22 @@
 
           if (closest) {
             showPointDetails(closest);
+          } else {
+            selectedPoint = null;
+            renderCanvas();
           }
         }
       });
 
-      // Interactive Hover Visual Cue & Instant Floating Tooltip
+      // Interactive Hover Visual Cue & Instant Floating Tooltip (Desktop Mouse only)
       let hoverTimer = null;
       map.on('mousemove', (e) => {
+        if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return;
         if (hoverTimer) return;
         hoverTimer = setTimeout(() => {
           hoverTimer = null;
           if (!filteredPoints || filteredPoints.length === 0) {
-            if (hoveredPoint || hoveredCluster) {
-              hoveredPoint = null;
-              hoveredCluster = null;
-              hoverTooltipEl.style.display = 'none';
-              map.getContainer().style.cursor = '';
-              renderCanvas();
-            }
+            hideHoverTooltip();
             return;
           }
 
@@ -2017,16 +2123,6 @@
         }, 16);
       });
 
-      map.on('mouseout', () => {
-        if (hoveredPoint || hoveredCluster) {
-          hoveredPoint = null;
-          hoveredCluster = null;
-          hoverTooltipEl.style.display = 'none';
-          map.getContainer().style.cursor = '';
-          renderCanvas();
-        }
-      });
-
       // Show Point Details in Drawer & Popup
       function showPointDetails(p) {
         // Schema: [0:id, 1:lat, 2:lng, 3:catCode, 4:isKosong, 5:label, 6:noBang, 7:pcl, 8:pml, 9:korlap, 10:namaSls, 11:desa, 12:kec, 13:kodeSls]
@@ -2102,6 +2198,10 @@
           </div>
         `;
 
+        // Update selected point visual marker on canvas
+        selectedPoint = p;
+        renderCanvas();
+
         const placeholder = document.getElementById('drawerPlaceholder');
         const body = document.getElementById('drawerDetailsBody');
         if (placeholder) placeholder.style.display = 'none';
@@ -2109,6 +2209,10 @@
           body.style.display = 'block';
           body.innerHTML = detailsHtml;
         }
+
+        // Keep current drawer collapse state (do not force-open automatically)
+        const drawerContentInfo = document.getElementById('drawerContentInfo');
+        if (drawerContentInfo) drawerContentInfo.scrollTop = 0;
 
         const popupHtml = `
           <div style="font-family: 'Inter', sans-serif; min-width: 220px; padding: 2px;">
@@ -2130,9 +2234,15 @@
           </div>
         `;
 
-        if (window.innerWidth > 768) {
-          L.popup().setLatLng([lat, lng]).setContent(popupHtml).openOn(map);
-        }
+        // Open clean native Leaflet popup anchored to point coordinates
+        L.popup({
+          autoClose: true,
+          closeOnClick: true,
+          offset: [0, -8]
+        })
+        .setLatLng([lat, lng])
+        .setContent(popupHtml)
+        .openOn(map);
       }
 
       // Filter Logic
@@ -2736,6 +2846,10 @@
           body.style.display = 'block';
           body.innerHTML = html;
         }
+
+        // Keep current drawer collapse state (do not force-open automatically)
+        const drawerContentInfo = document.getElementById('drawerContentInfo');
+        if (drawerContentInfo) drawerContentInfo.scrollTop = 0;
       }
 
       window.filterByDesaDirect = function(desaName) {
