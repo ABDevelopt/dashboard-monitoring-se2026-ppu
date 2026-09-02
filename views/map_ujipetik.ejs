@@ -992,7 +992,7 @@
   <div class="loading-overlay" id="mapLoading">
     <div class="spinner"></div>
     <div id="loadingStatusText" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">
-      Memuat 69.626 Titik Uji Petik Spasial...
+      Memuat Titik Uji Petik Spasial...
     </div>
   </div>
 
@@ -1242,6 +1242,26 @@
       const mapContainerEl = document.getElementById('map');
       if (!mapContainerEl) return;
 
+      // State & Data holders (Declared at top to prevent TDZ ReferenceError)
+      let allPoints = [];
+      let filteredPoints = [];
+      let summaryStats = null;
+      let desaGeoJson = null;
+      let kecGeoJson = null;
+      let slsGeoJson = null;
+      let desaLayer = null;
+      let kecLayer = null;
+      let slsLayer = null;
+      let activeBoundaryLayer = 'desa'; // Default: Desa (matching Peta Progres)
+      let isSlsLoading = false;
+      let currentBasemapType = 'satellite';
+      let currentKec = '';
+      let currentDesa = '';
+      let currentPcl = '';
+      let currentPml = '';
+      let currentCatCode = '';
+      let currentSearch = '';
+
       // Clean previous map instance
       if (window._leafletUjiPetikMapInstance) {
         try { window._leafletUjiPetikMapInstance.remove(); } catch (_) {}
@@ -1347,10 +1367,8 @@
         }
       );
 
-      let currentBasemapType = 'satellite';
-
       function updateBasemap() {
-        const isLight = document.body.classList.contains('light-mode');
+        const isLight = (document.body && document.body.classList.contains('light-mode')) || (document.documentElement && document.documentElement.classList.contains('light-mode'));
         let targetLayer = null;
 
         if (currentBasemapType === 'satellite') {
@@ -1404,19 +1422,6 @@
       };
       [50, 150, 300, 600].forEach(d => setTimeout(invalidateSize, d));
       window.addEventListener('resize', invalidateSize);
-
-      // Data holders
-      let allPoints = [];
-      let filteredPoints = [];
-      let summaryStats = null;
-      let desaGeoJson = null;
-      let kecGeoJson = null;
-      let slsGeoJson = null;
-      let desaLayer = null;
-      let kecLayer = null;
-      let slsLayer = null;
-      let activeBoundaryLayer = 'desa'; // Default: Desa (matching Peta Progres)
-      let isSlsLoading = false;
 
       // Color mapping
       const categoryColors = {
@@ -2131,13 +2136,6 @@
       }
 
       // Filter Logic
-      let currentKec = '';
-      let currentDesa = '';
-      let currentPcl = '';
-      let currentPml = '';
-      let currentCatCode = '';
-      let currentSearch = '';
-
       function applyFilters() {
         let scoped = allPoints || [];
 
@@ -3073,6 +3071,13 @@
           allPoints = await pointsRes.json();
           desaGeoJson = await desaGeoRes.json();
           kecGeoJson = await kecGeoRes.json();
+
+          if (allPoints && allPoints.length > 0) {
+            const statusEl = document.getElementById('loadingStatusText');
+            if (statusEl) {
+              statusEl.textContent = `Memuat ${allPoints.length.toLocaleString('id-ID')} Titik Uji Petik Spasial...`;
+            }
+          }
 
           populateDesaDropdown('');
           populateOfficerDropdowns('', '', '');
