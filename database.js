@@ -1280,6 +1280,35 @@ function runMigrations(dbConn, surveyId = 'se2026') {
           `);
         } catch (_) {}
       }
+    },
+    {
+      version: '20260901000000_add_titik_uji_petik',
+      up: (dbConn) => {
+        try {
+          dbConn.exec(`
+            CREATE TABLE IF NOT EXISTS titik_uji_petik (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              level_6_full_code TEXT NOT NULL,
+              label TEXT,
+              no_bang TEXT,
+              kode_bang_label TEXT,
+              latitude REAL NOT NULL,
+              longitude REAL NOT NULL,
+              is_kosong INTEGER DEFAULT 0,
+              pcl TEXT,
+              pml TEXT,
+              korlap TEXT
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_titik_ujipetik_code ON titik_uji_petik(level_6_full_code);
+            CREATE INDEX IF NOT EXISTS idx_titik_ujipetik_kode_bang ON titik_uji_petik(kode_bang_label);
+            CREATE INDEX IF NOT EXISTS idx_titik_ujipetik_kosong ON titik_uji_petik(is_kosong);
+            CREATE INDEX IF NOT EXISTS idx_titik_ujipetik_pcl ON titik_uji_petik(pcl);
+            CREATE INDEX IF NOT EXISTS idx_titik_ujipetik_pml ON titik_uji_petik(pml);
+            CREATE INDEX IF NOT EXISTS idx_titik_ujipetik_korlap ON titik_uji_petik(korlap);
+          `);
+        } catch (_) {}
+      }
     }
   ];
 
@@ -2378,6 +2407,7 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`;
   const defaults = {
     'survey_title': isSe2026 ? 'Sensus Ekonomi 2026 PPU' : 'Sakernas Agustus 2026 PPU',
     'page_map': '1',
+    'page_map_ujipetik': '1',
     'page_earlywarning': '1',
     'page_deteksianomali': isSe2026 ? '1' : '0',
     'page_leaderboard': '1',
@@ -2393,6 +2423,7 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`;
     'auth_req_overview': '0',
     'auth_req_agent': '0',
     'auth_req_map': '0',
+    'auth_req_map_ujipetik': '0',
     'auth_req_earlywarning': '0',
     'auth_req_deteksianomali': '0',
     'auth_req_leaderboard': '0',
@@ -3605,6 +3636,356 @@ function executeAgentQueryById(id, surveyId) {
   }
 }
 
+function parseCSVLineInternal(text) {
+  const result = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (inQuotes && text[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === ',' && !inQuotes) {
+      result.push(cur);
+      cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+function clearTitikUjiPetik(surveyId = 'se2026') {
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='titik_uji_petik'").get();
+  if (tableCheck) {
+    db.exec('DELETE FROM titik_uji_petik;');
+  }
+  _titikUjiPetikCompactCache = null;
+  logger.info(`[Titik Uji Petik] Seluruh data titik uji petik berhasil dikosongkan (${sId}).`);
+  return true;
+}
+
+function importTitikUjiPetikFromCsv(filePath, surveyId = 'se2026', replaceExisting = true) {
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+
+  // Auto-create table if not exists
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS titik_uji_petik (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      level_6_full_code TEXT NOT NULL,
+      label TEXT,
+      no_bang TEXT,
+      kode_bang_label TEXT,
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      is_kosong INTEGER DEFAULT 0,
+      pcl TEXT,
+      pml TEXT,
+      korlap TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_titik_uji_petik_sls ON titik_uji_petik (level_6_full_code);
+    CREATE INDEX IF NOT EXISTS idx_titik_uji_petik_coords ON titik_uji_petik (latitude, longitude);
+  `);
+
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File CSV tidak ditemukan pada path: ${filePath}`);
+  }
+
+  const rawData = fs.readFileSync(filePath, 'utf-8');
+  const lines = rawData.split(/\r?\n/);
+  if (lines.length <= 1) return 0;
+
+  const insertStmt = db.prepare(`
+    INSERT INTO titik_uji_petik (
+      level_6_full_code, label, no_bang, kode_bang_label,
+      latitude, longitude, is_kosong, pcl, pml, korlap
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const tx = db.transaction(() => {
+    if (replaceExisting) {
+      db.exec('DELETE FROM titik_uji_petik;');
+    }
+    let count = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      const cols = parseCSVLineInternal(line);
+      if (cols.length < 6) continue;
+
+      const code = (cols[0] || '').trim();
+      const label = (cols[1] || '').trim();
+      const noBang = (cols[2] || '').trim();
+      const kodeBangLabel = (cols[3] || '').trim();
+      const lat = parseFloat(cols[4]);
+      const lng = parseFloat(cols[5]);
+      const kosong = (cols[6] || '').trim() === '1' ? 1 : 0;
+      const pcl = (cols[7] || '').trim();
+      const pml = (cols[8] || '').trim();
+      const korlap = (cols[9] || '').trim();
+
+      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        insertStmt.run(code, label, noBang, kodeBangLabel, lat, lng, kosong, pcl, pml, korlap);
+        count++;
+      }
+    }
+    return count;
+  });
+
+  const total = tx();
+  _titikUjiPetikCompactCache = null;
+  logger.info(`[Titik Uji Petik] Berhasil mengimpor ${total} titik ke database (${sId}).`);
+  return total;
+}
+
+function getTitikUjiPetikStats(surveyId = 'se2026') {
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+
+  const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='titik_uji_petik'").get();
+  if (!tableCheck) {
+    return {
+      total: 0,
+      kosong: 0,
+      isi: 0,
+      kategoriStats: [],
+      kecStats: [],
+      desaStats: [],
+      pcls: [],
+      pmls: [],
+      korlaps: []
+    };
+  }
+
+  const overall = db.prepare(`
+    SELECT 
+      COUNT(*) AS total,
+      SUM(CASE WHEN is_kosong = 1 THEN 1 ELSE 0 END) AS kosong,
+      SUM(CASE WHEN is_kosong = 0 THEN 1 ELSE 0 END) AS isi
+    FROM titik_uji_petik
+  `).get() || { total: 0, kosong: 0, isi: 0 };
+
+  const kategoriStats = db.prepare(`
+    SELECT 
+      COALESCE(NULLIF(kode_bang_label, ''), 'Lainnya / Tidak Tercatat') AS kategori,
+      COUNT(*) AS count
+    FROM titik_uji_petik
+    GROUP BY kode_bang_label
+    ORDER BY count DESC
+  `).all();
+
+  const kecStats = db.prepare(`
+    SELECT 
+      m.kecamatan,
+      COUNT(t.id) AS total_titik,
+      SUM(CASE WHEN t.kode_bang_label LIKE '%Usaha%' OR t.kode_bang_label LIKE '%Campuran%' THEN 1 ELSE 0 END) AS usaha_titik,
+      SUM(CASE WHEN t.is_kosong = 1 THEN 1 ELSE 0 END) AS kosong_titik
+    FROM titik_uji_petik t
+    LEFT JOIN subsls_master m ON t.level_6_full_code = m.kode
+    WHERE m.kecamatan IS NOT NULL
+    GROUP BY m.kecamatan
+    ORDER BY m.kecamatan ASC
+  `).all();
+
+  const desaStats = db.prepare(`
+    SELECT 
+      SUBSTR(t.level_6_full_code, 1, 10) AS iddesa,
+      m.kecamatan,
+      m.desa,
+      COUNT(t.id) AS total_titik,
+      SUM(CASE WHEN t.kode_bang_label LIKE '%Usaha%' OR t.kode_bang_label LIKE '%Campuran%' THEN 1 ELSE 0 END) AS usaha_titik,
+      SUM(CASE WHEN t.is_kosong = 1 THEN 1 ELSE 0 END) AS kosong_titik
+    FROM titik_uji_petik t
+    LEFT JOIN subsls_master m ON t.level_6_full_code = m.kode
+    WHERE m.desa IS NOT NULL
+    GROUP BY SUBSTR(t.level_6_full_code, 1, 10), m.kecamatan, m.desa
+    ORDER BY m.kecamatan ASC, m.desa ASC
+  `).all();
+
+  const pcls = db.prepare(`SELECT DISTINCT pcl FROM titik_uji_petik WHERE pcl IS NOT NULL AND pcl != '' ORDER BY pcl ASC`).all().map(r => r.pcl);
+  const pmls = db.prepare(`SELECT DISTINCT pml FROM titik_uji_petik WHERE pml IS NOT NULL AND pml != '' ORDER BY pml ASC`).all().map(r => r.pml);
+  const korlaps = db.prepare(`SELECT DISTINCT korlap FROM titik_uji_petik WHERE korlap IS NOT NULL AND korlap != '' ORDER BY korlap ASC`).all().map(r => r.korlap);
+
+  return {
+    total: overall.total || 0,
+    kosong: overall.kosong || 0,
+    isi: overall.isi || 0,
+    kategoriStats,
+    kecStats,
+    desaStats,
+    pcls,
+    pmls,
+    korlaps
+  };
+}
+
+function getTitikUjiPetikPoints(filters = {}, surveyId = 'se2026') {
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+
+  const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='titik_uji_petik'").get();
+  if (!tableCheck) return [];
+
+  let sql = `
+    SELECT 
+      t.id,
+      t.level_6_full_code AS kode_sls,
+      t.label,
+      t.no_bang,
+      t.kode_bang_label,
+      t.latitude,
+      t.longitude,
+      t.is_kosong,
+      COALESCE(t.pcl, m.pcl) AS pcl,
+      COALESCE(t.pml, m.pml) AS pml,
+      COALESCE(t.korlap, m.korlap) AS korlap,
+      m.nama_sls,
+      m.desa,
+      m.kecamatan
+    FROM titik_uji_petik t
+    LEFT JOIN subsls_master m ON t.level_6_full_code = m.kode
+    WHERE 1=1
+  `;
+
+  const params = [];
+
+  if (filters.kec) {
+    sql += ` AND UPPER(TRIM(m.kecamatan)) = UPPER(TRIM(?))`;
+    params.push(filters.kec);
+  }
+
+  if (filters.desa) {
+    sql += ` AND (UPPER(TRIM(m.desa)) = UPPER(TRIM(?)) OR SUBSTR(t.level_6_full_code, 1, 10) = ?)`;
+    params.push(filters.desa, filters.desa);
+  }
+
+  if (filters.sls || filters.kode_sls) {
+    const slsVal = filters.sls || filters.kode_sls;
+    sql += ` AND t.level_6_full_code = ?`;
+    params.push(slsVal);
+  }
+
+  if (filters.kategori) {
+    sql += ` AND t.kode_bang_label = ?`;
+    params.push(filters.kategori);
+  }
+
+  if (filters.kosong !== undefined && filters.kosong !== '' && filters.kosong !== null) {
+    sql += ` AND t.is_kosong = ?`;
+    params.push(parseInt(filters.kosong, 10));
+  }
+
+  if (filters.pcl) {
+    sql += ` AND (LOWER(TRIM(t.pcl)) = LOWER(TRIM(?)) OR LOWER(TRIM(m.pcl)) = LOWER(TRIM(?)))`;
+    params.push(filters.pcl, filters.pcl);
+  }
+
+  if (filters.pml) {
+    sql += ` AND (LOWER(TRIM(t.pml)) = LOWER(TRIM(?)) OR LOWER(TRIM(m.pml)) = LOWER(TRIM(?)))`;
+    params.push(filters.pml, filters.pml);
+  }
+
+  if (filters.korlap) {
+    sql += ` AND (LOWER(TRIM(t.korlap)) = LOWER(TRIM(?)) OR LOWER(TRIM(m.korlap)) = LOWER(TRIM(?)))`;
+    params.push(filters.korlap, filters.korlap);
+  }
+
+  if (filters.search) {
+    const q = `%${filters.search.toLowerCase().trim()}%`;
+    sql += ` AND (
+      LOWER(t.label) LIKE ? OR
+      LOWER(t.no_bang) LIKE ? OR
+      LOWER(t.level_6_full_code) LIKE ? OR
+      LOWER(t.pcl) LIKE ? OR
+      LOWER(m.nama_sls) LIKE ? OR
+      LOWER(m.desa) LIKE ?
+    )`;
+    params.push(q, q, q, q, q, q);
+  }
+
+  if (filters.limit) {
+    sql += ` LIMIT ?`;
+    params.push(parseInt(filters.limit, 10));
+  }
+
+  return db.prepare(sql).all(...params);
+}
+
+let _titikUjiPetikCompactCache = null;
+
+function getTitikUjiPetikCompact(surveyId = 'se2026') {
+  if (_titikUjiPetikCompactCache) return _titikUjiPetikCompactCache;
+
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+
+  const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='titik_uji_petik'").get();
+  if (!tableCheck) return [];
+
+  const rows = db.prepare(`
+    SELECT 
+      t.id,
+      t.latitude,
+      t.longitude,
+      t.kode_bang_label,
+      t.is_kosong,
+      t.label,
+      t.no_bang,
+      COALESCE(t.pcl, m.pcl, '') AS pcl,
+      COALESCE(t.pml, m.pml, '') AS pml,
+      COALESCE(t.korlap, m.korlap, '') AS korlap,
+      COALESCE(m.nama_sls, '') AS nama_sls,
+      COALESCE(m.desa, '') AS desa,
+      COALESCE(m.kecamatan, '') AS kecamatan,
+      t.level_6_full_code AS kode_sls
+    FROM titik_uji_petik t
+    LEFT JOIN subsls_master m ON t.level_6_full_code = m.kode
+  `).all();
+
+  function getCatCode(str, isKosong) {
+    if (isKosong === 1) return 6;
+    if (!str) return 0;
+    if (str.startsWith('1')) return 1;
+    if (str.startsWith('2')) return 2;
+    if (str.startsWith('3')) return 3;
+    if (str.startsWith('4')) return 4;
+    if (str.startsWith('5')) return 5;
+    if (str.startsWith('6')) return 6;
+    if (str.startsWith('8')) return 8;
+    if (str.startsWith('9')) return 9;
+    return 0;
+  }
+
+  // Schema: [id, lat, lng, catCode, isKosong, label, noBang, pcl, pml, korlap, namaSls, desa, kec, kodeSls]
+  const compact = rows.map(r => [
+    r.id,
+    r.latitude,
+    r.longitude,
+    getCatCode(r.kode_bang_label, r.is_kosong),
+    r.is_kosong,
+    r.label || '',
+    r.no_bang || '',
+    r.pcl || '',
+    r.pml || '',
+    r.korlap || '',
+    r.nama_sls || '',
+    r.desa || '',
+    r.kecamatan || '',
+    r.kode_sls || ''
+  ]);
+
+  _titikUjiPetikCompactCache = compact;
+  return compact;
+}
+
 module.exports = {
   getDb, getSharedDb, resolveSurveyId, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -3627,8 +4008,10 @@ module.exports = {
   pushWhatsappCommand, popPendingWhatsappCommands,
   queueWhatsappMessage, getPendingWhatsappMessages, updateWhatsappMessageStatus, checkQueuedMessageStatus,
   runWalCheckpoint, runWalCheckpointAll,
-  saveAgentQuery, getAgentQueryById, executeAgentQueryById, updateAgentQueryAnalysis
+  saveAgentQuery, getAgentQueryById, executeAgentQueryById, updateAgentQueryAnalysis,
+  importTitikUjiPetikFromCsv, clearTitikUjiPetik, getTitikUjiPetikStats, getTitikUjiPetikPoints, getTitikUjiPetikCompact
 };
+
 
 
 
