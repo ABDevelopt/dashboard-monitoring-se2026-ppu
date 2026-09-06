@@ -156,6 +156,7 @@ router.get('/data', (req, res) => {
         }
         selectFields.push(
           `${targetFormula} AS "Target FASIH"`,
+          `CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${targetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END AS "FASIH Open"`,
           'COALESCE(p.draft, 0) AS "FASIH Draft"',
           'COALESCE(p.submitted_by_pcl, 0) AS "FASIH Submitted"',
           'COALESCE(p.approved, 0) AS "FASIH Approved"',

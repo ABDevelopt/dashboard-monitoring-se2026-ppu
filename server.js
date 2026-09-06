@@ -507,7 +507,7 @@ app.use((req, res, next) => {
             !url.startsWith('/logout') && 
             !url.startsWith('/api') &&
             !url.startsWith('/health')) {
-          return originalRedirect.call(this, res.locals.navPrefix + (url === '/' ? '' : url));
+          return originalRedirect.call(this, res.locals.navPrefix + (url === '/' ? '/' : url));
         }
       }
       return originalRedirect.call(this, url);
@@ -522,6 +522,27 @@ app.use((req, res, next) => {
     next();
   }
 });
+
+// Route Survey Feature Map for Multi-Survey Isolation
+const routeSurveyFeatureMap = {
+  '/map': 'map',
+  '/agent': 'agent',
+  '/korlap': 'korlap',
+  '/pml': 'pml',
+  '/pcl': 'pcl',
+  '/early-warning': 'earlywarning',
+  '/earlywarning': 'earlywarning',
+  '/deteksi-anomali': 'deteksi-anomali',
+  '/performa': 'performa',
+  '/performa-terendah': 'performa',
+  '/harian': 'harian',
+  '/leaderboard': 'leaderboard',
+  '/kecamatan': 'kecamatan',
+  '/subsls': 'subsls',
+  '/pbi': 'subsls',
+  '/kipp': 'subsls',
+  '/export': 'export'
+};
 
 // Route Guard Middleware based on Page Display settings & Authentication Requirements
 const routeSettingsMap = {
@@ -567,6 +588,24 @@ const routeAuthMap = {
 
 app.use((req, res, next) => {
   const path = req.path;
+
+  // 0. Cek Isolasi Modul Survei: Jika halaman tidak termasuk dalam cakupan survei aktif (misal Deteksi Anomali atau Korlap pada Sakernas), redirect otomatis ke overview survei
+  if (res.locals.surveyConfig && Array.isArray(res.locals.surveyConfig.enabledPages)) {
+    let requiredFeature = null;
+    for (const [routePrefix, feat] of Object.entries(routeSurveyFeatureMap)) {
+      if (path === routePrefix || path.startsWith(routePrefix + '/')) {
+        requiredFeature = feat;
+        break;
+      }
+    }
+    if (requiredFeature && !res.locals.surveyConfig.enabledPages.includes(requiredFeature)) {
+      return res.redirect('/');
+    }
+    if ((path === '/korlap' || path.startsWith('/korlap/')) && res.locals.surveyConfig.hasKorlap === false) {
+      return res.redirect('/');
+    }
+  }
+
   let settingKey = null;
 
   if (path === '/subsls/export') {

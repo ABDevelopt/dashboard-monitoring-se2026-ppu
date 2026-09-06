@@ -449,7 +449,7 @@
 
       <% } %>
 
-      <a href="/" class="login-back-link">
+      <a href="<%= (typeof navPrefix !== 'undefined' && navPrefix) ? navPrefix + '/' : '/' %>" class="login-back-link">
         <i class="bi bi-arrow-left"></i> Halaman Utama Dashboard
       </a>
     </div>

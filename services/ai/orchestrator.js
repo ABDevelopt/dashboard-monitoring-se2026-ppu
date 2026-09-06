@@ -8,7 +8,7 @@
 //  - Pembersihan dan penyimpanan kembali riwayat
 // ─────────────────────────────────────────────────────────────────────────────
 
-const { getDb, getSettings, getLatestUpload, updateAgentQueryAnalysis } = require('../../database');
+const { getDb, getSettings, getLatestUpload, getOverviewSummary, getKecamatanStats, updateAgentQueryAnalysis } = require('../../database');
 const contextBuilder = require('./contextBuilder');
 const memoryManager = require('./memoryManager');
 const toolRegistry = require('./toolRegistry');
@@ -61,7 +61,8 @@ Maka entitas tersebut WAJIB dijadikan filter PENGEQUALIAN (NOT LIKE / NOT IN / !
      - Persentase Capaian (%): \`ROUND(CAST(SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS FLOAT) / NULLIF(SUM(m.target_fasih), 0) * 100, 2)\`.
      - Kriteria Selesai 100%: \`HAVING SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) >= SUM(m.target_fasih)\`.
      - **DILARANG KERAS MENGGUNAKAN KOLOM MUATAN / TOTAL_MUATAN / MUATAN_SELESAI / USAHA_DITEMUKAN** ketika pertanyaan menanyakan FASIH / Dokumen / Assignment!
-2. **Pertanyaan MUATAN / Beban Muatan / Usaha / Keluarga**:
+2. **Pertanyaan MUATAN / Beban Muatan / Usaha / Keluarga (KHUSUS SENSUS EKONOMI 2026)**:
+   - Fitur Muatan, Target Muatan, dan Beban Usaha/Keluarga HANYA berlaku pada kegiatan Sensus Ekonomi 2026. Untuk kegiatan survei lain (seperti Sakernas), konsep muatan/usaha TIDAK ADA, seluruh metrik murni adalah Assignment Dokumen FASIH.
    - Kolom Target: \`m.muatan\` / \`SUM(m.muatan)\` (atau \`total_muatan\` di \`summary_cache\`).
    - Kolom Realisasi: \`SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0) + COALESCE(p.ditemukan+p.keluarga_baru,0))\` (atau \`muatan_selesai\` di \`summary_cache\`).
 
@@ -214,22 +215,113 @@ function buildSystemInstruction(liveCtx = '', surveyId = 'se2026') {
 // ─────────────────────────────────────────────
 //  SIMULATION FALLBACK (SIMPLIFIED OFFLINE RUNNER)
 // ─────────────────────────────────────────────
-function runSimulation(userMessage, chatHistory) {
+function runSimulation(userMessage, chatHistory, surveyId = 'se2026') {
   const lowerMsg = userMessage.toLowerCase();
-  const db = getDb();
+  const db = getDb(surveyId);
 
-  const latestUpload = db.prepare('SELECT * FROM uploads ORDER BY id DESC LIMIT 1').get();
+  const latestUpload = getLatestUpload(surveyId);
   if (!latestUpload) {
     return {
       role: 'model',
-      content: `Belum ada data upload di sistem. Silakan masuk ke menu **Upload Data** terlebih dahulu.\n\n**Tautan Navigasi Dashboard:**\n- [Buka Halaman Upload Data](/upload)`,
+      content: `Belum ada data upload di sistem untuk survei ini. Silakan masuk ke menu **Upload Data** terlebih dahulu.\n\n**Tautan Navigasi Dashboard:**\n- [Buka Halaman Upload Data](/upload)`,
       isSimulation: true
     };
   }
 
   const uploadId = latestUpload.id;
+  const settings = getSettings(surveyId);
+  const { getSurveyConfigById } = require('../surveyRegistry');
+  const surveyConfig = getSurveyConfigById(surveyId) || {};
+  const officerRole = surveyConfig.officerRole || 'PCL';
+  const unitName = surveyConfig.unitName || 'dokumen';
+  const surveyName = surveyConfig.name || 'Sensus/Survei PPU';
+  const isCensus = surveyConfig.category === 'sensus';
+  const enabledPages = Array.isArray(surveyConfig.enabledPages) ? surveyConfig.enabledPages : [];
+
+  function getActionLinks() {
+    let links = '\n\n**Tautan Navigasi Dashboard:**\n- [Buka Ringkasan Beranda](/)';
+    if (enabledPages.includes('kecamatan')) links += '\n- [Buka Rekap Progres Kecamatan](/kecamatan)';
+    if (enabledPages.includes('pcl')) links += `\n- [Lihat Detail Monitoring ${officerRole}](/pcl)`;
+    if (enabledPages.includes('pml')) links += '\n- [Lihat Detail Monitoring PML](/pml)';
+    if (enabledPages.includes('deteksi-anomali')) links += '\n- [Buka Deteksi Anomali Lapangan](/deteksi-anomali)';
+    if (enabledPages.includes('leaderboard')) links += '\n- [Buka Leaderboard Petugas](/leaderboard)';
+    if (enabledPages.includes('harian')) links += '\n- [Buka Tren Progres Harian](/harian)';
+    return links;
+  }
 
   try {
+    // 1. Executive Summary Progres Kegiatan / Wilayah
+    if (
+      lowerMsg.includes('ringkasan') || 
+      lowerMsg.includes('progres') || 
+      lowerMsg.includes('capaian') || 
+      lowerMsg.includes('perkembangan') || 
+      lowerMsg.includes('saat ini') || 
+      lowerMsg.includes('kabupaten') || 
+      lowerMsg.includes('sakernas') || 
+      lowerMsg.includes('rekap')
+    ) {
+      const summary = getOverviewSummary(uploadId, settings, surveyId);
+      const kecStats = getKecamatanStats(uploadId, settings, surveyId);
+
+      const pctFasih = (summary.fasih_pct != null ? summary.fasih_pct : summary.pct) || 0;
+      const targetFasih = summary.target_fasih_total || summary.target_static_total || summary.total_muatan || 0;
+      const realFasih = (summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0);
+      const sisaTarget = Math.max(0, targetFasih - realFasih);
+      const sisaPct = targetFasih > 0 ? ((sisaTarget / targetFasih) * 100).toFixed(2) : 0;
+      const slsSelesai = summary.selesai || 0;
+      const slsTotal = summary.total || 0;
+      const slsPct = slsTotal > 0 ? ((slsSelesai / slsTotal) * 100).toFixed(2) : 0;
+
+      let content = `Berikut adalah ringkasan progres pelaksanaan **${surveyName}** di Kabupaten Penajam Paser Utara berdasarkan data mutakhir (*${latestUpload.tanggal}*):\n\n`;
+
+      content += `### 1. Capaian Utama ${isCensus ? 'Listing/Pendataan' : 'Pendataan ' + unitName}\n`;
+      content += `* **Target ${unitName}**: **${targetFasih.toLocaleString('id-ID')} ${unitName}**${!isCensus ? ` (dari total ${slsTotal} Blok Sensus/SLS terpilih)` : ''}.\n`;
+      content += `* **Realisasi Terdata**: **${realFasih.toLocaleString('id-ID')} ${unitName}** atau sebesar **${pctFasih.toFixed(2)}%**.\n`;
+      content += `* **Sisa Target**: **${sisaTarget.toLocaleString('id-ID')} ${unitName}** (${sisaPct}%) yang masih perlu diselesaikan.\n`;
+      content += `* **${isCensus ? 'SLS' : 'Blok Sensus'} Selesai 100%**: **${slsSelesai} dari ${slsTotal} wilayah** (${slsPct}%).\n\n`;
+
+      content += `### 2. Status Verifikasi Dokumen\n`;
+      content += `* **Approved (Disetujui PML)**: **${(summary.approved_total || 0).toLocaleString('id-ID')} dokumen** (${targetFasih > 0 ? (((summary.approved_total || 0) / targetFasih) * 100).toFixed(2) : 0}%).\n`;
+      content += `* **Submitted (Menunggu Review PML)**: **${(summary.submitted_total || 0).toLocaleString('id-ID')} dokumen**.\n`;
+      content += `* **Rejected (Perbaikan Petugas)**: **${(summary.rejected_total || 0).toLocaleString('id-ID')} dokumen**.\n`;
+      content += `* **Draft**: **${(summary.draft_total || 0).toLocaleString('id-ID')} dokumen**.\n\n`;
+
+      content += `### 3. Kinerja Petugas Lapangan\n`;
+      content += `* **${officerRole} Aktif**: **${summary.active_pcl || 0} orang** dari total **${summary.total_pcl || 0} ${officerRole}** (${summary.total_pcl > 0 ? (((summary.active_pcl || 0) / summary.total_pcl) * 100).toFixed(0) : 100}% aktif bergerak).\n`;
+      content += `* **PML Pengawas**: **${summary.total_pml || 0} orang**.\n`;
+      content += `* **Rata-rata Terdata**: **${(summary.avg_didata_per_pcl || 0).toLocaleString('id-ID')} ${unitName} per ${officerRole}**.\n\n`;
+
+      if (Array.isArray(kecStats) && kecStats.length > 0) {
+        content += `### 4. Capaian per Kecamatan di Kabupaten PPU\n\n`;
+        content += `| Kecamatan | Target ${unitName} | Realisasi | % Capaian | Approved PML | Selesai |\n| :--- | :---: | :---: | :---: | :---: | :---: |\n`;
+        kecStats.forEach(k => {
+          const kTarget = k.target_fasih_total || k.target_static_total || k.total_muatan || 0;
+          const kReal = k.fasih_real_total != null ? k.fasih_real_total : k.muatan_selesai || 0;
+          const kPct = (k.fasih_pct != null ? k.fasih_pct : k.pct) || 0;
+          const kApp = k.approved_total || 0;
+          content += `| **${k.kecamatan}** | ${kTarget.toLocaleString('id-ID')} | ${kReal.toLocaleString('id-ID')} | **${kPct.toFixed(2)}%** | ${kApp.toLocaleString('id-ID')} | ${k.selesai} / ${k.total_subsls} |\n`;
+        });
+        content += '\n';
+      }
+
+      content += `### Rekomendasi & Evaluasi Lapangan:\n`;
+      if (summary.submitted_total > 0) {
+        content += `1. **Pemeriksaan PML**: Dorong PML untuk mempercepat approval terhadap **${summary.submitted_total} dokumen submitted** yang menunggu verifikasi.\n`;
+      }
+      if (summary.rejected_total > 0) {
+        content += `2. **Perbaikan Dokumen Rejected**: Segera koordinasikan perbaikan terhadap **${summary.rejected_total} dokumen rejected** agar tidak menjadi beban di akhir periode.\n`;
+      }
+      if (sisaTarget > 0) {
+        content += `3. **Penyelesaian Sisa Target**: Prioritaskan penyisiran lapangan untuk menyelesaikan **${sisaTarget} ${unitName} tersisa**.\n`;
+      }
+      content += `4. **Pengawasan Kualitas**: Pastikan seluruh SOP metodologi dan konsistensi isian terverifikasi dengan baik.\n`;
+
+      content += getActionLinks();
+
+      return { role: 'model', content, isSimulation: true };
+    }
+
     const isExcludeKipp = (lowerMsg.includes('selain') || lowerMsg.includes('bukan') || lowerMsg.includes('non') || lowerMsg.includes('luar') || lowerMsg.includes('tanpa') || lowerMsg.includes('kecuali')) && lowerMsg.includes('kipp');
     const kippFilter = isExcludeKipp ? "AND m.nama_sls NOT LIKE '%KIPP%' AND m.pcl NOT IN (SELECT DISTINCT pcl FROM subsls_master WHERE nama_sls = 'KIPP IKN' AND pcl IS NOT NULL AND pcl != '')" : "";
     const kippLabel = isExcludeKipp ? " (Selain Petugas SLS KIPP)" : "";
@@ -286,23 +378,23 @@ function runSimulation(userMessage, chatHistory) {
       if (rows.length === 0) {
         return {
           role: 'model',
-          content: `Tidak ditemukan data petugas sensus untuk **${kecLabel || 'Seluruh Wilayah'}** pada data upload terbaru.\n\n**Tautan Navigasi Dashboard:**\n- [Lihat Detail Monitoring PCL](/pcl)\n- [Buka Rekap Progres Kecamatan](/kecamatan)`,
+          content: `Tidak ditemukan data petugas untuk **${kecLabel || 'Seluruh Wilayah'}** pada data upload terbaru.${getActionLinks()}`,
           isSimulation: true
         };
       }
 
-      let content = `Berikut daftar 5 PCL ${isHeavy ? 'dengan beban target tertinggi yang memerlukan pendampingan' : 'dengan progres terendah'} untuk **${kecLabel || 'Seluruh Wilayah'}** (upload *${latestUpload.tanggal}*):\n\n`;
-      content += `| Nama PCL | PML Pengawas | Kecamatan | Target FASIH | Realisasi | Capaian (%) |\n| :--- | :--- | :--- | :---: | :---: | :---: |\n`;
+      let content = `Berikut daftar 5 ${officerRole} ${isHeavy ? 'dengan beban target tertinggi yang memerlukan pendampingan' : 'dengan progres terendah'} untuk **${kecLabel || 'Seluruh Wilayah'}** (upload *${latestUpload.tanggal}*):\n\n`;
+      content += `| Nama ${officerRole} | PML Pengawas | Kecamatan | Target | Realisasi | Capaian (%) |\n| :--- | :--- | :--- | :---: | :---: | :---: |\n`;
       rows.forEach(r => {
         const pct = r.target_fasih_total > 0 ? ((r.realisasi_fasih / r.target_fasih_total) * 100).toFixed(2) : (r.total_muatan > 0 ? ((r.muatan_selesai / r.total_muatan) * 100).toFixed(2) : '0.00');
         content += `| **${r.pcl}** | ${r.pml} | ${r.kecamatan} | ${r.target_fasih_total || r.total_muatan} | ${r.realisasi_fasih || r.muatan_selesai} | **${pct}%** |\n`;
       });
-      content += `\n**Rekomendasi:** Prioritaskan pendampingan lapangan langsung oleh PML terhadap **${rows[0].pcl}** untuk menyelesaikan target SLS yang tersisa.\n\n**Tautan Navigasi Dashboard:**\n- [Lihat Detail Monitoring PCL](/pcl)\n- [Buka Daftar Performa Terendah](/performa-terendah)\n- [Lihat Detail Monitoring PML](/pml)\n`;
+      content += `\n**Rekomendasi:** Prioritaskan pendampingan lapangan langsung oleh PML terhadap **${rows[0].pcl}** untuk menyelesaikan target yang tersisa.${getActionLinks()}`;
       return { role: 'model', content, isSimulation: true };
     }
 
-    if (lowerMsg.includes('harian') && (lowerMsg.includes('rata') || lowerMsg.includes('rerata') || lowerMsg.includes('penambahan')) && (lowerMsg.includes('petugas') || lowerMsg.includes('pcl') || lowerMsg.includes('siapa') || lowerMsg.includes('terbanyak') || lowerMsg.includes('tertinggi'))) {
-      const daysCount = db.prepare('SELECT COUNT(DISTINCT tanggal) as days FROM uploads WHERE tanggal IS NOT NULL').get().days || 1;
+    if (lowerMsg.includes('harian') && (lowerMsg.includes('rata') || lowerMsg.includes('rerata') || lowerMsg.includes('penambahan')) && (lowerMsg.includes('petugas') || lowerMsg.includes('pcl') || lowerMsg.includes('ppl') || lowerMsg.includes('siapa') || lowerMsg.includes('terbanyak') || lowerMsg.includes('tertinggi'))) {
+      const daysCount = db.prepare('SELECT COUNT(DISTINCT tanggal) as days FROM uploads WHERE tanggal IS NOT NULL').get()?.days || 1;
       const rows = db.prepare(`
         SELECT m.pcl, MAX(m.pml) AS pml, MAX(m.kecamatan) AS kecamatan,
           SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS realisasi,
@@ -314,15 +406,15 @@ function runSimulation(userMessage, chatHistory) {
         GROUP BY m.pcl ORDER BY rata_rata_harian DESC LIMIT 5
       `).all(uploadId);
 
-      let content = `Berikut daftar 5 Petugas (PCL) dengan Rata-rata Penambahan Harian Terbanyak (berdasarkan ${daysCount} hari pendataan)${kippLabel}${kecLabel}:\n\n`;
-      content += `| No | Nama PCL | PML Pengawas | Kecamatan | Total Dokumen Selesai | Rata-rata Harian | Target FASIH |\n| :---: | :--- | :--- | :--- | :---: | :---: | :---: |\n`;
+      let content = `Berikut daftar 5 Petugas (${officerRole}) dengan Rata-rata Penambahan Harian Terbanyak (berdasarkan ${daysCount} hari pendataan)${kippLabel}${kecLabel}:\n\n`;
+      content += `| No | Nama ${officerRole} | PML Pengawas | Kecamatan | Total Selesai | Rata-rata Harian | Target |\n| :---: | :--- | :--- | :--- | :---: | :---: | :---: |\n`;
       rows.forEach((r, i) => {
         content += `| ${i+1} | **${r.pcl}** | ${r.pml} | ${r.kecamatan} | ${r.realisasi?.toLocaleString('id-ID') || 0} | **${r.rata_rata_harian?.toLocaleString('id-ID')} dok/hari** | ${r.target_fasih?.toLocaleString('id-ID') || 0} |\n`;
       });
       content += `\n### Analisis Produktivitas Harian:\n`;
       content += `* **Peringkat Teratas**: **${rows[0]?.pcl || '-'}** memimpin dengan rata-rata penambahan harian sebesar **${rows[0]?.rata_rata_harian || 0} dokumen/hari**.\n`;
-      content += `* Petugas di atas menunjukkan ritme kerja konsisten dan produktivitas tinggi dalam menyelesaikan dokumen FASIH secara berkelanjutan.\n`;
-      content += `\n**Tautan Navigasi Dashboard:**\n- [Buka Tren Progres Harian](/harian)\n- [Lihat Detail Monitoring PCL](/pcl)\n- [Buka Leaderboard Petugas](/leaderboard)\n`;
+      content += `* Petugas di atas menunjukkan ritme kerja konsisten dan produktivitas tinggi dalam menyelesaikan dokumen secara berkelanjutan.\n`;
+      content += getActionLinks();
       return { role: 'model', content, isSimulation: true };
     }
 
@@ -339,68 +431,50 @@ function runSimulation(userMessage, chatHistory) {
         GROUP BY m.pcl ORDER BY target_fasih DESC, realisasi_fasih DESC, muatan_selesai DESC LIMIT 5
       `).all(uploadId);
 
-      let content = `Berikut daftar 5 Petugas (PCL) Terbaik berdasarkan Prioritas Jumlah Assignment FASIH dan Realisasi Dokumen${kippLabel}${kecLabel}:\n\n`;
-      content += `| No | Nama PCL | PML Pengawas | Kecamatan | Assignment FASIH | Realisasi FASIH | Target Muatan | Realisasi Muatan |\n| :---: | :--- | :--- | :--- | :---: | :---: | :---: | :---: |\n`;
-      rows.forEach((r, i) => {
-        content += `| ${i+1} | **${r.pcl}** | ${r.pml} | ${r.kecamatan} | ${r.target_fasih || 0} | **${r.realisasi_fasih || 0}** | ${r.total_muatan || 0} | **${r.muatan_selesai || 0}** |\n`;
-      });
+      let content = `Berikut daftar 5 Petugas (${officerRole}) Terbaik berdasarkan Capaian Dokumen${kippLabel}${kecLabel}:\n\n`;
+      if (isCensus) {
+        content += `| No | Nama ${officerRole} | PML Pengawas | Kecamatan | Target | Realisasi | Target Muatan | Realisasi Muatan |\n| :---: | :--- | :--- | :--- | :---: | :---: | :---: | :---: |\n`;
+        rows.forEach((r, i) => {
+          content += `| ${i+1} | **${r.pcl}** | ${r.pml} | ${r.kecamatan} | ${r.target_fasih || 0} | **${r.realisasi_fasih || 0}** | ${r.total_muatan || 0} | **${r.muatan_selesai || 0}** |\n`;
+        });
+      } else {
+        content += `| No | Nama ${officerRole} | PML Pengawas | Kecamatan | Target ${unitName} | Realisasi | % Capaian |\n| :---: | :--- | :--- | :--- | :---: | :---: | :---: |\n`;
+        rows.forEach((r, i) => {
+          const tVal = r.target_fasih || 0;
+          const rVal = r.realisasi_fasih || 0;
+          const pVal = tVal > 0 ? ((rVal / tVal) * 100).toFixed(1) + '%' : '0.0%';
+          content += `| ${i+1} | **${r.pcl}** | ${r.pml} | ${r.kecamatan} | ${tVal} | **${rVal}** | **${pVal}** |\n`;
+        });
+      }
       content += `\n### Analisis & Rekomendasi:\n`;
-      content += `* **Peringkat Teratas**: **${rows[0]?.pcl || '-'}** (${rows[0]?.kecamatan || '-'}) memegang assignment FASIH tertinggi sebesar **${rows[0]?.target_fasih || 0} dokumen** dengan realisasi **${rows[0]?.realisasi_fasih || 0} dokumen** terverifikasi/submit.\n`;
-      content += `* **Efisiensi Lapangan**: Seluruh petugas pada daftar di atas telah melampaui target muatan dasar dan aktif menyelesaikan sinkronisasi dokumen FASIH.\n`;
-      content += `\n**Tautan Navigasi Dashboard:**\n- [Buka Leaderboard Petugas](/leaderboard)\n- [Lihat Detail Monitoring PCL](/pcl)\n- [Lihat Detail Monitoring PML](/pml)\n`;
-      return { role: 'model', content, isSimulation: true };
-    }
-
-    if (lowerMsg.includes('rerata') || lowerMsg.includes('rata-rata') || lowerMsg.includes('progres') || lowerMsg.includes('capaian')) {
-      const totalSls       = db.prepare('SELECT COUNT(*) as n FROM subsls_master').get().n;
-      const muatanTotal    = db.prepare('SELECT SUM(muatan) as n FROM subsls_master').get().n || 0;
-      const muatanSelesai  = db.prepare(`SELECT SUM(COALESCE(p.usaha_ditemukan,0)+COALESCE(p.usaha_baru,0)+COALESCE(p.ditemukan,0)+COALESCE(p.keluarga_baru,0)) as n FROM progres p WHERE p.upload_id = ?`).get(uploadId).n || 0;
-      const totalDone      = db.prepare(`SELECT COUNT(DISTINCT p.kode) as n FROM progres p JOIN subsls_master m ON p.kode=m.kode WHERE p.upload_id=? AND COALESCE(m.target_fasih,0)>0 AND (COALESCE(p.submitted_by_pcl,0)+COALESCE(p.approved,0)+COALESCE(p.rejected,0))>=m.target_fasih`).get(uploadId).n;
-      const kecs = db.prepare(`
-        SELECT m.kecamatan, COUNT(m.kode) AS total_subsls,
-          SUM(m.muatan) AS total_muatan,
-          SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0)+COALESCE(p.ditemukan+p.keluarga_baru,0)) AS muatan_selesai
-        FROM subsls_master m LEFT JOIN progres p ON m.kode=p.kode AND p.upload_id=?
-        GROUP BY m.kecamatan
-      `).all(uploadId);
-
-      const slsPct    = totalSls    > 0 ? ((totalDone    / totalSls)    * 100).toFixed(2) : '0.00';
-      const muatanPct = muatanTotal > 0 ? ((muatanSelesai / muatanTotal) * 100).toFixed(2) : '0.00';
-
-      let content = `Ringkasan Progres Lapangan:\n\n`;
-      content += `- **Total SLS:** ${totalSls.toLocaleString('id-ID')} | Selesai: **${totalDone.toLocaleString('id-ID')} (${slsPct}%)**\n`;
-      content += `- **Total Muatan:** ${muatanTotal.toLocaleString('id-ID')} | Realisasi: **${muatanSelesai.toLocaleString('id-ID')} (${muatanPct}%)**\n\n`;
-      content += `### Capaian per Kecamatan:\n\n| Kecamatan | SLS | Target Muatan | Realisasi | % |\n| :--- | :---: | :---: | :---: | :---: |\n`;
-      kecs.forEach(k => {
-        const p = k.total_muatan > 0 ? ((k.muatan_selesai / k.total_muatan) * 100).toFixed(2) : '0.00';
-        content += `| ${k.kecamatan} | ${k.total_subsls} | ${k.total_muatan} | ${k.muatan_selesai} | **${p}%** |\n`;
-      });
-      content += `\n**Tautan Navigasi Dashboard:**\n- [Buka Rekap Progres Kecamatan](/kecamatan)\n- [Buka Ringkasan Beranda](/)\n`;
+      content += `* **Peringkat Teratas**: **${rows[0]?.pcl || '-'}** (${rows[0]?.kecamatan || '-'}) memegang target tertinggi sebesar **${rows[0]?.target_fasih || 0} dokumen** dengan realisasi **${rows[0]?.realisasi_fasih || 0} dokumen** terverifikasi/submit.\n`;
+      content += `* **Efisiensi Lapangan**: Seluruh petugas pada daftar di atas aktif menyelesaikan sinkronisasi dokumen lapangan.\n`;
+      content += getActionLinks();
       return { role: 'model', content, isSimulation: true };
     }
 
     if (lowerMsg.includes('anomali') || lowerMsg.includes('ganda')) {
-      const ganda  = db.prepare('SELECT SUM(usaha_ganda) as n FROM progres WHERE upload_id=?').get(uploadId).n || 0;
-      const noMeet = db.prepare('SELECT SUM(tidak_dapat_ditemui) as n FROM progres WHERE upload_id=?').get(uploadId).n || 0;
-      const reject = db.prepare('SELECT SUM(rejected) as n FROM progres WHERE upload_id=?').get(uploadId).n || 0;
+      const ganda  = db.prepare('SELECT SUM(usaha_ganda) as n FROM progres WHERE upload_id=?').get(uploadId)?.n || 0;
+      const noMeet = db.prepare('SELECT SUM(tidak_dapat_ditemui) as n FROM progres WHERE upload_id=?').get(uploadId)?.n || 0;
+      const reject = db.prepare('SELECT SUM(rejected) as n FROM progres WHERE upload_id=?').get(uploadId)?.n || 0;
       const top    = db.prepare(`
         SELECT m.pcl, m.pml, SUM(COALESCE(p.usaha_ganda,0)) AS ganda, SUM(COALESCE(p.rejected,0)) AS reject
         FROM subsls_master m JOIN progres p ON m.kode=p.kode AND p.upload_id=?
         GROUP BY m.pcl HAVING ganda>0 OR reject>0 ORDER BY (ganda+reject) DESC LIMIT 3
       `).all(uploadId);
 
-      let content = `Rekap Temuan Anomali Data Lapangan:\n\n1. **Usaha Ganda:** **${ganda} kasus**\n2. **Tidak dapat ditemui:** **${noMeet} kasus**\n3. **Dokumen ditolak (Rejected):** **${reject} dokumen**\n\n`;
+      let content = `Rekap Temuan Anomali Data Lapangan:\n\n1. **Data Ganda:** **${ganda} kasus**\n2. **Tidak dapat ditemui:** **${noMeet} kasus**\n3. **Dokumen ditolak (Rejected):** **${reject} dokumen**\n\n`;
       if (top.length > 0) {
-        content += `| PCL | PML | Ganda | Rejected |\n| :--- | :--- | :---: | :---: |\n`;
+        content += `| ${officerRole} | PML | Ganda | Rejected |\n| :--- | :--- | :---: | :---: |\n`;
         top.forEach(r => content += `| ${r.pcl} | ${r.pml} | ${r.ganda} | ${r.reject} |\n`);
       }
-      content += `\n**Tautan Navigasi Dashboard:**\n- [Buka Deteksi Anomali Lapangan](/deteksi-anomali)\n- [Buka Early Warning System](/early-warning)\n- [Lihat Detail Monitoring PML](/pml)\n`;
+      content += getActionLinks();
       return { role: 'model', content, isSimulation: true };
     }
 
     return {
       role: 'model',
-      content: `Pencarian data dapat menggunakan kata kunci: **progres**, **terendah**, **terbaik**, atau **anomali**.\n\n**Tautan Navigasi Dashboard:**\n- [Buka Rekap Progres Kecamatan](/kecamatan)\n- [Lihat Detail Monitoring PCL](/pcl)\n- [Buka Ringkasan Beranda](/)\n\n*Konfigurasikan API Key untuk pertanyaan bebas.*`,
+      content: `Pencarian data dapat menggunakan kata kunci: **ringkasan progres**, **kinerja petugas**, **terendah**, **terbaik**, atau **anomali** data.${getActionLinks()}\n\n*Konfigurasikan API Key untuk analisis mendalam tanpa batas.*`,
       isSimulation: true
     };
   } catch (err) {
@@ -409,11 +483,11 @@ function runSimulation(userMessage, chatHistory) {
   }
 }
 
-async function streamSimulation(userMessage, chatHistory, onEvent, abortSignal) {
+async function streamSimulation(userMessage, chatHistory, onEvent, abortSignal, surveyId = 'se2026') {
   onEvent('status', { text: 'Menghubungkan ke basis data lokal...', step: 'simulation_query' });
   await new Promise(r => setTimeout(r, 150));
 
-  const simResult = runSimulation(userMessage, chatHistory);
+  const simResult = runSimulation(userMessage, chatHistory, surveyId);
   const text = simResult.content || '';
 
   onEvent('status', { text: 'Merumuskan jawaban...', step: 'streaming' });
@@ -504,7 +578,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
 
       try {
         finalResult = await llmGateway.sendMessageToGemini(
-          userMessage, mergedHistory, settings, current.model, serverController.signal, kItem.key, dynInstruction
+          userMessage, mergedHistory, settings, current.model, serverController.signal, kItem.key, dynInstruction, { surveyId: currentSurveyId }
         );
         keyPool.markSuccess(kItem.key);
         if (finalResult.queryId && finalResult.content) {
@@ -533,7 +607,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
 
   if (!finalResult) {
     log.warn('Fallback to local simulation.');
-    finalResult = runSimulation(userMessage, mergedHistory);
+    finalResult = runSimulation(userMessage, mergedHistory, currentSurveyId);
     const rawErr = lastError ? lastError.message : 'API key tidak terkonfigurasi';
     finalResult.content = `⚠️ **AI Provider Error:** ${rawErr}\n\n*Fallback ke simulasi lokal:*\n\n` + finalResult.content;
   }
@@ -631,7 +705,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
       log.info(`[ORCH:STREAM] -> Menjalankan ${kItem.label} (${keyPool.maskKey(kItem.key)}) pada model '${current.model}'...`);
       try {
         finalResult = await llmGateway.streamMessageToGemini(
-          userMessage, mergedHistory, settings, current.model, abortSignal, kItem.key, onEvent, dynInstruction
+          userMessage, mergedHistory, settings, current.model, abortSignal, kItem.key, onEvent, dynInstruction, { surveyId: currentSurveyId }
         );
         keyPool.markSuccess(kItem.key);
         if (finalResult.queryId && finalResult.content) {
@@ -665,7 +739,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
   }
 
   if (!finalResult) {
-    finalResult = await streamSimulation(userMessage, mergedHistory, onEvent, abortSignal);
+    finalResult = await streamSimulation(userMessage, mergedHistory, onEvent, abortSignal, currentSurveyId);
     let rawErr = lastError ? lastError.message : 'API key tidak terkonfigurasi';
     let friendlyErr = rawErr;
     if (rawErr.includes('429') || rawErr.includes('quota') || rawErr.toLowerCase().includes('rate limit')) {
@@ -691,5 +765,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
 module.exports = {
   sendMessageToAgent,
   streamMessageToAgent,
+  runSimulation,
+  streamSimulation,
   fetchPageData: toolRegistry.fetchPageDataCompat
 };

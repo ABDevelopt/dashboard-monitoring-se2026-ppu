@@ -215,11 +215,11 @@
     <% if (totalPages > 1) { %>
       <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 20px;">
         <% if (page > 1) { %>
-          <a href="/master?page=<%= page - 1 %>&q=<%= encodeURIComponent(q) %>" class="btn btn-secondary btn-sm"><i class="bi bi-chevron-left"></i> Sebelumnya</a>
+          <a href="<%= (typeof navPrefix !== 'undefined' ? navPrefix : '') %>/master?page=<%= page - 1 %>&q=<%= encodeURIComponent(q) %>" class="btn btn-secondary btn-sm"><i class="bi bi-chevron-left"></i> Sebelumnya</a>
         <% } %>
         <span style="font-size: 13px; color: var(--text-secondary);">Halaman <strong><%= page %></strong> dari <strong><%= totalPages %></strong></span>
         <% if (page < totalPages) { %>
-          <a href="/master?page=<%= page + 1 %>&q=<%= encodeURIComponent(q) %>" class="btn btn-secondary btn-sm">Berikutnya <i class="bi bi-chevron-right"></i></a>
+          <a href="<%= (typeof navPrefix !== 'undefined' ? navPrefix : '') %>/master?page=<%= page + 1 %>&q=<%= encodeURIComponent(q) %>" class="btn btn-secondary btn-sm">Berikutnya <i class="bi bi-chevron-right"></i></a>
         <% } %>
       </div>
     <% } %>

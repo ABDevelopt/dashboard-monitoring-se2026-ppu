@@ -1783,7 +1783,7 @@
   // ─────────────────────────────────────────────────────────────────
   //  CHAT HISTORY PERSISTENCE (LocalStorage)
   // ─────────────────────────────────────────────────────────────────
-  const HISTORY_STORAGE_KEY = 'se2026_agent_chat_history';
+  const HISTORY_STORAGE_KEY = ((typeof navPrefix !== 'undefined' && navPrefix ? navPrefix.replace(/^\//, '') : '') || (window.activeSurveyId || 'se2026')) + '_agent_chat_history';
 
   function saveChatHistory() {
     try {

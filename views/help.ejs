@@ -1,11 +1,8 @@
 <div class="fade-in" id="help-page">
 
 <%
-const isSakernas = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
-const hideMuatanHelp = (typeof hideMuatanGlobal !== 'undefined' && hideMuatanGlobal)
-  || (typeof surveyConfig !== 'undefined' && !surveyConfig.showMuatanUsaha)
-  || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0')
-  || isSakernas;
+const isSe2026Help = (typeof activeSurvey !== 'undefined' ? activeSurvey === 'se2026' : (typeof surveyConfig !== 'undefined' ? surveyConfig.id === 'se2026' : true));
+const hideMuatanHelp = !isSe2026Help || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0');
 /* ─── SECTION DATA ─────────────────────────────────────────── */
 const allSections = [
   { id: 'getting-started', icon: 'bi-rocket-takeoff-fill', label: 'Mulai Menggunakan', color: 'var(--accent-blue)' },
@@ -825,7 +822,7 @@ const sections = hideMuatanHelp ? allSections.filter(s => !s.sensusOnly) : allSe
     <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Masih ada pertanyaan?</div>
     <p style="font-size: 12px; color: var(--text-secondary); margin: 0;">Hubungi tim teknis BPS Kabupaten Penajam Paser Utara atau gunakan fitur <strong>Asisten AI</strong> untuk mendapat jawaban cepat berbasis data.</p>
     <% if (typeof settings !== 'undefined' && settings.page_aiagent === '1') { %>
-    <a href="/agent" class="btn btn-primary" style="margin-top: 14px; display: inline-flex;">
+    <a href="<%= (typeof navPrefix !== 'undefined' ? navPrefix : '') %>/agent" class="btn btn-primary" style="margin-top: 14px; display: inline-flex;">
       <i class="bi bi-robot"></i> Tanya Asisten AI
     </a>
     <% } %>

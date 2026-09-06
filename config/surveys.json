@@ -49,7 +49,7 @@
     "officerRole": "PPL",
     "officerFullRole": "Petugas Pendataan Lapangan",
     "hasKorlap": false,
-    "enabledPages": ["map", "agent", "pml", "pcl", "earlywarning", "harian", "leaderboard", "kecamatan", "subsls", "export"]
+    "enabledPages": ["map", "agent", "pml", "pcl", "performa", "earlywarning", "harian", "leaderboard", "kecamatan", "subsls", "export"]
   },
   "sakernas-pendataan": {
     "id": "sakernas-pendataan",
@@ -75,6 +75,6 @@
     "officerRole": "PPL",
     "officerFullRole": "Petugas Pendataan Lapangan",
     "hasKorlap": false,
-    "enabledPages": ["map", "agent", "pml", "pcl", "performa", "harian", "leaderboard", "kecamatan", "subsls", "export"]
+    "enabledPages": ["map", "agent", "pml", "pcl", "performa", "earlywarning", "harian", "leaderboard", "kecamatan", "subsls", "export"]
   }
 }

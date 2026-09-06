@@ -26,23 +26,29 @@ const upload = multer({
 
 // GET: Unified Upload page with tabs
 router.get('/', (req, res) => {
-  const activeTab = req.query.tab || 'fasih';
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const isSe2026 = activeSurvey === 'se2026';
+  const navPrefix = res.locals.navPrefix || '';
+
+  if (req.query.tab === 'sls' || (!isSe2026 && req.query.tab === 'muatan')) {
+    return res.redirect(`${navPrefix}/admin/upload?tab=fasih`);
+  }
+
+  let activeTab = req.query.tab || 'fasih';
+
   const allUploads = getAllUploads().sort((a, b) => (b.id - a.id) || b.tanggal.localeCompare(a.tanggal));
   
-  const muatanUploads = allUploads.filter(u => u.filename && u.filename.length > 0);
-  const fasihUploads = allUploads.filter(u => u.status_filename && !u.status_filename.toLowerCase().includes('monitoring_sls'));
-  const slsUploads = allUploads.filter(u => u.status_filename && u.status_filename.toLowerCase().includes('monitoring_sls'));
+  const muatanUploads = isSe2026 ? allUploads.filter(u => u.filename && u.filename.length > 0) : [];
+  const fasihUploads = allUploads.filter(u => u.status_filename);
 
-  const activeSurvey = res.locals.activeSurvey || 'se2026';
   const workspaceFiles = scanWorkspace(activeSurvey);
 
   res.render('upload', {
-    title: 'Upload Data Sensus',
+    title: isSe2026 ? 'Upload Data Sensus' : 'Upload Data Survei',
     activePage: 'upload',
     activeTab,
     muatanUploads,
     fasihUploads,
-    slsUploads,
     workspaceFiles
   });
 });
@@ -91,7 +97,8 @@ function scanWorkspace(activeSurvey) {
 
 // Redirect old routes for backwards compatibility
 router.get('/muatan', (req, res) => {
-  res.redirect(`${req.baseUrl || '/admin/upload'}?tab=muatan`);
+  const isSe2026 = (res.locals.activeSurvey || 'se2026') === 'se2026';
+  res.redirect(`${req.baseUrl || '/admin/upload'}?tab=${isSe2026 ? 'muatan' : 'fasih'}`);
 });
 
 router.get('/fasih', (req, res) => {
@@ -99,7 +106,7 @@ router.get('/fasih', (req, res) => {
 });
 
 router.get('/sls', (req, res) => {
-  res.redirect(`${req.baseUrl || '/admin/upload'}?tab=sls`);
+  res.redirect(`${req.baseUrl || '/admin/upload'}?tab=fasih`);
 });
 
 function extractDateFromFilename(filename) {
@@ -158,7 +165,8 @@ async function handleUploadPost(req, res) {
 
   if (excelFiles.length === 0 && keluargaFiles.length === 0 && usahaFiles.length === 0 && statusFiles.length === 0 && slsFiles.length === 0) {
     req.flash('error', 'Silakan pilih setidaknya satu file untuk diupload.');
-    return res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
+    const fallbackTab = (res.locals.activeSurvey || 'se2026') === 'se2026' ? 'muatan' : 'fasih';
+    return res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}?tab=${fallbackTab}`);
   }
 
   // Prepend monitoring_sls_ prefix to SLS status filename to keep database records properly grouped/identified
@@ -341,24 +349,35 @@ async function handleUploadPost(req, res) {
     req.flash('error', `Pemberitahuan:<br>- ${errors.join('<br>- ')}`);
   }
 
-  res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
+  const fallbackTab = (res.locals.activeSurvey || 'se2026') === 'se2026' ? 'muatan' : 'fasih';
+  res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}?tab=${fallbackTab}`);
 }
 
 // POST Redirects and Specific Fields uploads
-router.post('/', (req, res) => res.redirect(`${req.baseUrl || '/admin/upload'}/muatan`));
+router.post('/', (req, res) => {
+  const fallbackTab = (res.locals.activeSurvey || 'se2026') === 'se2026' ? 'muatan' : 'fasih';
+  res.redirect(`${req.baseUrl || '/admin/upload'}?tab=${fallbackTab}`);
+});
 
 router.post('/muatan', upload.fields([
   { name: 'keluargaFile', maxCount: 100 },
   { name: 'usahaFile', maxCount: 100 }
-]), async (req, res) => handleUploadPost(req, res));
+]), async (req, res) => {
+  if ((res.locals.activeSurvey || 'se2026') !== 'se2026') {
+    req.flash('error', 'Upload progres muatan hanya diperkenankan untuk kegiatan Sensus Ekonomi 2026.');
+    return res.redirect(`${req.baseUrl || '/admin/upload'}?tab=fasih`);
+  }
+  return handleUploadPost(req, res);
+});
 
 router.post('/fasih', upload.fields([
   { name: 'statusFile', maxCount: 100 }
 ]), async (req, res) => handleUploadPost(req, res));
 
-router.post('/sls', upload.fields([
-  { name: 'slsFile', maxCount: 100 }
-]), async (req, res) => handleUploadPost(req, res));
+router.post('/sls', (req, res) => {
+  req.flash('error', 'Mekanisme upload status SLS selesai telah dinonaktifkan.');
+  return res.redirect(`${req.baseUrl || '/admin/upload'}?tab=fasih`);
+});
 
 // DELETE: hapus upload
 router.post('/delete/:id', (req, res) => {

@@ -18,35 +18,91 @@
   if (window._aiWidgetInitialized) return;
   window._aiWidgetInitialized = true;
 
+  // Survey identification and metadata for isolated greetings & storage
+  function getActiveSurveyId() {
+    if (window.activeSurveyId) return window.activeSurveyId;
+    const path = window.location.pathname;
+    if (path.startsWith('/sakernas-pemutakhiran')) return 'sakernas-pemutakhiran';
+    if (path.startsWith('/sakernas-pendataan')) return 'sakernas-pendataan';
+    if (window.navPrefix) {
+      const p = window.navPrefix.replace(/^\//, '');
+      if (p) return p;
+    }
+    return 'se2026';
+  }
+
+  function getSurveyHistoryStorageKey() {
+    return `${getActiveSurveyId()}_agent_chat_history`;
+  }
+
+  function getActiveSurveyInfo() {
+    const sid = getActiveSurveyId();
+    if (sid === 'sakernas-pemutakhiran') {
+      return {
+        id: sid,
+        name: 'Sakernas — Pemutakhiran',
+        shortName: 'Sakernas Pemutakhiran',
+        officerRole: 'PPL',
+        greetingHtml: 'Halo! 👋 Saya <strong>Pananyo Taka</strong>, Asisten Pintar Pemutakhiran Sakernas Penajam Paser Utara.<br>Ada yang bisa saya bantu terkait progres pemutakhiran muatan, beban kerja PPL/PML, atau target rumah tangga?',
+        placeholder: 'Tanyakan sesuatu tentang Sakernas Pemutakhiran...'
+      };
+    }
+    if (sid === 'sakernas-pendataan') {
+      return {
+        id: sid,
+        name: 'Sakernas — Pendataan',
+        shortName: 'Sakernas Pendataan (CAPI)',
+        officerRole: 'PPL',
+        greetingHtml: 'Halo! 👋 Saya <strong>Pananyo Taka</strong>, Asisten Pintar Pencacahan Sampel Sakernas (CAPI) Penajam Paser Utara.<br>Ada yang bisa saya bantu terkait progres pendataan sampel 10 RT per BS, performa PPL/PML, atau status verifikasi dokumen?',
+        placeholder: 'Tanyakan sesuatu tentang Sakernas Pendataan (CAPI)...'
+      };
+    }
+    return {
+      id: 'se2026',
+      name: 'Sensus Ekonomi 2026',
+      shortName: 'SE2026 PPU',
+      officerRole: 'PCL',
+      greetingHtml: 'Halo! 👋 Saya <strong>Pananyo Taka</strong>, Asisten Pintar Sensus Ekonomi 2026 Penajam Paser Utara.<br>Ada yang bisa saya bantu terkait progres pendataan, status milestone, evaluasi petugas, atau deteksi anomali data?',
+      placeholder: 'Tanyakan sesuatu tentang SE2026...'
+    };
+  }
+
   // Shared Storage Keys with /agent page
-  const HISTORY_STORAGE_KEY = 'se2026_agent_chat_history';
   const SELECTED_AI_KEY = 'se2026_selected_ai';
   const OPEN_STATE_KEY = 'se2026_ai_widget_open_state';
   const MAX_HISTORY = 15;
   let chatHistory = [];
+  let currentLoadedSurveyId = null;
   let isSending = false;
 
   // Page context mapping
   function getPageContextName() {
-    const path = window.location.pathname;
-    if (path === '/' || path === '/overview') return 'Overview Dashboard';
+    let path = window.location.pathname;
+    if (window.navPrefix && path.startsWith(window.navPrefix)) {
+      path = path.substring(window.navPrefix.length) || '/';
+    } else {
+      path = path.replace(/^\/sakernas-pemutakhiran/, '').replace(/^\/sakernas-pendataan/, '') || '/';
+    }
+    const isSakernas = (window.activeSurveyId && window.activeSurveyId.startsWith('sakernas')) ||
+                       window.location.pathname.includes('/sakernas-');
+    if (path === '/' || path === '/overview') return isSakernas ? 'Overview Sakernas' : 'Overview Dashboard';
     if (path.startsWith('/kecamatan')) return 'Monitoring Kecamatan';
     if (path.startsWith('/korlap')) return 'Monitoring Korlap';
     if (path.startsWith('/pml')) return 'Monitoring PML';
-    if (path.startsWith('/pcl')) return 'Monitoring PCL';
-    if (path.startsWith('/subsls')) return 'Monitoring SubSLS';
+    if (path.startsWith('/pcl')) return isSakernas ? 'Monitoring PPL' : 'Monitoring PCL';
+    if (path.startsWith('/subsls')) return isSakernas ? 'Monitoring Blok Sensus' : 'Monitoring SubSLS';
     if (path.startsWith('/harian')) return 'Progres Harian';
-    if (path.startsWith('/earlywarning')) return 'Early Warning System';
-    if (path.startsWith('/deteksianomali')) return 'Deteksi Anomali Data';
+    if (path.startsWith('/earlywarning') || path.startsWith('/early-warning')) return 'Early Warning System';
+    if (path.startsWith('/deteksianomali') || path.startsWith('/deteksi-anomali')) return 'Deteksi Anomali Data';
     if (path.startsWith('/leaderboard')) return 'Leaderboard & Peringkat';
     if (path.startsWith('/performa-terendah')) return 'Performa Terendah';
     if (path.startsWith('/map')) return 'Peta Spasial GIS';
     if (path.startsWith('/master')) return 'Master Data';
     if (path.startsWith('/agent')) return 'Halaman AI Asisten';
     if (path.startsWith('/kipp')) return 'Chatbot KIPP';
-    if (path.startsWith('/upload')) return 'Upload Data FASIH';
+    if (path.startsWith('/upload') || path.startsWith('/admin/upload')) return 'Upload Data FASIH';
     if (path.startsWith('/settings')) return 'Pengaturan Sistem';
-    return document.title.split('—')[0].trim() || 'Monitoring SE2026';
+    return document.title.split('—')[0].trim() || 'Monitoring Dashboard';
   }
 
   // Get active selected AI info from localStorage
@@ -107,8 +163,14 @@
     const fab = document.getElementById('ai-widget-fab');
     const container = document.getElementById('ai-widget-container');
     const contextElem = document.getElementById('ai-widget-context-name');
+    const inputElem = document.getElementById('ai-widget-input');
 
-    const isAgentPage = window.location.pathname.startsWith('/agent');
+    const surveyInfo = getActiveSurveyInfo();
+    if (inputElem) {
+      inputElem.placeholder = surveyInfo.placeholder;
+    }
+
+    const isAgentPage = window.location.pathname.endsWith('/agent') || window.location.pathname.includes('/agent');
 
     if (isAgentPage) {
       if (fab) {
@@ -133,6 +195,12 @@
 
     if (contextElem) {
       contextElem.textContent = getPageContextName();
+    }
+
+    // If survey changed during navigation, refresh chat history & greeting
+    const activeSid = getActiveSurveyId();
+    if (currentLoadedSurveyId !== activeSid) {
+      restoreLocalStorageHistory();
     }
 
     updateAiWidgetModelDisplay();
@@ -163,6 +231,8 @@
       return;
     }
 
+    const surveyInfo = getActiveSurveyInfo();
+
     // 1. Floating Action Button (FAB)
     const fab = document.createElement('button');
     fab.id = 'ai-widget-fab';
@@ -171,35 +241,33 @@
     fab.innerHTML = `
       <i class="bi bi-chevron-left fab-icon-dock"></i>
       <i class="bi bi-robot fab-icon-chat"></i>
-      <i class="bi bi-x-lg fab-icon-close"></i>
-      <span class="fab-badge" title="Pananyo Taka Aktif"></span>
+      <span class="fab-pulse-ring"></span>
     `;
 
-    // 2. Chat Drawer Container
+    // 2. Chatbot Container Window
     const container = document.createElement('div');
     container.id = 'ai-widget-container';
+    container.className = 'ai-widget-container';
     container.innerHTML = `
       <!-- Header -->
       <div class="ai-widget-header">
-        <div class="ai-widget-header-info">
+        <div class="ai-widget-header-title">
           <div class="ai-widget-avatar">
             <i class="bi bi-robot"></i>
           </div>
-          <div>
-            <div class="ai-widget-title" style="display: flex; align-items: center; gap: 6px;">
-              Pananyo Taka <span class="gemini-gradient-text" style="font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 4px; background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan);">AI</span>
-            </div>
-            <div class="ai-widget-status" id="ai-widget-status-text">Pananyo Taka Active</div>
+          <div class="ai-widget-meta">
+            <h4 class="ai-widget-name">Pananyo Taka</h4>
+            <span id="ai-widget-status-text" class="ai-widget-status">Gemini 3.5 Flash</span>
           </div>
         </div>
         <div class="ai-widget-actions">
-          <button id="ai-widget-expand" class="ai-widget-btn-icon" title="Buka Layar Penuh Pananyo Taka (/agent)">
-            <i class="bi bi-box-arrow-up-right"></i>
+          <button id="ai-widget-expand" class="ai-widget-tool-btn" title="Buka Halaman Penuh (/agent)">
+            <i class="bi bi-arrows-fullscreen"></i>
           </button>
-          <button id="ai-widget-clear" class="ai-widget-btn-icon" title="Bersihkan Percakapan">
+          <button id="ai-widget-clear" class="ai-widget-tool-btn" title="Bersihkan Chat">
             <i class="bi bi-trash3"></i>
           </button>
-          <button id="ai-widget-close" class="ai-widget-btn-icon" title="Tutup">
+          <button id="ai-widget-close" class="ai-widget-tool-btn" title="Tutup Widget (Esc)">
             <i class="bi bi-chevron-down"></i>
           </button>
         </div>
@@ -216,8 +284,7 @@
         <!-- Default Welcome Message -->
         <div class="ai-msg ai-msg-assistant">
           <div class="ai-msg-bubble">
-            Halo! 👋 Saya <strong>Pananyo Taka</strong>, Asisten Pintar Sensus Ekonomi 2026 Penajam Paser Utara.<br>
-            Ada yang bisa saya bantu terkait progres pendataan, status milestone, evaluasi petugas, atau deteksi anomali data?
+            ${surveyInfo.greetingHtml}
           </div>
           <span class="ai-msg-time">Sekarang</span>
         </div>
@@ -227,7 +294,7 @@
       <!-- Footer Input -->
       <div class="ai-widget-footer">
         <div class="ai-widget-input-wrap">
-          <textarea id="ai-widget-input" class="ai-widget-textarea" placeholder="Tanyakan sesuatu tentang SE2026..." rows="1"></textarea>
+          <textarea id="ai-widget-input" class="ai-widget-textarea" placeholder="${surveyInfo.placeholder}" rows="1"></textarea>
           <button id="ai-widget-stop" class="ai-widget-stop-btn" title="Hentikan Jawaban" style="display: none;">
             <i class="bi bi-stop-fill"></i>
           </button>
@@ -641,8 +708,9 @@
   // Shared LocalStorage Persistence (synced with /agent page)
   function saveLocalStorageHistory() {
     try {
-      localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(chatHistory));
-      window.dispatchEvent(new CustomEvent('ai_chat_history_updated', { detail: { source: 'widget' } }));
+      const storageKey = getSurveyHistoryStorageKey();
+      localStorage.setItem(storageKey, JSON.stringify(chatHistory));
+      window.dispatchEvent(new CustomEvent('ai_chat_history_updated', { detail: { source: 'widget', surveyId: getActiveSurveyId() } }));
     } catch (e) {
       console.warn('[AI-WIDGET] Unable to save chat history to localStorage', e);
     }
@@ -650,22 +718,25 @@
 
   function restoreLocalStorageHistory() {
     try {
-      const saved = localStorage.getItem(HISTORY_STORAGE_KEY);
+      const activeSid = getActiveSurveyId();
+      currentLoadedSurveyId = activeSid;
+      const storageKey = getSurveyHistoryStorageKey();
+      const saved = localStorage.getItem(storageKey);
       const body = document.getElementById('ai-widget-body');
       if (!body) return;
 
-      const DEFAULT_GREETING_HTML = `
+      const surveyInfo = getActiveSurveyInfo();
+      const defaultGreetingHtml = `
         <div class="ai-msg ai-msg-assistant">
           <div class="ai-msg-bubble">
-            Halo! 👋 Saya <strong>Pananyo Taka</strong>, Asisten Pintar Sensus Ekonomi 2026 Penajam Paser Utara.<br>
-            Ada yang bisa saya bantu terkait progres pendataan, status milestone, evaluasi petugas, atau deteksi anomali data?
+            ${surveyInfo.greetingHtml}
           </div>
           <span class="ai-msg-time">Sekarang</span>
         </div>`;
 
       if (!saved) {
         chatHistory = [];
-        body.innerHTML = DEFAULT_GREETING_HTML;
+        body.innerHTML = defaultGreetingHtml;
         return;
       }
 
@@ -678,7 +749,7 @@
         });
       } else {
         chatHistory = [];
-        body.innerHTML = DEFAULT_GREETING_HTML;
+        body.innerHTML = defaultGreetingHtml;
       }
     } catch (e) {
       console.warn('[AI-WIDGET] Unable to restore chat history', e);
@@ -727,7 +798,8 @@
     activeWidgetAbortController = controller;
 
     try {
-      const response = await fetch('/agent/chat/stream', {
+      const streamUrl = (window.navPrefix || '') + '/agent/chat/stream';
+      const response = await fetch(streamUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -879,7 +951,7 @@
     function toggleWidget(show = null) {
       const isCurrentlyVisible = container.classList.contains('is-visible');
       const shouldShow = show !== null ? show : !isCurrentlyVisible;
-      const isAgentPage = window.location.pathname.startsWith('/agent');
+      const isAgentPage = window.location.pathname.endsWith('/agent') || window.location.pathname.includes('/agent');
 
       if (shouldShow && !isAgentPage) {
         container.classList.add('is-visible');
@@ -909,27 +981,28 @@
       expandBtn.addEventListener('click', () => {
         try { sessionStorage.setItem(OPEN_STATE_KEY, 'false'); } catch (_) {}
         toggleWidget(false);
-        window.location.href = '/agent';
+        window.location.href = (window.navPrefix || '') + '/agent';
       });
     }
 
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
+        const surveyInfo = getActiveSurveyInfo();
         if (confirm('Bersihkan seluruh percakapan Asisten AI? (Akan terhapus juga di halaman AI utama)')) {
           chatHistory = [];
-          localStorage.removeItem(HISTORY_STORAGE_KEY);
+          localStorage.removeItem(getSurveyHistoryStorageKey());
           const body = document.getElementById('ai-widget-body');
           if (body) {
             body.innerHTML = `
               <div class="ai-msg ai-msg-assistant">
                 <div class="ai-msg-bubble">
-                  Percakapan dibersihkan. Ada yang bisa saya bantu lagi terkait monitoring SE2026?
+                  ${surveyInfo.greetingHtml}
                 </div>
                 <span class="ai-msg-time">Sekarang</span>
               </div>
             `;
           }
-          window.dispatchEvent(new CustomEvent('ai_chat_history_updated', { detail: { source: 'widget' } }));
+          window.dispatchEvent(new CustomEvent('ai_chat_history_updated', { detail: { source: 'widget', surveyId: getActiveSurveyId() } }));
         }
       });
     }
@@ -967,7 +1040,8 @@
 
     // Realtime sync across tabs or when changed in /agent page
     function handleWidgetHistorySync(e) {
-      if (e.type === 'storage' && e.key === HISTORY_STORAGE_KEY) {
+      const storageKey = getSurveyHistoryStorageKey();
+      if (e.type === 'storage' && e.key === storageKey) {
         restoreLocalStorageHistory();
       } else if (e.type === 'ai_chat_history_updated') {
         if (e.detail && e.detail.source === 'widget') return;

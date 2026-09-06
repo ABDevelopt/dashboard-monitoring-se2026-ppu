@@ -1,9 +1,13 @@
 <%
-  const uploadType = activeTab || 'fasih';
-  const uploads = uploadType === 'muatan' ? muatanUploads : (uploadType === 'fasih' ? fasihUploads : slsUploads);
+  const hideMuatanUpload = (typeof hideMuatanGlobal !== 'undefined' && hideMuatanGlobal) || (typeof activeSurvey !== 'undefined' && activeSurvey !== 'se2026');
+  let uploadType = activeTab || 'fasih';
+  if (hideMuatanUpload && uploadType === 'muatan') uploadType = 'fasih';
+  if (uploadType === 'sls') uploadType = 'fasih';
+  const uploads = uploadType === 'muatan' ? muatanUploads : fasihUploads;
 %>
 <div class="fade-in">
-  <!-- TAB NAVIGATION -->
+  <!-- TAB NAVIGATION (Hanya tampil jika SE2026 yang memiliki 2 jenis upload: FASIH dan Muatan) -->
+  <% if (!hideMuatanUpload) { %>
   <div style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; flex-wrap: wrap;">
     <a href="<%= navPrefix %>/admin/upload?tab=fasih" class="btn <%= uploadType === 'fasih' ? 'btn-primary' : 'btn-secondary' %>" style="border-radius: 24px; padding: 8px 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s;">
       <i class="bi bi-file-earmark-code-fill <%= uploadType === 'fasih' ? '' : 'text-purple' %>"></i> Status FASIH
@@ -11,16 +15,14 @@
     <a href="<%= navPrefix %>/admin/upload?tab=muatan" class="btn <%= uploadType === 'muatan' ? 'btn-primary' : 'btn-secondary' %>" style="border-radius: 24px; padding: 8px 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s;">
       <i class="bi bi-people-fill <%= uploadType === 'muatan' ? '' : 'text-cyan' %>"></i> Progres Muatan
     </a>
-    <a href="<%= navPrefix %>/admin/upload?tab=sls" class="btn <%= uploadType === 'sls' ? 'btn-primary' : 'btn-secondary' %>" style="border-radius: 24px; padding: 8px 20px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s;">
-      <i class="bi bi-check2-square <%= uploadType === 'sls' ? '' : 'text-green' %>"></i> Status SLS Selesai
-    </a>
   </div>
+  <% } %>
 
 
   <div class="card">
     <div class="card-header">
       <div class="card-title">
-        <span><i class="bi bi-upload"></i> Upload File <%= uploadType === 'muatan' ? 'Progres Muatan' : (uploadType === 'fasih' ? 'Status FASIH' : 'Status SLS Selesai') %> Baru</span>
+        <span><i class="bi bi-upload"></i> Upload File <%= uploadType === 'muatan' ? 'Progres Muatan' : 'Status FASIH' %> Baru</span>
       </div>
     </div>
     
@@ -28,11 +30,11 @@
       <div class="mb-4">
         <label for="tanggal" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-calendar3"></i> Tanggal Data Rekap</label>
         <input type="date" id="tanggal" name="tanggal" required style="width: 100%; max-width: 300px; padding: 10px; font-size: 13px;" value="<%= new Date().toISOString().slice(0, 10) %>">
-        <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Pilih tanggal pelaksanaan sensus yang diwakili oleh data ini (biasanya tanggal hari ini atau kemarin).</p>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Pilih tanggal pelaksanaan pendataan/sensus yang diwakili oleh data ini (biasanya tanggal hari ini atau kemarin).</p>
       </div>
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 16px; margin-bottom: 20px;">
-        <% if (uploadType === 'muatan') { %>
+        <% if (uploadType === 'muatan' && !hideMuatanUpload) { %>
           <div>
             <label for="keluargaFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-people-fill text-cyan"></i> File Progres Keluarga (Opsional)</label>
             <div class="upload-zone" id="uploadZoneKeluarga" style="height: 140px; padding: 10px;">
@@ -52,7 +54,7 @@
               <input type="file" id="usahaFile" name="usahaFile" accept=".xlsx, .xls, .csv" style="display: none;">
             </div>
           </div>
-        <% } else if (uploadType === 'fasih') { %>
+        <% } else { %>
           <div>
             <label for="statusFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-file-earmark-code-fill text-purple"></i> File Status FASIH / Rekap Petugas</label>
             <div class="upload-zone" id="uploadZoneStatus" style="height: 140px; padding: 10px; border-color: rgba(139, 92, 246, 0.4);">
@@ -60,16 +62,6 @@
               <div class="upload-zone-title" style="font-size: 12px; font-weight: 600; color: var(--accent-purple);">Status FASIH (Excel/CSV/JSON)</div>
               <div class="upload-zone-sub" style="font-size: 10px;">atau seret ke sini (.xlsx, .xls, .csv, .json)</div>
               <input type="file" id="statusFile" name="statusFile" accept=".xlsx, .xls, .csv, .json" required style="display: none;">
-            </div>
-          </div>
-        <% } else if (uploadType === 'sls') { %>
-          <div>
-            <label for="slsFile" style="display: block; font-size: 13px; margin-bottom: 6px; color: var(--text-secondary);"><i class="bi bi-check2-square text-green"></i> File Status SLS Selesai</label>
-            <div class="upload-zone" id="uploadZoneSls" style="height: 140px; padding: 10px; border-color: rgba(34, 197, 94, 0.4);">
-              <div class="upload-zone-icon" style="font-size: 24px; margin-bottom: 4px; color: var(--accent-green);"><i class="bi bi-cloud-arrow-up"></i></div>
-              <div class="upload-zone-title" style="font-size: 12px; font-weight: 600; color: var(--accent-green);">Status SLS Selesai (Excel)</div>
-              <div class="upload-zone-sub" style="font-size: 10px;">atau seret ke sini (.xlsx, .xls)</div>
-              <input type="file" id="slsFile" name="slsFile" accept=".xlsx, .xls" required style="display: none;">
             </div>
           </div>
         <% } %>
@@ -156,7 +148,7 @@
   <div class="card mt-4">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
       <div class="card-title">
-        <span><i class="bi bi-clock-history"></i> Riwayat Upload & Histori <%= uploadType === 'muatan' ? 'Progres Muatan' : (uploadType === 'fasih' ? 'Status FASIH' : 'Status SLS') %></span>
+        <span><i class="bi bi-clock-history"></i> Riwayat Upload & Histori <%= uploadType === 'muatan' ? 'Progres Muatan' : 'Status FASIH' %></span>
       </div>
       <div style="display: flex; gap: 8px; align-items: center;">
         <% if (uploads && uploads.length > 0) { %>
@@ -197,10 +189,8 @@
                 <td class="td-primary">
                   <% if (uploadType === 'muatan') { %>
                     <div><i class="bi bi-file-earmark-excel text-cyan" style="margin-right: 4px;"></i> <%= u.filename %></div>
-                  <% } else if (uploadType === 'fasih') { %>
+                  <% } else { %>
                     <div><i class="bi bi-file-earmark-code text-purple" style="margin-right: 4px;"></i> <%= u.status_filename %></div>
-                  <% } else if (uploadType === 'sls') { %>
-                    <div><i class="bi bi-check2-square text-green" style="margin-right: 4px;"></i> <%= u.status_filename %></div>
                   <% } %>
                 </td>
                 <td><span class="badge badge-gray"><%= u.tanggal %></span></td>
@@ -210,7 +200,7 @@
                 <td class="text-center" style="display: flex; gap: 4px; justify-content: center; align-items: center;">
                   <% if (uploadType === 'muatan' && u.stored_filename) { %>
                     <a href="<%= navPrefix %>/admin/upload/download/<%= u.id %>" download class="btn btn-secondary" style="padding: 4px 8px;" title="Download File Excel Progres" aria-label="Unduh Excel Progres <%= u.filename %>"><i class="bi bi-download"></i></a>
-                  <% } else if ((uploadType === 'fasih' || uploadType === 'sls') && u.status_filename) { %>
+                  <% } else if (u.status_filename) { %>
                     <a href="<%= navPrefix %>/admin/upload/download-status/<%= u.id %>" download class="btn btn-secondary" style="padding: 4px 8px; color: var(--accent-purple); border-color: rgba(139, 92, 246, 0.3);" title="Download File Status" aria-label="Unduh File Status <%= u.status_filename %>"><i class="bi bi-download"></i></a>
                   <% } %>
                   <form action="<%= navPrefix %>/admin/upload/delete/<%= u.id %>" method="POST" onsubmit="return confirm('Yakin ingin menghapus data rekap ini?');" style="margin: 0;">
@@ -334,7 +324,6 @@
     initUploadZone('uploadZoneKeluarga', 'keluargaFile');
     initUploadZone('uploadZoneUsaha', 'usahaFile');
     initUploadZone('uploadZoneStatus', 'statusFile');
-    initUploadZone('uploadZoneSls', 'slsFile');
     initUploadZone('uploadZoneHonor', 'honorFile');
     makeTableSortable('uploadsTable');
 
@@ -393,7 +382,6 @@
     const keluargaInput = document.getElementById('keluargaFile');
     const usahaInput = document.getElementById('usahaFile');
     const statusInput = document.getElementById('statusFile');
-    const slsInput = document.getElementById('slsFile');
     const tanggalInput = document.getElementById('tanggal');
 
     function handleFileSelect(file) {
@@ -407,7 +395,6 @@
     if (keluargaInput) keluargaInput.addEventListener('change', () => { if (keluargaInput.files[0]) handleFileSelect(keluargaInput.files[0]); });
     if (usahaInput) usahaInput.addEventListener('change', () => { if (usahaInput.files[0]) handleFileSelect(usahaInput.files[0]); });
     if (statusInput) statusInput.addEventListener('change', () => { if (statusInput.files[0]) handleFileSelect(statusInput.files[0]); });
-    if (slsInput) slsInput.addEventListener('change', () => { if (slsInput.files[0]) handleFileSelect(slsInput.files[0]); });
 
     document.getElementById('uploadForm').addEventListener('submit', (e) => {
       const uploadType = '<%= uploadType %>';
@@ -418,17 +405,11 @@
           e.preventDefault();
           alert('Silakan pilih setidaknya satu file progres muatan (Keluarga atau Usaha) untuk diupload.');
         }
-      } else if (uploadType === 'fasih') {
+      } else {
         const status = document.getElementById('statusFile');
         if (!status || !status.files[0]) {
           e.preventDefault();
           alert('Silakan pilih file status FASIH untuk diupload.');
-        }
-      } else if (uploadType === 'sls') {
-        const sls = document.getElementById('slsFile');
-        if (!sls || !sls.files[0]) {
-          e.preventDefault();
-          alert('Silakan pilih file status SLS Selesai untuk diupload.');
         }
       }
     });

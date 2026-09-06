@@ -48,7 +48,10 @@
           <div>
             <label for="exportScope" class="ui-label-upper">Skope / Cakupan Kolom</label>
             <select id="exportScope" class="w-full" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary);">
-              <% const hideMuatanExport = (typeof hideMuatanGlobal !== 'undefined' && hideMuatanGlobal) || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') || (typeof isSakernas !== 'undefined' && isSakernas) || (typeof surveyConfig !== 'undefined' && !surveyConfig.showMuatanUsaha); %>
+              <% 
+                const isSe2026Export = (typeof activeSurvey !== 'undefined' ? activeSurvey === 'se2026' : (typeof surveyConfig !== 'undefined' ? surveyConfig.id === 'se2026' : true));
+                const hideMuatanExport = !isSe2026Export || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0'); 
+              %>
               <% if (!hideMuatanExport) { %>
               <option value="all" selected>Muatan + FASIH (Semua Kolom)</option>
               <option value="assignment">Assignment FASIH (Tugas Petugas)</option>
@@ -236,6 +239,7 @@
       // Fasih
       'Target Fasih Awal': { type: 'Integer', desc: 'Target muatan SLS pada aplikasi FASIH di awal kegiatan sensus.', src: 'Master SLS' },
       'Target FASIH': { type: 'Integer', desc: 'Jumlah dokumen aktif/target pengerjaan pada aplikasi FASIH saat ini (mengikuti setelan target).', src: 'Sistem/Upload' },
+      'FASIH Open': { type: 'Integer', desc: 'Jumlah alokasi dokumen di aplikasi FASIH yang belum disentuh (belum dibuat draft).', src: 'Formulasi Sistem' },
       'FASIH Draft': { type: 'Integer', desc: 'Jumlah dokumen di aplikasi FASIH yang baru tersimpan sebagai Draft oleh petugas.', src: 'Aplikasi FASIH' },
       'FASIH Submitted': { type: 'Integer', desc: 'Jumlah dokumen di aplikasi FASIH yang sudah disubmit oleh PCL ke pengawas.', src: 'Aplikasi FASIH' },
       'FASIH Approved': { type: 'Integer', desc: 'Jumlah dokumen di aplikasi FASIH yang disetujui (Approved) oleh PML.', src: 'Aplikasi FASIH' },
@@ -341,7 +345,7 @@
         ];
         if (scope === 'all' || scope === 'assignment' || scope === 'fasih') {
           if (scope === 'all' || scope === 'fasih') columns.push('Target Fasih Awal');
-          columns.push('Target FASIH', 'FASIH Draft', 'FASIH Submitted', 'FASIH Approved', 'FASIH Rejected', 'Capaian FASIH (%)');
+          columns.push('Target FASIH', 'FASIH Open', 'FASIH Draft', 'FASIH Submitted', 'FASIH Approved', 'FASIH Rejected', 'Capaian FASIH (%)');
           if (scope === 'all' || scope === 'fasih') columns.push('Target Static', 'Target Upload');
         }
         if (scope === 'all' || scope === 'muatan') {
@@ -356,7 +360,7 @@
         // Petugas
         columns = ['Nama PCL', 'PML (Pengawas)', 'Korlap (Koordinator)', 'Kecamatan', 'Total Sub-SLS'];
         if (scope === 'all' || scope === 'fasih') {
-          columns.push('Target FASIH', 'FASIH Draft', 'FASIH Submitted', 'FASIH Approved', 'FASIH Rejected', 'Capaian FASIH (%)');
+          columns.push('Target FASIH', 'FASIH Open', 'FASIH Draft', 'FASIH Submitted', 'FASIH Approved', 'FASIH Rejected', 'Capaian FASIH (%)');
         }
         if (scope === 'all' || scope === 'muatan') {
           columns.push('Target Muatan', 'Realisasi Muatan', 'Capaian Muatan (%)');

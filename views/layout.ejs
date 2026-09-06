@@ -73,7 +73,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin=""></script>
   <style>
     <%- typeof customStyles !== 'undefined' ? customStyles : '' %>
-    <% const hideMuatanGlobal = (typeof settings !== 'undefined' && settings.show_progres_muatan === '0') || (typeof isSakernas !== 'undefined' && isSakernas) || (typeof activeSurvey !== 'undefined' && activeSurvey.startsWith('sakernas')) || (typeof surveyConfig !== 'undefined' && !surveyConfig.showMuatanUsaha); %>
+    <% const isSe2026Global = (typeof activeSurvey !== 'undefined' ? activeSurvey === 'se2026' : (typeof surveyConfig !== 'undefined' ? surveyConfig.id === 'se2026' : true)); %>
+    <% const hideMuatanGlobal = !isSe2026Global || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0'); %>
     <% if (hideMuatanGlobal) { %>
       .muatan-col, .muatan-only, [data-metric="muatan"] { display: none !important; }
     <% } %>
@@ -125,6 +126,21 @@
       if (e.stopPropagation) e.stopPropagation();
     }
     const dropdown = document.getElementById('targetSelectorDropdown');
+    if (!dropdown) return;
+    const isOpen = dropdown.classList.contains('is-open');
+    document.querySelectorAll('.topbar-dropdown').forEach(d => {
+      if (d !== dropdown) d.classList.remove('is-open');
+    });
+    dropdown.classList.toggle('is-open', !isOpen);
+  };
+
+  // Fail-safe Survey Switcher Dropdown
+  window.toggleSurveySwitcherDropdown = function(e) {
+    if (e) {
+      if (e.preventDefault) e.preventDefault();
+      if (e.stopPropagation) e.stopPropagation();
+    }
+    const dropdown = document.getElementById('surveySwitcherDropdown');
     if (!dropdown) return;
     const isOpen = dropdown.classList.contains('is-open');
     document.querySelectorAll('.topbar-dropdown').forEach(d => {
@@ -211,6 +227,9 @@
     <% } else { %>
       <p style="font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 4px;">Penajam Paser Utara</p>
     <% } %>
+    <a href="/surveys" class="no-pjax" data-no-pjax="true" title="Buka Katalog Sensus & Survei" style="margin-top: 8px; font-size: 11px; padding: 4px 10px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; text-decoration: none; color: var(--text-secondary); border: 1px solid var(--border); background: var(--bg-card); transition: all 0.2s;">
+      <i class="bi bi-arrow-left-right" style="color: var(--accent-primary);"></i> Ganti Kegiatan
+    </a>
   </div>
 
   <div class="sidebar-upload-info" style="margin: 10px 14px; padding: 9px 12px; background: rgba(var(--accent-rgb), 0.04); border: 1px solid var(--border); border-radius: 10px; font-size: 11px; display: <%= (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed && ((!hideMuatanGlobal && latestUploadsDetailed.muatan) || latestUploadsDetailed.fasih)) ? 'flex' : 'none' %>; flex-direction: column; gap: 6px;">
@@ -306,26 +325,34 @@
     <% } %>
 
     <!-- Section 3: Drilldown Petugas -->
-    <% if (typeof settings !== 'undefined' && (settings.page_korlap === '1' || settings.page_pml === '1' || settings.page_pcl === '1')) { %>
+    <% 
+      const isPageEnabledInSurvey = (pageName) => !surveyConfig || !surveyConfig.enabledPages || surveyConfig.enabledPages.includes(pageName);
+      const showKorlap = (typeof settings !== 'undefined' && settings.page_korlap === '1') && 
+                         (typeof surveyConfig === 'undefined' || surveyConfig.hasKorlap !== false) &&
+                         isPageEnabledInSurvey('korlap');
+      const showPml = typeof settings !== 'undefined' && settings.page_pml === '1' && isPageEnabledInSurvey('pml');
+      const showPcl = typeof settings !== 'undefined' && settings.page_pcl === '1' && isPageEnabledInSurvey('pcl');
+    %>
+    <% if (showKorlap || showPml || showPcl) { %>
     <div class="nav-section-wrapper <%= ['korlap', 'pml', 'pcl'].includes(activePage) ? 'has-active is-open' : '' %>" data-section="petugas">
       <div class="nav-section-header" role="button" tabindex="0">
         <span>Drilldown Petugas</span>
         <i class="bi bi-chevron-down nav-section-chevron"></i>
       </div>
       <div class="nav-section-content">
-        <% if (settings.page_korlap === '1') { %>
+        <% if (showKorlap) { %>
         <a href="<%= navPrefix %>/korlap" class="nav-item <%= activePage === 'korlap' ? 'active' : '' %>">
           <span class="nav-icon icon-purple"><i class="bi bi-person-workspace"></i></span>
           <span class="nav-label">Korlap</span>
         </a>
         <% } %>
-        <% if (settings.page_pml === '1') { %>
+        <% if (showPml) { %>
         <a href="<%= navPrefix %>/pml" class="nav-item <%= activePage === 'pml' ? 'active' : '' %>">
           <span class="nav-icon icon-blue"><i class="bi bi-clipboard2-data"></i></span>
           <span class="nav-label">PML</span>
         </a>
         <% } %>
-        <% if (settings.page_pcl === '1') { %>
+        <% if (showPcl) { %>
         <a href="<%= navPrefix %>/pcl" class="nav-item <%= activePage === 'pcl' ? 'active' : '' %>">
           <span class="nav-icon icon-cyan"><i class="bi bi-person-gear"></i></span>
           <span class="nav-label"><%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'PPL' : 'PCL' %></span>
@@ -336,32 +363,38 @@
     <% } %>
 
     <!-- Section 4: Analisis Kinerja -->
-    <% if (typeof settings !== 'undefined' && (settings.page_performa === '1' || settings.page_leaderboard === '1' || settings.page_performatrendah === '1')) { %>
+    <% 
+      const showPerforma = (typeof settings !== 'undefined' && settings.page_performa === '1') && isPageEnabledInSurvey('performa');
+      const showHarian = (typeof settings !== 'undefined' && settings.page_performa === '1') && isPageEnabledInSurvey('harian');
+      const showLeaderboard = (typeof settings !== 'undefined' && settings.page_leaderboard === '1') && isPageEnabledInSurvey('leaderboard');
+      const showPerformaRendah = (typeof settings !== 'undefined' && settings.page_performatrendah === '1') && isPageEnabledInSurvey('performa');
+    %>
+    <% if (showPerforma || showHarian || showLeaderboard || showPerformaRendah) { %>
     <div class="nav-section-wrapper <%= ['performa', 'harian', 'leaderboard', 'performa-terendah'].includes(activePage) ? 'has-active is-open' : '' %>" data-section="analisis">
       <div class="nav-section-header" role="button" tabindex="0">
         <span>Analisis Kinerja</span>
         <i class="bi bi-chevron-down nav-section-chevron"></i>
       </div>
       <div class="nav-section-content">
-        <% if (settings.page_performa === '1') { %>
+        <% if (showPerforma) { %>
         <a href="<%= navPrefix %>/performa" class="nav-item <%= activePage === 'performa' ? 'active' : '' %>">
           <span class="nav-icon icon-emerald"><i class="bi bi-speedometer2"></i></span>
           <span class="nav-label">Performa Petugas</span>
         </a>
         <% } %>
-        <% if (settings.page_performa === '1') { %>
+        <% if (showHarian) { %>
         <a href="<%= navPrefix %>/harian" class="nav-item <%= activePage === 'harian' ? 'active' : '' %>">
           <span class="nav-icon icon-indigo"><i class="bi bi-calendar3"></i></span>
           <span class="nav-label">Progres Harian</span>
         </a>
         <% } %>
-        <% if (settings.page_leaderboard === '1') { %>
+        <% if (showLeaderboard) { %>
         <a href="<%= navPrefix %>/leaderboard" class="nav-item <%= activePage === 'leaderboard' ? 'active' : '' %>">
           <span class="nav-icon icon-amber"><i class="bi bi-trophy"></i></span>
           <span class="nav-label">Performa Terbaik</span>
         </a>
         <% } %>
-        <% if (settings.page_performatrendah === '1') { %>
+        <% if (showPerformaRendah) { %>
         <a href="<%= navPrefix %>/performa-terendah" class="nav-item <%= activePage === 'performa-terendah' ? 'active' : '' %>">
           <span class="nav-icon icon-red"><i class="bi bi-graph-down"></i></span>
           <span class="nav-label">Performa Terendah</span>
@@ -373,9 +406,9 @@
 
     <!-- Section 5: Evaluasi & Kualitas -->
     <% 
-      const isSakernasLayout = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
-      const showAnomali = !isSakernasLayout && typeof settings !== 'undefined' && settings.page_deteksianomali === '1';
-      const showEarlyWarning = typeof settings !== 'undefined' && settings.page_earlywarning === '1';
+      const isSe2026Layout = (typeof activeSurvey !== 'undefined' ? activeSurvey === 'se2026' : (typeof surveyConfig !== 'undefined' ? surveyConfig.id === 'se2026' : false));
+      const showAnomali = isSe2026Layout && typeof settings !== 'undefined' && settings.page_deteksianomali === '1' && isPageEnabledInSurvey('deteksi-anomali');
+      const showEarlyWarning = typeof settings !== 'undefined' && settings.page_earlywarning === '1' && isPageEnabledInSurvey('earlywarning');
     %>
     <% if (showEarlyWarning || showAnomali) { %>
     <div class="nav-section-wrapper <%= ['earlywarning', 'deteksi-anomali'].includes(activePage) ? 'has-active is-open' : '' %>" data-section="evaluasi">
@@ -422,9 +455,9 @@
 
     <!-- Section Admin: Administrasi & Sistem -->
     <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-    <div class="nav-section-wrapper <%= ['admin-menu', 'upload', 'upload-muatan', 'upload-fasih', 'upload-sls', 'master', 'users', 'petugas-email', 'settings', 'chatbot-settings', 'whatsapp', 'settings-backup'].includes(activePage) ? 'has-active is-open' : '' %>" data-section="admin">
+    <div class="nav-section-wrapper <%= ['admin-menu', 'upload', 'upload-muatan', 'upload-fasih', 'master', 'users', 'petugas-email', 'settings', 'chatbot-settings', 'whatsapp', 'settings-backup'].includes(activePage) ? 'has-active is-open' : '' %>" data-section="admin">
       <div class="nav-section-header" role="button" tabindex="0">
-        <span>Administrasi &amp; Sistem</span>
+        <span>Admin Panel</span>
         <i class="bi bi-chevron-down nav-section-chevron"></i>
       </div>
       <div class="nav-section-content">
@@ -432,8 +465,9 @@
           <span class="nav-icon icon-purple"><i class="bi bi-grid-fill"></i></span>
           <span class="nav-label">Menu Utama Admin</span>
         </a>
-        <!-- Collapsible Item: Upload Data -->
-        <% const isUploadActive = (activePage === 'upload' || ['upload-muatan', 'upload-fasih', 'upload-sls'].includes(activePage)); %>
+        <% if (!hideMuatanGlobal) { %>
+        <!-- Collapsible Item: Upload Data (SE2026: FASIH + Muatan) -->
+        <% const isUploadActive = (activePage === 'upload' || ['upload-muatan', 'upload-fasih'].includes(activePage)); %>
         <div class="nav-sub-wrapper <%= isUploadActive ? 'is-open' : 'is-collapsed' %>" id="uploadNavSubWrapper" style="margin-bottom: 2px;">
           <div class="nav-item nav-sub-header <%= isUploadActive ? 'active' : '' %>" onclick="toggleUploadSubMenu(event)" role="button" tabindex="0" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -452,12 +486,15 @@
               <span class="nav-icon icon-cyan"><i class="bi bi-people-fill"></i></span>
               <span class="nav-label">Progres Muatan</span>
             </a>
-            <a href="<%= navPrefix %>/admin/upload?tab=sls" class="nav-item <%= (activePage === 'upload' && currentUploadTab === 'sls') || activePage === 'upload-sls' ? 'active' : '' %>" style="font-size: 12.5px; padding: 7px 10px;">
-              <span class="nav-icon icon-emerald"><i class="bi bi-check2-square"></i></span>
-              <span class="nav-label">Status SLS Selesai</span>
-            </a>
           </div>
         </div>
+        <% } else { %>
+        <!-- Single Item: Upload Status FASIH (Survei Non-SE2026: Murni FASIH) -->
+        <a href="<%= navPrefix %>/admin/upload?tab=fasih" class="nav-item <%= activePage === 'upload' || activePage === 'upload-fasih' ? 'active' : '' %>">
+          <span class="nav-icon icon-amber"><i class="bi bi-cloud-arrow-up-fill"></i></span>
+          <span class="nav-label">Upload Status FASIH</span>
+        </a>
+        <% } %>
         <a href="<%= navPrefix %>/admin/master" class="nav-item <%= activePage === 'master' ? 'active' : '' %>">
           <span class="nav-icon icon-cyan"><i class="bi bi-database-fill-gear"></i></span>
           <span class="nav-label">Kelola Master Data</span>
@@ -569,7 +606,7 @@
 
 <%# MODERN MOBILE BOTTOM QUICK-DOCK %>
 <nav class="bottom-nav" aria-label="Mobile Navigation">
-  <a href="/" id="bottomNavHomeBtn" class="bottom-nav-item <%= (typeof activePage !== 'undefined' && (activePage === 'overview' || activePage === 'home')) ? 'active' : '' %>">
+  <a href="<%= (typeof navPrefix !== 'undefined' && navPrefix) ? navPrefix + '/' : '/' %>" id="bottomNavHomeBtn" class="bottom-nav-item <%= (typeof activePage !== 'undefined' && (activePage === 'overview' || activePage === 'home')) ? 'active' : '' %>">
     <i class="bi bi-house-door"></i>
     <span>Home</span>
   </a>
@@ -579,11 +616,11 @@
   </a>
   <a href="<%= navPrefix %>/agent" id="bottomNavAgentBtn" class="bottom-nav-item <%= (typeof activePage !== 'undefined' && activePage === 'agent') ? 'active' : '' %>">
     <i class="bi bi-robot"></i>
-    <span>AI Agent</span>
+    <span>AI Chat</span>
   </a>
   <a href="<%= navPrefix %>/pcl" id="bottomNavPetugasBtn" class="bottom-nav-item <%= (typeof activePage !== 'undefined' && ['pcl', 'pml', 'korlap', 'performa', 'leaderboard', 'performa-terendah'].includes(activePage)) ? 'active' : '' %>" aria-label="Halaman Petugas">
     <i class="bi bi-people"></i>
-    <span>Petugas</span>
+    <span><%= (typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas')) ? 'PPL' : 'Petugas' %></span>
   </a>
   <button id="bottomNavMenuBtn" class="bottom-nav-item <%= (typeof activePage !== 'undefined' && ['earlywarning', 'deteksi-anomali', 'harian', 'help', 'admin-menu', 'export', 'kecamatan', 'subsls', 'kipp', 'pbi', 'master', 'settings'].includes(activePage)) ? 'active' : '' %>" aria-label="Buka Menu Lengkap">
     <i class="bi bi-grid"></i>
@@ -648,6 +685,52 @@
         </div>
       </div>
 
+      <!-- Survey Switcher Selector -->
+      <div class="topbar-dropdown-wrapper" id="surveySwitcherWrapper">
+        <button class="btn btn-secondary topbar-action-btn no-pjax" id="surveySwitcherBtn" title="Pilih Modul Sensus / Survei" aria-label="Pilih Modul Sensus / Survei" onclick="window.toggleSurveySwitcherDropdown(event)">
+          <i class="bi <%= (typeof surveyConfig !== 'undefined' && surveyConfig.categoryIcon) ? surveyConfig.categoryIcon : 'bi-layers-fill' %>" style="color: var(--accent-primary);"></i>
+          <span class="topbar-action-label" style="font-weight: 700; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= (typeof surveyConfig !== 'undefined' && surveyConfig.shortName) ? surveyConfig.shortName : 'SE2026' %></span>
+          <i class="bi bi-chevron-down topbar-chevron"></i>
+        </button>
+        <div id="surveySwitcherDropdown" class="topbar-dropdown topbar-dropdown--right" style="min-width: 280px; padding: 6px 0;">
+          <div style="padding: 8px 14px 6px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border);">
+            Pilih Modul Kegiatan
+          </div>
+          <div style="display: flex; flex-direction: column; padding: 4px 6px; gap: 2px;">
+            <a href="/" class="survey-switcher-item <%= activeSurvey === 'se2026' ? 'active' : '' %>" data-no-pjax="true" style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.15s; <%= activeSurvey === 'se2026' ? 'background: rgba(249, 115, 22, 0.12); font-weight: 700;' : '' %>">
+              <span style="width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: rgba(249, 115, 22, 0.15); color: #f97316; flex-shrink: 0;"><i class="bi bi-shop"></i></span>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 12.5px; line-height: 1.2; font-weight: 700;">SE2026 PPU</div>
+                <div style="font-size: 10.5px; color: var(--text-muted); line-height: 1.2;">Sensus Ekonomi 2026</div>
+              </div>
+              <span class="badge" style="background: rgba(249, 115, 22, 0.15); color: #ea580c; font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Sensus</span>
+            </a>
+            <a href="/sakernas-pemutakhiran/" class="survey-switcher-item <%= activeSurvey === 'sakernas-pemutakhiran' ? 'active' : '' %>" data-no-pjax="true" style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.15s; <%= activeSurvey === 'sakernas-pemutakhiran' ? 'background: rgba(16, 185, 129, 0.12); font-weight: 700;' : '' %>">
+              <span style="width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: rgba(16, 185, 129, 0.15); color: #10b981; flex-shrink: 0;"><i class="bi bi-clipboard-check-fill"></i></span>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 12.5px; line-height: 1.2; font-weight: 700;">Sakernas Listing</div>
+                <div style="font-size: 10.5px; color: var(--text-muted); line-height: 1.2;">Pemutakhiran Rumah Tangga</div>
+              </div>
+              <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Survei</span>
+            </a>
+            <a href="/sakernas-pendataan/" class="survey-switcher-item <%= activeSurvey === 'sakernas-pendataan' ? 'active' : '' %>" data-no-pjax="true" style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.15s; <%= activeSurvey === 'sakernas-pendataan' ? 'background: rgba(37, 99, 235, 0.12); font-weight: 700;' : '' %>">
+              <span style="width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: rgba(37, 99, 235, 0.15); color: #2563eb; flex-shrink: 0;"><i class="bi bi-people-fill"></i></span>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 12.5px; line-height: 1.2; font-weight: 700;">Sakernas CAPI</div>
+                <div style="font-size: 10.5px; color: var(--text-muted); line-height: 1.2;">Pendataan Sampel Rumah Tangga</div>
+              </div>
+              <span class="badge" style="background: rgba(37, 99, 235, 0.15); color: #2563eb; font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Survei</span>
+            </a>
+          </div>
+          <div style="border-top: 1px solid var(--border); margin-top: 4px; padding: 6px 8px 2px;">
+            <a href="/surveys" class="survey-switcher-item" data-no-pjax="true" style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; text-decoration: none; color: var(--text-secondary); font-size: 12px; font-weight: 600;">
+              <i class="bi bi-grid-3x3-gap-fill" style="color: var(--accent-primary);"></i>
+              <span>Buka Portal Induk Semua Survei</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
       <!-- Target Mode Selector -->
       <div class="topbar-dropdown-wrapper" id="targetWrapper">
         <button class="btn btn-secondary topbar-action-btn" id="targetSelectorBtn" title="Ubah Mode Target" aria-label="Ubah Mode Target" onclick="window.toggleTargetDropdown(event)">
@@ -663,6 +746,7 @@
               <option value="fasih-sm" <%= settings.target_fasih_mode === 'fasih-sm' ? 'selected' : '' %>>FASIH-SM</option>
             </select>
           </div>
+          <% if (!hideMuatanGlobal) { %>
           <div class="topbar-dropdown-section topbar-dropdown-section--bordered">
             <div class="topbar-dropdown-section-label"><i class="bi bi-box-seam" style="color:var(--accent-cyan)"></i> Target Muatan</div>
             <select id="publicTargetMuatanMode" class="topbar-select" aria-label="Mode Target Muatan">
@@ -670,6 +754,7 @@
               <option value="honor" <%= settings.target_muatan_mode === 'honor' ? 'selected' : '' %>>Target Honor</option>
             </select>
           </div>
+          <% } %>
         </div>
       </div>
 
@@ -830,10 +915,11 @@
 
 <script>
   (function() {
+    let isMuatanEnabled = <%= !hideMuatanGlobal %>;
     <% if (typeof latestUploadsDetailed !== 'undefined' && latestUploadsDetailed) { %>
-      let latestMuatanDate = <%- latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.created_at ? JSON.stringify(latestUploadsDetailed.muatan.created_at) : 'null' %>;
+      let latestMuatanDate = <%- (!hideMuatanGlobal && latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.created_at) ? JSON.stringify(latestUploadsDetailed.muatan.created_at) : 'null' %>;
       let latestFasihDate = <%- latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.created_at ? JSON.stringify(latestUploadsDetailed.fasih.created_at) : 'null' %>;
-      let latestMuatanFile = <%- latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.filename ? JSON.stringify(latestUploadsDetailed.muatan.filename) : 'null' %>;
+      let latestMuatanFile = <%- (!hideMuatanGlobal && latestUploadsDetailed.muatan && latestUploadsDetailed.muatan.filename) ? JSON.stringify(latestUploadsDetailed.muatan.filename) : 'null' %>;
       let latestFasihFile = <%- latestUploadsDetailed.fasih && latestUploadsDetailed.fasih.status_filename ? JSON.stringify(latestUploadsDetailed.fasih.status_filename) : 'null' %>;
     <% } else { %>
       let latestMuatanDate = null;
@@ -1094,7 +1180,7 @@
         let shouldShowMuatan = false;
         let shouldShowFasih = false;
 
-        if (latestMuatanDate) {
+        if (isMuatanEnabled && latestMuatanDate) {
           const muatanTime = new Date(latestMuatanDate.endsWith('Z') ? latestMuatanDate : latestMuatanDate.replace(' ', 'T') + 'Z');
           if (!isNaN(muatanTime.getTime()) && (now - muatanTime) < oneDayMs) {
             shouldShowMuatan = true;
@@ -1112,7 +1198,7 @@
           }
         }
 
-        if (shouldShowMuatan) {
+        if (isMuatanEnabled && shouldShowMuatan) {
           showNotification = true;
           updates.push({
             type: 'muatan',
@@ -1133,7 +1219,7 @@
           });
         }
       } else {
-        if (latestMuatanDate && storedMuatan !== latestMuatanDate) {
+        if (isMuatanEnabled && latestMuatanDate && storedMuatan !== latestMuatanDate) {
           showNotification = true;
           updates.push({
             type: 'muatan',
@@ -1169,7 +1255,7 @@
           let hasNewUpdate = false;
           let newUpdates = [];
 
-          if (data.muatan && data.muatan.created_at && data.muatan.created_at !== notifiedMuatanDate) {
+          if (isMuatanEnabled && data.muatan && data.muatan.created_at && data.muatan.created_at !== notifiedMuatanDate) {
             hasNewUpdate = true;
             newUpdates.push({
               type: 'muatan',
@@ -1246,7 +1332,7 @@
           const storedMuatan = localStorage.getItem('last_seen_muatan_date');
           const storedFasih = localStorage.getItem('last_seen_fasih_date');
 
-          let isMuatanNew = latestMuatanDate && storedMuatan !== latestMuatanDate;
+          let isMuatanNew = isMuatanEnabled && latestMuatanDate && storedMuatan !== latestMuatanDate;
           let isFasihNew = latestFasihDate && storedFasih !== latestFasihDate;
 
           const bellBadges = document.querySelectorAll('#notificationBellBadge, #notificationBellBadgeAgent, .notification-bell-badge');
@@ -1261,7 +1347,7 @@
 
           // Build list items
           let html = '';
-          if (latestMuatanDate) {
+          if (isMuatanEnabled && latestMuatanDate) {
             html += `
               <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; min-width: 0;">
                 <span style="font-weight: 700; font-size: 10px; color: var(--accent-cyan); display: flex; align-items: center; gap: 6px;">
@@ -1285,14 +1371,14 @@
               </div>
             `;
           }
-          if (!latestMuatanDate && !latestFasihDate) {
+          if ((!isMuatanEnabled || !latestMuatanDate) && !latestFasihDate) {
             html = '<div style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 12px 0;">Belum ada riwayat update.</div>';
           }
           bellLists.forEach(list => list.innerHTML = html);
         }
 
         function markAllAsRead() {
-          if (latestMuatanDate) localStorage.setItem('last_seen_muatan_date', latestMuatanDate);
+          if (isMuatanEnabled && latestMuatanDate) localStorage.setItem('last_seen_muatan_date', latestMuatanDate);
           if (latestFasihDate) localStorage.setItem('last_seen_fasih_date', latestFasihDate);
           updateBellStateInternal();
         }

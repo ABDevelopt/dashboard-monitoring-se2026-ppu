@@ -365,9 +365,11 @@ router.post('/settings/target-mode', (req, res) => {
 // Endpoint untuk cek status update upload terbaru
 router.get('/latest-updates', (req, res) => {
   const { getLatestUploadsDetailed } = require('../database');
-  const details = getLatestUploadsDetailed();
+  const activeSurvey = res.locals.activeSurvey || req.query.survey || 'se2026';
+  const details = getLatestUploadsDetailed(activeSurvey);
+  const isCensus = activeSurvey === 'se2026';
   res.json({
-    muatan: details.muatan ? {
+    muatan: (isCensus && details.muatan) ? {
       id: details.muatan.id,
       created_at: details.muatan.created_at,
       tanggal: details.muatan.tanggal,
@@ -405,13 +407,8 @@ router.get('/early-warning-summary', (req, res) => {
   });
 });
 
-// AI Insights memory cache
-let aiInsightsCache = {
-  uploadId: null,
-  key: null,
-  insights: null,
-  timestamp: 0
-};
+// AI Insights memory cache partitioned by surveyId
+let aiInsightsCache = {};
 
 // Helper function to call Gemini / LLM directly (multi-key & multi-provider fallback)
 async function callGeminiDirect(prompt, settings = {}) {
@@ -440,10 +437,11 @@ async function callGeminiDirect(prompt, settings = {}) {
   }
 
   const modelName = settings.gemini_model || 'gemini-3.5-flash';
-  const TIMEOUT_MS = 12000; // Increased to 12s for reliable hosting connection
+  const TIMEOUT_MS = 2500;
+  const keysAttempted = keysToTry.slice(0, 2);
 
   // Try Gemini keys
-  for (const apiKey of keysToTry) {
+  for (const apiKey of keysAttempted) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
     const requestBody = JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }]
@@ -474,14 +472,18 @@ async function callGeminiDirect(prompt, settings = {}) {
         console.warn(`[AI Insights] Gemini API key (ending ...${apiKey.slice(-4)}) status ${response.status}: ${errText}`);
       }
     } catch (fetchErr) {
+      if (fetchErr.name === 'AbortError' || (fetchErr.message && fetchErr.message.includes('abort'))) {
+        console.warn(`[AI Insights] Gemini key (...${apiKey.slice(-4)}) timed out after ${TIMEOUT_MS}ms.`);
+        continue;
+      }
       console.warn(`[AI Insights] Fetch attempt failed for Gemini key (...${apiKey.slice(-4)}): ${fetchErr.message}, trying curl fallback...`);
       try {
         const curlRes = await new Promise((resolve, reject) => {
           const { spawn } = require('child_process');
           const child = spawn('curl', [
             '-s', '-X', 'POST',
-            '--connect-timeout', '8',
-            '-m', '10',
+            '--connect-timeout', '2',
+            '-m', '3',
             '-H', 'Content-Type: application/json',
             '-d', requestBody,
             url
@@ -518,10 +520,12 @@ async function callGeminiDirect(prompt, settings = {}) {
 
 // Rule-based fallback summary insights generator (offline and quota-exhausted guard)
 function generateSimulatedInsights(payload) {
+  const unitName = payload.unit_name || 'dokumen';
+  const officerRole = payload.officer_role || 'petugas';
   let parts = [];
   
   if (payload.show_fasih && payload.fasih) {
-    parts.push(`realisasi pengisian Dokumen FASIH saat ini mencatat pencapaian sebesar **${payload.fasih.persen}%** (${payload.fasih.realisasi} dari target ${payload.fasih.target} dokumen, mode ${payload.target_fasih_mode})`);
+    parts.push(`realisasi pengisian Dokumen FASIH saat ini mencatat pencapaian sebesar **${payload.fasih.persen}%** (${payload.fasih.realisasi} dari target ${payload.fasih.target} ${unitName}, mode ${payload.target_fasih_mode})`);
   }
 
   if (payload.show_muatan && payload.muatan) {
@@ -531,9 +535,9 @@ function generateSimulatedInsights(payload) {
   let ewText = '';
   if (payload.show_early_warning && payload.early_warning) {
     if (payload.early_warning.slow_progress_pcl > 0) {
-      ewText = `terdeteksi **${payload.early_warning.slow_progress_pcl} PCL berkinerja lambat** yang memerlukan evaluasi lapangan`;
+      ewText = `terdeteksi **${payload.early_warning.slow_progress_pcl} ${officerRole} berkinerja lambat** yang memerlukan evaluasi lapangan`;
     } else {
-      ewText = `kinerja petugas pencacah relatif stabil tanpa adanya indikasi petugas berkinerja lambat`;
+      ewText = `kinerja ${officerRole} relatif stabil tanpa adanya indikasi petugas berkinerja lambat`;
     }
   }
 
@@ -564,33 +568,45 @@ function generateSimulatedInsights(payload) {
 router.get('/ai-insights', async (req, res) => {
   const uploadId = res.locals.uploadId;
   const settings = res.locals.settings || {};
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const surveyConfig = res.locals.surveyConfig || {};
+  const surveyName = surveyConfig.name || 'Sensus Ekonomi 2026';
+  const surveyCategory = surveyConfig.category === 'survei' ? 'Survei' : 'Sensus';
+  const officerRole = surveyConfig.officerRole || 'PCL';
+  const unitName = surveyConfig.unitName || 'dokumen';
 
   if (!uploadId) {
     return res.json({ success: false, error: 'Belum ada data upload' });
   }
 
   // Cek visibilitas data sesuai pengaturan admin
-  const showMuatan = settings.show_progres_muatan !== '0' && settings.overview_muatan !== '0';
+  const showMuatan = settings.show_progres_muatan !== '0' && settings.overview_muatan !== '0' && (surveyConfig.showMuatanUsaha !== false);
   const showFasih = settings.overview_fasih !== '0';
   const showKecamatan = settings.overview_kecamatan !== '0';
   const showEarlyWarning = settings.page_earlywarning !== '0';
 
-  const settingsKey = `${uploadId}_m${showMuatan ? 1 : 0}_f${showFasih ? 1 : 0}_k${showKecamatan ? 1 : 0}_e${showEarlyWarning ? 1 : 0}_tm${settings.target_muatan_mode}_tf${settings.target_fasih_mode}`;
+  const settingsKey = `${activeSurvey}_${uploadId}_m${showMuatan ? 1 : 0}_f${showFasih ? 1 : 0}_k${showKecamatan ? 1 : 0}_e${showEarlyWarning ? 1 : 0}_tm${settings.target_muatan_mode}_tf${settings.target_fasih_mode}`;
 
   // Cek cache jika bukan force refresh
   const forceRefresh = req.query.refresh === 'true';
-  if (!forceRefresh && aiInsightsCache.uploadId === uploadId && aiInsightsCache.key === settingsKey && aiInsightsCache.insights) {
-    return res.json({ success: true, insights: aiInsightsCache.insights, fromCache: true });
+  const cached = aiInsightsCache[activeSurvey];
+  if (!forceRefresh && cached && cached.uploadId === uploadId && cached.key === settingsKey && cached.insights) {
+    return res.json({ success: true, insights: cached.insights, fromCache: true });
   }
 
   try {
     const { getOverviewSummary, getKecamatanStats, getEarlyWarning } = require('../database');
-    const summary = getOverviewSummary(uploadId, settings);
+    const summary = getOverviewSummary(uploadId, settings, activeSurvey);
     if (!summary) {
       return res.json({ success: false, error: 'Gagal memuat ringkasan progres data' });
     }
 
     const payload = {
+      survey_id: activeSurvey,
+      survey_name: surveyName,
+      survey_category: surveyCategory,
+      officer_role: officerRole,
+      unit_name: unitName,
       tanggal_data: summary.tanggal_data || 'Tidak diketahui',
       target_fasih_mode: settings.target_fasih_mode === 'fasih-sm' ? 'Target FASIH-SM' : 'Target Statis',
       target_muatan_mode: settings.target_muatan_mode === 'honor' ? 'Target Honor' : 'Target Prelist',
@@ -621,7 +637,7 @@ router.get('/ai-insights', async (req, res) => {
     }
 
     if (showEarlyWarning) {
-      const ew = getEarlyWarning(uploadId);
+      const ew = getEarlyWarning(uploadId, {}, settings, activeSurvey);
       payload.early_warning = {
         zero_progress_pcl: ew.zeroPcl ? ew.zeroPcl.length : 0,
         slow_progress_pcl: ew.slowPcl ? ew.slowPcl.length : 0,
@@ -631,7 +647,7 @@ router.get('/ai-insights', async (req, res) => {
     }
 
     if (showKecamatan) {
-      const kecs = getKecamatanStats(uploadId, settings);
+      const kecs = getKecamatanStats(uploadId, settings, activeSurvey);
       payload.kecamatan_stats = (kecs || []).map(k => {
         const item = {
           nama: k.kecamatan,
@@ -650,7 +666,7 @@ router.get('/ai-insights', async (req, res) => {
     promptSections.push(`DATA PROGRES TERKINI (Tanggal Rekap Data: ${payload.tanggal_data}):`);
     
     if (showFasih && payload.fasih) {
-      promptSections.push(`- Dokumen FASIH (${payload.target_fasih_mode} - Target vs Realisasi): ${payload.fasih.realisasi} / ${payload.fasih.target} (${payload.fasih.persen}%)`);
+      promptSections.push(`- Dokumen FASIH (${payload.target_fasih_mode} - Target vs Realisasi): ${payload.fasih.realisasi} / ${payload.fasih.target} ${unitName} (${payload.fasih.persen}%)`);
       promptSections.push(`  - Rincian Dokumen FASIH: Draft: ${payload.fasih.draft}, Submitted: ${payload.fasih.submitted}, Approved: ${payload.fasih.approved}, Rejected: ${payload.fasih.rejected}`);
     }
 
@@ -660,9 +676,9 @@ router.get('/ai-insights', async (req, res) => {
 
     if (showEarlyWarning && payload.early_warning) {
       promptSections.push(`- Early Warning Petugas:`);
-      promptSections.push(`  - Petugas berkinerja lambat (Slow Progress): ${payload.early_warning.slow_progress_pcl} PCL`);
-      promptSections.push(`  - Petugas dengan progres stagnan: ${payload.early_warning.stagnant_pcl} PCL`);
-      promptSections.push(`  - Proyeksi target rendah: ${payload.early_warning.low_projected_pcl} PCL`);
+      promptSections.push(`  - Petugas berkinerja lambat (Slow Progress): ${payload.early_warning.slow_progress_pcl} ${officerRole}`);
+      promptSections.push(`  - Petugas dengan progres stagnan: ${payload.early_warning.stagnant_pcl} ${officerRole}`);
+      promptSections.push(`  - Proyeksi target rendah: ${payload.early_warning.low_projected_pcl} ${officerRole}`);
     }
 
     if (showKecamatan && payload.kecamatan_stats && payload.kecamatan_stats.length > 0) {
@@ -679,8 +695,9 @@ router.get('/ai-insights', async (req, res) => {
     const promptDataText = promptSections.join('\n');
 
     const prompt = `
-Anda adalah AI Analyst senior untuk sistem Monitoring Lapangan SE2026 PPU BPS.
-Tugas Anda adalah menganalisis data progres lapangan berikut yang DITAMPILKAN SANGAT SPESIFIK SESUAI DENGAN PENGATURAN DASBOR ADMIN dan memberikan analisis strategis mendalam, tajam, serta solutif dalam satu paragraf utuh (single block).
+Anda adalah AI Analyst senior untuk sistem Monitoring Lapangan ${surveyName} Penajam Paser Utara (BPS Kab. Penajam Paser Utara).
+Tugas Anda adalah menganalisis data progres lapangan ${surveyCategory} ${surveyName} berikut yang DITAMPILKAN SANGAT SPESIFIK SESUAI DENGAN PENGATURAN DASBOR ADMIN dan memberikan analisis strategis mendalam, tajam, serta solutif dalam satu paragraf utuh (single block).
+PENTING: Jangan menyebutkan kegiatan sensus/survei lain selain ${surveyName}. Gunakan sebutan petugas ${officerRole} (bukan ${officerRole === 'PPL' ? 'PCL' : 'PPL'}) dan satuan ${unitName}.
 
 ${promptDataText}
 
@@ -714,7 +731,7 @@ ATURAN STRICT & FORMAT JAWABAN (WAJIB DIIKUTI TANPA PENGECUALIAN):
       if (isFallback) {
         content = content.replace('</div>', '<br><small style="opacity:0.75; font-size:10px;">💡 <i>Statistik teranalisis otomatis oleh sistem internal (Offline Fallback).</i></small></div>');
       }
-      aiInsightsCache = {
+      aiInsightsCache[activeSurvey] = {
         uploadId,
         key: settingsKey,
         insights: content,

@@ -1,11 +1,13 @@
 <%
   const isSakernas = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
+  const isSe2026Pcl = (typeof activeSurvey !== 'undefined' ? activeSurvey === 'se2026' : (typeof surveyConfig !== 'undefined' ? surveyConfig.id === 'se2026' : true));
+  const hideMuatanPcl = !isSe2026Pcl || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0');
   const officerLabel = isSakernas ? 'PPL' : 'PCL';
 
   let activeTargetPct = 25;
   let targetMonthName = '30 Juni';
   const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
-  if (currentDate >= new Date('2026-07-01')) {
+  if (isSe2026Pcl && currentDate >= new Date('2026-07-01')) {
     activeTargetPct = 40;
     targetMonthName = '15 Juli';
   }
@@ -169,7 +171,9 @@
                   <th rowspan="2" class="text-center th-no" title="Nomor Ranking (Peringkat FASIH tertinggi)">No</th>
                   <th rowspan="2">Nama <%= officerLabel %></th>
                   <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">FASIH %</th>
+                  <% if (!hideMuatanPcl) { %>
                   <th rowspan="2" class="text-right bg-cyan-soft muatan-col" style="min-width: 140px;">Muatan %</th>
+                  <% } %>
                   <th rowspan="2" class="hide-md">PML</th>
                   <% if (!isSakernas) { %>
                   <th rowspan="2" class="hide-md">Korlap</th>
@@ -177,8 +181,10 @@
                   <th rowspan="2" class="hide-md">Kecamatan</th>
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
                   <th colspan="<%= activeStatusCols %>" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
-                   <th colspan="2" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
+                  <% if (!hideMuatanPcl) { %>
+                  <th colspan="2" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
                   <th colspan="6" class="text-center bg-green-soft muatan-col" style="border-bottom: 1px solid var(--border);">Temuan Keberadaan Usaha</th>
+                  <% } %>
                   <th colspan="4" class="text-center bg-blue-soft hide-sm" style="border-bottom: 1px solid var(--border);">Proyeksi (Deadline: 31 Agt)</th>
                 </tr>
                 <tr>
@@ -198,6 +204,7 @@
                     <th class="text-right bg-green-soft">Approved</th>
                   <% } %>
                   <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : 'Tgt Statis' %></th>
+                  <% if (!hideMuatanPcl) { %>
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Realisasi</th>
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Target</th>
                   <th class="text-right bg-green-soft hide-sm muatan-col">Total Usaha</th>
@@ -206,6 +213,7 @@
                   <th class="text-right bg-green-soft hide-sm muatan-col">Tdk Ditemukan</th>
                   <th class="text-right bg-green-soft hide-sm muatan-col">Tutup</th>
                   <th class="text-right bg-green-soft hide-sm muatan-col">Ganda</th>
+                  <% } %>
                   <th class="text-right bg-blue-soft hide-sm">Laju Saat Ini</th>
                   <th class="text-right bg-orange-soft hide-sm" style="min-width: 90px;">Kec. Perlu/Hr</th>
                   <th class="text-right bg-orange-soft hide-sm" style="min-width: 80px;">Perlu (Hari)</th>
@@ -218,7 +226,9 @@
                   <th>Nama <%= officerLabel %></th>
                   <!-- <th class="text-right">Selesai</th> -->
                   <th class="text-right bg-purple-soft" data-column-idx="2">FASIH %</th>
+                  <% if (!hideMuatanPcl) { %>
                   <th class="text-right bg-cyan-soft muatan-col" data-column-idx="3">Muatan %</th>
+                  <% } %>
                 </tr>
               </thead>
               <tbody>
@@ -302,6 +312,7 @@
                         <div class="progress-bar <%= fasihWPcl >= 100 ? 'green' : (fasihWPcl < 40 ? 'red' : 'purple') %>" data-width="<%= fasihWPcl %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
+                    <% if (!hideMuatanPcl) { %>
                     <td class="bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>" style="min-width: 160px; padding: 6px 10px;">
                       <%
                         const muatanRealPcl = p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total);
@@ -317,6 +328,7 @@
                         <div class="progress-bar <%= muatanWPcl >= 100 ? 'green' : (muatanWPcl < 40 ? 'red' : 'blue') %>" data-width="<%= muatanWPcl %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
+                    <% } %>
                     <td class="hide-md">
                       <%= p.pml %>
                       <% if (kippPmls.includes(p.pml.toUpperCase())) { %>
@@ -350,6 +362,7 @@
                        <td class="text-right bg-green-soft hide-sm status-approve-text" data-sort="<%= p.approved_total %>" style="font-weight: 600;"><%= (p.approved_total || 0).toLocaleString('id-ID') %></td>
                      <% } %>
                      <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.target_fasih_total %>"><%= (p.target_fasih_total || 0).toLocaleString('id-ID') %></td>
+                     <% if (!hideMuatanPcl) { %>
                      <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.muatan_selesai %>"><%= (p.muatan_selesai || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
@@ -358,6 +371,7 @@
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_tidak_ditemukan_total %>"><%= (p.usaha_tidak_ditemukan_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_tutup_total %>"><%= (p.usaha_tutup_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_ganda_total %>"><%= (p.usaha_ganda_total || 0).toLocaleString('id-ID') %></td>
+                     <% } %>
                     <%
                       let fasihSelesaiPcl = (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
                       let totalFasihProgress = (p.draft_total || 0) + fasihSelesaiPcl;
@@ -526,6 +540,7 @@
                 </div>
 
                 <!-- Progress Muatan -->
+                <% if (!hideMuatanPcl) { %>
                 <div class="mb-3 muatan-col">
                   <div class="bar-label">
                     <span><i class="bi bi-briefcase"></i> Progres Muatan</span>
@@ -547,6 +562,7 @@
                     </div>
                   </div>
                 </div>
+                <% } %>
 
                 <!-- Mini Grid Status FASIH -->
                 <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(<%= activeStatusCols - 1 %>, 1fr); gap: 6px; margin-top: 14px; text-align: center;">
@@ -689,9 +705,11 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); flex-wrap: wrap; gap: 4px;">
                       <div><%= s.desa %></div>
                       <div style="display: flex; gap: 6px; align-items: center;">
+                        <% if (!hideMuatanPcl) { %>
                         <span class="muatan-col" style="color: var(--accent-cyan);">
                           Muatan: <strong><%= s.usaha_total %></strong>/<%= Math.round(s.muatan) %>
                         </span>
+                        <% } %>
                         <span style="color: var(--accent-purple);">
                           FASIH: <strong><%= (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0) %></strong>/<%= Math.round(s.target_fasih) %> 
                           <span style="font-size: 9px; color: var(--text-muted);">(D<%= s.draft %> S<%= s.submitted_by_pcl %> A<%= s.approved %> R<%= s.rejected %>)</span>
