@@ -63,14 +63,14 @@ function buildLiveContext(surveyId = 'se2026') {
     // Anomali: hitung total anomali aktif
     let anomaliCount = 0;
     try {
-      const anomali = getAnomalyStats(upload.id);
+      const anomali = getAnomalyStats(upload.id, {}, surveyId);
       if (Array.isArray(anomali)) anomaliCount = anomali.length;
     } catch (_) {}
 
     // Early warning: hitung total item
     let ewCount = 0;
     try {
-      const ew = getEarlyWarning(upload.id);
+      const ew = getEarlyWarning(upload.id, {}, settings, surveyId);
       if (Array.isArray(ew)) ewCount = ew.length;
       else if (ew && typeof ew === 'object') {
         ewCount = Object.values(ew).filter(v => Array.isArray(v)).reduce((acc, arr) => acc + arr.length, 0);
@@ -85,8 +85,8 @@ function buildLiveContext(surveyId = 'se2026') {
     const isCensus = surveyConfig && surveyConfig.category === 'sensus';
 
     // Build context block
-    const pctFasih   = fmtPct(summary.pct);
-    const pctMuatan  = fmtPct(summary.pct_muatan);
+    const pctFasih   = fmtPct(summary.fasih_pct != null ? summary.fasih_pct : summary.pct);
+    const pctMuatan  = fmtPct(summary.muatan_pct != null ? summary.muatan_pct : summary.pct_muatan);
     const selesai    = fmt(summary.selesai);
     const total      = fmt(summary.total);
     const muatanSel  = fmt(summary.muatan_selesai);
@@ -94,25 +94,35 @@ function buildLiveContext(surveyId = 'se2026') {
     const targetFasih = fmt(summary.target_fasih_total || summary.target_static_total);
     const realFasih  = fmt((summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0));
     const approved   = fmt(summary.approved_total);
+    const submitted  = fmt(summary.submitted_total);
+    const rejected   = fmt(summary.rejected_total);
     const draft      = fmt(summary.draft_total);
     const totalPcl   = fmt(summary.total_pcl);
     const activePcl  = fmt(summary.active_pcl);
+    const totalPml   = fmt(summary.total_pml);
 
-    let topKecText = topKec.map(k =>
-      `  - **${k.kecamatan}**: ${fmtPct(k.pct)} Capaian Utama, ${fmtPct(k.pct_muatan)} Muatan`
-    ).join('\n') || '  _Data tidak tersedia_';
-
-    let botKecText = botKec.map(k =>
-      `  - **${k.kecamatan}**: ${fmtPct(k.pct)} Capaian Utama, ${fmtPct(k.pct_muatan)} Muatan`
-    ).join('\n') || '  _Data tidak tersedia_';
+    let kecTableText = '';
+    try {
+      const allKec = getKecamatanStats(upload.id, settings, surveyId);
+      if (Array.isArray(allKec) && allKec.length > 0) {
+        kecTableText = `\n### Capaian Seluruh Kecamatan di Kabupaten PPU\n| Kecamatan | Target ${unitName} | Realisasi | % Capaian | Approved | Selesai |\n|:---|:---:|:---:|:---:|:---:|:---:|\n`;
+        allKec.forEach(k => {
+          const kPct = fmtPct(k.fasih_pct != null ? k.fasih_pct : k.pct);
+          const kTarget = fmt(k.target_fasih_total || k.target_static_total || k.total_muatan);
+          const kReal = fmt(k.fasih_real_total != null ? k.fasih_real_total : k.muatan_selesai);
+          const kApp = fmt(k.approved_total);
+          const kDone = `${k.selesai} / ${k.total_subsls}`;
+          kecTableText += `| **${k.kecamatan}** | ${kTarget} | ${kReal} | **${kPct}** | ${kApp} | ${kDone} |\n`;
+        });
+      }
+    } catch (_) {}
 
     return `
 ## Konteks Data Ringkasan Terkini (Live Context)
 
 > Data di bawah ini adalah snapshot ringkasan database saat ini untuk kegiatan **${surveyName}**.
 > Karakteristik Kegiatan: ${surveyConfig ? `${surveyConfig.categoryLabel || 'Survei'} | Satuan: ${unitName} | Petugas: ${officerRole}` : 'Pemantauan BPS'}
-> Jika pertanyaan pengguna berkaitan langsung dengan metrik agregat di bawah, Anda dapat menggunakannya langsung.
-> Namun jika pertanyaan menanyakan analisis spesifik, peringkat lengkap, atau data petugas individual, jalankan fungsi tool yang sesuai.
+> **PANDUAN PENTING**: Jika pertanyaan pengguna berkaitan dengan ringkasan progres umum kegiatan/kabupaten (misalnya: "Bagaimana ringkasan progres survei Sakernas CAPI di Kabupaten PPU saat ini?"), GUNAKAN LANGSUNG DATA DI BAWAH INI untuk menyusun jawaban naratif yang kaya, lengkap, dan analitis. JANGAN memanggil tool hanya untuk mengulang data agregat yang sudah tercantum di sini!
 
 ### Upload Terakhir
 - **Tanggal**: ${upload.tanggal}
@@ -124,21 +134,17 @@ function buildLiveContext(surveyId = 'se2026') {
 |:---|---:|
 | ${isCensus ? 'SLS Selesai / Total' : 'Blok Sensus Selesai / Total Sampel'} | ${selesai} / ${total} |
 | % Capaian Utama (${unitName}) | **${pctFasih}** |
-| % Progres Muatan / Listing | **${pctMuatan}** |
-| Target ${unitName} | ${targetFasih} |
+${isCensus ? `| % Progres Muatan / Listing | **${pctMuatan}** |\n` : ''}| Target ${unitName} | ${targetFasih} |
 | Realisasi ${unitName} Terdata | ${realFasih} |
-| Dokumen Approved | ${approved} |
+| Dokumen Approved (Disetujui PML) | ${approved} |
+| Dokumen Submitted (Menunggu Review PML) | ${submitted} |
+| Dokumen Rejected (Perlu Perbaikan PPL) | ${rejected} |
 | Dokumen Draft | ${draft} |
-| Muatan Selesai / Target | ${muatanSel} / ${muatanTot} |
-| ${officerRole} Aktif / Total ${officerRole} | ${activePcl} / ${totalPcl} |
+${isCensus ? `| Muatan Selesai / Target | ${muatanSel} / ${muatanTot} |\n` : ''}| ${officerRole} Aktif / Total ${officerRole} | ${activePcl} / ${totalPcl} |
+| Total PML Pengawas | ${totalPml} |
 | ${officerRole} dengan Anomali / Perhatian | ${anomaliCount} |
 | Item Early Warning | ${ewCount} |
-
-### Kecamatan Progres Tertinggi
-${topKecText}
-
-### Kecamatan Progres Terendah
-${botKecText}
+${kecTableText}
 `;
   } catch (err) {
     // Jangan crash jika context gagal dibangun — cukup kembalikan string kosong

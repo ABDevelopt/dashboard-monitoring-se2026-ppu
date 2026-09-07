@@ -244,7 +244,7 @@ async function generateWithRetry(model, payload, timeoutMs, label = 'Gemini API 
   }
 }
 
-async function sendMessageToGemini(userMessage, chatHistory, settings, selectedModel, abortSignal, customApiKey, systemInstruction) {
+async function sendMessageToGemini(userMessage, chatHistory, settings, selectedModel, abortSignal, customApiKey, systemInstruction, toolContext = {}) {
   try {
     const { GoogleGenerativeAI } = require("@google/generative-ai");
     const apiKey = customApiKey || settings.gemini_api_key;
@@ -298,7 +298,7 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
 
       const toolResponses = await Promise.all(
         functionCalls.map(async (fc) => {
-          const result = await runToolCall({ name: fc.name, args: fc.args }, { prompt: userMessage });
+          const result = await runToolCall({ name: fc.name, args: fc.args }, { prompt: userMessage, surveyId: toolContext?.surveyId });
           lastExecutedToolResult = { name: fc.name, args: fc.args, result };
           return {
             functionResponse: {
@@ -342,6 +342,9 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
         }
       } catch (err) {
         log.warn('[LLM_GW] Force text generation fallback failed:', err.message);
+        if (err.message && (err.message.includes('429') || err.message.toLowerCase().includes('quota') || err.message.toLowerCase().includes('rate limit') || err.message.includes('403'))) {
+          throw err;
+        }
       }
     }
 
@@ -367,7 +370,7 @@ async function sendMessageToGemini(userMessage, chatHistory, settings, selectedM
   }
 }
 
-async function streamMessageToGemini(userMessage, chatHistory, settings, selectedModel, abortSignal, customApiKey, onEvent, systemInstruction) {
+async function streamMessageToGemini(userMessage, chatHistory, settings, selectedModel, abortSignal, customApiKey, onEvent, systemInstruction, toolContext = {}) {
   try {
     const { GoogleGenerativeAI } = require("@google/generative-ai");
     const apiKey = customApiKey || settings.gemini_api_key;
@@ -434,7 +437,7 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
 
       const toolResponses = await Promise.all(
         functionCalls.map(async (fc) => {
-          const result = await runToolCall({ name: fc.name, args: fc.args }, { prompt: userMessage });
+          const result = await runToolCall({ name: fc.name, args: fc.args }, { prompt: userMessage, surveyId: toolContext?.surveyId });
           lastExecutedToolResult = { name: fc.name, args: fc.args, result };
           onEvent('tool_end', { tool: fc.name, message: `Selesai mengambil data` });
           return {
@@ -490,6 +493,9 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
         }
       } catch (streamErr) {
         log.warn('[LLM_GW] Native stream error, proceeding with text fallback:', streamErr.message);
+        if (streamErr.message && (streamErr.message.includes('429') || streamErr.message.toLowerCase().includes('quota') || streamErr.message.toLowerCase().includes('rate limit') || streamErr.message.includes('403'))) {
+          throw streamErr;
+        }
         break;
       }
     }
@@ -517,6 +523,9 @@ async function streamMessageToGemini(userMessage, chatHistory, settings, selecte
         }
       } catch (err) {
         log.warn('[LLM_GW] Force text generation fallback failed:', err.message);
+        if (err.message && (err.message.includes('429') || err.message.toLowerCase().includes('quota') || err.message.toLowerCase().includes('rate limit') || err.message.includes('403'))) {
+          throw err;
+        }
       }
     }
 

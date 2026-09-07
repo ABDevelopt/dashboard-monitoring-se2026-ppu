@@ -1,5 +1,7 @@
 <%
   const isSakernas = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
+  const isSe2026Subsls = (typeof activeSurvey !== 'undefined' ? activeSurvey === 'se2026' : (typeof surveyConfig !== 'undefined' ? surveyConfig.id === 'se2026' : true));
+  const hideMuatanSubsls = !isSe2026Subsls || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0');
   const officerLabel = isSakernas ? 'PPL' : 'PCL';
 
   let activeSubslsStatusCols = 1;
@@ -164,9 +166,13 @@
                   <th rowspan="2">Petugas (<%= isSakernas ? 'PPL/PML' : 'PCL/PML/Korlap' %>)</th>
                   <th rowspan="2" class="text-center">Status</th>
                   <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 130px; white-space: nowrap;">FASIH %</th>
+                  <% if (!hideMuatanSubsls) { %>
                   <th rowspan="2" class="text-center bg-cyan-soft muatan-col" style="min-width: 110px; white-space: nowrap;">Muatan %</th>
+                  <% } %>
                   <th colspan="<%= activeSubslsStatusCols %>" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                  <% if (!hideMuatanSubsls) { %>
                   <th colspan="3" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
+                  <% } %>
                 </tr>
                 <tr>
                   <% if (settings.show_status_open === '1' || settings.show_status_open === undefined) { %>
@@ -186,9 +192,11 @@
                   <% } %>
                   <th class="text-right bg-purple-soft">Target</th>
                   
+                  <% if (!hideMuatanSubsls) { %>
                   <th class="text-right bg-cyan-soft muatan-col">Realisasi</th>
                   <th class="text-right bg-cyan-soft muatan-col">Target</th>
                   <th class="text-right bg-cyan-soft muatan-col">Usaha Baru</th>
+                  <% } %>
                 </tr>
               </thead>
               <tbody>
@@ -277,6 +285,7 @@
                       </div>
                     </td>
 
+                    <% if (!hideMuatanSubsls) { %>
                     <!-- Muatan % Column with Progress Bar -->
                     <td class="bg-cyan-soft muatan-col" data-sort="<%= parseFloat(mPctVal) %>" style="min-width: 110px; padding: 6px 10px; vertical-align: middle; white-space: nowrap;">
                       <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-secondary); margin-bottom:3px; white-space: nowrap;">
@@ -287,6 +296,7 @@
                         <div class="progress-bar <%= mW >= 100 ? 'green' : (mW < 40 ? 'red' : 'blue') %>" data-width="<%= mW %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
+                    <% } %>
                     
                     <% if (settings.show_status_open === '1' || settings.show_status_open === undefined) { %>
                       <td class="text-right bg-gray-soft status-open-text" data-sort="<%= row.open %>"><%= (row.open || 0).toLocaleString('id-ID') %></td>
@@ -305,9 +315,11 @@
                     <% } %>
                     <td class="text-right bg-purple-soft" data-sort="<%= row.target_fasih %>"><%= Math.round(row.target_fasih || 0).toLocaleString('id-ID') %></td>
                     
+                    <% if (!hideMuatanSubsls) { %>
                     <td class="text-right fw-bold bg-cyan-soft muatan-col" data-sort="<%= row.muatan_selesai %>"><%= (row.muatan_selesai || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft muatan-col" data-sort="<%= row.muatan %>"><%= Math.round(row.muatan || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft text-green muatan-col" data-sort="<%= row.usaha_baru %>">+<%= (row.usaha_baru || 0).toLocaleString('id-ID') %></td>
+                    <% } %>
                   </tr>
                 <% }) %>
               </tbody>
@@ -631,7 +643,7 @@
           <div class="card empty-state text-center" style="height: 100%; min-height: 300px; display: flex; flex-direction: column; justify-content: center; border-style: dashed;">
             <div class="empty-state-icon"><i class="bi bi-arrow-left-circle"></i></div>
             <div class="empty-state-title">Pilih SubSLS</div>
-            <div class="empty-state-text">Klik nama SubSLS di tabel sebelah kiri untuk melihat rincian progres tugas, temuan muatan, dan detail lainnya secara lengkap.</div>
+            <div class="empty-state-text">Klik nama SubSLS di tabel sebelah kiri untuk melihat rincian progres tugas<%= !hideMuatanSubsls ? ', temuan muatan,' : '' %> dan detail lainnya secara lengkap.</div>
           </div>
         <% } %>
       </div>

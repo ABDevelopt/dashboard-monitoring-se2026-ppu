@@ -1410,9 +1410,13 @@ function getLatestUpload(surveyId) {
 // Ambil upload terakhir yang memiliki data FASIH dan data Muatan secara terpisah
 function getLatestUploadsDetailed(surveyId) {
   try {
-    const db = getDb(surveyId);
+    const sId = resolveSurveyId(surveyId);
+    const db = getDb(sId);
+    const isCensus = sId === 'se2026';
     const latestFasih = db.prepare("SELECT * FROM uploads WHERE status_filename IS NOT NULL AND status_filename != '' AND status_filename != 'null' ORDER BY tanggal DESC, id DESC LIMIT 1").get();
-    const latestMuatan = db.prepare("SELECT * FROM uploads WHERE filename IS NOT NULL AND filename != '' AND filename != 'null' AND filename != 'Imputasi Otomatis (Hari Kosong)' ORDER BY tanggal DESC, id DESC LIMIT 1").get();
+    const latestMuatan = isCensus 
+      ? db.prepare("SELECT * FROM uploads WHERE filename IS NOT NULL AND filename != '' AND filename != 'null' AND filename != 'Imputasi Otomatis (Hari Kosong)' ORDER BY tanggal DESC, id DESC LIMIT 1").get()
+      : null;
     return {
       fasih: latestFasih || null,
       muatan: latestMuatan || null
@@ -1567,6 +1571,7 @@ function getKecamatanStats(uploadId, settings, surveyId) {
       SUM(COALESCE(p.usaha_tidak_ditemukan, 0)) AS usaha_tidak_ditemukan,
       SUM(COALESCE(p.tidak_ditemukan, 0)) AS tidak_ditemukan,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
@@ -1607,6 +1612,7 @@ function getKorlapStats(uploadId, settings, surveyId) {
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
@@ -1648,6 +1654,7 @@ function getPmlStats(uploadId, settings, surveyId) {
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
@@ -1690,7 +1697,7 @@ function getPclStats(uploadId, settings, surveyId) {
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
-      SUM(COALESCE(p.open, 0)) AS open_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
@@ -1827,6 +1834,7 @@ function getOverviewSummary(uploadId, settings = getSettings(), surveyId = 'se20
 
   return attachProgressPercentages({ 
     total, 
+    total_subsls: total,
     selesai, 
     belum: total - selesai, 
     total_muatan, 
@@ -1913,6 +1921,7 @@ function getEarlyWarning(uploadId, filters = {}, settings = null, surveyId = 'se
       SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS muatan_realisasi,
       ROUND(SUM(COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) * 1.0 / ?, 2) AS rata_rata,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
@@ -1936,6 +1945,7 @@ function getEarlyWarning(uploadId, filters = {}, settings = null, surveyId = 'se
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
@@ -1985,6 +1995,7 @@ function getEarlyWarning(uploadId, filters = {}, settings = null, surveyId = 'se
             SUM(${singleTargetFormula}) AS target_fasih_total,
             SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS selesai_sekarang,
             SUM(COALESCE(p.draft, 0)) AS draft_total,
+            SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
             SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
             SUM(COALESCE(p.approved, 0)) AS approved_total,
             SUM(COALESCE(p.rejected, 0)) AS rejected_total
@@ -2013,6 +2024,7 @@ function getEarlyWarning(uploadId, filters = {}, settings = null, surveyId = 'se
           ? AS tanggal_ref,
           ? AS tanggal_prev,
           c.draft_total,
+          c.open_total,
           c.submitted_total,
           c.approved_total,
           c.rejected_total
@@ -2046,6 +2058,7 @@ function getEarlyWarning(uploadId, filters = {}, settings = null, surveyId = 'se
         SUM(${singleSelesaiFormula}) AS selesai,
         SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) AS selesai_sekarang,
         SUM(COALESCE(p.draft, 0)) AS draft_total,
+        SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
         SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
         SUM(COALESCE(p.approved, 0)) AS approved_total,
         SUM(COALESCE(p.rejected, 0)) AS rejected_total,
@@ -2084,6 +2097,7 @@ function getEarlyWarning(uploadId, filters = {}, settings = null, surveyId = 'se
             projected_final_july15: Math.round(projectedJuly15),
             projected_pct_july15: parseFloat(projectedPctJuly15.toFixed(2)),
             draft_total: item.draft_total || 0,
+            open_total: item.open_total || 0,
             submitted_total: item.submitted_total || 0,
             approved_total: item.approved_total || 0,
             rejected_total: item.rejected_total || 0
@@ -2146,6 +2160,7 @@ function getTopPerformers(uploadId, filters = {}, settings = null, surveyId = 's
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
@@ -2171,6 +2186,7 @@ function getTopPerformers(uploadId, filters = {}, settings = null, surveyId = 's
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
@@ -2238,6 +2254,7 @@ function getBottomPerformers(uploadId, filters = {}, settings = null, surveyId =
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
@@ -2263,6 +2280,7 @@ function getBottomPerformers(uploadId, filters = {}, settings = null, surveyId =
       SUM(${usahaTotalFormula}) AS usaha_total,
       SUM(${keluargaTotalFormula}) AS keluarga_total,
       SUM(COALESCE(p.draft, 0)) AS draft_total,
+      SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${singleTargetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
       SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
       SUM(COALESCE(p.approved, 0)) AS approved_total,
       SUM(COALESCE(p.rejected, 0)) AS rejected_total,
@@ -2283,7 +2301,14 @@ function getBottomPerformers(uploadId, filters = {}, settings = null, surveyId =
   };
 }
 
-function getAnomalyStats(uploadId, filters = {}) {
+function getAnomalyStats(uploadId, filters = {}, surveyId = 'se2026') {
+  if (typeof uploadId === 'string' && (uploadId === 'se2026' || uploadId.startsWith('sakernas-'))) {
+    surveyId = uploadId;
+    const latest = getLatestUpload(surveyId);
+    uploadId = latest ? latest.id : null;
+  }
+  if (!uploadId) return [];
+
   let where = '';
   const params = [uploadId];
 
@@ -2324,7 +2349,7 @@ function getAnomalyStats(uploadId, filters = {}) {
     ORDER BY total_anomali DESC
   `;
 
-  return getDb().prepare(sql).all(...params);
+  return getDb(surveyId).prepare(sql).all(...params);
 }
 
 function initSettings(dbConn, surveyId = 'se2026') {

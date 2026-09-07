@@ -130,7 +130,7 @@
                 <tr>
                   <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= idx + 1 %></td>
                   <td class="td-primary" style="font-weight: 600;">
-                    <a href="/pcl?pcl=<%= encodeURIComponent(p.nama_petugas) %>"><%= p.nama_petugas %></a>
+                    <a href="<%= (typeof navPrefix !== 'undefined' ? navPrefix : '') %>/pcl?pcl=<%= encodeURIComponent(p.nama_petugas) %>"><%= p.nama_petugas %></a>
                   </td>
                   <td class="text-right"><%= p.draft %></td>
                   <td class="text-right"><%= p.submitted %></td>
@@ -153,10 +153,10 @@
     <div class="card">
       <div class="card-header" style="margin-bottom: 8px; padding-bottom: 8px;">
         <div class="card-title"><i class="bi bi-search"></i> Filter Kawasan KIPP IKN</div>
-        <a href="/kipp" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
+        <a href="<%= (typeof navPrefix !== 'undefined' ? navPrefix : '') %>/kipp" class="btn btn-secondary btn-xs"><i class="bi bi-arrow-repeat"></i> Reset Filter</a>
       </div>
       
-      <form action="/kipp" method="GET" id="filterForm">
+      <form action="<%= (typeof navPrefix !== 'undefined' ? navPrefix : '') %>/kipp" method="GET" id="filterForm">
         <div class="filter-form-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); gap: 10px;">
           
           <div>
@@ -249,10 +249,11 @@
                 <th rowspan="2">Nama SLS</th>
                 <th rowspan="2">Wilayah</th>
                 <th rowspan="2">Petugas (PCL/PML/Korlap)</th>
-                <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                <th colspan="6" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
                 <th colspan="3" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
               </tr>
               <tr>
+                <th class="text-right bg-purple-soft">Open</th>
                 <th class="text-right bg-purple-soft">Draft</th>
                 <th class="text-right bg-purple-soft">Submitted</th>
                 <th class="text-right bg-purple-soft">Approved</th>
@@ -277,7 +278,7 @@
                   <td>
                     <div style="font-weight: 500; font-size: 12px;" class="td-primary">
                       <% if (row.pcl) { %>
-                        <a href="/pcl?pcl=<%= encodeURIComponent(row.pcl) %>" style="color: inherit; text-decoration: none;"><%= row.pcl %></a>
+                        <a href="<%= (typeof navPrefix !== 'undefined' ? navPrefix : '') %>/pcl?pcl=<%= encodeURIComponent(row.pcl) %>" style="color: inherit; text-decoration: none;"><%= row.pcl %></a>
                       <% } else { %>
                         -
                       <% } %>
@@ -285,6 +286,7 @@
                     <div style="font-size: 11px; color: var(--text-muted);" class="hide-md">PML: <%= row.pml %> · Krl: <%= row.korlap %></div>
                   </td>
                   
+                  <td class="text-right bg-purple-soft" data-sort="<%= row.open %>"><%= (row.open || 0).toLocaleString('id-ID') %></td>
                   <td class="text-right bg-purple-soft" data-sort="<%= row.draft %>"><%= (row.draft || 0).toLocaleString('id-ID') %></td>
                   <td class="text-right bg-purple-soft" data-sort="<%= row.submitted_by_pcl %>"><%= (row.submitted_by_pcl || 0).toLocaleString('id-ID') %></td>
                   <td class="text-right bg-purple-soft fw-bold" data-sort="<%= row.approved %>"><%= (row.approved || 0).toLocaleString('id-ID') %></td>
@@ -336,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
       
-      const resetBtn = container.querySelector('a[href="/kipp"]');
+      const resetBtn = container.querySelector('a[href$="/kipp"]');
       if (resetBtn) {
         resetBtn.addEventListener('click', (e) => {
           e.preventDefault();

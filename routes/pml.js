@@ -209,6 +209,7 @@ router.get('/', (req, res) => {
           SUM(${usahaTotalFormula}) AS usaha_total,
           SUM(${keluargaTotalFormula}) AS keluarga_total,
           SUM(COALESCE(p.draft, 0)) AS draft_total,
+          SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${targetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
           SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
           SUM(COALESCE(p.approved, 0)) AS approved_total,
           SUM(COALESCE(p.rejected, 0)) AS rejected_total,

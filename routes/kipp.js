@@ -48,6 +48,7 @@ router.get('/', (req, res) => {
         m.korlap, m.pml, m.pcl, m.muatan,
         m.target_fasih AS target_fasih_awal,
         COALESCE(p.draft, 0) AS draft,
+        CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${targetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END AS open,
         COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
         COALESCE(p.approved, 0) AS approved,
         COALESCE(p.rejected, 0) AS rejected,

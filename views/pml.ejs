@@ -1,11 +1,13 @@
 <%
   const isSakernas = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
+  const isSe2026Pml = (typeof activeSurvey !== 'undefined' ? activeSurvey === 'se2026' : (typeof surveyConfig !== 'undefined' ? surveyConfig.id === 'se2026' : true));
+  const hideMuatanPml = !isSe2026Pml || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0');
   const officerLabel = isSakernas ? 'PPL' : 'PCL';
 
   let activeTargetPct = 25;
   let targetMonthName = '30 Juni';
   const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
-  if (currentDate >= new Date('2026-07-01')) {
+  if (isSe2026Pml && currentDate >= new Date('2026-07-01')) {
     activeTargetPct = 40;
     targetMonthName = '15 Juli';
   }
@@ -72,23 +74,30 @@
                   <th rowspan="2">Nama PML</th>
                   <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">FASIH %</th>
                   <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">Verifikasi %</th>
+                  <% if (!hideMuatanPml) { %>
                   <th rowspan="2" class="text-right bg-cyan-soft muatan-col" style="min-width: 140px;">Muatan %</th>
+                  <% } %>
                   <% if (!isSakernas) { %>
                   <th rowspan="2" class="hide-md">Korlap</th>
                   <% } %>
                   <th rowspan="2" class="text-right">Jumlah <%= officerLabel %></th>
                   <!-- <th colspan="2" class="text-center" style="border-bottom: 1px solid var(--border);">SubSLS</th> -->
-                  <th colspan="5" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                  <th colspan="6" class="text-center bg-purple-soft" style="border-bottom: 1px solid var(--border);">Assignment FASIH</th>
+                  <% if (!hideMuatanPml) { %>
                   <th colspan="2" class="text-center bg-cyan-soft muatan-col" style="border-bottom: 1px solid var(--border);">Progres Muatan</th>
+                  <% } %>
                 </tr>
                 <tr>
+                  <th class="text-right bg-gray-soft status-open-text">Open</th>
                   <th class="text-right bg-yellow-soft">Draft</th>
                   <th class="text-right bg-blue-soft">Submitted</th>
                   <th class="text-right bg-red-soft">Rejected</th>
                   <th class="text-right bg-green-soft">Approved</th>
                   <th class="text-right bg-purple-soft"><%= settings.target_fasih_mode === 'fasih-sm' ? 'Tgt FASIH-SM' : 'Tgt Statis' %></th>
-                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Realisasi</th>
+                  <% if (!hideMuatanPml) { %>
+                  <th class="text-right bg-cyan-soft hide-sm muatan-col">Realisasi</th>
                   <th class="text-right bg-cyan-soft hide-sm muatan-col">Target</th>
+                  <% } %>
                 </tr>
               </thead>
               <thead class="show-sm-table-header">
@@ -98,7 +107,9 @@
                   <!-- <th class="text-right">Selesai</th> -->
                   <th class="text-right bg-purple-soft" data-column-idx="2">FASIH %</th>
                   <th class="text-right bg-purple-soft" data-column-idx="3">Verif %</th>
+                  <% if (!hideMuatanPml) { %>
                   <th class="text-right bg-cyan-soft muatan-col" data-column-idx="4">Muatan %</th>
+                  <% } %>
                 </tr>
               </thead>
               <tbody>
@@ -145,6 +156,7 @@
                         <div class="progress-bar <%= fVerifW >= 100 ? 'green' : (fVerifW < 40 ? 'red' : 'purple') %>" data-width="<%= fVerifW %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
+                    <% if (!hideMuatanPml) { %>
                     <td class="bg-cyan-soft muatan-col" data-sort="<%= parseFloat(muatanPct) %>" style="min-width: 160px; padding: 6px 10px;">
                       <%
                         const muatanReal = p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total);
@@ -160,19 +172,27 @@
                         <div class="progress-bar <%= muatanW >= 100 ? 'green' : (muatanW < 40 ? 'red' : 'blue') %>" data-width="<%= muatanW %>" style="width:0%; height:100%; border-radius:99px;"></div>
                       </div>
                     </td>
+                    <% } %>
                     <% if (!isSakernas) { %>
                     <td class="hide-md"><%= p.korlap %></td>
                     <% } %>
                     <td class="text-right hide-sm" data-sort="<%= p.jumlah_pcl %>"><%= p.jumlah_pcl %> <%= officerLabel %></td>
                     <!-- <td class="text-right hide-sm" data-sort="<%= p.total_subsls %>"><%= p.total_subsls %></td> -->
                     <!-- <td class="text-right fw-bold" data-sort="<%= p.selesai %>" style="<%= p.selesai === 0 ? 'color: var(--accent-red)' : '' %>"><%= p.selesai %></td> -->
+                    <% 
+                      const pDone = (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
+                      const pOpen = p.open_total !== undefined ? p.open_total : Math.max(0, (p.target_fasih_total || 0) - ((p.draft_total || 0) + pDone));
+                    %>
+                    <td class="text-right bg-gray-soft hide-sm status-open-text" data-sort="<%= pOpen %>"><%= pOpen.toLocaleString('id-ID') %></td>
                     <td class="text-right bg-yellow-soft hide-sm status-draft-text" data-sort="<%= p.draft_total %>"><%= (p.draft_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-blue-soft hide-sm status-submit-text" data-sort="<%= p.submitted_total %>"><%= (p.submitted_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-red-soft hide-sm status-reject-text" data-sort="<%= p.rejected_total %>" style="font-weight: 600;"><%= (p.rejected_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm status-approve-text" data-sort="<%= p.approved_total %>" style="font-weight: 600;"><%= (p.approved_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.target_fasih_total %>"><%= (p.target_fasih_total || 0).toLocaleString('id-ID') %></td>
+                    <% if (!hideMuatanPml) { %>
                     <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total) %>"><%= (p.muatan_selesai !== undefined ? p.muatan_selesai : (p.usaha_total + p.keluarga_total)).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
+                    <% } %>
                   </tr>
                 <% }) %>
               </tbody>
@@ -272,7 +292,7 @@
                   </div>
                 </div>
 
-                <% if (settings.show_progres_muatan === '1' && (typeof hideMuatanGlobal === 'undefined' || !hideMuatanGlobal)) { %>
+                <% if (!hideMuatanPml) { %>
                 <div style="margin-bottom: 14px;" class="muatan-col">
                   <div class="bar-label" style="font-size: 11.5px; margin-bottom: 4px;">
                     <span><i class="bi bi-briefcase"></i> Progres Muatan Tim</span>
@@ -337,6 +357,7 @@
                     </div>
 
                     <!-- Muatan Progress Bar -->
+                    <% if (!hideMuatanPml) { %>
                     <% const muatanPctVal = parseFloat(item.muatan_pct) || 0; %>
                     <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 4px;" class="muatan-col">
                       <span style="font-weight: 600;"><i class="bi bi-briefcase"></i> Muatan: <span style="color: var(--accent-cyan);"><%= item.muatan_pct_str %>%</span></span>
@@ -348,11 +369,18 @@
                       </div>
                       <div style="position: absolute; left: <%= activeTargetPct %>%; top: -2px; height: 9px; border-left: 1.5px dashed var(--accent-cyan); z-index: 2; opacity: 0.8; pointer-events: none;" title="Target: <%= activeTargetPct %>%"></div>
                     </div>
+                    <% } %>
                     
+                    <%
+                      const itemDone = (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0);
+                      const itemTgt = (item.target_fasih_total !== undefined ? item.target_fasih_total : item.target_fasih) || 0;
+                      const itemOpen = item.open_total !== undefined ? item.open_total : Math.max(0, itemTgt - ((item.draft_total || 0) + itemDone));
+                    %>
                     <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); flex-wrap: wrap; gap: 4px; margin-top: 8px;">
                       <div>Kec. <%= item.kecamatan %></div>
-                      <div style="font-size: 9px; color: var(--text-muted);">
-                        (D<%= item.draft_total %> S<%= item.submitted_total %> A<%= item.approved_total %> R<%= item.rejected_total %>)
+                      <div style="display: flex; gap: 8px; font-size: 9px; color: var(--text-muted);">
+                        <span>Open: <strong style="color: #94a3b8;"><%= itemOpen.toLocaleString('id-ID') %></strong></span>
+                        <span>(D<%= item.draft_total %> S<%= item.submitted_total %> A<%= item.approved_total %> R<%= item.rejected_total %>)</span>
                       </div>
                     </div>
                   </div>
