@@ -434,7 +434,7 @@ function getSurveyData(surveyId, page, query = {}, locals = {}) {
       case 'pbi':
         return { title: 'Pendataan PBI', activePage: 'pbi', pbiStats: [], filterKec: '', kecList: [] };
       case 'agent':
-        return { title: 'Pananyo Taka AI', activePage: 'agent', provider: 'gemini', activeModel: 'gemini-2.5-flash', activeProvider: 'gemini', activeCategory: 'Sakernas', geminiModels: ['gemini-2.5-flash'], openaiModels: [], openrouterModels: [], selectedGeminiModel: 'gemini-2.5-flash', selectedOpenAIModel: '', selectedOpenRouterModel: '', hasKey: true, hasGeminiKey: true, hasOpenAIKey: false, hasOpenRouterKey: false, agentName: 'Pananyo Taka AI', surveyContext: surveyId };
+        return { title: 'Pananyo Taka AI', activePage: 'agent', provider: 'gemini', activeModel: 'gemini-3.8-flash', activeProvider: 'gemini', activeCategory: 'Sakernas', geminiModels: ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'], openaiModels: [], openrouterModels: [], selectedGeminiModel: 'gemini-3.8-flash', selectedOpenAIModel: '', selectedOpenRouterModel: '', hasKey: true, hasGeminiKey: true, hasOpenAIKey: false, hasOpenRouterKey: false, agentName: 'Pananyo Taka AI', surveyContext: surveyId };
       case 'map':
         return { title: 'Peta Progres', activePage: 'map', kecStats: [], filterKec: '' };
       default:
@@ -723,7 +723,10 @@ function getSurveyData(surveyId, page, query = {}, locals = {}) {
       const appSettings = getSettings() || {};
       const geminiModels = appSettings.gemini_models_list
         ? appSettings.gemini_models_list.split(',').map(m => m.trim()).filter(Boolean)
-        : ['gemini-2.5-flash', 'gemini-2.5-pro'];
+        : ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
+      if (appSettings.gemini_model && !geminiModels.includes(appSettings.gemini_model)) {
+        geminiModels.push(appSettings.gemini_model);
+      }
       const openaiModels = appSettings.openai_models_list
         ? appSettings.openai_models_list.split(',').map(m => m.trim()).filter(Boolean)
         : ['gpt-4o'];
@@ -731,13 +734,13 @@ function getSurveyData(surveyId, page, query = {}, locals = {}) {
         title: 'Pananyo Taka AI',
         activePage: 'agent',
         provider: 'gemini',
-        activeModel: 'gemini-2.5-flash',
+        activeModel: appSettings.gemini_model || 'gemini-3.8-flash',
         activeProvider: 'gemini',
         activeCategory: locals.surveyConfig ? locals.surveyConfig.name : 'Sakernas',
         geminiModels,
         openaiModels,
         openrouterModels: [],
-        selectedGeminiModel: 'gemini-2.5-flash',
+        selectedGeminiModel: appSettings.gemini_model || 'gemini-3.8-flash',
         selectedOpenAIModel: 'gpt-4o',
         selectedOpenRouterModel: '',
         hasKey: true,

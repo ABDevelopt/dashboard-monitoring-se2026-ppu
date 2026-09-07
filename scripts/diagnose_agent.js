@@ -49,7 +49,7 @@ async function testDatabaseAndAI() {
     const upload = getLatestUpload('se2026');
     console.log(`   ✅ Koneksi SQLite   : OK`);
     console.log(`   - Upload Terakhir  : ${upload ? `ID ${upload.id} (${upload.tanggal || upload.filename})` : 'Belum ada data upload'}`);
-    console.log(`   - Default Model    : ${settings.gemini_model || 'gemini-3.5-flash'}`);
+    console.log(`   - Default Model    : ${settings.gemini_model || 'gemini-3.8-flash'}`);
     console.log(`   - SmartSwitch      : ${settings.chatbot_smart_switch !== '0' ? 'Aktif' : 'Nonaktif'}`);
   } catch (dbErr) {
     console.error(`   ❌ GAGAL Baca Database: ${dbErr.message}`);
@@ -94,7 +94,7 @@ async function testDatabaseAndAI() {
       const result = await streamMessageToAgent(
         t.prompt,
         [],
-        { provider: 'gemini', model: settings.gemini_model || 'gemini-3.5-flash' },
+        { provider: 'gemini', model: settings.gemini_model || 'gemini-3.8-flash' },
         (event, data) => {
           events.push({ event, data });
           if (event === 'chunk' && !firstTokenTime) {

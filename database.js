@@ -146,6 +146,8 @@ function initSharedDb(dbConn) {
     CREATE INDEX IF NOT EXISTS idx_shared_ref_petugas_nama ON ref_petugas(nama_lengkap);
   `);
 
+  initUsers(dbConn);
+
   // Migrasikan petugas_email jika sebelumnya masih berupa tabel fisik menjadi SQL VIEW
   try {
     const isTable = dbConn.prepare("SELECT type FROM sqlite_master WHERE name='petugas_email'").get();
@@ -1684,9 +1686,9 @@ function getPclStats(uploadId, settings, surveyId) {
 
   return attachProgressPercentages(getDb(sId).prepare(`
     SELECT 
-      COALESCE(p.pcl_name, m.pcl) AS pcl,
-      COALESCE(p.pcl_email, m.pcl_email) AS email,
-      COALESCE(p.pcl_sobat_id, m.pcl_sobat_id) AS sobat_id,
+      COALESCE(m.pcl, p.pcl_name) AS pcl,
+      MAX(COALESCE(p.pcl_email, m.pcl_email)) AS email,
+      MAX(COALESCE(p.pcl_sobat_id, m.pcl_sobat_id)) AS sobat_id,
       MAX(m.pml) AS pml,
       MAX(m.korlap) AS korlap,
       MAX(m.kecamatan) AS kecamatan,
@@ -1713,7 +1715,7 @@ function getPclStats(uploadId, settings, surveyId) {
     FROM progres p
     LEFT JOIN ${masterTable} m ON p.kode = m.kode
     WHERE p.upload_id = ?
-    GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), COALESCE(p.pcl_name, m.pcl)
+    GROUP BY COALESCE(m.pcl, p.pcl_name)
     ORDER BY approved_total DESC
   `).all(uploadId), effSettings);
 }
@@ -2440,8 +2442,8 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`;
     'agent_provider': 'gemini',
     'gemini_api_key': '',
     'gemini_backup_api_keys': '[]',
-    'gemini_model': 'gemini-3.5-flash',
-    'gemini_models_list': 'gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.6-flash, gemini-3.7-flash, gemini-3.1-flash-lite, gemini-2.5-flash',
+    'gemini_model': 'gemini-3.8-flash',
+    'gemini_models_list': 'gemini-3.8-flash, gemini-3.7-flash, gemini-3.6-flash, gemini-3.5-flash',
     'openai_api_key': '',
     'openai_model': 'gpt-5.5',
     'openai_models_list': 'gpt-5.5, gpt-4o',
@@ -2501,9 +2503,46 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`;
     dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run('openrouter/free', 'openrouter_model');
   }
 
-  const geminiModel = dbConn.prepare('SELECT value FROM settings WHERE key = ?').get('gemini_model');
-  if (geminiModel && (geminiModel.value === 'gemini-1.5-flash' || geminiModel.value === 'gemini-2.5-flash')) {
-    dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-3.5-flash', 'gemini_model');
+  const newGeminiModelsList = 'gemini-3.8-flash, gemini-3.7-flash, gemini-3.6-flash, gemini-3.5-flash';
+  const currentListRow = dbConn.prepare("SELECT value FROM settings WHERE key = 'gemini_models_list'").get();
+  const currentGeminiModelRow = dbConn.prepare("SELECT value FROM settings WHERE key = 'gemini_model'").get();
+  const migrationRow = dbConn.prepare("SELECT value FROM settings WHERE key = 'gemini_v38_migrated'").get();
+
+  const isPre38 = !migrationRow || migrationRow.value !== '1';
+
+  const strictlyLegacyModels = [
+    'gemini-pro',
+    'gemini-1.0-pro',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-flash-8b',
+    'gemini-2.0-flash',
+    'gemini-2.5-flash',
+    'gemini-2.5-pro',
+    'gemini-3-flash-preview',
+    'gemini-3.1-flash-lite',
+    'gemini-3.5-flash-lite'
+  ];
+
+  if (isPre38) {
+    // Migrasi satu kali ke Gemini 3.8 Flash untuk database versi sebelumnya
+    dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run(newGeminiModelsList, 'gemini_models_list');
+
+    const legacyOrOldModels = [
+      ...strictlyLegacyModels,
+      'gemini-3.5-flash' // Default lama sebelum migrasi 3.8
+    ];
+    if (!currentGeminiModelRow || !currentGeminiModelRow.value || legacyOrOldModels.includes(currentGeminiModelRow.value)) {
+      dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-3.8-flash', 'gemini_model');
+    }
+    dbConn.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('gemini_v38_migrated', '1');
+  } else {
+    // Database telah dimigrasikan: pertahankan pilihan pengguna atas gemini-3.5-flash (model minimal yang didukung).
+    // Hanya normalkan jika model saat ini adalah model usang (< 3.5)
+    if (!currentGeminiModelRow || !currentGeminiModelRow.value || strictlyLegacyModels.includes(currentGeminiModelRow.value)) {
+      dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-3.8-flash', 'gemini_model');
+    }
   }
 }
 
@@ -2517,14 +2556,14 @@ function getSettings(surveyId) {
     settings.target_fasih_mode = 'static';
   }
   if (!settings.gemini_model) {
-    settings.gemini_model = 'gemini-3.5-flash';
+    settings.gemini_model = 'gemini-3.8-flash';
   }
   return settings;
 }
 
 function rebuildAllSummaryCaches() {
-  const surveysConfig = require('./config/surveys.json');
-  const { ensureAllSubslsInUpload } = require('./services/excelParser');
+  const surveysConfig = require(path.join(__dirname, 'config', 'surveys.json'));
+  const { ensureAllSubslsInUpload } = require(path.join(__dirname, 'services', 'excelParser'));
   for (const surveyId of Object.keys(surveysConfig)) {
     try {
       const db = getDb(surveyId);
@@ -2540,7 +2579,7 @@ function rebuildAllSummaryCaches() {
     }
   }
   try {
-    const { triggerAsyncSync } = require('./services/firebaseSyncService');
+    const { triggerAsyncSync } = require(path.join(__dirname, 'services', 'firebaseSyncService'));
     triggerAsyncSync();
   } catch (e) {
     logger.error('Failed to trigger Firebase sync:', e.message);
@@ -2610,7 +2649,7 @@ function rebuildSummaryCache(uploadId, surveyId) {
       MAX(m.desa) AS desa,
       MAX(m.korlap) AS korlap,
       MAX(m.pml) AS pml,
-      COALESCE(p.pcl_name, m.pcl) AS pcl,
+      COALESCE(m.pcl, p.pcl_name) AS pcl,
       COUNT(DISTINCT p.kode) AS total_sls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
@@ -2644,7 +2683,7 @@ function rebuildSummaryCache(uploadId, surveyId) {
     FROM progres p
     LEFT JOIN ${masterTable} m ON p.kode = m.kode
     WHERE p.upload_id = ?
-    GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), m.kecamatan, m.desa
+    GROUP BY COALESCE(m.pcl, p.pcl_name), m.kecamatan, m.desa
   `).run(uploadId, uploadId);
 }
 

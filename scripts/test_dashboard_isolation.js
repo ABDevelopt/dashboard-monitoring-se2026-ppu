@@ -260,11 +260,11 @@ async function runAllTests() {
       return `SE2026 Total SLS: ${seCount} vs Sakernas Pemutakhiran BS: ${pmuCount}`;
     });
 
-    runAssertion(suiteApi, 'Data API Summary Sakernas Pendataan: 42 Blok Sensus', () => {
+    runAssertion(suiteApi, 'Data API Summary Sakernas Pendataan: 68 Blok Sensus', () => {
       if (!sumPdt) throw new Error('Gagal mem-parse JSON summary Sakernas Pendataan');
       const pdtCount = sumPdt.total_subsls || sumPdt.total;
-      if (pdtCount !== 42) {
-        throw new Error(`Expected 42 BS, got ${pdtCount}`);
+      if (pdtCount !== 68) {
+        throw new Error(`Expected 68 BS, got ${pdtCount}`);
       }
       return `Sakernas Pendataan: ${pdtCount} BS Sampel terdata`;
     });
@@ -468,23 +468,23 @@ async function runAllTests() {
     const { runSimulation } = require('../services/ai/orchestrator');
     const { buildLiveContext } = require('../services/ai/contextBuilder');
 
-    runAssertion(suiteAi, 'Live Context Sakernas CAPI Memuat Angka Capaian Akurat (91.67%)', () => {
+    runAssertion(suiteAi, 'Live Context Sakernas CAPI Memuat Angka Capaian Akurat (41.20%)', () => {
       const liveCtx = buildLiveContext('sakernas-pendataan');
-      if (!liveCtx.includes('91.67%')) throw new Error('Live context tidak memuat angka 91.67%');
-      if (!liveCtx.includes('420')) throw new Error('Live context tidak memuat target 420 RT');
-      if (!liveCtx.includes('385')) throw new Error('Live context tidak memuat realisasi 385 RT');
+      if (!liveCtx.includes('41.20%')) throw new Error('Live context tidak memuat angka 41.20%');
+      if (!liveCtx.includes('665')) throw new Error('Live context tidak memuat target 665 RT');
+      if (!liveCtx.includes('274')) throw new Error('Live context tidak memuat realisasi 274 RT');
       if (liveCtx.includes('% Capaian Utama (Rumah Tangga) | **-%**') || liveCtx.includes('% Capaian Utama (Rumah Tangga) | **-**')) {
         throw new Error('Persentase capaian di live context kosong / bernilai tanda strip');
       }
-      return 'Live context Sakernas CAPI memuat 91.67% target 420 dan realisasi 385 RT';
+      return 'Live context Sakernas CAPI memuat 41.20% target 665 dan realisasi 274 RT';
     });
 
     runAssertion(suiteAi, 'Jawaban Ringkasan Progres Sakernas CAPI Terstruktur & Bersih', () => {
       const sim = runSimulation('Bagaimana ringkasan progres survei Sakernas CAPI di Kabupaten PPU saat ini?', [], 'sakernas-pendataan');
       const text = sim.content || '';
-      if (!text.includes('420')) throw new Error('Jawaban tidak memuat target 420');
-      if (!text.includes('385')) throw new Error('Jawaban tidak memuat realisasi 385');
-      if (!text.includes('91.67%')) throw new Error('Jawaban tidak memuat 91.67%');
+      if (!text.includes('665')) throw new Error('Jawaban tidak memuat target 665');
+      if (!text.includes('274')) throw new Error('Jawaban tidak memuat realisasi 274');
+      if (!text.includes('41.20%')) throw new Error('Jawaban tidak memuat 41.20%');
       if (!text.includes('PPL')) throw new Error('Jawaban tidak menyebut PPL');
       if (text.includes('PCL')) throw new Error('Jawaban membocorkan sebutan PCL');
       if (text.includes('upload_id') || text.includes('summary_cache')) throw new Error('Jawaban membocorkan nama kolom database teknis');

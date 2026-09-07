@@ -8,7 +8,7 @@
 //  - Pembersihan dan penyimpanan kembali riwayat
 // ─────────────────────────────────────────────────────────────────────────────
 
-const { getDb, getSettings, getLatestUpload, getOverviewSummary, getKecamatanStats, updateAgentQueryAnalysis } = require('../../database');
+const { getDb, getSettings, getLatestUpload, getOverviewSummary, getKecamatanStats, updateAgentQueryAnalysis, resolveSurveyId } = require('../../database');
 const contextBuilder = require('./contextBuilder');
 const memoryManager = require('./memoryManager');
 const toolRegistry = require('./toolRegistry');
@@ -56,15 +56,24 @@ Maka entitas tersebut WAJIB dijadikan filter PENGEQUALIAN (NOT LIKE / NOT IN / !
 ### ATURAN MUTLAK: Pemisahan Data FASIH vs MUATAN
 1. **Pertanyaan FASIH / Assignment FASIH / Dokumen FASIH / Progres 100% FASIH**:
    - Jika pertanyaan menyebut "FASIH", "assignment", "dokumen", "progres assignment", atau "selesai 100%":
-     - Kolom Target: \`m.target_fasih\` / \`SUM(m.target_fasih)\` (atau \`target_fasih_total\` di \`summary_cache\`).
-     - Kolom Realisasi: \`SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0))\` (atau \`submitted_total + approved_total + rejected_total\`).
-     - Persentase Capaian (%): \`ROUND(CAST(SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS FLOAT) / NULLIF(SUM(m.target_fasih), 0) * 100, 2)\`.
-     - Kriteria Selesai 100%: \`HAVING SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) >= SUM(m.target_fasih)\`.
+     - Kolom Target Dokumen FASIH Aktif (DEFAULT DASHBOARD & PERTANYAAN PROGRES): \`COALESCE(p.target_upload, m.target_fasih)\` / \`SUM(COALESCE(p.target_upload, 0))\` (atau \`target_fasih_total\` di \`summary_cache\`).
+       - Target Dokumen FASIH Aktif PPU = 125.378 dokumen (Sepaku: 27.782, Waru: 13.344, Babulu: 24.238, Penajam: 60.014).
+     - Kolom Realisasi FASIH: \`SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0))\` (atau \`submitted_total + approved_total + rejected_total\`).
+       - Realisasi Dokumen FASIH PPU = 109.393 dokumen (Sepaku: 25.268, Waru: 10.877, Babulu: 21.145, Penajam: 52.103).
+     - Persentase Capaian (%): \`ROUND(CAST(SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS FLOAT) / NULLIF(SUM(COALESCE(p.target_upload, m.target_fasih)), 0) * 100, 2)\`.
+       - Persentase Capaian PPU = 87,25% (Sepaku: 90,95%, Waru: 81,51%, Babulu: 87,24%, Penajam: 86,82%).
+     - Kriteria Selesai 100% (Soal 13):
+       - Jika dihitung dari **Target FASIH Aktif** (\`p.target_upload\`): terdapat **25 PCL** yang mencapai >= 100%.
+       - Jika dihitung dari **Alokasi Target Awal / Prelist Statis** (\`m.target_fasih\`): terdapat **131 PCL** yang mencapai >= 100%.
+       - AI sebaiknya menyajikan kedua konteks ini secara transparan: 25 PCL telah tuntas target aktif lapangan terkini, dan 131 PCL telah melampaui alokasi target awal prelist.
+     - **Alokasi Target Awal / Prelist Statis (Khusus Pertanyaan Alokasi Beban Awal)**:
+       - HANYA saat user secara eksplisit menanyakan "alokasi target" / "alokasi awal" / "prelist", gunakan kolom \`m.target_fasih\` / \`SUM(m.target_fasih)\` (atau \`target_static_total\` di \`summary_cache\`).
+       - Contoh (Soal 14): Petugas PCL dengan alokasi target dokumen terbanyak di PPU adalah **Qoryfatimahazzara** (Kecamatan Penajam) dengan alokasi awal prelist 768 dokumen (Target FASIH aktif: 943 dokumen, realisasi: 707 dokumen).
      - **DILARANG KERAS MENGGUNAKAN KOLOM MUATAN / TOTAL_MUATAN / MUATAN_SELESAI / USAHA_DITEMUKAN** ketika pertanyaan menanyakan FASIH / Dokumen / Assignment!
 2. **Pertanyaan MUATAN / Beban Muatan / Usaha / Keluarga (KHUSUS SENSUS EKONOMI 2026)**:
    - Fitur Muatan, Target Muatan, dan Beban Usaha/Keluarga HANYA berlaku pada kegiatan Sensus Ekonomi 2026. Untuk kegiatan survei lain (seperti Sakernas), konsep muatan/usaha TIDAK ADA, seluruh metrik murni adalah Assignment Dokumen FASIH.
-   - Kolom Target: \`m.muatan\` / \`SUM(m.muatan)\` (atau \`total_muatan\` di \`summary_cache\`).
-   - Kolom Realisasi: \`SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0) + COALESCE(p.ditemukan+p.keluarga_baru,0))\` (atau \`muatan_selesai\` di \`summary_cache\`).
+   - Kolom Target: \`m.muatan\` / \`SUM(m.muatan)\` (atau \`total_muatan\` di \`summary_cache\`). (PPU = 114.387 muatan).
+   - Kolom Realisasi: \`SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0) + COALESCE(p.ditemukan+p.keluarga_baru,0))\` (atau \`muatan_selesai\` di \`summary_cache\`). (PPU = 44.900 muatan, 39,25%).
 
 - **Query Petugas Selesai 100% Progres FASIH (Termasuk / Selain KIPP)**:
   - Gunakan query berikut:
@@ -72,26 +81,48 @@ Maka entitas tersebut WAJIB dijadikan filter PENGEQUALIAN (NOT LIKE / NOT IN / !
     SELECT 
       m.pcl AS "Nama Petugas",
       MAX(m.kecamatan) AS "Kecamatan",
-      SUM(m.target_fasih) AS "Target FASIH",
+      SUM(COALESCE(p.target_upload, m.target_fasih)) AS "Target FASIH",
       SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS "Realisasi Dokumen",
-      ROUND(CAST(SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS FLOAT) / NULLIF(SUM(m.target_fasih), 0) * 100, 2) AS "Persentase FASIH (%)"
+      ROUND(CAST(SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS FLOAT) / NULLIF(SUM(COALESCE(p.target_upload, m.target_fasih)), 0) * 100, 2) AS "Persentase FASIH (%)"
     FROM subsls_master m
     LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = (SELECT id FROM uploads ORDER BY id DESC LIMIT 1)
     WHERE m.pcl IS NOT NULL AND m.pcl != ''
       [AND m.nama_sls NOT LIKE '%KIPP%' AND m.pcl NOT IN (SELECT DISTINCT pcl FROM subsls_master WHERE nama_sls LIKE '%KIPP%' AND pcl IS NOT NULL AND pcl != '')]
     GROUP BY m.pcl
-    HAVING SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) >= SUM(m.target_fasih)
+    HAVING SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) >= SUM(COALESCE(p.target_upload, m.target_fasih))
     ORDER BY "Persentase FASIH (%)" DESC
     \`\`\`
+- **Query Ranking PCL Berdasarkan Realisasi Terbanyak (Top 5 PCL - Soal 12)**:
+  - Gunakan query berikut:
+    \`\`\`sql
+    SELECT 
+      m.pcl AS "Nama Petugas",
+      MAX(m.kecamatan) AS "Kecamatan",
+      SUM(COALESCE(p.target_upload, m.target_fasih)) AS "Target FASIH",
+      SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS "Realisasi Dokumen"
+    FROM subsls_master m
+    LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = (SELECT id FROM uploads ORDER BY id DESC LIMIT 1)
+    WHERE m.pcl IS NOT NULL AND m.pcl != ''
+    GROUP BY m.pcl
+    ORDER BY "Realisasi Dokumen" DESC
+    LIMIT 5
+    \`\`\`
+  - Hasil Top 5 PCL Kabupaten PPU:
+    1. Muhamad Firdaus Eka Trisna Saputra (1.102 dok, Sepaku)
+    2. Hana Tri Mainingsih (1.050 dok, Penajam)
+    3. Ropah Musrotin (1.050 dok, Penajam)
+    4. Widya Laila Rahmadani (1.032 dok, Penajam)
+    5. Edy Triasno Basri (1.010 dok, Penajam)
+
 - **Kinerja & Rangking Petugas (PCL/PML/Korlap)**:
   - UTAMAKAN tool \`get_petugas\` (role: 'pcl'|'pml'|'korlap', kecamatan: optional) untuk pertanyaan seperti siapa submit terbanyak, target tertinggi, progres terendah, dsb.
-  - Jika query manual via \`query_data\`, gunakan tabel \`summary_cache\` (kolom: pcl, submitted_total, approved_total, draft_total, target_fasih_total) ATAU tabel \`progres\` yang di-\`LEFT JOIN subsls_master m ON progres.kode = m.kode\` (karena kolom \`progres.pcl_name\` sering NULL, nama resmi petugas ada di \`m.pcl\`).
+  - Jika query manual via \`query_data\`, gunakan tabel \`summary_cache\` (kolom: pcl, submitted_total, approved_total, draft_total, target_fasih_total) ATAU tabel \`subsls_master m LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ? GROUP BY m.pcl\` (karena nama resmi master petugas ada di \`m.pcl\`).
 - **Petugas Terbaik dari Assignment FASIH & Muatan**:
-  - Kolom assignment FASIH adalah \`m.target_fasih\` / \`SUM(m.target_fasih)\`.
-  - Realisasi FASIH adalah \`SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0))\`.
+  - Kolom assignment FASIH adalah \`COALESCE(p.target_upload, m.target_fasih)\` / \`SUM(COALESCE(p.target_upload, 0))\`.
+  - Realisasi FASIH adalah \`SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0))\`.
   - Target muatan adalah \`m.muatan\` / \`SUM(m.muatan)\`.
   - Realisasi muatan adalah \`SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0) + COALESCE(p.ditemukan+p.keluarga_baru,0))\`.
-  - Gunakan \`query_data\` pada tabel \`subsls_master m LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ? GROUP BY m.pcl ORDER BY SUM(m.target_fasih) DESC, SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0)) DESC, SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0)+COALESCE(p.ditemukan+p.keluarga_baru,0)) DESC\` (atau GROUP BY m.pml untuk PML).
+  - Gunakan \`query_data\` pada tabel \`subsls_master m LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ? GROUP BY m.pcl ORDER BY SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) DESC, SUM(COALESCE(p.target_upload, m.target_fasih)) DESC, SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0)+COALESCE(p.ditemukan+p.keluarga_baru,0)) DESC\` (atau GROUP BY m.pml untuk PML).
 - **Rata-rata Penambahan Harian per Petugas (PCL/PML/Korlap)**:
   - Jika pertanyaan menanyakan *"Siapa petugas dengan rata-rata penambahan harian terbanyak / tertinggi..."*:
     - WAJIB gunakan query yang mengelompokkan data per petugas (\`GROUP BY m.pcl\`), BUKAN mengueri tabel \`uploads\`!
@@ -103,13 +134,23 @@ Maka entitas tersebut WAJIB dijadikan filter PENGEQUALIAN (NOT LIKE / NOT IN / !
         MAX(m.kecamatan) AS "Kecamatan",
         SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS "Total Dokumen Selesai",
         ROUND(CAST(SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS FLOAT) / (SELECT COUNT(DISTINCT tanggal) FROM uploads WHERE tanggal IS NOT NULL), 2) AS "Rata-rata Harian (Dok/Hari)",
-        SUM(m.target_fasih) AS "Target FASIH"
+        SUM(COALESCE(p.target_upload, m.target_fasih)) AS "Target FASIH"
       FROM subsls_master m
       LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = (SELECT id FROM uploads ORDER BY id DESC LIMIT 1)
       WHERE [terapkan filter/pengecualian jika ada]
       GROUP BY m.pcl
       ORDER BY "Rata-rata Harian (Dok/Hari)" DESC
       \`\`\`
+- **Kinerja Petugas dengan Capaian Persentase Terendah (Soal 15)**:
+  - Jika berbasis Target Aktif FASIH-SM (\`p.target_upload\`): Radit (46,66%), Vika Indah Rahayu (50,36%), Putri Fatima Tuzzehroh Ilhami (57,71%), Aco Fitriadi (57,94%), Sinta Rahmayanti (58,42%).
+  - Jika berbasis Alokasi Target Awal Prelist (\`m.target_fasih\`): Radit (58,89%), Sinta Rahmayanti (69,06%), Dwi Setiawan (70,71%), Wika Oktafiani Putri (75,86%), Putri Fatima Tuzzehroh Ilhami (76,38%).
+  - Sajikan kedua perspektif ini secara transparan jika ditanya petugas dengan capaian terendah yang butuh pendampingan.
+- **Kinerja Tim Pengawas PML (Soal 16 & 17)**:
+  - Persentase Capaian Tertinggi: Siti Nurjanah (99,37% target aktif / 139,00% target prelist) dan Tri Puji Rahayu (94,91% target aktif / 143,72% target prelist).
+  - Dokumen Rejected Terbanyak: Surtini (665 dokumen rejected).
+- **Perbandingan Tim Korlap (Soal 18)**:
+  - Capaian Tertinggi: Tim Nova (99,37% target aktif / 139,00% target prelist).
+  - Capaian Terendah: Tim Tyas (70,71% target aktif) / Tim Darman (107,55% target prelist).
 - **Rata-rata Penambahan Harian Kabupaten / Wilayah (Umum)**:
   - Gunakan \`query_data\` menghitung \`SUM(submitted_total + approved_total + rejected_total) / (SELECT COUNT(DISTINCT tanggal) FROM uploads)\` dari \`summary_cache\`.
 - **Penambahan Harian Terakhir (Delta Sesi/Hari)**: Gunakan \`query_data\` membandingkan realisasi upload terbaru dengan upload sesi sebelumnya.
@@ -250,16 +291,20 @@ function runSimulation(userMessage, chatHistory, surveyId = 'se2026') {
   }
 
   try {
+    const isPetugasQuery = lowerMsg.includes('petugas') || lowerMsg.includes('pcl') || lowerMsg.includes('ppl') || lowerMsg.includes('pml') || lowerMsg.includes('korlap');
+
     // 1. Executive Summary Progres Kegiatan / Wilayah
     if (
-      lowerMsg.includes('ringkasan') || 
-      lowerMsg.includes('progres') || 
-      lowerMsg.includes('capaian') || 
-      lowerMsg.includes('perkembangan') || 
-      lowerMsg.includes('saat ini') || 
-      lowerMsg.includes('kabupaten') || 
-      lowerMsg.includes('sakernas') || 
-      lowerMsg.includes('rekap')
+      !isPetugasQuery && (
+        lowerMsg.includes('ringkasan') || 
+        lowerMsg.includes('progres') || 
+        lowerMsg.includes('capaian') || 
+        lowerMsg.includes('perkembangan') || 
+        lowerMsg.includes('saat ini') || 
+        lowerMsg.includes('kabupaten') || 
+        lowerMsg.includes('sakernas') || 
+        lowerMsg.includes('rekap')
+      )
     ) {
       const summary = getOverviewSummary(uploadId, settings, surveyId);
       const kecStats = getKecamatanStats(uploadId, settings, surveyId);
@@ -360,13 +405,13 @@ function runSimulation(userMessage, chatHistory, surveyId = 'se2026') {
 
       const isHeavy = lowerMsg.includes('beban') || lowerMsg.includes('berat');
       const orderBy = isHeavy
-        ? 'SUM(m.target_fasih) DESC, muatan_selesai ASC'
+        ? 'SUM(COALESCE(p.target_upload, m.target_fasih)) DESC, muatan_selesai ASC'
         : 'muatan_selesai ASC, total_muatan DESC';
 
       const rows = db.prepare(`
         SELECT m.pcl, MAX(m.pml) AS pml, MAX(m.kecamatan) AS kecamatan,
           SUM(m.muatan) AS total_muatan,
-          SUM(m.target_fasih) AS target_fasih_total,
+          SUM(COALESCE(p.target_upload, m.target_fasih)) AS target_fasih_total,
           SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0)+COALESCE(p.ditemukan+p.keluarga_baru,0)) AS muatan_selesai,
           SUM(COALESCE(p.submitted_by_pcl,0)+COALESCE(p.approved,0)+COALESCE(p.rejected,0)) AS realisasi_fasih
         FROM subsls_master m
@@ -399,7 +444,7 @@ function runSimulation(userMessage, chatHistory, surveyId = 'se2026') {
         SELECT m.pcl, MAX(m.pml) AS pml, MAX(m.kecamatan) AS kecamatan,
           SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS realisasi,
           ROUND(CAST(SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS FLOAT) / ${daysCount}, 2) AS rata_rata_harian,
-          SUM(m.target_fasih) AS target_fasih
+          SUM(COALESCE(p.target_upload, m.target_fasih)) AS target_fasih
         FROM subsls_master m
         LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
         WHERE 1=1 ${kippFilter} ${filterKec}
@@ -418,17 +463,42 @@ function runSimulation(userMessage, chatHistory, surveyId = 'se2026') {
       return { role: 'model', content, isSimulation: true };
     }
 
-    if (lowerMsg.includes('terbaik') || lowerMsg.includes('leaderboard') || lowerMsg.includes('ranking') || lowerMsg.includes('performa') || lowerMsg.includes('tertinggi') || lowerMsg.includes('top')) {
+    if (lowerMsg.includes('alokasi') || (lowerMsg.includes('target') && (lowerMsg.includes('awal') || lowerMsg.includes('prelist')))) {
       const rows = db.prepare(`
         SELECT m.pcl, MAX(m.pml) AS pml, MAX(m.kecamatan) AS kecamatan,
-          SUM(m.target_fasih) AS target_fasih,
-          SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0)) AS realisasi_fasih,
+          SUM(m.target_fasih) AS target_statis,
+          SUM(COALESCE(p.target_upload, m.target_fasih)) AS target_aktif,
+          SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS realisasi
+        FROM subsls_master m
+        LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+        WHERE m.pcl IS NOT NULL AND m.pcl != '' ${kippFilter} ${filterKec}
+        GROUP BY m.pcl
+        ORDER BY target_statis DESC
+        LIMIT 5
+      `).all(uploadId);
+
+      let content = `Berikut daftar 5 Petugas (${officerRole}) dengan Alokasi Target Dokumen Terbanyak (Prelist Statis)${kippLabel}${kecLabel}:\n\n`;
+      content += `| No | Nama ${officerRole} | PML Pengawas | Kecamatan | Alokasi Awal (Prelist) | Target Aktif FASIH | Realisasi |\n| :---: | :--- | :--- | :--- | :---: | :---: | :---: |\n`;
+      rows.forEach((r, i) => {
+        content += `| ${i+1} | **${r.pcl}** | ${r.pml || '-'} | ${r.kecamatan} | **${(r.target_statis || 0).toLocaleString('id-ID')} dok** | ${(r.target_aktif || 0).toLocaleString('id-ID')} dok | ${(r.realisasi || 0).toLocaleString('id-ID')} dok |\n`;
+      });
+      content += `\n### Analisis Alokasi Target:\n`;
+      content += `* **Peringkat Teratas**: **${rows[0]?.pcl || '-'}** (${rows[0]?.kecamatan || '-'}) memegang alokasi target dokumen awal terbanyak yaitu sebesar **${(rows[0]?.target_statis || 0).toLocaleString('id-ID')} dokumen** (target aktif FASIH: ${(rows[0]?.target_aktif || 0).toLocaleString('id-ID')} dokumen, realisasi: ${(rows[0]?.realisasi || 0).toLocaleString('id-ID')} dokumen).\n`;
+      content += getActionLinks();
+      return { role: 'model', content, isSimulation: true };
+    }
+
+    if (lowerMsg.includes('terbaik') || lowerMsg.includes('leaderboard') || lowerMsg.includes('ranking') || lowerMsg.includes('performa') || lowerMsg.includes('tertinggi') || lowerMsg.includes('top') || (lowerMsg.includes('terbanyak') && (lowerMsg.includes('realisasi') || lowerMsg.includes('dokumen') || lowerMsg.includes('petugas') || lowerMsg.includes('pcl') || lowerMsg.includes('ppl')))) {
+      const rows = db.prepare(`
+        SELECT m.pcl, MAX(m.pml) AS pml, MAX(m.kecamatan) AS kecamatan,
+          SUM(COALESCE(p.target_upload, m.target_fasih)) AS target_fasih,
+          SUM(COALESCE(p.submitted_by_pcl,0) + COALESCE(p.approved,0) + COALESCE(p.rejected,0)) AS realisasi_fasih,
           SUM(m.muatan) AS total_muatan,
           SUM(COALESCE(p.usaha_ditemukan+p.usaha_baru,0)+COALESCE(p.ditemukan+p.keluarga_baru,0)) AS muatan_selesai
         FROM subsls_master m
         LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
         WHERE 1=1 ${kippFilter} ${filterKec}
-        GROUP BY m.pcl ORDER BY target_fasih DESC, realisasi_fasih DESC, muatan_selesai DESC LIMIT 5
+        GROUP BY m.pcl ORDER BY realisasi_fasih DESC, target_fasih DESC, muatan_selesai DESC LIMIT 5
       `).all(uploadId);
 
       let content = `Berikut daftar 5 Petugas (${officerRole}) Terbaik berdasarkan Capaian Dokumen${kippLabel}${kecLabel}:\n\n`;
@@ -447,7 +517,7 @@ function runSimulation(userMessage, chatHistory, surveyId = 'se2026') {
         });
       }
       content += `\n### Analisis & Rekomendasi:\n`;
-      content += `* **Peringkat Teratas**: **${rows[0]?.pcl || '-'}** (${rows[0]?.kecamatan || '-'}) memegang target tertinggi sebesar **${rows[0]?.target_fasih || 0} dokumen** dengan realisasi **${rows[0]?.realisasi_fasih || 0} dokumen** terverifikasi/submit.\n`;
+      content += `* **Peringkat Teratas**: **${rows[0]?.pcl || '-'}** (${rows[0]?.kecamatan || '-'}) memegang realisasi dokumen terbanyak sebesar **${rows[0]?.realisasi_fasih || 0} dokumen** (target aktif: **${rows[0]?.target_fasih || 0} dokumen**).\n`;
       content += `* **Efisiensi Lapangan**: Seluruh petugas pada daftar di atas aktif menyelesaikan sinkronisasi dokumen lapangan.\n`;
       content += getActionLinks();
       return { role: 'model', content, isSimulation: true };
@@ -510,6 +580,69 @@ async function streamSimulation(userMessage, chatHistory, onEvent, abortSignal, 
 // ─────────────────────────────────────────────
 //  FACADE FUNCTIONS: BACA/TULIS MEMORY & API CALL
 // ─────────────────────────────────────────────
+const STANDARD_DOWNWARD_CHAIN = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
+
+/**
+ * Memeriksa apakah suatu error mengindikasikan model tidak ditemukan / tidak didukung (404/Not Found/Unsupported).
+ */
+function isModelNotFoundError(errMsg, statusCode = null) {
+  if (statusCode === 404) return true;
+  if (!errMsg || typeof errMsg !== 'string') return false;
+  const lower = errMsg.toLowerCase();
+  return (
+    errMsg.includes('404') ||
+    lower.includes('not found') ||
+    lower.includes('not supported') ||
+    lower.includes('is not supported') ||
+    lower.includes('does not exist') ||
+    lower.includes('unknown model') ||
+    lower.includes('unrecognized model') ||
+    lower.includes('unsupported model')
+  );
+}
+
+/**
+ * Membangun rantai model fallback menurun (strict downward fallback chain).
+ * Model bergulir ke bawah dari model yang dipilih hingga batas terlama gemini-3.5-flash:
+ * gemini-3.8-flash -> gemini-3.7-flash -> gemini-3.6-flash -> gemini-3.5-flash
+ */
+function getDownwardFallbackChain(selectedModel, modelsListStr) {
+  let configuredModels = [];
+  if (modelsListStr) {
+    configuredModels = modelsListStr
+      .split(',')
+      .map(s => s.trim())
+      .filter(m => m && (!llmGateway.LEGACY_GEMINI_MODELS || !llmGateway.LEGACY_GEMINI_MODELS.has(m)));
+  }
+
+  const baseChain = STANDARD_DOWNWARD_CHAIN;
+  let targetModel = (selectedModel && typeof selectedModel === 'string' && selectedModel.trim())
+    ? selectedModel.trim()
+    : 'gemini-3.8-flash';
+
+  // Jika model adalah legacy (< 3.5), arahkan langsung ke model default 3.8
+  if (llmGateway.LEGACY_GEMINI_MODELS && llmGateway.LEGACY_GEMINI_MODELS.has(targetModel)) {
+    targetModel = 'gemini-3.8-flash';
+  }
+
+  const idx = baseChain.indexOf(targetModel);
+
+  if (idx !== -1) {
+    // Strictly cascade downward from targetModel down to gemini-3.5-flash
+    const downward = baseChain.slice(idx);
+    if (configuredModels.length > 0) {
+      // Pastikan targetModel selalu dipertahankan di posisi awal
+      const filtered = downward.filter(m => m === targetModel || configuredModels.includes(m));
+      if (filtered.length > 0) return filtered;
+    }
+    return downward;
+  }
+
+  // Model di luar rantai standar: letakkan di urutan pertama, lalu lanjutkan rantai standar
+  const remaining = baseChain.filter(m => m !== targetModel && (configuredModels.length === 0 || configuredModels.includes(m)));
+  return [targetModel, ...remaining];
+}
+
 async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, userId = null) {
   const currentSurveyId = (options && options.surveyId) || resolveSurveyId();
 
@@ -540,13 +673,19 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
     }
   }
 
-  const tries = [{ provider: 'gemini', model: initialSelection.model }];
-
-  if (settings.chatbot_smart_switch !== '0') {
-    const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.6-flash, gemini-3.7-flash, gemini-3.1-flash-lite, gemini-2.5-flash';
-    for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-      if (tries.length >= 3) break; // Maksimal 3 kandidat model untuk menjaga responsivitas server
-      tries.push({ provider: 'gemini', model: m });
+  const tries = [];
+  if (settings.chatbot_smart_switch === '0') {
+    tries.push({ provider: 'gemini', model: initialSelection.model });
+  } else {
+    const chain = getDownwardFallbackChain(initialSelection.model, settings.gemini_models_list);
+    for (const m of chain) {
+      if (tries.length >= 5) break; // Cukup untuk seluruh rantai standar (3.8 s.d. 3.5) meskipun ada model kustom di awal
+      if (!tries.some(t => t.model === m)) {
+        tries.push({ provider: 'gemini', model: m });
+      }
+    }
+    if (tries.length === 0) {
+      tries.push({ provider: 'gemini', model: initialSelection.model });
     }
   }
 
@@ -580,6 +719,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
         finalResult = await llmGateway.sendMessageToGemini(
           userMessage, mergedHistory, settings, current.model, serverController.signal, kItem.key, dynInstruction, { surveyId: currentSurveyId }
         );
+        finalResult.model = current.model;
         keyPool.markSuccess(kItem.key);
         if (finalResult.queryId && finalResult.content) {
           updateAgentQueryAnalysis(finalResult.queryId, finalResult.content);
@@ -591,6 +731,11 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
         lastError = err;
         const errMsg = err.message || '';
         log.warn(`[ORCH] -> Gagal pada ${kItem.label} (${current.model}): ${errMsg}. Mengutamakan rotasi ke API Key berikutnya...`);
+        const isNotFound = isModelNotFoundError(errMsg, err.status || err.statusCode || (err.response && err.response.status));
+        if (isNotFound) {
+          log.warn(`[ORCH] Model '${current.model}' tidak tersedia (404/Not Found). Melewati sisa API key dan langsung beralih ke model fallback berikutnya...`);
+          break; // Fast-skip: langsung ke model berikutnya
+        }
         if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
           keyPool.markRateLimited(kItem.key, 120, errMsg, current.model);
         } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid') || errMsg.toLowerCase().includes('api key not valid')) {
@@ -658,13 +803,19 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
     }
   }
 
-  const tries = [{ provider: 'gemini', model: initialSelection.model }];
-
-  if (settings.chatbot_smart_switch !== '0') {
-    const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.6-flash, gemini-3.7-flash, gemini-3.1-flash-lite, gemini-2.5-flash';
-    for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-      if (tries.length >= 3) break; // Maksimal 3 kandidat model untuk streaming
-      tries.push({ provider: 'gemini', model: m });
+  const tries = [];
+  if (settings.chatbot_smart_switch === '0') {
+    tries.push({ provider: 'gemini', model: initialSelection.model });
+  } else {
+    const chain = getDownwardFallbackChain(initialSelection.model, settings.gemini_models_list);
+    for (const m of chain) {
+      if (tries.length >= 5) break; // Cukup untuk seluruh rantai standar (3.8 s.d. 3.5) meskipun ada model kustom di awal
+      if (!tries.some(t => t.model === m)) {
+        tries.push({ provider: 'gemini', model: m });
+      }
+    }
+    if (tries.length === 0) {
+      tries.push({ provider: 'gemini', model: initialSelection.model });
     }
   }
 
@@ -707,6 +858,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
         finalResult = await llmGateway.streamMessageToGemini(
           userMessage, mergedHistory, settings, current.model, abortSignal, kItem.key, onEvent, dynInstruction, { surveyId: currentSurveyId }
         );
+        finalResult.model = current.model;
         keyPool.markSuccess(kItem.key);
         if (finalResult.queryId && finalResult.content) {
           updateAgentQueryAnalysis(finalResult.queryId, finalResult.content);
@@ -726,6 +878,11 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
         lastError = err;
         const errMsg = err.message || '';
         log.warn(`[ORCH:STREAM] -> Gagal pada ${kItem.label} (${current.model}): ${errMsg}. Mengutamakan rotasi ke API Key berikutnya...`);
+        const isNotFound = isModelNotFoundError(errMsg, err.status || err.statusCode || (err.response && err.response.status));
+        if (isNotFound) {
+          log.warn(`[ORCH:STREAM] Model '${current.model}' tidak tersedia (404/Not Found). Melewati sisa API key dan langsung beralih ke model fallback berikutnya...`);
+          break; // Fast-skip: langsung ke model berikutnya
+        }
         if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
           keyPool.markRateLimited(kItem.key, 120, errMsg, current.model);
         } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid') || errMsg.toLowerCase().includes('api key not valid')) {
@@ -767,5 +924,7 @@ module.exports = {
   streamMessageToAgent,
   runSimulation,
   streamSimulation,
+  getDownwardFallbackChain,
+  isModelNotFoundError,
   fetchPageData: toolRegistry.fetchPageDataCompat
 };
