@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
+const { getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, getSubslsStatusFormula } = require('../database');
 
 const PBI_CODES = [
   '64090100010003', '64090100010008', '64090100020000', '64090100020003', '64090100020004',
@@ -122,8 +122,8 @@ const uploadId = res.locals.uploadId;
       cond.push('(m.pcl = ? OR p.pcl_name = ? OR p.pcl_email = ?)');
       params.push(filterPcl, filterPcl, filterPcl);
     }
-    if (filterStatus === 'selesai') cond.push(`p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 1`);
-    if (filterStatus === 'belum') cond.push(`(p.kode IS NULL OR COALESCE(p.sls_selesai, 0) = 0)`);
+    if (filterStatus === 'selesai') cond.push(`p.kode IS NOT NULL AND (${getSingleSelesaiFormula(targetFormula, 'p')}) = 1`);
+    if (filterStatus === 'belum') cond.push(`(p.kode IS NULL OR (${getSingleSelesaiFormula(targetFormula, 'p')}) = 0)`);
 
     const where = cond.length ? 'AND ' + cond.join(' AND ') : '';
 
@@ -140,13 +140,14 @@ const uploadId = res.locals.uploadId;
         m.korlap, m.pml, m.pcl, m.muatan,
         m.target_fasih AS target_fasih_awal,
         COALESCE(p.draft, 0) AS draft,
+        CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${targetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END AS open,
         COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
         COALESCE(p.approved, 0) AS approved,
         COALESCE(p.rejected, 0) AS rejected,
         ${targetFormula} AS target_fasih,
         COALESCE(m.target_fasih, 0) AS target_static,
         COALESCE(p.target_upload, 0) AS target_upload,
-        COALESCE(p.sls_selesai, 0) AS sudah_diisi,
+        ${getSubslsStatusFormula(targetFormula, 'p')} AS sudah_diisi,
         COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
         COALESCE(p.usaha_ditemukan, 0) AS usaha_ditemukan,
         COALESCE(p.usaha_baru, 0) AS usaha_baru,

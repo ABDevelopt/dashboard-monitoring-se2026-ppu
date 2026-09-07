@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSubslsStatusFormula } = require('../database');
+const { getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, getSubslsStatusFormula } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -12,7 +12,7 @@ router.get('/', (req, res) => {
   const filterKorlap = req.query.korlap || '';
   const filterPml = req.query.pml || '';
   const filterPcl = req.query.pcl || '';
-  const filterStatus = req.query.status || ''; // 'belum_mulai' | 'sedang_didata' | 'memenuhi_target' | 'melebihi_target'
+  const filterStatus = req.query.status || ''; // 'belum_mulai' | 'sedang_didata' | 'memenuhi_target' | 'selesai'
   const filterKode = req.query.kode || '';
   const filterQ = req.query.q || '';
 
@@ -45,13 +45,13 @@ router.get('/', (req, res) => {
     }
     
     if (filterStatus === 'belum_mulai') {
-      cond.push('(p.kode IS NULL OR (COALESCE(p.sls_selesai, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
+      cond.push(`(p.kode IS NULL OR ((${getSingleSelesaiFormula(targetFormula, 'p')}) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))`);
     } else if (filterStatus === 'sedang_didata') {
-      cond.push(`(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0) AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) < (${targetFormula}))`);
+      cond.push(`(p.kode IS NOT NULL AND (${getSingleSelesaiFormula(targetFormula, 'p')}) = 0 AND (COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0) AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) < (${targetFormula}))`);
     } else if (filterStatus === 'memenuhi_target') {
-      cond.push(`(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}))`);
+      cond.push(`(p.kode IS NOT NULL AND (${getSingleSelesaiFormula(targetFormula, 'p')}) = 0 AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}))`);
     } else if (filterStatus === 'selesai') {
-      cond.push('(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 1)');
+      cond.push(`(p.kode IS NOT NULL AND (${getSingleSelesaiFormula(targetFormula, 'p')}) = 1)`);
     }
 
     const where = cond.length ? 'AND ' + cond.join(' AND ') : '';
@@ -82,6 +82,7 @@ router.get('/', (req, res) => {
         m.korlap, m.pml, m.pcl, m.muatan,
         m.target_fasih AS target_fasih_awal,
         COALESCE(p.draft, 0) AS draft,
+        CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${targetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END AS open,
         COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
         COALESCE(p.approved, 0) AS approved,
         COALESCE(p.rejected, 0) AS rejected,
@@ -128,6 +129,7 @@ router.get('/', (req, res) => {
           m.korlap, m.pml, m.pcl, m.muatan,
           m.target_fasih AS target_fasih_awal,
           COALESCE(p.draft, 0) AS draft,
+          CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${targetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END AS open,
           COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
           COALESCE(p.approved, 0) AS approved,
           COALESCE(p.rejected, 0) AS rejected,
@@ -297,13 +299,13 @@ router.get('/export', (req, res) => {
   }
 
   if (filterStatus === 'belum_mulai') {
-    cond.push('(p.kode IS NULL OR (COALESCE(p.sls_selesai, 0) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))');
+    cond.push(`(p.kode IS NULL OR ((${getSingleSelesaiFormula(targetFormula, 'p')}) = 0 AND COALESCE(p.draft, 0) = 0 AND COALESCE(p.submitted_by_pcl, 0) = 0 AND COALESCE(p.approved, 0) = 0 AND COALESCE(p.rejected, 0) = 0))`);
   } else if (filterStatus === 'sedang_didata') {
-    cond.push(`(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0) AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) < (${targetFormula}))`);
+    cond.push(`(p.kode IS NOT NULL AND (${getSingleSelesaiFormula(targetFormula, 'p')}) = 0 AND (COALESCE(p.draft, 0) > 0 OR COALESCE(p.submitted_by_pcl, 0) > 0 OR COALESCE(p.approved, 0) > 0 OR COALESCE(p.rejected, 0) > 0) AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) < (${targetFormula}))`);
   } else if (filterStatus === 'memenuhi_target') {
-    cond.push(`(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 0 AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}))`);
+    cond.push(`(p.kode IS NOT NULL AND (${getSingleSelesaiFormula(targetFormula, 'p')}) = 0 AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}))`);
   } else if (filterStatus === 'selesai') {
-    cond.push('(p.kode IS NOT NULL AND COALESCE(p.sls_selesai, 0) = 1)');
+    cond.push(`(p.kode IS NOT NULL AND (${getSingleSelesaiFormula(targetFormula, 'p')}) = 1)`);
   }
 
   const where = cond.length ? 'AND ' + cond.join(' AND ') : '';
@@ -314,6 +316,7 @@ router.get('/export', (req, res) => {
       m.korlap, m.pml, m.pcl, 
       m.target_fasih AS target_fasih_awal,
       COALESCE(p.draft, 0) AS draft,
+      CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${targetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END AS open,
       COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
       COALESCE(p.approved, 0) AS approved,
       COALESCE(p.rejected, 0) AS rejected,
@@ -322,17 +325,7 @@ router.get('/export', (req, res) => {
       COALESCE(p.target_upload, 0) AS target_upload,
 
       (${targetMuatanFormula}) AS target_muatan,
-      CASE 
-        WHEN COALESCE(p.sls_selesai, 0) = 1 THEN 'Selesai'
-        WHEN p.kode IS NOT NULL AND (${targetFormula}) > 0 AND (COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) >= (${targetFormula}) THEN 'Memenuhi Target'
-        WHEN p.kode IS NOT NULL AND (
-          COALESCE(p.draft, 0) > 0 OR 
-          COALESCE(p.submitted_by_pcl, 0) > 0 OR 
-          COALESCE(p.approved, 0) > 0 OR 
-          COALESCE(p.rejected, 0) > 0
-        ) THEN 'Sedang Didata'
-        ELSE 'Belum Mulai'
-      END AS status,
+      ${getSubslsStatusFormula(targetFormula, 'p')} AS status,
       COALESCE(p.usaha_tidak_ditemukan, 0) AS usaha_tidak_ditemukan,
       COALESCE(p.usaha_ditemukan, 0) AS usaha_ditemukan,
       COALESCE(p.usaha_baru, 0) AS usaha_baru,

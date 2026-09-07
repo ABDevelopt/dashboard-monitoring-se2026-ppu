@@ -1631,8 +1631,8 @@
         <div class="gmaps-control-row" style="display: grid; grid-template-columns: <%= hideMuatanMap ? '1fr' : '1.25fr 1fr' %>; gap: 7px;">
           <div class="gmaps-pill-group" style="display: flex; width: 100%;">
             <button id="btnLayerKec" class="gmaps-pill-btn" title="Tingkat Kecamatan" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-diagram-3"></i> Kec</button>
-            <button id="btnLayerDesa" class="gmaps-pill-btn active" title="Tingkat Desa / Kelurahan" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-geo"></i> Desa</button>
-            <button id="btnLayerSls" class="gmaps-pill-btn" title="Tingkat SubSLS / RT" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-pin-map"></i> SLS</button>
+            <button id="btnLayerDesa" class="gmaps-pill-btn" title="Tingkat Desa / Kelurahan" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-geo"></i> Desa</button>
+            <button id="btnLayerSls" class="gmaps-pill-btn active" title="Tingkat SubSLS / RT" type="button" style="flex: 1; justify-content: center;"><i class="bi bi-pin-map"></i> SLS</button>
           </div>
 
           <% if (!hideMuatanMap) { %>
@@ -1757,7 +1757,7 @@
             <div class="map-legend-item"><div class="map-legend-color" style="background: #64748b;"></div><span><strong>0%</strong> Belum Mulai</span></div>
           </div>
 
-          <div id="legendDesa">
+          <div id="legendDesa" style="display: none;">
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Kategori Realisasi Desa:</div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>100%</strong> Selesai</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>75% &ndash; 99%</strong> Tinggi</span></div>
@@ -1766,7 +1766,7 @@
             <div class="map-legend-item"><div class="map-legend-color" style="background: #64748b;"></div><span><strong>0%</strong> Belum Mulai</span></div>
           </div>
 
-          <div id="legendSls" style="display: none;">
+          <div id="legendSls">
             <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Kategori Progres SubSLS:</div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #10b981;"></div><span><strong>Selesai Resmi</strong> (BPS)</span></div>
             <div class="map-legend-item"><div class="map-legend-color" style="background: #0284c7;"></div><span><strong>75% &ndash; 99%</strong> Tinggi</span></div>
@@ -2213,7 +2213,7 @@
         let slsLayer = null;
         let isOutlineOnlyMode = false;
         let showProgressLabels = false;
-        let activeLayerName = 'desa'; // 'desa', 'sls', or 'kec'
+        let activeLayerName = 'sls'; // 'sls', 'desa', or 'kec'
         let currentFilteredKec = '';
         let currentFilteredDesa = '';
         let currentThematicMetric = 'fasih'; // 'fasih' | 'muatan'
@@ -3370,11 +3370,12 @@
             updateBasemap();
             invalidateMapSize();
 
-            // Step 1: load real-time stats, Desa geojson, and Kecamatan geojson in parallel
-            const [statsRes, desaGeoRes, kecGeoRes] = await Promise.all([
+            // Step 1: load real-time stats, SLS geojson, Desa geojson, and Kecamatan geojson in parallel
+            const [statsRes, desaGeoRes, kecGeoRes, slsGeoRes] = await Promise.all([
               fetch('<%= typeof navPrefix !== "undefined" ? navPrefix : "" %>/api/map-stats'),
               fetch('/data/desa_boundaries.geojson'),
-              fetch('/data/kecamatan_boundaries.geojson')
+              fetch('/data/kecamatan_boundaries.geojson'),
+              fetch('/data/sls_boundaries.geojson')
             ]);
             
             const stats = await statsRes.json();
@@ -3383,6 +3384,7 @@
             slsStats = stats.slsStats || [];
             desaGeoJson = await desaGeoRes.json();
             kecGeoJson = await kecGeoRes.json();
+            slsGeoJson = await slsGeoRes.json();
 
             // Guard against unmounted/destroyed map after async fetches
             if (!map || !map._container || !map._mapPane) {
@@ -3402,12 +3404,15 @@
             // Setup boundary mapping layers
             setupKecLayer();
             setupDesaLayer();
+            setupSlsLayer();
 
             if (map && map._mapPane) {
               if (activeLayerName === 'kec' && kecLayer) {
                 kecLayer.addTo(map);
-              } else if (desaLayer) {
+              } else if (activeLayerName === 'desa' && desaLayer) {
                 desaLayer.addTo(map);
+              } else if (slsLayer) {
+                slsLayer.addTo(map);
               }
             }
 
@@ -3415,8 +3420,9 @@
             updateBasemap();
             invalidateMapSize();
 
-            if (isSakernasMap && desaLayer && !window.location.search) {
-              const sampleBounds = desaLayer.getBounds();
+            if (isSakernasMap && (slsLayer || desaLayer) && !window.location.search) {
+              const activeTargetLayer = slsLayer || desaLayer;
+              const sampleBounds = activeTargetLayer.getBounds();
               if (sampleBounds && sampleBounds.isValid()) {
                 map.fitBounds(sampleBounds, { padding: [30, 30] });
               }
@@ -3431,7 +3437,7 @@
             // Apply URL parameters if redirected from Drilldown Wilayah (?kec=..., ?desa=..., ?search=...)
             applyUrlParameters();
 
-            // Lazy load high-detail SLS boundaries in background
+            // Lazy load high-detail SLS boundaries check
             lazyLoadSlsGeoJSON();
 
           } catch (err) {
@@ -3509,10 +3515,27 @@
         }
 
         async function lazyLoadSlsGeoJSON() {
+          if (slsGeoJson && slsLayer) {
+            const params = new URLSearchParams(window.location.search);
+            const searchParam = params.get('search') || params.get('kode');
+            if (searchParam) {
+              setTimeout(() => {
+                if (window.focusSubSlsOnMap) window.focusSubSlsOnMap(searchParam);
+              }, 150);
+            }
+            return;
+          }
           try {
-            const res = await fetch('/data/sls_boundaries.geojson');
-            slsGeoJson = await res.json();
-            setupSlsLayer();
+            if (!slsGeoJson) {
+              const res = await fetch('/data/sls_boundaries.geojson');
+              slsGeoJson = await res.json();
+            }
+            if (!slsLayer) {
+              setupSlsLayer();
+            }
+            if (activeLayerName === 'sls' && slsLayer && map && !map.hasLayer(slsLayer)) {
+              slsLayer.addTo(map);
+            }
 
             // Auto focus SLS if search/kode query param is provided
             const params = new URLSearchParams(window.location.search);

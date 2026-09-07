@@ -53,7 +53,7 @@ function injectLimit(sql, limit = QUERY_DEFAULT_LIMIT) {
 // ─────────────────────────────────────────────
 //  ASYNC SQL QUERY EXECUTION
 // ─────────────────────────────────────────────
-async function executeQueryAsync(sql, params = {}) {
+async function executeQueryAsync(sql, params = {}, surveyId = 'se2026') {
   const cleanSql = injectLimit(validateSql(sql));
 
   return new Promise((resolve, reject) => {
@@ -64,7 +64,7 @@ async function executeQueryAsync(sql, params = {}) {
 
     setImmediate(() => {
       try {
-        const db = getDb();
+        const db = getDb(surveyId);
         try { db.pragma('journal_mode = WAL'); } catch (_) {}
 
         const stmt = db.prepare(cleanSql);
@@ -84,58 +84,63 @@ async function executeQueryAsync(sql, params = {}) {
 // ─────────────────────────────────────────────
 //  LEGACY COMPATIBILITY ROUTE HANDLER (FOR EXPRESS /agent/fetch_page_data)
 // ─────────────────────────────────────────────
-async function fetchPageDataCompat(route, queryParams = {}) {
+async function fetchPageDataCompat(route, queryParams = {}, surveyId = 'se2026') {
   const normalizedRoute = String(route || '').trim().replace(/\/+$|\?.*$/, '').toLowerCase();
   const page = normalizedRoute === '' || normalizedRoute === '/' ? '/overview' : normalizedRoute;
 
-  const upload = getLatestUpload();
+  const upload = getLatestUpload(surveyId);
   if (!upload) return { error: 'Belum ada data upload dalam sistem.' };
 
-  const settings = getSettings();
+  const settings = getSettings(surveyId);
 
   switch (page) {
     case '/overview':
       return {
         route: '/overview',
-        summary: getOverviewSummary(upload.id, settings),
-        earlyWarning: getEarlyWarning(upload.id, settings),
-        timestamp: upload.tanggal
+        summary: getOverviewSummary(upload.id, settings, surveyId),
+        kecamatan: getKecamatanStats(upload.id, settings, surveyId),
+        anomalies: getAnomalyStats(upload.id, {}, surveyId),
+        earlyWarning: getEarlyWarning(upload.id, {}, settings, surveyId)
       };
+
     case '/pcl':
       return {
         route: '/pcl',
-        pclList: getPclStats(upload.id, settings),
-        summary: getOverviewSummary(upload.id, settings)
+        data: getPclStats(upload.id, settings, surveyId),
+        summary: getOverviewSummary(upload.id, settings, surveyId)
       };
+
     case '/pml':
       return {
         route: '/pml',
-        pmlList: getPmlStats(upload.id, settings)
+        pmlList: getPmlStats(upload.id, settings, surveyId),
+        summary: getOverviewSummary(upload.id, settings, surveyId)
       };
     case '/korlap':
       return {
         route: '/korlap',
-        korlapList: getKorlapStats(upload.id, settings)
+        korlapList: getKorlapStats(upload.id, settings, surveyId),
+        summary: getOverviewSummary(upload.id, settings, surveyId)
       };
     case '/kecamatan':
       return {
         route: '/kecamatan',
-        kecamatanList: getKecamatanStats(upload.id, settings)
+        kecamatanList: getKecamatanStats(upload.id, settings, surveyId)
       };
     case '/early-warning':
       return {
         route: '/early-warning',
-        warningData: getEarlyWarning(upload.id, settings)
+        warningData: getEarlyWarning(upload.id, {}, settings, surveyId)
       };
     case '/deteksi-anomali':
       return {
         route: '/deteksi-anomali',
-        anomalies: getAnomalyStats(upload.id)
+        anomalies: getAnomalyStats(upload.id, {}, surveyId)
       };
     default:
       return {
         route: page,
-        summary: getOverviewSummary(upload.id, settings)
+        summary: getOverviewSummary(upload.id, settings, surveyId)
       };
   }
 }
@@ -213,16 +218,17 @@ const TOOL_SCHEMAS = {
 // ─────────────────────────────────────────────
 async function runToolCall(toolCall, context = {}) {
   const { name, args } = toolCall;
-  const cacheKey = cacheManager.generateKey(name, args);
+  const surveyId = context.surveyId || 'se2026';
+  const cacheKey = `${surveyId}:${cacheManager.generateKey(name, args)}`;
 
   // 1. Check cache first
   const cachedVal = cacheManager.get(cacheKey);
   if (cachedVal) {
-    _logger.info(`[TOOL_REGISTRY] Cache HIT for tool '${name}'`);
+    _logger.info(`[TOOL_REGISTRY] Cache HIT for tool '${name}' (${surveyId})`);
     return cachedVal;
   }
 
-  _logger.info(`[TOOL_REGISTRY] Cache MISS for tool '${name}' - executing...`);
+  _logger.info(`[TOOL_REGISTRY] Cache MISS for tool '${name}' (${surveyId}) - executing...`);
   let result;
 
   try {
@@ -230,7 +236,7 @@ async function runToolCall(toolCall, context = {}) {
       case 'query_data': {
         const query = args.query || '';
         const params = args.params || {};
-        const rows = await executeQueryAsync(query, params);
+        const rows = await executeQueryAsync(query, params, surveyId);
         const total = rows.length;
         const truncated = total > TOOL_RESULT_MAX_ROWS;
         const finalRows = truncated ? rows.slice(0, TOOL_RESULT_MAX_ROWS) : rows;
@@ -245,7 +251,7 @@ async function runToolCall(toolCall, context = {}) {
           queryParams: params,
           columnsJson: Object.keys(rows[0] || {}),
           rowCount: total
-        });
+        }, surveyId);
 
         result = {
           status: 'success',
@@ -260,11 +266,72 @@ async function runToolCall(toolCall, context = {}) {
       }
 
       case 'get_summary': {
-        const db = getDb();
-        const uploadId = args.uploadId;
+        const db = getDb(surveyId);
+        const uploadId = args.uploadId || (getLatestUpload(surveyId)?.id);
         const kec = args.kecamatan;
         const desa = args.desa;
-        let query = 'SELECT * FROM summary_cache WHERE upload_id = ?';
+        const settings = getSettings(surveyId);
+
+        if (!kec && !desa) {
+          const overview = getOverviewSummary(uploadId, settings, surveyId);
+          const kecamatanStats = getKecamatanStats(uploadId, settings, surveyId);
+
+          const queryId = 'q_' + Math.random().toString(36).substring(2, 9);
+          saveAgentQuery({
+            id: queryId,
+            userId: context.userId || null,
+            prompt: context.prompt || args.prompt || '',
+            toolName: 'get_summary',
+            querySql: `Overview summary for uploadId ${uploadId}`,
+            queryParams: {},
+            columnsJson: Object.keys(overview || {}),
+            rowCount: kecamatanStats.length
+          }, surveyId);
+
+          result = {
+            status: 'success',
+            queryId,
+            level: 'kabupaten',
+            overview: {
+              total_sls: overview.total,
+              sls_selesai: overview.selesai,
+              pct_capaian: overview.fasih_pct ?? overview.pct,
+              target_utama: overview.target_fasih_total || overview.target_static_total,
+              realisasi_utama: (overview.submitted_total || 0) + (overview.approved_total || 0) + (overview.rejected_total || 0),
+              approved_pml: overview.approved_total,
+              submitted: overview.submitted_total,
+              rejected: overview.rejected_total,
+              draft: overview.draft_total,
+              petugas_aktif: overview.active_pcl,
+              total_petugas: overview.total_pcl,
+              total_pml: overview.total_pml
+            },
+            rekap_kecamatan: kecamatanStats.map(k => ({
+              kecamatan: k.kecamatan,
+              target: k.target_fasih_total || k.target_static_total || k.total_muatan,
+              realisasi: k.fasih_real_total != null ? k.fasih_real_total : k.muatan_selesai,
+              pct_capaian: k.fasih_pct != null ? k.fasih_pct : k.pct,
+              approved: k.approved_total,
+              sls_selesai: `${k.selesai} / ${k.total_subsls}`
+            }))
+          };
+          break;
+        }
+
+        let query = `
+          SELECT 
+            kecamatan AS "Kecamatan",
+            desa AS "Desa",
+            pml AS "PML",
+            pcl AS "Petugas",
+            target_fasih_total AS "Target",
+            (COALESCE(submitted_total,0) + COALESCE(approved_total,0) + COALESCE(rejected_total,0)) AS "Realisasi",
+            approved_total AS "Approved",
+            submitted_total AS "Submitted",
+            rejected_total AS "Rejected"
+          FROM summary_cache 
+          WHERE upload_id = ?
+        `;
         const params = [uploadId];
         if (kec) {
           query += ' AND LOWER(kecamatan) = LOWER(?)';
@@ -287,7 +354,7 @@ async function runToolCall(toolCall, context = {}) {
           queryParams: params,
           columnsJson: Object.keys(fullRows[0] || {}),
           rowCount: fullRows.length
-        });
+        }, surveyId);
 
         result = { status: 'success', queryId, rowCount: fullRows.length, data: fullRows.slice(0, 20) };
         break;
@@ -295,7 +362,7 @@ async function runToolCall(toolCall, context = {}) {
 
       case 'get_anomaly': {
         const uploadId = args.uploadId;
-        const anomalies = getAnomalyStats(uploadId);
+        const anomalies = getAnomalyStats(uploadId, {}, surveyId);
         const queryId = 'q_' + Math.random().toString(36).substring(2, 9);
         const anomalySql = `
           SELECT 
@@ -325,7 +392,7 @@ async function runToolCall(toolCall, context = {}) {
           queryParams: {},
           columnsJson: Object.keys(anomalies[0] || {}),
           rowCount: anomalies.length
-        });
+        }, surveyId);
 
         result = { status: 'success', queryId, anomalyCount: anomalies.length, data: anomalies.slice(0, 20) };
         break;
@@ -334,11 +401,11 @@ async function runToolCall(toolCall, context = {}) {
       case 'get_petugas': {
         const uploadId = args.uploadId;
         const role = String(args.role).toLowerCase();
-        const settings = getSettings();
+        const settings = getSettings(surveyId);
         let data;
-        if (role === 'pcl') data = getPclStats(uploadId, settings);
-        else if (role === 'pml') data = getPmlStats(uploadId, settings);
-        else if (role === 'korlap') data = getKorlapStats(uploadId, settings);
+        if (role === 'pcl' || role === 'ppl') data = getPclStats(uploadId, settings, surveyId);
+        else if (role === 'pml') data = getPmlStats(uploadId, settings, surveyId);
+        else if (role === 'korlap') data = getKorlapStats(uploadId, settings, surveyId);
         else throw new Error(`Role petugas '${role}' tidak dikenal.`);
 
         const queryId = 'q_' + Math.random().toString(36).substring(2, 9);
@@ -374,7 +441,7 @@ async function runToolCall(toolCall, context = {}) {
           queryParams: {},
           columnsJson: Object.keys(data[0] || {}),
           rowCount: data.length
-        });
+        }, surveyId);
 
         result = { status: 'success', queryId, role, count: data.length, data: data.slice(0, 20) };
         break;
@@ -383,7 +450,7 @@ async function runToolCall(toolCall, context = {}) {
       case 'fetch_page_data': {
         const route = args.route || '';
         const queryParams = args.queryParams || {};
-        const data = await fetchPageDataCompat(route, queryParams);
+        const data = await fetchPageDataCompat(route, queryParams, surveyId);
         result = { status: 'success', ...data };
         break;
       }
@@ -414,48 +481,65 @@ function formatToolRowsToMarkdown(toolName, args, rows) {
   const topRows = rows.slice(0, 5); // Maksimal 5 baris data
 
   const colMap = {
-    pcl: 'Nama PCL',
+    pcl: 'Petugas PCL/PPL',
     pml: 'PML Pengawas',
     korlap: 'Korlap',
     kecamatan: 'Kecamatan',
     desa: 'Desa',
     nama_sls: 'Nama SLS',
-    kode: 'Kode SLS',
-    realisasi_fasih: 'Realisasi FASIH',
-    target_fasih: 'Target FASIH',
+    kode: 'Kode Wilayah',
+    realisasi_fasih: 'Realisasi Dokumen',
+    target_fasih: 'Target Dokumen',
     draft: 'Draft',
     submitted: 'Submitted',
     approved: 'Approved',
     rejected: 'Rejected',
-    pct_fasih: '% FASIH',
+    pct_fasih: '% Capaian',
     pct_muatan: '% Muatan',
     muatan_selesai: 'Realisasi Muatan',
     target_muatan: 'Target Muatan',
     total_muatan: 'Target Muatan',
     usaha_ganda: 'Usaha Ganda',
     total_sls: 'Total SLS',
-    start_date: 'Tanggal Mulai',
-    end_date: 'Tanggal Selesai',
-    elapsed_days: 'Durasi Lapangan (Hari)',
-    total_realisasi_fasih: 'Total Realisasi FASIH',
-    jumlah_pcl_aktif: 'Jumlah PCL Aktif',
-    jumlah_pcl_punya_target: 'PCL Ber-target',
-    avg_daily_per_pcl: 'Rata-Rata Progres Harian (Dok/PCL/Hari)',
+    selesai: 'SLS Selesai',
+    avg_daily_per_pcl: 'Rata-Rata Harian',
     avg_daily: 'Rata-Rata Harian'
   };
 
-  const keys = Object.keys(topRows[0]);
-  const headers = keys.map(k => {
+  const IGNORED_COLS = new Set([
+    'upload_id', 'id', 'created_at', 'updated_at', 'stored_filename', 'filename',
+    'status_filename', 'survey_id', 'open_total', 'target_honor_total',
+    'target_static_total', 'target_upload_total', 'keluarga_khusus_total', 'strata',
+    'rumah_tunggal', 'rumah_deret', 'rumah_susun', 'apartemen', 'lainnya',
+    'usaha_baru', 'keluarga_baru', 'tidak_eligible', 'ditemukan', 'usaha_ditemukan',
+    'usaha_tidak_ditemukan', 'tidak_ditemukan', 'usaha_tutup', 'meninggal'
+  ]);
+
+  let allKeys = Object.keys(topRows[0]).filter(k => !IGNORED_COLS.has(k.toLowerCase()));
+
+  // Prioritas kolom jika terlalu banyak (maksimal 6 kolom)
+  if (allKeys.length > 6) {
+    const priority = ['kecamatan', 'desa', 'nama_sls', 'pcl', 'petugas', 'pml', 'target', 'target_fasih', 'target_fasih_total', 'realisasi', 'realisasi_fasih', 'pct_fasih', 'capaian', 'approved', 'approved_total', 'submitted', 'rejected', 'selesai'];
+    const chosen = [];
+    priority.forEach(p => {
+      const match = allKeys.find(k => k.toLowerCase() === p || k.toLowerCase().includes(p));
+      if (match && !chosen.includes(match) && chosen.length < 6) chosen.push(match);
+    });
+    if (chosen.length >= 3) allKeys = chosen;
+    else allKeys = allKeys.slice(0, 6);
+  }
+
+  const headers = allKeys.map(k => {
     const lk = k.toLowerCase();
     return colMap[lk] || colMap[k] || k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   });
 
   let markdown = `Berikut ringkasan data hasil analisis:\n\n`;
 
-  if (topRows.length === 1 && keys.length <= 8) {
+  if (topRows.length === 1 && allKeys.length <= 6) {
     const row = topRows[0];
     markdown += `**Indikator Kinerja Utama:**\n`;
-    keys.forEach(k => {
+    allKeys.forEach(k => {
       const label = colMap[k.toLowerCase()] || k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
       let val = row[k];
       if (val === null || val === undefined) val = '-';
@@ -466,13 +550,13 @@ function formatToolRowsToMarkdown(toolName, args, rows) {
   }
 
   markdown += `| # | ${headers.join(' | ')} |\n`;
-  markdown += `| :---: | ${keys.map(() => ':---').join(' | ')} |\n`;
+  markdown += `| :---: | ${allKeys.map(() => ':---').join(' | ')} |\n`;
 
   topRows.forEach((r, idx) => {
-    const rowVals = keys.map(k => {
+    const rowVals = allKeys.map(k => {
       let val = r[k];
       if (val === null || val === undefined) return '-';
-      if (typeof k === 'string' && (k.toLowerCase().startsWith('pct_') || k.toLowerCase().includes('percent'))) return `**${val}%**`;
+      if (typeof k === 'string' && (k.toLowerCase().startsWith('pct_') || k.toLowerCase().includes('percent') || k.toLowerCase().includes('capaian'))) return `**${val}%**`;
       if (typeof val === 'number') return val.toLocaleString('id-ID');
       return String(val);
     });
@@ -483,11 +567,11 @@ function formatToolRowsToMarkdown(toolName, args, rows) {
     markdown += `\n*Menampilkan 5 data prioritas utama dari total ${rows.length} entitas. Data lengkap dapat diakses pada menu monitoring terkait.*\n`;
   }
 
-  const avgKey = keys.find(k => k.toLowerCase().includes('avg'));
+  const avgKey = allKeys.find(k => k.toLowerCase().includes('avg'));
   if (avgKey) {
     const avgVal = topRows[0][avgKey];
     if (avgVal) {
-      markdown += `\n**Rekomendasi / Analisis:** Rata-rata pencapaian PCL sebesar **${avgVal} dokumen per hari per petugas**. Tingkatkan pengawasan lapangan untuk wilayah dengan progres di bawah rata-rata.`;
+      markdown += `\n**Rekomendasi / Analisis:** Rata-rata pencapaian sebesar **${avgVal} dokumen per hari per petugas**. Tingkatkan pengawasan lapangan untuk wilayah dengan progres di bawah rata-rata.`;
     }
   }
 

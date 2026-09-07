@@ -192,7 +192,22 @@ app.use((req, res, next) => {
 // Auto-login from Remember Me cookie (Instagram Style)
 const cookie = require('cookie');
 app.use((req, res, next) => {
-  const cookies = req.headers.cookie ? cookie.parse(req.headers.cookie) : {};
+  let cookies = {};
+  if (req.headers.cookie) {
+    try {
+      cookies = cookie.parse(req.headers.cookie, {
+        decode: (val) => {
+          try {
+            return decodeURIComponent(val);
+          } catch (_) {
+            return val;
+          }
+        }
+      });
+    } catch (_) {
+      cookies = {};
+    }
+  }
 
   if (!req.session.user && cookies.remember_token && !req.session.loggedOut) {
     try {
@@ -500,7 +515,7 @@ app.use((req, res, next) => {
             !url.startsWith('/logout') && 
             !url.startsWith('/api') &&
             !url.startsWith('/health')) {
-          return originalRedirect.call(this, res.locals.navPrefix + (url === '/' ? '' : url));
+          return originalRedirect.call(this, res.locals.navPrefix + (url === '/' ? '/' : url));
         }
       }
       return originalRedirect.call(this, url);
@@ -516,9 +531,32 @@ app.use((req, res, next) => {
   }
 });
 
+// Route Survey Feature Map for Multi-Survey Isolation
+const routeSurveyFeatureMap = {
+  '/map': 'map',
+  '/agent': 'agent',
+  '/korlap': 'korlap',
+  '/pml': 'pml',
+  '/pcl': 'pcl',
+  '/early-warning': 'earlywarning',
+  '/earlywarning': 'earlywarning',
+  '/deteksi-anomali': 'deteksi-anomali',
+  '/performa': 'performa',
+  '/performa-terendah': 'performa',
+  '/harian': 'harian',
+  '/leaderboard': 'leaderboard',
+  '/kecamatan': 'kecamatan',
+  '/subsls': 'subsls',
+  '/pbi': 'subsls',
+  '/kipp': 'subsls',
+  '/export': 'export'
+};
+
 // Route Guard Middleware based on Page Display settings & Authentication Requirements
 const routeSettingsMap = {
   '/map': 'page_map',
+  '/map-ujipetik': 'page_map_ujipetik',
+  '/ujipetik': 'page_map_ujipetik',
   '/early-warning': 'page_earlywarning',
   '/deteksi-anomali': 'page_deteksianomali',
   '/leaderboard': 'page_leaderboard',
@@ -539,6 +577,8 @@ const routeSettingsMap = {
 const routeAuthMap = {
   '/agent': 'auth_req_agent',
   '/map': 'auth_req_map',
+  '/map-ujipetik': 'auth_req_map_ujipetik',
+  '/ujipetik': 'auth_req_map_ujipetik',
   '/early-warning': 'auth_req_earlywarning',
   '/deteksi-anomali': 'auth_req_deteksianomali',
   '/leaderboard': 'auth_req_leaderboard',
@@ -560,6 +600,24 @@ const routeAuthMap = {
 
 app.use((req, res, next) => {
   const path = req.path;
+
+  // 0. Cek Isolasi Modul Survei: Jika halaman tidak termasuk dalam cakupan survei aktif (misal Deteksi Anomali atau Korlap pada Sakernas), redirect otomatis ke overview survei
+  if (res.locals.surveyConfig && Array.isArray(res.locals.surveyConfig.enabledPages)) {
+    let requiredFeature = null;
+    for (const [routePrefix, feat] of Object.entries(routeSurveyFeatureMap)) {
+      if (path === routePrefix || path.startsWith(routePrefix + '/')) {
+        requiredFeature = feat;
+        break;
+      }
+    }
+    if (requiredFeature && !res.locals.surveyConfig.enabledPages.includes(requiredFeature)) {
+      return res.redirect('/');
+    }
+    if ((path === '/korlap' || path.startsWith('/korlap/')) && res.locals.surveyConfig.hasKorlap === false) {
+      return res.redirect('/');
+    }
+  }
+
   let settingKey = null;
 
   if (path === '/subsls/export') {
@@ -625,6 +683,8 @@ app.use((req, res, next) => {
 app.use('/', require('./routes/index'));
 app.use('/', require('./routes/auth'));
 app.use('/map', require('./routes/map'));
+app.use('/map-ujipetik', require('./routes/map_ujipetik'));
+app.get('/ujipetik', (req, res) => res.redirect('/map-ujipetik'));
 app.use('/kecamatan', require('./routes/kecamatan'));
 app.use('/korlap', require('./routes/korlap'));
 app.use('/pml', require('./routes/pml'));
@@ -705,8 +765,19 @@ if (process.env.SENTRY_DSN) {
 
 // Error handler
 app.use((err, req, res, next) => {
+  if (err instanceof URIError) {
+    logger.warn(`URIError caught on URL "${req.originalUrl || req.url}": ${err.message}`);
+    if (req.xhr || (req.headers.accept && req.headers.accept.includes('json'))) {
+      return res.status(400).json({ error: 'URL atau parameter tidak valid (URI malformed).' });
+    }
+    return res.status(400).render('error', {
+      title: 'Permintaan Tidak Valid (400)',
+      message: 'Format URL atau karakter khusus pada tautan tidak valid. Silakan kembali ke halaman utama.',
+      activePage: ''
+    });
+  }
   logger.error('Unhandled request error:', err);
-  res.status(500).render('error', { title: 'Server Error', message: err.message });
+  res.status(500).render('error', { title: 'Server Error', message: err.message, activePage: '' });
 });
 
 // Init DB & load master data

@@ -13,7 +13,20 @@ const cookie = require('cookie');
 
 // Helper to parse cookies from request headers safely
 function parseCookies(req) {
-  return req.headers.cookie ? cookie.parse(req.headers.cookie) : {};
+  if (!req.headers.cookie) return {};
+  try {
+    return cookie.parse(req.headers.cookie, {
+      decode: (val) => {
+        try {
+          return decodeURIComponent(val);
+        } catch (_) {
+          return val;
+        }
+      }
+    });
+  } catch (_) {
+    return {};
+  }
 }
 
 // GET /login

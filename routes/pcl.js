@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getPclStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSubslsStatusFormula } = require('../database');
+const { getPclStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, getSubslsStatusFormula } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -33,7 +33,7 @@ router.get('/', (req, res) => {
         m.pcl, m.pml, m.korlap, m.kecamatan,
         MAX(COALESCE(p.pcl_email, m.pcl_email)) AS email,
         COUNT(m.kode) AS total_subsls,
-        SUM(COALESCE(p.sls_selesai, 0)) AS selesai,
+        SUM(${getSingleSelesaiFormula(targetFormula, 'p')}) AS selesai,
         SUM(${targetMuatanFormula}) AS total_muatan,
         SUM(${realFormula}) AS muatan_selesai,
         SUM(${usahaTotalFormula}) AS usaha_total,
@@ -195,7 +195,7 @@ router.get('/export-excel', (req, res) => {
     SELECT 
       m.pcl, m.pml, m.korlap, m.kecamatan,
       COUNT(m.kode) AS total_subsls,
-      SUM(COALESCE(p.sls_selesai, 0)) AS selesai,
+      SUM(${getSingleSelesaiFormula(targetFormula, 'p')}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
       SUM(${usahaTotalFormula}) AS usaha_total,
@@ -228,7 +228,7 @@ router.get('/export-excel', (req, res) => {
       m.pml, m.korlap,
       COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
       COUNT(DISTINCT p.kode) AS total_subsls,
-      SUM(COALESCE(p.sls_selesai, 0)) AS selesai,
+      SUM(${getSingleSelesaiFormula(targetFormula, 'p')}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
       SUM(${usahaTotalFormula}) AS usaha_total,
@@ -252,7 +252,7 @@ router.get('/export-excel', (req, res) => {
       COUNT(DISTINCT m.pml) AS jumlah_pml,
       COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
       COUNT(DISTINCT p.kode) AS total_subsls,
-      SUM(COALESCE(p.sls_selesai, 0)) AS selesai,
+      SUM(${getSingleSelesaiFormula(targetFormula, 'p')}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
       SUM(${realFormula}) AS muatan_selesai,
       SUM(${usahaTotalFormula}) AS usaha_total,
@@ -303,6 +303,7 @@ router.get('/export-excel', (req, res) => {
       'Keluarga Meninggal': r.keluarga_meninggal_total || 0,
       'Keluarga Tidak Eligible': r.keluarga_tidak_eligible_total || 0,
       'Keluarga Tidak Dapat Ditemui': r.keluarga_tidak_dapat_ditemui_total || 0,
+      'FASIH Open': Math.max(0, targetFasih - ((r.draft_total || 0) + completedFasih)),
       'FASIH Draft': r.draft_total || 0,
       'FASIH Submitted': r.submitted_total || 0,
       'FASIH Approved': r.approved_total || 0,
@@ -334,6 +335,7 @@ router.get('/export-excel', (req, res) => {
       'Capaian Muatan (%)': muatanPct,
       'Total Usaha': r.usaha_total || 0,
       'Total Keluarga': r.keluarga_total || 0,
+      'FASIH Open': Math.max(0, targetFasih - ((r.draft_total || 0) + completedFasih)),
       'FASIH Draft': r.draft_total || 0,
       'FASIH Submitted': r.submitted_total || 0,
       'FASIH Approved': r.approved_total || 0,
@@ -365,6 +367,7 @@ router.get('/export-excel', (req, res) => {
       'Capaian Muatan (%)': muatanPct,
       'Total Usaha': r.usaha_total || 0,
       'Total Keluarga': r.keluarga_total || 0,
+      'FASIH Open': Math.max(0, targetFasih - ((r.draft_total || 0) + completedFasih)),
       'FASIH Draft': r.draft_total || 0,
       'FASIH Submitted': r.submitted_total || 0,
       'FASIH Approved': r.approved_total || 0,

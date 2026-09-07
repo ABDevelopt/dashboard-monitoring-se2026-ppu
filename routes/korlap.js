@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getKorlapStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula } = require('../database');
+const { getKorlapStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -26,12 +26,13 @@ router.get('/', (req, res) => {
           m.pml, m.korlap,
           COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
           COUNT(DISTINCT p.kode) AS total_subsls,
-          SUM(COALESCE(p.sls_selesai, 0)) AS selesai,
+          SUM(${getSingleSelesaiFormula(targetFormula, 'p')}) AS selesai,
           SUM(${targetMuatanFormula}) AS total_muatan,
           SUM(${realFormula}) AS muatan_selesai,
           SUM(${usahaTotalFormula}) AS usaha_total,
           SUM(${keluargaTotalFormula}) AS keluarga_total,
           SUM(COALESCE(p.draft, 0)) AS draft_total,
+          SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${targetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
           SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
           SUM(COALESCE(p.approved, 0)) AS approved_total,
           SUM(COALESCE(p.rejected, 0)) AS rejected_total,

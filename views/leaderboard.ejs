@@ -139,7 +139,15 @@
                         <span class="fasih-grid-title"><i class="bi bi-phone"></i> FASIH</span>
                         <span class="badge badge-blue">Target: <%= item.target_fasih_total %></span>
                       </div>
-                      <div class="fasih-grid">
+                      <% 
+                        const itemDone = (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0);
+                        const itemOpen = item.open_total !== undefined ? item.open_total : Math.max(0, (item.target_fasih_total || 0) - ((item.draft_total || 0) + itemDone));
+                      %>
+                      <div class="fasih-grid" style="grid-template-columns: repeat(5, 1fr); gap: 4px;">
+                        <div class="fasih-grid-item fasih-item-open" title="Open: Alokasi yang belum dikerjakan">
+                          <div class="fasih-grid-item-label" style="font-size: 8.5px;">Open</div>
+                          <div class="fasih-grid-item-value" style="font-size: 11px;"><%= itemOpen.toLocaleString('id-ID') %></div>
+                        </div>
                         <div class="fasih-grid-item fasih-item-draft">
                           <div class="fasih-grid-item-label">Draft</div>
                           <div class="fasih-grid-item-value"><%= item.draft_total %></div>
@@ -226,21 +234,29 @@
                         <span class="fasih-grid-title"><i class="bi bi-phone"></i> FASIH</span>
                         <span class="badge badge-blue">Target: <%= item.target_fasih_total %></span>
                       </div>
-                      <div class="fasih-grid">
+                      <% 
+                        const itemDonePml = (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0);
+                        const itemOpenPml = item.open_total !== undefined ? item.open_total : Math.max(0, (item.target_fasih_total || 0) - ((item.draft_total || 0) + itemDonePml));
+                      %>
+                      <div class="fasih-grid" style="grid-template-columns: repeat(5, 1fr); gap: 4px;">
+                        <div class="fasih-grid-item fasih-item-open" title="Open: Alokasi yang belum dikerjakan">
+                          <div class="fasih-grid-item-label" style="font-size: 8.5px;">Open</div>
+                          <div class="fasih-grid-item-value" style="font-size: 11px;"><%= itemOpenPml.toLocaleString('id-ID') %></div>
+                        </div>
                         <div class="fasih-grid-item fasih-item-draft">
-                          <div class="fasih-grid-item-label">Draft</div>
+                          <div class="fasih-grid-item-label" style="font-size: 8.5px;">Draft</div>
                           <div class="fasih-grid-item-value"><%= item.draft_total %></div>
                         </div>
                         <div class="fasih-grid-item fasih-item-submit">
-                          <div class="fasih-grid-item-label">Submit</div>
+                          <div class="fasih-grid-item-label" style="font-size: 8.5px;">Submit</div>
                           <div class="fasih-grid-item-value"><%= item.submitted_total %></div>
                         </div>
                         <div class="fasih-grid-item fasih-item-approve">
-                          <div class="fasih-grid-item-label">Approve</div>
+                          <div class="fasih-grid-item-label" style="font-size: 8.5px;">Approve</div>
                           <div class="fasih-grid-item-value"><%= item.approved_total %></div>
                         </div>
                         <div class="fasih-grid-item fasih-item-reject">
-                          <div class="fasih-grid-item-label">Reject</div>
+                          <div class="fasih-grid-item-label" style="font-size: 8.5px;">Reject</div>
                           <div class="fasih-grid-item-value"><%= item.rejected_total %></div>
                         </div>
                       </div>

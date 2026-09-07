@@ -259,6 +259,8 @@ function updateTime() {
     const PAGE_MAP = {
       '/':                  { label: 'Overview',          icon: 'bi-house-door-fill' },
       '/map':               { label: 'Peta Progres',      icon: 'bi-map-fill' },
+      '/map-ujipetik':      { label: 'Titik Uji Petik',   icon: 'bi-pin-map-fill' },
+      '/ujipetik':          { label: 'Titik Uji Petik',   icon: 'bi-pin-map-fill' },
       '/agent':             { label: 'Pananyo Taka',      icon: 'bi-sparkles' },
       '/kecamatan':         { label: 'Kecamatan',         icon: 'bi-geo-alt-fill' },
       '/korlap':            { label: 'Korlap',            icon: 'bi-person-lines-fill' },
@@ -302,7 +304,9 @@ function updateTime() {
 
     // Resolve the current page info
     let fallbackLabel = normalizedPath.replace(/^\//, '').replace(/-/g, ' ');
-    try { fallbackLabel = decodeURIComponent(fallbackLabel); } catch (e) {}
+    try {
+      fallbackLabel = decodeURIComponent(fallbackLabel);
+    } catch (_) {}
     fallbackLabel = fallbackLabel.replace(/\b\w/g, c => c.toUpperCase());
     const pageInfo = PAGE_MAP[normalizedPath] || { label: fallbackLabel, icon: 'bi-file-earmark' };
     const pageHref = prefix + (normalizedPath === '/' ? '' : normalizedPath);
@@ -2727,6 +2731,28 @@ function updateTime() {
       if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.getAttribute('target') === '_blank' || a.hasAttribute('download') || href.includes('/export/data') || href.includes('/api/export') || href.includes('/download') || href === '/surveys' || href.startsWith('/surveys') || window.location.pathname === '/surveys') {
         return;
       }
+
+      // Bypass PJAX if explicitly opted-out
+      if (a.classList.contains('no-pjax') || a.dataset.noPjax === 'true') {
+        return;
+      }
+
+      // Helper to identify survey scope
+      const getSurveyFromPath = (p) => {
+        if (!p || p === '/' || p === '') return 'se2026';
+        if (p.startsWith('/sakernas-pemutakhiran')) return 'sakernas-pemutakhiran';
+        if (p.startsWith('/sakernas-pendataan')) return 'sakernas-pendataan';
+        if (p.startsWith('/surveys')) return 'surveys';
+        return 'se2026';
+      };
+
+      // Cross-Survey Transition: If clicking a link to a different survey or portal, bypass PJAX to reload whole document & theme
+      const currentSurveyId = window.activeSurveyId || 'se2026';
+      const targetUrlObj = new URL(href, window.location.origin);
+      const targetSurveyId = getSurveyFromPath(targetUrlObj.pathname);
+      if (currentSurveyId !== targetSurveyId) {
+        return;
+      }
       
       // Ignore click handlers that open modals or are custom triggers
       if (a.getAttribute('onclick') || a.dataset.bsToggle || a.dataset.toggle) {
@@ -2915,6 +2941,18 @@ function updateTime() {
     // Handle browser back/forward buttons
     window.addEventListener('popstate', (e) => {
       const url = (e.state && e.state.url) ? e.state.url : window.location.pathname + window.location.search;
+      const getSurveyFromPath = (p) => {
+        if (!p || p === '/' || p === '') return 'se2026';
+        if (p.startsWith('/sakernas-pemutakhiran')) return 'sakernas-pemutakhiran';
+        if (p.startsWith('/sakernas-pendataan')) return 'sakernas-pendataan';
+        if (p.startsWith('/surveys')) return 'surveys';
+        return 'se2026';
+      };
+      const currentSurveyId = window.activeSurveyId || 'se2026';
+      if (currentSurveyId !== getSurveyFromPath(window.location.pathname)) {
+        window.location.reload();
+        return;
+      }
       loadPage(url, false);
     });
 

@@ -245,11 +245,26 @@
               <span class="switch-icon"><i class="bi bi-map"></i></span>
               <div style="min-width: 0;">
                 <label for="page_map" class="switch-label-text">Peta Progres</label>
-                <div class="switch-desc">Halaman visualisasi peta wilayah</div>
+                <div class="switch-desc">Halaman visualisasi peta progres wilayah</div>
               </div>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" id="page_map" name="page_map" value="1" <%= settings.page_map === '1' ? 'checked' : '' %>>
+              <input type="checkbox" id="page_map" name="page_map" value="1" <%= (typeof settings === 'undefined' || !settings || settings.page_map !== '0') ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Titik Uji Petik -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #f59e0b;"><i class="bi bi-pin-map-fill"></i></span>
+              <div style="min-width: 0;">
+                <label for="page_map_ujipetik" class="switch-label-text">Titik Uji Petik</label>
+                <div class="switch-desc">Halaman visualisasi sebaran spasial titik uji petik (69k titik)</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="page_map_ujipetik" name="page_map_ujipetik" value="1" <%= (typeof settings === 'undefined' || !settings || settings.page_map_ujipetik !== '0') ? 'checked' : '' %>>
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -618,11 +633,33 @@
                     <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
                   <% } %>
                 </div>
-                <div class="switch-desc">Wajibkan login untuk melihat peta sebaran spasial</div>
+                <div class="switch-desc">Wajibkan login untuk melihat peta progres spasial</div>
               </div>
             </div>
             <label class="toggle-switch">
               <input type="checkbox" id="auth_req_map" name="auth_req_map" value="1" <%= settings.auth_req_map === '1' ? 'checked' : '' %>>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Titik Uji Petik GIS -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: #f59e0b;"><i class="bi bi-pin-map-fill"></i></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <label for="auth_req_map_ujipetik" class="switch-label-text">Titik Uji Petik GIS</label>
+                  <% if (settings.auth_req_map_ujipetik === '1') { %>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-lock-fill"></i> Wajib Login</span>
+                  <% } else { %>
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;"><i class="bi bi-unlock-fill"></i> Publik</span>
+                  <% } %>
+                </div>
+                <div class="switch-desc">Wajibkan login untuk melihat peta sebaran titik uji petik</div>
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auth_req_map_ujipetik" name="auth_req_map_ujipetik" value="1" <%= settings.auth_req_map_ujipetik === '1' ? 'checked' : '' %>>
               <span class="toggle-slider"></span>
             </label>
           </div>
