@@ -2440,8 +2440,8 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`;
     'agent_provider': 'gemini',
     'gemini_api_key': '',
     'gemini_backup_api_keys': '[]',
-    'gemini_model': 'gemini-3.5-flash',
-    'gemini_models_list': 'gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.6-flash, gemini-3.7-flash, gemini-3.1-flash-lite, gemini-2.5-flash',
+    'gemini_model': 'gemini-3.8-flash',
+    'gemini_models_list': 'gemini-3.8-flash, gemini-3.7-flash, gemini-3.6-flash, gemini-3.5-flash',
     'openai_api_key': '',
     'openai_model': 'gpt-5.5',
     'openai_models_list': 'gpt-5.5, gpt-4o',
@@ -2501,9 +2501,46 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`;
     dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run('openrouter/free', 'openrouter_model');
   }
 
-  const geminiModel = dbConn.prepare('SELECT value FROM settings WHERE key = ?').get('gemini_model');
-  if (geminiModel && (geminiModel.value === 'gemini-1.5-flash' || geminiModel.value === 'gemini-2.5-flash')) {
-    dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-3.5-flash', 'gemini_model');
+  const newGeminiModelsList = 'gemini-3.8-flash, gemini-3.7-flash, gemini-3.6-flash, gemini-3.5-flash';
+  const currentListRow = dbConn.prepare("SELECT value FROM settings WHERE key = 'gemini_models_list'").get();
+  const currentGeminiModelRow = dbConn.prepare("SELECT value FROM settings WHERE key = 'gemini_model'").get();
+  const migrationRow = dbConn.prepare("SELECT value FROM settings WHERE key = 'gemini_v38_migrated'").get();
+
+  const isPre38 = !migrationRow || migrationRow.value !== '1';
+
+  const strictlyLegacyModels = [
+    'gemini-pro',
+    'gemini-1.0-pro',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-flash-8b',
+    'gemini-2.0-flash',
+    'gemini-2.5-flash',
+    'gemini-2.5-pro',
+    'gemini-3-flash-preview',
+    'gemini-3.1-flash-lite',
+    'gemini-3.5-flash-lite'
+  ];
+
+  if (isPre38) {
+    // Migrasi satu kali ke Gemini 3.8 Flash untuk database versi sebelumnya
+    dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run(newGeminiModelsList, 'gemini_models_list');
+
+    const legacyOrOldModels = [
+      ...strictlyLegacyModels,
+      'gemini-3.5-flash' // Default lama sebelum migrasi 3.8
+    ];
+    if (!currentGeminiModelRow || !currentGeminiModelRow.value || legacyOrOldModels.includes(currentGeminiModelRow.value)) {
+      dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-3.8-flash', 'gemini_model');
+    }
+    dbConn.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run('gemini_v38_migrated', '1');
+  } else {
+    // Database telah dimigrasikan: pertahankan pilihan pengguna atas gemini-3.5-flash (model minimal yang didukung).
+    // Hanya normalkan jika model saat ini adalah model usang (< 3.5)
+    if (!currentGeminiModelRow || !currentGeminiModelRow.value || strictlyLegacyModels.includes(currentGeminiModelRow.value)) {
+      dbConn.prepare('UPDATE settings SET value = ? WHERE key = ?').run('gemini-3.8-flash', 'gemini_model');
+    }
   }
 }
 
@@ -2517,7 +2554,7 @@ function getSettings(surveyId) {
     settings.target_fasih_mode = 'static';
   }
   if (!settings.gemini_model) {
-    settings.gemini_model = 'gemini-3.5-flash';
+    settings.gemini_model = 'gemini-3.8-flash';
   }
   return settings;
 }

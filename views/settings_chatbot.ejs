@@ -266,12 +266,12 @@
             <div>
               <div class="settings-field">
                 <label for="gemini_model" style="font-size: 13px; font-weight: 600;">Default Model Gemini</label>
-                <input type="text" id="gemini_model" name="gemini_model" value="<%= settings.gemini_model || 'gemini-3.5-flash' %>" placeholder="gemini-3.5-flash">
-                <p class="settings-hint">Rekomendasi: <code>gemini-3.5-flash</code> (generasi terbaru, cerdas, dan responsif).</p>
+                <input type="text" id="gemini_model" name="gemini_model" value="<%= settings.gemini_model || 'gemini-3.8-flash' %>" placeholder="gemini-3.8-flash">
+                <p class="settings-hint">Rekomendasi: <code>gemini-3.8-flash</code> (generasi terbaru, cerdas, dan responsif).</p>
               </div>
               <div class="settings-field">
                 <label for="gemini_models_list" style="font-size: 13px; font-weight: 600;">Daftar Pilihan Model Gemini</label>
-                <textarea id="gemini_models_list" name="gemini_models_list" rows="3" placeholder="gemini-3.5-flash, gemini-2.5-flash, gemini-3.1-flash-lite, gemini-2.5-pro"><%= settings.gemini_models_list || 'gemini-3.5-flash, gemini-2.5-flash, gemini-3.1-flash-lite, gemini-2.5-pro' %></textarea>
+                <textarea id="gemini_models_list" name="gemini_models_list" rows="3" placeholder="gemini-3.8-flash, gemini-3.7-flash, gemini-3.6-flash, gemini-3.5-flash"><%= settings.gemini_models_list || 'gemini-3.8-flash, gemini-3.7-flash, gemini-3.6-flash, gemini-3.5-flash' %></textarea>
                 <p class="settings-hint">Pisahkan nama model dengan tanda koma (,).</p>
               </div>
             </div>
@@ -414,7 +414,7 @@
       const primaryKey = (document.getElementById('gemini_api_key')?.value || '').trim();
       const backupInputs = Array.from(document.querySelectorAll('input[name="gemini_backup_keys"]'));
       const backupKeys = backupInputs.map(i => i.value.trim()).filter(Boolean);
-      const model = (document.getElementById('gemini_model')?.value || 'gemini-3.5-flash').trim();
+      const model = (document.getElementById('gemini_model')?.value || 'gemini-3.8-flash').trim();
 
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
       const prefix = window.navPrefix || '<%= navPrefix %>';

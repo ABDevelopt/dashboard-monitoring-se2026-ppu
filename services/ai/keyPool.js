@@ -221,7 +221,7 @@ if (dns.setDefaultResultOrder) {
 /**
  * Menguji satu API Key secara langsung ke Google Gemini API (dengan proteksi IPv4 dan timeout)
  */
-function testSingleGeminiKey(key, model = 'gemini-3.5-flash') {
+function testSingleGeminiKey(key, model = 'gemini-3.8-flash') {
   if (!key || typeof key !== 'string') {
     return Promise.resolve({
       valid: false,
@@ -347,7 +347,7 @@ function testSingleGeminiKey(key, model = 'gemini-3.5-flash') {
  */
 async function testAllGeminiKeys(settings = {}) {
   const allKeys = getAllGeminiKeys(settings);
-  const model = settings.gemini_model || 'gemini-3.5-flash';
+  const model = settings.gemini_model || 'gemini-3.8-flash';
 
   const results = await Promise.all(
     allKeys.map(async (item) => {

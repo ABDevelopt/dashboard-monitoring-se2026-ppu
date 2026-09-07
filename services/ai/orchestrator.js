@@ -8,7 +8,7 @@
 //  - Pembersihan dan penyimpanan kembali riwayat
 // ─────────────────────────────────────────────────────────────────────────────
 
-const { getDb, getSettings, getLatestUpload, getOverviewSummary, getKecamatanStats, updateAgentQueryAnalysis } = require('../../database');
+const { getDb, getSettings, getLatestUpload, getOverviewSummary, getKecamatanStats, updateAgentQueryAnalysis, resolveSurveyId } = require('../../database');
 const contextBuilder = require('./contextBuilder');
 const memoryManager = require('./memoryManager');
 const toolRegistry = require('./toolRegistry');
@@ -510,6 +510,69 @@ async function streamSimulation(userMessage, chatHistory, onEvent, abortSignal, 
 // ─────────────────────────────────────────────
 //  FACADE FUNCTIONS: BACA/TULIS MEMORY & API CALL
 // ─────────────────────────────────────────────
+const STANDARD_DOWNWARD_CHAIN = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
+
+/**
+ * Memeriksa apakah suatu error mengindikasikan model tidak ditemukan / tidak didukung (404/Not Found/Unsupported).
+ */
+function isModelNotFoundError(errMsg, statusCode = null) {
+  if (statusCode === 404) return true;
+  if (!errMsg || typeof errMsg !== 'string') return false;
+  const lower = errMsg.toLowerCase();
+  return (
+    errMsg.includes('404') ||
+    lower.includes('not found') ||
+    lower.includes('not supported') ||
+    lower.includes('is not supported') ||
+    lower.includes('does not exist') ||
+    lower.includes('unknown model') ||
+    lower.includes('unrecognized model') ||
+    lower.includes('unsupported model')
+  );
+}
+
+/**
+ * Membangun rantai model fallback menurun (strict downward fallback chain).
+ * Model bergulir ke bawah dari model yang dipilih hingga batas terlama gemini-3.5-flash:
+ * gemini-3.8-flash -> gemini-3.7-flash -> gemini-3.6-flash -> gemini-3.5-flash
+ */
+function getDownwardFallbackChain(selectedModel, modelsListStr) {
+  let configuredModels = [];
+  if (modelsListStr) {
+    configuredModels = modelsListStr
+      .split(',')
+      .map(s => s.trim())
+      .filter(m => m && (!llmGateway.LEGACY_GEMINI_MODELS || !llmGateway.LEGACY_GEMINI_MODELS.has(m)));
+  }
+
+  const baseChain = STANDARD_DOWNWARD_CHAIN;
+  let targetModel = (selectedModel && typeof selectedModel === 'string' && selectedModel.trim())
+    ? selectedModel.trim()
+    : 'gemini-3.8-flash';
+
+  // Jika model adalah legacy (< 3.5), arahkan langsung ke model default 3.8
+  if (llmGateway.LEGACY_GEMINI_MODELS && llmGateway.LEGACY_GEMINI_MODELS.has(targetModel)) {
+    targetModel = 'gemini-3.8-flash';
+  }
+
+  const idx = baseChain.indexOf(targetModel);
+
+  if (idx !== -1) {
+    // Strictly cascade downward from targetModel down to gemini-3.5-flash
+    const downward = baseChain.slice(idx);
+    if (configuredModels.length > 0) {
+      // Pastikan targetModel selalu dipertahankan di posisi awal
+      const filtered = downward.filter(m => m === targetModel || configuredModels.includes(m));
+      if (filtered.length > 0) return filtered;
+    }
+    return downward;
+  }
+
+  // Model di luar rantai standar: letakkan di urutan pertama, lalu lanjutkan rantai standar
+  const remaining = baseChain.filter(m => m !== targetModel && (configuredModels.length === 0 || configuredModels.includes(m)));
+  return [targetModel, ...remaining];
+}
+
 async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, userId = null) {
   const currentSurveyId = (options && options.surveyId) || resolveSurveyId();
 
@@ -540,13 +603,19 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
     }
   }
 
-  const tries = [{ provider: 'gemini', model: initialSelection.model }];
-
-  if (settings.chatbot_smart_switch !== '0') {
-    const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.6-flash, gemini-3.7-flash, gemini-3.1-flash-lite, gemini-2.5-flash';
-    for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-      if (tries.length >= 3) break; // Maksimal 3 kandidat model untuk menjaga responsivitas server
-      tries.push({ provider: 'gemini', model: m });
+  const tries = [];
+  if (settings.chatbot_smart_switch === '0') {
+    tries.push({ provider: 'gemini', model: initialSelection.model });
+  } else {
+    const chain = getDownwardFallbackChain(initialSelection.model, settings.gemini_models_list);
+    for (const m of chain) {
+      if (tries.length >= 5) break; // Cukup untuk seluruh rantai standar (3.8 s.d. 3.5) meskipun ada model kustom di awal
+      if (!tries.some(t => t.model === m)) {
+        tries.push({ provider: 'gemini', model: m });
+      }
+    }
+    if (tries.length === 0) {
+      tries.push({ provider: 'gemini', model: initialSelection.model });
     }
   }
 
@@ -580,6 +649,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
         finalResult = await llmGateway.sendMessageToGemini(
           userMessage, mergedHistory, settings, current.model, serverController.signal, kItem.key, dynInstruction, { surveyId: currentSurveyId }
         );
+        finalResult.model = current.model;
         keyPool.markSuccess(kItem.key);
         if (finalResult.queryId && finalResult.content) {
           updateAgentQueryAnalysis(finalResult.queryId, finalResult.content);
@@ -591,6 +661,11 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
         lastError = err;
         const errMsg = err.message || '';
         log.warn(`[ORCH] -> Gagal pada ${kItem.label} (${current.model}): ${errMsg}. Mengutamakan rotasi ke API Key berikutnya...`);
+        const isNotFound = isModelNotFoundError(errMsg, err.status || err.statusCode || (err.response && err.response.status));
+        if (isNotFound) {
+          log.warn(`[ORCH] Model '${current.model}' tidak tersedia (404/Not Found). Melewati sisa API key dan langsung beralih ke model fallback berikutnya...`);
+          break; // Fast-skip: langsung ke model berikutnya
+        }
         if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
           keyPool.markRateLimited(kItem.key, 120, errMsg, current.model);
         } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid') || errMsg.toLowerCase().includes('api key not valid')) {
@@ -658,13 +733,19 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
     }
   }
 
-  const tries = [{ provider: 'gemini', model: initialSelection.model }];
-
-  if (settings.chatbot_smart_switch !== '0') {
-    const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.6-flash, gemini-3.7-flash, gemini-3.1-flash-lite, gemini-2.5-flash';
-    for (const m of listStr.split(',').map(s => s.trim()).filter(Boolean)) {
-      if (tries.length >= 3) break; // Maksimal 3 kandidat model untuk streaming
-      tries.push({ provider: 'gemini', model: m });
+  const tries = [];
+  if (settings.chatbot_smart_switch === '0') {
+    tries.push({ provider: 'gemini', model: initialSelection.model });
+  } else {
+    const chain = getDownwardFallbackChain(initialSelection.model, settings.gemini_models_list);
+    for (const m of chain) {
+      if (tries.length >= 5) break; // Cukup untuk seluruh rantai standar (3.8 s.d. 3.5) meskipun ada model kustom di awal
+      if (!tries.some(t => t.model === m)) {
+        tries.push({ provider: 'gemini', model: m });
+      }
+    }
+    if (tries.length === 0) {
+      tries.push({ provider: 'gemini', model: initialSelection.model });
     }
   }
 
@@ -707,6 +788,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
         finalResult = await llmGateway.streamMessageToGemini(
           userMessage, mergedHistory, settings, current.model, abortSignal, kItem.key, onEvent, dynInstruction, { surveyId: currentSurveyId }
         );
+        finalResult.model = current.model;
         keyPool.markSuccess(kItem.key);
         if (finalResult.queryId && finalResult.content) {
           updateAgentQueryAnalysis(finalResult.queryId, finalResult.content);
@@ -726,6 +808,11 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
         lastError = err;
         const errMsg = err.message || '';
         log.warn(`[ORCH:STREAM] -> Gagal pada ${kItem.label} (${current.model}): ${errMsg}. Mengutamakan rotasi ke API Key berikutnya...`);
+        const isNotFound = isModelNotFoundError(errMsg, err.status || err.statusCode || (err.response && err.response.status));
+        if (isNotFound) {
+          log.warn(`[ORCH:STREAM] Model '${current.model}' tidak tersedia (404/Not Found). Melewati sisa API key dan langsung beralih ke model fallback berikutnya...`);
+          break; // Fast-skip: langsung ke model berikutnya
+        }
         if (errMsg.includes('429') || errMsg.toLowerCase().includes('quota') || errMsg.toLowerCase().includes('rate limit')) {
           keyPool.markRateLimited(kItem.key, 120, errMsg, current.model);
         } else if (errMsg.includes('403') || errMsg.toLowerCase().includes('leaked') || errMsg.toLowerCase().includes('api_key_invalid') || errMsg.toLowerCase().includes('api key not valid')) {
@@ -767,5 +854,7 @@ module.exports = {
   streamMessageToAgent,
   runSimulation,
   streamSimulation,
+  getDownwardFallbackChain,
+  isModelNotFoundError,
   fetchPageData: toolRegistry.fetchPageDataCompat
 };
