@@ -3,7 +3,9 @@
   let uploadType = activeTab || 'fasih';
   if (hideMuatanUpload && uploadType === 'muatan') uploadType = 'fasih';
   if (uploadType === 'sls') uploadType = 'fasih';
-  const uploads = uploadType === 'muatan' ? muatanUploads : (uploadType === 'fasih' ? fasihUploads : []);
+  const safeMuatanUploads = (typeof muatanUploads !== 'undefined' && Array.isArray(muatanUploads)) ? muatanUploads : [];
+  const safeFasihUploads = (typeof fasihUploads !== 'undefined' && Array.isArray(fasihUploads)) ? fasihUploads : [];
+  const uploads = uploadType === 'muatan' ? safeMuatanUploads : (uploadType === 'fasih' ? safeFasihUploads : []);
 %>
 <div class="fade-in">
   <!-- TAB NAVIGATION (Hanya tampil jika SE2026 yang memiliki opsi upload multi-tipe) -->
