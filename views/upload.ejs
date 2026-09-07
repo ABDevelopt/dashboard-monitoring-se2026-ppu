@@ -2,8 +2,9 @@
   const hideMuatanUpload = (typeof hideMuatanGlobal !== 'undefined' && hideMuatanGlobal) || (typeof activeSurvey !== 'undefined' && activeSurvey !== 'se2026');
   let uploadType = activeTab || 'fasih';
   if (hideMuatanUpload && uploadType === 'muatan') uploadType = 'fasih';
-  if (uploadType === 'sls') uploadType = 'fasih';
-  const uploads = uploadType === 'muatan' ? muatanUploads : (uploadType === 'fasih' ? fasihUploads : []);
+  const mUploads = typeof muatanUploads !== 'undefined' ? muatanUploads : [];
+  const fUploads = typeof fasihUploads !== 'undefined' ? fasihUploads : [];
+  const uploads = uploadType === 'muatan' ? mUploads : (uploadType === 'fasih' ? fUploads : []);
 %>
 <div class="fade-in">
   <!-- TAB NAVIGATION (Hanya tampil jika SE2026 yang memiliki opsi upload multi-tipe) -->

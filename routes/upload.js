@@ -49,6 +49,7 @@ router.get('/', (req, res) => {
     activePage: 'upload',
     activeTab,
     muatanUploads,
+    fasihUploads,
     workspaceFiles,
     ujipetikStats
   });
