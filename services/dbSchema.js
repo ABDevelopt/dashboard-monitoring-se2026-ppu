@@ -24,7 +24,7 @@ You have read-only access to a SQLite database with the following schema:
    - pml: TEXT (Pengawas Lapangan PML name, title-cased)
    - pcl: TEXT (Petugas Pencacah PCL name, title-cased)
    - muatan: INTEGER (The prelist target workload for usaha/businesses in this SLS)
-   - target_fasih: INTEGER (Target count of family documents to be completed in FASIH app)
+   - target_fasih: INTEGER (Alokasi Target Awal / Prelist Statis count of family documents to be completed in FASIH app, misal: PCL Qoryfatimahazzara dengan 768 dokumen. Total PPU = 91.760 dokumen)
 
 
 3. Table: progres (Stores progress per SubSLS per upload)
@@ -32,7 +32,7 @@ You have read-only access to a SQLite database with the following schema:
    - upload_id: INTEGER REFERENCES uploads(id) ON DELETE CASCADE
    - kode: TEXT (SubSLS code references subsls_master.kode)
    - pcl_email: TEXT (Email of the officer)
-   - pcl_name: TEXT (NOTE: Often NULL. ALWAYS JOIN subsls_master m ON progres.kode = m.kode to get officer names m.pcl, m.pml, m.korlap!)
+   - pcl_name: TEXT (NOTE: Often NULL. ALWAYS JOIN subsls_master m ON progres.kode = m.kode to get official officer names m.pcl, m.pml, m.korlap!)
    - pcl_sobat_id: TEXT (Sobat ID of the officer)
    - usaha_ditemukan: INTEGER (Businesses found during census)
    - usaha_baru: INTEGER (New businesses found)
@@ -49,6 +49,7 @@ You have read-only access to a SQLite database with the following schema:
    - submitted_by_pcl: INTEGER (FASIH document submitted by PCL, waiting for PML review)
    - approved: INTEGER (FASIH document approved by PML - count of completed documents)
    - rejected: INTEGER (FASIH document rejected by PML - count of documents returned to PCL)
+   - target_upload: INTEGER (Target Dokumen FASIH Aktif terkini per SubSLS pada sesi upload ini, sinkron dengan Web Dashboard. Total PPU = 125.378 dokumen)
 
 4. Table: petugas_email (Stores email and account details of officers/mitra)
    - id: INTEGER PRIMARY KEY AUTOINCREMENT
@@ -74,19 +75,23 @@ You have read-only access to a SQLite database with the following schema:
    - submitted_total: INTEGER (FASIH document submitted count)
    - approved_total: INTEGER (FASIH document approved count)
    - rejected_total: INTEGER (FASIH document rejected count)
-   - target_fasih_total: INTEGER (Target count of family documents to be completed in FASIH app)
+   - target_fasih_total: INTEGER (Target Dokumen FASIH Aktif terkini, sinkron dengan tampilan Web Dashboard. Kolom target utama saat user bertanya FASIH/dokumen)
+   - target_static_total: INTEGER (Alokasi Target Awal / Prelist Statis dari subsls_master. Digunakan saat user bertanya alokasi target awal/prelist)
+   - target_upload_total: INTEGER (Target Dokumen FASIH Aktif dari progres.target_upload)
 
 Relationships & Calculations:
 - Connect "progres" to "subsls_master" on "kode".
 - Connect "progres" to "uploads" on "upload_id".
-- Realisasi FASIH = (submitted_by_pcl + approved + rejected). Note that approved = completed/final.
-- Target FASIH = target_fasih.
-- Persentase FASIH = 100 * (submitted_by_pcl + approved + rejected) / target_fasih.
-- Petugas Selesai 100% FASIH = (submitted_by_pcl + approved + rejected) >= target_fasih. (ALWAYS use FASIH metrics when question asks about assignment/dokumen/FASIH!).
-- Realisasi Muatan Selesai = (usaha_ditemukan + usaha_baru + ditemukan + keluarga_baru).
-- Total Target Muatan = muatan.
+- Target Dokumen FASIH Aktif (DEFAULT DASHBOARD & PERTANYAAN PROGRES): Gunakan COALESCE(p.target_upload, m.target_fasih) pada progres, atau target_fasih_total / target_upload_total pada summary_cache. (Total PPU = 125.378 dokumen; Sepaku = 27.782, Waru = 13.344, Babulu = 24.238, Penajam = 60.014).
+- Alokasi Target Awal / Prelist Statis: Gunakan m.target_fasih pada subsls_master, atau target_static_total pada summary_cache. (Total PPU = 91.760 dokumen). HANYA gunakan kolom ini jika pertanyaan secara eksplisit menanyakan "alokasi target awal", "alokasi target", atau "prelist" (contoh: PCL dengan alokasi target terbanyak = Qoryfatimahazzara 768 dokumen alokasi awal, target aktif FASIH 943 dokumen).
+- Realisasi Dokumen FASIH = (submitted_by_pcl + approved + rejected) pada progres, atau (submitted_total + approved_total + rejected_total) pada summary_cache. Note that approved = verified/final. (Total PPU = 109.393 dokumen; Sepaku = 25.268, Waru = 10.877, Babulu = 21.145, Penajam = 52.103).
+- Persentase Capaian FASIH (%) = 100 * (submitted_by_pcl + approved + rejected) / COALESCE(p.target_upload, m.target_fasih) (atau / target_fasih_total). (Capaian PPU = 87,25%; Sepaku = 90,95%, Waru = 81,51%, Babulu = 87,24%, Penajam = 86,82%).
+- Petugas Selesai 100% FASIH = (submitted_by_pcl + approved + rejected) >= COALESCE(p.target_upload, m.target_fasih). (Total 25 PCL mencapai >= 100% target aktif FASIH; jika dibandingkan target statis m.target_fasih terdapat 131 PCL).
+- Ranking PCL Realisasi FASIH Terbanyak: Top 5 PCL adalah Muhamad Firdaus Eka Trisna Saputra (1.102 dok), Hana Tri Mainingsih (1.050 dok), Ropah Musrotin (1.050 dok), Widya Laila Rahmadani (1.032 dok), Edy Triasno Basri (1.010 dok).
+- Realisasi Muatan Selesai = (usaha_ditemukan + usaha_baru + ditemukan + keluarga_baru). (Total PPU = 44.900 muatan, 39,25%).
+- Total Target Muatan = muatan. (Total PPU = 114.387 muatan).
 - Persentase Realisasi Muatan = 100 * (usaha_ditemukan + usaha_baru + ditemukan + keluarga_baru) / muatan.
-- SubSLS is considered "Selesai" (Completed) when target_fasih > 0 AND (submitted_by_pcl + approved + rejected) >= target_fasih.
+- SubSLS is considered "Selesai" (Completed) when target_fasih > 0 AND (submitted_by_pcl + approved + rejected) >= COALESCE(p.target_upload, m.target_fasih).
 - Anomalies include: usaha_ganda > 0, tidak_dapat_ditemui > 0, rejected > 0.
 - Performa Rendah indicators:
   * Zero progress PCLs: total progress (draft + submitted + approved + rejected) = 0 across all assigned SubSLS.

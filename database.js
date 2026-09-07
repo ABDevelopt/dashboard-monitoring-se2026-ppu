@@ -146,6 +146,8 @@ function initSharedDb(dbConn) {
     CREATE INDEX IF NOT EXISTS idx_shared_ref_petugas_nama ON ref_petugas(nama_lengkap);
   `);
 
+  initUsers(dbConn);
+
   // Migrasikan petugas_email jika sebelumnya masih berupa tabel fisik menjadi SQL VIEW
   try {
     const isTable = dbConn.prepare("SELECT type FROM sqlite_master WHERE name='petugas_email'").get();
@@ -1684,9 +1686,9 @@ function getPclStats(uploadId, settings, surveyId) {
 
   return attachProgressPercentages(getDb(sId).prepare(`
     SELECT 
-      COALESCE(p.pcl_name, m.pcl) AS pcl,
-      COALESCE(p.pcl_email, m.pcl_email) AS email,
-      COALESCE(p.pcl_sobat_id, m.pcl_sobat_id) AS sobat_id,
+      COALESCE(m.pcl, p.pcl_name) AS pcl,
+      MAX(COALESCE(p.pcl_email, m.pcl_email)) AS email,
+      MAX(COALESCE(p.pcl_sobat_id, m.pcl_sobat_id)) AS sobat_id,
       MAX(m.pml) AS pml,
       MAX(m.korlap) AS korlap,
       MAX(m.kecamatan) AS kecamatan,
@@ -1713,7 +1715,7 @@ function getPclStats(uploadId, settings, surveyId) {
     FROM progres p
     LEFT JOIN ${masterTable} m ON p.kode = m.kode
     WHERE p.upload_id = ?
-    GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), COALESCE(p.pcl_name, m.pcl)
+    GROUP BY COALESCE(m.pcl, p.pcl_name)
     ORDER BY approved_total DESC
   `).all(uploadId), effSettings);
 }
@@ -2560,8 +2562,8 @@ function getSettings(surveyId) {
 }
 
 function rebuildAllSummaryCaches() {
-  const surveysConfig = require('./config/surveys.json');
-  const { ensureAllSubslsInUpload } = require('./services/excelParser');
+  const surveysConfig = require(path.join(__dirname, 'config', 'surveys.json'));
+  const { ensureAllSubslsInUpload } = require(path.join(__dirname, 'services', 'excelParser'));
   for (const surveyId of Object.keys(surveysConfig)) {
     try {
       const db = getDb(surveyId);
@@ -2577,7 +2579,7 @@ function rebuildAllSummaryCaches() {
     }
   }
   try {
-    const { triggerAsyncSync } = require('./services/firebaseSyncService');
+    const { triggerAsyncSync } = require(path.join(__dirname, 'services', 'firebaseSyncService'));
     triggerAsyncSync();
   } catch (e) {
     logger.error('Failed to trigger Firebase sync:', e.message);
@@ -2647,7 +2649,7 @@ function rebuildSummaryCache(uploadId, surveyId) {
       MAX(m.desa) AS desa,
       MAX(m.korlap) AS korlap,
       MAX(m.pml) AS pml,
-      COALESCE(p.pcl_name, m.pcl) AS pcl,
+      COALESCE(m.pcl, p.pcl_name) AS pcl,
       COUNT(DISTINCT p.kode) AS total_sls,
       SUM(${singleSelesaiFormula}) AS selesai,
       SUM(${targetMuatanFormula}) AS total_muatan,
@@ -2681,7 +2683,7 @@ function rebuildSummaryCache(uploadId, surveyId) {
     FROM progres p
     LEFT JOIN ${masterTable} m ON p.kode = m.kode
     WHERE p.upload_id = ?
-    GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), m.kecamatan, m.desa
+    GROUP BY COALESCE(m.pcl, p.pcl_name), m.kecamatan, m.desa
   `).run(uploadId, uploadId);
 }
 
