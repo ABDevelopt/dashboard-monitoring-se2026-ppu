@@ -63,7 +63,10 @@
   <link rel="stylesheet" href="/css/survey-themes.css?v=<%= appVersion %>">
   <script src="/js/search-helper.min.js?v=<%= appVersion %>"></script>
   <link rel="stylesheet" href="/css/spreadsheet.min.css?v=<%= appVersion %>">
+  <% const isMapPage = (typeof activePage !== 'undefined' && (activePage === 'map' || activePage === 'map-ujipetik' || activePage === 'ujipetik')); %>
+  <% if (!isMapPage) { %>
   <link rel="stylesheet" href="/css/ai-widget.min.css?v=<%= appVersion %>">
+  <% } %>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="" />
 
@@ -78,6 +81,13 @@
     <% if (hideMuatanGlobal) { %>
       .muatan-col, .muatan-only, [data-metric="muatan"] { display: none !important; }
     <% } %>
+    body.page-map #ai-widget-fab,
+    body.page-map #ai-widget-container,
+    body.page-map #ai-widget-backdrop,
+    body.page-map #ai-widget-toast,
+    body.page-map .ai-widget-floating-button {
+      display: none !important;
+    }
     @media (max-width: 992px) {
       .topbar-weather-widget { display: none !important; }
     }
@@ -1458,6 +1468,8 @@
 </script>
 <%- typeof scripts !== 'undefined' ? scripts : '' %>
 <script src="/js/spreadsheet-editor.min.js?v=<%= appVersion %>" defer></script>
+<% if (!isMapPage) { %>
 <script src="/js/ai-widget.min.js?v=<%= appVersion %>" defer></script>
+<% } %>
 </body>
 </html>
