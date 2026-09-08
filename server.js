@@ -47,6 +47,17 @@ const PORT = process.env.PORT || 3000;
 // Disable X-Powered-By header to prevent technology fingerprinting
 app.disable('x-powered-by');
 
+// Enable Gzip/Deflate HTTP compression for responses > 1KB
+const compression = require('compression');
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  },
+  level: 6,
+  threshold: 1024 // Only compress responses > 1KB
+}));
+
 // View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -89,8 +100,14 @@ app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.css') || filePath.endsWith('.js')) {
       res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    } else if (filePath.endsWith('.geojson')) {
+      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+      res.removeHeader('Pragma');
+      res.removeHeader('Expires');
     } else if (filePath.endsWith('.png') || filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') || filePath.endsWith('.svg') || filePath.endsWith('.woff2')) {
       res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.removeHeader('Pragma');
+      res.removeHeader('Expires');
     }
   }
 }));
