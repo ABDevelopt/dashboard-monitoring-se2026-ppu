@@ -399,13 +399,13 @@ function findStatusColumnIndexes(headers) {
   const kodeIdx = findIndex(['level_6_full_code', 'smallcode', 'kode subsls', 'idsubsls', 'kode', 'code']);
   const draftIdxs = findMultipleIndexes(['draft', 'revoked']);
   const openIdxs = findMultipleIndexes(['open', 'belum diisi', 'belum_diisi', 'unassigned', 'not_started', 'not started']);
-  const approvedIdxs = findMultipleIndexes(['approved', 'completed', 'selesai'])
+  const approvedIdxs = findMultipleIndexes(['approved', 'completed', 'selesai', 'edited'])
     .filter(idx => !headers[idx].includes('persentase') && !headers[idx].includes('percent') && !headers[idx].includes('%'));
   // Collect ALL 'rejected' / 'reject' columns (e.g. "REJECTED BY Pengawas", "REJECTED BY Admin Kabupaten", "Reject")
   const rejectedIdxs = findMultipleIndexes(['rejected', 'reject']);
 
   // Look for submitted / submit columns
-  const submittedIdxs = findMultipleIndexes(['submitted_by_pcl', 'submitted by pencacah', 'submitted respondent', 'submitted', 'submit', 'edited']);
+  const submittedIdxs = findMultipleIndexes(['submitted_by_pcl', 'submitted by pencacah', 'submitted respondent', 'submitted', 'submit']);
 
   const totalIdx = findIndex(['total', 'target']);
   const desaIdx = findIndex(['desa', 'nama_desa', 'kelurahan']);
@@ -1478,7 +1478,7 @@ function parseAndSaveJsonStatusOnly(filePath, originalFilename, storedFilename, 
           if (sName.includes('OPEN')) openVal += cnt;
           else if (sName.includes('DRAFT')) draftVal += cnt;
           else if (sName.includes('SUBMITTED') || sName.includes('SUBMIT')) submittedVal += cnt;
-          else if (sName.includes('APPROVED')) approvedVal += cnt;
+          else if (sName.includes('APPROVED') || sName.includes('COMPLETED') || sName.includes('EDITED')) approvedVal += cnt;
           else if (sName.includes('REJECTED') || sName.includes('REVOKED')) rejectedVal += cnt;
         });
 
