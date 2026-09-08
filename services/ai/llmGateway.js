@@ -64,7 +64,7 @@ const customHttpsFetch = (url, options = {}) => {
 globalThis.fetch = customHttpsFetch;
 
 const { 
-  GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash'
+  GEMINI_DEFAULT_MODEL = 'gemini-3.8-flash'
 } = process.env;
 
 const AGENT_API_TIMEOUT_MS          = 20000; 
@@ -80,7 +80,11 @@ const LEGACY_GEMINI_MODELS = new Set([
   'gemini-1.5-flash-latest',
   'gemini-1.5-flash-8b',
   'gemini-2.0-flash',
-  'gemini-3-flash-preview'
+  'gemini-2.5-flash',
+  'gemini-2.5-pro',
+  'gemini-3-flash-preview',
+  'gemini-3.1-flash-lite',
+  'gemini-3.5-flash-lite'
 ]);
 const _activeControllers = new Map();
 
@@ -129,7 +133,7 @@ function abortAllActive() {
 }
 
 function getAllowedModels(provider, settings) {
-  const listStr = settings.gemini_models_list || 'gemini-3.5-flash, gemini-2.5-flash, gemini-3.1-flash-lite, gemini-2.5-pro';
+  const listStr = settings.gemini_models_list || 'gemini-3.8-flash, gemini-3.7-flash, gemini-3.6-flash, gemini-3.5-flash';
   const models = listStr.split(',').map(m => m.trim()).filter(Boolean);
   if (settings.gemini_model) models.push(settings.gemini_model);
   return Array.from(new Set(models));
@@ -576,9 +580,12 @@ module.exports = {
   registerActiveRequest,
   clearActiveRequest,
   abortAllActive,
+  getAllowedModels,
   resolveAgentSelection,
   sendMessageToGemini,
   streamMessageToGemini,
-  MAX_SWITCH_TRIES
+  MAX_SWITCH_TRIES,
+  GEMINI_DEFAULT_MODEL,
+  LEGACY_GEMINI_MODELS
 };
 

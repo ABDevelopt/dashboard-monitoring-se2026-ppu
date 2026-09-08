@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { parseAndSaveExcel, parseAndSaveSeparateExports, parseAndSaveStatusExcelOnly, parseAndSaveJsonStatusOnly } = require('../services/excelParser');
-const { getAllUploads, getDb, getSettings, rebuildAllSummaryCaches, getTitikUjiPetikStats, importTitikUjiPetikFromCsv, clearTitikUjiPetik } = require('../database');
+const { getAllUploads, getDb, getSettings, rebuildAllSummaryCaches, getTitikUjiPetikStats, importTitikUjiPetik, importTitikUjiPetikFromCsv, clearTitikUjiPetik, getTitikUjiPetikUploads, getTitikUjiPetikUploadById, deleteTitikUjiPetikUpload } = require('../database');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, '../uploads')),
@@ -43,14 +43,17 @@ router.get('/', (req, res) => {
 
   const workspaceFiles = scanWorkspace(activeSurvey);
   const ujipetikStats = getTitikUjiPetikStats(activeSurvey);
+  const ujipetikUploads = getTitikUjiPetikUploads(activeSurvey);
 
   res.render('upload', {
     title: isSe2026 ? 'Upload Data Sensus' : 'Upload Data Survei',
     activePage: 'upload',
     activeTab,
     muatanUploads,
+    fasihUploads,
     workspaceFiles,
-    ujipetikStats
+    ujipetikStats,
+    ujipetikUploads
   });
 });
 
@@ -687,10 +690,10 @@ router.post('/google-sheets', async (req, res) => {
   res.redirect(req.header('Referer') || `${req.baseUrl || '/admin/upload'}/muatan`);
 });
 
-// POST: Upload Titik Uji Petik CSV
+// POST: Upload Titik Uji Petik (Excel / CSV)
 router.post('/ujipetik', upload.single('ujipetikFile'), async (req, res) => {
   if (!req.file) {
-    req.flash('error', 'Silakan pilih file CSV Titik Uji Petik untuk diupload.');
+    req.flash('error', 'Silakan pilih file Excel (.xlsx/.xls) atau CSV Titik Uji Petik untuk diupload.');
     return res.redirect(`${req.baseUrl || '/admin/upload'}?tab=ujipetik`);
   }
 
@@ -698,18 +701,57 @@ router.post('/ujipetik', upload.single('ujipetikFile'), async (req, res) => {
   const replaceExisting = req.body.mode !== 'append';
 
   try {
-    const count = importTitikUjiPetikFromCsv(req.file.path, activeSurvey, replaceExisting);
+    const uploadMeta = {
+      filename: req.file.originalname,
+      stored_filename: req.file.filename,
+      mode: req.body.mode === 'append' ? 'append' : 'replace'
+    };
+    const count = importTitikUjiPetik(req.file.path, activeSurvey, replaceExisting, uploadMeta);
     req.flash('success', `Berhasil mengimpor ${count.toLocaleString('id-ID')} Titik Uji Petik dari file "${req.file.originalname}".`);
   } catch (err) {
     console.error('Error importing Titik Uji Petik:', err);
-    req.flash('error', `Gagal memproses file CSV Titik Uji Petik: ${err.message}`);
-  } finally {
     if (req.file && fs.existsSync(req.file.path)) {
       try { fs.unlinkSync(req.file.path); } catch (_) {}
     }
+    req.flash('error', `Gagal memproses file Titik Uji Petik: ${err.message}`);
   }
 
   res.redirect(`${req.baseUrl || '/admin/upload'}?tab=ujipetik`);
+});
+
+// POST: Hapus / Rollback Upload Titik Uji Petik
+router.post('/ujipetik/delete/:id', (req, res) => {
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const id = parseInt(req.params.id);
+  try {
+    const result = deleteTitikUjiPetikUpload(id, activeSurvey);
+    if (result.success) {
+      req.flash('success', `Upload Titik Uji Petik "${result.filename}" berhasil dibatalkan/di-rollback.`);
+    } else {
+      req.flash('error', result.message || 'Gagal membatalkan upload titik uji petik.');
+    }
+  } catch (err) {
+    console.error('Error deleting Titik Uji Petik upload:', err);
+    req.flash('error', `Gagal membatalkan upload: ${err.message}`);
+  }
+  res.redirect(`${req.baseUrl || '/admin/upload'}?tab=ujipetik`);
+});
+
+// GET: Download File Fisik Titik Uji Petik
+router.get('/ujipetik/download/:id', (req, res) => {
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const id = parseInt(req.params.id);
+  const rec = getTitikUjiPetikUploadById(id, activeSurvey);
+  if (!rec || !rec.stored_filename) {
+    req.flash('error', 'File fisik titik uji petik tidak ditemukan.');
+    return res.redirect(`${req.baseUrl || '/admin/upload'}?tab=ujipetik`);
+  }
+  const filePath = path.join(__dirname, '../uploads', rec.stored_filename);
+  if (!fs.existsSync(filePath)) {
+    req.flash('error', 'File fisik di server sudah tidak tersedia.');
+    return res.redirect(`${req.baseUrl || '/admin/upload'}?tab=ujipetik`);
+  }
+  res.download(filePath, rec.filename);
 });
 
 // POST: Clear All Titik Uji Petik Data
@@ -717,7 +759,7 @@ router.post('/ujipetik/clear', (req, res) => {
   const activeSurvey = res.locals.activeSurvey || 'se2026';
   try {
     clearTitikUjiPetik(activeSurvey);
-    req.flash('success', 'Seluruh data Titik Uji Petik berhasil dikosongkan.');
+    req.flash('success', 'Seluruh data Titik Uji Petik dan riwayat upload berhasil dikosongkan.');
   } catch (err) {
     req.flash('error', `Gagal mengosongkan data Titik Uji Petik: ${err.message}`);
   }

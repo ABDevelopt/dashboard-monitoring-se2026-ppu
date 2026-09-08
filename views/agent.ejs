@@ -1355,7 +1355,7 @@
         </button>
 
         <input type="hidden" id="agentProvider" value="<%= typeof provider !== 'undefined' && provider ? provider : 'gemini' %>">
-        <input type="hidden" id="agentModel" value="<%= typeof selectedGeminiModel !== 'undefined' && selectedGeminiModel ? selectedGeminiModel : (typeof model !== 'undefined' && model ? model : 'gemini-3.5-flash') %>">
+        <input type="hidden" id="agentModel" value="<%= typeof selectedGeminiModel !== 'undefined' && selectedGeminiModel ? selectedGeminiModel : (typeof model !== 'undefined' && model ? model : 'gemini-3.8-flash') %>">
       </div>
     </div>
     
@@ -1467,7 +1467,7 @@
     updateAgentViewport();
   }
 
-  const VALID_GEMINI_MODELS = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'];
+  const VALID_GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
   
   // Sanitize localStorage selected AI model
   try {
@@ -1476,7 +1476,7 @@
       const parsed = JSON.parse(rawSaved);
       if (parsed && (!parsed.model || !VALID_GEMINI_MODELS.includes(parsed.model))) {
         parsed.provider = 'gemini';
-        parsed.model = 'gemini-3.5-flash';
+        parsed.model = 'gemini-3.8-flash';
         localStorage.setItem('se2026_selected_ai', JSON.stringify(parsed));
       }
     }
@@ -1484,10 +1484,10 @@
 
   const chatHistory = [];
   const modelOptions = {
-    gemini: <%- JSON.stringify(geminiModels || ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-pro']) %>
+    gemini: <%- JSON.stringify(geminiModels || ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash']) %>
   };
   const selectedModels = {
-    gemini: <%- JSON.stringify(selectedGeminiModel || 'gemini-3.5-flash') %>
+    gemini: <%- JSON.stringify(selectedGeminiModel || 'gemini-3.8-flash') %>
   };
 
   // FIX #1 — Guard global: pastikan hanya ada SATU request aktif dalam satu waktu.
@@ -2296,7 +2296,7 @@
     const modelElem = document.getElementById('agentModel');
     let reqModel = modelElem ? modelElem.value : '';
     if (!reqModel || !VALID_GEMINI_MODELS.includes(reqModel)) {
-      reqModel = 'gemini-3.5-flash';
+      reqModel = 'gemini-3.8-flash';
     }
 
     const safePayloadHistory = chatHistory

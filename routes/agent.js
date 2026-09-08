@@ -23,7 +23,7 @@ router.get('/', (req, res) => {
 
   const geminiModels = settings.gemini_models_list
     ? settings.gemini_models_list.split(',').map(m => m.trim()).filter(Boolean)
-    : ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'];
+    : ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
   if (settings.gemini_model && !geminiModels.includes(settings.gemini_model)) {
     geminiModels.push(settings.gemini_model);
   }
@@ -33,7 +33,7 @@ router.get('/', (req, res) => {
     activePage         : 'agent',
     hasKey,
     provider           : 'gemini',
-    selectedGeminiModel: settings.gemini_model || 'gemini-3.5-flash',
+    selectedGeminiModel: settings.gemini_model || 'gemini-3.8-flash',
     geminiModels,
     hasGeminiKey       : geminiEnabled
   });

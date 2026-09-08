@@ -493,83 +493,103 @@ async function callGeminiDirect(prompt, settings = {}) {
     } catch (e) {}
   }
 
-  const modelName = settings.gemini_model || 'gemini-3.5-flash';
+  const { getDownwardFallbackChain, isModelNotFoundError } = require('../services/ai/orchestrator');
+  const modelsToTry = getDownwardFallbackChain(settings.gemini_model, settings.gemini_models_list);
   const TIMEOUT_MS = 2500;
   const keysAttempted = keysToTry.slice(0, 2);
 
-  // Try Gemini keys
-  for (const apiKey of keysAttempted) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-    const requestBody = JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }]
-    });
-
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: requestBody,
-        signal: controller.signal
+  // Try models in downward fallback chain (e.g. 3.8 -> 3.7 -> 3.6 -> 3.5)
+  for (const modelName of modelsToTry) {
+    let fastSkipModel = false;
+    for (const apiKey of keysAttempted) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+      const requestBody = JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
       });
 
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        if (!data.error) {
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) return text;
-        }
-      } else {
-        let errText = '';
-        try { errText = await response.text(); } catch (e) {}
-        console.warn(`[AI Insights] Gemini API key (ending ...${apiKey.slice(-4)}) status ${response.status}: ${errText}`);
-      }
-    } catch (fetchErr) {
-      if (fetchErr.name === 'AbortError' || (fetchErr.message && fetchErr.message.includes('abort'))) {
-        console.warn(`[AI Insights] Gemini key (...${apiKey.slice(-4)}) timed out after ${TIMEOUT_MS}ms.`);
-        continue;
-      }
-      console.warn(`[AI Insights] Fetch attempt failed for Gemini key (...${apiKey.slice(-4)}): ${fetchErr.message}, trying curl fallback...`);
       try {
-        const curlRes = await new Promise((resolve, reject) => {
-          const { spawn } = require('child_process');
-          const child = spawn('curl', [
-            '-s', '-X', 'POST',
-            '--connect-timeout', '2',
-            '-m', '3',
-            '-H', 'Content-Type: application/json',
-            '-d', requestBody,
-            url
-          ]);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-          const stdoutChunks = [];
-          const stderrChunks = [];
-          child.stdout.on('data', chunk => stdoutChunks.push(chunk));
-          child.stderr.on('data', chunk => stderrChunks.push(chunk));
-
-          child.on('close', code => {
-            if (code !== 0) return reject(new Error(`curl exit code ${code}`));
-            try {
-              const resText = Buffer.concat(stdoutChunks).toString();
-              const data = JSON.parse(resText);
-              if (data.error) return reject(new Error(data.error.message));
-              const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (text) resolve(text);
-              else reject(new Error('Empty candidate text'));
-            } catch (e) {
-              reject(e);
-            }
-          });
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody,
+          signal: controller.signal
         });
-        if (curlRes) return curlRes;
-      } catch (curlErr) {
-        console.warn(`[AI Insights] Curl fallback failed: ${curlErr.message}`);
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const data = await response.json();
+          if (!data.error) {
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) return text;
+          }
+        } else {
+          let errText = '';
+          try { errText = await response.text(); } catch (e) {}
+          console.warn(`[AI Insights] Gemini API key (ending ...${apiKey.slice(-4)}) on '${modelName}' status ${response.status}: ${errText}`);
+          if (isModelNotFoundError(errText, response.status)) {
+            console.warn(`[AI Insights] Model '${modelName}' tidak tersedia (404/Not Found). Fast-skip ke model fallback berikutnya...`);
+            fastSkipModel = true;
+            break;
+          }
+        }
+      } catch (fetchErr) {
+        if (fetchErr.name === 'AbortError' || (fetchErr.message && fetchErr.message.includes('abort'))) {
+          console.warn(`[AI Insights] Gemini key (...${apiKey.slice(-4)}) on '${modelName}' timed out after ${TIMEOUT_MS}ms.`);
+          continue;
+        }
+        if (fastSkipModel) break;
+        if (isModelNotFoundError(fetchErr.message)) {
+          console.warn(`[AI Insights] Model '${modelName}' tidak tersedia (404/Not Found). Fast-skip ke model fallback berikutnya...`);
+          fastSkipModel = true;
+          break;
+        }
+        console.warn(`[AI Insights] Fetch attempt failed for Gemini key (...${apiKey.slice(-4)}) on '${modelName}': ${fetchErr.message}, trying curl fallback...`);
+        try {
+          const curlRes = await new Promise((resolve, reject) => {
+            const { spawn } = require('child_process');
+            const child = spawn('curl', [
+              '-s', '-X', 'POST',
+              '--connect-timeout', '2',
+              '-m', '3',
+              '-H', 'Content-Type: application/json',
+              '-d', requestBody,
+              url
+            ]);
+
+            const stdoutChunks = [];
+            const stderrChunks = [];
+            child.stdout.on('data', chunk => stdoutChunks.push(chunk));
+            child.stderr.on('data', chunk => stderrChunks.push(chunk));
+
+            child.on('close', code => {
+              if (code !== 0) return reject(new Error(`curl exit code ${code}`));
+              try {
+                const resText = Buffer.concat(stdoutChunks).toString();
+                const data = JSON.parse(resText);
+                if (data.error) return reject(new Error(data.error.message));
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) resolve(text);
+                else reject(new Error('Empty candidate text'));
+              } catch (e) {
+                reject(e);
+              }
+            });
+          });
+          if (curlRes) return curlRes;
+        } catch (curlErr) {
+          console.warn(`[AI Insights] Curl fallback failed on '${modelName}': ${curlErr.message}`);
+          if (isModelNotFoundError(curlErr.message)) {
+            fastSkipModel = true;
+            break;
+          }
+        }
       }
     }
+    if (fastSkipModel) continue;
   }
 
   throw new Error('Tidak ada API Key Gemini yang valid atau semua permintaan mengalami timeout / rate limit.');
@@ -948,6 +968,8 @@ router.get('/pcl-distribution', (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+router.callGeminiDirect = callGeminiDirect;
 
 module.exports = router;
 

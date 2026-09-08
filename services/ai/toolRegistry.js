@@ -171,7 +171,7 @@ const TOOL_SCHEMAS = {
         kecamatan: { type: "STRING", description: "Optional kecamatan name." },
         desa: { type: "STRING", description: "Optional desa name." }
       },
-      required: ["uploadId"]
+      required: []
     }
   },
   get_anomaly: {
@@ -180,10 +180,10 @@ const TOOL_SCHEMAS = {
     parameters: {
       type: "OBJECT",
       properties: {
-        uploadId: { type: "INTEGER", description: "The upload ID." },
+        uploadId: { type: "INTEGER", description: "The upload ID (defaults to latest upload)." },
         kecamatan: { type: "STRING", description: "Optional kecamatan filter." }
       },
-      required: ["uploadId"]
+      required: []
     }
   },
   get_petugas: {
@@ -192,11 +192,11 @@ const TOOL_SCHEMAS = {
     parameters: {
       type: "OBJECT",
       properties: {
-        uploadId: { type: "INTEGER", description: "The upload ID." },
+        uploadId: { type: "INTEGER", description: "The upload ID (defaults to latest upload)." },
         role: { type: "STRING", description: "Role name to fetch: 'pcl', 'pml', or 'korlap'." },
         kecamatan: { type: "STRING", description: "Optional kecamatan name filter (e.g. 'Sepaku', 'Penajam', 'Babulu', 'Waru')." }
       },
-      required: ["uploadId", "role"]
+      required: ["role"]
     }
   },
   fetch_page_data: {
@@ -361,16 +361,19 @@ async function runToolCall(toolCall, context = {}) {
       }
 
       case 'get_anomaly': {
-        const uploadId = args.uploadId;
-        const anomalies = getAnomalyStats(uploadId, {}, surveyId);
+        const uploadId = args.uploadId || (getLatestUpload(surveyId)?.id);
+        const filters = {};
+        if (args.kecamatan) filters.kec = args.kecamatan;
+        const anomalies = getAnomalyStats(uploadId, filters, surveyId);
         const queryId = 'q_' + Math.random().toString(36).substring(2, 9);
+        const kecWhere = args.kecamatan ? `AND LOWER(m.kecamatan) LIKE LOWER('%${args.kecamatan.replace(/'/g, "''")}%')` : '';
         const anomalySql = `
           SELECT 
             p.kode AS "Kode SubSLS",
             m.nama_sls AS "Nama SLS",
             m.desa AS "Desa",
             m.kecamatan AS "Kecamatan",
-            COALESCE(p.pcl_name, m.pcl) AS "Nama PCL",
+            COALESCE(m.pcl, p.pcl_name) AS "Nama PCL",
             m.pml AS "PML Pengawas",
             COALESCE(p.usaha_ganda, 0) AS "Usaha Ganda",
             COALESCE(p.tidak_dapat_ditemui, 0) AS "Tidak Ditemui",
@@ -378,7 +381,7 @@ async function runToolCall(toolCall, context = {}) {
             COALESCE(p.approved, 0) AS "Approved"
           FROM progres p
           JOIN subsls_master m ON p.kode = m.kode
-          WHERE p.upload_id = ${uploadId || '(SELECT id FROM uploads ORDER BY id DESC LIMIT 1)'}
+          WHERE p.upload_id = ${uploadId || '(SELECT id FROM uploads ORDER BY id DESC LIMIT 1)'} ${kecWhere}
             AND (COALESCE(p.usaha_ganda, 0) > 0 OR COALESCE(p.rejected, 0) > 0 OR COALESCE(p.tidak_dapat_ditemui, 0) > 0)
           ORDER BY (COALESCE(p.usaha_ganda, 0) + COALESCE(p.rejected, 0) + COALESCE(p.tidak_dapat_ditemui, 0)) DESC
         `.trim();
@@ -399,7 +402,7 @@ async function runToolCall(toolCall, context = {}) {
       }
 
       case 'get_petugas': {
-        const uploadId = args.uploadId;
+        const uploadId = args.uploadId || (getLatestUpload(surveyId)?.id);
         const role = String(args.role).toLowerCase();
         const settings = getSettings(surveyId);
         let data;
@@ -408,11 +411,16 @@ async function runToolCall(toolCall, context = {}) {
         else if (role === 'korlap') data = getKorlapStats(uploadId, settings, surveyId);
         else throw new Error(`Role petugas '${role}' tidak dikenal.`);
 
+        if (args.kecamatan && Array.isArray(data)) {
+          const kecTarget = args.kecamatan.toLowerCase().trim();
+          data = data.filter(d => d.kecamatan && d.kecamatan.toLowerCase().includes(kecTarget));
+        }
+
         const queryId = 'q_' + Math.random().toString(36).substring(2, 9);
         const kecWhere = args.kecamatan ? `AND LOWER(m.kecamatan) LIKE LOWER('%${args.kecamatan.replace(/'/g, "''")}%')` : '';
         const petugasSql = `
           SELECT 
-            COALESCE(p.pcl_name, m.pcl) AS "Nama PCL",
+            COALESCE(m.pcl, p.pcl_name) AS "Nama PCL",
             MAX(m.pml) AS "PML Pengawas",
             MAX(m.korlap) AS "Korlap",
             MAX(m.kecamatan) AS "Kecamatan",
@@ -424,11 +432,11 @@ async function runToolCall(toolCall, context = {}) {
             SUM(COALESCE(p.submitted_by_pcl, 0)) AS "Submitted",
             SUM(COALESCE(p.approved, 0)) AS "Approved",
             SUM(COALESCE(p.rejected, 0)) AS "Rejected",
-            SUM(COALESCE(m.target_fasih, 0)) AS "Target FASIH"
+            SUM(COALESCE(p.target_upload, m.target_fasih)) AS "Target FASIH"
           FROM progres p
           LEFT JOIN subsls_master m ON p.kode = m.kode
           WHERE p.upload_id = ${uploadId || '(SELECT id FROM uploads ORDER BY id DESC LIMIT 1)'} ${kecWhere}
-          GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), COALESCE(p.pcl_name, m.pcl)
+          GROUP BY COALESCE(m.pcl, p.pcl_name)
           ORDER BY "Approved" DESC, "Target FASIH" DESC
         `.trim();
 

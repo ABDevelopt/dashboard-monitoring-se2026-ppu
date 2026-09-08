@@ -6,11 +6,11 @@
 (function () {
   'use strict';
 
-  // Do not initialize on login page
-  if (document.body && document.body.classList.contains('page-login')) {
+  // Do not initialize on login or map pages
+  if (document.body && (document.body.classList.contains('page-login') || document.body.classList.contains('page-map'))) {
     return;
   }
-  if (window.location.pathname.startsWith('/login')) {
+  if (window.location.pathname.startsWith('/login') || /^\/(?:[^\/]+\/)?(?:peta|map-ujipetik)(?:\/|$)/.test(window.location.pathname)) {
     return;
   }
 
@@ -107,7 +107,7 @@
 
   // Get active selected AI info from localStorage
   function getSelectedAI() {
-    const VALID_MODELS = ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'];
+    const VALID_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
     try {
       const saved = localStorage.getItem(SELECTED_AI_KEY);
       if (saved) {
@@ -117,12 +117,12 @@
         }
       }
     } catch (e) {}
-    return { provider: 'gemini', model: 'gemini-3.5-flash' };
+    return { provider: 'gemini', model: 'gemini-3.8-flash' };
   }
 
   // Format model string for clean header display
   function formatModelDisplayName(provider, model) {
-    if (!model) return 'Gemini 3.5 Flash';
+    if (!model) return 'Gemini 3.8 Flash';
     
     let clean = model;
     if (clean.includes('/')) {
@@ -131,12 +131,10 @@
     clean = clean.replace(':free', '').replace('-instruct', '');
 
     const map = {
-      'gemini-3.5-flash': 'Gemini 3.5 Flash',
-      'gemini-3.5-flash-lite': 'Gemini 3.5 Flash-Lite',
-      'gemini-3.6-flash': 'Gemini 3.6 Flash',
+      'gemini-3.8-flash': 'Gemini 3.8 Flash',
       'gemini-3.7-flash': 'Gemini 3.7 Flash',
-      'gemini-3.1-flash-lite': 'Gemini 3.1 Flash-Lite',
-      'gemini-2.5-flash': 'Gemini 2.5 Flash'
+      'gemini-3.6-flash': 'Gemini 3.6 Flash',
+      'gemini-3.5-flash': 'Gemini 3.5 Flash'
     };
 
     if (map[model]) return map[model];
@@ -257,7 +255,7 @@
           </div>
           <div class="ai-widget-meta">
             <h4 class="ai-widget-name">Pananyo Taka</h4>
-            <span id="ai-widget-status-text" class="ai-widget-status">Gemini 3.5 Flash</span>
+            <span id="ai-widget-status-text" class="ai-widget-status">Gemini 3.8 Flash</span>
           </div>
         </div>
         <div class="ai-widget-actions">
