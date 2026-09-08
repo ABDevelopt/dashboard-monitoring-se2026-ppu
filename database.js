@@ -93,12 +93,7 @@ function getDb(surveyId) {
 
 function reloadDbConnection(surveyId) {
   const sId = resolveSurveyId(surveyId);
-  if (dbs[sId]) {
-    try {
-      dbs[sId].close();
-    } catch (_) {}
-    delete dbs[sId];
-  }
+  closeDbConnection(sId);
   return getDb(sId);
 }
 
@@ -106,9 +101,15 @@ function closeDbConnection(surveyId) {
   const sId = resolveSurveyId(surveyId);
   if (dbs[sId]) {
     try {
+      dbs[sId].pragma('wal_checkpoint(TRUNCATE)');
+    } catch (_) {}
+    try {
       dbs[sId].close();
     } catch (_) {}
     delete dbs[sId];
+    if (sId === 'se2026') {
+      db = null;
+    }
   }
 }
 
