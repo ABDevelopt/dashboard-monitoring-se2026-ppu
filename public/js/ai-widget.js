@@ -6,11 +6,11 @@
 (function () {
   'use strict';
 
-  // Do not initialize on login page
-  if (document.body && document.body.classList.contains('page-login')) {
+  // Do not initialize on login or map pages
+  if (document.body && (document.body.classList.contains('page-login') || document.body.classList.contains('page-map'))) {
     return;
   }
-  if (window.location.pathname.startsWith('/login')) {
+  if (window.location.pathname.startsWith('/login') || /^\/(?:[^\/]+\/)?(?:peta|map-ujipetik)(?:\/|$)/.test(window.location.pathname)) {
     return;
   }
 

@@ -1380,8 +1380,8 @@
   <!-- Floating Boundary Layer Switcher (Bottom Right) -->
   <div class="gmaps-floating-boundary-pill" title="Tampilkan Garis Batas Wilayah">
     <button id="btnLayerKec" class="gmaps-pill-btn" title="Garis Batas Kecamatan" type="button"><i class="bi bi-diagram-3"></i> Kec</button>
-    <button id="btnLayerDesa" class="gmaps-pill-btn active" title="Garis Batas Desa / Kelurahan" type="button"><i class="bi bi-geo"></i> Desa</button>
-    <button id="btnLayerSls" class="gmaps-pill-btn" title="Garis Batas SubSLS / RT" type="button"><i class="bi bi-pin-map"></i> SLS</button>
+    <button id="btnLayerDesa" class="gmaps-pill-btn" title="Garis Batas Desa / Kelurahan" type="button"><i class="bi bi-geo"></i> Desa</button>
+    <button id="btnLayerSls" class="gmaps-pill-btn active" title="Garis Batas SubSLS / RT" type="button"><i class="bi bi-pin-map"></i> SLS</button>
   </div>
 
   <!-- Floating Basemap Switcher (Bottom Right) -->
@@ -1492,7 +1492,7 @@
       let desaLayer = null;
       let kecLayer = null;
       let slsLayer = null;
-      let activeBoundaryLayer = 'desa'; // Default: Desa (matching Peta Progres)
+      let activeBoundaryLayer = 'sls'; // Default: SLS (SubSLS / RT)
       let isSlsLoading = false;
       let selectedPoint = null;
       let currentBasemapType = 'satellite';
@@ -3267,7 +3267,7 @@
           populateOfficerDropdowns('', '', '');
           setupBoundaryLayers();
           renderModalDesaGrid();
-          setTimeout(lazyLoadSlsGeoJSON, 800);
+          lazyLoadSlsGeoJSON();
 
           // Setup Modal Live Search Listener
           const modalSearchInput = document.getElementById('modalDesaSearchInput');

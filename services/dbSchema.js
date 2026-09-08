@@ -46,8 +46,8 @@ You have read-only access to a SQLite database with the following schema:
    - tidak_eligible: INTEGER (Ineligible entries)
    - tidak_dapat_ditemui: INTEGER (Could not be met - anomaly indicator)
    - draft: INTEGER (FASIH document draft status count)
-   - submitted_by_pcl: INTEGER (FASIH document submitted by PCL, waiting for PML review)
-   - approved: INTEGER (FASIH document approved by PML - count of completed documents)
+   - submitted_by_pcl: INTEGER (FASIH document submitted by PCL / respondent, waiting for PML review)
+   - approved: INTEGER (FASIH document approved by PML, completed by admin, or edited by admin - count of verified/completed documents)
    - rejected: INTEGER (FASIH document rejected by PML - count of documents returned to PCL)
    - target_upload: INTEGER (Target Dokumen FASIH Aktif terkini per SubSLS pada sesi upload ini, sinkron dengan Web Dashboard. Total PPU = 125.378 dokumen)
 

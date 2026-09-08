@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const XLSX = require('xlsx');
 const logger = require('./services/logger');
 
 const DB_PATH = path.join(__dirname, 'data', 'se2026.db');
@@ -3699,23 +3700,7 @@ function parseCSVLineInternal(text) {
   return result;
 }
 
-function clearTitikUjiPetik(surveyId = 'se2026') {
-  const sId = resolveSurveyId(surveyId);
-  const db = getDb(sId);
-  const tableCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='titik_uji_petik'").get();
-  if (tableCheck) {
-    db.exec('DELETE FROM titik_uji_petik;');
-  }
-  _titikUjiPetikCompactCache = null;
-  logger.info(`[Titik Uji Petik] Seluruh data titik uji petik berhasil dikosongkan (${sId}).`);
-  return true;
-}
-
-function importTitikUjiPetikFromCsv(filePath, surveyId = 'se2026', replaceExisting = true) {
-  const sId = resolveSurveyId(surveyId);
-  const db = getDb(sId);
-
-  // Auto-create table if not exists
+function ensureTitikUjiPetikTables(db, sId = 'se2026') {
   db.exec(`
     CREATE TABLE IF NOT EXISTS titik_uji_petik (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -3728,61 +3713,354 @@ function importTitikUjiPetikFromCsv(filePath, surveyId = 'se2026', replaceExisti
       is_kosong INTEGER DEFAULT 0,
       pcl TEXT,
       pml TEXT,
-      korlap TEXT
+      korlap TEXT,
+      upload_id INTEGER DEFAULT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_titik_uji_petik_sls ON titik_uji_petik (level_6_full_code);
     CREATE INDEX IF NOT EXISTS idx_titik_uji_petik_coords ON titik_uji_petik (latitude, longitude);
+
+    CREATE TABLE IF NOT EXISTS titik_uji_petik_uploads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      filename TEXT NOT NULL,
+      stored_filename TEXT,
+      total_titik INTEGER DEFAULT 0,
+      total_isi INTEGER DEFAULT 0,
+      total_kosong INTEGER DEFAULT 0,
+      mode TEXT DEFAULT 'replace',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      survey_id TEXT NOT NULL DEFAULT 'se2026'
+    );
+    CREATE INDEX IF NOT EXISTS idx_titik_ujipetik_uploads_survey ON titik_uji_petik_uploads(survey_id);
   `);
 
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`File CSV tidak ditemukan pada path: ${filePath}`);
+  const cols = db.prepare("PRAGMA table_info(titik_uji_petik)").all();
+  if (!cols.some(c => c.name === 'upload_id')) {
+    db.exec("ALTER TABLE titik_uji_petik ADD COLUMN upload_id INTEGER DEFAULT NULL;");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_titik_uji_petik_upload_id ON titik_uji_petik(upload_id);");
+  }
+}
+
+function clearTitikUjiPetik(surveyId = 'se2026') {
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  ensureTitikUjiPetikTables(db, sId);
+
+  const uploads = db.prepare("SELECT stored_filename FROM titik_uji_petik_uploads WHERE survey_id = ?").all(sId);
+  for (const u of uploads) {
+    if (u.stored_filename) {
+      const filePath = path.join(__dirname, 'uploads', u.stored_filename);
+      if (fs.existsSync(filePath)) {
+        try { fs.unlinkSync(filePath); } catch (_) {}
+      }
+    }
   }
 
-  const rawData = fs.readFileSync(filePath, 'utf-8');
-  const lines = rawData.split(/\r?\n/);
-  if (lines.length <= 1) return 0;
+  db.transaction(() => {
+    db.exec('DELETE FROM titik_uji_petik;');
+    db.prepare('DELETE FROM titik_uji_petik_uploads WHERE survey_id = ?;').run(sId);
+  })();
+
+  _titikUjiPetikCompactCache = null;
+  logger.info(`[Titik Uji Petik] Seluruh data titik uji petik dan riwayat upload berhasil dikosongkan (${sId}).`);
+  return true;
+}
+
+function resolveTitikUjiPetikColumns(headerRow) {
+  const map = {};
+  if (Array.isArray(headerRow)) {
+    headerRow.forEach((col, idx) => {
+      if (col === null || col === undefined) return;
+      const norm = String(col).trim().toLowerCase().replace(/[\s_-]+/g, '');
+      if (norm) map[norm] = idx;
+    });
+  }
+
+  function findCol(...candidates) {
+    for (const c of candidates) {
+      const norm = c.toLowerCase().replace(/[\s_-]+/g, '');
+      if (map[norm] !== undefined) return map[norm];
+    }
+    return -1;
+  }
+
+  const codeIdx = findCol('level_6_full_code', 'level6fullcode', 'kodesls', 'slscode', 'idsls', 'fullcode', 'sls');
+  const labelIdx = findCol('label', 'namabangunan', 'namausaha', 'keterangan');
+  const noBangIdx = findCol('no_bang', 'nobang', 'nomorbangunan', 'nobangunan', 'no_bangunan');
+  const kodeBangLabelIdx = findCol('kode_bang_label', 'kodebanglabel', 'kategori', 'kategoribangunan', 'jenisbangunan');
+  const latIdx = findCol('geotag_latitude', 'latitude', 'lat', 'geotaglat', 'lintang');
+  const lngIdx = findCol('geotag_longitude', 'longitude', 'long', 'lng', 'geotaglong', 'geotaglng', 'bujur');
+  const kosongIdx = findCol('kosong', 'is_kosong', 'iskosong', 'statuskosong', 'status_kosong');
+  const pclIdx = findCol('pcl', 'namapcl', 'petugaspcl', 'petugas');
+  const pmlIdx = findCol('pml', 'namapml', 'pengawaspml', 'pengawas');
+  const korlapIdx = findCol('korlap', 'namakorlap', 'koordinatorlapangan');
+
+  return {
+    codeIdx,
+    labelIdx,
+    noBangIdx,
+    kodeBangLabelIdx,
+    latIdx,
+    lngIdx,
+    kosongIdx,
+    pclIdx,
+    pmlIdx,
+    korlapIdx
+  };
+}
+
+function _loadTitikRowsFromFile(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  let rows = [];
+
+  if (ext === '.xlsx' || ext === '.xls') {
+    const wb = XLSX.readFile(filePath, { raw: true });
+    if (!wb.SheetNames || wb.SheetNames.length === 0) {
+      throw new Error('File Excel tidak memiliki lembar kerja (sheet).');
+    }
+
+    let targetSheet = wb.SheetNames[0];
+    for (const sName of wb.SheetNames) {
+      if (/titik|data|uji.*petik/i.test(sName)) {
+        targetSheet = sName;
+        break;
+      }
+    }
+    const ws = wb.Sheets[targetSheet];
+    rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  } else {
+    const rawData = fs.readFileSync(filePath, 'utf-8');
+    const lines = rawData.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      rows.push(parseCSVLineInternal(line));
+    }
+  }
+  return rows;
+}
+
+function _parseAndInsertTitikRows(db, rows, uploadId = null) {
+  if (!rows || rows.length <= 1) return { count: 0, countIsi: 0, countKosong: 0 };
+
+  const headerRow = rows[0];
+  let indices = resolveTitikUjiPetikColumns(headerRow);
+  let startRow = 1;
+
+  if (indices.latIdx === -1 || indices.lngIdx === -1) {
+    const testLat = parseFloat(rows[0][4]);
+    const testLng = parseFloat(rows[0][5]);
+    if (!isNaN(testLat) && !isNaN(testLng) && testLat !== 0 && testLng !== 0) {
+      indices = {
+        codeIdx: 0, labelIdx: 1, noBangIdx: 2, kodeBangLabelIdx: 3,
+        latIdx: 4, lngIdx: 5, kosongIdx: 6, pclIdx: 7, pmlIdx: 8, korlapIdx: 9
+      };
+      startRow = 0;
+    } else {
+      indices = {
+        codeIdx: indices.codeIdx !== -1 ? indices.codeIdx : 0,
+        labelIdx: indices.labelIdx !== -1 ? indices.labelIdx : 1,
+        noBangIdx: indices.noBangIdx !== -1 ? indices.noBangIdx : 2,
+        kodeBangLabelIdx: indices.kodeBangLabelIdx !== -1 ? indices.kodeBangLabelIdx : 3,
+        latIdx: indices.latIdx !== -1 ? indices.latIdx : 4,
+        lngIdx: indices.lngIdx !== -1 ? indices.lngIdx : 5,
+        kosongIdx: indices.kosongIdx !== -1 ? indices.kosongIdx : 6,
+        pclIdx: indices.pclIdx !== -1 ? indices.pclIdx : 7,
+        pmlIdx: indices.pmlIdx !== -1 ? indices.pmlIdx : 8,
+        korlapIdx: indices.korlapIdx !== -1 ? indices.korlapIdx : 9
+      };
+      startRow = 1;
+    }
+  }
 
   const insertStmt = db.prepare(`
     INSERT INTO titik_uji_petik (
       level_6_full_code, label, no_bang, kode_bang_label,
-      latitude, longitude, is_kosong, pcl, pml, korlap
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      latitude, longitude, is_kosong, pcl, pml, korlap, upload_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
+  let count = 0;
+  let countIsi = 0;
+  let countKosong = 0;
+
+  for (let i = startRow; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r.length < 2) continue;
+
+    const getVal = (idx) => (idx !== -1 && r[idx] !== undefined && r[idx] !== null) ? String(r[idx]).trim() : '';
+
+    let code = getVal(indices.codeIdx);
+    if (code.endsWith('.0')) code = code.slice(0, -2);
+
+    const label = getVal(indices.labelIdx);
+    let noBang = getVal(indices.noBangIdx);
+    if (noBang.endsWith('.0')) noBang = noBang.slice(0, -2);
+
+    const kodeBangLabel = getVal(indices.kodeBangLabelIdx);
+    const lat = parseFloat(getVal(indices.latIdx));
+    const lng = parseFloat(getVal(indices.lngIdx));
+
+    let kosong = 0;
+    if (indices.kosongIdx !== -1) {
+      const rawKosong = getVal(indices.kosongIdx).toLowerCase();
+      if (rawKosong === '1' || rawKosong === 'ya' || rawKosong === 'true' || rawKosong === 'kosong') {
+        kosong = 1;
+      } else {
+        kosong = 0;
+      }
+    } else {
+      const combined = (label + ' ' + kodeBangLabel).toLowerCase();
+      if (combined.includes('kosong')) {
+        kosong = 1;
+      } else {
+        kosong = 0;
+      }
+    }
+
+    const pcl = getVal(indices.pclIdx);
+    const pml = getVal(indices.pmlIdx);
+    const korlap = getVal(indices.korlapIdx);
+
+    if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+      insertStmt.run(code, label, noBang, kodeBangLabel, lat, lng, kosong, pcl, pml, korlap, uploadId);
+      count++;
+      if (kosong === 1) countKosong++;
+      else countIsi++;
+    }
+  }
+
+  return { count, countIsi, countKosong };
+}
+
+function importTitikUjiPetik(filePath, surveyId = 'se2026', replaceExisting = true, uploadMetadata = null) {
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  ensureTitikUjiPetikTables(db, sId);
+
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File tidak ditemukan pada path: ${filePath}`);
+  }
+
+  const rows = _loadTitikRowsFromFile(filePath);
+  if (!rows || rows.length <= 1) return 0;
+
   const tx = db.transaction(() => {
+    let uploadId = null;
+    if (uploadMetadata) {
+      const insertUploadStmt = db.prepare(`
+        INSERT INTO titik_uji_petik_uploads (filename, stored_filename, mode, survey_id, created_at)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `);
+      const info = insertUploadStmt.run(
+        uploadMetadata.filename || path.basename(filePath),
+        uploadMetadata.stored_filename || '',
+        replaceExisting ? 'replace' : 'append',
+        sId
+      );
+      uploadId = info.lastInsertRowid;
+    }
+
     if (replaceExisting) {
       db.exec('DELETE FROM titik_uji_petik;');
     }
-    let count = 0;
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-      const cols = parseCSVLineInternal(line);
-      if (cols.length < 6) continue;
 
-      const code = (cols[0] || '').trim();
-      const label = (cols[1] || '').trim();
-      const noBang = (cols[2] || '').trim();
-      const kodeBangLabel = (cols[3] || '').trim();
-      const lat = parseFloat(cols[4]);
-      const lng = parseFloat(cols[5]);
-      const kosong = (cols[6] || '').trim() === '1' ? 1 : 0;
-      const pcl = (cols[7] || '').trim();
-      const pml = (cols[8] || '').trim();
-      const korlap = (cols[9] || '').trim();
+    const { count, countIsi, countKosong } = _parseAndInsertTitikRows(db, rows, uploadId);
 
-      if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-        insertStmt.run(code, label, noBang, kodeBangLabel, lat, lng, kosong, pcl, pml, korlap);
-        count++;
-      }
+    if (uploadId) {
+      db.prepare(`
+        UPDATE titik_uji_petik_uploads
+        SET total_titik = ?, total_isi = ?, total_kosong = ?
+        WHERE id = ?
+      `).run(count, countIsi, countKosong, uploadId);
     }
+
     return count;
   });
 
   const total = tx();
   _titikUjiPetikCompactCache = null;
-  logger.info(`[Titik Uji Petik] Berhasil mengimpor ${total} titik ke database (${sId}).`);
+  logger.info(`[Titik Uji Petik] Berhasil mengimpor ${total} titik ke database (${sId}) dari file ${path.basename(filePath)}.`);
   return total;
+}
+
+const importTitikUjiPetikFromCsv = importTitikUjiPetik;
+
+function getTitikUjiPetikUploads(surveyId = 'se2026') {
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  ensureTitikUjiPetikTables(db, sId);
+
+  // Jika tabel uploads kosong tetapi titik_uji_petik sudah ada data, buatkan baseline record otomatis
+  const uploadCount = db.prepare("SELECT COUNT(*) AS c FROM titik_uji_petik_uploads WHERE survey_id = ?").get(sId).c;
+  if (uploadCount === 0) {
+    const totalPoints = db.prepare("SELECT COUNT(*) AS c FROM titik_uji_petik").get().c;
+    if (totalPoints > 0) {
+      const stats = db.prepare(`
+        SELECT 
+          COUNT(*) AS total,
+          SUM(CASE WHEN is_kosong = 1 THEN 1 ELSE 0 END) AS kosong,
+          SUM(CASE WHEN is_kosong = 0 THEN 1 ELSE 0 END) AS isi
+        FROM titik_uji_petik
+      `).get();
+      const insertBaseline = db.prepare(`
+        INSERT INTO titik_uji_petik_uploads (filename, stored_filename, total_titik, total_isi, total_kosong, mode, survey_id, created_at)
+        VALUES ('titik_uji_petik_baseline.xlsx', '', ?, ?, ?, 'replace', ?, CURRENT_TIMESTAMP)
+      `);
+      const info = insertBaseline.run(stats.total || 0, stats.isi || 0, stats.kosong || 0, sId);
+      db.prepare("UPDATE titik_uji_petik SET upload_id = ? WHERE upload_id IS NULL").run(info.lastInsertRowid);
+    }
+  }
+
+  return db.prepare("SELECT * FROM titik_uji_petik_uploads WHERE survey_id = ? ORDER BY id DESC").all(sId);
+}
+
+function getTitikUjiPetikUploadById(uploadId, surveyId = 'se2026') {
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  ensureTitikUjiPetikTables(db, sId);
+  return db.prepare("SELECT * FROM titik_uji_petik_uploads WHERE id = ? AND survey_id = ?").get(uploadId, sId);
+}
+
+function deleteTitikUjiPetikUpload(uploadId, surveyId = 'se2026') {
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  ensureTitikUjiPetikTables(db, sId);
+
+  const uploadRec = db.prepare("SELECT * FROM titik_uji_petik_uploads WHERE id = ? AND survey_id = ?").get(uploadId, sId);
+  if (!uploadRec) {
+    return { success: false, message: 'Data upload titik uji petik tidak ditemukan.' };
+  }
+
+  if (uploadRec.stored_filename) {
+    const filePath = path.join(__dirname, 'uploads', uploadRec.stored_filename);
+    if (fs.existsSync(filePath)) {
+      try { fs.unlinkSync(filePath); } catch (e) {
+        logger.warn(`Gagal menghapus file fisik ${filePath}: ${e.message}`);
+      }
+    }
+  }
+
+  db.transaction(() => {
+    db.prepare("DELETE FROM titik_uji_petik WHERE upload_id = ?").run(uploadId);
+    db.prepare("DELETE FROM titik_uji_petik_uploads WHERE id = ?").run(uploadId);
+
+    // Jika titik_uji_petik menjadi kosong setelah penghapusan, cari upload sebelumnya yang memiliki file fisik untuk direstore
+    const remainingCount = db.prepare("SELECT COUNT(*) AS c FROM titik_uji_petik").get().c;
+    if (remainingCount === 0) {
+      const prevUpload = db.prepare("SELECT * FROM titik_uji_petik_uploads WHERE survey_id = ? ORDER BY id DESC LIMIT 1").get(sId);
+      if (prevUpload && prevUpload.stored_filename) {
+        const prevFilePath = path.join(__dirname, 'uploads', prevUpload.stored_filename);
+        if (fs.existsSync(prevFilePath)) {
+          const rows = _loadTitikRowsFromFile(prevFilePath);
+          _parseAndInsertTitikRows(db, rows, prevUpload.id);
+        }
+      }
+    }
+  })();
+
+  _titikUjiPetikCompactCache = null;
+  logger.info(`[Titik Uji Petik] Upload ID ${uploadId} (${uploadRec.filename}) berhasil dihapus/di-rollback (${sId}).`);
+  return { success: true, filename: uploadRec.filename };
 }
 
 function getTitikUjiPetikStats(surveyId = 'se2026') {
@@ -4048,7 +4326,8 @@ module.exports = {
   queueWhatsappMessage, getPendingWhatsappMessages, updateWhatsappMessageStatus, checkQueuedMessageStatus,
   runWalCheckpoint, runWalCheckpointAll,
   saveAgentQuery, getAgentQueryById, executeAgentQueryById, updateAgentQueryAnalysis,
-  importTitikUjiPetikFromCsv, clearTitikUjiPetik, getTitikUjiPetikStats, getTitikUjiPetikPoints, getTitikUjiPetikCompact
+  importTitikUjiPetik, importTitikUjiPetikFromCsv, clearTitikUjiPetik, getTitikUjiPetikStats, getTitikUjiPetikPoints, getTitikUjiPetikCompact,
+  getTitikUjiPetikUploads, getTitikUjiPetikUploadById, deleteTitikUjiPetikUpload
 };
 
 
