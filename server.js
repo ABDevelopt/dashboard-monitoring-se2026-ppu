@@ -307,7 +307,7 @@ app.use((req, res, next) => {
     if (!req.session.settings) {
       req.session.settings = {};
     }
-    res.locals.settings = { ...globalSettings, ...req.session.settings };
+    res.locals.settings = { ...globalSettings, ...req.session.settings, target_fasih_mode: 'fasih-sm', target_muatan_mode: 'prelist' };
   } catch (err) {
     logger.error('Error injecting global settings:', err);
     res.locals.settings = {};

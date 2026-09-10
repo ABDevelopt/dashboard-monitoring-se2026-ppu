@@ -401,46 +401,9 @@ router.get('/weather/history', (req, res) => {
   res.json(getWeatherHistory());
 });
 
-// Ubah mode target utama progres secara dinamis per-user session dan global database
+// Compatibility response for pages opened before target selection was removed.
 router.post('/settings/target-mode', (req, res) => {
-  const { target_fasih_mode, target_muatan_mode, surveyId } = req.body;
-  const activeSurveyId = surveyId || res.locals.activeSurvey || req.session.activeSurvey || 'se2026';
-
-  if (!req.session.settings) {
-    req.session.settings = {};
-  }
-
-  let changed = false;
-  const dbUpdates = {};
-
-  if (target_fasih_mode && ['static', 'fasih-sm', 'dynamic'].includes(target_fasih_mode)) {
-    req.session.settings.target_fasih_mode = target_fasih_mode;
-    dbUpdates.target_fasih_mode = target_fasih_mode;
-    changed = true;
-  }
-  if (target_muatan_mode && ['prelist', 'honor'].includes(target_muatan_mode)) {
-    req.session.settings.target_muatan_mode = target_muatan_mode;
-    dbUpdates.target_muatan_mode = target_muatan_mode;
-    changed = true;
-  }
-
-  if (changed) {
-    try {
-      // Perbarui di database global agar memicu rebuild cache dan sinkron dengan WA
-      updateSettings(dbUpdates, activeSurveyId);
-      
-      req.session.save((err) => {
-        if (err) {
-          return res.status(500).json({ error: `Gagal menyimpan session: ${err.message}` });
-        }
-        res.json({ success: true, target_fasih_mode, target_muatan_mode });
-      });
-    } catch (dbErr) {
-      res.status(500).json({ error: `Gagal memperbarui database: ${dbErr.message}` });
-    }
-  } else {
-    res.status(400).json({ error: 'Tidak ada perubahan target yang valid.' });
-  }
+  res.status(410).json({ error: 'Target tetap menggunakan FASIH-SM dan Muatan Prelist.' });
 });
 
 // Endpoint untuk cek status update upload terbaru

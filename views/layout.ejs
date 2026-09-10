@@ -129,21 +129,6 @@
     window.dispatchEvent(new Event('themechange'));
   };
 
-  // Instant Fail-safe Target Dropdown Switcher
-  window.toggleTargetDropdown = function(e) {
-    if (e) {
-      if (e.preventDefault) e.preventDefault();
-      if (e.stopPropagation) e.stopPropagation();
-    }
-    const dropdown = document.getElementById('targetSelectorDropdown');
-    if (!dropdown) return;
-    const isOpen = dropdown.classList.contains('is-open');
-    document.querySelectorAll('.topbar-dropdown').forEach(d => {
-      if (d !== dropdown) d.classList.remove('is-open');
-    });
-    dropdown.classList.toggle('is-open', !isOpen);
-  };
-
   // Fail-safe Survey Switcher Dropdown
   window.toggleSurveySwitcherDropdown = function(e) {
     if (e) {
@@ -792,33 +777,6 @@
               <span>Buka Portal Induk Semua Survei</span>
             </a>
           </div>
-        </div>
-      </div>
-
-      <!-- Target Mode Selector -->
-      <div class="topbar-dropdown-wrapper" id="targetWrapper">
-        <button class="btn btn-secondary topbar-action-btn" id="targetSelectorBtn" title="Ubah Mode Target" aria-label="Ubah Mode Target" onclick="window.toggleTargetDropdown(event)">
-          <i class="bi bi-bullseye topbar-target-icon"></i>
-          <span class="target-btn-text topbar-action-label">Target: <%= settings.target_fasih_mode === 'fasih-sm' ? 'FASIH-SM' : 'Statis' %></span>
-          <i class="bi bi-chevron-down topbar-chevron"></i>
-        </button>
-        <div id="targetSelectorDropdown" class="topbar-dropdown topbar-dropdown--right">
-          <div class="topbar-dropdown-section">
-            <div class="topbar-dropdown-section-label"><i class="bi bi-phone" style="color:var(--accent-purple)"></i> Target FASIH</div>
-            <select id="publicTargetFasihMode" class="topbar-select" aria-label="Mode Target FASIH">
-              <option value="static" <%= settings.target_fasih_mode === 'static' || !settings.target_fasih_mode ? 'selected' : '' %>>Statis (Prelist)</option>
-              <option value="fasih-sm" <%= settings.target_fasih_mode === 'fasih-sm' ? 'selected' : '' %>>FASIH-SM</option>
-            </select>
-          </div>
-          <% if (!hideMuatanGlobal) { %>
-          <div class="topbar-dropdown-section topbar-dropdown-section--bordered">
-            <div class="topbar-dropdown-section-label"><i class="bi bi-box-seam" style="color:var(--accent-cyan)"></i> Target Muatan</div>
-            <select id="publicTargetMuatanMode" class="topbar-select" aria-label="Mode Target Muatan">
-              <option value="prelist" <%= settings.target_muatan_mode === 'prelist' || !settings.target_muatan_mode ? 'selected' : '' %>>Muatan Prelist</option>
-              <option value="honor" <%= settings.target_muatan_mode === 'honor' ? 'selected' : '' %>>Target Honor</option>
-            </select>
-          </div>
-          <% } %>
         </div>
       </div>
 

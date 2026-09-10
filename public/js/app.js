@@ -1346,22 +1346,6 @@ function updateTime() {
         return;
       }
 
-      // 4. Target Mode Selector Button Click
-      const targetBtn = e.target.closest('#targetSelectorBtn');
-      if (targetBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        const dropdown = document.getElementById('targetSelectorDropdown');
-        if (dropdown) {
-          const isOpen = dropdown.classList.contains('is-open');
-          document.querySelectorAll('.topbar-dropdown').forEach(d => {
-            if (d !== dropdown) d.classList.remove('is-open');
-          });
-          dropdown.classList.toggle('is-open', !isOpen);
-        }
-        return;
-      }
-
       // 5. Notification Bell Button Click
       const bellBtn = e.target.closest('#notificationBellBtn, #notificationBellBtnAgent, .notification-bell-btn');
       if (bellBtn) {
@@ -3079,54 +3063,6 @@ function updateTime() {
       });
     }
 
-
-    const updateTargetMode = async (payload) => {
-      if (typeof Swal !== 'undefined') {
-        Swal.fire({
-          title: 'Memperbarui Target...',
-          text: 'Mohon tunggu sejenak, data sedang disesuaikan.',
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          }
-        });
-      }
-
-      try {
-        const response = await fetch('/api/settings/target-mode', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-          },
-          body: JSON.stringify({ ...payload, surveyId: window.activeSurveyId || undefined })
-        });
-        const result = await response.json();
-        if (result.success) {
-          window.location.reload();
-        } else {
-          if (typeof Swal !== 'undefined') {
-            Swal.fire('Gagal', result.error || 'Terjadi kesalahan saat memperbarui target.', 'error');
-          } else {
-            alert(result.error || 'Terjadi kesalahan saat memperbarui target.');
-          }
-        }
-      } catch (err) {
-        if (typeof Swal !== 'undefined') {
-          Swal.fire('Gagal', 'Koneksi server terputus.', 'error');
-        } else {
-          alert('Koneksi server terputus.');
-        }
-      }
-    };
-
-    document.addEventListener('change', (e) => {
-      if (e.target.id === 'publicTargetFasihMode') {
-        updateTargetMode({ target_fasih_mode: e.target.value });
-      } else if (e.target.id === 'publicTargetMuatanMode') {
-        updateTargetMode({ target_muatan_mode: e.target.value });
-      }
-    });
 
     // 1. Interceptor Form Submit Global untuk feedback instan & cegah double-submit
     document.addEventListener('submit', (e) => {

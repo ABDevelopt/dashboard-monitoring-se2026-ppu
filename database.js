@@ -88,6 +88,18 @@ function getDb(surveyId) {
     if (sId === 'se2026') {
       db = dbConn;
     }
+
+    // Rebuild only after the initialized connection is available to getDb().
+    const uploadCount = dbConn.prepare('SELECT COUNT(*) as n FROM uploads').get().n;
+    const cacheCount = dbConn.prepare('SELECT COUNT(*) as n FROM summary_cache').get().n;
+    if (uploadCount > 0 && cacheCount === 0) {
+      logger.info('Populating summary_cache for existing uploads...');
+      const uploadsList = dbConn.prepare('SELECT id FROM uploads').all();
+      for (const u of uploadsList) {
+        rebuildSummaryCache(u.id, sId);
+      }
+    }
+
   }
   return dbs[sId];
 }
@@ -1316,6 +1328,21 @@ function runMigrations(dbConn, surveyId = 'se2026') {
   ];
 
   let appliedCount = 0;
+  migrations.push({
+    version: '20260910020000_fixed_target_modes',
+    up: (dbConn) => {
+      dbConn.transaction(() => {
+        const oldMode = dbConn.prepare("SELECT value FROM settings WHERE key = 'target_muatan_mode'").get();
+        if (oldMode && oldMode.value === 'honor') {
+          dbConn.prepare('UPDATE subsls_master SET muatan = COALESCE(muatan_original, 0)').run();
+        }
+        dbConn.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('target_fasih_mode', 'fasih-sm'), ('target_muatan_mode', 'prelist')").run();
+        // Startup repopulates the cache using the fixed target modes.
+        dbConn.prepare('DELETE FROM summary_cache').run();
+      })();
+    }
+  });
+
   migrations.forEach(m => {
     if (!appliedMigrations.includes(m.version)) {
       logger.info(`Applying database migration: ${m.version}`);
@@ -1390,15 +1417,6 @@ function runMigrations(dbConn, surveyId = 'se2026') {
       logger.error('Error checking summary_cache structure:', tblErr);
     }
 
-    const uploadCount = dbConn.prepare('SELECT COUNT(*) as n FROM uploads').get().n;
-    const cacheCount = dbConn.prepare('SELECT COUNT(*) as n FROM summary_cache').get().n;
-    if (uploadCount > 0 && cacheCount === 0) {
-      logger.info('Populating summary_cache for existing uploads...');
-      const uploadsList = dbConn.prepare('SELECT id FROM uploads').all();
-      for (const u of uploadsList) {
-        rebuildSummaryCache(u.id);
-      }
-    }
   } catch (err) {
     logger.error('Error migrating/populating summary_cache:', err);
   }
@@ -2461,7 +2479,7 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`;
     'overview_kecamatan': '1',
     'overview_bangunan': isSe2026 ? '1' : '0',
     'show_progres_muatan': isSe2026 ? '1' : '0',
-    'target_fasih_mode': 'static',
+    'target_fasih_mode': 'fasih-sm',
     'target_muatan_mode': 'prelist',
     'google_sheets_anomaly_url': isSe2026 ? 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2cciIGMfpN1IJpezUhI8d1m6XX7MAX7lE1G9XsSIFgeOMxLVOEuKJWvDtjiLdkdButQU95_7WoP9S/pubhtml' : '',
     'google_sheets_apps_script_url': isSe2026 ? 'https://script.google.com/macros/s/AKfycby3zpFtIN58xOf6GxnDqkl7gjwKX-oeUZwuAp93wL0OrejumH91ykBGa9XbsoMdhZQetA/exec' : '',
@@ -2553,9 +2571,9 @@ function getSettings(surveyId) {
   rows.forEach(r => {
     settings[r.key] = r.value;
   });
-  if (settings.target_fasih_mode === 'dynamic') {
-    settings.target_fasih_mode = 'static';
-  }
+  // Target modes are fixed, including databases with legacy settings.
+  settings.target_fasih_mode = 'fasih-sm';
+  settings.target_muatan_mode = 'prelist';
   if (!settings.gemini_model) {
     settings.gemini_model = 'gemini-3.8-flash';
   }
@@ -2588,6 +2606,9 @@ function rebuildAllSummaryCaches() {
 }
 
 function updateSettings(settingsObj, surveyId) {
+  settingsObj = { ...settingsObj };
+  delete settingsObj.target_fasih_mode;
+  delete settingsObj.target_muatan_mode;
   const activeSurveyId = resolveSurveyId(surveyId);
   const db = getDb(activeSurveyId);
   const currentSettings = getSettings(activeSurveyId);
