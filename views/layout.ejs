@@ -129,21 +129,6 @@
     window.dispatchEvent(new Event('themechange'));
   };
 
-  // Fail-safe Survey Switcher Dropdown
-  window.toggleSurveySwitcherDropdown = function(e) {
-    if (e) {
-      if (e.preventDefault) e.preventDefault();
-      if (e.stopPropagation) e.stopPropagation();
-    }
-    const dropdown = document.getElementById('surveySwitcherDropdown');
-    if (!dropdown) return;
-    const isOpen = dropdown.classList.contains('is-open');
-    document.querySelectorAll('.topbar-dropdown').forEach(d => {
-      if (d !== dropdown) d.classList.remove('is-open');
-    });
-    dropdown.classList.toggle('is-open', !isOpen);
-  };
-
   // Registry of page-specific event listeners that need to be cleaned up on PJAX load
   window._pjaxCleanups = [];
 
@@ -730,52 +715,6 @@
           </div>
           <div id="notificationBellList" class="topbar-dropdown-list">
             <!-- content injected by JS -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Survey Switcher Selector -->
-      <div class="topbar-dropdown-wrapper" id="surveySwitcherWrapper">
-        <button class="btn btn-secondary topbar-action-btn no-pjax" id="surveySwitcherBtn" title="Pilih Modul Sensus / Survei" aria-label="Pilih Modul Sensus / Survei" onclick="window.toggleSurveySwitcherDropdown(event)">
-          <i class="bi <%= (typeof surveyConfig !== 'undefined' && surveyConfig.categoryIcon) ? surveyConfig.categoryIcon : 'bi-layers-fill' %>" style="color: var(--accent-primary);"></i>
-          <span class="topbar-action-label" style="font-weight: 700; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= (typeof surveyConfig !== 'undefined' && surveyConfig.shortName) ? surveyConfig.shortName : 'SE2026' %></span>
-          <i class="bi bi-chevron-down topbar-chevron"></i>
-        </button>
-        <div id="surveySwitcherDropdown" class="topbar-dropdown topbar-dropdown--right" style="min-width: 280px; padding: 6px 0;">
-          <div style="padding: 8px 14px 6px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border);">
-            Pilih Modul Kegiatan
-          </div>
-          <div style="display: flex; flex-direction: column; padding: 4px 6px; gap: 2px;">
-            <a href="/" class="survey-switcher-item <%= activeSurvey === 'se2026' ? 'active' : '' %>" data-no-pjax="true" style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.15s; <%= activeSurvey === 'se2026' ? 'background: rgba(249, 115, 22, 0.12); font-weight: 700;' : '' %>">
-              <span style="width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: rgba(249, 115, 22, 0.15); color: #f97316; flex-shrink: 0;"><i class="bi bi-shop"></i></span>
-              <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 12.5px; line-height: 1.2; font-weight: 700;">SE2026 PPU</div>
-                <div style="font-size: 10.5px; color: var(--text-muted); line-height: 1.2;">Sensus Ekonomi 2026</div>
-              </div>
-              <span class="badge" style="background: rgba(249, 115, 22, 0.15); color: #ea580c; font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Sensus</span>
-            </a>
-            <a href="/sakernas-pemutakhiran/" class="survey-switcher-item <%= activeSurvey === 'sakernas-pemutakhiran' ? 'active' : '' %>" data-no-pjax="true" style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.15s; <%= activeSurvey === 'sakernas-pemutakhiran' ? 'background: rgba(16, 185, 129, 0.12); font-weight: 700;' : '' %>">
-              <span style="width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: rgba(16, 185, 129, 0.15); color: #10b981; flex-shrink: 0;"><i class="bi bi-clipboard-check-fill"></i></span>
-              <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 12.5px; line-height: 1.2; font-weight: 700;">Sakernas Listing</div>
-                <div style="font-size: 10.5px; color: var(--text-muted); line-height: 1.2;">Pemutakhiran Rumah Tangga</div>
-              </div>
-              <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Survei</span>
-            </a>
-            <a href="/sakernas-pendataan/" class="survey-switcher-item <%= activeSurvey === 'sakernas-pendataan' ? 'active' : '' %>" data-no-pjax="true" style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: all 0.15s; <%= activeSurvey === 'sakernas-pendataan' ? 'background: rgba(37, 99, 235, 0.12); font-weight: 700;' : '' %>">
-              <span style="width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: rgba(37, 99, 235, 0.15); color: #2563eb; flex-shrink: 0;"><i class="bi bi-people-fill"></i></span>
-              <div style="flex: 1; min-width: 0;">
-                <div style="font-size: 12.5px; line-height: 1.2; font-weight: 700;">Sakernas CAPI</div>
-                <div style="font-size: 10.5px; color: var(--text-muted); line-height: 1.2;">Pendataan Sampel Rumah Tangga</div>
-              </div>
-              <span class="badge" style="background: rgba(37, 99, 235, 0.15); color: #2563eb; font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Survei</span>
-            </a>
-          </div>
-          <div style="border-top: 1px solid var(--border); margin-top: 4px; padding: 6px 8px 2px;">
-            <a href="/surveys" class="survey-switcher-item" data-no-pjax="true" style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; text-decoration: none; color: var(--text-secondary); font-size: 12px; font-weight: 600;">
-              <i class="bi bi-grid-3x3-gap-fill" style="color: var(--accent-primary);"></i>
-              <span>Buka Portal Induk Semua Survei</span>
-            </a>
           </div>
         </div>
       </div>
