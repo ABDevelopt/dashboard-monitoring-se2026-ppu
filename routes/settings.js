@@ -83,14 +83,6 @@ router.post('/', (req, res) => {
     updatedSettings[key] = req.body[key] === '1' ? '1' : '0';
   }
 
-  if (['static', 'fasih-sm'].includes(req.body.target_fasih_mode)) {
-    updatedSettings.target_fasih_mode = req.body.target_fasih_mode;
-  }
-
-  if (['prelist', 'honor'].includes(req.body.target_muatan_mode)) {
-    updatedSettings.target_muatan_mode = req.body.target_muatan_mode;
-  }
-
   if (req.body.google_sheets_anomaly_url !== undefined) {
     updatedSettings.google_sheets_anomaly_url = req.body.google_sheets_anomaly_url.trim();
   }

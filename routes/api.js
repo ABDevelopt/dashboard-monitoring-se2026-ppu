@@ -120,6 +120,8 @@ router.get('/map-stats', (req, res) => {
 // Titik Uji Petik Statistics Summary API
 router.get('/ujipetik-stats', (req, res) => {
   res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
+  res.removeHeader('Pragma');
+  res.removeHeader('Expires');
   try {
     const stats = getTitikUjiPetikStats(res.locals.activeSurvey);
     res.json(stats);
@@ -131,9 +133,31 @@ router.get('/ujipetik-stats', (req, res) => {
 // Titik Uji Petik Filtered Points API (Compact & Cached for Ultra-High Performance)
 router.get('/ujipetik-points', (req, res) => {
   res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
+  res.removeHeader('Pragma');
+  res.removeHeader('Expires');
   try {
-    const compactPoints = getTitikUjiPetikCompact(res.locals.activeSurvey);
-    res.json(compactPoints);
+    let points = getTitikUjiPetikCompact(res.locals.activeSurvey);
+    const { desa, kec } = req.query;
+    if (desa && String(desa).trim().length > 0) {
+      const targetDesa = String(desa).trim().toUpperCase();
+      const targetDesaNorm = targetDesa.replace(/[\s\-_]/g, '');
+      const isCode = /^\d{7,10}$/.test(targetDesa);
+      points = points.filter(p => {
+        const d = (p[11] || '').toUpperCase();
+        return d === targetDesa || 
+               d.replace(/[\s\-_]/g, '') === targetDesaNorm || 
+               (isCode && (p[13] || '').startsWith(targetDesa));
+      });
+    }
+    if (kec && String(kec).trim().length > 0) {
+      const targetKec = String(kec).trim().toUpperCase();
+      const targetKecNorm = targetKec.replace(/[\s\-_]/g, '');
+      points = points.filter(p => {
+        const k = (p[12] || '').toUpperCase();
+        return k === targetKec || k.replace(/[\s\-_]/g, '') === targetKecNorm;
+      });
+    }
+    res.json(points);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -377,46 +401,9 @@ router.get('/weather/history', (req, res) => {
   res.json(getWeatherHistory());
 });
 
-// Ubah mode target utama progres secara dinamis per-user session dan global database
+// Compatibility response for pages opened before target selection was removed.
 router.post('/settings/target-mode', (req, res) => {
-  const { target_fasih_mode, target_muatan_mode, surveyId } = req.body;
-  const activeSurveyId = surveyId || res.locals.activeSurvey || req.session.activeSurvey || 'se2026';
-
-  if (!req.session.settings) {
-    req.session.settings = {};
-  }
-
-  let changed = false;
-  const dbUpdates = {};
-
-  if (target_fasih_mode && ['static', 'fasih-sm', 'dynamic'].includes(target_fasih_mode)) {
-    req.session.settings.target_fasih_mode = target_fasih_mode;
-    dbUpdates.target_fasih_mode = target_fasih_mode;
-    changed = true;
-  }
-  if (target_muatan_mode && ['prelist', 'honor'].includes(target_muatan_mode)) {
-    req.session.settings.target_muatan_mode = target_muatan_mode;
-    dbUpdates.target_muatan_mode = target_muatan_mode;
-    changed = true;
-  }
-
-  if (changed) {
-    try {
-      // Perbarui di database global agar memicu rebuild cache dan sinkron dengan WA
-      updateSettings(dbUpdates, activeSurveyId);
-      
-      req.session.save((err) => {
-        if (err) {
-          return res.status(500).json({ error: `Gagal menyimpan session: ${err.message}` });
-        }
-        res.json({ success: true, target_fasih_mode, target_muatan_mode });
-      });
-    } catch (dbErr) {
-      res.status(500).json({ error: `Gagal memperbarui database: ${dbErr.message}` });
-    }
-  } else {
-    res.status(400).json({ error: 'Tidak ada perubahan target yang valid.' });
-  }
+  res.status(410).json({ error: 'Target tetap menggunakan FASIH-SM dan Muatan Prelist.' });
 });
 
 // Endpoint untuk cek status update upload terbaru
