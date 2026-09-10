@@ -291,25 +291,9 @@
       this.overlay.id = `shOverlay_${this.tableId}`;
       this.overlay.innerHTML = `
         <div class="sheet-toolbar" id="shToolbar_${this.tableId}">
-          <span class="sheet-edit-badge"><i class="bi bi-pencil-fill"></i> Edit</span>
-          <button class="sheet-btn" data-sh="toggle-edit" title="Aktifkan/nonaktifkan mode edit">
-            <i class="bi bi-pencil"></i><span class="sheet-btn-label"> Edit</span>
-          </button>
-          <div class="sheet-toolbar-sep"></div>
-          <button class="sheet-btn" data-sh="undo" title="Undo (Ctrl+Z)" disabled>
-            <i class="bi bi-arrow-counterclockwise"></i><span class="sheet-btn-label"> Undo</span>
-          </button>
-          <button class="sheet-btn" data-sh="redo" title="Redo (Ctrl+Y)" disabled>
-            <i class="bi bi-arrow-clockwise"></i><span class="sheet-btn-label"> Redo</span>
-          </button>
-          <div class="sheet-toolbar-sep"></div>
-          <button class="sheet-btn" data-sh="add-col" title="Tambah kolom kustom">
-            <i class="bi bi-plus-square"></i><span class="sheet-btn-label"> + Kolom</span>
-          </button>
           <button class="sheet-btn" data-sh="col-panel" title="Kelola visibilitas kolom">
             <i class="bi bi-eye"></i><span class="sheet-btn-label"> Kolom</span>
           </button>
-          <div class="sheet-toolbar-sep"></div>
           <button class="sheet-btn danger" data-sh="reset" style="display:none" title="Reset semua perubahan ke data asli">
             <i class="bi bi-arrow-counterclockwise"></i><span class="sheet-btn-label"> Reset</span>
           </button>
@@ -321,28 +305,19 @@
             </button>
           </div>
         </div>
-        <div class="sheet-formula-bar" id="shFxBar_${this.tableId}">
-          <span class="sheet-cell-ref" id="shCellRef_${this.tableId}">—</span>
-          <span class="sheet-fx-icon">fx</span>
-          <input class="sheet-formula-input" id="shFxInput_${this.tableId}"
-                 placeholder="Ketik nilai atau =FORMULA()" autocomplete="off" spellcheck="false">
-        </div>
       `;
       document.body.appendChild(this.overlay);
 
       // Column panel
       this.colPanel = this._mkEl('div', 'sheet-col-panel', `shColPanel_${this.tableId}`);
       // Add-col dialog + backdrop
-      this.addColDlg = this._mkEl('div', 'sheet-add-col-dialog', `shAddColDlg_${this.tableId}`);
       this.backdrop  = this._mkEl('div', 'sheet-backdrop', `shBackdrop_${this.tableId}`);
-      // Context menu
-      this.ctxMenu   = this._mkEl('div', 'sheet-ctx-menu', `shCtxMenu_${this.tableId}`);
 
       // Shortcuts to key elements
       this.toolbar   = this.overlay.querySelector('.sheet-toolbar');
-      this.fxBar     = this.overlay.querySelector('.sheet-formula-bar');
-      this.fxInput   = document.getElementById(`shFxInput_${this.tableId}`);
-      this.cellRefEl = document.getElementById(`shCellRef_${this.tableId}`);
+      this.fxBar     = null;
+      this.fxInput   = null;
+      this.cellRefEl = null;
 
       this._updateResetBtn();
     }
@@ -370,11 +345,7 @@
         const btn = e.target.closest('[data-sh]');
         if (!btn || btn.disabled) return;
         const a = btn.dataset.sh;
-        if (a === 'toggle-edit') this._toggleEditMode();
-        else if (a === 'undo')      this._undo();
-        else if (a === 'redo')      this._redo();
-        else if (a === 'add-col')   this._openAddColDlg();
-        else if (a === 'col-panel') this._toggleColPanel();
+        if (a === 'col-panel')      this._toggleColPanel();
         else if (a === 'reset')     this._confirmReset();
         else if (a === 'collapse') {
           // Trigger tombol expand bawaan card untuk meng-collapse kembali
@@ -429,17 +400,10 @@
       // Global keyboard
       this._onKeydown = e => {
         if (!this.card.classList.contains('card-expanded')) return;
-        const ctrl = e.ctrlKey || e.metaKey;
-        if (ctrl && !e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); this._undo(); return; }
-        if (ctrl && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) { e.preventDefault(); this._redo(); return; }
-        if (!this.editMode) return;
-        if (e.key === 'Escape') { this._cancelEdit(); return; }
-        if (e.key === 'Tab' && !e.target.closest('.sheet-add-col-dialog')) {
-          e.preventDefault(); this._moveActive(0, e.shiftKey ? -1 : 1); return;
-        }
-        const dirs = { ArrowDown: [1, 0], ArrowUp: [-1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
-        if (dirs[e.key] && !e.target.closest('input, textarea')) {
-          e.preventDefault(); this._moveActive(...dirs[e.key]);
+        if (e.key === 'Escape') {
+          if (this.colPanel && this.colPanel.classList.contains('is-open')) {
+            this.colPanel.classList.remove('is-open');
+          }
         }
       };
       document.addEventListener('keydown', this._onKeydown);
@@ -1056,7 +1020,7 @@
       z-index: 2010;
       background: var(--bg-card);
       border-bottom: 1px solid var(--border);
-      padding: 4px 16px 0;
+      padding: 4px 16px;
       gap: 0;
       box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     }
@@ -1066,12 +1030,8 @@
     }
     .sheet-overlay .sheet-toolbar {
       display: flex !important;
-    }
-    .sheet-overlay.sheet-edit-mode .sheet-formula-bar {
-      display: flex !important;
-    }
-    .sheet-overlay .sheet-formula-bar {
-      display: none;
+      border-bottom: none !important;
+      padding: 5px 0 5px !important;
     }
   `;
   if (!document.getElementById('sheet-overlay-styles')) {
