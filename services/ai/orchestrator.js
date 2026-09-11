@@ -580,7 +580,7 @@ async function streamSimulation(userMessage, chatHistory, onEvent, abortSignal, 
 // ─────────────────────────────────────────────
 //  FACADE FUNCTIONS: BACA/TULIS MEMORY & API CALL
 // ─────────────────────────────────────────────
-const STANDARD_DOWNWARD_CHAIN = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
+const STANDARD_DOWNWARD_CHAIN = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash'];
 
 /**
  * Memeriksa apakah suatu error mengindikasikan model tidak ditemukan / tidak didukung (404/Not Found/Unsupported).

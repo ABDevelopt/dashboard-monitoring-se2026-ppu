@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getTrenHarian, getKecamatanStats, getPclStats, getDb, getSettings, updateSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, getSubslsStatusFormula, getTitikUjiPetikStats, getTitikUjiPetikPoints, getTitikUjiPetikCompact } = require('../database');
+const logger = require('../services/logger');
 
 // Tren harian (untuk Chart.js)
 router.get('/tren', (req, res) => {
@@ -454,46 +455,52 @@ router.get('/early-warning-summary', (req, res) => {
 // AI Insights memory cache partitioned by surveyId
 let aiInsightsCache = {};
 
+
 // Helper function to call Gemini / LLM directly (multi-key & multi-provider fallback)
 async function callGeminiDirect(prompt, settings = {}) {
-  // Collect all potential Gemini API keys
-  let keysToTry = [];
-  
-  if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
-    keysToTry.push(settings.gemini_api_key.trim());
-  }
-  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() && !keysToTry.includes(process.env.GEMINI_API_KEY.trim())) {
-    keysToTry.push(process.env.GEMINI_API_KEY.trim());
-  }
-  if (settings.gemini_backup_api_keys) {
-    try {
-      let backups = typeof settings.gemini_backup_api_keys === 'string' 
-        ? JSON.parse(settings.gemini_backup_api_keys) 
-        : settings.gemini_backup_api_keys;
-      if (Array.isArray(backups)) {
-        backups.forEach(k => {
-          if (typeof k === 'string' && k.trim() && !keysToTry.includes(k.trim())) {
-            keysToTry.push(k.trim());
-          }
-        });
-      }
-    } catch (e) {}
+  const { getDownwardFallbackChain, isModelNotFoundError } = require('../services/ai/orchestrator');
+  const keyPool = require('../services/ai/keyPool');
+
+  // Use keyPool for ordered, health-aware key rotation (task #11)
+  const keyItems = keyPool.getOrderedEligibleKeys(settings, settings.gemini_model);
+  // Fallback: build key list manually if keyPool returns nothing
+  let keysToTry = keyItems.map(k => k.key);
+  if (keysToTry.length === 0) {
+    if (settings.gemini_api_key && settings.gemini_api_key.trim()) {
+      keysToTry.push(settings.gemini_api_key.trim());
+    }
+    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() && !keysToTry.includes(process.env.GEMINI_API_KEY.trim())) {
+      keysToTry.push(process.env.GEMINI_API_KEY.trim());
+    }
+    if (settings.gemini_backup_api_keys) {
+      try {
+        let backups = typeof settings.gemini_backup_api_keys === 'string'
+          ? JSON.parse(settings.gemini_backup_api_keys)
+          : settings.gemini_backup_api_keys;
+        if (Array.isArray(backups)) {
+          backups.forEach(k => {
+            if (typeof k === 'string' && k.trim() && !keysToTry.includes(k.trim())) {
+              keysToTry.push(k.trim());
+            }
+          });
+        }
+      } catch (e) {}
+    }
   }
 
-  const { getDownwardFallbackChain, isModelNotFoundError } = require('../services/ai/orchestrator');
   const modelsToTry = getDownwardFallbackChain(settings.gemini_model, settings.gemini_models_list);
-  const TIMEOUT_MS = 2500;
-  const keysAttempted = keysToTry.slice(0, 2);
+  const TIMEOUT_MS = 15000; // task #1: increased from 2500ms (min Google latency ~4.4s)
 
   // Try models in downward fallback chain (e.g. 3.8 -> 3.7 -> 3.6 -> 3.5)
   for (const modelName of modelsToTry) {
     let fastSkipModel = false;
-    for (const apiKey of keysAttempted) {
+    for (const apiKey of keysToTry) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
       const requestBody = JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }]
       });
 
+      let timedOut = false;
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -511,37 +518,55 @@ async function callGeminiDirect(prompt, settings = {}) {
           const data = await response.json();
           if (!data.error) {
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) return text;
+            if (text) {
+              keyPool.markSuccess(apiKey);
+              return text;
+            }
           }
         } else {
           let errText = '';
           try { errText = await response.text(); } catch (e) {}
-          console.warn(`[AI Insights] Gemini API key (ending ...${apiKey.slice(-4)}) on '${modelName}' status ${response.status}: ${errText}`);
-          if (isModelNotFoundError(errText, response.status)) {
-            console.warn(`[AI Insights] Model '${modelName}' tidak tersedia (404/Not Found). Fast-skip ke model fallback berikutnya...`);
+          logger.warn(`[AI Insights] Gemini API key (ending ...${apiKey.slice(-4)}) on '${modelName}' status ${response.status}: ${errText}`);
+
+          // task #7: fast-skip overloaded model on 503
+          if (response.status === 503) {
+            logger.warn(`[AI Insights] Model '${modelName}' kelebihan beban (503). Fast-skip ke model fallback berikutnya...`);
             fastSkipModel = true;
             break;
+          }
+          if (isModelNotFoundError(errText, response.status)) {
+            logger.warn(`[AI Insights] Model '${modelName}' tidak tersedia (404/Not Found). Fast-skip ke model fallback berikutnya...`);
+            fastSkipModel = true;
+            break;
+          }
+          // task #11: mark key states based on HTTP status
+          if (response.status === 429) {
+            keyPool.markRateLimited(apiKey, 120, errText, modelName);
+          } else if (response.status === 403) {
+            keyPool.markInvalid(apiKey, errText);
           }
         }
       } catch (fetchErr) {
         if (fetchErr.name === 'AbortError' || (fetchErr.message && fetchErr.message.includes('abort'))) {
-          console.warn(`[AI Insights] Gemini key (...${apiKey.slice(-4)}) on '${modelName}' timed out after ${TIMEOUT_MS}ms.`);
-          continue;
-        }
-        if (fastSkipModel) break;
-        if (isModelNotFoundError(fetchErr.message)) {
-          console.warn(`[AI Insights] Model '${modelName}' tidak tersedia (404/Not Found). Fast-skip ke model fallback berikutnya...`);
+          logger.warn(`[AI Insights] Gemini key (...${apiKey.slice(-4)}) on '${modelName}' timed out after ${TIMEOUT_MS}ms. Trying curl fallback...`);
+          timedOut = true;
+          // task #5: do NOT continue here — fall through to curl fallback below
+        } else if (isModelNotFoundError(fetchErr.message)) {
+          logger.warn(`[AI Insights] Model '${modelName}' tidak tersedia (404/Not Found). Fast-skip ke model fallback berikutnya...`);
           fastSkipModel = true;
           break;
+        } else {
+          logger.warn(`[AI Insights] Fetch attempt failed for Gemini key (...${apiKey.slice(-4)}) on '${modelName}': ${fetchErr.message}, trying curl fallback...`);
         }
-        console.warn(`[AI Insights] Fetch attempt failed for Gemini key (...${apiKey.slice(-4)}) on '${modelName}': ${fetchErr.message}, trying curl fallback...`);
+        if (fastSkipModel) break;
+        // Curl fallback (runs after AbortError too — task #5)
         try {
           const curlRes = await new Promise((resolve, reject) => {
             const { spawn } = require('child_process');
             const child = spawn('curl', [
               '-s', '-X', 'POST',
-              '--connect-timeout', '2',
-              '-m', '3',
+              '--connect-timeout', '5',
+              '-m', '15', // task #1: increased from 3s
               '-H', 'Content-Type: application/json',
               '-d', requestBody,
               url
@@ -566,9 +591,12 @@ async function callGeminiDirect(prompt, settings = {}) {
               }
             });
           });
-          if (curlRes) return curlRes;
+          if (curlRes) {
+            keyPool.markSuccess(apiKey);
+            return curlRes;
+          }
         } catch (curlErr) {
-          console.warn(`[AI Insights] Curl fallback failed on '${modelName}': ${curlErr.message}`);
+          logger.warn(`[AI Insights] Curl fallback failed on '${modelName}': ${curlErr.message}`);
           if (isModelNotFoundError(curlErr.message)) {
             fastSkipModel = true;
             break;
@@ -581,6 +609,7 @@ async function callGeminiDirect(prompt, settings = {}) {
 
   throw new Error('Tidak ada API Key Gemini yang valid atau semua permintaan mengalami timeout / rate limit.');
 }
+
 
 // Rule-based fallback summary insights generator (offline and quota-exhausted guard)
 function generateSimulatedInsights(payload) {
@@ -655,7 +684,11 @@ router.get('/ai-insights', async (req, res) => {
   const forceRefresh = req.query.refresh === 'true';
   const cached = aiInsightsCache[activeSurvey];
   if (!forceRefresh && cached && cached.uploadId === uploadId && cached.key === settingsKey && cached.insights) {
-    return res.json({ success: true, insights: cached.insights, fromCache: true });
+    // TTL: 15 menit untuk AI sukses, 30 detik untuk offline fallback (task #6)
+    const TTL_MS = cached.isFallback ? 30000 : 900000;
+    if (Date.now() - (cached.timestamp || 0) < TTL_MS) {
+      return res.json({ success: true, insights: cached.insights, fromCache: true });
+    }
   }
 
   try {
@@ -781,11 +814,11 @@ ATURAN STRICT & FORMAT JAWABAN (WAJIB DIIKUTI TANPA PENGECUALIAN):
     try {
       content = await callGeminiDirect(prompt, settings);
       if (content) {
-        // Bersihkan markdown code block wraps (```html ... ```) jika ada
-        content = content.replace(/^```html\s*/i, '').replace(/```\s*$/, '').trim();
+        // Bersihkan markdown code block wraps (```html/```markdown/```json ... ```) jika ada
+        content = content.replace(/^```(?:html|markdown|json)?\s*/i, '').replace(/```\s*$/, '').trim();
       }
     } catch (apiErr) {
-      console.warn('Gagal memanggil Gemini API, menggunakan local fallback generator:', apiErr.message);
+      logger.warn('Gagal memanggil Gemini API, menggunakan local fallback generator: ' + apiErr.message);
       content = generateSimulatedInsights(payload);
       isFallback = true;
     }
@@ -799,6 +832,7 @@ ATURAN STRICT & FORMAT JAWABAN (WAJIB DIIKUTI TANPA PENGECUALIAN):
         uploadId,
         key: settingsKey,
         insights: content,
+        isFallback, // task #6: needed to compute correct TTL on cache hit
         timestamp: Date.now()
       };
       res.json({ success: true, insights: content, fromCache: false, fallback: isFallback });
@@ -806,7 +840,7 @@ ATURAN STRICT & FORMAT JAWABAN (WAJIB DIIKUTI TANPA PENGECUALIAN):
       throw new Error('Respons kosong dari Gemini API');
     }
   } catch (error) {
-    console.error('Error generating AI Insights:', error);
+    logger.error('Error generating AI Insights: ' + error.message);
     res.json({ success: false, error: 'Gagal menghasilkan AI Smart Insights: ' + error.message });
   }
 });

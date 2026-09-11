@@ -9,7 +9,8 @@ console.log('Suite 1: LLM Gateway Constants & Model Resolution');
 const llmGateway = require('../services/ai/llmGateway');
 
 assert.strictEqual(llmGateway.GEMINI_DEFAULT_MODEL, 'gemini-3.8-flash', 'Default model harus gemini-3.8-flash');
-assert.ok(llmGateway.LEGACY_GEMINI_MODELS.has('gemini-2.5-flash'), 'gemini-2.5-flash harus legacy');
+// task #8: gemini-2.5-flash dipromosi dari legacy ke aktif
+assert.ok(!llmGateway.LEGACY_GEMINI_MODELS.has('gemini-2.5-flash'), 'gemini-2.5-flash TIDAK BOLEH lagi dianggap legacy (task #8)');
 assert.ok(llmGateway.LEGACY_GEMINI_MODELS.has('gemini-2.5-pro'), 'gemini-2.5-pro harus legacy');
 assert.ok(llmGateway.LEGACY_GEMINI_MODELS.has('gemini-3.1-flash-lite'), 'gemini-3.1-flash-lite harus legacy');
 assert.ok(llmGateway.LEGACY_GEMINI_MODELS.has('gemini-3.5-flash-lite'), 'gemini-3.5-flash-lite harus legacy');
@@ -23,8 +24,9 @@ assert.deepStrictEqual(allowed, ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini
 const resDefault = llmGateway.resolveAgentSelection({});
 assert.strictEqual(resDefault.model, 'gemini-3.8-flash', 'Default fallback resolve harus 3.8');
 
+// task #8: gemini-2.5-flash bukan lagi legacy — tetapi karena tidak ada di allowedModels default, fallback ke 3.8
 const resLegacy = llmGateway.resolveAgentSelection({}, { model: 'gemini-2.5-flash' });
-assert.strictEqual(resLegacy.model, 'gemini-3.8-flash', 'Legacy model 2.5 harus dinormalkan ke 3.8');
+assert.strictEqual(resLegacy.model, 'gemini-3.8-flash', 'gemini-2.5-flash tidak ada di allowedModels default → fallback ke 3.8 (bukan karena legacy, tapi karena not in list)');
 
 const resExplicit35 = llmGateway.resolveAgentSelection({}, { model: 'gemini-3.5-flash' });
 assert.strictEqual(resExplicit35.model, 'gemini-3.5-flash', 'Model 3.5 flash yang valid harus diterima');
@@ -35,32 +37,35 @@ console.log('Suite 2: Strict Downward Fallback Chain Logic');
 const orchestrator = require('../services/ai/orchestrator');
 const { getDownwardFallbackChain, isModelNotFoundError } = orchestrator;
 
+// task #8: gemini-2.5-flash ditambahkan ke STANDARD_DOWNWARD_CHAIN sebagai tail fallback
 const chain38 = getDownwardFallbackChain('gemini-3.8-flash');
-assert.deepStrictEqual(chain38, ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash']);
+assert.deepStrictEqual(chain38, ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash']);
 
 const chain37 = getDownwardFallbackChain('gemini-3.7-flash');
-assert.deepStrictEqual(chain37, ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash']);
+assert.deepStrictEqual(chain37, ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash']);
 
 const chain36 = getDownwardFallbackChain('gemini-3.6-flash');
-assert.deepStrictEqual(chain36, ['gemini-3.6-flash', 'gemini-3.5-flash']);
+assert.deepStrictEqual(chain36, ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash']);
 
 const chain35 = getDownwardFallbackChain('gemini-3.5-flash');
-assert.deepStrictEqual(chain35, ['gemini-3.5-flash']);
+assert.deepStrictEqual(chain35, ['gemini-3.5-flash', 'gemini-2.5-flash']);
 
+// task #8: gemini-2.5-flash bukan lagi legacy — dimulai dari posisinya di chain (indeks 4)
 const chainLegacy = getDownwardFallbackChain('gemini-2.5-flash');
-assert.deepStrictEqual(chainLegacy, ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'], 'Legacy model harus otomatis diarahkan ke 3.8');
+assert.deepStrictEqual(chainLegacy, ['gemini-2.5-flash'], 'gemini-2.5-flash sekarang memulai chain dari posisinya (task #8)');
 
 const chainLegacyList = getDownwardFallbackChain('gemini-3.8-flash', 'gemini-2.5-flash, gemini-3.6-flash');
-assert.deepStrictEqual(chainLegacyList, ['gemini-3.8-flash', 'gemini-3.6-flash'], 'Legacy model di daftar pilihan harus disaring keluar');
+// task #8: gemini-2.5-flash bukan legacy lagi, jadi tidak disaring; hanya 3.8 (target) + 3.6 + 2.5 yang lolos
+assert.deepStrictEqual(chainLegacyList, ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-2.5-flash'], 'Daftar pilihan: target+3.6+2.5 (task #8)');
 
 const chainWhitespace = getDownwardFallbackChain('   ');
-assert.deepStrictEqual(chainWhitespace, ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'], 'Whitespace targetModel harus default ke 3.8');
+assert.deepStrictEqual(chainWhitespace, ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash'], 'Whitespace targetModel harus default ke 3.8');
 
 const chainPreserve = getDownwardFallbackChain('gemini-3.7-flash', 'gemini-3.5-flash');
 assert.deepStrictEqual(chainPreserve, ['gemini-3.7-flash', 'gemini-3.5-flash'], 'Target model terpilih harus tetap di posisi pertama');
 
 const chainCustom = getDownwardFallbackChain('gemini-exp-1206');
-assert.deepStrictEqual(chainCustom, ['gemini-exp-1206', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash']);
+assert.deepStrictEqual(chainCustom, ['gemini-exp-1206', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash']);
 console.log('   ✔ PASS Suite 2 Lulus Semua Assertions\n');
 
 // 3. Fast-Skip 404 / Model Not Found Error Detection
