@@ -884,56 +884,6 @@
           </div>
         </div>
 
-        <!-- GROUP 2B: METODE TARGET FASIH -->
-        <div class="settings-group">
-          <div class="settings-group-title">
-            <i class="bi bi-bullseye"></i> Metode Target FASIH
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
-            <label class="radio-card">
-              <input type="radio" name="target_fasih_mode" value="static" <%= settings.target_fasih_mode === 'static' || !settings.target_fasih_mode ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
-              <div style="min-width: 0;">
-                <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 1: Target Alokasi Statis (Sesuai Dashboard Pimpinan)</strong>
-                <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target dikunci mutlak berdasarkan alokasi rancangan awal. Target tidak akan pernah berubah, namun progres petugas bisa melebihi 100% jika ada temuan baru.</span>
-              </div>
-            </label>
-
-            <label class="radio-card">
-              <input type="radio" name="target_fasih_mode" value="fasih-sm" <%= settings.target_fasih_mode === 'fasih-sm' ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
-              <div style="min-width: 0;">
-                <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 3: Target FASIH-SM (Sesuai Dashboard FASIH-SM)</strong>
-                <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target dihitung menggunakan kolom "total" yang ada di file excel progres (sheet Rekap Pivot) yang diupload.</span>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <% if (!isSakernas) { %>
-        <!-- GROUP 2C: METODE TARGET MUATAN -->
-        <div class="settings-group">
-          <div class="settings-group-title">
-            <i class="bi bi-box-seam"></i> Metode Target Muatan
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
-            <label class="radio-card">
-              <input type="radio" name="target_muatan_mode" value="prelist" <%= settings.target_muatan_mode === 'prelist' || !settings.target_muatan_mode ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
-              <div style="min-width: 0;">
-                <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 1: Target Muatan Prelist (Original)</strong>
-                <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target muatan menggunakan alokasi prelist awal yang diimpor dari file JSON atau Master data.</span>
-              </div>
-            </label>
-
-            <label class="radio-card">
-              <input type="radio" name="target_muatan_mode" value="honor" <%= settings.target_muatan_mode === 'honor' ? 'checked' : '' %> style="margin-top: 4px; margin-right: 12px;">
-              <div style="min-width: 0;">
-                <strong style="display: block; font-size: 13px; margin-bottom: 3px; color: var(--text-primary); transition: color 0.2s;">Model 2: Target Honor</strong>
-                <span style="display: block; font-size: 11px; color: var(--text-muted); line-height: 1.4;">Target muatan menggunakan jumlah pembayaran honor yang diambil dari kolom Y (keluarga) + Z (jml_utp_subsektor) + AA (Total_usaha_SBR) pada file muatan_sls_pembayaran_honor.xlsx.</span>
-              </div>
-            </label>
-          </div>
-        </div>
-        <% } %>
-
         <!-- GROUP 2D: PARAMETER TARGET & SPEEDOMETER -->
         <div class="settings-group">
           <div class="settings-group-title">

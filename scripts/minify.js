@@ -3,6 +3,12 @@ const path = require('path');
 const CleanCSS = require('clean-css');
 const UglifyJS = require('uglify-js');
 
+// Git does not preserve read permission bits, and hosting umasks may create 0640 files.
+// Repair public bundles even when their contents have not changed.
+function ensurePublicReadAccess(filePath) {
+  if (process.platform !== 'win32') fs.chmodSync(filePath, 0o644);
+}
+
 function minifyAll() {
   console.log('[Minifier] Starting minification pipeline...');
   const publicDir = path.join(__dirname, '../public');
@@ -33,6 +39,7 @@ function minifyAll() {
 
     const destPath = srcPath.replace(/\.css$/, '.min.css');
     try {
+      ensurePublicReadAccess(srcPath);
       const raw = fs.readFileSync(srcPath, 'utf8');
       const minified = new CleanCSS({ level: 1 }).minify(raw);
       if (minified.errors.length) {
@@ -46,6 +53,7 @@ function minifyAll() {
           fs.writeFileSync(destPath, formattedStyles, 'utf8');
           console.log(`[Minifier] ✔ CSS Minified: ${relPath} -> ${path.basename(destPath)} (${(raw.length/1024).toFixed(1)}KB -> ${(minified.styles.length/1024).toFixed(1)}KB)`);
         }
+        ensurePublicReadAccess(destPath);
       }
     } catch (err) {
       console.error(`[Minifier] Exception minifying CSS ${relPath}:`, err);
@@ -62,6 +70,7 @@ function minifyAll() {
 
     const destPath = srcPath.replace(/\.js$/, '.min.js');
     try {
+      ensurePublicReadAccess(srcPath);
       const raw = fs.readFileSync(srcPath, 'utf8');
       const minified = UglifyJS.minify(raw);
       if (minified.error) {
@@ -75,6 +84,7 @@ function minifyAll() {
           fs.writeFileSync(destPath, formattedCode, 'utf8');
           console.log(`[Minifier] ✔ JS Minified: ${relPath} -> ${path.basename(destPath)} (${(raw.length/1024).toFixed(1)}KB -> ${(minified.code.length/1024).toFixed(1)}KB)`);
         }
+        ensurePublicReadAccess(destPath);
       }
     } catch (err) {
       console.error(`[Minifier] Exception minifying JS ${relPath}:`, err);

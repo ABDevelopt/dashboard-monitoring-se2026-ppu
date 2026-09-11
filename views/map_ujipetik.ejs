@@ -1857,6 +1857,96 @@
 
 <script>
   (function() {
+    // Lightweight, promise-based IndexedDB Storage Helper for client-side caching of Uji Petik points
+    const UjiPetikStorage = {
+      DB_NAME: 'SE2026_UjiPetik_Cache',
+      DB_VERSION: 1,
+      STORE_NAME: 'points_store',
+      _dbPromise: null,
+
+      getDb() {
+        if (this._dbPromise) return this._dbPromise;
+        this._dbPromise = new Promise((resolve, reject) => {
+          if (typeof window === 'undefined' || !window.indexedDB) {
+            return reject(new Error('IndexedDB not supported'));
+          }
+          const req = indexedDB.open(this.DB_NAME, this.DB_VERSION);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+              db.createObjectStore(this.STORE_NAME);
+            }
+          };
+          req.onsuccess = (e) => resolve(e.target.result);
+          req.onerror = (e) => {
+            this._dbPromise = null;
+            reject(e.target.error || new Error('Failed to open IndexedDB'));
+          };
+          req.onblocked = () => {
+            this._dbPromise = null;
+            reject(new Error('IndexedDB open blocked'));
+          };
+        });
+        return this._dbPromise;
+      },
+
+      async get(key) {
+        try {
+          const db = await this.getDb();
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(this.STORE_NAME, 'readonly');
+            const store = tx.objectStore(this.STORE_NAME);
+            const req = store.get(key);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error);
+          });
+        } catch (err) {
+          console.warn('[UjiPetikStorage] read error:', err);
+          return null;
+        }
+      },
+
+      async set(key, value) {
+        try {
+          const db = await this.getDb();
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(this.STORE_NAME, 'readwrite');
+            const store = tx.objectStore(this.STORE_NAME);
+            const req = store.put(value, key);
+            req.onsuccess = () => resolve(true);
+            req.onerror = () => reject(req.error);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error);
+          });
+        } catch (err) {
+          console.warn('[UjiPetikStorage] write error:', err);
+          return false;
+        }
+      },
+
+      async clear() {
+        try {
+          const db = await this.getDb();
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(this.STORE_NAME, 'readwrite');
+            const store = tx.objectStore(this.STORE_NAME);
+            const req = store.clear();
+            req.onsuccess = () => resolve(true);
+            req.onerror = () => reject(req.error);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error);
+          });
+        } catch (err) {
+          console.warn('[UjiPetikStorage] clear error:', err);
+          return false;
+        }
+      }
+    };
+
     function initUjiPetikMapPage() {
       if (typeof L === 'undefined') {
         setTimeout(initUjiPetikMapPage, 50);
@@ -1868,6 +1958,7 @@
 
       // State & Data holders
       let allPoints = [];
+      let currentScopedPoints = null;
       let filteredPoints = [];
       let summaryStats = null;
       let desaGeoJson = null;
@@ -1935,6 +2026,10 @@
         minZoom: 9
       }).setView(centerCoords, defaultZoom);
       window._leafletUjiPetikMapInstance = map;
+
+      // Dedicated Canvas Renderer for vector boundary layers (SLS, Desa, Kecamatan)
+      // Renders 1,042 SLS polygons onto an off-screen Canvas rather than creating 1,042 SVG DOM elements
+      const boundaryCanvasRenderer = L.canvas({ padding: 0.5 });
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -2775,16 +2870,28 @@
 
       // Filter Logic
       function applyFilters() {
-        let scoped = allPoints || [];
+        const base = (allPoints && allPoints.length > 0) ? allPoints : (currentScopedPoints || []);
+        let scoped = base;
 
-        if (currentKec) {
-          const kecUpper = currentKec.toUpperCase();
-          scoped = scoped.filter(p => p[12] && p[12].toUpperCase() === kecUpper);
-        }
+        if (allPoints && allPoints.length > 0) {
+          if (currentKec) {
+            const kecUpper = currentKec.toUpperCase().trim();
+            const kecNorm = kecUpper.replace(/[\s\-_]/g, '');
+            scoped = scoped.filter(p => {
+              const k = (p[12] || '').toUpperCase();
+              return k === kecUpper || k.replace(/[\s\-_]/g, '') === kecNorm;
+            });
+          }
 
-        if (currentDesa) {
-          const desaUpper = currentDesa.toUpperCase();
-          scoped = scoped.filter(p => (p[11] && p[11].toUpperCase() === desaUpper) || (p[13] && p[13].startsWith(currentDesa)));
+          if (currentDesa) {
+            const desaUpper = currentDesa.toUpperCase().trim();
+            const desaNorm = desaUpper.replace(/[\s\-_]/g, '');
+            const isCode = /^\d{7,10}$/.test(desaUpper);
+            scoped = scoped.filter(p => {
+              const d = (p[11] || '').toUpperCase();
+              return d === desaUpper || d.replace(/[\s\-_]/g, '') === desaNorm || (isCode && (p[13] || '').startsWith(desaUpper));
+            });
+          }
         }
 
         if (currentPcl) {
@@ -3067,7 +3174,40 @@
         grid.innerHTML = html;
       }
 
-      function selectScopeDesaDirect(desaName, kecName) {
+      let activeScopeRequestId = 0;
+
+      async function ensureScopeDataLoaded(scopedKec, scopedDesa) {
+        if (allPoints && allPoints.length > 0) {
+          populateOfficerDropdowns(scopedKec, scopedDesa, currentPml);
+          return;
+        }
+
+        const reqId = ++activeScopeRequestId;
+        try {
+          let url = '/api/ujipetik-points?';
+          if (scopedDesa) {
+            url += `desa=${encodeURIComponent(scopedDesa)}`;
+          } else if (scopedKec) {
+            url += `kec=${encodeURIComponent(scopedKec)}`;
+          } else {
+            return;
+          }
+
+          const res = await fetch(url);
+          const scopedPts = await res.json();
+
+          // Race condition guard: ensure this is still the active request and allPoints is still unloaded
+          if (reqId === activeScopeRequestId && (!allPoints || allPoints.length === 0)) {
+            currentScopedPoints = scopedPts;
+            populateOfficerDropdowns(scopedKec, scopedDesa, currentPml);
+            applyFilters();
+          }
+        } catch (err) {
+          console.warn('[UjiPetik] Error fetching scoped points:', err);
+        }
+      }
+
+      window.selectScopeDesaDirect = async function(desaName, kecName) {
         currentDesa = desaName;
         if (!kecName && summaryStats && summaryStats.desaStats) {
           const match = summaryStats.desaStats.find(d => d.desa && d.desa.toUpperCase() === desaName.toUpperCase());
@@ -3096,15 +3236,20 @@
           desaSelect.value = desaName;
         }
 
-        populateOfficerDropdowns(currentKec, currentDesa, '');
-        applyFilters();
         zoomToDesa(desaName);
         showDesaSummaryDrawer(desaName, currentKec);
         updateScopeButtonLabel();
         closeScopeModal();
+
+        if (allPoints && allPoints.length > 0) {
+          populateOfficerDropdowns(currentKec, currentDesa, '');
+          applyFilters();
+        } else {
+          await ensureScopeDataLoaded(currentKec, currentDesa);
+        }
       };
 
-      function selectAllPoints() {
+      window.selectAllPoints = async function() {
         currentKec = '';
         currentDesa = '';
         currentPcl = '';
@@ -3153,6 +3298,15 @@
           body.innerHTML = '';
         }
 
+        closeScopeModal();
+
+        if (!allPoints || allPoints.length === 0) {
+          const btnText = document.getElementById('currentScopeBtnText');
+          if (btnText) btnText.innerHTML = '<span class="spinner-border spinner-border-sm" style="width: 11px; height: 11px;"></span> Memuat...';
+          if (loadFullPointsPromise) await loadFullPointsPromise;
+        }
+
+        currentScopedPoints = null;
         populateOfficerDropdowns('', '', '');
         filteredPoints = allPoints || [];
         renderCanvas();
@@ -3161,7 +3315,6 @@
         updateScopeButtonLabel();
         updateMapBreadcrumbs('kab');
         refreshBoundaryStyles();
-        closeScopeModal();
       };
 
       function populateDesaDropdown(kecName) {
@@ -3185,35 +3338,61 @@
       function populateOfficerDropdowns(scopedKec, scopedDesa, scopedPml) {
         const pclSelect = document.getElementById('pclFilter');
         const pmlSelect = document.getElementById('pmlFilter');
-        if (!allPoints || allPoints.length === 0) return;
 
-        let pts = allPoints;
-        if (scopedKec) {
-          const kUpper = scopedKec.toUpperCase();
-          pts = pts.filter(p => p[12] && p[12].toUpperCase() === kUpper);
+        const pts = (allPoints && allPoints.length > 0) ? allPoints : currentScopedPoints;
+
+        let sortedPmls = [];
+        let sortedPcls = [];
+
+        if (pts && pts.length > 0) {
+          let pList = pts;
+          if (scopedKec) {
+            const kUpper = scopedKec.toUpperCase().trim();
+            const kNorm = kUpper.replace(/[\s\-_]/g, '');
+            pList = pList.filter(p => {
+              const k = (p[12] || '').toUpperCase();
+              return k === kUpper || k.replace(/[\s\-_]/g, '') === kNorm;
+            });
+          }
+          if (scopedDesa) {
+            const dUpper = scopedDesa.toUpperCase().trim();
+            const dNorm = dUpper.replace(/[\s\-_]/g, '');
+            const isCode = /^\d{7,10}$/.test(dUpper);
+            pList = pList.filter(p => {
+              const d = (p[11] || '').toUpperCase();
+              return d === dUpper || d.replace(/[\s\-_]/g, '') === dNorm || (isCode && (p[13] || '').startsWith(dUpper));
+            });
+          }
+
+          // Extract unique PMLs in this area
+          const pmlsInScope = new Set();
+          pList.forEach(p => {
+            if (p[8] && p[8].trim() !== '') pmlsInScope.add(p[8].trim());
+          });
+          sortedPmls = Array.from(pmlsInScope).sort((a, b) => a.localeCompare(b));
+
+          // If a specific PML is selected, narrow PCLs to that PML's points
+          let pclPts = pList;
+          if (scopedPml) {
+            const pmlLower = scopedPml.toLowerCase().trim();
+            pclPts = pclPts.filter(p => p[8] && p[8].toLowerCase().trim() === pmlLower);
+          }
+
+          // Extract unique PCLs in this area (and under this PML if selected)
+          const pclsInScope = new Set();
+          pclPts.forEach(p => {
+            if (p[7] && p[7].trim() !== '') pclsInScope.add(p[7].trim());
+          });
+          sortedPcls = Array.from(pclsInScope).sort((a, b) => a.localeCompare(b));
+        } else if (summaryStats) {
+          if (Array.isArray(summaryStats.pmls)) {
+            sortedPmls = [...summaryStats.pmls].sort((a, b) => a.localeCompare(b));
+          }
+          if (Array.isArray(summaryStats.pcls)) {
+            sortedPcls = [...summaryStats.pcls].sort((a, b) => a.localeCompare(b));
+          }
         }
-        if (scopedDesa) {
-          const dUpper = scopedDesa.toUpperCase();
-          pts = pts.filter(p => (p[11] && p[11].toUpperCase() === dUpper) || (p[13] && p[13].startsWith(scopedDesa)));
-        }
 
-        const pmlsInScope = new Set();
-        pts.forEach(p => {
-          if (p[8] && p[8].trim() !== '') pmlsInScope.add(p[8].trim());
-        });
-        const sortedPmls = Array.from(pmlsInScope).sort((a, b) => a.localeCompare(b));
-
-        let pclPts = pts;
-        if (scopedPml) {
-          const pmlLower = scopedPml.toLowerCase().trim();
-          pclPts = pclPts.filter(p => p[8] && p[8].toLowerCase().trim() === pmlLower);
-        }
-
-        const pclsInScope = new Set();
-        pclPts.forEach(p => {
-          if (p[7] && p[7].trim() !== '') pclsInScope.add(p[7].trim());
-        });
-        const sortedPcls = Array.from(pclsInScope).sort((a, b) => a.localeCompare(b));
 
         if (pmlSelect) {
           const prevPml = pmlSelect.value;
@@ -3222,7 +3401,7 @@
             html += `<option value="${p}">${p}</option>`;
           });
           pmlSelect.innerHTML = html;
-          if (prevPml && pmlsInScope.has(prevPml)) {
+          if (prevPml && sortedPmls.includes(prevPml)) {
             pmlSelect.value = prevPml;
           } else {
             pmlSelect.value = '';
@@ -3237,7 +3416,7 @@
             html += `<option value="${p}">${p}</option>`;
           });
           pclSelect.innerHTML = html;
-          if (prevPcl && pclsInScope.has(prevPcl)) {
+          if (prevPcl && sortedPcls.includes(prevPcl)) {
             pclSelect.value = prevPcl;
           } else {
             pclSelect.value = '';
@@ -3318,12 +3497,14 @@
       function setupBoundaryLayers() {
         if (kecGeoJson && !kecLayer) {
           kecLayer = L.geoJSON(kecGeoJson, {
+            renderer: boundaryCanvasRenderer,
             interactive: false,
             style: kecBoundaryStyle
           });
         }
         if (desaGeoJson && !desaLayer) {
           desaLayer = L.geoJSON(desaGeoJson, {
+            renderer: boundaryCanvasRenderer,
             interactive: false,
             style: desaBoundaryStyle
           });
@@ -3334,6 +3515,7 @@
       function setupSlsLayer() {
         if (slsGeoJson && !slsLayer) {
           slsLayer = L.geoJSON(slsGeoJson, {
+            renderer: boundaryCanvasRenderer,
             interactive: false,
             style: slsBoundaryStyle
           });
@@ -3425,12 +3607,38 @@
       if (btnLayerDesa) btnLayerDesa.addEventListener('click', () => setBoundaryLayer('desa'));
       if (btnLayerSls) btnLayerSls.addEventListener('click', () => setBoundaryLayer('sls'));
 
-      function showDesaSummaryDrawer(nmdesa, nmkec) {
-        const ptsInDesa = allPoints.filter(p => (p[11] && p[11].toUpperCase() === (nmdesa || '').toUpperCase()));
-        const total = ptsInDesa.length;
-        const usaha = ptsInDesa.filter(p => p[3] === 1 || p[3] === 2).length;
-        const tinggal = ptsInDesa.filter(p => p[3] === 3).length;
-        const kosong = ptsInDesa.filter(p => p[3] === 6).length;
+      function showDesaSummaryDrawer(nmdesa, nmkec, iddesa) {
+        let total = 0, usaha = 0, tinggal = 0, kosong = 0;
+        const targetDesa = (nmdesa || '').toUpperCase().trim();
+        const targetDesaNorm = targetDesa.replace(/[\s\-_]/g, '');
+        const targetId = (iddesa || '').trim();
+
+        const pts = (allPoints && allPoints.length > 0) ? allPoints : currentScopedPoints;
+        if (pts && pts.length > 0) {
+          const ptsInDesa = pts.filter(p => {
+            const d = (p[11] || '').toUpperCase();
+            return d === targetDesa || d.replace(/[\s\-_]/g, '') === targetDesaNorm || (targetId && (p[13] || '').startsWith(targetId));
+          });
+          if (ptsInDesa.length > 0) {
+            total = ptsInDesa.length;
+            usaha = ptsInDesa.filter(p => p[3] === 1 || p[3] === 2).length;
+            tinggal = ptsInDesa.filter(p => p[3] === 3).length;
+            kosong = ptsInDesa.filter(p => p[4] === 1 || p[3] === 6).length;
+          }
+        }
+
+        if (total === 0 && summaryStats && summaryStats.desaStats) {
+          const ds = summaryStats.desaStats.find(d => {
+            const dName = (d.desa || '').toUpperCase().trim();
+            return dName === targetDesa || dName.replace(/[\s\-_]/g, '') === targetDesaNorm || (targetId && d.iddesa === targetId);
+          });
+          if (ds) {
+            total = ds.total_titik || 0;
+            usaha = ds.usaha_titik || 0;
+            kosong = ds.kosong_titik || 0;
+            tinggal = Math.max(0, total - usaha - kosong);
+          }
+        }
 
         const html = `
           <div style="background: rgba(2, 132, 199, 0.14); border: 1px solid rgba(2, 132, 199, 0.35); padding: 11px 13px; border-radius: 12px; margin-bottom: 10px;">
@@ -3488,13 +3696,8 @@
         updateMapBreadcrumbs('desa', nmkec, nmdesa);
       }
 
-      function filterByDesaDirect(desaName) {
-        const desaSelect = document.getElementById('desaFilter');
-        if (desaSelect) desaSelect.value = desaName;
-        currentDesa = desaName;
-        applyFilters();
-        zoomToDesa(desaName);
-        updateScopeButtonLabel();
+      window.filterByDesaDirect = async function(desaName) {
+        await selectScopeDesaDirect(desaName, currentKec);
       };
 
       // Category filter buttons listener
@@ -3548,15 +3751,12 @@
       // Kecamatan Filter Listener
       const kecFilter = document.getElementById('kecFilter');
       if (kecFilter) {
-        kecFilter.addEventListener('change', (e) => {
+        kecFilter.addEventListener('change', async (e) => {
           currentKec = e.target.value;
           currentDesa = '';
           currentPcl = '';
           currentPml = '';
           populateDesaDropdown(currentKec);
-          populateOfficerDropdowns(currentKec, '', '');
-          applyFilters();
-
           if (currentKec) {
             zoomToKecamatan(currentKec);
           } else {
@@ -3564,13 +3764,15 @@
             updateMapBreadcrumbs('kab');
           }
           updateScopeButtonLabel();
+          await ensureScopeDataLoaded(currentKec, '');
+          applyFilters();
         });
       }
 
       // Desa Filter Listener
       const desaFilter = document.getElementById('desaFilter');
       if (desaFilter) {
-        desaFilter.addEventListener('change', (e) => {
+        desaFilter.addEventListener('change', async (e) => {
           currentDesa = e.target.value;
           currentPcl = '';
           currentPml = '';
@@ -3589,8 +3791,6 @@
               }
             }
           }
-          populateOfficerDropdowns(currentKec, currentDesa, '');
-          applyFilters();
 
           if (currentDesa) {
             zoomToDesa(currentDesa);
@@ -3601,6 +3801,8 @@
             updateMapBreadcrumbs('kab');
           }
           updateScopeButtonLabel();
+          await ensureScopeDataLoaded(currentKec, currentDesa);
+          applyFilters();
         });
       }
 
@@ -4097,7 +4299,7 @@
         });
       }
 
-      // Dynamic Location Sync for KPI Bar (Desktop: Top Right / Mobile: hidden to avoid redundant duplicate pills)
+// Dynamic Location Sync for KPI Bar (Desktop: Top Right / Mobile: hidden to avoid redundant duplicate pills)
       function syncKpiBarLocation() {
         const kpiBar = document.getElementById('kpiBarContainer');
         const gmapsWrapper = document.getElementById('gmapsWrapper');
@@ -4362,36 +4564,105 @@
       window.exportPointsCsv = exportPointsCsv;
       window.exportPointsGeoJson = exportPointsGeoJson;
 
+      let loadFullPointsPromise = null;
+
+      function loadPointsInBackground() {
+        if (loadFullPointsPromise) return loadFullPointsPromise;
+
+        loadFullPointsPromise = (async () => {
+          try {
+            const expectedTotal = summaryStats ? summaryStats.total : 0;
+            let cached = null;
+
+            if (expectedTotal > 0) {
+              try {
+                cached = await UjiPetikStorage.get('ujipetik_points_data');
+              } catch (e) {
+                console.warn('[UjiPetik] IndexedDB read error:', e);
+              }
+            }
+
+            // If cached points exist and count matches current server total, load immediately from IndexedDB
+            if (cached && cached.total === expectedTotal && Array.isArray(cached.points) && cached.points.length === expectedTotal) {
+              allPoints = cached.points;
+              console.log(`[UjiPetik] Loaded ${allPoints.length} points from IndexedDB cache (0ms network)`);
+            } else if (expectedTotal > 0) {
+              console.log('[UjiPetik] Fetching compressed points from /api/ujipetik-points...');
+              const res = await fetch('/api/ujipetik-points');
+              allPoints = await res.json();
+              if (allPoints && allPoints.length > 0) {
+                UjiPetikStorage.set('ujipetik_points_data', {
+                  total: allPoints.length,
+                  timestamp: Date.now(),
+                  points: allPoints
+                }).catch(err => console.warn('[UjiPetik] IndexedDB write error:', err));
+              }
+            } else {
+              allPoints = [];
+            }
+
+            // Clear temporary scoped points once allPoints is ready
+            currentScopedPoints = null;
+
+            // Populate officers dropdown based on loaded allPoints
+            populateOfficerDropdowns(currentKec, currentDesa, currentPml);
+
+            // If a scope is currently active or points are displayed, refresh filters
+            if (currentDesa || currentKec || currentPcl || currentPml || currentSearch || currentCatCode) {
+              applyFilters();
+            } else if (filteredPoints && filteredPoints.length > 0) {
+              filteredPoints = allPoints;
+              renderCanvas();
+              updateCategoryPillCounts(filteredPoints);
+            }
+
+            // Handle Empty Database State
+            if (!allPoints || allPoints.length === 0) {
+              const placeholder = document.getElementById('drawerPlaceholder');
+              if (placeholder) {
+                placeholder.innerHTML = `
+                  <div style="padding: 10px 4px; text-align: center;">
+                    <i class="bi bi-inbox" style="font-size: 32px; color: var(--accent-amber); display: block; margin-bottom: 8px;"></i>
+                    <strong style="font-size: 14px; color: var(--text-primary); display: block; margin-bottom: 4px;">Belum Ada Data Titik Uji Petik</strong>
+                    <span style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 14px; line-height: 1.4;">
+                      Peta ini secara default kosong. Admin dapat mengunggah file data CSV Titik Uji Petik melalui halaman Upload Data.
+                    </span>
+                    <a href="/admin/upload?tab=ujipetik" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-weight: 600; text-decoration: none; border-radius: 8px; font-size: 12px;">
+                      <i class="bi bi-upload"></i> Upload File CSV Titik Uji Petik
+                    </a>
+                  </div>
+                `;
+              }
+            }
+          } catch (err) {
+            console.error('[UjiPetik] Error loading points in background:', err);
+          }
+        })();
+
+        return loadFullPointsPromise;
+      }
+
+      // Bootstrap & Load Data (Progressive: UI & Boundaries in <500ms, Points in Background)
       async function bootstrap() {
         const loading = document.getElementById('mapLoading');
         try {
-          const [statsRes, pointsRes, desaGeoRes, kecGeoRes] = await Promise.all([
+          // Phase 1: Fast Critical Data (Stats + Kecamatan & Desa GeoJSON boundaries: ~550 KB gzip total)
+          const [statsRes, desaGeoRes, kecGeoRes] = await Promise.all([
             fetch('/api/ujipetik-stats'),
-            fetch('/api/ujipetik-points'),
             fetch('/data/desa_boundaries.geojson'),
             fetch('/data/kecamatan_boundaries.geojson')
           ]);
 
           summaryStats = await statsRes.json();
-          allPoints = await pointsRes.json();
           desaGeoJson = await desaGeoRes.json();
           kecGeoJson = await kecGeoRes.json();
 
           // Guard against unmounted/destroyed map after async fetches
           if (!map || !map._container || !map._mapPane) return;
-
-          if (allPoints && allPoints.length > 0) {
-            const statusEl = document.getElementById('loadingStatusText');
-            if (statusEl) {
-              statusEl.textContent = `Memuat ${allPoints.length.toLocaleString('id-ID')} Titik Uji Petik Spasial...`;
-            }
-          }
-
           populateDesaDropdown('');
           populateOfficerDropdowns('', '', '');
           setupBoundaryLayers();
           renderModalDesaGrid();
-          lazyLoadSlsGeoJSON();
 
           const modalSearchInput = document.getElementById('modalDesaSearchInput');
           if (modalSearchInput) {
@@ -4401,35 +4672,62 @@
             });
           }
 
-          // Check URL query parameters
-          const urlParams = new URLSearchParams(window.location.search);
-          const initialKec = urlParams.get('kec');
-          const initialDesa = urlParams.get('desa');
+          // Update dynamic legend numbers
+          if (summaryStats) {
+            const findCatCount = (keyword) => {
+              if (!summaryStats.kategoriStats) return 0;
+              const found = summaryStats.kategoriStats.find(k => (k.kategori || '').toLowerCase().includes(keyword.toLowerCase()));
+              return found ? found.count : 0;
+            };
 
-          if (initialDesa) {
-            selectScopeDesaDirect(initialDesa, initialKec || '');
-          } else if (initialKec) {
-            currentKec = initialKec;
-            const kecSelect = document.getElementById('kecFilter');
-            if (kecSelect) kecSelect.value = initialKec;
-            populateDesaDropdown(initialKec);
-            populateOfficerDropdowns(initialKec, '', '');
-            applyFilters();
-            zoomToKecamatan(initialKec);
-            updateScopeButtonLabel();
-          } else {
-            filteredPoints = [];
-            renderCanvas();
-            updateCategoryPillCounts(allPoints || []);
-            updateScopeButtonLabel();
+            const setVal = (id, val) => {
+              const el = document.getElementById(id);
+              if (el) el.textContent = (val || 0).toLocaleString('id-ID');
+            };
 
-            if (allPoints && allPoints.length > 0) {
-              setTimeout(openScopeModal, 300);
-            }
+            const usaha = findCatCount('Khusus Usaha');
+            const campuran = findCatCount('Campuran');
+            const tinggal = findCatCount('Tempat Tinggal');
+            const ibadah = findCatCount('Ibadah');
+            const pemerintah = findCatCount('Pemerintah');
+            const kosong = summaryStats.kosong || findCatCount('Kosong');
+            const panti = findCatCount('Panti');
+            const nonRespon = findCatCount('Non Respon') || findCatCount('Tidak Ada');
+            const lainnya = findCatCount('Lainnya');
+
+            setVal('countCatAll', summaryStats.total);
+            setVal('countCatUsaha', usaha);
+            setVal('countCatCampuran', campuran);
+            setVal('countCatTinggal', tinggal);
+            setVal('countCatIbadah', ibadah);
+            setVal('countCatPemerintah', pemerintah);
+            setVal('countCatKosong', kosong);
+            setVal('countCatPanti', panti);
+            setVal('countCatNonRespon', nonRespon);
+            setVal('countCatLainnya', lainnya);
+
+            // Floating KPI Bar
+            setVal('kpiTotalTitik', summaryStats.total);
+            setVal('kpiTitikUsaha', usaha);
+            setVal('kpiTitikCampuran', campuran);
+            setVal('kpiTitikTinggal', tinggal);
+            setVal('kpiTitikKosong', kosong);
+            setVal('kpiTitikNonRespon', nonRespon);
+
+            // Legend Drawer counts
+            setVal('legendCountUsaha', usaha);
+            setVal('legendCountCampuran', campuran);
+            setVal('legendCountTinggal', tinggal);
+            setVal('legendCountIbadah', ibadah);
+            setVal('legendCountPemerintah', pemerintah);
+            setVal('legendCountLainnya', kosong);
+            setVal('legendCountPanti', panti);
+            setVal('legendCountNonRespon', nonRespon);
+            setVal('legendCountMisc', lainnya);
           }
 
           // Handle Empty Database State
-          if (!allPoints || allPoints.length === 0) {
+          if (!summaryStats || summaryStats.total === 0) {
             const placeholder = document.getElementById('drawerPlaceholder');
             if (placeholder) {
               placeholder.innerHTML = `
@@ -4446,11 +4744,43 @@
               `;
             }
           }
-
           if (loading) {
             loading.style.opacity = '0';
             setTimeout(() => loading.style.display = 'none', 300);
           }
+
+          // Check URL query parameters (e.g. ?desa=WARU or ?kec=BABULU)
+          const urlParams = new URLSearchParams(window.location.search);
+          const initialKec = urlParams.get('kec');
+          const initialDesa = urlParams.get('desa');
+
+          if (initialDesa) {
+            selectScopeDesaDirect(initialDesa, initialKec || '');
+          } else if (initialKec) {
+            currentKec = initialKec;
+            const kecSelect = document.getElementById('kecFilter');
+            if (kecSelect) kecSelect.value = initialKec;
+            populateDesaDropdown(initialKec);
+            zoomToKecamatan(initialKec);
+            updateScopeButtonLabel();
+            ensureScopeDataLoaded(initialKec, '').then(() => {
+              applyFilters();
+            });
+          } else {
+            // Default: do NOT draw all points automatically (prevents initial lag)
+            filteredPoints = [];
+            renderCanvas();
+            updateScopeButtonLabel();
+
+            if (summaryStats && summaryStats.total > 0) {
+              setTimeout(openScopeModal, 200);
+            }
+          }
+
+          // Phase 2: Asynchronous Background Loading (IndexedDB / Gzip Points & SLS Boundaries)
+          loadPointsInBackground();
+          lazyLoadSlsGeoJSON();
+
         } catch (err) {
           console.error('Error bootstrapping Uji Petik Map:', err);
           if (loading) {
