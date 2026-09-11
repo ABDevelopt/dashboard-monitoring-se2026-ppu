@@ -2724,8 +2724,8 @@
         const cleanNoBang = noBang ? String(noBang).trim() : '';
         const cleanLabel = getCleanBuildingLabel(cleanNoBang, label, catName);
         const statusBadge = isKosong === 1
-          ? '<span class="badge" style="background: rgba(148, 163, 184, 0.22); color: #cbd5e1; border: 1px solid rgba(148,163,184,0.45); font-size: 11px; padding: 3px 8px; font-weight: 600;">Bangunan Kosong</span>'
-          : '<span class="badge" style="background: rgba(16, 185, 129, 0.20); color: #34d399; border: 1px solid rgba(16,185,129,0.45); font-size: 11px; padding: 3px 8px; font-weight: 600;">Berpenghuni / Berisi</span>';
+          ? '<span class="badge" style="background: rgba(148, 163, 184, 0.22); color: #cbd5e1; border: 1px solid rgba(148,163,184,0.45); font-size: 12px; padding: 3px 8px; font-weight: 600;">Bangunan Kosong</span>'
+          : '<span class="badge" style="background: rgba(16, 185, 129, 0.20); color: #34d399; border: 1px solid rgba(16,185,129,0.45); font-size: 12px; padding: 3px 8px; font-weight: 600;">Berpenghuni / Berisi</span>';
 
         const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 
@@ -2873,25 +2873,23 @@
         const base = (allPoints && allPoints.length > 0) ? allPoints : (currentScopedPoints || []);
         let scoped = base;
 
-        if (allPoints && allPoints.length > 0) {
-          if (currentKec) {
-            const kecUpper = currentKec.toUpperCase().trim();
-            const kecNorm = kecUpper.replace(/[\s\-_]/g, '');
-            scoped = scoped.filter(p => {
-              const k = (p[12] || '').toUpperCase();
-              return k === kecUpper || k.replace(/[\s\-_]/g, '') === kecNorm;
-            });
-          }
+        if (currentKec) {
+          const kecUpper = currentKec.toUpperCase().trim();
+          const kecNorm = kecUpper.replace(/[\s\-_]/g, '');
+          scoped = scoped.filter(p => {
+            const k = (p[12] || '').toUpperCase();
+            return k === kecUpper || k.replace(/[\s\-_]/g, '') === kecNorm;
+          });
+        }
 
-          if (currentDesa) {
-            const desaUpper = currentDesa.toUpperCase().trim();
-            const desaNorm = desaUpper.replace(/[\s\-_]/g, '');
-            const isCode = /^\d{7,10}$/.test(desaUpper);
-            scoped = scoped.filter(p => {
-              const d = (p[11] || '').toUpperCase();
-              return d === desaUpper || d.replace(/[\s\-_]/g, '') === desaNorm || (isCode && (p[13] || '').startsWith(desaUpper));
-            });
-          }
+        if (currentDesa) {
+          const desaUpper = currentDesa.toUpperCase().trim();
+          const desaNorm = desaUpper.replace(/[\s\-_]/g, '');
+          const isCode = /^\d{7,10}$/.test(desaUpper);
+          scoped = scoped.filter(p => {
+            const d = (p[11] || '').toUpperCase();
+            return d === desaUpper || d.replace(/[\s\-_]/g, '') === desaNorm || (isCode && (p[13] || '').startsWith(desaUpper));
+          });
         }
 
         if (currentPcl) {
@@ -3096,6 +3094,13 @@
           desaSelect.value = desaName;
         }
 
+        currentPcl = '';
+        currentPml = '';
+        const pclSelect = document.getElementById('pclFilter');
+        const pmlSelect = document.getElementById('pmlFilter');
+        if (pclSelect) pclSelect.value = '';
+        if (pmlSelect) pmlSelect.value = '';
+
         populateOfficerDropdowns(currentKec, currentDesa, '');
         applyFilters();
 
@@ -3214,6 +3219,13 @@
           if (match && match.kecamatan) kecName = match.kecamatan;
         }
         currentKec = kecName || '';
+
+        currentPcl = '';
+        currentPml = '';
+        const pclSelect = document.getElementById('pclFilter');
+        const pmlSelect = document.getElementById('pmlFilter');
+        if (pclSelect) pclSelect.value = '';
+        if (pmlSelect) pmlSelect.value = '';
 
         const kecSelect = document.getElementById('kecFilter');
         const desaSelect = document.getElementById('desaFilter');
@@ -4418,7 +4430,7 @@
 
       // ── EXPORT DATA TITIK UJI PETIK (CSV & GeoJSON) ─────────────
       function exportPointsCsv() {
-        const pts = (filteredPoints && filteredPoints.length > 0) ? filteredPoints : (allPoints || []);
+        const pts = (filteredPoints && filteredPoints.length > 0) ? filteredPoints : ((allPoints && allPoints.length > 0) ? allPoints : (currentScopedPoints || []));
         if (!pts || pts.length === 0) {
           if (typeof alert !== 'undefined') {
             alert('Tidak ada data titik uji petik untuk diekspor.');
@@ -4486,7 +4498,7 @@
       }
 
       function exportPointsGeoJson() {
-        const pts = (filteredPoints && filteredPoints.length > 0) ? filteredPoints : (allPoints || []);
+        const pts = (filteredPoints && filteredPoints.length > 0) ? filteredPoints : ((allPoints && allPoints.length > 0) ? allPoints : (currentScopedPoints || []));
         if (!pts || pts.length === 0) {
           if (typeof alert !== 'undefined') {
             alert('Tidak ada data titik uji petik untuk diekspor.');
