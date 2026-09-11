@@ -3814,7 +3814,7 @@ function _loadTitikRowsFromFile(filePath) {
   let rows = [];
 
   if (ext === '.xlsx' || ext === '.xls') {
-    const wb = XLSX.readFile(filePath, { raw: true });
+    const wb = XLSX.readFile(filePath, { raw: true, cellFormula: false, cellHTML: false, cellStyles: false, cellText: false });
     if (!wb.SheetNames || wb.SheetNames.length === 0) {
       throw new Error('File Excel tidak memiliki lembar kerja (sheet).');
     }
@@ -3910,8 +3910,13 @@ function _parseAndInsertTitikRows(db, rows, uploadId = null) {
         kosong = 0;
       }
     } else {
-      const combined = (label + ' ' + kodeBangLabel).toLowerCase();
-      if (combined.includes('kosong')) {
+      const trimmedCat = kodeBangLabel.trim();
+      const firstChar = trimmedCat.charAt(0);
+      if (['1', '2', '3', '4', '5', '8', '9'].includes(firstChar)) {
+        kosong = 0;
+      } else if (firstChar === '6' || trimmedCat.toLowerCase().includes('kosong')) {
+        kosong = 1;
+      } else if (label.toLowerCase().includes('kosong')) {
         kosong = 1;
       } else {
         kosong = 0;
@@ -4128,9 +4133,9 @@ function getTitikUjiPetikStats(surveyId = 'se2026') {
     ORDER BY m.kecamatan ASC, m.desa ASC
   `).all();
 
-  const pcls = db.prepare(`SELECT DISTINCT pcl FROM titik_uji_petik WHERE pcl IS NOT NULL AND pcl != '' ORDER BY pcl ASC`).all().map(r => r.pcl);
-  const pmls = db.prepare(`SELECT DISTINCT pml FROM titik_uji_petik WHERE pml IS NOT NULL AND pml != '' ORDER BY pml ASC`).all().map(r => r.pml);
-  const korlaps = db.prepare(`SELECT DISTINCT korlap FROM titik_uji_petik WHERE korlap IS NOT NULL AND korlap != '' ORDER BY korlap ASC`).all().map(r => r.korlap);
+  const pcls = db.prepare(`SELECT DISTINCT COALESCE(NULLIF(t.pcl, ''), m.pcl) AS pcl FROM titik_uji_petik t LEFT JOIN subsls_master m ON t.level_6_full_code = m.kode WHERE COALESCE(NULLIF(t.pcl, ''), m.pcl) IS NOT NULL AND COALESCE(NULLIF(t.pcl, ''), m.pcl) != '' ORDER BY pcl ASC`).all().map(r => r.pcl);
+  const pmls = db.prepare(`SELECT DISTINCT COALESCE(NULLIF(t.pml, ''), m.pml) AS pml FROM titik_uji_petik t LEFT JOIN subsls_master m ON t.level_6_full_code = m.kode WHERE COALESCE(NULLIF(t.pml, ''), m.pml) IS NOT NULL AND COALESCE(NULLIF(t.pml, ''), m.pml) != '' ORDER BY pml ASC`).all().map(r => r.pml);
+  const korlaps = db.prepare(`SELECT DISTINCT COALESCE(NULLIF(t.korlap, ''), m.korlap) AS korlap FROM titik_uji_petik t LEFT JOIN subsls_master m ON t.level_6_full_code = m.kode WHERE COALESCE(NULLIF(t.korlap, ''), m.korlap) IS NOT NULL AND COALESCE(NULLIF(t.korlap, ''), m.korlap) != '' ORDER BY korlap ASC`).all().map(r => r.korlap);
 
   return {
     total: overall.total || 0,
@@ -4162,9 +4167,9 @@ function getTitikUjiPetikPoints(filters = {}, surveyId = 'se2026') {
       t.latitude,
       t.longitude,
       t.is_kosong,
-      COALESCE(t.pcl, m.pcl) AS pcl,
-      COALESCE(t.pml, m.pml) AS pml,
-      COALESCE(t.korlap, m.korlap) AS korlap,
+      COALESCE(NULLIF(t.pcl, ''), m.pcl, '') AS pcl,
+      COALESCE(NULLIF(t.pml, ''), m.pml, '') AS pml,
+      COALESCE(NULLIF(t.korlap, ''), m.korlap, '') AS korlap,
       m.nama_sls,
       m.desa,
       m.kecamatan
@@ -4257,9 +4262,9 @@ function getTitikUjiPetikCompact(surveyId = 'se2026') {
       t.is_kosong,
       t.label,
       t.no_bang,
-      COALESCE(t.pcl, m.pcl, '') AS pcl,
-      COALESCE(t.pml, m.pml, '') AS pml,
-      COALESCE(t.korlap, m.korlap, '') AS korlap,
+      COALESCE(NULLIF(t.pcl, ''), m.pcl, '') AS pcl,
+      COALESCE(NULLIF(t.pml, ''), m.pml, '') AS pml,
+      COALESCE(NULLIF(t.korlap, ''), m.korlap, '') AS korlap,
       COALESCE(m.nama_sls, '') AS nama_sls,
       COALESCE(m.desa, '') AS desa,
       COALESCE(m.kecamatan, '') AS kecamatan,
@@ -4269,16 +4274,14 @@ function getTitikUjiPetikCompact(surveyId = 'se2026') {
   `).all();
 
   function getCatCode(str, isKosong) {
+    if (str) {
+      const trimmed = String(str).trim();
+      const firstChar = trimmed.charAt(0);
+      if (['1', '2', '3', '4', '5', '6', '8', '9'].includes(firstChar)) {
+        return parseInt(firstChar, 10);
+      }
+    }
     if (isKosong === 1) return 6;
-    if (!str) return 0;
-    if (str.startsWith('1')) return 1;
-    if (str.startsWith('2')) return 2;
-    if (str.startsWith('3')) return 3;
-    if (str.startsWith('4')) return 4;
-    if (str.startsWith('5')) return 5;
-    if (str.startsWith('6')) return 6;
-    if (str.startsWith('8')) return 8;
-    if (str.startsWith('9')) return 9;
     return 0;
   }
 
