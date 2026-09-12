@@ -230,6 +230,33 @@
         </button>
       </form>
     </div>
+
+    <!-- SEED / SYNC SAKERNAS CARD -->
+    <% if (activeSurvey.startsWith('sakernas')) { %>
+    <div class="backup-card" style="grid-column: 1 / -1; min-height: auto;">
+      <div class="d-flex justify-between items-center flex-wrap gap-4">
+        <div class="d-flex items-start gap-3">
+          <div class="backup-icon-box" style="background: linear-gradient(135deg, #10b981, #059669); flex-shrink: 0;">
+            <i class="bi bi-arrow-repeat"></i>
+          </div>
+          <div>
+            <h2 class="backup-title">Sinkronisasi / Seed Data Sakernas dari Workspace</h2>
+            <p class="backup-desc">Isi atau perbarui database Sakernas secara instan dari berkas rekap JSON yang tersedia di repository Git.</p>
+            <div class="fs-xs text-muted mt-1">
+              Solusi instan untuk server hosting (Dewaweb) agar data langsung terisi tanpa perlu upload manual.
+            </div>
+          </div>
+        </div>
+        <div>
+          <form action="<%= navPrefix %>/admin/settings/backup/seed-sakernas" method="POST" style="margin: 0;" onsubmit="return confirm('Apakah Anda yakin ingin memproses ulang seluruh data Sakernas dari workspace?');">
+            <button type="submit" class="btn-admin" style="background: #10b981; color: white;">
+              <i class="bi bi-cloud-arrow-down-fill"></i> Sinkronkan Data Sakernas
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <% } %>
   </div>
 
   <!-- LOCAL BACKUPS TABLE -->

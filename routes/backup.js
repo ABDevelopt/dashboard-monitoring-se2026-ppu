@@ -188,4 +188,27 @@ router.post('/restore', upload.single('db_file'), async (req, res) => {
   res.redirect(getBackupRedirectUrl(res, activeSurvey));
 });
 
+// POST: Seed Sakernas Data from Workspace
+router.post('/seed-sakernas', async (req, res) => {
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  try {
+    const { seedAll, seedSurvey, PMU_FILES, PDT_FILES } = require('../scripts/seed_sakernas_from_workspace');
+    if (activeSurvey === 'sakernas-pemutakhiran') {
+      seedSurvey('sakernas-pemutakhiran', 'alokasi_petugas_sakernas_pemutakhiran.json', PMU_FILES, true);
+      req.flash('success', 'Data Sakernas Pemutakhiran berhasil disinkronkan dan di-seed dari workspace.');
+    } else if (activeSurvey === 'sakernas-pendataan') {
+      seedSurvey('sakernas-pendataan', 'alokasi_petugas_sakernas_pendataan.json', PDT_FILES, true);
+      req.flash('success', 'Data Sakernas Pendataan berhasil disinkronkan dan di-seed dari workspace.');
+    } else {
+      seedAll(true);
+      req.flash('success', 'Seluruh data Sakernas (Pemutakhiran & Pendataan) berhasil disinkronkan.');
+    }
+  } catch (err) {
+    console.error('[Seed Sakernas Error]', err);
+    req.flash('error', `Gagal sinkronisasi Sakernas: ${err.message}`);
+  }
+
+  res.redirect(getBackupRedirectUrl(res, activeSurvey));
+});
+
 module.exports = router;

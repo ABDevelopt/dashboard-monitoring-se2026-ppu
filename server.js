@@ -850,6 +850,14 @@ function init() {
       logger.info(`✅ Master SubSLS SE2026 already populated: ${rowCount} records (from DB)`);
     }
 
+    // Auto-seed Sakernas if databases are unseeded (e.g. fresh deployment on hosting server like Dewaweb)
+    try {
+      const { seedAll } = require('./scripts/seed_sakernas_from_workspace');
+      seedAll(false);
+    } catch (sakernasErr) {
+      logger.error('❌ Error checking/seeding Sakernas databases:', sakernasErr.message);
+    }
+
     // Rebuild cache on startup to ensure any code/formula updates are reflected
     const { rebuildAllSummaryCaches } = require('./database');
     setTimeout(() => {
