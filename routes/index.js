@@ -15,7 +15,7 @@ router.get('/', (req, res) => {
   if (uploadId) {
     summary = getOverviewSummary(uploadId, res.locals.settings, surveyId);
     kecStats = getKecamatanStats(uploadId, res.locals.settings, surveyId);
-    tren = getTrenHarian(surveyId);
+    tren = getTrenHarian(surveyId, res.locals.effectiveUploadDate);
 
     // Dapatkan data upload saat ini dan upload valid sebelumnya (Single Query)
     const currentUpload = db.prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);

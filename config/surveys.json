@@ -23,7 +23,7 @@
     "officerRole": "PCL",
     "officerFullRole": "Petugas Cacah Lapangan",
     "hasKorlap": true,
-    "enabledPages": ["map", "agent", "korlap", "pml", "pcl", "earlywarning", "deteksi-anomali", "performa", "harian", "leaderboard", "kecamatan", "subsls", "export"]
+    "enabledPages": ["map", "agent", "korlap", "pml", "pcl", "earlywarning", "deteksi-anomali", "performa", "harian", "leaderboard", "kecamatan", "subsls", "export", "map-ujipetik"]
   },
   "sakernas-pemutakhiran": {
     "id": "sakernas-pemutakhiran",

@@ -194,6 +194,8 @@ window.Swal = {
   }
 };
 
+var Swal = window.Swal;
+
 // Make sure global helpers use this system
 window.showAlert = function(options) {
   return window.Swal.fire(options);
@@ -682,10 +684,26 @@ function updateTime() {
   }
   window.loadScript = loadScript;
 
-  // ===== BOOKMARKS / FAVORIT SAYA =====
+  // ===== BOOKMARKS / FAVORIT SAYA (Terisolasi per survei/sensus) =====
+  function getBookmarkKey() {
+    const survey = window.activeSurveyId || (function() {
+      const p = window.location.pathname;
+      if (p.startsWith('/sakernas-pemutakhiran')) return 'sakernas-pemutakhiran';
+      if (p.startsWith('/sakernas-pendataan')) return 'sakernas-pendataan';
+      return 'se2026';
+    })();
+    const key = `ppu_bookmarks_${survey}`;
+    if (survey === 'se2026' && localStorage.getItem(key) === null && localStorage.getItem('ppu_bookmarks') !== null) {
+      try {
+        localStorage.setItem(key, localStorage.getItem('ppu_bookmarks'));
+      } catch (_) {}
+    }
+    return key;
+  }
+
   window.getPinnedItems = function() {
     try {
-      const items = localStorage.getItem('ppu_bookmarks');
+      const items = localStorage.getItem(getBookmarkKey());
       return items ? JSON.parse(items) : [];
     } catch (e) {
       console.error('Error reading bookmarks:', e);
@@ -695,7 +713,7 @@ function updateTime() {
 
   window.savePinnedItems = function(items) {
     try {
-      localStorage.setItem('ppu_bookmarks', JSON.stringify(items));
+      localStorage.setItem(getBookmarkKey(), JSON.stringify(items));
     } catch (e) {
       console.error('Error saving bookmarks:', e);
     }
@@ -1346,6 +1364,47 @@ function updateTime() {
         return;
       }
 
+      // 4.5 Date Selector Button Click
+      const dateBtn = e.target.closest('#dateSelectorBtn');
+      if (dateBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const wrapper = dateBtn.closest('.topbar-dropdown-wrapper');
+        const dropdown = wrapper ? wrapper.querySelector('.topbar-dropdown') : document.getElementById('dateSelectorDropdown');
+        if (dropdown) {
+          const isOpen = dropdown.classList.contains('is-open');
+          document.querySelectorAll('.topbar-dropdown').forEach(d => {
+            if (d !== dropdown) d.classList.remove('is-open');
+          });
+          if (!isOpen) {
+            dropdown.classList.add('is-open');
+          }
+        }
+        return;
+      }
+
+      // 4.6 Apply Custom Cut-off Date Button Click
+      const applyDateBtn = e.target.closest('#topbarApplyDateBtn');
+      if (applyDateBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const dateInput = document.getElementById('topbarCustomDatePicker');
+        if (dateInput && dateInput.value) {
+          const targetDate = dateInput.value.trim();
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.set('date', targetDate);
+          const newUrl = currentUrl.pathname + currentUrl.search;
+          const dropdown = document.getElementById('dateSelectorDropdown');
+          if (dropdown) dropdown.classList.remove('is-open');
+          if (typeof window.loadPage === 'function') {
+            window.loadPage(newUrl);
+          } else {
+            window.location.href = newUrl;
+          }
+        }
+        return;
+      }
+
       // 5. Notification Bell Button Click
       const bellBtn = e.target.closest('#notificationBellBtn, #notificationBellBtnAgent, .notification-bell-btn');
       if (bellBtn) {
@@ -1634,94 +1693,125 @@ function updateTime() {
     };
 
     window.exportTableToXLSX = async (tableId, title) => {
-      Swal.fire({
-        title: 'Menyiapkan Export...',
-        text: 'Sedang memproses file Excel, harap tunggu.',
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      });
+      const swalObj = window.Swal || (typeof Swal !== 'undefined' ? Swal : null);
+      if (swalObj && swalObj.fire) {
+        swalObj.fire({
+          title: 'Menyiapkan Export...',
+          text: 'Sedang memproses file Excel, harap tunggu.',
+          allowOutsideClick: false,
+          showConfirmButton: false,
+          didOpen: () => {
+            if (swalObj.showLoading) swalObj.showLoading();
+          }
+        });
+      }
       try {
-        await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+        if (typeof XLSX === 'undefined') {
+          try {
+            await loadScript('/js/xlsx.full.min.js');
+          } catch (_) {
+            await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+          }
+        }
         const cleanTable = window.getCleanTableClone(tableId);
         if (!cleanTable) {
-          Swal.close();
+          if (swalObj && swalObj.close) swalObj.close();
           return;
         }
 
         const wb = XLSX.utils.table_to_book(cleanTable, { raw: true });
-        const filename = title.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_').toLowerCase();
+        const filename = (title || 'export').replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_').toLowerCase();
         XLSX.writeFile(wb, `${filename}.xlsx`);
-        Swal.close();
+        if (swalObj && swalObj.close) swalObj.close();
+        if (swalObj && swalObj.toast) swalObj.toast('Tabel berhasil diexport ke Excel (.xlsx)', 'success');
       } catch (err) {
-        console.error(err);
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal Export',
-          text: 'Gagal memuat pustaka XLSX.',
-          confirmButtonText: 'Tutup'
-        });
+        console.error('XLSX export error:', err);
+        if (swalObj && swalObj.fire) {
+          swalObj.fire({
+            icon: 'error',
+            title: 'Gagal Export',
+            text: 'Gagal memproses file Excel: ' + (err.message || 'Terjadi kesalahan.'),
+            confirmButtonText: 'Tutup'
+          });
+        }
       }
     };
 
     window.exportTableToPDF = async (tableId, title) => {
-      Swal.fire({
-        title: 'Menyiapkan Export...',
-        text: 'Sedang memproses dokumen PDF, harap tunggu.',
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      });
+      const swalObj = window.Swal || (typeof Swal !== 'undefined' ? Swal : null);
+      if (swalObj && swalObj.fire) {
+        swalObj.fire({
+          title: 'Menyiapkan Export...',
+          text: 'Sedang memproses dokumen PDF, harap tunggu.',
+          allowOutsideClick: false,
+          showConfirmButton: false,
+          didOpen: () => {
+            if (swalObj.showLoading) swalObj.showLoading();
+          }
+        });
+      }
       try {
         // Load sequentially to prevent prototype registration race conditions
-        await loadScript('/js/jspdf.umd.min.js?v=<%= appVersion %>');
-        await loadScript('/js/jspdf.plugin.autotable.min.js?v=<%= appVersion %>');
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+          await loadScript('/js/jspdf.umd.min.js');
+        }
+        await loadScript('/js/jspdf.plugin.autotable.min.js');
         const cleanTable = window.getCleanTableClone(tableId);
         if (!cleanTable) {
-          Swal.close();
+          if (swalObj && swalObj.close) swalObj.close();
           return;
         }
 
-        const { jsPDF } = window.jspdf;
-        const colCount = cleanTable.querySelector('tr') ? cleanTable.querySelector('tr').querySelectorAll('th, td').length : 0;
-        const orientation = colCount > 6 ? 'l' : 'p';
-        
-        const doc = new jsPDF(orientation, 'pt', 'a4');
-        
-        doc.setFontSize(14);
-        doc.text(title, 20, 30);
+        // Temporarily append cleanTable offscreen so getComputedStyle works in jspdf-autotable
+        cleanTable.style.position = 'absolute';
+        cleanTable.style.left = '-9999px';
+        cleanTable.style.top = '0';
+        cleanTable.style.visibility = 'hidden';
+        document.body.appendChild(cleanTable);
 
-        doc.autoTable({
-          html: cleanTable,
-          startY: 45,
-          theme: 'striped',
-          styles: {
-            fontSize: 8,
-            cellPadding: 4,
-          },
-          headStyles: {
-            fillColor: [59, 130, 246],
-            textColor: 255,
-            fontStyle: 'bold'
-          },
-          margin: { top: 40, bottom: 40, left: 20, right: 20 }
-        });
+        try {
+          const { jsPDF } = window.jspdf;
+          const colCount = cleanTable.querySelector('tr') ? cleanTable.querySelector('tr').querySelectorAll('th, td').length : 0;
+          const orientation = colCount > 6 ? 'l' : 'p';
+          
+          const doc = new jsPDF(orientation, 'pt', 'a4');
+          
+          doc.setFontSize(13);
+          doc.text(title || 'Laporan Data', 20, 30);
 
-        const filename = title.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_').toLowerCase();
-        doc.save(`${filename}.pdf`);
-        Swal.close();
+          doc.autoTable({
+            html: cleanTable,
+            startY: 45,
+            theme: 'striped',
+            styles: {
+              fontSize: 8,
+              cellPadding: 4,
+            },
+            headStyles: {
+              fillColor: [59, 130, 246],
+              textColor: 255,
+              fontStyle: 'bold'
+            },
+            margin: { top: 40, bottom: 40, left: 20, right: 20 }
+          });
+
+          const filename = (title || 'export').replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_').toLowerCase();
+          doc.save(`${filename}.pdf`);
+          if (swalObj && swalObj.close) swalObj.close();
+          if (swalObj && swalObj.toast) swalObj.toast('Tabel berhasil diexport ke PDF (.pdf)', 'success');
+        } finally {
+          cleanTable.remove();
+        }
       } catch (err) {
-        console.error(err);
-        Swal.fire({
-          icon: 'error',
-          title: 'Gagal Export',
-          text: 'Gagal memuat pustaka PDF.',
-          confirmButtonText: 'Tutup'
-        });
+        console.error('PDF export error:', err);
+        if (swalObj && swalObj.fire) {
+          swalObj.fire({
+            icon: 'error',
+            title: 'Gagal Export',
+            text: 'Gagal memproses dokumen PDF: ' + (err.message || 'Terjadi kesalahan.'),
+            confirmButtonText: 'Tutup'
+          });
+        }
       }
     };
 
@@ -1796,12 +1886,14 @@ function updateTime() {
 
         exportDropdown.querySelector('.export-opt-xlsx').addEventListener('click', (e) => {
           e.preventDefault();
+          e.stopPropagation();
           menu.style.display = 'none';
           window.exportTableToXLSX(table.id, title);
         });
 
         exportDropdown.querySelector('.export-opt-pdf').addEventListener('click', (e) => {
           e.preventDefault();
+          e.stopPropagation();
           menu.style.display = 'none';
           window.exportTableToPDF(table.id, title);
         });
@@ -1846,7 +1938,7 @@ function updateTime() {
           wrap.style.display = 'flex';
           wrap.style.justifyContent = 'flex-end';
           wrap.style.marginBottom = '8px';
-          wrap.appendChild(btnGroup);
+          wrap.appendChild(exportDropdown);
           target.parentNode.insertBefore(wrap, target);
         }
       });
@@ -2712,7 +2804,7 @@ function updateTime() {
 
       // Cross-Survey Transition: If clicking a link to a different survey or portal, bypass PJAX to reload whole document & theme
       const currentSurveyId = window.activeSurveyId || 'se2026';
-      const targetUrlObj = new URL(href, window.location.origin);
+      const targetUrlObj = new URL(href, window.location.href);
       const targetSurveyId = getSurveyFromPath(targetUrlObj.pathname);
       if (currentSurveyId !== targetSurveyId) {
         return;
@@ -2724,7 +2816,7 @@ function updateTime() {
       }
 
       // Check if it is an internal page
-      const isInternal = href.startsWith('/') || href.startsWith(window.location.origin);
+      const isInternal = href.startsWith('/') || href.startsWith('?') || href.startsWith(window.location.origin);
       if (!isInternal) return;
 
       // Skip logout link
@@ -2744,7 +2836,7 @@ function updateTime() {
         sidebarItem.classList.add('nav-item-loading');
       }
       
-      loadPage(href);
+      loadPage(a.href);
     });
 
     function isSidebarItemActive(itemHref, targetUrl) {

@@ -257,13 +257,14 @@
           <span class="nav-label">Overview</span>
         </a>
         
-        <!-- Collapsible Item: Peta (Dropdown) -->
+        <!-- Collapsible Item: Peta (Dropdown untuk SE2026 yang memiliki Uji Petik) atau Link Tunggal untuk Sakernas -->
         <% 
+          const isSe2026Survey = (typeof activeSurvey !== 'undefined' ? activeSurvey === 'se2026' : (typeof surveyConfig !== 'undefined' ? surveyConfig.id === 'se2026' : true));
           const isMapPageEnabled = typeof settings === 'undefined' || !settings || settings.page_map !== '0';
-          const isMapUjiPetikEnabled = typeof settings === 'undefined' || !settings || settings.page_map_ujipetik !== '0';
+          const isMapUjiPetikEnabled = isSe2026Survey && (typeof settings === 'undefined' || !settings || settings.page_map_ujipetik !== '0');
           const isMapGroupActive = (activePage === 'map' || activePage === 'map-ujipetik' || activePage === 'ujipetik');
         %>
-        <% if (isMapPageEnabled || isMapUjiPetikEnabled) { %>
+        <% if (isMapUjiPetikEnabled) { %>
         <div class="nav-sub-wrapper <%= isMapGroupActive ? 'is-open' : 'is-collapsed' %>" id="mapNavSubWrapper" style="margin-bottom: 2px;">
           <div class="nav-item nav-sub-header <%= isMapGroupActive ? 'active' : '' %>" onclick="toggleMapSubMenu(event)" role="button" tabindex="0" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -282,14 +283,18 @@
               <span class="nav-label">Peta Progres</span>
             </a>
             <% } %>
-            <% if (isMapUjiPetikEnabled) { %>
             <a href="<%= navPrefix %>/map-ujipetik" class="nav-item <%= activePage === 'map-ujipetik' || activePage === 'ujipetik' ? 'active' : '' %>" style="font-size: 12.5px; padding: 7px 10px; margin-bottom: 2px;">
               <span class="nav-icon icon-amber"><i class="bi bi-pin-map-fill"></i></span>
               <span class="nav-label">Titik Uji Petik</span>
             </a>
-            <% } %>
           </div>
         </div>
+        <% } else if (isMapPageEnabled) { %>
+        <a href="<%= navPrefix %>/map" class="nav-item <%= activePage === 'map' ? 'active' : '' %>">
+          <span class="nav-icon icon-cyan"><i class="bi bi-map"></i></span>
+          <span class="nav-label">Peta Progres</span>
+          <span class="nav-tag-badge" style="background: linear-gradient(135deg, #06b6d4, #3b82f6); color: white; font-size: 8.5px; font-weight: 800; padding: 1px 5px; border-radius: 4px; margin-left: auto;">GIS</span>
+        </a>
         <% } %>
 
         <% if (typeof settings === 'undefined' || !settings || settings.page_aiagent !== '0') { %>
@@ -648,7 +653,7 @@
     <i class="bi bi-house-door"></i>
     <span>Home</span>
   </a>
-  <a href="<%= navPrefix %>/map" id="bottomNavMapBtn" class="bottom-nav-item <%= (typeof activePage !== 'undefined' && activePage === 'map') ? 'active' : '' %>">
+  <a href="<%= navPrefix %>/map" id="bottomNavMapBtn" class="bottom-nav-item <%= (typeof activePage !== 'undefined' && (activePage === 'map' || activePage === 'map-ujipetik' || activePage === 'ujipetik')) ? 'active' : '' %>">
     <i class="bi bi-map"></i>
     <span>Peta</span>
   </a>
@@ -705,6 +710,55 @@
       <button type="button" class="btn btn-secondary topbar-action-btn show-sm-inline" id="globalSearchBtnMobile" onclick="window.toggleGlobalSearchModal(true)" title="Cari... (Ctrl+K)" aria-label="Pencarian Global" style="display: none;">
         <i class="bi bi-search"></i>
       </button>
+
+      <!-- Date Cutoff Milestone Selector -->
+      <div class="topbar-dropdown-wrapper" id="dateSelectorWrapper">
+        <button class="btn btn-secondary topbar-action-btn <%= (typeof isHistoricalView !== 'undefined' && isHistoricalView) ? 'is-historical' : '' %>" id="dateSelectorBtn" title="Pilih Tanggal Cut-off Tampilan Data" aria-label="Pilih Tanggal Cut-off Tampilan Data" style="<%= (typeof isHistoricalView !== 'undefined' && isHistoricalView) ? 'border-color: #f59e0b; color: #f59e0b; background: rgba(245, 158, 11, 0.12);' : '' %>">
+          <i class="bi bi-calendar3"></i>
+          <span class="topbar-date-label show-md-inline" style="font-size: 12px; font-weight: 600; margin-left: 4px;">
+            <% if (typeof isHistoricalView !== 'undefined' && isHistoricalView && typeof effectiveUploadDate !== 'undefined' && effectiveUploadDate) { %>
+              <%= typeof formatIndonesianDateShort === 'function' ? formatIndonesianDateShort(effectiveUploadDate) : effectiveUploadDate %>
+            <% } else { %>
+              Terbaru
+            <% } %>
+          </span>
+        </button>
+        <div id="dateSelectorDropdown" class="topbar-dropdown topbar-dropdown--right date-selector-dropdown" style="min-width: 250px; padding: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+            <span style="font-size: 13px; font-weight: 700; color: var(--text-primary);"><i class="bi bi-clock-history me-1 text-warning"></i> Cut-off Data</span>
+            <% if (typeof isHistoricalView !== 'undefined' && isHistoricalView) { %>
+              <a href="?date=latest" class="badge bg-primary text-decoration-none" style="cursor: pointer; font-size: 11px;">Reset Terbaru</a>
+            <% } %>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label for="topbarCustomDatePicker" style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Pilih Tanggal Kalender:</label>
+            <div style="display: flex; gap: 6px;">
+              <input type="date" id="topbarCustomDatePicker" class="form-control form-control-sm" value="<%= (typeof selectedDate !== 'undefined' && selectedDate) ? selectedDate : ((typeof effectiveUploadDate !== 'undefined' && effectiveUploadDate) ? effectiveUploadDate : '') %>" style="font-size: 12px; padding: 4px 8px; height: 32px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; flex: 1;">
+              <button type="button" class="btn btn-primary btn-sm" id="topbarApplyDateBtn" style="padding: 4px 10px; font-size: 12px; height: 32px; white-space: nowrap;">Terapkan</button>
+            </div>
+          </div>
+          <% if (typeof availableUploadDates !== 'undefined' && availableUploadDates && availableUploadDates.length > 0) { %>
+          <div>
+            <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Riwayat Tanggal Upload:</label>
+            <div style="max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px;">
+              <a href="?date=latest" class="date-select-item <%= (!isHistoricalView) ? 'active' : '' %>" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-radius: 6px; font-size: 12px; text-decoration: none; color: var(--text-primary); background: <%= (!isHistoricalView) ? 'var(--accent-primary-transparent, rgba(16,185,129,0.1))' : 'transparent' %>;">
+                <span style="font-weight: 600;"><i class="bi bi-stars text-success me-1"></i> Data Terbaru (Live)</span>
+                <% if (!isHistoricalView) { %><i class="bi bi-check2 text-success fw-bold"></i><% } %>
+              </a>
+              <% availableUploadDates.forEach((ud, idx) => { %>
+                <% const itemDate = (typeof ud === 'string') ? ud : (ud && ud.tanggal ? ud.tanggal : ''); %>
+                <% if (!itemDate) return; %>
+                <% const isThisDate = (typeof effectiveUploadDate !== 'undefined' && effectiveUploadDate === itemDate); %>
+                <a href="?date=<%= itemDate %>" class="date-select-item <%= (isHistoricalView && isThisDate) ? 'active' : '' %>" style="display: flex; justify-content: space-between; align-items: center; padding: 5px 8px; border-radius: 6px; font-size: 12px; text-decoration: none; color: var(--text-primary); background: <%= (isHistoricalView && isThisDate) ? 'rgba(245, 158, 11, 0.15)' : 'transparent' %>;">
+                  <span><i class="bi bi-calendar-event me-1 text-muted"></i> <%= typeof formatIndonesianDateShort === 'function' ? formatIndonesianDateShort(itemDate) : itemDate %></span>
+                  <% if (isHistoricalView && isThisDate) { %><i class="bi bi-check2 text-warning fw-bold"></i><% } else if (idx === 0) { %><span class="badge bg-secondary" style="font-size: 9px;">Terbaru</span><% } %>
+                </a>
+              <% }) %>
+            </div>
+          </div>
+          <% } %>
+        </div>
+      </div>
 
       <!-- Notification Bell -->
       <div class="topbar-dropdown-wrapper" id="bellWrapper">
@@ -777,6 +831,23 @@
     <% } %>
 
     <div id="pjax-container">
+      <% if (typeof isHistoricalView !== 'undefined' && isHistoricalView) { %>
+      <div class="historical-view-banner" style="display: flex; align-items: center; justify-content: space-between; background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05)); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; gap: 12px; animation: fadeIn 0.3s ease-in-out;">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-primary); flex-wrap: wrap;">
+          <i class="bi bi-clock-history text-warning" style="font-size: 18px; flex-shrink: 0;"></i>
+          <div>
+            <strong>Mode Riwayat Cut-Off:</strong> Menampilkan data s.d. tanggal 
+            <span style="font-weight: 700; color: #f59e0b;"><%= typeof formatIndonesianDate === 'function' ? formatIndonesianDate(effectiveUploadDate) : effectiveUploadDate %></span>
+            <% if (typeof realLatestUpload !== 'undefined' && realLatestUpload && realLatestUpload.tanggal !== effectiveUploadDate) { %>
+              <span style="color: var(--text-muted); font-size: 12px;"> (Data upload terkini: <%= typeof formatIndonesianDate === 'function' ? formatIndonesianDate(realLatestUpload.tanggal) : realLatestUpload.tanggal %>)</span>
+            <% } %>
+          </div>
+        </div>
+        <a href="?date=latest" class="btn btn-sm btn-warning text-dark fw-bold text-nowrap" style="display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; padding: 4px 12px; font-size: 12px; text-decoration: none; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <i class="bi bi-arrow-counterclockwise"></i> Kembali ke Data Terbaru
+        </a>
+      </div>
+      <% } %>
       <%- body %>
     </div>
   </main>
@@ -1066,6 +1137,78 @@
       viewBtn.addEventListener('click', closeModal);
     }
 
+    // ====== IN-APP NOTIFICATION BELL & READ STATE HELPERS ======
+    function updateBellStateInternal() {
+      const storedMuatan = localStorage.getItem('last_seen_muatan_date');
+      const storedFasih = localStorage.getItem('last_seen_fasih_date');
+
+      let isMuatanNew = isMuatanEnabled && latestMuatanDate && storedMuatan !== latestMuatanDate;
+      let isFasihNew = latestFasihDate && storedFasih !== latestFasihDate;
+
+      const bellBadges = document.querySelectorAll('#notificationBellBadge, #notificationBellBadgeAgent, .notification-bell-badge');
+      const bellIcons = document.querySelectorAll('#notificationBellIcon, #notificationBellIconAgent, .notification-bell-icon');
+      const clearBadgeBtns = document.querySelectorAll('#clearNotificationBadge, #clearNotificationBadgeAgent, .clear-notification-badge');
+      const bellLists = document.querySelectorAll('#notificationBellList, #notificationBellListAgent, .notification-bell-list');
+
+      // Show/hide badge and style bell
+      bellBadges.forEach(badge => badge.style.display = (isMuatanNew || isFasihNew) ? 'block' : 'none');
+      bellIcons.forEach(icon => icon.style.color = (isMuatanNew || isFasihNew) ? '#f59e0b' : 'var(--text-muted)');
+      clearBadgeBtns.forEach(btn => btn.style.display = (isMuatanNew || isFasihNew) ? 'inline' : 'none');
+
+      // Build list items
+      let html = '';
+      if (isMuatanEnabled && latestMuatanDate) {
+        html += `
+          <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+            <span style="font-weight: 700; font-size: 10px; color: var(--accent-cyan); display: flex; align-items: center; gap: 6px;">
+              <i class="bi bi-box-seam"></i> UPDATE MUATAN
+              ${isMuatanNew ? '<span style="background: #ef4444; color: white; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: 800;">BARU</span>' : ''}
+            </span>
+            <span style="font-size: 11px; color: var(--text-primary); font-weight: 500;">${formatWitaString(latestMuatanDate)}</span>
+            <span style="font-size: 9px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;">File: ${latestMuatanFile}</span>
+          </div>
+        `;
+      }
+      if (latestFasihDate) {
+        html += `
+          <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+            <span style="font-weight: 700; font-size: 10px; color: var(--accent-purple); display: flex; align-items: center; gap: 6px;">
+              <i class="bi bi-phone"></i> UPDATE FASIH
+              ${isFasihNew ? '<span style="background: #ef4444; color: white; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: 800;">BARU</span>' : ''}
+            </span>
+            <span style="font-size: 11px; color: var(--text-primary); font-weight: 500;">${formatWitaString(latestFasihDate)}</span>
+            <span style="font-size: 9px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;">File: ${latestFasihFile}</span>
+          </div>
+        `;
+      }
+      if ((!isMuatanEnabled || !latestMuatanDate) && !latestFasihDate) {
+        html = '<div style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 12px 0;">Belum ada riwayat update.</div>';
+      }
+      bellLists.forEach(list => list.innerHTML = html);
+    }
+
+    function markAllAsRead() {
+      if (isMuatanEnabled && latestMuatanDate) localStorage.setItem('last_seen_muatan_date', latestMuatanDate);
+      if (latestFasihDate) localStorage.setItem('last_seen_fasih_date', latestFasihDate);
+      updateBellStateInternal();
+    }
+
+    function markNotificationAsRead(type, date) {
+      if (type === 'muatan' && date) {
+        localStorage.setItem('last_seen_muatan_date', date);
+      } else if (type === 'fasih' && date) {
+        localStorage.setItem('last_seen_fasih_date', date);
+      } else {
+        markAllAsRead();
+        return;
+      }
+      updateBellStateInternal();
+    }
+
+    window.updateBellState = updateBellStateInternal;
+    window.markAllAsRead = markAllAsRead;
+    window.markNotificationAsRead = markNotificationAsRead;
+
     // ====== TOAST NOTIFICATION FOR DATA UPDATES ======
     function createToastNotification(updates) {
       if (!updates || updates.length === 0) return;
@@ -1079,7 +1222,7 @@
       }
 
       updates.forEach((u, i) => {
-        const iconMap = { muatan: 'bi-bar-chart-fill', fasih: 'bi-phone-fill' };
+        const iconMap = { muatan: 'bi-box-seam', fasih: 'bi-phone' };
         const colorMap = { muatan: 'var(--accent-cyan)', fasih: 'var(--accent-purple)' };
         const icon  = iconMap[u.type]  || 'bi-bell-fill';
         const color = colorMap[u.type] || 'var(--accent-blue)';
@@ -1093,38 +1236,75 @@
             <i class="bi ${icon}"></i>
           </div>
           <div class="toast-notif-content">
-            <div class="toast-notif-title">
-              ${u.title || 'Data Diperbarui'}
+            <div class="toast-notif-title-row">
+              <div class="toast-notif-title">
+                ${u.title || 'Data Diperbarui'}
+              </div>
+              <button type="button" class="toast-notif-close toast-close-btn" title="Tutup dan tandai dibaca" aria-label="Tutup notifikasi">
+                <i class="bi bi-x-lg"></i>
+              </button>
             </div>
             <div class="toast-notif-desc">
               ${u.desc || ''}
             </div>
-          </div>
-          <button class="toast-notif-close toast-close-btn" title="Tutup">
-            <i class="bi bi-x-lg"></i>
-          </button>`;
+            <div class="toast-notif-actions">
+              <button type="button" class="toast-btn-action toast-btn-primary toast-ack-btn" title="Tandai data sudah dibaca dan bersihkan notifikasi">
+                <i class="bi bi-check2-circle"></i> Tandai Sudah Dibaca
+              </button>
+              <button type="button" class="toast-btn-action toast-btn-subtle toast-dismiss-btn" title="Tutup pesan notifikasi">
+                Tutup
+              </button>
+            </div>
+          </div>`;
 
         container.appendChild(toast);
 
-        // Animate in (staggered)
+        // Animate in from top (staggered)
         setTimeout(() => {
           toast.style.opacity = '1';
           toast.style.transform = 'translateY(0)';
         }, 80 + i * 120);
 
-        // Auto-dismiss after 6 seconds
-        const autoDismiss = setTimeout(() => removeToast(toast), 6000 + i * 120);
-
-        // Manual close
-        toast.querySelector('.toast-close-btn').addEventListener('click', () => {
-          clearTimeout(autoDismiss);
-          removeToast(toast);
-        });
-
-        function removeToast(el) {
+        function removeToast(el, markAsRead) {
+          if (markAsRead && u.type && u.date) {
+            markNotificationAsRead(u.type, u.date);
+          }
           el.style.opacity = '0';
-          el.style.transform = 'translateY(8px)';
-          setTimeout(() => el.remove(), 350);
+          el.style.transform = 'translateY(-12px)';
+          setTimeout(() => el.remove(), 320);
+        }
+
+        // Auto-dismiss after 8 seconds (marks as read so it won't pop up again on refresh)
+        const autoDismiss = setTimeout(() => removeToast(toast, true), 8000 + i * 120);
+
+        // "Tandai Sudah Dibaca" action button
+        const ackBtn = toast.querySelector('.toast-ack-btn');
+        if (ackBtn) {
+          ackBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            clearTimeout(autoDismiss);
+            removeToast(toast, true);
+          });
+        }
+
+        // "Tutup" subtle button
+        const dismissBtn = toast.querySelector('.toast-dismiss-btn');
+        if (dismissBtn) {
+          dismissBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            clearTimeout(autoDismiss);
+            removeToast(toast, true);
+          });
+        }
+
+        // Top-right close button
+        const closeBtn = toast.querySelector('.toast-close-btn');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            clearTimeout(autoDismiss);
+            removeToast(toast, true);
+          });
         }
       });
     }
@@ -1272,6 +1452,7 @@
 
           if (hasNewUpdate && newUpdates.length > 0) {
             updateBellState();
+            createToastNotification(newUpdates);
             
             // Re-check early warning on new data upload
             checkEarlyWarningSummary();
@@ -1282,74 +1463,9 @@
       }, 60000);
 
       // === Notification Bell Logic ===
-      // Wrapper untuk pemanggilan dari cek background update data
-      function updateBellState() {
-        if (typeof window.updateBellState === 'function') {
-          window.updateBellState();
-        }
-      }
-
       function initNotificationBell() {
         const bellBtns = document.querySelectorAll('#notificationBellBtn, #notificationBellBtnAgent, .notification-bell-btn');
         if (!bellBtns.length) return;
-
-        function updateBellStateInternal() {
-          const storedMuatan = localStorage.getItem('last_seen_muatan_date');
-          const storedFasih = localStorage.getItem('last_seen_fasih_date');
-
-          let isMuatanNew = isMuatanEnabled && latestMuatanDate && storedMuatan !== latestMuatanDate;
-          let isFasihNew = latestFasihDate && storedFasih !== latestFasihDate;
-
-          const bellBadges = document.querySelectorAll('#notificationBellBadge, #notificationBellBadgeAgent, .notification-bell-badge');
-          const bellIcons = document.querySelectorAll('#notificationBellIcon, #notificationBellIconAgent, .notification-bell-icon');
-          const clearBadgeBtns = document.querySelectorAll('#clearNotificationBadge, #clearNotificationBadgeAgent, .clear-notification-badge');
-          const bellLists = document.querySelectorAll('#notificationBellList, #notificationBellListAgent, .notification-bell-list');
-
-          // Show/hide red badge and style bell
-          bellBadges.forEach(badge => badge.style.display = (isMuatanNew || isFasihNew) ? 'block' : 'none');
-          bellIcons.forEach(icon => icon.style.color = (isMuatanNew || isFasihNew) ? '#f59e0b' : 'var(--text-muted)');
-          clearBadgeBtns.forEach(btn => btn.style.display = (isMuatanNew || isFasihNew) ? 'inline' : 'none');
-
-          // Build list items
-          let html = '';
-          if (isMuatanEnabled && latestMuatanDate) {
-            html += `
-              <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; min-width: 0;">
-                <span style="font-weight: 700; font-size: 10px; color: var(--accent-cyan); display: flex; align-items: center; gap: 6px;">
-                  <i class="bi bi-box-seam"></i> UPDATE MUATAN
-                  ${isMuatanNew ? '<span style="background: #ef4444; color: white; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: 800;">BARU</span>' : ''}
-                </span>
-                <span style="font-size: 11px; color: var(--text-primary); font-weight: 500;">${formatWitaString(latestMuatanDate)}</span>
-                <span style="font-size: 9px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;">File: ${latestMuatanFile}</span>
-              </div>
-            `;
-          }
-          if (latestFasihDate) {
-            html += `
-              <div style="padding: 6px 8px; border-radius: 6px; background: rgba(var(--accent-rgb), 0.02); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 2px; min-width: 0;">
-                <span style="font-weight: 700; font-size: 10px; color: var(--accent-purple); display: flex; align-items: center; gap: 6px;">
-                  <i class="bi bi-phone"></i> UPDATE FASIH
-                  ${isFasihNew ? '<span style="background: #ef4444; color: white; font-size: 8px; padding: 1px 4px; border-radius: 4px; font-weight: 800;">BARU</span>' : ''}
-                </span>
-                <span style="font-size: 11px; color: var(--text-primary); font-weight: 500;">${formatWitaString(latestFasihDate)}</span>
-                <span style="font-size: 9px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace;">File: ${latestFasihFile}</span>
-              </div>
-            `;
-          }
-          if ((!isMuatanEnabled || !latestMuatanDate) && !latestFasihDate) {
-            html = '<div style="font-size: 11px; color: var(--text-muted); text-align: center; padding: 12px 0;">Belum ada riwayat update.</div>';
-          }
-          bellLists.forEach(list => list.innerHTML = html);
-        }
-
-        function markAllAsRead() {
-          if (isMuatanEnabled && latestMuatanDate) localStorage.setItem('last_seen_muatan_date', latestMuatanDate);
-          if (latestFasihDate) localStorage.setItem('last_seen_fasih_date', latestFasihDate);
-          updateBellStateInternal();
-        }
-
-        // Expose state update globally
-        window.updateBellState = updateBellStateInternal;
 
         // Initialize state
         updateBellStateInternal();

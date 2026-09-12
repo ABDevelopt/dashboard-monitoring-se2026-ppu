@@ -11,18 +11,25 @@ router.get('/', (req, res) => {
   const filterPml = req.query.pml || '';
 
   // Get recent 5 distinct upload dates for daily progress tracking (hanya upload riil pengguna)
+  let dateFilter = '';
+  let dateParams = [];
+  if (res.locals.effectiveUploadDate) {
+    dateFilter = 'AND tanggal <= ?';
+    dateParams.push(res.locals.effectiveUploadDate);
+  }
   const recentUploads = db.prepare(`
     SELECT id, tanggal 
     FROM (
       SELECT MAX(id) AS id, tanggal 
       FROM uploads 
       WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%')
+        ${dateFilter}
       GROUP BY tanggal 
       ORDER BY tanggal DESC 
       LIMIT 5
     ) 
     ORDER BY tanggal ASC
-  `).all();
+  `).all(...dateParams);
 
   // Attach weather details and session_count to each upload day
   recentUploads.forEach(u => {

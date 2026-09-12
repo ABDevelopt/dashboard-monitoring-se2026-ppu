@@ -36,8 +36,7 @@ if (process.env.SENTRY_DSN) {
 const express = require('express');
 const session = require('express-session');
 const flash = require('connect-flash');
-const { loadMasterFromJson } = require('./services/excelParser');
-const { getDb, getLatestUpload, getLatestUploadsDetailed, getSettings, getKippOfficers, runWalCheckpointAll } = require('./database');
+const { getDb, getLatestUpload, getLatestUploadsDetailed, getUploadByDate, getAllUploadDates, getSettings, getKippOfficers, runWalCheckpointAll } = require('./database');
 
 
 const app = express();
@@ -178,7 +177,10 @@ app.use((req, res, next) => {
     return next();
   }
 
-  // Lewati verifikasi CSRF untuk request multipart (upload file) karena body belum diparse oleh multer
+  // Lewati verifikasi CSRF untuk request multipart (upload file) dan endpoint preferensi set-date
+  if (req.path.includes('/set-date')) {
+    return next();
+  }
   const contentType = req.headers['content-type'] || '';
   if (contentType.includes('multipart/form-data')) {
     return next();
@@ -298,6 +300,11 @@ app.use((req, res, next) => {
     res.locals.uploadId = null;
     res.locals.latestUploadsDetailed = { fasih: null, muatan: null };
   }
+  res.locals.realLatestUpload = null;
+  res.locals.selectedDate = '';
+  res.locals.effectiveUploadDate = null;
+  res.locals.isHistoricalView = false;
+  res.locals.availableUploadDates = [];
   res.locals.user = req.session.user || null;
   res.locals.isAdmin = req.session.isAdmin || false;
 
@@ -496,13 +503,33 @@ app.use((req, res, next) => {
       ` : ''}
     `;
     
-    // Override/update active upload info and settings for this request
-    const { getLatestUpload, getLatestUploadsDetailed, getSettings } = require('./database');
-    const latest = getLatestUpload(res.locals.activeSurvey);
-    res.locals.latestUpload = latest || null;
-    res.locals.uploadId = latest ? latest.id : null;
-    res.locals.latestUploadsDetailed = getLatestUploadsDetailed(res.locals.activeSurvey);
-    res.locals.settings = getSettings(res.locals.activeSurvey);
+    // Cut-off Date Selection & Multi-Survey Upload Resolution
+    const { getLatestUpload, getLatestUploadsDetailed, getUploadByDate, getAllUploadDates, getSettings } = require('./database');
+    const surveyKey = res.locals.activeSurvey || 'se2026';
+
+    if (req.query && req.query.date !== undefined) {
+      if (!req.session.selectedDates) req.session.selectedDates = {};
+      const dateQuery = String(req.query.date).trim();
+      if (!dateQuery || dateQuery === 'latest' || dateQuery === 'all') {
+        delete req.session.selectedDates[surveyKey];
+      } else {
+        req.session.selectedDates[surveyKey] = dateQuery.slice(0, 10);
+      }
+    }
+
+    const selectedDate = (req.session && req.session.selectedDates && req.session.selectedDates[surveyKey]) || null;
+    const realLatest = getLatestUpload(surveyKey);
+    const effectiveUpload = getUploadByDate(surveyKey, selectedDate);
+
+    res.locals.realLatestUpload = realLatest || null;
+    res.locals.latestUpload = effectiveUpload || null;
+    res.locals.uploadId = effectiveUpload ? effectiveUpload.id : null;
+    res.locals.latestUploadsDetailed = getLatestUploadsDetailed(surveyKey, selectedDate);
+    res.locals.settings = getSettings(surveyKey);
+    res.locals.selectedDate = selectedDate || '';
+    res.locals.effectiveUploadDate = effectiveUpload ? effectiveUpload.tanggal : (selectedDate || null);
+    res.locals.isHistoricalView = Boolean(selectedDate && realLatest && effectiveUpload && effectiveUpload.id !== realLatest.id);
+    res.locals.availableUploadDates = getAllUploadDates(surveyKey);
     
     let logoSrc = '/images/logo-pananyo-taka-flow.svg';
     if (res.locals.activeSurvey === 'sakernas-pemutakhiran') {
@@ -547,6 +574,9 @@ app.use((req, res, next) => {
 // Route Survey Feature Map for Multi-Survey Isolation
 const routeSurveyFeatureMap = {
   '/map': 'map',
+  '/map-ujipetik': 'map-ujipetik',
+  '/ujipetik': 'map-ujipetik',
+  '/map/ujipetik': 'map-ujipetik',
   '/agent': 'agent',
   '/korlap': 'korlap',
   '/pml': 'pml',
@@ -698,6 +728,7 @@ app.use('/', require('./routes/auth'));
 app.use('/map', require('./routes/map'));
 app.use('/map-ujipetik', require('./routes/map_ujipetik'));
 app.get('/ujipetik', (req, res) => res.redirect('/map-ujipetik'));
+app.get('/map/ujipetik', (req, res) => res.redirect('/map-ujipetik'));
 app.use('/kecamatan', require('./routes/kecamatan'));
 app.use('/korlap', require('./routes/korlap'));
 app.use('/pml', require('./routes/pml'));

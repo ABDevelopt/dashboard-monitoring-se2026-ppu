@@ -1429,15 +1429,31 @@ function getLatestUpload(surveyId) {
   return db.prepare('SELECT * FROM uploads ORDER BY tanggal DESC, id DESC LIMIT 1').get();
 }
 
-// Ambil upload terakhir yang memiliki data FASIH dan data Muatan secara terpisah
-function getLatestUploadsDetailed(surveyId) {
+// Ambil upload efektif berdasarkan batas tanggal tertentu (Time-Travel / Cut-Off Date)
+// Jika targetDate null / empty / 'latest', maka mengambil upload terbaru (default)
+function getUploadByDate(surveyId, targetDate) {
+  const db = getDb(surveyId);
+  if (!targetDate || targetDate === 'latest') {
+    return getLatestUpload(surveyId);
+  }
+  const dateStr = String(targetDate).slice(0, 10);
+  const upload = db.prepare('SELECT * FROM uploads WHERE tanggal <= ? ORDER BY tanggal DESC, id DESC LIMIT 1').get(dateStr);
+  if (!upload) {
+    return db.prepare('SELECT * FROM uploads ORDER BY tanggal ASC, id ASC LIMIT 1').get();
+  }
+  return upload;
+}
+
+// Ambil upload terakhir yang memiliki data FASIH dan data Muatan secara terpisah (bisa dibatasi cut-off date)
+function getLatestUploadsDetailed(surveyId, targetDate) {
   try {
     const sId = resolveSurveyId(surveyId);
     const db = getDb(sId);
     const isCensus = sId === 'se2026';
-    const latestFasih = db.prepare("SELECT * FROM uploads WHERE status_filename IS NOT NULL AND status_filename != '' AND status_filename != 'null' ORDER BY tanggal DESC, id DESC LIMIT 1").get();
+    const dateFilter = (targetDate && targetDate !== 'latest') ? "AND tanggal <= '" + String(targetDate).slice(0, 10) + "' " : "";
+    const latestFasih = db.prepare(`SELECT * FROM uploads WHERE status_filename IS NOT NULL AND status_filename != '' AND status_filename != 'null' ${dateFilter}ORDER BY tanggal DESC, id DESC LIMIT 1`).get();
     const latestMuatan = isCensus 
-      ? db.prepare("SELECT * FROM uploads WHERE filename IS NOT NULL AND filename != '' AND filename != 'null' AND filename != 'Imputasi Otomatis (Hari Kosong)' ORDER BY tanggal DESC, id DESC LIMIT 1").get()
+      ? db.prepare(`SELECT * FROM uploads WHERE filename IS NOT NULL AND filename != '' AND filename != 'null' AND filename != 'Imputasi Otomatis (Hari Kosong)' ${dateFilter}ORDER BY tanggal DESC, id DESC LIMIT 1`).get()
       : null;
     return {
       fasih: latestFasih || null,
@@ -1446,6 +1462,25 @@ function getLatestUploadsDetailed(surveyId) {
   } catch (err) {
     logger.error('Error fetching getLatestUploadsDetailed:', err);
     return { fasih: null, muatan: null };
+  }
+}
+
+// Ambil seluruh daftar tanggal upload unik yang tersedia untuk survei terkait
+function getAllUploadDates(surveyId) {
+  try {
+    const sId = resolveSurveyId(surveyId);
+    const db = getDb(sId);
+    const rows = db.prepare(`
+      SELECT DISTINCT tanggal 
+      FROM uploads 
+      WHERE (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%')
+        AND tanggal IS NOT NULL AND TRIM(tanggal) != ''
+      ORDER BY tanggal DESC
+    `).all();
+    return rows.map(r => ({ tanggal: r.tanggal }));
+  } catch (err) {
+    logger.error('Error fetching getAllUploadDates:', err);
+    return [];
   }
 }
 
@@ -1740,9 +1775,10 @@ function getPclStats(uploadId, settings, surveyId) {
   `).all(uploadId), effSettings);
 }
 
-// Tren harian
-function getTrenHarian(surveyId) {
+// Tren harian (dapat dibatasi hingga tanggal cut-off tertentu)
+function getTrenHarian(surveyId, maxDate) {
   const sId = resolveSurveyId(surveyId);
+  const dateFilter = (maxDate && maxDate !== 'latest') ? "AND tanggal <= '" + String(maxDate).slice(0, 10) + "' " : "";
   return getDb(sId).prepare(`
     SELECT 
       u.id,
@@ -1766,6 +1802,7 @@ function getTrenHarian(surveyId) {
       FROM uploads
       WHERE total_subsls_terisi > 0
         AND (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%')
+        ${dateFilter}
       GROUP BY tanggal
     ) u
     LEFT JOIN summary_cache s ON s.upload_id = u.id
@@ -4367,7 +4404,7 @@ function getTitikUjiPetikCompact(surveyId = 'se2026') {
 }
 
 module.exports = {
-  getDb, getSharedDb, resolveSurveyId, getLatestUpload, getLatestUploadsDetailed, getAllUploads,
+  getDb, getSharedDb, resolveSurveyId, getLatestUpload, getUploadByDate, getLatestUploadsDetailed, getAllUploads, getAllUploadDates,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
   getBottomPerformers, getAnomalyStats,

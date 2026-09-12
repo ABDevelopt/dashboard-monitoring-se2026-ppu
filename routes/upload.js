@@ -30,7 +30,7 @@ router.get('/', (req, res) => {
   const isSe2026 = activeSurvey === 'se2026';
   const navPrefix = res.locals.navPrefix || '';
 
-  if (req.query.tab === 'sls' || (!isSe2026 && req.query.tab === 'muatan')) {
+  if (req.query.tab === 'sls' || (!isSe2026 && (req.query.tab === 'muatan' || req.query.tab === 'ujipetik'))) {
     return res.redirect(`${navPrefix}/admin/upload?tab=fasih`);
   }
 
@@ -121,6 +121,12 @@ function extractDateFromFilename(filename) {
   const ymd = name.match(/(?<!\d)(20\d{2})[-/._](0[1-9]|1[0-2])[-/._](0[1-9]|[12]\d|3[01])(?!\d)/);
   if (ymd) {
     return `${ymd[1]}-${ymd[2]}-${ymd[3]}`;
+  }
+
+  // Pattern 1b: YYYYMMDD compact (e.g. 20260816_084522)
+  const ymdCompact = name.match(/(?<!\d)(20\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])(?!\d)/);
+  if (ymdCompact) {
+    return `${ymdCompact[1]}-${ymdCompact[2]}-${ymdCompact[3]}`;
   }
 
   // Pattern 2: DD-MM-YYYY
@@ -698,6 +704,13 @@ router.post('/ujipetik', upload.single('ujipetikFile'), async (req, res) => {
   }
 
   const activeSurvey = res.locals.activeSurvey || 'se2026';
+  if (activeSurvey !== 'se2026') {
+    if (req.file && fs.existsSync(req.file.path)) {
+      try { fs.unlinkSync(req.file.path); } catch (_) {}
+    }
+    req.flash('error', 'Fitur Titik Uji Petik hanya tersedia untuk Sensus Ekonomi 2026.');
+    return res.redirect(`${req.baseUrl || '/admin/upload'}?tab=fasih`);
+  }
   const replaceExisting = req.body.mode !== 'append';
 
   try {
@@ -765,5 +778,7 @@ router.post('/ujipetik/clear', (req, res) => {
   }
   res.redirect(`${req.baseUrl || '/admin/upload'}?tab=ujipetik`);
 });
+
+router.extractDateFromFilename = extractDateFromFilename;
 
 module.exports = router;

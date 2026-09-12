@@ -5,7 +5,22 @@ const logger = require('../services/logger');
 
 // Tren harian (untuk Chart.js)
 router.get('/tren', (req, res) => {
-  res.json(getTrenHarian());
+  const surveyId = res.locals.activeSurvey || 'se2026';
+  const effectiveDate = req.query.date || res.locals.effectiveUploadDate;
+  res.json(getTrenHarian(surveyId, effectiveDate));
+});
+
+// Set cut-off date selection via AJAX / Query
+router.all('/set-date', express.json(), (req, res) => {
+  const surveyKey = (req.body && req.body.survey) || req.query.survey || res.locals.activeSurvey || 'se2026';
+  const targetDate = (req.body && req.body.date !== undefined) ? req.body.date : req.query.date;
+  if (!req.session.selectedDates) req.session.selectedDates = {};
+  if (!targetDate || targetDate === 'latest') {
+    delete req.session.selectedDates[surveyKey];
+  } else {
+    req.session.selectedDates[surveyKey] = String(targetDate).slice(0, 10);
+  }
+  res.json({ success: true, survey: surveyKey, selectedDate: req.session.selectedDates[surveyKey] || null });
 });
 
 // Stats per kecamatan

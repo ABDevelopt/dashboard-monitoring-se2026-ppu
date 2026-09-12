@@ -24,8 +24,8 @@ function loadMasterFromJson(jsonPath, surveyId = 'se2026') {
 
   const insert = db.prepare(`
     INSERT OR REPLACE INTO subsls_master 
-      (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025, target_fasih, muatan_original)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025, target_fasih, muatan_original, pcl_email, pcl_sobat_id, pml_email, pml_sobat_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const insertMany = db.transaction((rows) => {
@@ -33,28 +33,72 @@ function loadMasterFromJson(jsonPath, surveyId = 'se2026') {
   });
 
   const rows = [];
-  for (const kec of raw) {
-    const kecNama = kec.nama_kec || '';
-    const kecKode = kec.kode_kec || '';
-    for (const desa of kec.desa || []) {
-      const desaNama = desa.nama_desa || '';
-      for (const sls of desa.sls || []) {
-        const slsNama = sls.nama_sls || '';
-        for (const subsls of sls.subsls || []) {
-          rows.push([
-            subsls.id_subsls,
-            kecKode,
-            toTitleCase(kecNama),
-            toTitleCase(desaNama),
-            slsNama,
-            normalizeName(subsls.nama_korlap || ''),
-            normalizeName(subsls.nama_pml || ''),
-            normalizeName(subsls.nama_pcl || ''),
-            subsls.total_muatan_assignment || 0,
-            subsls.id_subsls_2025 || subsls.id_subsls,
-            subsls.total_muatan_assignment || 0, // Default target_fasih to muatan
-            subsls.total_muatan_assignment || 0  // muatan_original
-          ]);
+  if (Array.isArray(raw) && raw.length > 0 && (raw[0].kode || raw[0].id_subsls)) {
+    // Format JSON datar (Flat Array of Objects)
+    for (const item of raw) {
+      const kode = item.kode || item.id_subsls || '';
+      if (!kode) continue;
+      const kecKode = item.kode_kec || kode.substring(6, 8);
+      const kecNama = item.kecamatan || item.nama_kec || '';
+      const desaNama = item.desa || item.nama_desa || '';
+      const slsNama = item.nama_sls || item.sls || '';
+      const korlap = normalizeName(item.korlap || item.nama_korlap || '');
+      const pml = normalizeName(item.pml || item.nama_pml || '');
+      const pcl = normalizeName(item.pcl || item.ppl || item.nama_pcl || item.nama_ppl || '');
+      const muatan = toInt(item.muatan || item.total_muatan || item.total_muatan_assignment || 0);
+      const kode2025 = item.kode_2025 || item.id_subsls_2025 || kode;
+      const targetFasih = item.target_fasih !== undefined ? toInt(item.target_fasih) : (surveyId.startsWith('sakernas') ? (surveyId === 'sakernas-pendataan' ? 10 : muatan) : muatan);
+      const pcl_email = safeNullableStr(item.pcl_email || item.email_pcl || item.email_ppl || item.ppl_email || item.email);
+      const pcl_sobat_id = safeNullableStr(item.pcl_sobat_id || item.sobat_id || item.id_sobat || item.sobat_id_pcl || item.sobat_id_ppl);
+      const pml_email = safeNullableStr(item.pml_email || item.email_pml);
+      const pml_sobat_id = safeNullableStr(item.pml_sobat_id || item.sobat_id_pml);
+      rows.push([
+        kode,
+        kecKode,
+        toTitleCase(kecNama),
+        toTitleCase(desaNama),
+        slsNama,
+        korlap,
+        pml,
+        pcl,
+        muatan,
+        kode2025,
+        targetFasih,
+        muatan,
+        pcl_email,
+        pcl_sobat_id,
+        pml_email,
+        pml_sobat_id
+      ]);
+    }
+  } else {
+    for (const kec of raw) {
+      const kecNama = kec.nama_kec || '';
+      const kecKode = kec.kode_kec || '';
+      for (const desa of kec.desa || []) {
+        const desaNama = desa.nama_desa || '';
+        for (const sls of desa.sls || []) {
+          const slsNama = sls.nama_sls || '';
+          for (const subsls of sls.subsls || []) {
+            rows.push([
+              subsls.id_subsls,
+              kecKode,
+              toTitleCase(kecNama),
+              toTitleCase(desaNama),
+              slsNama,
+              normalizeName(subsls.nama_korlap || ''),
+              normalizeName(subsls.nama_pml || ''),
+              normalizeName(subsls.nama_pcl || subsls.nama_ppl || ''),
+              subsls.total_muatan_assignment || 0,
+              subsls.id_subsls_2025 || subsls.id_subsls,
+              subsls.total_muatan_assignment || 0, // Default target_fasih to muatan
+              subsls.total_muatan_assignment || 0, // muatan_original
+              null,
+              null,
+              null,
+              null
+            ]);
+          }
         }
       }
     }
@@ -88,8 +132,10 @@ function loadMasterFromJson(jsonPath, surveyId = 'se2026') {
     console.error('⚠️ Warning: Failed to apply target_fasih from Excel:', err.message);
   }
 
-  // Apply KIPP IKN overrides
-  applyKippOverrides(db);
+  // Apply KIPP IKN overrides (khusus SE2026)
+  if (surveyId === 'se2026') {
+    applyKippOverrides(db);
+  }
 
   // Sync muatan column based on target_muatan_mode
   try {
@@ -919,17 +965,21 @@ function loadMasterFromExcel(filePath, surveyId = 'se2026') {
   }
 
   const colIdx = {
-    kode: findCol(['kode', 'id_subsls', 'id subsls', 'id_sls', 'id sls']),
+    kode: findCol(['kode', 'id_subsls', 'id subsls', 'id_sls', 'id sls', 'level_6_full_code']),
     kode_kec: findCol(['kode_kec', 'kode kec', 'id_kec', 'id kec']),
-    kecamatan: findCol(['kecamatan', 'kec']),
-    desa: findCol(['desa', 'kelurahan', 'desa_kelurahan', 'desa/kelurahan']),
+    kecamatan: findCol(['kecamatan', 'kec', 'nama_kecamatan']),
+    desa: findCol(['desa', 'kelurahan', 'desa_kelurahan', 'desa/kelurahan', 'nama_desa']),
     nama_sls: findCol(['nama_sls', 'nama sls', 'sls', 'nama_sls_master']),
     korlap: findCol(['korlap', 'nama_korlap', 'nama korlap']),
     pml: findCol(['pml', 'nama_pml', 'nama pml', 'pengawas']),
-    pcl: findCol(['pcl', 'nama_pcl', 'nama pcl', 'pencacah']),
+    pcl: findCol(['pcl', 'ppl', 'nama_pcl', 'nama_ppl', 'nama pcl', 'nama ppl', 'pencacah', 'petugas']),
     muatan: findCol(['muatan', 'total_muatan', 'total_muatan_assignment', 'assignment', 'beban']),
-    kode_2025: findCol(['kode_2025', 'id_subsls_2025', 'id_subsls_2025']),
-    target_fasih: findCol(['target_fasih', 'total_assignment_fasih', 'total assignment fasih', 'assignment_fasih', 'fasih_target'])
+    kode_2025: findCol(['kode_2025', 'id_subsls_2025']),
+    target_fasih: findCol(['target_fasih', 'total_assignment_fasih', 'total assignment fasih', 'assignment_fasih', 'fasih_target', 'target']),
+    pcl_email: findCol(['pcl_email', 'email_pcl', 'email_ppl', 'ppl_email', 'email']),
+    pcl_sobat_id: findCol(['pcl_sobat_id', 'sobat_id', 'id_sobat', 'sobat_id_pcl', 'sobat_id_ppl']),
+    pml_email: findCol(['pml_email', 'email_pml']),
+    pml_sobat_id: findCol(['pml_sobat_id', 'sobat_id_pml'])
   };
 
   if (colIdx.kode === -1) throw new Error('Kolom "kode" atau "id_subsls" tidak ditemukan.');
@@ -951,7 +1001,11 @@ function loadMasterFromExcel(filePath, surveyId = 'se2026') {
     const pcl = colIdx.pcl !== -1 ? normalizeName(String(row[colIdx.pcl] || '')) : '';
     const muatan = colIdx.muatan !== -1 ? toInt(row[colIdx.muatan]) : 0;
     const kode_2025 = colIdx.kode_2025 !== -1 ? String(row[colIdx.kode_2025] || '').trim() : kode;
-    const target_fasih = colIdx.target_fasih !== -1 ? toInt(row[colIdx.target_fasih]) : 0; // fallback to 0 instead of muatan
+    const target_fasih = colIdx.target_fasih !== -1 ? toInt(row[colIdx.target_fasih]) : 0;
+    const pcl_email = colIdx.pcl_email !== -1 ? safeNullableStr(row[colIdx.pcl_email]) : null;
+    const pcl_sobat_id = colIdx.pcl_sobat_id !== -1 ? safeNullableStr(row[colIdx.pcl_sobat_id]) : null;
+    const pml_email = colIdx.pml_email !== -1 ? safeNullableStr(row[colIdx.pml_email]) : null;
+    const pml_sobat_id = colIdx.pml_sobat_id !== -1 ? safeNullableStr(row[colIdx.pml_sobat_id]) : null;
 
     dataRows.push([
       kode,
@@ -965,7 +1019,11 @@ function loadMasterFromExcel(filePath, surveyId = 'se2026') {
       muatan,
       kode_2025,
       target_fasih,
-      muatan
+      muatan,
+      pcl_email,
+      pcl_sobat_id,
+      pml_email,
+      pml_sobat_id
     ]);
   }
 
@@ -973,8 +1031,8 @@ function loadMasterFromExcel(filePath, surveyId = 'se2026') {
 
   const insert = db.prepare(`
     INSERT OR REPLACE INTO subsls_master 
-      (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025, target_fasih, muatan_original)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pcl, muatan, kode_2025, target_fasih, muatan_original, pcl_email, pcl_sobat_id, pml_email, pml_sobat_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const saveTx = db.transaction((list) => {
@@ -986,8 +1044,10 @@ function loadMasterFromExcel(filePath, surveyId = 'se2026') {
 
   saveTx(dataRows);
   
-  // Apply KIPP IKN overrides
-  applyKippOverrides(db);
+  // Apply KIPP IKN overrides (khusus SE2026)
+  if (surveyId === 'se2026') {
+    applyKippOverrides(db);
+  }
 
   // Sync muatan column based on target_muatan_mode
   try {
@@ -1414,13 +1474,25 @@ function parseAndSaveJsonStatusOnly(filePath, originalFilename, storedFilename, 
   `).run('', null, tanggal, 0, safeNullableStr(originalFilename), safeNullableStr(storedFilename));
   const uploadId = uploadResult.lastInsertRowid;
 
-  // 6. Prepared statements for master and progres
   const insertSubslsMaster = db.prepare(`
-    INSERT OR REPLACE INTO subsls_master (
-      kode, kecamatan, desa, nama_sls, korlap, pml, pml_email, pml_sobat_id, pcl, pcl_email, pcl_sobat_id, target_fasih
+    INSERT INTO subsls_master (
+      kode, kode_kec, kecamatan, desa, nama_sls, korlap, pml, pml_email, pml_sobat_id, pcl, pcl_email, pcl_sobat_id, target_fasih, muatan, muatan_original
     ) VALUES (
-      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
     )
+    ON CONFLICT(kode) DO UPDATE SET
+      kecamatan = COALESCE(excluded.kecamatan, subsls_master.kecamatan),
+      desa = COALESCE(excluded.desa, subsls_master.desa),
+      nama_sls = COALESCE(excluded.nama_sls, subsls_master.nama_sls),
+      pml = CASE WHEN excluded.pml != 'PML Belum Dialokasikan' THEN excluded.pml ELSE subsls_master.pml END,
+      pml_email = COALESCE(excluded.pml_email, subsls_master.pml_email),
+      pml_sobat_id = COALESCE(excluded.pml_sobat_id, subsls_master.pml_sobat_id),
+      pcl = CASE WHEN excluded.pcl != 'PPL Belum Dialokasikan' THEN excluded.pcl ELSE subsls_master.pcl END,
+      pcl_email = COALESCE(excluded.pcl_email, subsls_master.pcl_email),
+      pcl_sobat_id = COALESCE(excluded.pcl_sobat_id, subsls_master.pcl_sobat_id),
+      target_fasih = CASE WHEN COALESCE(subsls_master.target_fasih, 0) > 0 THEN subsls_master.target_fasih ELSE excluded.target_fasih END,
+      muatan = CASE WHEN COALESCE(subsls_master.muatan, 0) > 0 THEN subsls_master.muatan ELSE excluded.muatan END,
+      muatan_original = CASE WHEN COALESCE(subsls_master.muatan_original, 0) > 0 THEN subsls_master.muatan_original ELSE excluded.muatan_original END
   `);
 
   const insertProgresStmt = db.prepare(`
@@ -1515,8 +1587,10 @@ function parseAndSaveJsonStatusOnly(filePath, originalFilename, storedFilename, 
         }
 
         // Auto-seed / update subsls_master
+        const kecKode = kodeClean.substring(6, 8);
         insertSubslsMaster.run(
           kodeClean,
+          kecKode,
           kecName,
           desaName,
           slsName,
@@ -1527,6 +1601,8 @@ function parseAndSaveJsonStatusOnly(filePath, originalFilename, storedFilename, 
           namaLengkap,             // PCL
           rawEmail,
           sobatId,
+          targetVal,
+          targetVal,
           targetVal
         );
 

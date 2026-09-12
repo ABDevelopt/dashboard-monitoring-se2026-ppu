@@ -435,41 +435,62 @@
    ========================================================================== */
 #toastNotifContainer {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  top: 72px;
+  right: 20px;
   z-index: 9999;
   display: flex;
   flex-direction: column;
   gap: 10px;
   pointer-events: none;
-  max-width: 360px;
-  width: calc(100% - 48px);
+  max-width: 380px;
+  width: calc(100% - 40px);
+}
+
+@media (max-width: 768px) {
+  #toastNotifContainer {
+    top: calc(56px + env(safe-area-inset-top, 0px) + 8px);
+    bottom: auto;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: calc(100% - 24px);
+    margin: 0 auto;
+    gap: 8px;
+  }
 }
 
 .toast-notif-item {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 12px 14px;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  gap: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.15);
   pointer-events: auto;
   opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.35s ease, transform 0.35s ease;
+  transform: translateY(-12px);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+body.light-mode .toast-notif-item {
+  background: #ffffff;
+  border-color: rgba(226, 232, 240, 0.95);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
 .toast-notif-icon {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: 17px;
+  margin-top: 1px;
 }
 
 .toast-notif-content {
@@ -477,28 +498,130 @@
   min-width: 0;
 }
 
+.toast-notif-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
 .toast-notif-title {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 3px;
+  line-height: 1.35;
 }
 
 .toast-notif-desc {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.toast-notif-desc strong {
+  color: var(--text-primary);
+}
+
+.toast-notif-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.toast-btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  min-height: 30px;
+  line-height: 1;
+}
+
+.toast-btn-primary {
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--accent-cyan);
+  border-color: rgba(var(--accent-rgb), 0.28);
+}
+
+.toast-btn-primary:hover, .toast-btn-primary:active {
+  background: rgba(var(--accent-rgb), 0.25);
+  border-color: var(--accent-cyan);
+}
+
+.toast-btn-subtle {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: transparent;
+  padding: 5px 8px;
+}
+
+.toast-btn-subtle:hover, .toast-btn-subtle:active {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
 }
 
 .toast-notif-close {
-  background: none;
+  background: transparent;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 0 2px;
-  font-size: 14px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 13px;
   flex-shrink: 0;
   line-height: 1;
-  margin-top: 1px;
+  transition: background 0.15s, color 0.15s;
+  margin: -4px -4px 0 0;
 }
+
+.toast-notif-close:hover, .toast-notif-close:active {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+/* Date Selector & Historical View Banner */
+#dateSelectorBtn.is-historical {
+  border-color: #f59e0b !important;
+  color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.12) !important;
+}
+
+.date-select-item {
+  transition: background-color 0.15s ease;
+}
+
+.date-select-item:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06)) !important;
+}
+
+.historical-view-banner {
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08);
+}
+
+@media (max-width: 576px) {
+  .historical-view-banner {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+  .historical-view-banner a {
+    align-self: flex-start;
+  }
+}
+
+
 

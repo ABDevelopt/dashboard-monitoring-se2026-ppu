@@ -1,0 +1,1422 @@
+[
+  {
+    "role": "PML",
+    "officer": "fitri.handayani@bps.go.id fitri.handayani@bps.go.id Total Assignment 40",
+    "regions": [
+      {
+        "code": "6409010002001000",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "OPEN",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409010003000900",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "7"
+          },
+          {
+            "status": "OPEN",
+            "count": "3"
+          }
+        ]
+      },
+      {
+        "code": "6409030012000401",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "7"
+          },
+          {
+            "status": "OPEN",
+            "count": "2"
+          },
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409030012001200",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "6"
+          },
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "3"
+          },
+          {
+            "status": "OPEN",
+            "count": "1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PML",
+    "officer": "6409.zella@dummy.sobat.id 6409.zella@dummy.sobat.id Total Assignment 40",
+    "regions": [
+      {
+        "code": "6409010004000200",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409010007000600",
+        "statuses": [
+          {
+            "status": "EDITED BY Admin Kabupaten",
+            "count": "4"
+          },
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "4"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "1"
+          },
+          {
+            "status": "OPEN",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409030013000103",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "8"
+          },
+          {
+            "status": "EDITED BY Admin Kabupaten",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409030013000700",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "10"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PML",
+    "officer": "tyas.hapsari@bps.go.id tyas.hapsari@bps.go.id Total Assignment 42",
+    "regions": [
+      {
+        "code": "6409010008001401",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "12"
+          }
+        ]
+      },
+      {
+        "code": "6409010008002202",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409030009000902",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "6"
+          },
+          {
+            "status": "OPEN",
+            "count": "3"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409030010000902",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "6"
+          },
+          {
+            "status": "OPEN",
+            "count": "3"
+          },
+          {
+            "status": "DRAFT",
+            "count": "1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PML",
+    "officer": "khuzaini@bps.go.id khuzaini@bps.go.id Total Assignment 39",
+    "regions": [
+      {
+        "code": "6409010012000403",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409020001000102",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409020001000500",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409040008000900",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "9"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PML",
+    "officer": "aisyah.khoirunnisa@bps.go.id aisyah.khoirunnisa@bps.go.id Total Assignment 40",
+    "regions": [
+      {
+        "code": "6409020003000703",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409020003001301",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409030022000102",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "OPEN",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409030022000402",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "9"
+          },
+          {
+            "status": "OPEN",
+            "count": "1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PML",
+    "officer": "asrani-pppk@bps.go.id asrani-pppk@bps.go.id Total Assignment 36",
+    "regions": [
+      {
+        "code": "6409030003001001",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409030013002000",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409030013002801",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "9"
+          },
+          {
+            "status": "OPEN",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409030003001102",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "6"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PML",
+    "officer": "dhofirur.romadhon@bps.go.id dhofirur.romadhon@bps.go.id Total Assignment 38",
+    "regions": [
+      {
+        "code": "6409030015000701",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "9"
+          },
+          {
+            "status": "DRAFT",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409030016000700",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "7"
+          },
+          {
+            "status": "DRAFT",
+            "count": "2"
+          },
+          {
+            "status": "OPEN",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409040006001200",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409040006000700",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PML",
+    "officer": "yamin.muhamad@bps.go.id yamin.muhamad@bps.go.id Total Assignment 39",
+    "regions": [
+      {
+        "code": "6409040002000100",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409040006002300",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "9"
+          },
+          {
+            "status": "OPEN",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409040008000400",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409040002000400",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "5"
+          },
+          {
+            "status": "OPEN",
+            "count": "4"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PML",
+    "officer": "s.karim@bps.go.id s.karim@bps.go.id Total Assignment 40",
+    "regions": [
+      {
+        "code": "6409040009001300",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409040009001600",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409040010000101",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409040010001601",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PML",
+    "officer": "nabila.paramita@bps.go.id nabila.paramita@bps.go.id Total Assignment 39",
+    "regions": [
+      {
+        "code": "6409010009000800",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "OPEN",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409030022000602",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "OPEN",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409030022000700",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409010009000300",
+        "statuses": [
+          {
+            "status": "OPEN",
+            "count": "7"
+          },
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "2"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PML",
+    "officer": "faliq.ridho@bps.go.id faliq.ridho@bps.go.id Total Assignment 38",
+    "regions": [
+      {
+        "code": "6409040008000300",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409040008000600",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "9"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409040011000100",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "6"
+          },
+          {
+            "status": "OPEN",
+            "count": "3"
+          },
+          {
+            "status": "DRAFT",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409040011000703",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PML",
+    "officer": "sudarman-pppk@bps.go.id sudarman-pppk@bps.go.id Total Assignment 40",
+    "regions": [
+      {
+        "code": "6409030014000403",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "7"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "3"
+          }
+        ]
+      },
+      {
+        "code": "6409030020000100",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409040012000300",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409040012000600",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "9"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PML",
+    "officer": "zahrakhairunnisa@bps.go.id zahrakhairunnisa@bps.go.id Total Assignment 37",
+    "regions": [
+      {
+        "code": "6409010001000300",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409030002000700",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "6"
+          },
+          {
+            "status": "DRAFT",
+            "count": "2"
+          },
+          {
+            "status": "OPEN",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409030005000100",
+        "statuses": [
+          {
+            "status": "OPEN",
+            "count": "9"
+          },
+          {
+            "status": "DRAFT",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409010011000600",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "7"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "rahmadjaya1983@gmail.com rahmadjaya1983@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409040004000100",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409040004000900",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "2"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "husnulkhotimah19123@gmail.com husnulkhotimah19123@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409040010000101",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409040010001601",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "lianur877@gmail.com lianur877@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409020001000102",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409020001000500",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "10"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "ajkuriachmadhadi@gmail.com ajkuriachmadhadi@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409030013002000",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409030013002801",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "9"
+          },
+          {
+            "status": "OPEN",
+            "count": "1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "suaibah518@gmail.com suaibah518@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409010008000603",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409010008000904",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "OPEN",
+            "count": "2"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "indizahra941@gmail.com indizahra941@gmail.com Total Assignment 18",
+    "regions": [
+      {
+        "code": "6409030013001100",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "9"
+          },
+          {
+            "status": "DRAFT",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409030013001001",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "6"
+          },
+          {
+            "status": "DRAFT",
+            "count": "1"
+          },
+          {
+            "status": "REJECTED BY PML",
+            "count": "1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "sucitra.offc3@gmail.com sucitra.offc3@gmail.com Total Assignment 9",
+    "regions": [
+      {
+        "code": "6409040008000900",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "9"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "safiyatunclara@gmail.com safiyatunclara@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409030022000602",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "OPEN",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409030022000700",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "febri.anti9945@gmail.com febri.anti9945@gmail.com Total Assignment 17",
+    "regions": [
+      {
+        "code": "6409010001000300",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409010011000600",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "7"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "izmunkmutz09@gmail.com izmunkmutz09@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409020003000703",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409020003001301",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "naufalalagsan@gmail.com naufalalagsan@gmail.com Total Assignment 0",
+    "regions": []
+  },
+  {
+    "role": "PPL",
+    "officer": "dsvikry@gmail.com dsvikry@gmail.com Total Assignment 10",
+    "regions": [
+      {
+        "code": "6409030014000403",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "7"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "3"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "ismiatinur141@gmail.com ismiatinur141@gmail.com Total Assignment 16",
+    "regions": [
+      {
+        "code": "6409030003001001",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409030003001102",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "6"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "ayurra066@gmail.com ayurra066@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409010002001000",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "OPEN",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409010003000900",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "7"
+          },
+          {
+            "status": "OPEN",
+            "count": "3"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "riskisaskiar15@gmail.com riskisaskiar15@gmail.com Total Assignment 10",
+    "regions": [
+      {
+        "code": "6409030020000100",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "2"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "bahriahriah12@gmail.com bahriahriah12@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409030009000902",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "6"
+          },
+          {
+            "status": "OPEN",
+            "count": "3"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409030010000902",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "6"
+          },
+          {
+            "status": "OPEN",
+            "count": "3"
+          },
+          {
+            "status": "DRAFT",
+            "count": "1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "fitri1234januari@gmail.com fitri1234januari@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409040008000300",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409040008000600",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "9"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "ekopujisetiawan925@gmail.com ekopujisetiawan925@gmail.com Total Assignment 8",
+    "regions": [
+      {
+        "code": "6409040011000703",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "junadwi937@gmail.com junadwi937@gmail.com Total Assignment 0",
+    "regions": []
+  },
+  {
+    "role": "PPL",
+    "officer": "dkesumawati457@gmail.com dkesumawati457@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409030022000102",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "OPEN",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409030022000402",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "9"
+          },
+          {
+            "status": "OPEN",
+            "count": "1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "nia050486@gmail.com nia050486@gmail.com Total Assignment 10",
+    "regions": [
+      {
+        "code": "6409010012000403",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "10"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "jogerzaki@gmail.com jogerzaki@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409010010000102",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409010010000500",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "nurmilyana62@admin.belajar.paud.id nurmilyana62@admin.belajar.paud.id Total Assignment 9",
+    "regions": [
+      {
+        "code": "6409040003000402",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "7"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "1"
+          },
+          {
+            "status": "DRAFT",
+            "count": "1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "gabrielts20719@gmail.com gabrielts20719@gmail.com Total Assignment 0",
+    "regions": []
+  },
+  {
+    "role": "PPL",
+    "officer": "umiyatiaz@gmail.com umiyatiaz@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409030004000100",
+        "statuses": [
+          {
+            "status": "OPEN",
+            "count": "6"
+          },
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "4"
+          }
+        ]
+      },
+      {
+        "code": "6409030004001301",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "6"
+          },
+          {
+            "status": "OPEN",
+            "count": "4"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "adindaayulestari483@gmail.com adindaayulestari483@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409010008000102",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "7"
+          },
+          {
+            "status": "OPEN",
+            "count": "2"
+          },
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409010008000203",
+        "statuses": [
+          {
+            "status": "APPROVED BY PML",
+            "count": "9"
+          },
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "arshaninchanel@gmail.com arshaninchanel@gmail.com Total Assignment 18",
+    "regions": [
+      {
+        "code": "6409040006001200",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "10"
+          }
+        ]
+      },
+      {
+        "code": "6409040006000700",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "lanarqapress@gmail.com lanarqapress@gmail.com Total Assignment 20",
+    "regions": [
+      {
+        "code": "6409030015000701",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "9"
+          },
+          {
+            "status": "DRAFT",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409030016000700",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "7"
+          },
+          {
+            "status": "DRAFT",
+            "count": "2"
+          },
+          {
+            "status": "OPEN",
+            "count": "1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "role": "PPL",
+    "officer": "pujirahayudiah78@gmail.com pujirahayudiah78@gmail.com Total Assignment 30",
+    "regions": [
+      {
+        "code": "6409040011000100",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "6"
+          },
+          {
+            "status": "OPEN",
+            "count": "3"
+          },
+          {
+            "status": "DRAFT",
+            "count": "1"
+          }
+        ]
+      },
+      {
+        "code": "6409040012000300",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "8"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "2"
+          }
+        ]
+      },
+      {
+        "code": "6409040012000600",
+        "statuses": [
+          {
+            "status": "SUBMITTED BY PPL",
+            "count": "9"
+          },
+          {
+            "status": "APPROVED BY PML",
+            "count": "1"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -10,7 +10,7 @@ const allSections = [
   { id: 'excel-format',    icon: 'bi-file-earmark-excel-fill', label: 'Format File Excel', color: '#22c55e' },
   { id: 'columns',         icon: 'bi-table',               label: 'Arti Kolom Data',   color: 'var(--accent-cyan)' },
   { id: 'metode-muatan',   icon: 'bi-calculator-fill',    label: 'Metode Progres Muatan', color: 'var(--accent-cyan)', sensusOnly: true },
-  { id: 'navigation',      icon: 'bi-map-fill',            label: 'Navigasi & Filter', color: 'var(--accent-purple)' },
+  { id: 'navigation',      icon: 'bi-funnel-fill',         label: 'Navigasi & Filter', color: 'var(--accent-purple)' },
   { id: 'faq',             icon: 'bi-question-circle-fill', label: 'FAQ',               color: 'var(--accent-yellow)' },
 ];
 const sections = hideMuatanHelp ? allSections.filter(s => !s.sensusOnly) : allSections;
@@ -366,7 +366,7 @@ const sections = hideMuatanHelp ? allSections.filter(s => !s.sensusOnly) : allSe
 <div class="help-section" id="navigation">
   <div class="help-section-header">
     <div class="help-section-icon" style="background: rgba(167,139,250,0.12);">
-      <i class="bi bi-map-fill" style="color: var(--accent-purple);"></i>
+      <i class="bi bi-funnel-fill" style="color: var(--accent-purple);"></i>
     </div>
     <div>
       <h2 class="help-section-title">Navigasi & Filter</h2>

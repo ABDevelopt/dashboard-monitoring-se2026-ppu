@@ -467,24 +467,37 @@ async function runAllTests() {
     // 6. Ringkasan Progres Sakernas CAPI Respons Terstruktur
     const { runSimulation } = require('../services/ai/orchestrator');
     const { buildLiveContext } = require('../services/ai/contextBuilder');
+    const { getLatestUpload, getSettings, getOverviewSummary } = require('../database');
 
-    runAssertion(suiteAi, 'Live Context Sakernas CAPI Memuat Angka Capaian Akurat (41.20%)', () => {
+    runAssertion(suiteAi, 'Live Context Sakernas CAPI Memuat Angka Capaian Akurat', () => {
       const liveCtx = buildLiveContext('sakernas-pendataan');
-      if (!liveCtx.includes('41.20%')) throw new Error('Live context tidak memuat angka 41.20%');
-      if (!liveCtx.includes('665')) throw new Error('Live context tidak memuat target 665 RT');
-      if (!liveCtx.includes('274')) throw new Error('Live context tidak memuat realisasi 274 RT');
+      const latestUpload = getLatestUpload('sakernas-pendataan');
+      const summary = getOverviewSummary(latestUpload.id, getSettings('sakernas-pendataan'), 'sakernas-pendataan');
+      const expectedPct = (summary.fasih_pct != null ? summary.fasih_pct : summary.pct).toFixed(2) + '%';
+      const expectedTarget = String(summary.target_fasih_total || summary.target_static_total);
+      const expectedReal = String((summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0));
+
+      if (!liveCtx.includes(expectedPct)) throw new Error(`Live context tidak memuat angka ${expectedPct}`);
+      if (!liveCtx.includes(expectedTarget)) throw new Error(`Live context tidak memuat target ${expectedTarget} RT`);
+      if (!liveCtx.includes(expectedReal)) throw new Error(`Live context tidak memuat realisasi ${expectedReal} RT`);
       if (liveCtx.includes('% Capaian Utama (Rumah Tangga) | **-%**') || liveCtx.includes('% Capaian Utama (Rumah Tangga) | **-**')) {
         throw new Error('Persentase capaian di live context kosong / bernilai tanda strip');
       }
-      return 'Live context Sakernas CAPI memuat 41.20% target 665 dan realisasi 274 RT';
+      return `Live context Sakernas CAPI memuat ${expectedPct} target ${expectedTarget} dan realisasi ${expectedReal} RT`;
     });
 
     runAssertion(suiteAi, 'Jawaban Ringkasan Progres Sakernas CAPI Terstruktur & Bersih', () => {
+      const latestUpload = getLatestUpload('sakernas-pendataan');
+      const summary = getOverviewSummary(latestUpload.id, getSettings('sakernas-pendataan'), 'sakernas-pendataan');
+      const expectedPct = (summary.fasih_pct != null ? summary.fasih_pct : summary.pct).toFixed(2) + '%';
+      const expectedTarget = String(summary.target_fasih_total || summary.target_static_total);
+      const expectedReal = String((summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0));
+
       const sim = runSimulation('Bagaimana ringkasan progres survei Sakernas CAPI di Kabupaten PPU saat ini?', [], 'sakernas-pendataan');
       const text = sim.content || '';
-      if (!text.includes('665')) throw new Error('Jawaban tidak memuat target 665');
-      if (!text.includes('274')) throw new Error('Jawaban tidak memuat realisasi 274');
-      if (!text.includes('41.20%')) throw new Error('Jawaban tidak memuat 41.20%');
+      if (!text.includes(expectedTarget)) throw new Error(`Jawaban tidak memuat target ${expectedTarget}`);
+      if (!text.includes(expectedReal)) throw new Error(`Jawaban tidak memuat realisasi ${expectedReal}`);
+      if (!text.includes(expectedPct)) throw new Error(`Jawaban tidak memuat ${expectedPct}`);
       if (!text.includes('PPL')) throw new Error('Jawaban tidak menyebut PPL');
       if (text.includes('PCL')) throw new Error('Jawaban membocorkan sebutan PCL');
       if (text.includes('upload_id') || text.includes('summary_cache')) throw new Error('Jawaban membocorkan nama kolom database teknis');

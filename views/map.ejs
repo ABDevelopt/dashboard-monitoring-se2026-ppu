@@ -1589,7 +1589,23 @@
       <div class="gmaps-panel-drag-header" id="toolsPanelDragHandle" title="Klik dan geser untuk memindahkan posisi menu">
         <div class="drag-pill-indicator"></div>
       </div>
-      
+
+      <!-- Map Mode Switcher (SE2026 Only) -->
+      <% 
+        const isSe2026Map = (typeof activeSurvey !== 'undefined' ? activeSurvey === 'se2026' : (typeof surveyConfig !== 'undefined' ? surveyConfig.id === 'se2026' : true));
+        const isUjiPetikAvailable = isSe2026Map && (typeof settings === 'undefined' || !settings || settings.page_map_ujipetik !== '0');
+      %>
+      <% if (isUjiPetikAvailable) { %>
+      <div class="map-view-switcher" style="display: flex; gap: 4px; padding: 3px; background: rgba(0, 0, 0, 0.25); border-radius: 10px; margin-bottom: 8px; border: 1px solid rgba(255, 255, 255, 0.12);">
+        <a href="<%= (typeof navPrefix !== 'undefined' ? navPrefix : '') %>/map" class="map-switch-tab active" style="flex: 1; text-align: center; padding: 5px 8px; font-size: 11.5px; font-weight: 700; border-radius: 7px; text-decoration: none; background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%); color: #ffffff; display: inline-flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);">
+          <i class="bi bi-geo-alt-fill"></i> Peta Progres
+        </a>
+        <a href="<%= (typeof navPrefix !== 'undefined' ? navPrefix : '') %>/map-ujipetik" class="map-switch-tab" style="flex: 1; text-align: center; padding: 5px 8px; font-size: 11.5px; font-weight: 500; border-radius: 7px; text-decoration: none; color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.2s;">
+          <i class="bi bi-pin-map-fill" style="color: var(--accent-amber);"></i> Titik Uji Petik
+        </a>
+      </div>
+      <% } %>
+
       <!-- Primary Search & Action Header -->
       <div class="gmaps-search-box">
         <i class="bi bi-search search-icon"></i>
@@ -1602,7 +1618,7 @@
       <!-- Collapsible Filter & Options Section -->
       <div class="gmaps-controls-collapsible" id="toolsExtraRows">
         <!-- Section 1: Filter Wilayah (Kecamatan & Desa) -->
-        <div class="gmaps-section-label"><i class="bi bi-geo-alt"></i> Filter Wilayah Spasial</div>
+        <div class="gmaps-section-label"><i class="bi bi-funnel"></i> Filter Wilayah Spasial</div>
         <div class="gmaps-control-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 6px;">
           <select id="kecFilter" class="gmaps-select-pill" title="Filter Berdasarkan Kecamatan" style="width: 100%;">
             <option value="">-- Semua Kecamatan --</option>
@@ -1618,7 +1634,7 @@
         </div>
 
         <!-- Section 1: Filter Petugas PCL -->
-        <div class="gmaps-section-label"><i class="bi bi-person-badge"></i> Filter Petugas PCL</div>
+        <div class="gmaps-section-label"><i class="bi bi-funnel"></i> Filter Petugas PCL</div>
         <div class="gmaps-control-row" style="margin-bottom: 8px;">
           <select id="pclFilter" class="gmaps-select-pill" title="Filter Cepat Berdasarkan Petugas PCL" style="width: 100%;">
             <option value="">-- Semua Petugas PCL --</option>

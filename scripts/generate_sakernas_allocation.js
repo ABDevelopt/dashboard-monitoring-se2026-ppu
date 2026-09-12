@@ -6,6 +6,12 @@ const { getDb } = require('../database');
 function generateAllocationFiles() {
   console.log('[Generator] Menyiapkan file alokasi Sakernas...');
 
+  // Pastikan direktori workspace target ada
+  const wsDirPmu = path.join(__dirname, '../file_upload_workspace/sakernas-pemutakhiran');
+  const wsDirPdt = path.join(__dirname, '../file_upload_workspace/sakernas-pendataan');
+  if (!fs.existsSync(wsDirPmu)) fs.mkdirSync(wsDirPmu, { recursive: true });
+  if (!fs.existsSync(wsDirPdt)) fs.mkdirSync(wsDirPdt, { recursive: true });
+
   // 1. Ambil data dari database Sakernas Pemutakhiran
   const dbPmu = getDb('sakernas-pemutakhiran');
   const rowsPmu = dbPmu.prepare(`
@@ -75,7 +81,6 @@ function generateAllocationFiles() {
   wsPmu['!cols'] = colWidths;
   XLSX.utils.book_append_sheet(wbPmu, wsPmu, 'master');
 
-  // Tambahkan sheet rekapitulasi petugas & alokasi per kecamatan
   const rekapKecPmu = {};
   rowsPmu.forEach(r => {
     if (!rekapKecPmu[r.kecamatan]) {
@@ -100,9 +105,14 @@ function generateAllocationFiles() {
   wsRekapPmu['!cols'] = [{ wch: 18 }, { wch: 25 }, { wch: 28 }, { wch: 30 }, { wch: 22 }, { wch: 26 }];
   XLSX.utils.book_append_sheet(wbPmu, wsRekapPmu, 'rekapitulasi_kecamatan');
 
-  const pmuFilePath = path.join(__dirname, '../alokasi_sakernas_pemutakhiran.xlsx');
-  XLSX.writeFile(wbPmu, pmuFilePath);
-  console.log(`[Generator] ✔ File alokasi Sakernas Pemutakhiran dibuat: ${pmuFilePath}`);
+  const pmuFile1 = path.join(__dirname, '../alokasi_sakernas_pemutakhiran.xlsx');
+  const pmuFile2 = path.join(__dirname, '../alokasi_petugas_sakernas_pemutakhiran.xlsx');
+  const pmuWsFile = path.join(wsDirPmu, 'alokasi_petugas_sakernas_pemutakhiran.xlsx');
+
+  XLSX.writeFile(wbPmu, pmuFile1);
+  XLSX.writeFile(wbPmu, pmuFile2);
+  XLSX.writeFile(wbPmu, pmuWsFile);
+  console.log(`[Generator] ✔ File alokasi Sakernas Pemutakhiran dibuat: ${pmuFile2}`);
 
   // ─── FILE 2: ALOKASI SAKERNAS PENDATAAN (.xlsx) ───
   const wbPdt = XLSX.utils.book_new();
@@ -134,24 +144,85 @@ function generateAllocationFiles() {
   wsRekapPdt['!cols'] = [{ wch: 18 }, { wch: 25 }, { wch: 20 }, { wch: 32 }, { wch: 22 }, { wch: 26 }];
   XLSX.utils.book_append_sheet(wbPdt, wsRekapPdt, 'rekapitulasi_kecamatan');
 
-  const pdtFilePath = path.join(__dirname, '../alokasi_sakernas_pendataan.xlsx');
-  XLSX.writeFile(wbPdt, pdtFilePath);
-  console.log(`[Generator] ✔ File alokasi Sakernas Pendataan dibuat: ${pdtFilePath}`);
+  const pdtFile1 = path.join(__dirname, '../alokasi_sakernas_pendataan.xlsx');
+  const pdtFile2 = path.join(__dirname, '../alokasi_petugas_sakernas_pendataan.xlsx');
+  const pdtWsFile = path.join(wsDirPdt, 'alokasi_petugas_sakernas_pendataan.xlsx');
 
-  // ─── FILE 3: MASTER ALOKASI TERPADU DENGAN FORMAT CSV & JSON ───
-  // Juga sediakan versi CSV dan JSON agar pengguna dapat mengunggah dengan berbagai format yang didukung
-  const pmuJsonPath = path.join(__dirname, '../alokasi_sakernas_pemutakhiran.json');
-  fs.writeFileSync(pmuJsonPath, JSON.stringify(rowsPmu, null, 2), 'utf8');
+  XLSX.writeFile(wbPdt, pdtFile1);
+  XLSX.writeFile(wbPdt, pdtFile2);
+  XLSX.writeFile(wbPdt, pdtWsFile);
+  console.log(`[Generator] ✔ File alokasi Sakernas Pendataan dibuat: ${pdtFile2}`);
 
-  const pdtJsonPath = path.join(__dirname, '../alokasi_sakernas_pendataan.json');
-  fs.writeFileSync(pdtJsonPath, JSON.stringify(rowsPdt, null, 2), 'utf8');
+  // ─── FILE 3: MASTER ALOKASI TERPADU DENGAN FORMAT JSON ───
+  const pmuJson1 = path.join(__dirname, '../alokasi_sakernas_pemutakhiran.json');
+  const pmuJson2 = path.join(__dirname, '../alokasi_petugas_sakernas_pemutakhiran.json');
+  const pmuWsJson = path.join(wsDirPmu, 'alokasi_petugas_sakernas_pemutakhiran.json');
+  const jsonContentPmu = JSON.stringify(rowsPmu, null, 2);
+  fs.writeFileSync(pmuJson1, jsonContentPmu, 'utf8');
+  fs.writeFileSync(pmuJson2, jsonContentPmu, 'utf8');
+  fs.writeFileSync(pmuWsJson, jsonContentPmu, 'utf8');
 
-  console.log('[Generator] Selesai! Semua file alokasi siap diupload ke dasbor.');
+  const pdtJson1 = path.join(__dirname, '../alokasi_sakernas_pendataan.json');
+  const pdtJson2 = path.join(__dirname, '../alokasi_petugas_sakernas_pendataan.json');
+  const pdtWsJson = path.join(wsDirPdt, 'alokasi_petugas_sakernas_pendataan.json');
+  const jsonContentPdt = JSON.stringify(rowsPdt, null, 2);
+  fs.writeFileSync(pdtJson1, jsonContentPdt, 'utf8');
+  fs.writeFileSync(pdtJson2, jsonContentPdt, 'utf8');
+  fs.writeFileSync(pdtWsJson, jsonContentPdt, 'utf8');
+
+  // ─── FILE 4: FILE MONITORING STATUS FASIH (UNTUK MENU UPLOAD FASIH) ───
+  const fasihRowsPmu = rowsPmu.map(r => ({
+    level_6_full_code: r.kode,
+    nama_kecamatan: r.kecamatan,
+    nama_desa: r.desa,
+    nama_sls: r.nama_sls,
+    pengawas: r.pml,
+    pencacah: r.pcl,
+    target: r.target_fasih || r.muatan || 0,
+    open: r.target_fasih || r.muatan || 0,
+    draft: 0,
+    submitted: 0,
+    approved: 0,
+    rejected: 0
+  }));
+  const wbFasihPmu = XLSX.utils.book_new();
+  const wsFasihPmu = XLSX.utils.json_to_sheet(fasihRowsPmu);
+  XLSX.utils.book_append_sheet(wbFasihPmu, wsFasihPmu, 'monitoring_status');
+  const fasihPmuFile = path.join(__dirname, '../monitoring_fasih_sakernas_pemutakhiran.xlsx');
+  const fasihPmuWsFile = path.join(wsDirPmu, 'monitoring_fasih_sakernas_pemutakhiran.xlsx');
+  XLSX.writeFile(wbFasihPmu, fasihPmuFile);
+  XLSX.writeFile(wbFasihPmu, fasihPmuWsFile);
+
+  const fasihRowsPdt = rowsPdt.map(r => ({
+    level_6_full_code: r.kode,
+    nama_kecamatan: r.kecamatan,
+    nama_desa: r.desa,
+    nama_sls: r.nama_sls,
+    pengawas: r.pml,
+    pencacah: r.pcl,
+    target: r.target_fasih || r.muatan || 10,
+    open: r.target_fasih || r.muatan || 10,
+    draft: 0,
+    submitted: 0,
+    approved: 0,
+    rejected: 0
+  }));
+  const wbFasihPdt = XLSX.utils.book_new();
+  const wsFasihPdt = XLSX.utils.json_to_sheet(fasihRowsPdt);
+  XLSX.utils.book_append_sheet(wbFasihPdt, wsFasihPdt, 'monitoring_status');
+  const fasihPdtFile = path.join(__dirname, '../monitoring_fasih_sakernas_pendataan.xlsx');
+  const fasihPdtWsFile = path.join(wsDirPdt, 'monitoring_fasih_sakernas_pendataan.xlsx');
+  XLSX.writeFile(wbFasihPdt, fasihPdtFile);
+  XLSX.writeFile(wbFasihPdt, fasihPdtWsFile);
+
+  console.log('[Generator] Selesai! Semua file alokasi master & monitoring FASIH siap diupload ke dasbor.');
   return {
-    pmuExcel: pmuFilePath,
-    pdtExcel: pdtFilePath,
-    pmuJson: pmuJsonPath,
-    pdtJson: pdtJsonPath,
+    pmuExcel: pmuFile2,
+    pdtExcel: pdtFile2,
+    pmuJson: pmuJson2,
+    pdtJson: pdtJson2,
+    pmuFasih: fasihPmuFile,
+    pdtFasih: fasihPdtFile,
     totalBs: rowsPmu.length
   };
 }
