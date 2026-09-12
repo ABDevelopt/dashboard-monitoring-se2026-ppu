@@ -27,7 +27,7 @@ Penelaahan teknis dihadiri oleh Penyusun, Mentor, serta Tim Reviewer Teknis Seks
 
 | No. | Nama & Gelar | NIP / Unit Kerja | Peran dalam Sesi Review | Persetujuan |
 | :--- | :--- | :--- | :--- | :--- |
-| 1 | **Yahya Abdurrohman** | 20020420 202410 1 002<br/>Pranata Komputer Ahli Pertama | Penyusun Arsitektur Sistem & Presenter | *(Disahkan)* |
+| 1 | **Yahya Abdurrohman** | 20021106 202603 1 003<br/>Pranata Komputer Ahli Pertama | Penyusun Arsitektur Sistem & Presenter | *(Disahkan)* |
 | 2 | **Ketua Tim IPJKD & DLS BPS Kab. PPU** | Ketua Tim IPJKD & DLS<br/>BPS Kab. Penajam Paser Utara | Mentor & Pengesah Utama | *(Disetujui)* |
 | 3 | **Tim Seksi Pengolahan Data & TI dan Tim IPJKD & DLS** | Seksi Pengolahan Data & TI<br/>BPS Kab. Penajam Paser Utara | Reviewer Teknis & Penelaah Infrastruktur | *(Terverifikasi)* |
 
@@ -122,7 +122,7 @@ Berdasarkan hasil penelaahan, Tim IT Seksi Pengolahan & Tim IPJKD & DLS Data & T
 
 ## 5. KESIMPULAN & PENGESAHAN TEKNIS
 
-Berdasarkan hasil evaluasi menyeluruh terhadap 4 aspek utama arsitektur dan 7 diagram perancangan sistem, Tim IT Seksi Pengolahan & Tim IPJKD & DLS Data & Tim IPJKD & DLS & Tim IPJKD & DLS BPS Kabupaten Penajam Paser Utara menyimpulkan bahwa:
+Berdasarkan hasil evaluasi menyeluruh terhadap 4 aspek utama arsitektur dan 7 diagram perancangan sistem, Tim TI Seksi Pengolahan Data dan Tim IPJKD & DLS BPS Kabupaten Penajam Paser Utara menyimpulkan bahwa:
 
 > **"Seluruh cetak biru perancangan sistem dan perangkat lunak (SDLC Phase 2) untuk Dashboard Pemantauan Lapangan SE2026 & Multi-Survei (Pananyo Taka) dinyatakan MEMENUHI SYARAT KELAYAKAN TEKNIS, DISAHKAN, dan SIAP DILANJUTKAN ke tahap pengkodean (SDLC Phase 3: Coding & Implementation)."**
 
@@ -134,6 +134,6 @@ Berdasarkan hasil evaluasi menyeluruh terhadap 4 aspek utama arsitektur dan 7 di
 
 | Peran | Nama & Gelar | Tanda Tangan |
 | :--- | :--- | :--- |
-| **Penyusun / Proposer** | **Yahya Abdurrohman**<br/> | *(Ditandatangani)* |
-| **Reviewer Teknis TI** | **Tim Seksi Pengolahan Data & TI dan Tim IPJKD & DLS**<br/>BPS Kab. Penajam Paser Utara | *(Terverifikasi)* |
-| **Mentor / Pengesah Utama** | **Ketua Tim IPJKD & DLS BPS Kab. PPU**<br/>Ketua Tim IPJKD & DLS BPS Kab. PPU | *(Disetujui & Disahkan)* |
+| **Penyusun / Proposer** | **Yahya Abdurrohman, S.Tr.Stat.**<br/>NIP. 20021106 202603 1 003 | *(Ditandatangani)* |
+| **Reviewer Teknis TI** | **Tim TI / Seksi Pengolahan Data**<br/>BPS Kab. Penajam Paser Utara | *(Terverifikasi)* |
+| **Mentor / Pengesah Utama** | **Baihaqi Ilham Syah, S.Tr.Stat.**<br/>NIP. 19980820 202201 1 001<br/>Ketua Tim IPJKD & DLS BPS Kab. PPU | *(Disetujui & Disahkan)* |
