@@ -2818,6 +2818,44 @@ function attachProgressPercentages(data, settings) {
   return data;
 }
 
+// Comparator function for officer Fasih progress bar ranking and tie-breakers:
+// 1. Fasih % (Primary sort metric, descending)
+// 2. approved (Tie-breaker 1: higher approved count comes first)
+// 3. submitted (Tie-breaker 2: higher submitted count comes next)
+// 4. rejected (Tie-breaker 3: higher rejected count comes next)
+// 5. draft (Tie-breaker 4: higher draft count comes next)
+// 6. open (Tie-breaker 5: higher open count comes next)
+function compareFasihProgress(a, b, nameKey = 'pcl') {
+  const aPct = typeof a.fasih_pct === 'number' && !isNaN(a.fasih_pct) ? a.fasih_pct : (parseFloat(a.fasih_pct_str || a.pct || 0) || 0);
+  const bPct = typeof b.fasih_pct === 'number' && !isNaN(b.fasih_pct) ? b.fasih_pct : (parseFloat(b.fasih_pct_str || b.pct || 0) || 0);
+  if (bPct !== aPct) return bPct - aPct;
+
+  const aApp = Number(a.approved_total !== undefined ? a.approved_total : (a.approved || 0)) || 0;
+  const bApp = Number(b.approved_total !== undefined ? b.approved_total : (b.approved || 0)) || 0;
+  if (bApp !== aApp) return bApp - aApp;
+
+  const aSub = Number(a.submitted_total !== undefined ? a.submitted_total : (a.submitted_by_pcl !== undefined ? a.submitted_by_pcl : (a.submitted || 0))) || 0;
+  const bSub = Number(b.submitted_total !== undefined ? b.submitted_total : (b.submitted_by_pcl !== undefined ? b.submitted_by_pcl : (b.submitted || 0))) || 0;
+  if (bSub !== aSub) return bSub - aSub;
+
+  const aRej = Number(a.rejected_total !== undefined ? a.rejected_total : (a.rejected || 0)) || 0;
+  const bRej = Number(b.rejected_total !== undefined ? b.rejected_total : (b.rejected || 0)) || 0;
+  if (bRej !== aRej) return bRej - aRej;
+
+  const aDraft = Number(a.draft_total !== undefined ? a.draft_total : (a.draft || 0)) || 0;
+  const bDraft = Number(b.draft_total !== undefined ? b.draft_total : (b.draft || 0)) || 0;
+  if (bDraft !== aDraft) return bDraft - aDraft;
+
+  const aOpen = Number(a.open_total !== undefined ? a.open_total : (a.open || 0)) || 0;
+  const bOpen = Number(b.open_total !== undefined ? b.open_total : (b.open || 0)) || 0;
+  if (bOpen !== aOpen) return bOpen - aOpen;
+
+  if (nameKey && (a[nameKey] || b[nameKey])) {
+    return (a[nameKey] || '').localeCompare(b[nameKey] || '', 'id');
+  }
+  return 0;
+}
+
 function getAllUsers() {
   return getDb().prepare('SELECT id, username, role, created_at FROM users ORDER BY created_at DESC').all();
 }
@@ -4334,7 +4372,7 @@ module.exports = {
   getPmlStats, getPclStats, getTrenHarian, getOverviewSummary, getEarlyWarning, getTopPerformers,
   getBottomPerformers, getAnomalyStats,
   getSettings, updateSettings, getUserByUsername, hashPassword, rebuildSummaryCache, rebuildAllSummaryCaches,
-  getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages, getTargetFormula,
+  getKippOfficers, saveDailyWeather, getWeatherHistory, attachProgressPercentages, compareFasihProgress, getTargetFormula,
   getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, getSubslsStatusFormula,
   getAllUsers, createUser, updateUser, deleteUser,
   saveRememberToken, getUserByRememberToken, deleteRememberToken, getIntradayUploadsByDate,

@@ -1,0 +1,207 @@
+<%
+  let activeTargetPct = 25;
+  const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
+  if (currentDate >= new Date('2026-07-01')) {
+    activeTargetPct = 40;
+  }
+%>
+<% if (filterKorlap) { %>
+  <div class="card" id="korlapDetailCard" style="margin-bottom: 0; position: sticky; top: 80px;">
+    <div class="card-header flex-between" style="gap: 8px;">
+      <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-clipboard2-data"></i> Anggota Tim PML: <mark class="highlight-name"><%= filterKorlap %></mark></div>
+      <div class="card-actions flex-start" style="gap: 6px; margin-left: auto;">
+        <button onclick="window.shareElementAsImage('korlapDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
+        <button onclick="window.copyElementAsImage('korlapDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
+        <a href="<%= navPrefix %>/korlap" class="btn btn-secondary btn-xs btn-close-detail" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
+      </div>
+    </div>
+
+    <% if (detailData && detailData.length > 0) { %>
+      <div class="mb-4">
+        <% 
+          let totalBeban = selectedKorlapStats ? selectedKorlapStats.total_muatan : 0;
+          let totalUsaha = selectedKorlapStats ? (selectedKorlapStats.muatan_selesai !== undefined ? selectedKorlapStats.muatan_selesai : (selectedKorlapStats.usaha_total + selectedKorlapStats.keluarga_total)) : 0;
+          let totalPct = selectedKorlapStats ? selectedKorlapStats.muatan_pct_str : '0.00';
+
+          let totalFasihTgt = selectedKorlapStats ? selectedKorlapStats.target_fasih_total : 0;
+          let totalFasihDone = selectedKorlapStats ? ((selectedKorlapStats.submitted_total || 0) + (selectedKorlapStats.approved_total || 0) + (selectedKorlapStats.rejected_total || 0)) : 0;
+          let totalFasihPct = selectedKorlapStats ? selectedKorlapStats.fasih_pct_str : '0.00';
+          let totalFasihDraft = selectedKorlapStats ? (selectedKorlapStats.draft_total || 0) : 0;
+          let totalFasihOpen = selectedKorlapStats ? (selectedKorlapStats.open_total !== undefined ? selectedKorlapStats.open_total : Math.max(0, totalFasihTgt - (totalFasihDraft + totalFasihDone))) : 0;
+          let totalFasihSubmit = selectedKorlapStats ? (selectedKorlapStats.submitted_total || 0) : 0;
+          let totalFasihApprove = selectedKorlapStats ? (selectedKorlapStats.approved_total || 0) : 0;
+          let totalFasihReject = selectedKorlapStats ? (selectedKorlapStats.rejected_total || 0) : 0;
+        %>
+        <!-- Progress FASIH -->
+        <%
+          const korlapActiveTotal = totalFasihApprove + totalFasihSubmit + totalFasihReject + totalFasihDraft + totalFasihOpen;
+          const korlapBase = Math.max(totalFasihTgt, korlapActiveTotal, 1);
+          const kWApp = Math.max(0, (totalFasihApprove / korlapBase * 100));
+          const kWSub = Math.max(0, (totalFasihSubmit / korlapBase * 100));
+          const kWRej = Math.max(0, (totalFasihReject / korlapBase * 100));
+          const kWDft = Math.max(0, (totalFasihDraft / korlapBase * 100));
+          const kWOpn = Math.max(0, (totalFasihOpen / korlapBase * 100));
+        %>
+        <div style="margin-bottom: 12px;">
+          <div class="bar-label">
+            <span><i class="bi bi-phone"></i> Progres FASIH Tim (Submit + Approve + Reject)</span>
+            <span class="fw-bold"><%= totalFasihDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihPct %>%)<% if (totalFasihTgt > 0 && totalFasihDone > totalFasihTgt) { %> <span class="badge badge-green badge-xs">&gt;100%</span><% } %></span>
+          </div>
+
+          <!-- Stacked Bar (Default) -->
+          <div class="progress-track-stacked"
+               style="height: 10px; margin-top: 8px;"
+               data-name="Tim <%= filterKorlap %>"
+               data-target="<%= totalFasihTgt %>"
+               data-app="<%= totalFasihApprove %>"
+               data-sub="<%= totalFasihSubmit %>"
+               data-rej="<%= totalFasihReject %>"
+               data-draft="<%= totalFasihDraft %>"
+               data-open="<%= totalFasihOpen %>"
+               tabindex="0"
+               role="progressbar"
+               aria-label="Progres FASIH Tim <%= filterKorlap %>">
+            <% if (kWApp > 0) { %><div class="stacked-segment seg-approved" style="width: <%= kWApp %>%;"></div><% } %>
+            <% if (kWSub > 0) { %><div class="stacked-segment seg-submitted" style="width: <%= kWSub %>%;"></div><% } %>
+            <% if (kWRej > 0) { %><div class="stacked-segment seg-rejected" style="width: <%= kWRej %>%;"></div><% } %>
+            <% if (kWDft > 0) { %><div class="stacked-segment seg-draft" style="width: <%= kWDft %>%;"></div><% } %>
+            <% if (kWOpn > 0) { %><div class="stacked-segment seg-open" style="width: <%= kWOpn %>%;"></div><% } %>
+          </div>
+
+          <!-- Standard Bar (When Toggled) -->
+          <div class="progress-track-standard">
+            <div class="progress-bar-wrap" style="height: 6px;">
+              <div class="progress-bar <%= parseFloat(totalFasihPct) >= 100 ? 'green' : (parseFloat(totalFasihPct) < 40 ? 'red' : 'purple') %>" data-width="<%= totalFasihPct %>" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress Muatan (Di bawah FASIH) -->
+        <div style="margin-bottom: 14px;" class="muatan-col">
+          <div class="bar-label">
+            <span><i class="bi bi-briefcase"></i> Progres Muatan Tim (Total Usaha + Keluarga)</span>
+            <span class="fw-bold" style="color: var(--accent-cyan);"><%= totalUsaha.toLocaleString('id-ID') %> / <%= totalBeban.toLocaleString('id-ID') %> (<%= totalPct %>%)</span>
+          </div>
+          <div class="progress-bar-wrap" style="height: 6px;">
+            <div class="progress-bar <%= parseFloat(totalPct) >= 100 ? 'green' : (parseFloat(totalPct) < 40 ? 'red' : 'blue') %>" data-width="<%= totalPct %>" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;">
+          <div>SubSLS Selesai: <strong style="color: var(--accent-green);"><%= selectedKorlapStats ? selectedKorlapStats.selesai : 0 %></strong> SubSLS</div>
+          <div>Total SubSLS: <strong><%= selectedKorlapStats ? selectedKorlapStats.total_subsls : 0 %></strong></div>
+        </div>
+
+        <div class="search-wrap mb-4" style="max-width: 100%; margin-bottom: 12px;">
+          <input type="search" id="detailPmlSearch" placeholder="Cari nama PML dalam tim..." aria-label="Cari nama PML dalam tim">
+        </div>
+
+        <div id="detailPmlList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
+          <% detailData.forEach(item => { %>
+            <div class="detail-item" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 4px; font-size: 11px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <div style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 75%;">
+                  <a href="<%= navPrefix %>/pml?pml=<%= encodeURIComponent(item.pml) %>" style="color: var(--accent-cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="bi bi-person"></i> <%= item.pml %>
+                  </a>
+                  <% if (kippPmls.includes(item.pml.toUpperCase())) { %>
+                    <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
+                  <% } %>
+                </div>
+                <div>
+                  <span class="badge badge-gray btn-xs" style="font-size: 8.5px; padding: 1px 4px;"><%= item.total_subsls %> SubSLS</span>
+                </div>
+              </div>
+              
+              <!-- 1. FASIH Progress Bar (DI ATAS) -->
+              <% 
+                const doneFasih = (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0);
+                const totalFasih = (item.target_fasih_total !== undefined ? item.target_fasih_total : item.target_fasih) || 0;
+                const fasihPctVal = parseFloat(item.fasih_pct) || 0;
+                const fasihPctStr = item.fasih_pct_str || fasihPctVal.toFixed(2);
+
+                const doneMuatan = item.muatan_selesai !== undefined ? item.muatan_selesai : (item.usaha_total + item.keluarga_total);
+                const totalMuatan = (item.total_muatan !== undefined ? item.total_muatan : item.muatan) || 0;
+                const muatanPctVal = parseFloat(item.muatan_pct) || 0;
+                const muatanPctStr = item.muatan_pct_str || muatanPctVal.toFixed(2);
+
+                const pmlItemApp = item.approved_total || 0;
+                const pmlItemSub = item.submitted_total || 0;
+                const pmlItemRej = item.rejected_total || 0;
+                const pmlItemDft = item.draft_total || 0;
+                const pmlItemOpen = item.open_total !== undefined ? item.open_total : Math.max(0, totalFasih - (pmlItemDft + doneFasih));
+                const pmlItemActiveTotal = pmlItemApp + pmlItemSub + pmlItemRej + pmlItemDft + pmlItemOpen;
+                const pmlItemBase = Math.max(totalFasih, pmlItemActiveTotal, 1);
+
+                const wApp = Math.max(0, (pmlItemApp / pmlItemBase * 100));
+                const wSub = Math.max(0, (pmlItemSub / pmlItemBase * 100));
+                const wRej = Math.max(0, (pmlItemRej / pmlItemBase * 100));
+                const wDft = Math.max(0, (pmlItemDft / pmlItemBase * 100));
+                const wOpn = Math.max(0, (pmlItemOpen / pmlItemBase * 100));
+              %>
+              <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-muted); margin-top: 4px;">
+                <span style="font-weight: 600;"><i class="bi bi-phone"></i> FASIH: <span style="color: var(--accent-purple);"><%= fasihPctStr %>%</span></span>
+                <span><%= doneFasih.toLocaleString('id-ID') %> / <%= totalFasih.toLocaleString('id-ID') %></span>
+              </div>
+
+              <!-- Stacked Bar (Default) -->
+              <div class="progress-track-stacked"
+                   style="height: 6px; margin-top: 2px; margin-bottom: 6px;"
+                   data-name="<%= item.pml %>"
+                   data-target="<%= totalFasih %>"
+                   data-app="<%= pmlItemApp %>"
+                   data-sub="<%= pmlItemSub %>"
+                   data-rej="<%= pmlItemRej %>"
+                   data-draft="<%= pmlItemDft %>"
+                   data-open="<%= pmlItemOpen %>"
+                   tabindex="0"
+                   role="progressbar"
+                   aria-label="Progres FASIH <%= item.pml %>">
+                <% if (wApp > 0) { %><div class="stacked-segment seg-approved" style="width: <%= wApp %>%;"></div><% } %>
+                <% if (wSub > 0) { %><div class="stacked-segment seg-submitted" style="width: <%= wSub %>%;"></div><% } %>
+                <% if (wRej > 0) { %><div class="stacked-segment seg-rejected" style="width: <%= wRej %>%;"></div><% } %>
+                <% if (wDft > 0) { %><div class="stacked-segment seg-draft" style="width: <%= wDft %>%;"></div><% } %>
+                <% if (wOpn > 0) { %><div class="stacked-segment seg-open" style="width: <%= wOpn %>%;"></div><% } %>
+              </div>
+
+              <!-- Standard Bar (When Toggled) -->
+              <div class="progress-track-standard">
+                <div class="progress-bar-target-wrap" style="position: relative; height: 5px; margin-top: 2px; margin-bottom: 6px;">
+                  <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
+                    <div class="progress-bar <%= fasihPctVal >= 100 ? 'green' : (fasihPctVal < 40 ? 'red' : 'purple') %>" data-width="<%= fasihPctVal %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
+                  </div>
+                  <div style="position: absolute; left: <%= activeTargetPct %>%; top: -2px; height: 9px; border-left: 1.5px dashed var(--accent-cyan); z-index: 2; opacity: 0.8; pointer-events: none;" title="Target: <%= activeTargetPct %>%"></div>
+                </div>
+              </div>
+
+              <!-- 2. Muatan Progress Bar (DI BAWAH FASIH) -->
+              <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-muted); margin-top: 4px;" class="muatan-col">
+                <span style="font-weight: 600;"><i class="bi bi-briefcase"></i> Muatan: <span style="color: var(--accent-cyan);"><%= muatanPctStr %>%</span></span>
+                <span><%= doneMuatan.toLocaleString('id-ID') %> / <%= totalMuatan.toLocaleString('id-ID') %></span>
+              </div>
+              <div class="progress-bar-target-wrap muatan-col" style="position: relative; height: 5px; margin-top: 2px; margin-bottom: 6px;">
+                <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
+                  <div class="progress-bar <%= muatanPctVal >= 100 ? 'green' : (muatanPctVal < 40 ? 'red' : 'blue') %>" data-width="<%= muatanPctVal %>" style="width: <%= Math.min(100, muatanPctVal) %>%; height: 100%; border-radius: 99px;"></div>
+                </div>
+                <div style="position: absolute; left: <%= activeTargetPct %>%; top: -2px; height: 9px; border-left: 1.5px dashed var(--accent-cyan); z-index: 2; opacity: 0.8; pointer-events: none;" title="Target: <%= activeTargetPct %>%"></div>
+              </div>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: var(--text-muted); margin-top: 4px;">
+                <span>Open: <strong style="color: #94a3b8;"><%= pmlItemOpen.toLocaleString('id-ID') %></strong></span>
+                <span>(D<%= item.draft_total || 0 %> S<%= item.submitted_total || 0 %> A<%= item.approved_total || 0 %> R<%= item.rejected_total || 0 %>)</span>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="no-data">Tidak ada detail PML.</div>
+    <% } %>
+  </div>
+<% } else { %>
+  <div class="card empty-state text-center" style="height: 100%; min-height: 300px; display: flex; flex-direction: column; justify-content: center; border-style: dashed;">
+    <div class="empty-state-icon"><i class="bi bi-arrow-left-circle"></i></div>
+    <div class="empty-state-title">Pilih Korlap</div>
+    <div class="empty-state-text">Klik nama Korlap di tabel sebelah kiri untuk melihat rincian PML yang diawasi beserta progres kinerjanya.</div>
+  </div>
+<% } %>

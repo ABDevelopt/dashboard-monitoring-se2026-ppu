@@ -98,14 +98,18 @@
   window.hideMuatanGlobal = <%= hideMuatanGlobal ? 'true' : 'false' %>;
   window.navPrefix = '<%= typeof navPrefix !== "undefined" ? navPrefix : "" %>';
   window.activeSurveyId = '<%= typeof activeSurvey !== "undefined" ? activeSurvey : (typeof surveyConfig !== "undefined" ? surveyConfig.id : "se2026") %>';
-  // Apply saved theme immediately to prevent flashing
-  if (localStorage.getItem('theme') === 'light') {
-    document.body.classList.add('light-mode');
-  }
-  // Apply saved sidebar state immediately to prevent layout shift (CLS)
-  if (window.innerWidth > 768 && localStorage.getItem('sidebar-collapsed') === 'true') {
-    document.body.classList.add('sidebar-collapsed');
-  }
+  // Apply saved preferences immediately to prevent flashing/CLS
+  try {
+    if (localStorage.getItem('theme') === 'light') {
+      document.body.classList.add('light-mode');
+    }
+    if (window.innerWidth > 768 && localStorage.getItem('sidebar-collapsed') === 'true') {
+      document.body.classList.add('sidebar-collapsed');
+    }
+    if (localStorage.getItem('officer_progress_bar_mode') === 'standard') {
+      document.body.classList.add('progress-mode-standard');
+    }
+  } catch (e) {}
 
   // Instant Fail-safe Theme Switcher
   window.toggleTheme = function(e) {

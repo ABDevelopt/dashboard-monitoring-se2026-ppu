@@ -57,12 +57,29 @@
       
       <!-- PML LIST TABLE -->
       <div class="card" style="margin-bottom: 0;">
-        <div class="card-header flex-between" style="gap: 8px;">
+        <div class="card-header flex-between" style="gap: 8px; flex-wrap: wrap;">
           <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-clipboard2-data"></i> Progres Kinerja per PML (Pengawas) <span class="badge badge-blue"><%= pmlStats.length %> PML</span></div>
+          <div class="card-actions flex-start" style="gap: 8px; align-items: center; flex-wrap: wrap;">
+            <div class="stacked-legend-wrap d-none d-lg-flex hide-md">
+              <span class="legend-item"><span class="legend-dot" style="background:#10b981;"></span>App</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#3b82f6;"></span>Sub</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#ef4444;"></span>Rej</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#f59e0b;"></span>Dft</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#64748b;"></span>Opn</span>
+            </div>
+            <div class="btn-group progress-mode-toggle" role="group" aria-label="Mode Tampilan Progress Bar">
+              <button type="button" class="btn btn-mode-stacked active" data-mode="stacked" onclick="window.setProgressBarMode('stacked')" title="Tampilkan Stacked Bar (Open, Draft, Submit, Approved, Rejected)" aria-label="Tampilan Stacked Bar">
+                <i class="bi bi-segmented-nav"></i><span class="hide-xs"> Stacked</span>
+              </button>
+              <button type="button" class="btn btn-mode-standard" data-mode="standard" onclick="window.setProgressBarMode('standard')" title="Tampilkan Progres Bar Tunggal Standar" aria-label="Tampilan Progres Bar Standar">
+                <i class="bi bi-distribute-horizontal"></i><span class="hide-xs"> Standar</span>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div class="search-wrap mb-4">
-          <input type="search" id="pmlSearch" placeholder="Cari nama PML..." aria-label="Cari nama Pengawas PML" style="width: 100%; max-width: 280px;">
+        <div class="search-wrap" style="margin-bottom: 10px;">
+          <input type="search" id="pmlSearch" placeholder="Cari nama PML..." aria-label="Cari nama Pengawas PML">
         </div>
 
         <% if (pmlStats && pmlStats.length > 0) { %>
@@ -72,7 +89,16 @@
                 <tr>
                   <th rowspan="2" class="text-center" style="font-weight: 600; width: 40px;">No</th>
                   <th rowspan="2">Nama PML</th>
-                  <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">FASIH %</th>
+                  <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 155px;">
+                    <div>FASIH %</div>
+                    <div class="stacked-header-legend hide-sm">
+                      <span class="legend-text-app">App</span> &bull;
+                      <span class="legend-text-sub">Sub</span> &bull;
+                      <span class="legend-text-rej">Rej</span> &bull;
+                      <span class="legend-text-draft">Dft</span> &bull;
+                      <span class="legend-text-open">Opn</span>
+                    </div>
+                  </th>
                   <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">Verifikasi %</th>
                   <% if (!hideMuatanPml) { %>
                   <th rowspan="2" class="text-right bg-cyan-soft muatan-col" style="min-width: 140px;">Muatan %</th>
@@ -114,8 +140,17 @@
               </thead>
               <tbody>
                 <% pmlStats.forEach((p, index) => { %>
-                  <% let fasihPct = p.fasih_pct_str; %>
-                  <% let muatanPct = p.muatan_pct_str; %>
+                  <% 
+                    let fasihPct = p.fasih_pct_str;
+                    let muatanPct = p.muatan_pct_str;
+                    const fReal = (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
+                    const fTgt = p.target_fasih_total || 0;
+                    const pmlApp = p.approved_total || 0;
+                    const pmlSub = p.submitted_total || 0;
+                    const pmlRej = p.rejected_total || 0;
+                    const pmlDft = p.draft_total || 0;
+                    const pmlOpn = p.open_total !== undefined ? p.open_total : Math.max(0, fTgt - (pmlDft + fReal));
+                  %>
                   <tr class="<%= filterPml === p.pml ? 'active' : '' %>" style="<%= filterPml === p.pml ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="text-center" style="font-weight: 600; background: var(--bg-subtle);"><%= index + 1 %></td>
                     <td class="td-primary">
@@ -126,19 +161,57 @@
                         <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 4px;">KIPP</span>
                       <% } %>
                     </td>
-                    <td class="bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>" style="min-width: 160px; padding: 6px 10px; vertical-align: middle;">
+                    <td class="bg-purple-soft"
+                        data-sort="<%= parseFloat(fasihPct) || 0 %>"
+                        data-sort-pct="<%= parseFloat(fasihPct) || 0 %>"
+                        data-sort-app="<%= pmlApp %>"
+                        data-sort-sub="<%= pmlSub %>"
+                        data-sort-rej="<%= pmlRej %>"
+                        data-sort-draft="<%= pmlDft %>"
+                        data-sort-open="<%= pmlOpn %>"
+                        style="min-width: 160px; padding: 6px 10px; vertical-align: middle;">
                       <%
-                        const fReal = (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
-                        const fTgt = p.target_fasih_total || 0;
                         const fW = Math.min(parseFloat(fasihPct), 100);
                         const fColor = fW >= 100 ? 'var(--accent-green)' : (fW < 40 ? 'var(--accent-red)' : 'var(--accent-purple)');
+
+                        const pmlActiveTotal = pmlApp + pmlSub + pmlRej + pmlDft + pmlOpn;
+                        const pmlBase = Math.max(fTgt, pmlActiveTotal, 1);
+
+                        const wApp = Math.max(0, (pmlApp / pmlBase * 100));
+                        const wSub = Math.max(0, (pmlSub / pmlBase * 100));
+                        const wRej = Math.max(0, (pmlRej / pmlBase * 100));
+                        const wDft = Math.max(0, (pmlDft / pmlBase * 100));
+                        const wOpn = Math.max(0, (pmlOpn / pmlBase * 100));
                       %>
-                      <div class="bar-label" style="font-size:10px; margin-bottom:3px;">
-                        <span style="font-weight:700; color:<%= fColor %>"><%= fasihPct %>%</span>
+                      <div class="bar-label" style="font-size:10px; margin-bottom:3px; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:700; color:<%= fColor %>"><%= fasihPct %>%<% if (fTgt > 0 && fReal > fTgt) { %> <span class="badge badge-green badge-xs">&gt;100%</span><% } %></span>
                         <span><%= fReal.toLocaleString('id-ID') %> / <%= fTgt.toLocaleString('id-ID') %></span>
                       </div>
-                      <div class="progress-track-sm">
-                        <div class="progress-bar <%= fW >= 100 ? 'green' : (fW < 40 ? 'red' : 'purple') %>" data-width="<%= fW %>" style="width:0%; height:100%; border-radius:99px;"></div>
+                      
+                      <!-- Stacked Bar (Default) -->
+                      <div class="progress-track-stacked"
+                           data-name="<%= p.pml %>"
+                           data-target="<%= fTgt %>"
+                           data-app="<%= pmlApp %>"
+                           data-sub="<%= pmlSub %>"
+                           data-rej="<%= pmlRej %>"
+                           data-draft="<%= pmlDft %>"
+                           data-open="<%= pmlOpn %>"
+                           tabindex="0"
+                           role="progressbar"
+                           aria-label="Progres FASIH <%= p.pml %>">
+                        <% if (wApp > 0) { %><div class="stacked-segment seg-approved" style="width: <%= wApp %>%;"></div><% } %>
+                        <% if (wSub > 0) { %><div class="stacked-segment seg-submitted" style="width: <%= wSub %>%;"></div><% } %>
+                        <% if (wRej > 0) { %><div class="stacked-segment seg-rejected" style="width: <%= wRej %>%;"></div><% } %>
+                        <% if (wDft > 0) { %><div class="stacked-segment seg-draft" style="width: <%= wDft %>%;"></div><% } %>
+                        <% if (wOpn > 0) { %><div class="stacked-segment seg-open" style="width: <%= wOpn %>%;"></div><% } %>
+                      </div>
+
+                      <!-- Standard Single Bar (When Toggled) -->
+                      <div class="progress-track-standard">
+                        <div class="progress-track-sm">
+                          <div class="progress-bar <%= fW >= 100 ? 'green' : (fW < 40 ? 'red' : 'purple') %>" data-width="<%= fW %>" style="width:0%; height:100%; border-radius:99px;"></div>
+                        </div>
                       </div>
                     </td>
                     <td class="bg-purple-soft" data-sort="<%= parseFloat(p.fasih_verified_pct_str) %>" style="min-width: 160px; padding: 6px 10px; vertical-align: middle;">
@@ -205,198 +278,7 @@
 
       <!-- PML'S PCL TEAM DETAILS -->
       <div id="pmlDetailContainer">
-        <% if (filterPml) { %>
-          <div class="card" id="pmlDetailCard" style="margin-bottom: 0; position: sticky; top: 80px;">
-            <div class="card-header flex-between" style="gap: 8px;">
-              <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-people"></i> Anggota Tim PML: <mark class="highlight-name"><%= filterPml %></mark></div>
-              <div class="card-actions flex-start" style="gap: 6px; margin-left: auto;">
-                <button onclick="window.shareElementAsImage('pmlDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
-                <button onclick="window.copyElementAsImage('pmlDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
-                <a href="<%= navPrefix %>/pml" class="btn btn-secondary btn-xs btn-close-detail" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
-              </div>
-            </div>
-
-            <% if (detailPcl && detailPcl.length > 0) { %>
-              <div class="mb-3">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; flex-wrap: wrap; gap: 6px;">
-                  <% if (!isSakernas) { %>
-                    <div>Korlap Atasan: <strong><%= (selectedPmlStats && selectedPmlStats.korlap) || detailPcl[0].korlap %></strong></div>
-                  <% } else { %>
-                    <div></div>
-                  <% } %>
-                  <div>SubSLS Selesai: <strong style="color: var(--accent-green);"><%= selectedPmlStats ? selectedPmlStats.selesai : 0 %></strong> SubSLS</div>
-                </div>
-                <% 
-                  let totalBeban = selectedPmlStats ? selectedPmlStats.total_muatan : 0;
-                  let totalUsaha = selectedPmlStats ? (selectedPmlStats.muatan_selesai !== undefined ? selectedPmlStats.muatan_selesai : (selectedPmlStats.usaha_total + selectedPmlStats.keluarga_total)) : 0;
-                  let totalPct = selectedPmlStats ? selectedPmlStats.muatan_pct_str : '0.00';
-
-                  let totalFasihTgt = selectedPmlStats ? selectedPmlStats.target_fasih_total : 0;
-                  let totalFasihDone = selectedPmlStats ? ((selectedPmlStats.submitted_total || 0) + (selectedPmlStats.approved_total || 0) + (selectedPmlStats.rejected_total || 0)) : 0;
-                  let totalFasihPct = selectedPmlStats ? selectedPmlStats.fasih_pct_str : '0.00';
-
-                  let totalFasihVerifDone = selectedPmlStats ? ((selectedPmlStats.approved_total || 0) + (selectedPmlStats.rejected_total || 0)) : 0;
-                  let totalFasihVerifPct = selectedPmlStats ? selectedPmlStats.fasih_verified_pct_str : '0.00';
-
-                  let totalFasihOpen = selectedPmlStats ? Math.max(0, (selectedPmlStats.target_fasih_total || 0) - ((selectedPmlStats.draft_total || 0) + (selectedPmlStats.submitted_total || 0) + (selectedPmlStats.approved_total || 0) + (selectedPmlStats.rejected_total || 0))) : 0;
-                  let totalFasihDraft = selectedPmlStats ? (selectedPmlStats.draft_total || 0) : 0;
-                  let totalFasihSubmit = selectedPmlStats ? (selectedPmlStats.submitted_total || 0) : 0;
-                  let totalFasihApprove = selectedPmlStats ? (selectedPmlStats.approved_total || 0) : 0;
-                  let totalFasihReject = selectedPmlStats ? (selectedPmlStats.rejected_total || 0) : 0;
-                %>
-                <!-- Progress FASIH -->
-                <div style="margin-bottom: 12px;">
-                  <div class="bar-label" style="font-size: 11.5px; margin-bottom: 4px;">
-                    <span><i class="bi bi-phone"></i> Progres FASIH Tim (Submit + Approve + Reject)</span>
-                    <span class="fw-bold" style="color: var(--accent-purple);"><%= totalFasihDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihPct %>%)</span>
-                  </div>
-                  <div class="progress-bar-wrap" style="height: 6px;">
-                    <div class="progress-bar <%= parseFloat(totalFasihPct) >= 100 ? 'green' : (parseFloat(totalFasihPct) < 40 ? 'red' : 'purple') %>" data-width="<%= totalFasihPct %>" style="width: 0%;"></div>
-                  </div>
-                </div>
-
-                <!-- Progress Verifikasi PML -->
-                <div style="margin-bottom: 12px;">
-                  <div class="bar-label" style="font-size: 11.5px; margin-bottom: 4px;">
-                    <span><i class="bi bi-shield-check"></i> Progres Verifikasi PML (Approve + Reject)</span>
-                    <span class="fw-bold" style="color: var(--accent-purple);"><%= totalFasihVerifDone.toLocaleString('id-ID') %> / <%= totalFasihTgt.toLocaleString('id-ID') %> (<%= totalFasihVerifPct %>%)</span>
-                  </div>
-                  <div class="progress-bar-wrap" style="height: 6px;">
-                    <div class="progress-bar <%= parseFloat(totalFasihVerifPct) >= 100 ? 'green' : (parseFloat(totalFasihVerifPct) < 40 ? 'red' : 'purple') %>" data-width="<%= totalFasihVerifPct %>" style="width: 0%;"></div>
-                  </div>
-                </div>
-
-                <!-- Rincian Status Dokumen FASIH Tim PML -->
-                <div class="fasih-grid-container" style="margin-bottom: 14px;">
-                  <div class="fasih-grid" style="grid-template-columns: repeat(5, 1fr); gap: 4px;">
-                    <div class="fasih-grid-item fasih-item-open" title="Open: Alokasi FASIH yang belum disentuh/draft">
-                      <div class="fasih-grid-item-label" style="font-size: 8.5px;">Open</div>
-                      <div class="fasih-grid-item-value" style="font-size: 11px;"><%= totalFasihOpen.toLocaleString('id-ID') %></div>
-                    </div>
-                    <div class="fasih-grid-item fasih-item-draft" title="Draft: Sedang Diisi <%= officerLabel %>">
-                      <div class="fasih-grid-item-label" style="font-size: 8.5px;">Draft</div>
-                      <div class="fasih-grid-item-value" style="font-size: 11px;"><%= totalFasihDraft.toLocaleString('id-ID') %></div>
-                    </div>
-                    <div class="fasih-grid-item fasih-item-submit" title="Submitted: Dikirim ke PML">
-                      <div class="fasih-grid-item-label" style="font-size: 8.5px;">Submit</div>
-                      <div class="fasih-grid-item-value" style="font-size: 11px;"><%= totalFasihSubmit.toLocaleString('id-ID') %></div>
-                    </div>
-                    <div class="fasih-grid-item fasih-item-approve" title="Approved: Disetujui PML">
-                      <div class="fasih-grid-item-label" style="font-size: 8.5px;">Approve</div>
-                      <div class="fasih-grid-item-value" style="font-size: 11px;"><%= totalFasihApprove.toLocaleString('id-ID') %></div>
-                    </div>
-                    <div class="fasih-grid-item fasih-item-reject" title="Rejected: Ditolak / Perlu Perbaikan">
-                      <div class="fasih-grid-item-label" style="font-size: 8.5px;">Reject</div>
-                      <div class="fasih-grid-item-value" style="font-size: 11px;"><%= totalFasihReject.toLocaleString('id-ID') %></div>
-                    </div>
-                  </div>
-                </div>
-
-                <% if (!hideMuatanPml) { %>
-                <div style="margin-bottom: 14px;" class="muatan-col">
-                  <div class="bar-label" style="font-size: 11.5px; margin-bottom: 4px;">
-                    <span><i class="bi bi-briefcase"></i> Progres Muatan Tim</span>
-                    <span class="fw-bold" style="color: var(--accent-cyan);"><%= totalUsaha.toLocaleString('id-ID') %> / <%= totalBeban.toLocaleString('id-ID') %> (<%= totalPct %>%)</span>
-                  </div>
-                  <div class="progress-bar-wrap" style="height: 6px;">
-                    <div class="progress-bar <%= parseFloat(totalPct) >= 100 ? 'green' : (parseFloat(totalPct) < 40 ? 'red' : 'cyan') %>" data-width="<%= totalPct %>" style="width: 0%;"></div>
-                  </div>
-                </div>
-                <% } %>
-              </div>
-
-                <!-- PML HISTORICAL CHART ACCORDION -->
-                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px; overflow: hidden;">
-                  <div class="pml-chart-header flex-between" onclick="togglePmlChart()" style="padding: 8px 12px; cursor: pointer; background: rgba(0,0,0,0.1); user-select: none;">
-                    <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-                      <i class="bi bi-graph-up-arrow" style="color: var(--accent-cyan);"></i> Tren Kinerja Tim PML (Antar Waktu)
-                    </div>
-                    <i class="bi bi-chevron-down" id="pmlChartChevron" style="font-size: 11px; transition: transform 0.2s ease;"></i>
-                  </div>
-                  <div id="pmlChartBody" style="display: none; padding: 10px 4px 6px 4px;">
-                    <div style="height: 180px; position: relative; width: 100%; padding-left: 10px; padding-right: 10px;">
-                      <canvas id="pmlHistoryChartCanvas"></canvas>
-                    </div>
-                  </div>
-
-                  <!-- JSON data script tag -->
-                  <script id="pmlHistoryData" type="application/json">
-                    <%- JSON.stringify(pmlHistory) %>
-                  </script>
-                </div>
-
-                <div class="search-wrap mb-4" style="max-width: 100%; margin-bottom: 12px;">
-                  <input type="search" id="detailPclSearch" placeholder="Cari nama <%= officerLabel %> dalam tim..." aria-label="Cari nama <%= officerLabel %> dalam tim">
-                </div>
-
-                <div id="detailPclList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
-                  <% detailPcl.forEach(item => { %>
-                    <div class="detail-item" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 4px; font-size: 11px;">
-                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                        <div style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 75%;">
-                          <a href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(item.pcl) %>" style="color: var(--accent-cyan); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                            <i class="bi bi-person"></i> <%= item.pcl %>
-                          </a>
-                        <% if (kippPcls.includes(item.pcl.toUpperCase())) { %>
-                          <span class="badge badge-orange" style="padding: 1px 4px; font-size: 8px; vertical-align: middle; margin-left: 2px;">KIPP</span>
-                        <% } %>
-                      </div>
-                    </div>
-                    
-                    <!-- FASIH Progress Bar -->
-                    <% const pctVal = parseFloat(item.pct) || 0; %>
-                    <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 6px;">
-                      <span style="font-weight: 600;"><i class="bi bi-phone"></i> FASIH: <span style="color: var(--accent-purple);"><%= pctVal.toFixed(2) %>%</span></span>
-                      <span><%= ((item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0)).toLocaleString('id-ID') %> / <%= ((item.target_fasih_total !== undefined ? item.target_fasih_total : item.target_fasih) || 0).toLocaleString('id-ID') %></span>
-                    </div>
-                    <div class="progress-bar-target-wrap" style="position: relative; height: 5px; margin-top: 2px; margin-bottom: 6px;">
-                      <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
-                        <div class="progress-bar <%= pctVal >= 100 ? 'green' : (pctVal < 40 ? 'red' : 'blue') %>" data-width="<%= pctVal %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
-                      </div>
-                      <div style="position: absolute; left: <%= activeTargetPct %>%; top: -2px; height: 9px; border-left: 1.5px dashed var(--accent-cyan); z-index: 2; opacity: 0.8; pointer-events: none;" title="Target: <%= activeTargetPct %>%"></div>
-                    </div>
-
-                    <!-- Muatan Progress Bar -->
-                    <% if (!hideMuatanPml) { %>
-                    <% const muatanPctVal = parseFloat(item.muatan_pct) || 0; %>
-                    <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-top: 4px;" class="muatan-col">
-                      <span style="font-weight: 600;"><i class="bi bi-briefcase"></i> Muatan: <span style="color: var(--accent-cyan);"><%= item.muatan_pct_str %>%</span></span>
-                      <span><%= (item.muatan_selesai !== undefined ? item.muatan_selesai : (item.usaha_total + item.keluarga_total)).toLocaleString('id-ID') %> / <%= ((item.total_muatan !== undefined ? item.total_muatan : item.muatan) || 0).toLocaleString('id-ID') %></span>
-                    </div>
-                    <div class="progress-bar-target-wrap muatan-col" style="position: relative; height: 5px; margin-top: 2px; margin-bottom: 6px;">
-                      <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
-                        <div class="progress-bar <%= muatanPctVal >= 100 ? 'green' : (muatanPctVal < 40 ? 'red' : 'cyan') %>" data-width="<%= muatanPctVal %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
-                      </div>
-                      <div style="position: absolute; left: <%= activeTargetPct %>%; top: -2px; height: 9px; border-left: 1.5px dashed var(--accent-cyan); z-index: 2; opacity: 0.8; pointer-events: none;" title="Target: <%= activeTargetPct %>%"></div>
-                    </div>
-                    <% } %>
-                    
-                    <%
-                      const itemDone = (item.submitted_total || 0) + (item.approved_total || 0) + (item.rejected_total || 0);
-                      const itemTgt = (item.target_fasih_total !== undefined ? item.target_fasih_total : item.target_fasih) || 0;
-                      const itemOpen = item.open_total !== undefined ? item.open_total : Math.max(0, itemTgt - ((item.draft_total || 0) + itemDone));
-                    %>
-                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); flex-wrap: wrap; gap: 4px; margin-top: 8px;">
-                      <div>Kec. <%= item.kecamatan %></div>
-                      <div style="display: flex; gap: 8px; font-size: 9px; color: var(--text-muted);">
-                        <span>Open: <strong style="color: #94a3b8;"><%= itemOpen.toLocaleString('id-ID') %></strong></span>
-                        <span>(D<%= item.draft_total %> S<%= item.submitted_total %> A<%= item.approved_total %> R<%= item.rejected_total %>)</span>
-                      </div>
-                    </div>
-                  </div>
-                <% }) %>
-              </div>
-            <% } else { %>
-              <div class="no-data">Tidak ada detail PCL.</div>
-            <% } %>
-          </div>
-        <% } else { %>
-          <div class="card empty-state text-center" style="height: 100%; min-height: 300px; display: flex; flex-direction: column; justify-content: center; border-style: dashed;">
-            <div class="empty-state-icon"><i class="bi bi-arrow-left-circle"></i></div>
-            <div class="empty-state-title">Pilih PML</div>
-            <div class="empty-state-text">Klik nama PML di tabel sebelah kiri untuk melihat rincian PCL yang diawasi beserta progres kinerja per PCL.</div>
-          </div>
-        <% } %>
+        <%- include('partials/pml_detail') %>
       </div>
 
     </div>
@@ -459,10 +341,52 @@
     const detailContainer = document.getElementById('pmlDetailContainer');
     const table = document.getElementById('pmlTable');
 
+    function renderPmlDetail(html, url) {
+      if (!html.includes('<!DOCTYPE') && !html.includes('<html')) {
+        detailContainer.innerHTML = html;
+      } else {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newDetail = doc.getElementById('pmlDetailContainer');
+        if (newDetail) detailContainer.innerHTML = newDetail.innerHTML;
+      }
+      detailContainer.style.opacity = '1';
+      detailContainer.classList.remove('smooth-detail-animate');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          detailContainer.classList.add('smooth-detail-animate');
+        });
+      });
+
+      // Toggle grid selection classes
+      const grid = document.querySelector('.drilldown-grid');
+      if (grid) {
+        const hasSel = url.includes('pml=');
+        if (hasSel) {
+          grid.classList.remove('no-selection');
+          grid.classList.add('has-selection');
+        } else {
+          grid.classList.remove('has-selection');
+          grid.classList.add('no-selection');
+        }
+      }
+
+      // Update URL path without refresh
+      window.history.pushState(null, '', url);
+
+      // Re-bind list search utility
+      makeListSearchable('detailPclSearch', 'detailPclList', '.detail-item');
+
+      // Re-bind close handler
+      bindCloseDetail();
+      if (window.initProgressBars) window.initProgressBars(detailContainer);
+      initPmlHistoryChart();
+    }
+
     if (table && detailContainer) {
       // Intercept row clicks
       table.querySelector('tbody').addEventListener('click', (e) => {
-        const link = e.target.closest('td.td-primary a');
+        const link = e.target.closest('td.td-primary a') || e.target.closest('td.td-primary')?.querySelector('a');
         if (!link) return;
 
         e.preventDefault();
@@ -470,49 +394,30 @@
         const row = link.closest('tr');
 
         // Update active row visual indicator
-        table.querySelectorAll('tbody tr').forEach(r => {
-          r.classList.remove('active');
-          r.style.background = '';
-          r.style.fontWeight = '';
-        });
+        const activeRow = table.querySelector('tbody tr.active');
+        if (activeRow) {
+          activeRow.classList.remove('active');
+          activeRow.style.background = '';
+          activeRow.style.fontWeight = '';
+        }
         row.classList.add('active');
         row.style.background = 'var(--bg-card-hover)';
         row.style.fontWeight = '500';
 
+        if (window.pmlDetailCache && window.pmlDetailCache[url]) {
+          renderPmlDetail(window.pmlDetailCache[url], url);
+          return;
+        }
+
         // Opacity transition
         detailContainer.style.opacity = '0.5';
 
-        fetch(url)
+        fetch(url, { headers: { 'X-Partial-Drilldown': '1' } })
           .then(res => res.text())
           .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const newDetail = doc.getElementById('pmlDetailContainer');
-            if (newDetail) {
-              detailContainer.innerHTML = newDetail.innerHTML;
-              detailContainer.style.opacity = '1';
-              detailContainer.classList.remove('smooth-detail-animate');
-              void detailContainer.offsetWidth;
-              detailContainer.classList.add('smooth-detail-animate');
-
-              // Toggle grid selection classes
-              const grid = document.querySelector('.drilldown-grid');
-              if (grid) {
-                grid.classList.remove('no-selection');
-                grid.classList.add('has-selection');
-              }
-
-              // Update URL path without refresh
-              window.history.pushState(null, '', url);
-
-              // Re-bind list search utility
-              makeListSearchable('detailPclSearch', 'detailPclList', '.detail-item');
-
-              // Re-bind close handler
-              bindCloseDetail();
-              if (window.initProgressBars) window.initProgressBars(detailContainer);
-              initPmlHistoryChart();
-            }
+            if (!window.pmlDetailCache) window.pmlDetailCache = {};
+            window.pmlDetailCache[url] = html;
+            renderPmlDetail(html, url);
           })
           .catch(err => {
             console.error(err);
@@ -523,7 +428,7 @@
 
     // AJAX Tutup Detail handler
     function bindCloseDetail() {
-      const closeBtn = detailContainer.querySelector('a[href*="/pml"]');
+      const closeBtn = detailContainer.querySelector('.btn-close-detail') || detailContainer.querySelector('a[href*="/pml"]');
       if (closeBtn) {
         closeBtn.addEventListener('click', (e) => {
           e.preventDefault();
@@ -531,37 +436,26 @@
 
           // Reset active rows
           if (table) {
-            table.querySelectorAll('tbody tr').forEach(r => {
-              r.classList.remove('active');
-              r.style.background = '';
-              r.style.fontWeight = '';
-            });
+            const activeRow = table.querySelector('tbody tr.active');
+            if (activeRow) {
+              activeRow.classList.remove('active');
+              activeRow.style.background = '';
+              activeRow.style.fontWeight = '';
+            }
+          }
+
+          if (window.pmlDetailCache && window.pmlDetailCache[url]) {
+            renderPmlDetail(window.pmlDetailCache[url], url);
+            return;
           }
 
           detailContainer.style.opacity = '0.5';
-          fetch(url)
+          fetch(url, { headers: { 'X-Partial-Drilldown': '1' } })
             .then(res => res.text())
             .then(html => {
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(html, 'text/html');
-              const newDetail = doc.getElementById('pmlDetailContainer');
-              if (newDetail) {
-                detailContainer.innerHTML = newDetail.innerHTML;
-                detailContainer.style.opacity = '1';
-                detailContainer.classList.remove('smooth-detail-animate');
-                void detailContainer.offsetWidth;
-                detailContainer.classList.add('smooth-detail-animate');
-                window.history.pushState(null, '', url);
-
-                // Toggle grid selection classes
-                const grid = document.querySelector('.drilldown-grid');
-                if (grid) {
-                  grid.classList.remove('has-selection');
-                  grid.classList.add('no-selection');
-                }
-                if (window.initProgressBars) window.initProgressBars(detailContainer);
-                bindCloseDetail();
-              }
+              if (!window.pmlDetailCache) window.pmlDetailCache = {};
+              window.pmlDetailCache[url] = html;
+              renderPmlDetail(html, url);
             })
             .catch(err => {
               console.error(err);

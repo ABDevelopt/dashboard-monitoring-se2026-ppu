@@ -1,0 +1,212 @@
+<%
+  const isSakernas = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
+  const isSe2026Pcl = (typeof activeSurvey !== 'undefined' ? activeSurvey === 'se2026' : (typeof surveyConfig !== 'undefined' ? surveyConfig.id === 'se2026' : true));
+  const hideMuatanPcl = !isSe2026Pcl || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0');
+%>
+<% if (filterPcl) { %>
+  <div class="card" id="pclDetailCard" style="margin-bottom: 0; position: sticky; top: 80px;">
+    <div class="card-header flex-between" style="gap: 8px;">
+      <div class="card-title mb-0 flex-start" style="flex-wrap: wrap; gap: 4px;">
+        <i class="bi bi-search"></i> Rincian Tugas SLS: <mark class="highlight-name"><%= filterPcl %></mark>
+        <button class="pin-btn" data-type="pcl" data-name="<%= filterPcl %>" data-href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(filterPcl) %>" title="Sematkan Petugas ke Favorit">
+          <i class="bi bi-star"></i>
+        </button>
+        <% if (kippPcls.includes(filterPcl.toUpperCase())) { %>
+          <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 6px;">KIPP</span>
+        <% } %>
+      </div>
+      <div class="card-actions flex-start" style="gap: 6px; margin-left: auto;">
+        <button onclick="window.shareElementAsImage('pclDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
+        <button onclick="window.copyElementAsImage('pclDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
+        <a href="<%= navPrefix %>/pcl?kec=<%= filterKec || '' %>&korlap=<%= filterKorlap || '' %>&pml=<%= filterPml || '' %>" class="btn btn-secondary btn-xs btn-close-detail" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
+      </div>
+    </div>
+
+    <% if (detailSubsls && detailSubsls.length > 0) { %>
+      <div class="mb-4">
+        <div class="text-base text-secondary mb-2">
+          PML: <strong><%= detailSubsls[0].pml %></strong><% if (kippPmls.includes(detailSubsls[0].pml.toUpperCase())) { %> <span class="badge badge-orange badge-xs" style="vertical-align: middle;">KIPP</span><% } %>
+          <% if (!isSakernas) { %>
+           · Korlap: <strong><%= detailSubsls[0].korlap %></strong><% if (kippKorlaps.includes(detailSubsls[0].korlap.toUpperCase())) { %> <span class="badge badge-orange badge-xs" style="vertical-align: middle;">KIPP</span><% } %>
+          <% } %>
+        </div>
+        <% 
+          let doneMuatan = selectedPclStats ? (selectedPclStats.muatan_selesai !== undefined ? selectedPclStats.muatan_selesai : (selectedPclStats.usaha_total + selectedPclStats.keluarga_total)) : 0;
+          let totalMuatan = selectedPclStats ? selectedPclStats.total_muatan : 0;
+          let donePct = selectedPclStats ? selectedPclStats.muatan_pct_str : '0.00';
+
+          let doneFasih = selectedPclStats ? ((selectedPclStats.submitted_total || 0) + (selectedPclStats.approved_total || 0) + (selectedPclStats.rejected_total || 0)) : 0;
+          let totalFasih = selectedPclStats ? selectedPclStats.target_fasih_total : 0;
+          let fasihPct = selectedPclStats ? selectedPclStats.fasih_pct_str : '0.00';
+
+          let openFasih = selectedPclStats ? (selectedPclStats.open_total || 0) : 0;
+          let draftFasih = selectedPclStats ? (selectedPclStats.draft_total || 0) : 0;
+          let submittedFasih = selectedPclStats ? (selectedPclStats.submitted_total || 0) : 0;
+          let rejectedFasih = selectedPclStats ? (selectedPclStats.rejected_total || 0) : 0;
+          let approvedFasih = selectedPclStats ? (selectedPclStats.approved_total || 0) : 0;
+        %>
+        <!-- Progress FASIH -->
+        <%
+          const dActiveTotal = approvedFasih + submittedFasih + rejectedFasih + draftFasih + openFasih;
+          const dBase = Math.max(totalFasih, dActiveTotal, 1);
+          const dWApp = Math.max(0, (approvedFasih / dBase * 100));
+          const dWSub = Math.max(0, (submittedFasih / dBase * 100));
+          const dWRej = Math.max(0, (rejectedFasih / dBase * 100));
+          const dWDft = Math.max(0, (draftFasih / dBase * 100));
+          const dWOpn = Math.max(0, (openFasih / dBase * 100));
+        %>
+        <div class="mb-3">
+          <div class="bar-label">
+            <span><i class="bi bi-phone"></i> Progres FASIH (Submit + Approve + Reject)</span>
+            <span class="fw-bold"><%= doneFasih.toLocaleString('id-ID') %> / <%= totalFasih.toLocaleString('id-ID') %> (<%= fasihPct %>%)<% if (totalFasih > 0 && doneFasih > totalFasih) { %> <span class="badge badge-green badge-xs">&gt;100%</span><% } %></span>
+          </div>
+          
+          <!-- Stacked Bar (Default) -->
+          <div class="progress-track-stacked"
+               style="height: 10px; margin-top: 16px; margin-bottom: 8px;"
+               data-name="<%= filterPcl %>"
+               data-target="<%= totalFasih %>"
+               data-app="<%= approvedFasih %>"
+               data-sub="<%= submittedFasih %>"
+               data-rej="<%= rejectedFasih %>"
+               data-draft="<%= draftFasih %>"
+               data-open="<%= openFasih %>"
+               tabindex="0"
+               role="progressbar"
+               aria-label="Progres FASIH <%= filterPcl %>">
+            <% if (dWApp > 0) { %><div class="stacked-segment seg-approved" style="width: <%= dWApp %>%;"></div><% } %>
+            <% if (dWSub > 0) { %><div class="stacked-segment seg-submitted" style="width: <%= dWSub %>%;"></div><% } %>
+            <% if (dWRej > 0) { %><div class="stacked-segment seg-rejected" style="width: <%= dWRej %>%;"></div><% } %>
+            <% if (dWDft > 0) { %><div class="stacked-segment seg-draft" style="width: <%= dWDft %>%;"></div><% } %>
+            <% if (dWOpn > 0) { %><div class="stacked-segment seg-open" style="width: <%= dWOpn %>%;"></div><% } %>
+          </div>
+
+          <!-- Standard Single Bar (When Toggled) -->
+          <div class="progress-track-standard">
+            <div class="progress-bar-wrap" style="height: 6px;">
+              <div class="progress-bar <%= parseFloat(fasihPct) >= 100 ? 'green' : (parseFloat(fasihPct) < 40 ? 'red' : 'purple') %>" data-width="<%= fasihPct %>" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress Muatan -->
+        <% if (!hideMuatanPcl) { %>
+        <div class="mb-3 muatan-col">
+          <div class="bar-label">
+            <span><i class="bi bi-briefcase"></i> Progres Muatan (Total Usaha + Keluarga)</span>
+            <span class="fw-bold" style="color: var(--accent-cyan);"><%= doneMuatan.toLocaleString('id-ID') %> / <%= totalMuatan.toLocaleString('id-ID') %> (<%= donePct %>%)</span>
+          </div>
+          <div class="progress-bar-wrap" style="height: 6px;">
+            <div class="progress-bar <%= parseFloat(donePct) >= 100 ? 'green' : (parseFloat(donePct) < 40 ? 'red' : 'blue') %>" data-width="<%= donePct %>" style="width: 0%;"></div>
+          </div>
+        </div>
+        <% } %>
+
+        <!-- Historical Progress Chart for PCL -->
+        <div class="card-item mb-3" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px;">
+          <div class="bar-label mb-2" style="font-size: 11px; font-weight: 600; color: var(--text-primary);">
+            <span><i class="bi bi-graph-up"></i> Tren Progres Harian Petugas</span>
+          </div>
+          <div style="height: 140px; position: relative; width: 100%;">
+            <canvas id="pclHistoryChartCanvas"></canvas>
+          </div>
+
+          <!-- Speedometer Target / Estimasi Selesai -->
+          <%
+            const curReal = doneFasih;
+            const curTgt = totalFasih;
+            const curSpeed = diffDays > 0 ? (curReal / diffDays) : 0;
+            const sisaTgt = Math.max(0, curTgt - curReal);
+            const reqSpeed = daysRemaining > 0 ? (sisaTgt / daysRemaining) : 0;
+            const isFinished = sisaTgt === 0 && curTgt > 0;
+            const estDaysNeeded = curSpeed > 0 ? Math.ceil(sisaTgt / curSpeed) : 999;
+          %>
+          <div style="margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 8px; font-size: 11px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="color: var(--text-muted);"><i class="bi bi-speedometer2"></i> Kecepatan Saat Ini:</span>
+              <strong style="color: var(--accent-blue);"><%= curSpeed.toFixed(2) %> dok/hari</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="color: var(--text-muted);"><i class="bi bi-flag"></i> Target Kecepatan:</span>
+              <strong style="color: var(--accent-orange);"><%= reqSpeed.toFixed(2) %> dok/hari</strong>
+            </div>
+            <% if (isFinished) { %>
+              <div style="margin-top: 8px; padding: 8px; background: rgba(34, 197, 94, 0.1); border-left: 3px solid var(--accent-green); border-radius: 4px; color: var(--accent-green); display: flex; align-items: center; gap: 6px;">
+                <i class="bi bi-check-circle-fill"></i>
+                <strong>Selesai:</strong> Seluruh target beban kerja telah tercapai 100%!
+              </div>
+            <% } else { %>
+              <% if (curSpeed < reqSpeed) { %>
+                <div style="margin-top: 8px; padding: 8px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--accent-red); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
+                  <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red); font-size: 13px; margin-top: 1px;"></i>
+                  <div><strong>Off-Track:</strong> Petugas diprediksi terlambat/tidak selesai tepat waktu. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeed.toFixed(2) %> dok/hari</strong> agar selesai sesuai target pada <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>.</div>
+                </div>
+              <% } else { %>
+                <div style="margin-top: 8px; padding: 8px; background: rgba(34, 197, 94, 0.08); border-left: 3px solid var(--accent-green); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
+                  <i class="bi bi-check-circle-fill" style="color: var(--accent-green); font-size: 13px; margin-top: 1px;"></i>
+                  <div><strong>On-Track:</strong> Kecepatan petugas sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>).</div>
+                </div>
+              <% } %>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- JSON data script tag -->
+        <script id="pclHistoryData" type="application/json">
+          <%- JSON.stringify(pclHistory || []) %>
+        </script>
+      </div>
+
+      <div class="search-wrap mb-4" style="max-width: 100%; margin-bottom: 12px;">
+        <input type="search" id="detailSubslsSearch" placeholder="Cari nama SLS/kode..." aria-label="Cari nama SLS atau kode wilayah">
+      </div>
+
+      <div id="detailSubslsList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
+        <% detailSubsls.forEach(s => { %>
+          <div class="detail-item" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 4px; font-size: 11px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+              <div style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%;">
+                <span class="td-code" style="font-size: 9px; padding: 1px 3px; font-weight: normal; margin-right: 4px;"><%= s.kode %></span>
+                <%= s.nama_sls %>
+              </div>
+              <% if (s.sudah_diisi === 'belum_mulai') { %>
+                <span class="badge badge-gray btn-xs" style="font-size: 8px; padding: 1px 4px;">Belum Mulai</span>
+              <% } else if (s.sudah_diisi === 'sedang_didata') { %>
+                <span class="badge badge-orange btn-xs" style="font-size: 8px; padding: 1px 4px;">Sedang Didata</span>
+              <% } else if (s.sudah_diisi === 'memenuhi_target') { %>
+                <span class="badge badge-purple btn-xs" style="font-size: 8px; padding: 1px 4px;">Memenuhi Target</span>
+              <% } else if (s.sudah_diisi === 'selesai') { %>
+                <span class="badge badge-green btn-xs" style="font-size: 8px; padding: 1px 4px;">Selesai</span>
+              <% } else { %>
+                <span class="badge badge-gray btn-xs" style="font-size: 8px; padding: 1px 4px;">-</span>
+              <% } %>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); flex-wrap: wrap; gap: 4px;">
+              <div><%= s.desa %></div>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <% if (!hideMuatanPcl) { %>
+                <span class="muatan-col" style="color: var(--accent-cyan);">
+                  Muatan: <strong><%= s.usaha_total %></strong>/<%= Math.round(s.muatan) %>
+                </span>
+                <% } %>
+                <span style="color: var(--accent-purple);">
+                  FASIH: <strong><%= (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0) %></strong>/<%= Math.round(s.target_fasih) %> 
+                  <span style="font-size: 9px; color: var(--text-muted);">(D<%= s.draft %> S<%= s.submitted_by_pcl %> A<%= s.approved %> R<%= s.rejected %>)</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <div class="no-data">Tidak ada rincian tugas.</div>
+    <% } %>
+  </div>
+<% } else { %>
+  <div class="card empty-state text-center" style="height: 100%; min-height: 300px; display: flex; flex-direction: column; justify-content: center; border-style: dashed;">
+    <div class="empty-state-icon"><i class="bi bi-arrow-left-circle"></i></div>
+    <div class="empty-state-title">Pilih PCL</div>
+    <div class="empty-state-text">Klik nama PCL di tabel sebelah kiri untuk melihat rincian alokasi SubSLS dan progres pencacahan secara detail.</div>
+  </div>
+<% } %>

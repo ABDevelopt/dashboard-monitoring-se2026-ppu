@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getPclStats, getDb, getSettings, attachProgressPercentages, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, getSubslsStatusFormula } = require('../database');
+const { getPclStats, getDb, getSettings, attachProgressPercentages, compareFasihProgress, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, getSubslsStatusFormula } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -12,6 +12,134 @@ router.get('/', (req, res) => {
   const filterKec = req.query.kec || '';
   const filterKorlap = req.query.korlap || '';
   const filterPml = req.query.pml || '';
+
+  const isPartial = req.query.partial === '1' || req.headers['x-partial-drilldown'] === '1';
+
+  // Optimized Fast Path for AJAX Partial Drilldown
+  if (isPartial) {
+    if (!filterPcl || !uploadId) {
+      return res.render('partials/pcl_detail', {
+        layout: false,
+        filterPcl: '',
+        selectedPclStats: null,
+        detailSubsls: [],
+        pclHistory: [],
+        diffDays: 1,
+        daysRemaining: 0,
+        filterKec,
+        filterKorlap,
+        filterPml,
+      });
+    }
+
+    const settings = res.locals.settings;
+    const targetFormula = getTargetFormula(settings.target_fasih_mode);
+    const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
+    const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+    const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+    const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+
+    // Query stats only for the selected PCL (sub-millisecond)
+    const selectedPclStatsRows = attachProgressPercentages(db.prepare(`
+      SELECT 
+        m.pcl, m.pml, m.korlap, m.kecamatan,
+        MAX(COALESCE(p.pcl_email, m.pcl_email)) AS email,
+        COUNT(m.kode) AS total_subsls,
+        SUM(${getSingleSelesaiFormula(targetFormula, 'p')}) AS selesai,
+        SUM(${targetMuatanFormula}) AS total_muatan,
+        SUM(${realFormula}) AS muatan_selesai,
+        SUM(${usahaTotalFormula}) AS usaha_total,
+        SUM(COALESCE(p.usaha_ditemukan, 0)) AS usaha_ditemukan_total,
+        SUM(COALESCE(p.usaha_baru, 0)) AS usaha_baru_total,
+        SUM(COALESCE(p.usaha_tidak_ditemukan, 0)) AS usaha_tidak_ditemukan_total,
+        SUM(COALESCE(p.usaha_tutup, 0)) AS usaha_tutup_total,
+        SUM(COALESCE(p.usaha_ganda, 0)) AS usaha_ganda_total,
+        SUM(COALESCE(p.ditemukan, 0)) AS keluarga_ditemukan_total,
+        SUM(COALESCE(p.keluarga_baru, 0)) AS keluarga_baru_total,
+        SUM(COALESCE(p.tidak_ditemukan, 0)) AS keluarga_tidak_ditemukan_total,
+        SUM(COALESCE(p.meninggal, 0)) AS keluarga_meninggal_total,
+        SUM(COALESCE(p.tidak_eligible, 0)) AS keluarga_tidak_eligible_total,
+        SUM(COALESCE(p.tidak_dapat_ditemui, 0)) AS keluarga_tidak_dapat_ditemui_total,
+        SUM(${keluargaTotalFormula}) AS keluarga_total,
+        SUM(COALESCE(p.draft, 0)) AS draft_total,
+        SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
+        SUM(COALESCE(p.approved, 0)) AS approved_total,
+        SUM(COALESCE(p.rejected, 0)) AS rejected_total,
+        SUM(${targetFormula}) AS target_fasih_total,
+        SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${targetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
+        SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
+        SUM(COALESCE(p.target_upload, 0)) AS target_upload_total,
+        CASE WHEN SUM(${targetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${targetFormula}), 2) ELSE 0.0 END AS pct
+      FROM subsls_master m
+      LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+      WHERE UPPER(TRIM(m.pcl)) = UPPER(TRIM(?))
+      GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
+    `).all(uploadId, filterPcl), settings);
+    const selectedPclStats = selectedPclStatsRows[0] || null;
+
+    detailSubsls = attachProgressPercentages(db.prepare(`
+      SELECT 
+        p.kode, m.kecamatan, m.desa, m.nama_sls,
+        m.korlap, m.pml, COALESCE(p.pcl_name, m.pcl) AS pcl, m.muatan,
+        m.target_fasih AS target_fasih_awal,
+        COALESCE(p.draft, 0) AS draft,
+        COALESCE(p.submitted_by_pcl, 0) AS submitted_by_pcl,
+        COALESCE(p.approved, 0) AS approved,
+        COALESCE(p.rejected, 0) AS rejected,
+        ${targetFormula} AS target_fasih,
+        COALESCE(m.target_fasih, 0) AS target_static,
+        COALESCE(p.target_upload, 0) AS target_upload,
+        ${getSubslsStatusFormula(targetFormula, 'p')} AS sudah_diisi,
+        ${usahaTotalFormula} AS usaha_total,
+        ${keluargaTotalFormula} AS keluarga_total
+      FROM subsls_master m
+      LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+      WHERE (UPPER(TRIM(COALESCE(NULLIF(p.pcl_name, ''), m.pcl))) = UPPER(TRIM(?)))
+      ORDER BY sudah_diisi ASC, m.kecamatan, m.desa, m.kode
+    `).all(uploadId, filterPcl), settings);
+
+    const START_DATE = new Date(settings.speedometer_start_date || (surveyId === 'se2026' ? '2026-06-15' : '2026-08-01'));
+    let diffDays = 1;
+    let daysRemaining = 0;
+    const currentUpload = db.prepare('SELECT tanggal FROM uploads WHERE id = ?').get(uploadId);
+    if (currentUpload) {
+      const d2 = new Date(currentUpload.tanggal);
+      const diffTime = d2 - START_DATE;
+      diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+
+      const deadline = new Date(settings.speedometer_target_date || (surveyId === 'se2026' ? '2026-08-31' : '2026-08-31'));
+      daysRemaining = Math.max(0, Math.ceil((deadline - d2) / (1000 * 60 * 60 * 24)));
+    }
+
+    let pclHistory = db.prepare(`
+      SELECT 
+        u.tanggal,
+        SUM(c.draft_total) AS draft_total,
+        SUM(c.submitted_total) AS submitted_total,
+        SUM(c.approved_total) AS approved_total,
+        SUM(c.rejected_total) AS rejected_total,
+        SUM(c.submitted_total + c.approved_total + c.rejected_total) AS selesai_total,
+        SUM(c.target_fasih_total) AS target_fasih_total
+      FROM summary_cache c
+      JOIN uploads u ON c.upload_id = u.id
+      WHERE UPPER(TRIM(c.pcl)) = UPPER(TRIM(?))
+      GROUP BY u.tanggal, u.id
+      ORDER BY u.tanggal ASC
+    `).all(filterPcl);
+
+    return res.render('partials/pcl_detail', {
+      layout: false,
+      filterPcl,
+      selectedPclStats,
+      detailSubsls,
+      pclHistory,
+      diffDays,
+      daysRemaining,
+      filterKec,
+      filterKorlap,
+      filterPml,
+    });
+  }
 
   if (uploadId) {
     // Build dynamic filter
@@ -65,22 +193,8 @@ router.get('/', (req, res) => {
       ORDER BY pct DESC, (SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) DESC, SUM(${targetFormula}) DESC, m.pcl ASC
     `).all(...params), settings);
 
-    // Ranking pengurutan: FASIH % tertinggi di atas, tie-breaker realisasi dokumen, target dokumen, dan nama
-    pclStats.sort((a, b) => {
-      const aPct = typeof a.fasih_pct === 'number' ? a.fasih_pct : parseFloat(a.fasih_pct_str || a.pct || 0);
-      const bPct = typeof b.fasih_pct === 'number' ? b.fasih_pct : parseFloat(b.fasih_pct_str || b.pct || 0);
-      if (bPct !== aPct) return bPct - aPct;
-
-      const aReal = (a.submitted_total || 0) + (a.approved_total || 0) + (a.rejected_total || 0);
-      const bReal = (b.submitted_total || 0) + (b.approved_total || 0) + (b.rejected_total || 0);
-      if (bReal !== aReal) return bReal - aReal;
-
-      const aTarget = a.target_fasih_total || 0;
-      const bTarget = b.target_fasih_total || 0;
-      if (bTarget !== aTarget) return bTarget - aTarget;
-
-      return (a.pcl || '').localeCompare(b.pcl || '', 'id');
-    });
+    // Ranking pengurutan: FASIH % tertinggi di atas, tie-breaker: approved -> submitted -> rejected -> draft -> open -> nama
+    pclStats.sort((a, b) => compareFasihProgress(a, b, 'pcl'));
 
     if (filterPcl) {
       const settings = res.locals.settings;

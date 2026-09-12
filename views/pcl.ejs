@@ -155,12 +155,29 @@
       
       <!-- PCL LIST TABLE -->
       <div class="card" style="margin-bottom: 0;">
-        <div class="card-header flex-between" style="gap: 8px;">
-          <div class="card-title"><i class="bi bi-person-gear"></i> Progres Kinerja per <%= officerLabel %> (<%= isSakernas ? 'Petugas Pendataan' : 'Pencacah' %>) <span class="badge badge-blue" id="pclCountBadge"><%= pclStats.length %> <%= officerLabel %></span></div>
+        <div class="card-header flex-between" style="gap: 8px; flex-wrap: wrap;">
+          <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-person-gear"></i> Progres Kinerja per <%= officerLabel %> (<%= isSakernas ? 'Petugas Pendataan' : 'Pencacah' %>) <span class="badge badge-blue" id="pclCountBadge"><%= pclStats.length %> <%= officerLabel %></span></div>
+          <div class="card-actions flex-start" style="gap: 8px; align-items: center; flex-wrap: wrap;">
+            <div class="stacked-legend-wrap d-none d-lg-flex hide-md">
+              <span class="legend-item"><span class="legend-dot" style="background:#10b981;"></span>App</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#3b82f6;"></span>Sub</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#ef4444;"></span>Rej</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#f59e0b;"></span>Dft</span>
+              <span class="legend-item"><span class="legend-dot" style="background:#64748b;"></span>Opn</span>
+            </div>
+            <div class="btn-group progress-mode-toggle" role="group" aria-label="Mode Tampilan Progress Bar">
+              <button type="button" class="btn btn-mode-stacked active" data-mode="stacked" onclick="window.setProgressBarMode('stacked')" title="Tampilkan Stacked Bar (Open, Draft, Submit, Approved, Rejected)" aria-label="Tampilan Stacked Bar">
+                <i class="bi bi-segmented-nav"></i><span class="hide-xs"> Stacked</span>
+              </button>
+              <button type="button" class="btn btn-mode-standard" data-mode="standard" onclick="window.setProgressBarMode('standard')" title="Tampilkan Progres Bar Tunggal Standar" aria-label="Tampilan Progres Bar Standar">
+                <i class="bi bi-distribute-horizontal"></i><span class="hide-xs"> Standar</span>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div class="search-wrap mb-4">
-          <input type="search" id="pclSearch" placeholder="Cari nama <%= officerLabel %>, PML, Kecamatan..." aria-label="Cari nama <%= officerLabel %>" style="width: 100%; max-width: 280px;">
+        <div class="search-wrap" style="margin-bottom: 10px;">
+          <input type="search" id="pclSearch" placeholder="Cari nama <%= officerLabel %>, PML, Kecamatan..." aria-label="Cari nama <%= officerLabel %>">
         </div>
 
         <% if (pclStats && pclStats.length > 0) { %>
@@ -170,7 +187,16 @@
                 <tr>
                   <th rowspan="2" class="text-center th-no" title="Nomor Ranking (Peringkat FASIH tertinggi)">No</th>
                   <th rowspan="2">Nama <%= officerLabel %></th>
-                  <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 140px;">FASIH %</th>
+                  <th rowspan="2" class="text-right bg-purple-soft" style="min-width: 155px;">
+                    <div>FASIH %</div>
+                    <div class="stacked-header-legend hide-sm">
+                      <span class="legend-text-app">App</span> &bull;
+                      <span class="legend-text-sub">Sub</span> &bull;
+                      <span class="legend-text-rej">Rej</span> &bull;
+                      <span class="legend-text-draft">Dft</span> &bull;
+                      <span class="legend-text-open">Opn</span>
+                    </div>
+                  </th>
                   <% if (!hideMuatanPcl) { %>
                   <th rowspan="2" class="text-right bg-cyan-soft muatan-col" style="min-width: 140px;">Muatan %</th>
                   <% } %>
@@ -238,6 +264,11 @@
                     let muatanPct = p.muatan_pct_str;
                     const fRealNum = (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
                     const fTgtNum = p.target_fasih_total || 0;
+                    const pApp = p.approved_total || 0;
+                    const pSub = p.submitted_total || 0;
+                    const pRej = p.rejected_total || 0;
+                    const pDft = p.draft_total || 0;
+                    const pOpn = p.open_total !== undefined ? p.open_total : Math.max(0, fTgtNum - (pDft + fRealNum));
                     const isKippPcl = kippPcls.includes(p.pcl.toUpperCase());
                     const isSelesaiPcl = fTgtNum > 0 && fRealNum >= fTgtNum;
                     const isOntrackPcl = parseFloat(fasihPct) >= activeTargetPct;
@@ -297,19 +328,59 @@
                         </div>
                       <% } %>
                     </td>
-                    <td class="bg-purple-soft" data-sort="<%= parseFloat(fasihPct) %>" style="min-width: 160px; padding: 6px 10px;">
+                    <td class="bg-purple-soft"
+                        data-sort="<%= parseFloat(fasihPct) || 0 %>"
+                        data-sort-pct="<%= parseFloat(fasihPct) || 0 %>"
+                        data-sort-app="<%= pApp %>"
+                        data-sort-sub="<%= pSub %>"
+                        data-sort-rej="<%= pRej %>"
+                        data-sort-draft="<%= pDft %>"
+                        data-sort-open="<%= pOpn %>"
+                        style="min-width: 160px; padding: 6px 10px;">
                       <%
-                        const fasihRealPcl = (p.submitted_total || 0) + (p.approved_total || 0) + (p.rejected_total || 0);
-                        const fasihTgtPcl  = p.target_fasih_total || 0;
+                        const fasihRealPcl = fRealNum;
+                        const fasihTgtPcl  = fTgtNum;
                         const fasihWPcl    = Math.min(parseFloat(fasihPct), 100);
                         const fasihColorPcl = fasihWPcl >= 100 ? 'var(--accent-green)' : (fasihWPcl < 40 ? 'var(--accent-red)' : 'var(--accent-purple)');
+
+                        const pActiveTotal = pApp + pSub + pRej + pDft + pOpn;
+                        const pBase = Math.max(fasihTgtPcl, pActiveTotal, 1);
+
+                        const wApp = Math.max(0, (pApp / pBase * 100));
+                        const wSub = Math.max(0, (pSub / pBase * 100));
+                        const wRej = Math.max(0, (pRej / pBase * 100));
+                        const wDft = Math.max(0, (pDft / pBase * 100));
+                        const wOpn = Math.max(0, (pOpn / pBase * 100));
                       %>
-                      <div class="bar-label" style="font-size:10px; margin-bottom:3px;">
-                        <span style="font-weight:700; color:<%= fasihColorPcl %>"><%= fasihPct %>%</span>
+                      <div class="bar-label" style="font-size:10px; margin-bottom:3px; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:700; color:<%= fasihColorPcl %>"><%= fasihPct %>%<% if (fasihTgtPcl > 0 && fasihRealPcl > fasihTgtPcl) { %> <span class="badge badge-green badge-xs">&gt;100%</span><% } %></span>
                         <span><%= fasihRealPcl.toLocaleString('id-ID') %> / <%= fasihTgtPcl.toLocaleString('id-ID') %></span>
                       </div>
-                      <div class="progress-track-sm">
-                        <div class="progress-bar <%= fasihWPcl >= 100 ? 'green' : (fasihWPcl < 40 ? 'red' : 'purple') %>" data-width="<%= fasihWPcl %>" style="width:0%; height:100%; border-radius:99px;"></div>
+                      
+                      <!-- Stacked Bar (Default) -->
+                      <div class="progress-track-stacked"
+                           data-name="<%= p.pcl %>"
+                           data-target="<%= fasihTgtPcl %>"
+                           data-app="<%= pApp %>"
+                           data-sub="<%= pSub %>"
+                           data-rej="<%= pRej %>"
+                           data-draft="<%= pDft %>"
+                           data-open="<%= pOpn %>"
+                           tabindex="0"
+                           role="progressbar"
+                           aria-label="Progres FASIH <%= p.pcl %>">
+                        <% if (wApp > 0) { %><div class="stacked-segment seg-approved" style="width: <%= wApp %>%;"></div><% } %>
+                        <% if (wSub > 0) { %><div class="stacked-segment seg-submitted" style="width: <%= wSub %>%;"></div><% } %>
+                        <% if (wRej > 0) { %><div class="stacked-segment seg-rejected" style="width: <%= wRej %>%;"></div><% } %>
+                        <% if (wDft > 0) { %><div class="stacked-segment seg-draft" style="width: <%= wDft %>%;"></div><% } %>
+                        <% if (wOpn > 0) { %><div class="stacked-segment seg-open" style="width: <%= wOpn %>%;"></div><% } %>
+                      </div>
+
+                      <!-- Standard Single Bar (When Toggled) -->
+                      <div class="progress-track-standard">
+                        <div class="progress-track-sm">
+                          <div class="progress-bar <%= fasihWPcl >= 100 ? 'green' : (fasihWPcl < 40 ? 'red' : 'purple') %>" data-width="<%= fasihWPcl %>" style="width:0%; height:100%; border-radius:99px;"></div>
+                        </div>
                       </div>
                     </td>
                     <% if (!hideMuatanPcl) { %>
@@ -331,7 +402,7 @@
                     <% } %>
                     <td class="hide-md">
                       <%= p.pml %>
-                      <% if (kippPmls.includes(p.pml.toUpperCase())) { %>
+                      <% if (p.pml && kippPmls.includes(p.pml.toUpperCase())) { %>
                         <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 2px;">KIPP</span>
                       <% } %>
                     </td>
@@ -364,8 +435,8 @@
                      <td class="text-right bg-purple-soft hide-sm" data-sort="<%= p.target_fasih_total %>"><%= (p.target_fasih_total || 0).toLocaleString('id-ID') %></td>
                      <% if (!hideMuatanPcl) { %>
                      <td class="text-right fw-bold bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.muatan_selesai %>"><%= (p.muatan_selesai || 0).toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.total_muatan %>"><%= p.total_muatan.toLocaleString('id-ID') %></td>
-                    <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_total %>"><%= p.usaha_total.toLocaleString('id-ID') %></td>
+                     <td class="text-right bg-cyan-soft hide-sm muatan-col" data-sort="<%= p.total_muatan || 0 %>"><%= (p.total_muatan || 0).toLocaleString('id-ID') %></td>
+                    <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_total || 0 %>"><%= (p.usaha_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_ditemukan_total %>"><%= (p.usaha_ditemukan_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_baru_total %>"><%= (p.usaha_baru_total || 0).toLocaleString('id-ID') %></td>
                     <td class="text-right bg-green-soft hide-sm muatan-col" data-sort="<%= p.usaha_tidak_ditemukan_total %>"><%= (p.usaha_tidak_ditemukan_total || 0).toLocaleString('id-ID') %></td>
@@ -474,262 +545,7 @@
 
       <!-- DETAIL OF CHOSEN PCL -->
       <div id="pclDetailContainer">
-        <% if (filterPcl) { %>
-          <div class="card" id="pclDetailCard" style="margin-bottom: 0; position: sticky; top: 80px;">
-            <div class="card-header flex-between" style="gap: 8px;">
-              <div class="card-title mb-0 flex-start" style="flex-wrap: wrap; gap: 4px;">
-                <i class="bi bi-search"></i> Rincian Tugas SLS: <mark class="highlight-name"><%= filterPcl %></mark>
-                <button class="pin-btn" data-type="pcl" data-name="<%= filterPcl %>" data-href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(filterPcl) %>" title="Sematkan Petugas ke Favorit">
-                  <i class="bi bi-star"></i>
-                </button>
-                <% if (kippPcls.includes(filterPcl.toUpperCase())) { %>
-                  <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 6px;">KIPP</span>
-                <% } %>
-              </div>
-              <div class="card-actions flex-start" style="gap: 6px; margin-left: auto;">
-                <button onclick="window.shareElementAsImage('pclDetailCard', event)" class="btn btn-secondary btn-xs" title="Bagikan gambar detail card"><i class="bi bi-share"></i><span class="btn-text-desktop"> Bagikan</span></button>
-                <button onclick="window.copyElementAsImage('pclDetailCard', event)" class="btn btn-secondary btn-xs" title="Salin gambar detail card ke clipboard"><i class="bi bi-copy"></i><span class="btn-text-desktop"> Salin</span></button>
-                <a href="<%= navPrefix %>/pcl?kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="btn btn-secondary btn-xs btn-close-detail" title="Tutup detail card"><i class="bi bi-x-lg"></i><span class="btn-text-desktop"> Tutup</span></a>
-              </div>
-            </div>
-
-            <% if (detailSubsls && detailSubsls.length > 0) { %>
-              <div class="mb-4">
-                <div class="text-base text-secondary mb-2">
-                  PML: <strong><%= detailSubsls[0].pml %></strong><% if (kippPmls.includes(detailSubsls[0].pml.toUpperCase())) { %> <span class="badge badge-orange badge-xs" style="vertical-align: middle;">KIPP</span><% } %>
-                  <% if (!isSakernas) { %>
-                   · Korlap: <strong><%= detailSubsls[0].korlap %></strong><% if (kippKorlaps.includes(detailSubsls[0].korlap.toUpperCase())) { %> <span class="badge badge-orange badge-xs" style="vertical-align: middle;">KIPP</span><% } %>
-                  <% } %>
-                </div>
-                <% 
-                  let doneMuatan = selectedPclStats ? (selectedPclStats.muatan_selesai !== undefined ? selectedPclStats.muatan_selesai : (selectedPclStats.usaha_total + selectedPclStats.keluarga_total)) : 0;
-                  let totalMuatan = selectedPclStats ? selectedPclStats.total_muatan : 0;
-                  let donePct = selectedPclStats ? selectedPclStats.muatan_pct_str : '0.00';
-
-                  let doneFasih = selectedPclStats ? ((selectedPclStats.submitted_total || 0) + (selectedPclStats.approved_total || 0) + (selectedPclStats.rejected_total || 0)) : 0;
-                  let totalFasih = selectedPclStats ? selectedPclStats.target_fasih_total : 0;
-                  let fasihPct = selectedPclStats ? selectedPclStats.fasih_pct_str : '0.00';
-
-                  let openFasih = selectedPclStats ? (selectedPclStats.open_total || 0) : 0;
-                  let draftFasih = selectedPclStats ? (selectedPclStats.draft_total || 0) : 0;
-                  let submittedFasih = selectedPclStats ? (selectedPclStats.submitted_total || 0) : 0;
-                  let rejectedFasih = selectedPclStats ? (selectedPclStats.rejected_total || 0) : 0;
-                  let approvedFasih = selectedPclStats ? (selectedPclStats.approved_total || 0) : 0;
-                %>
-                <!-- Progress FASIH -->
-                <div class="mb-3">
-                  <div class="bar-label">
-                    <span><i class="bi bi-phone"></i> Progres FASIH (Submit + Approve + Reject)</span>
-                    <span class="fw-bold"><%= doneFasih.toLocaleString('id-ID') %> / <%= totalFasih.toLocaleString('id-ID') %> (<%= fasihPct %>%)</span>
-                  </div>
-                  <div class="progress-bar-target-wrap" style="position: relative; height: 6px; margin-top: 16px; margin-bottom: 8px;">
-                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
-                      <div class="progress-bar <%= parseFloat(fasihPct) >= 100 ? 'green' : (parseFloat(fasihPct) < 40 ? 'red' : 'blue') %>" data-width="<%= fasihPct %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
-                    </div>
-                    
-                    <!-- Marker 25% (30 Juni) -->
-                    <div style="position: absolute; left: 25%; top: -3px; height: 12px; border-left: 1px dashed <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 25 ? '1' : '0.5' %>; z-index: 2; pointer-events: none;">
-                      <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">30 Jun: 25%</span>
-                    </div>
-
-                    <!-- Marker 40% (15 Juli) -->
-                    <div style="position: absolute; left: 40%; top: -3px; height: 12px; border-left: 1px dashed <%= activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 40 ? '1' : '0.5' %>; z-index: 2; pointer-events: none;">
-                      <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: <%= activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">15 Jul: 40%</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Progress Muatan -->
-                <% if (!hideMuatanPcl) { %>
-                <div class="mb-3 muatan-col">
-                  <div class="bar-label">
-                    <span><i class="bi bi-briefcase"></i> Progres Muatan</span>
-                    <span class="fw-bold"><%= doneMuatan.toLocaleString('id-ID') %> / <%= totalMuatan.toLocaleString('id-ID') %> (<%= donePct %>%)</span>
-                  </div>
-                  <div class="progress-bar-target-wrap" style="position: relative; height: 6px; margin-top: 16px; margin-bottom: 8px;">
-                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-progress-wrap); border-radius: 99px; overflow: hidden;">
-                      <div class="progress-bar <%= parseFloat(donePct) >= 100 ? 'green' : (parseFloat(donePct) < 40 ? 'red' : 'blue') %>" data-width="<%= donePct %>" style="width: 0%; height: 100%; border-radius: 99px;"></div>
-                    </div>
-                    
-                    <!-- Marker 25% (30 Juni) -->
-                    <div style="position: absolute; left: 25%; top: -3px; height: 12px; border-left: 1px dashed <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 25 ? '1' : '0.5' %>; z-index: 2; pointer-events: none;">
-                      <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: <%= activeTargetPct === 25 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">30 Jun: 25%</span>
-                    </div>
-
-                    <!-- Marker 40% (15 Juli) -->
-                    <div style="position: absolute; left: 40%; top: -3px; height: 12px; border-left: 1px dashed <%= activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; opacity: <%= activeTargetPct === 40 ? '1' : '0.5' %>; z-index: 2; pointer-events: none;">
-                      <span style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800; color: <%= activeTargetPct === 40 ? 'var(--accent-cyan)' : 'var(--text-muted)' %>; white-space: nowrap;">15 Jul: 40%</span>
-                    </div>
-                  </div>
-                </div>
-                <% } %>
-
-                <!-- Mini Grid Status FASIH -->
-                <div class="status-mini-grid" style="display: grid; grid-template-columns: repeat(<%= activeStatusCols - 1 %>, 1fr); gap: 6px; margin-top: 14px; text-align: center;">
-                  <% if (settings.show_status_open === '1' || settings.show_status_open === undefined) { %>
-                    <div class="fasih-grid-item status-open-bg">
-                      <div class="fasih-grid-item-label status-open-text">Open</div>
-                      <div class="fasih-grid-item-value status-open-text"><%= openFasih %></div>
-                    </div>
-                  <% } %>
-                  <% if (settings.show_status_draft === '1' || settings.show_status_draft === undefined) { %>
-                    <div class="fasih-grid-item fasih-item-draft">
-                      <div class="fasih-grid-item-label">Draft</div>
-                      <div class="fasih-grid-item-value"><%= draftFasih %></div>
-                    </div>
-                  <% } %>
-                  <% if (settings.show_status_submitted === '1' || settings.show_status_submitted === undefined) { %>
-                    <div class="fasih-grid-item fasih-item-submit">
-                      <div class="fasih-grid-item-label">Submit</div>
-                      <div class="fasih-grid-item-value"><%= submittedFasih %></div>
-                    </div>
-                  <% } %>
-                  <% if (settings.show_status_approved === '1' || settings.show_status_approved === undefined) { %>
-                    <div class="fasih-grid-item fasih-item-approve">
-                      <div class="fasih-grid-item-label">Approve</div>
-                      <div class="fasih-grid-item-value"><%= approvedFasih %></div>
-                    </div>
-                  <% } %>
-                  <% if (settings.show_status_rejected === '1' || settings.show_status_rejected === undefined) { %>
-                    <div class="fasih-grid-item fasih-item-reject">
-                      <div class="fasih-grid-item-label">Reject</div>
-                      <div class="fasih-grid-item-value"><%= rejectedFasih %></div>
-                    </div>
-                  <% } %>
-                </div>
-
-                <!-- Daily Progress Chart -->
-                <div style="margin-top: 20px; margin-bottom: 20px; border-top: 1px solid var(--border); padding-top: 16px; margin-left: -20px; margin-right: -20px;">
-                  <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; padding-left: 20px; padding-right: 20px;">
-                    <i class="bi bi-graph-up"></i> Tren Progres Harian (FASIH)
-                  </div>
-                  <div style="height: 180px; position: relative; width: 100%; padding-left: 10px; padding-right: 10px;">
-                    <canvas id="pclHistoryChartCanvas"></canvas>
-                  </div>
-                </div>
-
-                <!-- Analisis Kecepatan & Estimasi Pendataan -->
-                <%
-                  let remainingFasih = Math.max(0, totalFasih - doneFasih);
-                  let currentSpeed = doneFasih / diffDays; // dokumen per hari
-                  let currentSpeedText = currentSpeed.toFixed(2);
-                  
-                  let estDaysToFinish = currentSpeed > 0 ? (remainingFasih / currentSpeed) : null;
-                  let isOfftrack = (currentSpeed === 0 && remainingFasih > 0) || (estDaysToFinish !== null && estDaysToFinish > daysRemaining);
-                  
-                  let reqSpeed = daysRemaining > 0 ? (remainingFasih / daysRemaining) : remainingFasih;
-                %>
-                <div style="margin-top: 18px; padding: 14px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px;">
-                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-cyan); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                    <i class="bi bi-speedometer2" style="font-size: 14px;"></i> Analisis Kecepatan & Sisa Waktu
-                  </div>
-                  
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
-                    <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
-                      <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Kecepatan Saat Ini</div>
-                      <div style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-top: 2px;"><%= currentSpeedText %> <span style="font-size: 10px; font-weight: 500; color: var(--text-muted);">dok/hari</span></div>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
-                      <div style="font-size: 10px; color: var(--text-muted); font-weight: 500;">Status Target</div>
-                      <div style="font-size: 12px; font-weight: 700; margin-top: 4px;">
-                        <% if (remainingFasih === 0) { %>
-                          <span class="badge badge-green" style="font-size: 10px; padding: 3px 8px;">Selesai 100%</span>
-                        <% } else if (isOfftrack) { %>
-                          <span class="badge badge-red" style="font-size: 10px; padding: 3px 8px;"><i class="bi bi-exclamation-triangle-fill"></i> Off-Track</span>
-                        <% } else { %>
-                          <span class="badge badge-green" style="font-size: 10px; padding: 3px 8px;"><i class="bi bi-check-circle-fill"></i> On-Track</span>
-                        <% } %>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div style="font-size: 11px; line-height: 1.5; color: var(--text-secondary);">
-                    <% if (remainingFasih === 0) { %>
-                      Petugas <strong><%= filterPcl %></strong> telah menyelesaikan seluruh target pengisian dokumen FASIH sebanyak <strong><%= totalFasih %></strong> dokumen. Kinerja luar biasa!
-                    <% } else { %>
-                      Hari berjalan pendataan: <strong><%= diffDays %> hari</strong> (sejak <%= formatIndonesianDate(settings.speedometer_start_date || '2026-06-15') %>). Sisa hari menuju deadline (<%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>): <strong><%= daysRemaining %> hari</strong>.<br>
-                      Sisa beban kerja: <strong><%= remainingFasih %> dokumen</strong>. 
-                      Dengan kecepatan saat ini (<strong><%= currentSpeedText %> dok/hari</strong>), 
-                      <% if (currentSpeed === 0) { %>
-                        petugas belum merealisasikan dokumen FASIH sama sekali sehingga estimasi hari selesai tidak dapat diprediksi.
-                      <% } else { %>
-                        petugas diprediksi akan menyelesaikan sisa dokumen dalam waktu sekitar <strong><%= Math.ceil(estDaysToFinish) %> hari</strong>.
-                      <% } %>
-                      
-                      <% if (isOfftrack) { %>
-                        <div style="margin-top: 8px; padding: 8px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--accent-red); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
-                          <i class="bi bi-exclamation-triangle-fill" style="color: var(--accent-red); font-size: 13px; margin-top: 1px;"></i>
-                          <div><strong>Off-Track:</strong> Petugas diprediksi terlambat/tidak selesai tepat waktu. Diperlukan peningkatan kecepatan kerja minimal menjadi <strong><%= reqSpeed.toFixed(2) %> dok/hari</strong> agar selesai sesuai target pada <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>.</div>
-                        </div>
-                      <% } else { %>
-                        <div style="margin-top: 8px; padding: 8px; background: rgba(34, 197, 94, 0.08); border-left: 3px solid var(--accent-green); border-radius: 4px; color: var(--text-primary); display: flex; align-items: flex-start; gap: 6px;">
-                          <i class="bi bi-check-circle-fill" style="color: var(--accent-green); font-size: 13px; margin-top: 1px;"></i>
-                          <div><strong>On-Track:</strong> Kecepatan petugas sudah memadai untuk menyelesaikan seluruh beban kerja sebelum deadline (estimasi selesai sebelum <%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>).</div>
-                        </div>
-                      <% } %>
-                    <% } %>
-                  </div>
-                </div>
-
-                <!-- JSON data script tag -->
-                <script id="pclHistoryData" type="application/json">
-                  <%- JSON.stringify(pclHistory) %>
-                </script>
-              </div>
-
-              <div class="search-wrap mb-4" style="max-width: 100%; margin-bottom: 12px;">
-                <input type="search" id="detailSubslsSearch" placeholder="Cari nama SLS/kode..." aria-label="Cari nama SLS atau kode wilayah">
-              </div>
-
-              <div id="detailSubslsList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
-                <% detailSubsls.forEach(s => { %>
-                  <div class="detail-item" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 8px; margin-bottom: 4px; font-size: 11px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                      <div style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%;">
-                        <span class="td-code" style="font-size: 9px; padding: 1px 3px; font-weight: normal; margin-right: 4px;"><%= s.kode %></span>
-                        <%= s.nama_sls %>
-                      </div>
-                      <% if (s.sudah_diisi === 'belum_mulai') { %>
-                        <span class="badge badge-gray btn-xs" style="font-size: 8px; padding: 1px 4px;">Belum Mulai</span>
-                      <% } else if (s.sudah_diisi === 'sedang_didata') { %>
-                        <span class="badge badge-orange btn-xs" style="font-size: 8px; padding: 1px 4px;">Sedang Didata</span>
-                      <% } else if (s.sudah_diisi === 'memenuhi_target') { %>
-                        <span class="badge badge-purple btn-xs" style="font-size: 8px; padding: 1px 4px;">Memenuhi Target</span>
-                      <% } else if (s.sudah_diisi === 'selesai') { %>
-                        <span class="badge badge-green btn-xs" style="font-size: 8px; padding: 1px 4px;">Selesai</span>
-                      <% } else { %>
-                        <span class="badge badge-gray btn-xs" style="font-size: 8px; padding: 1px 4px;">-</span>
-                      <% } %>
-                    </div>
-                    
-                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); flex-wrap: wrap; gap: 4px;">
-                      <div><%= s.desa %></div>
-                      <div style="display: flex; gap: 6px; align-items: center;">
-                        <% if (!hideMuatanPcl) { %>
-                        <span class="muatan-col" style="color: var(--accent-cyan);">
-                          Muatan: <strong><%= s.usaha_total %></strong>/<%= Math.round(s.muatan) %>
-                        </span>
-                        <% } %>
-                        <span style="color: var(--accent-purple);">
-                          FASIH: <strong><%= (s.submitted_by_pcl || 0) + (s.approved || 0) + (s.rejected || 0) %></strong>/<%= Math.round(s.target_fasih) %> 
-                          <span style="font-size: 9px; color: var(--text-muted);">(D<%= s.draft %> S<%= s.submitted_by_pcl %> A<%= s.approved %> R<%= s.rejected %>)</span>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                <% }) %>
-              </div>
-            <% } else { %>
-              <div class="no-data">Tidak ada rincian tugas.</div>
-            <% } %>
-          </div>
-        <% } else { %>
-          <div class="card empty-state text-center" style="height: 100%; min-height: 300px; display: flex; flex-direction: column; justify-content: center; border-style: dashed;">
-            <div class="empty-state-icon"><i class="bi bi-arrow-left-circle"></i></div>
-            <div class="empty-state-title">Pilih PCL</div>
-            <div class="empty-state-text">Klik nama PCL di tabel sebelah kiri untuk melihat rincian alokasi SubSLS dan progres pencacahan secara detail.</div>
-          </div>
-        <% } %>
+        <%- include('partials/pcl_detail') %>
       </div>
 
     </div>
@@ -803,42 +619,52 @@ document.addEventListener('DOMContentLoaded', () => {
     const table = document.getElementById('pclTable');
 
     function renderDetail(html, url) {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const newDetail = doc.getElementById('pclDetailContainer');
-      if (newDetail) {
-        detailContainer.innerHTML = newDetail.innerHTML;
-        detailContainer.style.opacity = '1';
-        detailContainer.classList.remove('smooth-detail-animate');
+      if (!html.includes('<!DOCTYPE') && !html.includes('<html')) {
+        detailContainer.innerHTML = html;
+      } else {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newDetail = doc.getElementById('pclDetailContainer');
+        if (newDetail) {
+          detailContainer.innerHTML = newDetail.innerHTML;
+        }
+      }
+      detailContainer.style.opacity = '1';
+      detailContainer.classList.remove('smooth-detail-animate');
+      requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            detailContainer.classList.add('smooth-detail-animate');
-          });
+          detailContainer.classList.add('smooth-detail-animate');
         });
+      });
 
-        // Toggle grid selection classes
-        const grid = document.querySelector('.drilldown-grid');
-        if (grid) {
+      // Toggle grid selection classes
+      const grid = document.querySelector('.drilldown-grid');
+      if (grid) {
+        const hasSel = url.includes('pcl=');
+        if (hasSel) {
           grid.classList.remove('no-selection');
           grid.classList.add('has-selection');
+        } else {
+          grid.classList.remove('has-selection');
+          grid.classList.add('no-selection');
         }
-
-        // Update URL path without refresh
-        window.history.pushState(null, '', url);
-
-        // Re-bind list search utility
-        makeListSearchable('detailSubslsSearch', 'detailSubslsList', '.detail-item');
-
-        // Re-bind close handler
-        bindCloseDetail();
-        if (window.initProgressBars) window.initProgressBars(detailContainer);
-        initPclHistoryChart();
       }
+
+      // Update URL path without refresh
+      window.history.pushState(null, '', url);
+
+      // Re-bind list search utility
+      makeListSearchable('detailSubslsSearch', 'detailSubslsList', '.detail-item');
+
+      // Re-bind close handler
+      bindCloseDetail();
+      if (window.initProgressBars) window.initProgressBars(detailContainer);
+      initPclHistoryChart();
     }
 
     function bindCloseDetail() {
       if (!detailContainer) return;
-      const closeBtn = detailContainer.querySelector('a[href*="/pcl"]');
+      const closeBtn = detailContainer.querySelector('.btn-close-detail') || detailContainer.querySelector('a[href*="/pcl"]');
       if (closeBtn) {
         closeBtn.addEventListener('click', (e) => {
           e.preventDefault();
@@ -856,11 +682,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (window.detailHtmlCache && window.detailHtmlCache[url]) {
             renderDetail(window.detailHtmlCache[url], url);
-            const grid = document.querySelector('.drilldown-grid');
-            if (grid) {
-              grid.classList.remove('has-selection');
-              grid.classList.add('no-selection');
-            }
           } else {
             detailContainer.innerHTML = `
               <div class="card skeleton-card" style="border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); padding: 20px; position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px; min-height: 350px;">
@@ -901,17 +722,12 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             detailContainer.style.opacity = '1';
 
-            fetch(url)
+            fetch(url, { headers: { 'X-Partial-Drilldown': '1' } })
               .then(res => res.text())
               .then(html => {
                 if (!window.detailHtmlCache) window.detailHtmlCache = {};
                 window.detailHtmlCache[url] = html;
                 renderDetail(html, url);
-                const grid = document.querySelector('.drilldown-grid');
-                if (grid) {
-                  grid.classList.remove('has-selection');
-                  grid.classList.add('no-selection');
-                }
               })
               .catch(err => {
                 console.error(err);
@@ -924,7 +740,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (table && detailContainer) {
       table.querySelector('tbody').addEventListener('click', (e) => {
-        const link = e.target.closest('td.td-primary a');
+        const link = e.target.closest('td.td-primary a') || e.target.closest('td.td-primary')?.querySelector('a');
         if (!link) return;
 
         e.preventDefault();
@@ -985,7 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
           `;
           detailContainer.style.opacity = '1';
 
-          fetch(url)
+          fetch(url, { headers: { 'X-Partial-Drilldown': '1' } })
             .then(res => res.text())
             .then(html => {
               if (!window.detailHtmlCache) window.detailHtmlCache = {};

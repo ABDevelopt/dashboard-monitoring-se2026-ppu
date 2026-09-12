@@ -1729,3 +1729,282 @@ function createSportsDailyRateLineChart(canvasId, labels, data, targetVal = 13) 
   return chart;
 }
 
+// ===== OFFICER STACKED BAR PROGRESS & POPOVER UTILITIES =====
+let stackedBarPopoverEl = null;
+let hidePopoverTimeout = null;
+let currentActiveTrack = null;
+
+function getOrCreateStackedBarPopover() {
+  if (stackedBarPopoverEl && document.body.contains(stackedBarPopoverEl)) {
+    return stackedBarPopoverEl;
+  }
+  let existing = document.getElementById('stacked-bar-popover');
+  if (existing) {
+    stackedBarPopoverEl = existing;
+    return existing;
+  }
+  const popover = document.createElement('div');
+  popover.id = 'stacked-bar-popover';
+  popover.className = 'stacked-bar-popover';
+  popover.setAttribute('role', 'tooltip');
+  popover.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(popover);
+  stackedBarPopoverEl = popover;
+  return popover;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+window.showStackedBarPopover = function(trackEl) {
+  if (!trackEl) return;
+  if (hidePopoverTimeout) {
+    clearTimeout(hidePopoverTimeout);
+    hidePopoverTimeout = null;
+  }
+  currentActiveTrack = trackEl;
+  const popover = getOrCreateStackedBarPopover();
+  const ds = trackEl.dataset || {};
+  
+  const officerName = ds.name || ds.officerName || 'Petugas';
+  const target = parseInt(ds.target, 10) || 0;
+  const app = parseInt(ds.app, 10) || 0;
+  const sub = parseInt(ds.sub, 10) || 0;
+  const rej = parseInt(ds.rej, 10) || 0;
+  const draft = parseInt(ds.draft, 10) || 0;
+  const open = parseInt(ds.open, 10) || 0;
+  const untouched = parseInt(ds.untouched, 10) || 0;
+  
+  const pctApp = ds.pctApp || (target > 0 ? (app / target * 100).toFixed(1) : '0.0');
+  const pctSub = ds.pctSub || (target > 0 ? (sub / target * 100).toFixed(1) : '0.0');
+  const pctRej = ds.pctRej || (target > 0 ? (rej / target * 100).toFixed(1) : '0.0');
+  const pctDraft = ds.pctDraft || (target > 0 ? (draft / target * 100).toFixed(1) : '0.0');
+  const pctOpen = ds.pctOpen || (target > 0 ? (open / target * 100).toFixed(1) : '0.0');
+  const pctUntouched = ds.pctUntouched || (target > 0 ? (untouched / target * 100).toFixed(1) : '0.0');
+  
+  const real = parseInt(ds.real, 10) || (app + sub + rej);
+  const pct = ds.pct || (target > 0 ? (real / target * 100).toFixed(1) : '0.0');
+
+  popover.innerHTML = `
+    <div class="popover-header">
+      <span class="popover-title">${escapeHtml(officerName)}</span>
+      <span class="popover-target-badge">Target: <strong>${target.toLocaleString('id-ID')}</strong> Dok</span>
+    </div>
+    <div class="popover-grid">
+      <div class="popover-item">
+        <span class="popover-badge-dot dot-approved"></span>
+        <span class="popover-item-label">Approved</span>
+        <span class="popover-item-value"><strong>${app.toLocaleString('id-ID')}</strong> (${pctApp}%)</span>
+      </div>
+      <div class="popover-item">
+        <span class="popover-badge-dot dot-submitted"></span>
+        <span class="popover-item-label">Submitted</span>
+        <span class="popover-item-value"><strong>${sub.toLocaleString('id-ID')}</strong> (${pctSub}%)</span>
+      </div>
+      <div class="popover-item">
+        <span class="popover-badge-dot dot-rejected"></span>
+        <span class="popover-item-label">Rejected</span>
+        <span class="popover-item-value"><strong>${rej.toLocaleString('id-ID')}</strong> (${pctRej}%)</span>
+      </div>
+      <div class="popover-item">
+        <span class="popover-badge-dot dot-draft"></span>
+        <span class="popover-item-label">Draft</span>
+        <span class="popover-item-value"><strong>${draft.toLocaleString('id-ID')}</strong> (${pctDraft}%)</span>
+      </div>
+      <div class="popover-item">
+        <span class="popover-badge-dot dot-open"></span>
+        <span class="popover-item-label">Open</span>
+        <span class="popover-item-value"><strong>${open.toLocaleString('id-ID')}</strong> (${pctOpen}%)</span>
+      </div>
+      ${untouched > 0 ? `
+      <div class="popover-item">
+        <span class="popover-badge-dot dot-untouched"></span>
+        <span class="popover-item-label">Belum Disentuh</span>
+        <span class="popover-item-value"><strong>${untouched.toLocaleString('id-ID')}</strong> (${pctUntouched}%)</span>
+      </div>` : ''}
+    </div>
+    <div class="popover-footer">
+      <span>Realisasi (App+Sub+Rej):</span>
+      <strong class="popover-real-highlight">${real.toLocaleString('id-ID')} / ${target.toLocaleString('id-ID')} (${pct}%)</strong>
+    </div>
+  `;
+
+  const rect = trackEl.getBoundingClientRect();
+  popover.style.display = 'block';
+  popover.style.visibility = 'hidden';
+  popover.classList.remove('active');
+  
+  const popoverWidth = popover.offsetWidth || 290;
+  const popoverHeight = popover.offsetHeight || 180;
+  
+  const maxLeft = Math.max(12, window.innerWidth - popoverWidth - 12);
+  let left = rect.left + (rect.width / 2) - (popoverWidth / 2);
+  left = Math.max(12, Math.min(left, maxLeft));
+  
+  let top = rect.top - popoverHeight - 8;
+  if (top < 12) {
+    top = rect.bottom + 8;
+  }
+  if (top + popoverHeight > window.innerHeight - 12) {
+    top = Math.max(12, window.innerHeight - popoverHeight - 12);
+  }
+  
+  popover.style.left = `${Math.round(left)}px`;
+  popover.style.top = `${Math.round(top)}px`;
+  popover.style.visibility = 'visible';
+  popover.setAttribute('aria-hidden', 'false');
+  
+  requestAnimationFrame(() => {
+    popover.classList.add('active');
+  });
+};
+
+window.hideStackedBarPopover = function() {
+  if (!stackedBarPopoverEl || !stackedBarPopoverEl.classList.contains('active')) {
+    currentActiveTrack = null;
+    return;
+  }
+  currentActiveTrack = null;
+  if (hidePopoverTimeout) {
+    clearTimeout(hidePopoverTimeout);
+    hidePopoverTimeout = null;
+  }
+  stackedBarPopoverEl.classList.remove('active');
+  stackedBarPopoverEl.setAttribute('aria-hidden', 'true');
+  hidePopoverTimeout = setTimeout(() => {
+    if (!stackedBarPopoverEl.classList.contains('active')) {
+      stackedBarPopoverEl.style.display = 'none';
+      stackedBarPopoverEl.style.visibility = 'hidden';
+    }
+  }, 180);
+};
+
+window.setProgressBarMode = function(mode) {
+  if (mode !== 'standard' && mode !== 'stacked') mode = 'stacked';
+  try {
+    localStorage.setItem('officer_progress_bar_mode', mode);
+  } catch (e) {}
+  
+  if (mode === 'standard') {
+    document.body.classList.add('progress-mode-standard');
+  } else {
+    document.body.classList.remove('progress-mode-standard');
+  }
+  
+  document.querySelectorAll('.progress-mode-toggle button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  
+  if (mode === 'standard' && typeof window.initProgressBars === 'function') {
+    window.initProgressBars();
+  }
+};
+
+window.initProgressBarModeToggle = function() {
+  let mode = 'stacked';
+  try {
+    mode = localStorage.getItem('officer_progress_bar_mode') || 'stacked';
+  } catch (e) {}
+  
+  if (mode === 'standard') {
+    document.body.classList.add('progress-mode-standard');
+    if (typeof window.initProgressBars === 'function') {
+      window.initProgressBars();
+    }
+  } else {
+    document.body.classList.remove('progress-mode-standard');
+  }
+  
+  document.querySelectorAll('.progress-mode-toggle button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+};
+
+// Global delegation for hover/touch popover
+document.addEventListener('mouseover', (e) => {
+  const track = e.target.closest('.progress-track-stacked');
+  if (track) window.showStackedBarPopover(track);
+});
+
+document.addEventListener('mouseout', (e) => {
+  const track = e.target.closest('.progress-track-stacked');
+  if (track) {
+    // Ignore if pointer moved to another element within the same track
+    if (e.relatedTarget && track.contains(e.relatedTarget)) return;
+    window.hideStackedBarPopover();
+  }
+});
+
+document.addEventListener('focusin', (e) => {
+  const track = e.target.closest('.progress-track-stacked');
+  if (track) window.showStackedBarPopover(track);
+});
+
+document.addEventListener('focusout', (e) => {
+  const track = e.target.closest('.progress-track-stacked');
+  if (track) window.hideStackedBarPopover();
+});
+
+document.addEventListener('click', (e) => {
+  const track = e.target.closest('.progress-track-stacked');
+  if (track) {
+    // Toggle on repeat click/tap on mobile
+    if (stackedBarPopoverEl && stackedBarPopoverEl.classList.contains('active') && currentActiveTrack === track) {
+      window.hideStackedBarPopover();
+    } else {
+      window.showStackedBarPopover(track);
+    }
+  } else if (!e.target.closest('#stacked-bar-popover')) {
+    window.hideStackedBarPopover();
+  }
+});
+
+document.addEventListener('touchstart', (e) => {
+  if (!e.target.closest('.progress-track-stacked') && !e.target.closest('#stacked-bar-popover')) {
+    window.hideStackedBarPopover();
+  }
+}, { passive: true });
+
+window.addEventListener('scroll', () => {
+  window.hideStackedBarPopover();
+}, { capture: true, passive: true });
+
+window.addEventListener('touchmove', () => {
+  window.hideStackedBarPopover();
+}, { capture: true, passive: true });
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    window.hideStackedBarPopover();
+    return;
+  }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('progress-track-stacked')) {
+    e.preventDefault();
+    if (stackedBarPopoverEl && stackedBarPopoverEl.classList.contains('active') && currentActiveTrack === e.target) {
+      window.hideStackedBarPopover();
+    } else {
+      window.showStackedBarPopover(e.target);
+    }
+  }
+});
+
+window.addEventListener('resize', () => {
+  if (document.querySelector('.progress-mode-toggle')) {
+    window.initProgressBarModeToggle();
+  }
+});
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', window.initProgressBarModeToggle);
+} else {
+  window.initProgressBarModeToggle();
+}
+
+

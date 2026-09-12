@@ -2588,6 +2588,9 @@ function updateTime() {
         if (typeof window.initProgressBars === 'function') {
           window.initProgressBars();
         }
+        if (typeof window.initProgressBarModeToggle === 'function') {
+          window.initProgressBarModeToggle();
+        }
 
         // Re-initialize Excel-like column filters for the newly swapped table
         if (typeof window.initExcelFilters === 'function') {

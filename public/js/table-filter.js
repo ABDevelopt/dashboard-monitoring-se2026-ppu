@@ -81,8 +81,83 @@
     rows.sort((rowA, rowB) => {
       const cellA = rowA.cells[colIdx];
       const cellB = rowB.cells[colIdx];
-      const valA = cellA ? parseVal(cellA.textContent) : '';
-      const valB = cellB ? parseVal(cellB.textContent) : '';
+
+      // Check if cell has Fasih % progress bar tie-breaker attributes
+      const hasTieBreakersA = cellA && (cellA.hasAttribute('data-sort-app') || cellA.hasAttribute('data-sort-pct'));
+      const hasTieBreakersB = cellB && (cellB.hasAttribute('data-sort-app') || cellB.hasAttribute('data-sort-pct'));
+
+      if (hasTieBreakersA || hasTieBreakersB) {
+        const getNumAttr = (cell, attr) => {
+          if (!cell) return 0;
+          const v = cell.getAttribute(attr);
+          if (v === null || v === '') return 0;
+          const n = parseFloat(v);
+          return isNaN(n) ? 0 : n;
+        };
+
+        const getPct = (cell) => {
+          if (!cell) return 0;
+          const v = cell.getAttribute('data-sort-pct') ?? cell.getAttribute('data-sort');
+          if (v !== null && v !== '') {
+            const n = parseFloat(v);
+            if (!isNaN(n)) return n;
+          }
+          const parsed = parseVal(cell.textContent);
+          return typeof parsed === 'number' ? parsed : 0;
+        };
+
+        const pctA = getPct(cellA);
+        const pctB = getPct(cellB);
+        if (pctA !== pctB) {
+          return ascending ? pctA - pctB : pctB - pctA;
+        }
+
+        const appA = getNumAttr(cellA, 'data-sort-app');
+        const appB = getNumAttr(cellB, 'data-sort-app');
+        if (appA !== appB) {
+          return ascending ? appA - appB : appB - appA;
+        }
+
+        const subA = getNumAttr(cellA, 'data-sort-sub');
+        const subB = getNumAttr(cellB, 'data-sort-sub');
+        if (subA !== subB) {
+          return ascending ? subA - subB : subB - subA;
+        }
+
+        const rejA = getNumAttr(cellA, 'data-sort-rej');
+        const rejB = getNumAttr(cellB, 'data-sort-rej');
+        if (rejA !== rejB) {
+          return ascending ? rejA - rejB : rejB - rejA;
+        }
+
+        const dftA = getNumAttr(cellA, 'data-sort-draft');
+        const dftB = getNumAttr(cellB, 'data-sort-draft');
+        if (dftA !== dftB) {
+          return ascending ? dftA - dftB : dftB - dftA;
+        }
+
+        const opnA = getNumAttr(cellA, 'data-sort-open');
+        const opnB = getNumAttr(cellB, 'data-sort-open');
+        if (opnA !== opnB) {
+          return ascending ? opnA - opnB : opnB - opnA;
+        }
+
+        return 0;
+      }
+
+      const getVal = (cell) => {
+        if (!cell) return '';
+        const ds = cell.getAttribute('data-sort');
+        if (ds !== null && ds !== '') {
+          const clean = ds.replace(/%/g, '').replace(/[\$,]/g, '').trim();
+          const num = parseFloat(clean);
+          return isNaN(num) ? ds.toLowerCase().trim() : num;
+        }
+        return parseVal(cell.textContent);
+      };
+
+      const valA = getVal(cellA);
+      const valB = getVal(cellB);
 
       if (typeof valA === 'number' && typeof valB === 'number') {
         return ascending ? valA - valB : valB - valA;
@@ -468,6 +543,9 @@
       applyAllFilters(table);
     });
   };
+
+  // Expose sortTable for programatic and testing access
+  window.sortTable = sortTable;
 
   // Helper to clear filters for a table explicitly
   window.clearTableFilters = function (tableId) {
