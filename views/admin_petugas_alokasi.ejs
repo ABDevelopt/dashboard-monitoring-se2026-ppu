@@ -1,0 +1,1023 @@
+<%- contentFor('body') %>
+
+<style>
+  .unified-hub-wrap {
+    padding: 0 0 40px 0;
+  }
+  
+  /* Hero Section */
+  .hub-hero {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98)),
+                radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.25), transparent 50%);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 28px;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hub-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #6366f1, #38bdf8, #10b981);
+  }
+
+  .hub-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #a5b4fc;
+    margin-bottom: 12px;
+  }
+
+  .hub-hero-title {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hub-hero-desc {
+    font-size: 14px;
+    color: #94a3b8;
+    max-width: 780px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* Stat Grid */
+  .hub-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+  }
+
+  .hub-stat-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    backdrop-filter: blur(10px);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .hub-stat-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(99, 102, 241, 0.4);
+  }
+
+  .hub-stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+
+  .hub-stat-val {
+    font-size: 24px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .hub-stat-lbl {
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 500;
+  }
+
+  /* Modern Tab Navigation */
+  .hub-tabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 2px solid var(--border, #e2e8f0);
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .hub-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+    text-decoration: none;
+    border-radius: 12px 12px 0 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .hub-tab-btn:hover {
+    color: var(--text-primary, #0f172a);
+    background: var(--bg-card-hover, rgba(0,0,0,0.02));
+  }
+
+  .hub-tab-btn.active {
+    color: #4f46e5;
+    border-bottom-color: #4f46e5;
+    background: var(--bg-card, #fff);
+  }
+
+  /* Filter Toolbar */
+  .hub-toolbar {
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+
+  .hub-toolbar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    align-items: flex-end;
+  }
+
+  .hub-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .hub-form-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .hub-input, .hub-select {
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--border, #cbd5e1);
+    padding: 0 12px;
+    font-size: 13px;
+    background: var(--bg-card, #fff);
+    color: var(--text-primary, #0f172a);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .hub-input:focus, .hub-select:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+
+  /* Table styling */
+  .hub-table-card {
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  }
+
+  .hub-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .hub-table th {
+    background: var(--bg-body, #f8fafc);
+    padding: 14px 16px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--text-secondary, #64748b);
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  .hub-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    color: var(--text-primary, #1e293b);
+    vertical-align: middle;
+  }
+
+  .hub-table tr:hover td {
+    background: var(--bg-card-hover, #f8fafc);
+  }
+
+  .hub-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid transparent;
+  }
+
+  .hub-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    text-decoration: none;
+  }
+
+  .hub-btn-primary {
+    background: #4f46e5;
+    color: #fff;
+  }
+  .hub-btn-primary:hover {
+    background: #4338ca;
+  }
+
+  .hub-btn-secondary {
+    background: var(--bg-body, #f1f5f9);
+    border-color: var(--border, #cbd5e1);
+    color: var(--text-primary, #334155);
+  }
+  .hub-btn-secondary:hover {
+    background: #e2e8f0;
+  }
+
+  .hub-btn-danger {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #b91c1c;
+  }
+  .hub-btn-danger:hover {
+    background: #fecaca;
+  }
+
+  .hub-btn-sm {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+
+  /* Quick Modal */
+  .hub-modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1050;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .hub-modal-backdrop.show {
+    display: flex;
+  }
+  .hub-modal {
+    background: var(--bg-card, #fff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 18px;
+    width: 100%;
+    max-width: 520px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  }
+  .hub-modal-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .hub-modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .hub-modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .hub-modal-footer {
+    padding: 16px 24px;
+    background: var(--bg-body, #f8fafc);
+    border-top: 1px solid var(--border, #e2e8f0);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+</style>
+
+<div class="unified-hub-wrap">
+
+  <!-- HERO SECTION -->
+  <div class="hub-hero">
+    <div class="hub-hero-badge">
+      <i class="bi bi-shield-check"></i> Modul Terpadu Resmi BPS PPU
+    </div>
+    <h1 class="hub-hero-title">
+      <i class="bi bi-people-fill text-indigo-400"></i> Manajemen Akses &amp; Alokasi Petugas
+    </h1>
+    <p class="hub-hero-desc">
+      Pusat kendali terintegrasi untuk mengelola hak akses sistem, direktori kontak petugas (PCL/PML/Korlap), 
+      dan penugasan wilayah SLS secara dinamis pada 58 kegiatan survei sensus di Kabupaten Penajam Paser Utara.
+    </p>
+
+    <!-- Stat Grid -->
+    <div class="hub-stat-grid">
+      <div class="hub-stat-card">
+        <div class="hub-stat-icon" style="background: rgba(99, 102, 241, 0.2); color: #818cf8;">
+          <i class="bi bi-person-lock"></i>
+        </div>
+        <div>
+          <div class="hub-stat-val"><%= stats.totalUsers %></div>
+          <div class="hub-stat-lbl">Akun Pengguna Sistem</div>
+        </div>
+      </div>
+
+      <div class="hub-stat-card">
+        <div class="hub-stat-icon" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8;">
+          <i class="bi bi-person-badge"></i>
+        </div>
+        <div>
+          <div class="hub-stat-val"><%= stats.totalPetugas %></div>
+          <div class="hub-stat-lbl">Master Direktori Petugas</div>
+        </div>
+      </div>
+
+      <div class="hub-stat-card">
+        <div class="hub-stat-icon" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">
+          <i class="bi bi-geo-alt-fill"></i>
+        </div>
+        <div>
+          <div class="hub-stat-val"><%= stats.uniqueAssignedOfficers %></div>
+          <div class="hub-stat-lbl">Petugas Lapangan Aktif</div>
+        </div>
+      </div>
+
+      <div class="hub-stat-card">
+        <div class="hub-stat-icon" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div>
+          <div class="hub-stat-val"><%= stats.idleOfficersCount %></div>
+          <div class="hub-stat-lbl">Petugas Siaga (Cadangan)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVIGATION TABS -->
+  <div class="hub-tabs">
+    <a href="?survey=<%= surveyId %>&tab=alokasi" class="hub-tab-btn <%= activeTab === 'alokasi' ? 'active' : '' %>">
+      <i class="bi bi-diagram-3-fill"></i> 1. Alokasi Lapangan (SLS)
+    </a>
+    <a href="?survey=<%= surveyId %>&tab=petugas" class="hub-tab-btn <%= activeTab === 'petugas' ? 'active' : '' %>">
+      <i class="bi bi-person-vcard-fill"></i> 2. Direktori Petugas (<%= stats.totalPetugas %>)
+    </a>
+    <a href="?survey=<%= surveyId %>&tab=akses" class="hub-tab-btn <%= activeTab === 'akses' ? 'active' : '' %>">
+      <i class="bi bi-shield-lock-fill"></i> 3. Akses Pengguna (<%= stats.totalUsers %>)
+    </a>
+    <a href="?survey=<%= surveyId %>&tab=beban" class="hub-tab-btn <%= activeTab === 'beban' ? 'active' : '' %>">
+      <i class="bi bi-bar-chart-steps"></i> 4. Analisis Beban Kerja
+    </a>
+  </div>
+
+  <!-- ================= TAB 1: ALOKASI PETUGAS LAPANGAN ================= -->
+  <% if (activeTab === 'alokasi') { %>
+    
+    <!-- Filter & Toolbar -->
+    <div class="hub-toolbar">
+      <form method="GET" action="/admin/petugas-alokasi" class="hub-toolbar-grid">
+        <input type="hidden" name="tab" value="alokasi">
+
+        <!-- Survey Selector -->
+        <div class="hub-form-group">
+          <label class="hub-form-label">Kegiatan Survei</label>
+          <select name="survey" class="hub-select" onchange="this.form.submit()">
+            <% surveys.forEach(s => { %>
+              <option value="<%= s.id %>" <%= s.id === surveyId ? 'selected' : '' %>>
+                <%= s.name %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <!-- Kecamatan -->
+        <div class="hub-form-group">
+          <label class="hub-form-label">Kecamatan</label>
+          <select name="kec" class="hub-select" onchange="this.form.submit()">
+            <option value="">-- Semua Kecamatan --</option>
+            <% kecamatans.forEach(k => { const kName = k.nama_kecamatan || k.nama_kec; %>
+              <option value="<%= kName %>" <%= kecFilter === kName ? 'selected' : '' %>>
+                <%= k.kode_kec %> - <%= kName %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <!-- Desa -->
+        <div class="hub-form-group">
+          <label class="hub-form-label">Desa / Kelurahan</label>
+          <select name="desa" class="hub-select" onchange="this.form.submit()" <%= desas.length === 0 ? 'disabled' : '' %>>
+            <option value="">-- Semua Desa --</option>
+            <% desas.forEach(d => { %>
+              <option value="<%= d.nama_desa %>" <%= desaFilter === d.nama_desa ? 'selected' : '' %>>
+                <%= d.kode_desa %> - <%= d.nama_desa %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <!-- Pencarian -->
+        <div class="hub-form-group">
+          <label class="hub-form-label">Cari Nama / Kode SLS</label>
+          <input type="text" name="q" class="hub-input" placeholder="Ketik nama SLS / petugas..." value="<%= q %>">
+        </div>
+
+        <!-- Actions -->
+        <div style="display: flex; gap: 8px;">
+          <button type="submit" class="hub-btn hub-btn-primary" style="height: 40px; flex: 1;">
+            <i class="bi bi-filter"></i> Filter
+          </button>
+          <a href="/admin/petugas-alokasi?survey=<%= surveyId %>&tab=alokasi" class="hub-btn hub-btn-secondary" style="height: 40px;" title="Reset Filter">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </a>
+        </div>
+      </form>
+
+      <!-- Action Sub-bar -->
+      <div style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border, #e2e8f0); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
+        <div style="font-size: 13px; color: var(--text-secondary, #64748b);">
+          Menampilkan <strong><%= allocations.length %></strong> dari <strong><%= totalAllocations %></strong> SLS terdaftar pada <strong><%= activeSurveyConfig.name %></strong>.
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button onclick="openBulkAssignModal()" class="hub-btn hub-btn-secondary hub-btn-sm">
+            <i class="bi bi-layers-fill text-indigo-500"></i> Alokasi Massal Wilayah
+          </button>
+          <form method="POST" action="/admin/petugas-alokasi/resync-master" style="display: inline;" onsubmit="return confirm('Sinkronkan profil kontak email & Sobat ID dari direktori ke master survei ini?')">
+            <input type="hidden" name="survey_id" value="<%= surveyId %>">
+            <button type="submit" class="hub-btn hub-btn-secondary hub-btn-sm">
+              <i class="bi bi-arrow-repeat text-sky-500"></i> Sinkronkan Kontak
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Allocation Table -->
+    <div class="hub-table-card">
+      <div style="overflow-x: auto;">
+        <table class="hub-table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Kode SLS</th>
+              <th>Nama SLS</th>
+              <th>Kecamatan / Desa</th>
+              <th>Pencacah (PCL)</th>
+              <th>Pengawas (PML)</th>
+              <th>Korlap</th>
+              <th style="text-align: center;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (allocations.length === 0) { %>
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+                  <i class="bi bi-inbox" style="font-size: 32px; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
+                  Tidak ada data alokasi yang sesuai dengan kriteria filter.
+                </td>
+              </tr>
+            <% } %>
+
+            <% allocations.forEach((item, idx) => { %>
+              <tr>
+                <td style="color: var(--text-secondary); font-size: 12px;"><%= ((page - 1) * limit) + idx + 1 %></td>
+                <td>
+                  <span style="font-family: monospace; font-weight: 700; color: #4f46e5;"><%= item.kode %></span>
+                  <% if (item.has_progress > 0) { %>
+                    <span class="hub-badge" style="background: #ecfdf5; color: #047857; border-color: #a7f3d0;" title="Terdapat progres terisi">
+                      <i class="bi bi-check2-circle"></i> Ada Progres
+                    </span>
+                  <% } %>
+                </td>
+                <td>
+                  <strong style="color: var(--text-primary);"><%= item.nama_sls || '-' %></strong>
+                </td>
+                <td>
+                  <div style="font-weight: 600;"><%= item.kecamatan || '-' %></div>
+                  <div style="font-size: 11px; color: var(--text-secondary);"><%= item.desa || '-' %></div>
+                </td>
+                <td>
+                  <% if (item.pcl && item.pcl.trim()) { %>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span class="hub-badge" style="background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe;">
+                        <i class="bi bi-person-fill"></i> <%= item.pcl %>
+                      </span>
+                    </div>
+                    <% if (item.pcl_email) { %>
+                      <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;"><%= item.pcl_email %></div>
+                    <% } %>
+                  <% } else { %>
+                    <span style="color: #94a3b8; font-style: italic; font-size: 12px;">Belum Dialokasikan</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (item.pml && item.pml.trim()) { %>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span class="hub-badge" style="background: #faf5ff; color: #7e22ce; border-color: #e9d5ff;">
+                        <i class="bi bi-person-check-fill"></i> <%= item.pml %>
+                      </span>
+                    </div>
+                    <% if (item.pml_email) { %>
+                      <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;"><%= item.pml_email %></div>
+                    <% } %>
+                  <% } else { %>
+                    <span style="color: #94a3b8; font-style: italic; font-size: 12px;">-</span>
+                  <% } %>
+                </td>
+                <td>
+                  <span style="font-size: 12px; color: var(--text-secondary);"><%= item.korlap || '-' %></span>
+                </td>
+                <td style="text-align: center;">
+                  <button 
+                    onclick="openEditAllocationModal('<%= item.kode %>', '<%= item.nama_sls %>', '<%= item.pcl || '' %>', '<%= item.pml || '' %>', '<%= item.korlap || '' %>')"
+                    class="hub-btn hub-btn-secondary hub-btn-sm" 
+                    title="Ubah Petugas SLS Ini">
+                    <i class="bi bi-pencil-fill text-indigo-600"></i> Alokasikan
+                  </button>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <% if (totalPages > 1) { %>
+        <div style="padding: 16px 20px; border-top: 1px solid var(--border, #e2e8f0); display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 12px; color: var(--text-secondary);">
+            Halaman <%= page %> dari <%= totalPages %>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <% if (page > 1) { %>
+              <a href="?survey=<%= surveyId %>&tab=alokasi&kec=<%= kecFilter %>&desa=<%= desaFilter %>&q=<%= q %>&page=<%= page - 1 %>" class="hub-btn hub-btn-secondary hub-btn-sm">
+                <i class="bi bi-chevron-left"></i> Sebelumnya
+              </a>
+            <% } %>
+            <% if (page < totalPages) { %>
+              <a href="?survey=<%= surveyId %>&tab=alokasi&kec=<%= kecFilter %>&desa=<%= desaFilter %>&q=<%= q %>&page=<%= page + 1 %>" class="hub-btn hub-btn-secondary hub-btn-sm">
+                Berikutnya <i class="bi bi-chevron-right"></i>
+              </a>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+    </div>
+
+  <!-- ================= TAB 2: DIREKTORI PETUGAS ================= -->
+  <% } else if (activeTab === 'petugas') { %>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div>
+        <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 4px 0;">Direktori Master Petugas Lapangan</h3>
+        <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Database identitas resmi petugas sensus/survei (Sobat ID, Email BPS, Jenis Kelamin).</p>
+      </div>
+      <button onclick="openCreateOfficerModal()" class="hub-btn hub-btn-primary">
+        <i class="bi bi-person-plus-fill"></i> Tambah Petugas Baru
+      </button>
+    </div>
+
+    <div class="hub-table-card">
+      <div style="overflow-x: auto;">
+        <table class="hub-table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Nama Lengkap</th>
+              <th>Email BPS</th>
+              <th>Sobat ID</th>
+              <th>Gender</th>
+              <th>Status Kontak</th>
+              <th style="text-align: center;">Tindakan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% petugas.forEach((p, idx) => { %>
+              <tr>
+                <td style="color: var(--text-secondary); font-size: 12px;"><%= idx + 1 %></td>
+                <td>
+                  <strong style="color: var(--text-primary);"><%= p.nama_lengkap %></strong>
+                </td>
+                <td>
+                  <a href="mailto:<%= p.email %>" style="color: #4f46e5; text-decoration: none;">
+                    <%= p.email %>
+                  </a>
+                </td>
+                <td>
+                  <span style="font-family: monospace; font-size: 12px; background: var(--bg-body, #f1f5f9); padding: 2px 6px; border-radius: 4px;">
+                    <%= p.sobat_id || '-' %>
+                  </span>
+                </td>
+                <td>
+                  <span class="hub-badge" style="background: <%= p.jenis_kelamin === 'Lk' ? '#eff6ff' : '#fdf2f8' %>; color: <%= p.jenis_kelamin === 'Lk' ? '#1d4ed8' : '#be185d' %>;">
+                    <%= p.jenis_kelamin === 'Lk' ? 'Laki-laki' : 'Perempuan' %>
+                  </span>
+                </td>
+                <td>
+                  <span class="hub-badge" style="background: #ecfdf5; color: #047857; border-color: #a7f3d0;">
+                    <i class="bi bi-check-circle-fill"></i> Terdaftar
+                  </span>
+                </td>
+                <td style="text-align: center;">
+                  <a href="/admin/petugas-email" class="hub-btn hub-btn-secondary hub-btn-sm" title="Kelola di Halaman Email Petugas">
+                    <i class="bi bi-pencil-square"></i> Kelola
+                  </a>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  <!-- ================= TAB 3: MANAJEMEN AKSES PENGGUNA ================= -->
+  <% } else if (activeTab === 'akses') { %>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div>
+        <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 4px 0;">Manajemen Akses &amp; Akun Sistem</h3>
+        <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Kelola akun login administrator, viewer, dan petugas operasional.</p>
+      </div>
+      <button onclick="openCreateUserModal()" class="hub-btn hub-btn-primary">
+        <i class="bi bi-shield-plus"></i> Buat Akun Baru
+      </button>
+    </div>
+
+    <div class="hub-table-card">
+      <div style="overflow-x: auto;">
+        <table class="hub-table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Username</th>
+              <th>Peran (Role)</th>
+              <th>Tingkat Akses</th>
+              <th>Tanggal Registrasi</th>
+              <th style="text-align: center;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% users.forEach((u, idx) => { %>
+              <tr>
+                <td style="color: var(--text-secondary); font-size: 12px;"><%= idx + 1 %></td>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(99, 102, 241, 0.1); color: #4f46e5; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+                      <%= u.username.substring(0, 1).toUpperCase() %>
+                    </div>
+                    <div>
+                      <strong style="color: var(--text-primary);"><%= u.username %></strong>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <% if (u.role === 'admin') { %>
+                    <span class="hub-badge" style="background: #fef3c7; color: #b45309; border-color: #fde68a;">
+                      <i class="bi bi-star-fill"></i> Administrator
+                    </span>
+                  <% } else if (u.role === 'viewer') { %>
+                    <span class="hub-badge" style="background: #f1f5f9; color: #475569; border-color: #cbd5e1;">
+                      <i class="bi bi-eye-fill"></i> Viewer
+                    </span>
+                  <% } else { %>
+                    <span class="hub-badge" style="background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe;">
+                      <i class="bi bi-person-fill"></i> <%= u.role.toUpperCase() %>
+                    </span>
+                  <% } %>
+                </td>
+                <td>
+                  <span style="font-size: 12px; color: var(--text-secondary);">
+                    <%= u.role === 'admin' ? 'Akses Penuh Seluruh Dasbor & Master Data' : 'Akses Monitoring & View Progres' %>
+                  </span>
+                </td>
+                <td style="font-size: 12px; color: var(--text-secondary);">
+                  <%= u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' %>
+                </td>
+                <td style="text-align: center;">
+                  <span class="hub-badge" style="background: #ecfdf5; color: #047857; border-color: #a7f3d0;">
+                    <i class="bi bi-check-circle-fill"></i> Aktif
+                  </span>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  <!-- ================= TAB 4: ANALISIS BEBAN KERJA ================= -->
+  <% } else if (activeTab === 'beban') { %>
+
+    <div style="margin-bottom: 20px;">
+      <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 4px 0;">Matriks Utilisasi &amp; Beban Kerja Petugas</h3>
+      <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">Deteksi dini potensi *over-capacity* dan pemantauan distribusi penugasan pada survei [<%= activeSurveyConfig.name %>].</p>
+    </div>
+
+    <div class="hub-table-card">
+      <div style="overflow-x: auto;">
+        <table class="hub-table">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Nama Petugas</th>
+              <th>Email BPS</th>
+              <th style="text-align: center;">SLS Pencacah (PCL)</th>
+              <th style="text-align: center;">SLS Pengawas (PML)</th>
+              <th style="text-align: center;">Total SLS Ditugaskan</th>
+              <th style="text-align: center;">Kapasitas Beban</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% officerWorkloads.forEach((w, idx) => { %>
+              <tr>
+                <td style="color: var(--text-secondary); font-size: 12px;"><%= idx + 1 %></td>
+                <td>
+                  <strong style="color: var(--text-primary);"><%= w.nama_lengkap %></strong>
+                  <% if (w.sobat_id) { %>
+                    <span style="font-size: 11px; color: var(--text-secondary); margin-left: 6px;">[<%= w.sobat_id %>]</span>
+                  <% } %>
+                </td>
+                <td>
+                  <span style="color: var(--text-secondary); font-size: 12px;"><%= w.email %></span>
+                </td>
+                <td style="text-align: center; font-weight: 600;">
+                  <%= w.slsPcl %>
+                </td>
+                <td style="text-align: center; font-weight: 600;">
+                  <%= w.slsPml %>
+                </td>
+                <td style="text-align: center;">
+                  <strong style="font-size: 15px; color: <%= w.slsTotal > 15 ? '#b91c1c' : (w.slsTotal > 0 ? '#4f46e5' : '#94a3b8') %>;">
+                    <%= w.slsTotal %>
+                  </strong>
+                </td>
+                <td style="text-align: center;">
+                  <span class="hub-badge <%= w.badgeClass %>">
+                    <% if (w.statusBeban === 'Beban Tinggi') { %>
+                      <i class="bi bi-exclamation-triangle-fill"></i>
+                    <% } else if (w.statusBeban === 'Beban Ideal') { %>
+                      <i class="bi bi-check-circle-fill"></i>
+                    <% } else if (w.statusBeban === 'Beban Ringan') { %>
+                      <i class="bi bi-info-circle-fill"></i>
+                    <% } else { %>
+                      <i class="bi bi-pause-circle"></i>
+                    <% } %>
+                    <%= w.statusBeban %>
+                  </span>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  <% } %>
+
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- Modal 1: Edit Alokasi Satu SLS -->
+<div id="modalEditAllocation" class="hub-modal-backdrop">
+  <div class="hub-modal">
+    <div class="hub-modal-header">
+      <h4 class="hub-modal-title"><i class="bi bi-geo-fill text-indigo-600"></i> Alokasi Petugas SLS</h4>
+      <button onclick="closeModal('modalEditAllocation')" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8;">&times;</button>
+    </div>
+    <form method="POST" action="/admin/petugas-alokasi/assign-sls">
+      <input type="hidden" name="survey_id" value="<%= surveyId %>">
+      <input type="hidden" name="kode_sls" id="allocKodeSls">
+      <div class="hub-modal-body">
+        <div style="background: var(--bg-body, #f8fafc); padding: 12px; border-radius: 10px; border: 1px solid var(--border, #e2e8f0);">
+          <div style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700;">Target SLS</div>
+          <div style="font-size: 14px; font-weight: 700; color: #0f172a;" id="allocLabelSls">-</div>
+        </div>
+
+        <div class="hub-form-group">
+          <label class="hub-form-label">Pencacah (PCL)</label>
+          <input list="petugasListOptions" name="pcl_name" id="allocPclName" class="hub-input" placeholder="Pilih atau ketik nama PCL...">
+        </div>
+
+        <div class="hub-form-group">
+          <label class="hub-form-label">Pengawas (PML)</label>
+          <input list="petugasListOptions" name="pml_name" id="allocPmlName" class="hub-input" placeholder="Pilih atau ketik nama PML...">
+        </div>
+
+        <div class="hub-form-group">
+          <label class="hub-form-label">Koordinator Lapangan (Korlap)</label>
+          <input type="text" name="korlap_name" id="allocKorlapName" class="hub-input" placeholder="Nama Korlap (Opsional)...">
+        </div>
+      </div>
+      <div class="hub-modal-footer">
+        <button type="button" onclick="closeModal('modalEditAllocation')" class="hub-btn hub-btn-secondary">Batal</button>
+        <button type="submit" class="hub-btn hub-btn-primary"><i class="bi bi-check2"></i> Simpan Alokasi</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 2: Bulk Assign Wilayah -->
+<div id="modalBulkAssign" class="hub-modal-backdrop">
+  <div class="hub-modal">
+    <div class="hub-modal-header">
+      <h4 class="hub-modal-title"><i class="bi bi-layers-fill text-indigo-600"></i> Alokasi Massal Wilayah</h4>
+      <button onclick="closeModal('modalBulkAssign')" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8;">&times;</button>
+    </div>
+    <form method="POST" action="/admin/petugas-alokasi/bulk-assign" onsubmit="return confirm('Alokasikan seluruh SLS pada cakupan wilayah yang dipilih kepada petugas ini?')">
+      <input type="hidden" name="survey_id" value="<%= surveyId %>">
+      <div class="hub-modal-body">
+        <div class="hub-form-group">
+          <label class="hub-form-label">Kecamatan Target</label>
+          <select name="kecamatan" class="hub-select" id="bulkKecSelect" required>
+            <option value="">-- Pilih Kecamatan --</option>
+            <% kecamatans.forEach(k => { const kName = k.nama_kecamatan || k.nama_kec; %>
+              <option value="<%= kName %>"><%= k.kode_kec %> - <%= kName %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="hub-form-group">
+          <label class="hub-form-label">Desa Target (Opsional / Kosongkan untuk 1 Kecamatan)</label>
+          <input type="text" name="desa" class="hub-input" placeholder="Ketik nama desa jika spesifik...">
+        </div>
+
+        <div class="hub-form-group">
+          <label class="hub-form-label">Peran Penugasan</label>
+          <select name="target_role" class="hub-select" required>
+            <option value="pcl">Pencacah Lapangan (PCL)</option>
+            <option value="pml">Pengawas Lapangan (PML)</option>
+            <option value="korlap">Koordinator Lapangan (Korlap)</option>
+          </select>
+        </div>
+
+        <div class="hub-form-group">
+          <label class="hub-form-label">Petugas Lapangan Tujuan</label>
+          <input list="petugasListOptions" name="officer_name" class="hub-input" placeholder="Pilih nama petugas..." required>
+        </div>
+      </div>
+      <div class="hub-modal-footer">
+        <button type="button" onclick="closeModal('modalBulkAssign')" class="hub-btn hub-btn-secondary">Batal</button>
+        <button type="submit" class="hub-btn hub-btn-primary"><i class="bi bi-check2-all"></i> Jalankan Alokasi Massal</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 3: Buat Akun Pengguna Baru -->
+<div id="modalCreateUser" class="hub-modal-backdrop">
+  <div class="hub-modal">
+    <div class="hub-modal-header">
+      <h4 class="hub-modal-title"><i class="bi bi-shield-plus text-indigo-600"></i> Buat Akun Pengguna</h4>
+      <button onclick="closeModal('modalCreateUser')" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8;">&times;</button>
+    </div>
+    <form method="POST" action="/admin/petugas-alokasi/create-user">
+      <div class="hub-modal-body">
+        <div class="hub-form-group">
+          <label class="hub-form-label">Username</label>
+          <input type="text" name="username" class="hub-input" placeholder="Masukkan username..." required>
+        </div>
+        <div class="hub-form-group">
+          <label class="hub-form-label">Password</label>
+          <input type="password" name="password" class="hub-input" placeholder="Masukkan kata sandi..." required>
+        </div>
+        <div class="hub-form-group">
+          <label class="hub-form-label">Peran (Role)</label>
+          <select name="role" class="hub-select" required>
+            <option value="user">User Biasa / Operator</option>
+            <option value="viewer">Viewer (Hanya Lihat)</option>
+            <option value="admin">Administrator (Akses Penuh)</option>
+          </select>
+        </div>
+      </div>
+      <div class="hub-modal-footer">
+        <button type="button" onclick="closeModal('modalCreateUser')" class="hub-btn hub-btn-secondary">Batal</button>
+        <button type="submit" class="hub-btn hub-btn-primary"><i class="bi bi-save"></i> Buat Akun</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 4: Tambah Petugas Baru -->
+<div id="modalCreateOfficer" class="hub-modal-backdrop">
+  <div class="hub-modal">
+    <div class="hub-modal-header">
+      <h4 class="hub-modal-title"><i class="bi bi-person-plus-fill text-indigo-600"></i> Tambah Master Petugas</h4>
+      <button onclick="closeModal('modalCreateOfficer')" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8;">&times;</button>
+    </div>
+    <form method="POST" action="/admin/petugas-alokasi/create-officer">
+      <div class="hub-modal-body">
+        <div class="hub-form-group">
+          <label class="hub-form-label">Nama Lengkap Petugas</label>
+          <input type="text" name="nama_lengkap" class="hub-input" placeholder="Nama lengkap sesuai SK..." required>
+        </div>
+        <div class="hub-form-group">
+          <label class="hub-form-label">Email BPS Resmi</label>
+          <input type="email" name="email" class="hub-input" placeholder="contoh@bps.go.id" required>
+        </div>
+        <div class="hub-form-group">
+          <label class="hub-form-label">Sobat ID</label>
+          <input type="text" name="sobat_id" class="hub-input" placeholder="Sobat ID BPS (Opsional)">
+        </div>
+        <div class="hub-form-group">
+          <label class="hub-form-label">Jenis Kelamin</label>
+          <select name="jenis_kelamin" class="hub-select">
+            <option value="Lk">Laki-laki</option>
+            <option value="Pr">Perempuan</option>
+          </select>
+        </div>
+      </div>
+      <div class="hub-modal-footer">
+        <button type="button" onclick="closeModal('modalCreateOfficer')" class="hub-btn hub-btn-secondary">Batal</button>
+        <button type="submit" class="hub-btn hub-btn-primary"><i class="bi bi-save"></i> Simpan Petugas</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Datalist Autocomplete Petugas -->
+<datalist id="petugasListOptions">
+  <% petugas.forEach(p => { %>
+    <option value="<%= p.nama_lengkap %>"><%= p.email %> [<%= p.sobat_id || '-' %>]</option>
+  <% }) %>
+</datalist>
+
+<script>
+  function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('show');
+  }
+  function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  }
+  function openEditAllocationModal(kode, namaSls, pcl, pml, korlap) {
+    document.getElementById('allocKodeSls').value = kode;
+    document.getElementById('allocLabelSls').innerText = kode + ' - ' + (namaSls || 'Tanpa Nama');
+    document.getElementById('allocPclName').value = pcl || '';
+    document.getElementById('allocPmlName').value = pml || '';
+    document.getElementById('allocKorlapName').value = korlap || '';
+    openModal('modalEditAllocation');
+  }
+  function openBulkAssignModal() {
+    openModal('modalBulkAssign');
+  }
+  function openCreateUserModal() {
+    openModal('modalCreateUser');
+  }
+  function openCreateOfficerModal() {
+    openModal('modalCreateOfficer');
+  }
+  window.onclick = function(e) {
+    if (e.target.classList && e.target.classList.contains('hub-modal-backdrop')) {
+      e.target.classList.remove('show');
+    }
+  }
+</script>

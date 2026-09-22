@@ -788,6 +788,7 @@ adminRouter.get('/logout', (req, res) => {
 });
 
 // Protected Admin Routes
+adminRouter.use('/petugas-alokasi', requireAdmin, require('./routes/officers_allocation'));
 adminRouter.use('/upload', requireAdmin, require('./routes/upload'));
 adminRouter.use('/master', requireAdmin, require('./routes/master'));
 adminRouter.use('/settings', requireAdmin, require('./routes/settings'));
