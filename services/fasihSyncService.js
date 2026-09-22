@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const { getDb, getSharedDb, getSettings, rebuildSummaryCache, rebuildAllSummaryCaches, importTitikUjiPetik, reloadDbConnection } = require('../database');
+const { getDb, getSharedDb, getSettings, rebuildSummaryCache, rebuildAllSummaryCaches, importTitikUjiPetik, reloadDbConnection, getSurveyProgressSnapshotsMap, upsertSurveyProgressSnapshot, refreshSurveyProgressSnapshot } = require('../database');
 const logger = require('./logger');
 
 const DEFAULT_API_URL = process.env.FASIH_API_BASE_URL || 'http://43.163.98.53/api/sync/monitoring-data';
@@ -632,21 +632,47 @@ class FasihSyncService {
     if (date) urlObj.searchParams.set('date', date);
     if (forceRefresh) urlObj.searchParams.set('refresh', 'true');
 
-    logger.info(`[FASIH-SYNC] Mengambil data pemantauan dari: ${urlObj.toString()}...`);
+    // Cek snapshot lokal untuk ETag terakhir
+    let cachedEtag = null;
+    try {
+      const snap = getSharedDb().prepare('SELECT etag FROM survey_progress_snapshots WHERE survey_id = ?').get(surveyId);
+      if (snap && snap.etag) cachedEtag = snap.etag;
+    } catch (_) {}
+
+    const reqHeaders = {
+      'Accept': 'application/json',
+      'X-FASIH-API-KEY': apiKey
+    };
+    if (cachedEtag && !forceRefresh) {
+      reqHeaders['If-None-Match'] = cachedEtag;
+    }
+
+    logger.info(`[FASIH-SYNC] Mengambil data pemantauan dari: ${urlObj.toString()} (ETag: ${cachedEtag ? cachedEtag.slice(0, 20) + '...' : 'none'})...`);
 
     let response;
     try {
       response = await fetch(urlObj.toString(), {
         method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'X-FASIH-API-KEY': apiKey
-        },
+        headers: reqHeaders,
         signal: AbortSignal.timeout(30000)
       });
     } catch (fetchErr) {
       logger.error(`[FASIH-SYNC] Koneksi gagal: ${fetchErr.message}`);
       throw new Error(`Gagal menghubungi server FASIH API: ${fetchErr.message}`);
+    }
+
+    // Tangani HTTP 304 Not Modified (Data di Cloud belum berubah)
+    if (response.status === 304) {
+      logger.info(`[FASIH-SYNC] ⚡ HTTP 304 Not Modified untuk [${surveyId}] (ETag cocok). Melewati transfer payload & pemrosesan.`);
+      return {
+        success: true,
+        skipped: true,
+        notModified: true,
+        reason: 'not_modified_etag',
+        surveyId,
+        etag: cachedEtag,
+        message: `Data progres kegiatan [${surveyId}] sudah versi paling mutakhir (HTTP 304).`
+      };
     }
 
     if (!response.ok) {
@@ -704,6 +730,14 @@ class FasihSyncService {
           latestStats.total_rejected === remoteSummary.total_rejected &&
           latestStats.total_target === remoteSummary.total_target
         ) {
+          const resEtag = response.headers.get('etag') || payload.etag;
+          if (resEtag) {
+            try {
+              getSharedDb().prepare('UPDATE survey_progress_snapshots SET etag = ?, updated_at = CURRENT_TIMESTAMP WHERE survey_id = ?').run(resEtag, surveyId);
+            } catch (etagErr) {
+              logger.warn(`[FASIH-SYNC] Gagal update ETag di snapshot: ${etagErr.message}`);
+            }
+          }
           logger.info(`[FASIH-AUTO-SYNC] Data untuk tanggal ${effectiveDate} tidak mengalami perubahan (Approved: ${remoteSummary.total_approved}). Melewati sinkronisasi duplikat.`);
           return {
             success: true,
@@ -712,6 +746,7 @@ class FasihSyncService {
             uploadId: latestUpload.id,
             date: effectiveDate,
             totalSls: records.length,
+            etag: resEtag,
             summary: remoteSummary
           };
         }
@@ -796,6 +831,10 @@ class FasihSyncService {
           pml = CASE WHEN (pml IS NULL OR pml = '' OR pml = 'Pengawas Lapangan') AND excluded.pml != '' THEN excluded.pml ELSE pml END
       `);
 
+      // Cek apakah subsls_master sudah pernah terisi lengkap sebelumnya
+      const masterCount = db.prepare('SELECT COUNT(*) as c FROM subsls_master').get()?.c || 0;
+      const needMasterSeed = masterCount === 0 || masterCount < records.length;
+
       const lookup = this._getMasterLookup();
 
       for (const rec of records) {
@@ -850,11 +889,13 @@ class FasihSyncService {
         const korlapName = (existingMaster && existingMaster.korlap) || rec.korlap || 'Koordinator Lapangan';
         const targetUpload = rec.target || 0;
 
-        // Pastikan entri master SLS tersimpan di subsls_master
-        upsertMaster.run(
-          kode, kodeKec, kecamatan, desa, namaSls || ('SLS ' + kode.slice(10, 14)),
-          korlapName, pmlName, pclName, targetUpload, kode, targetUpload
-        );
+        // Pastikan entri master SLS tersimpan di subsls_master jika belum ada
+        if (needMasterSeed) {
+          upsertMaster.run(
+            kode, kodeKec, kecamatan, desa, namaSls || ('SLS ' + kode.slice(10, 14)),
+            korlapName, pmlName, pclName, targetUpload, kode, targetUpload
+          );
+        }
 
         let prevM = null;
         if (prevMuatanId) {
@@ -895,13 +936,44 @@ class FasihSyncService {
       db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(insertedCount, uploadId);
     })();
 
-    // 3. Rebuild cache ringkasan statistik spesifik untuk survei ini
+    // 3. Rebuild summary_cache & reload connection
     try {
       rebuildSummaryCache(uploadId, surveyId);
       reloadDbConnection(surveyId);
       logger.info(`[FASIH-SYNC] Cache ringkasan berhasil diperbarui untuk ${surveyId} (Upload ID: #${uploadId})`);
     } catch (cacheErr) {
       logger.warn(`[FASIH-SYNC] Gagal rebuild cache untuk ${surveyId}: ${cacheErr.message}`);
+    }
+
+    // 3b. Perbarui snapshot di shared.db (untuk sub-milidetik portal /surveys)
+    const resEtag = response.headers.get('etag') || payload.etag;
+    try {
+      const remoteSum = payload.summary || {};
+      const app = Number(remoteSum.total_approved || remoteSum.approved || 0);
+      const sub = Number(remoteSum.total_submitted || remoteSum.submitted || 0);
+      const tgt = Number(remoteSum.total_target || remoteSum.target || 0);
+      const real = app + sub;
+      const pct = tgt > 0 ? parseFloat(((real / tgt) * 100).toFixed(1)) : 0;
+
+      upsertSurveyProgressSnapshot(surveyId, {
+        survey_name: payload.survey_name || surveyId,
+        latest_upload_id: uploadId,
+        tanggal: effectiveDate,
+        total_sls: insertedCount,
+        realisasi: real,
+        target: tgt,
+        approved: app,
+        submitted: sub,
+        draft: Number(remoteSum.total_draft || remoteSum.draft || 0),
+        rejected: Number(remoteSum.total_rejected || remoteSum.rejected || 0),
+        open: Number(remoteSum.total_open || remoteSum.open || 0),
+        persen: pct,
+        etag: resEtag,
+        source: payload.source || 'cloud_sync'
+      });
+      logger.info(`[FASIH-SYNC] Snapshot portal diperbarui untuk ${surveyId} (ETag: ${resEtag || 'none'})`);
+    } catch (snapErr) {
+      logger.warn(`[FASIH-SYNC] Gagal update snapshot untuk ${surveyId}: ${snapErr.message}`);
     }
 
     // 4. Kirim notifikasi WhatsApp otomatis jika diminta
@@ -950,55 +1022,161 @@ class FasihSyncService {
     }
 
     const surveyKeys = Object.keys(surveysConfig);
+    const region = options.region || '6409';
+    const config = this.getConfig();
+    let batchBaseUrl = config.apiUrl;
+    if (batchBaseUrl.includes('/api/sync/monitoring-data')) {
+      batchBaseUrl = batchBaseUrl.replace('/api/sync/monitoring-data', '/api/sync/batch-summary');
+    } else {
+      batchBaseUrl = batchBaseUrl.replace(/\/+$/, '') + '/api/sync/batch-summary';
+    }
+    const batchUrl = `${batchBaseUrl}?region=${region}`;
+
+    logger.info(`[FASIH-SYNC-ALL] Memeriksa Batch Summary Cloud: ${batchUrl}...`);
+    let batchData = null;
+    try {
+      const bRes = await fetch(batchUrl, {
+        headers: { 'X-FASIH-API-KEY': config.apiKey, 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(15000)
+      });
+      if (bRes.ok) {
+        batchData = await bRes.json();
+      }
+    } catch (bErr) {
+      logger.warn(`[FASIH-SYNC-ALL] Batch summary fetch gagal, fallback ke mode per-survei: ${bErr.message}`);
+    }
+
+    const snapshotsMap = getSurveyProgressSnapshotsMap();
     const results = [];
     let syncedCount = 0;
     let failedCount = 0;
     let skippedCount = 0;
 
-    logger.info(`[FASIH-SYNC-ALL] Memulai sinkronisasi progres massal untuk ${surveyKeys.length} kegiatan survei/sensus...`);
+    if (batchData && batchData.success && batchData.surveys) {
+      const remoteSurveys = batchData.surveys;
+      logger.info(`[FASIH-SYNC-ALL] ⚡ Batch summary sukses memuat ${batchData.total_tracked} survei terdata (${batchData.active_surveys} aktif). Memeriksa delta...`);
 
-    for (const key of surveyKeys) {
-      try {
-        const res = await this.syncFromFasih({
-          ...options,
-          surveyId: key,
-          skipIfUnchanged: options.skipIfUnchanged !== false
-        });
+      for (const key of surveyKeys) {
+        const remoteInfo = remoteSurveys[key];
+        const localSnap = snapshotsMap[key];
 
-        if (res.skipped) {
+        // 1. Jika survei belum memiliki data sama sekali di Cloud atau 0 target di wilayah ini, lewati seketika
+        if (!remoteInfo || (remoteInfo.total_sls === 0 && remoteInfo.target === 0)) {
           skippedCount++;
           results.push({
             surveyId: key,
             name: surveysConfig[key]?.name || key,
             status: 'skipped',
-            reason: res.reason,
-            summary: res.summary
+            reason: !remoteInfo ? 'no_remote_data' : 'no_records_for_region'
           });
-        } else {
-          syncedCount++;
+          continue;
+        }
+
+        // 2. Jika ETag cocok dengan snapshot lokal dan tidak forceRefresh, lewati tanpa fetch WAN!
+        if (!options.forceRefresh && localSnap && localSnap.etag && remoteInfo.etag && localSnap.etag === remoteInfo.etag) {
+          skippedCount++;
           results.push({
             surveyId: key,
             name: surveysConfig[key]?.name || key,
-            status: 'synced',
-            uploadId: res.uploadId,
-            totalSls: res.totalSls,
-            summary: res.summary,
-            engine: res.engine
+            status: 'skipped',
+            reason: 'not_modified_etag',
+            etag: localSnap.etag,
+            summary: {
+              realisasi: localSnap.realisasi,
+              target: localSnap.target,
+              approved: localSnap.approved,
+              submitted: localSnap.submitted
+            }
           });
+          continue;
         }
-      } catch (err) {
-        failedCount++;
-        results.push({
-          surveyId: key,
-          name: surveysConfig[key]?.name || key,
-          status: 'error',
-          error: err.message
-        });
-        logger.warn(`[FASIH-SYNC-ALL] Gagal menyinkronkan progres kegiatan ${key}: ${err.message}`);
-      }
 
-      // Small delay between calls to maintain healthy server load
-      await new Promise(resolve => setTimeout(resolve, 200));
+        // 3. Ada delta baru atau belum pernah disinkronkan: Tarik detail SLS untuk survei ini saja
+        try {
+          const res = await this.syncFromFasih({
+            ...options,
+            surveyId: key,
+            skipIfUnchanged: options.skipIfUnchanged !== false
+          });
+
+          if (res.skipped) {
+            skippedCount++;
+            results.push({
+              surveyId: key,
+              name: surveysConfig[key]?.name || key,
+              status: 'skipped',
+              reason: res.reason,
+              summary: res.summary
+            });
+          } else {
+            syncedCount++;
+            results.push({
+              surveyId: key,
+              name: surveysConfig[key]?.name || key,
+              status: 'synced',
+              uploadId: res.uploadId,
+              totalSls: res.totalSls,
+              summary: res.summary,
+              engine: res.engine
+            });
+          }
+        } catch (err) {
+          failedCount++;
+          results.push({
+            surveyId: key,
+            name: surveysConfig[key]?.name || key,
+            status: 'error',
+            error: err.message
+          });
+          logger.warn(`[FASIH-SYNC-ALL] Gagal menyinkronkan progres kegiatan ${key}: ${err.message}`);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    } else {
+      // Fallback: Sequential sync
+      for (const key of surveyKeys) {
+        try {
+          const res = await this.syncFromFasih({
+            ...options,
+            surveyId: key,
+            skipIfUnchanged: options.skipIfUnchanged !== false
+          });
+
+          if (res.skipped) {
+            skippedCount++;
+            results.push({
+              surveyId: key,
+              name: surveysConfig[key]?.name || key,
+              status: 'skipped',
+              reason: res.reason,
+              summary: res.summary
+            });
+          } else {
+            syncedCount++;
+            results.push({
+              surveyId: key,
+              name: surveysConfig[key]?.name || key,
+              status: 'synced',
+              uploadId: res.uploadId,
+              totalSls: res.totalSls,
+              summary: res.summary,
+              engine: res.engine
+            });
+          }
+        } catch (err) {
+          failedCount++;
+          results.push({
+            surveyId: key,
+            name: surveysConfig[key]?.name || key,
+            status: 'error',
+            error: err.message
+          });
+          logger.warn(`[FASIH-SYNC-ALL] Gagal menyinkronkan progres kegiatan ${key}: ${err.message}`);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
     }
 
     logger.info(`[FASIH-SYNC-ALL] Selesai: ${syncedCount} disinkronkan, ${skippedCount} lewati (tidak berubah), ${failedCount} gagal.`);
@@ -1008,6 +1186,7 @@ class FasihSyncService {
       synced: syncedCount,
       skipped: skippedCount,
       failed: failedCount,
+      batchAccelerated: !!batchData,
       results
     };
   }

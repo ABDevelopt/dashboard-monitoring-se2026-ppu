@@ -158,7 +158,42 @@ function initSharedDb(dbConn) {
     CREATE INDEX IF NOT EXISTS idx_shared_ref_desa_kec ON ref_desa(kode_kec);
     CREATE INDEX IF NOT EXISTS idx_shared_ref_petugas_email ON ref_petugas(email);
     CREATE INDEX IF NOT EXISTS idx_shared_ref_petugas_nama ON ref_petugas(nama_lengkap);
+
+    CREATE TABLE IF NOT EXISTS survey_progress_snapshots (
+      survey_id TEXT PRIMARY KEY,
+      survey_name TEXT,
+      latest_upload_id INTEGER,
+      tanggal TEXT,
+      total_sls INTEGER DEFAULT 0,
+      realisasi INTEGER DEFAULT 0,
+      target INTEGER DEFAULT 0,
+      approved INTEGER DEFAULT 0,
+      submitted INTEGER DEFAULT 0,
+      draft INTEGER DEFAULT 0,
+      rejected INTEGER DEFAULT 0,
+      open INTEGER DEFAULT 0,
+      persen REAL DEFAULT 0,
+      etag TEXT,
+      source TEXT DEFAULT 'local',
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_survey_snapshots_updated ON survey_progress_snapshots(updated_at);
   `);
+
+  // Ensure survey_progress_snapshots has all columns
+  try {
+    const snapCols = dbConn.prepare('PRAGMA table_info(survey_progress_snapshots)').all().map(c => c.name);
+    if (!snapCols.includes('survey_name')) {
+      dbConn.exec('ALTER TABLE survey_progress_snapshots ADD COLUMN survey_name TEXT');
+    }
+    if (!snapCols.includes('etag')) {
+      dbConn.exec('ALTER TABLE survey_progress_snapshots ADD COLUMN etag TEXT');
+    }
+    if (!snapCols.includes('source')) {
+      dbConn.exec("ALTER TABLE survey_progress_snapshots ADD COLUMN source TEXT DEFAULT 'local'");
+    }
+  } catch (_) {}
 
   initUsers(dbConn);
 
@@ -3347,6 +3382,126 @@ function getRefPetugas() {
   }
 }
 
+// ===== SURVEY PROGRESS SNAPSHOTS (Shared Read-Through Cache untuk Portal /surveys) =====
+
+function getSurveyProgressSnapshotsMap() {
+  try {
+    const rows = getSharedDb().prepare('SELECT * FROM survey_progress_snapshots').all();
+    const map = {};
+    for (const r of rows) {
+      map[r.survey_id] = r;
+    }
+    return map;
+  } catch (err) {
+    logger.error('Error in getSurveyProgressSnapshotsMap:', err.message);
+    return {};
+  }
+}
+
+function upsertSurveyProgressSnapshot(surveyId, data = {}) {
+  try {
+    const sId = resolveSurveyId(surveyId);
+    const stmt = getSharedDb().prepare(`
+      INSERT OR REPLACE INTO survey_progress_snapshots (
+        survey_id, survey_name, latest_upload_id, tanggal,
+        total_sls, realisasi, target, approved, submitted,
+        draft, rejected, open, persen, etag, source, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    `);
+    stmt.run(
+      sId,
+      data.survey_name || data.surveyName || sId,
+      data.latest_upload_id || data.uploadId || null,
+      data.tanggal || data.data_date || null,
+      Number(data.total_sls || data.totalSls || 0),
+      Number(data.realisasi || 0),
+      Number(data.target || 0),
+      Number(data.approved || 0),
+      Number(data.submitted || 0),
+      Number(data.draft || 0),
+      Number(data.rejected || 0),
+      Number(data.open || 0),
+      Number(data.persen || 0),
+      data.etag || null,
+      data.source || 'local'
+    );
+    return true;
+  } catch (err) {
+    logger.error(`Error in upsertSurveyProgressSnapshot for ${surveyId}:`, err.message);
+    return false;
+  }
+}
+
+function refreshSurveyProgressSnapshot(surveyId) {
+  try {
+    const sId = resolveSurveyId(surveyId);
+    const latestUpload = getLatestUpload(sId);
+    if (!latestUpload) {
+      const emptySnapshot = {
+        survey_id: sId,
+        survey_name: sId,
+        latest_upload_id: null,
+        tanggal: null,
+        total_sls: 0,
+        realisasi: 0,
+        target: 0,
+        approved: 0,
+        submitted: 0,
+        draft: 0,
+        rejected: 0,
+        open: 0,
+        persen: 0,
+        source: 'empty'
+      };
+      upsertSurveyProgressSnapshot(sId, emptySnapshot);
+      return emptySnapshot;
+    }
+
+    const settings = getSettings(sId);
+    const summary = getOverviewSummary(latestUpload.id, settings, sId);
+    const approved = summary.approved_total || 0;
+    const submitted = summary.submitted_total || 0;
+    const rejected = summary.rejected_total || 0;
+    const draft = summary.draft_total || 0;
+    const open = summary.open_total || 0;
+    const realisasi = approved + submitted + rejected;
+    const target = summary.target_fasih_total || 0;
+    const persen = target > 0 ? parseFloat(((realisasi / target) * 100).toFixed(1)) : 0;
+
+    const snapshotData = {
+      survey_id: sId,
+      survey_name: sId,
+      latest_upload_id: latestUpload.id,
+      tanggal: latestUpload.tanggal,
+      total_sls: summary.total || 0,
+      realisasi,
+      target,
+      approved,
+      submitted,
+      draft,
+      rejected,
+      open,
+      persen,
+      source: 'local_upload'
+    };
+
+    upsertSurveyProgressSnapshot(sId, snapshotData);
+    return snapshotData;
+  } catch (err) {
+    logger.error(`Error refreshing snapshot for ${surveyId}:`, err.message);
+    return null;
+  }
+}
+
+function refreshAllSurveyProgressSnapshots(surveyKeys = []) {
+  const refreshed = {};
+  for (const k of surveyKeys) {
+    const snap = refreshSurveyProgressSnapshot(k);
+    if (snap) refreshed[k] = snap;
+  }
+  return refreshed;
+}
+
 
 /**
  * Mengambil daftar petugas yang ditugaskan pada survei tertentu
@@ -4458,7 +4613,8 @@ module.exports = {
   runWalCheckpoint, runWalCheckpointAll,
   saveAgentQuery, getAgentQueryById, executeAgentQueryById, updateAgentQueryAnalysis,
   importTitikUjiPetik, importTitikUjiPetikFromCsv, clearTitikUjiPetik, getTitikUjiPetikStats, getTitikUjiPetikPoints, getTitikUjiPetikCompact,
-  getTitikUjiPetikUploads, getTitikUjiPetikUploadById, deleteTitikUjiPetikUpload
+  getTitikUjiPetikUploads, getTitikUjiPetikUploadById, deleteTitikUjiPetikUpload,
+  getSurveyProgressSnapshotsMap, upsertSurveyProgressSnapshot, refreshSurveyProgressSnapshot, refreshAllSurveyProgressSnapshots
 };
 
 

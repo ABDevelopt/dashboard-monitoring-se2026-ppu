@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getLatestUpload, getOverviewSummary, getSettings } = require('../database');
+const { getLatestUpload, getOverviewSummary, getSettings, getSurveyProgressSnapshotsMap, refreshSurveyProgressSnapshot } = require('../database');
 const { getSurveysConfig } = require('../services/surveyRegistry');
 
 const fasihSyncService = require('../services/fasihSyncService');
@@ -76,9 +76,10 @@ router.get('/progress-status/:surveyId', (req, res) => {
   });
 });
 
-// GET /surveys - Portal Induk Menu Utama Pananyo Taka & Katalog Dasbor Survei/Sensus
+// GET /surveys - Portal Induk Menu Utama Pananyo Taka & Katalog Dasbor Survei/Sensus (Ultra-Fast via Shared Snapshot)
 router.get('/', (req, res) => {
   const surveysConfig = getSurveysConfig();
+  const snapshotsMap = getSurveyProgressSnapshotsMap();
   const surveysList = [];
   let totalRealisasiAll = 0;
   let totalTargetAll = 0;
@@ -93,26 +94,19 @@ router.get('/', (req, res) => {
   };
 
   for (const [key, cfg] of Object.entries(surveysConfig)) {
-    let summary = null;
-    let latestUpload = null;
-    try {
-      latestUpload = getLatestUpload(key);
-      if (latestUpload) {
-        const settings = getSettings(key);
-        summary = getOverviewSummary(latestUpload.id, settings, key);
-      }
-    } catch (err) {
-      console.error(`Error calculating summary for ${key}:`, err.message);
+    let snapshot = snapshotsMap[key];
+    if (!snapshot) {
+      // Lazy fallback jika survei belum terdata di snapshot cache
+      snapshot = refreshSurveyProgressSnapshot(key);
     }
 
-    // Hitung realisasi & target dari data upload nyata.
-    const realisasi = summary
-      ? ((summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0))
-      : 0;
-    const target = summary ? (summary.target_fasih_total || 0) : 0;
-    const persen = target > 0 ? parseFloat(((realisasi / target) * 100).toFixed(1)) : 0;
+    const realisasi = snapshot ? (snapshot.realisasi || 0) : 0;
+    const target = snapshot ? (snapshot.target || 0) : 0;
+    const persen = snapshot ? (snapshot.persen || 0) : 0;
+    const hasData = (snapshot && snapshot.latest_upload_id) || realisasi > 0;
+    const latestUploadDate = snapshot ? snapshot.tanggal : null;
 
-    if (latestUpload || realisasi > 0) {
+    if (hasData) {
       totalActiveSurveys++;
       totalRealisasiAll += realisasi;
       totalTargetAll += target;
@@ -142,12 +136,12 @@ router.get('/', (req, res) => {
       themeGradient: cfg.themeGradient,
       unitName: cfg.unitName || 'dokumen',
       route: key === 'se2026' ? '/' : `/${key}/`,
-      hasData: !!latestUpload || realisasi > 0,
-      latestUploadDate: latestUpload ? latestUpload.tanggal : null,
+      hasData,
+      latestUploadDate,
       realisasi,
       target,
       persen,
-      status: (persen >= 100) ? 'Selesai 100%' : (latestUpload || realisasi > 0 ? 'Aktif Berjalan' : 'Siap Mulai'),
+      status: (persen >= 100) ? 'Selesai 100%' : (hasData ? 'Aktif Berjalan' : 'Siap Mulai'),
       category: cat,
       categoryLabel: cfg.categoryLabel || (cat === 'sensus' ? 'Sensus Lengkap' : (cat === 'pelatihan' ? 'Pelatihan' : (cat === 'ujicoba' ? 'Ujicoba' : 'Survei Sampel'))),
       categoryBadge: cfg.categoryBadge || (cat === 'sensus' ? 'Sensus Lengkap' : (cat === 'pelatihan' ? 'Pelatihan' : (cat === 'ujicoba' ? 'Ujicoba' : 'Survei Sampel'))),

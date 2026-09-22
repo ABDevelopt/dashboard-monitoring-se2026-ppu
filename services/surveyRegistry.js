@@ -153,7 +153,16 @@ function rowToConfig(row, jsonCfg) {
  *
  * @returns {Object} — config survei keyed by survey id
  */
-function getSurveysConfig() {
+let _cachedSurveysConfig = null;
+let _cachedSurveysConfigTime = 0;
+const REGISTRY_CACHE_TTL_MS = 60 * 1000; // 60s in-memory cache
+
+function getSurveysConfig(force = false) {
+  const now = Date.now();
+  if (!force && _cachedSurveysConfig && (now - _cachedSurveysConfigTime < REGISTRY_CACHE_TTL_MS)) {
+    return _cachedSurveysConfig;
+  }
+
   const jsonConfig = getJsonFallback();
   const result = {};
 
@@ -168,6 +177,8 @@ function getSurveysConfig() {
     }
   }
 
+  _cachedSurveysConfig = result;
+  _cachedSurveysConfigTime = now;
   return result;
 }
 
@@ -198,10 +209,12 @@ function getSurveyById(surveyId) {
 }
 
 /**
- * Invalidate JSON cache. Dipanggil jika surveys.json diupdate saat runtime.
+ * Invalidate JSON & Registry cache. Dipanggil jika surveys.json diupdate saat runtime.
  */
 function invalidateCache() {
   _jsonFallback = null;
+  _cachedSurveysConfig = null;
+  _cachedSurveysConfigTime = 0;
 }
 
 module.exports = {
