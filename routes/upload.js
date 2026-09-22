@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { parseAndSaveExcel, parseAndSaveSeparateExports, parseAndSaveStatusExcelOnly, parseAndSaveJsonStatusOnly } = require('../services/excelParser');
 const { getAllUploads, getDb, getSettings, rebuildAllSummaryCaches, getTitikUjiPetikStats, importTitikUjiPetik, importTitikUjiPetikFromCsv, clearTitikUjiPetik, getTitikUjiPetikUploads, getTitikUjiPetikUploadById, deleteTitikUjiPetikUpload } = require('../database');
+const fasihSyncService = require('../services/fasihSyncService');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, '../uploads')),
@@ -44,6 +45,8 @@ router.get('/', (req, res) => {
   const workspaceFiles = scanWorkspace(activeSurvey);
   const ujipetikStats = getTitikUjiPetikStats(activeSurvey);
   const ujipetikUploads = getTitikUjiPetikUploads(activeSurvey);
+  const fasihApiConfig = fasihSyncService.getConfig();
+  const fasihSyncHistory = fasihSyncService.getSyncHistory(activeSurvey, 5);
 
   res.render('upload', {
     title: isSe2026 ? 'Upload Data Sensus' : 'Upload Data Survei',
@@ -53,7 +56,9 @@ router.get('/', (req, res) => {
     fasihUploads,
     workspaceFiles,
     ujipetikStats,
-    ujipetikUploads
+    ujipetikUploads,
+    fasihApiConfig,
+    fasihSyncHistory
   });
 });
 
@@ -776,6 +781,125 @@ router.post('/ujipetik/clear', (req, res) => {
   } catch (err) {
     req.flash('error', `Gagal mengosongkan data Titik Uji Petik: ${err.message}`);
   }
+  res.redirect(`${req.baseUrl || '/admin/upload'}?tab=ujipetik`);
+});
+
+// ==========================================
+// FASIH-SM CLOUD API SYNCHRONIZATION ROUTES
+// ==========================================
+
+// GET: Check connection & health status of FASIH-SM API
+router.get('/api-sync/status', async (req, res) => {
+  try {
+    const customUrl = req.query.url ? req.query.url.trim() : null;
+    const customKey = req.query.key ? req.query.key.trim() : null;
+    const status = await fasihSyncService.checkConnection(customUrl, customKey);
+    res.json(status);
+  } catch (err) {
+    res.status(500).json({ ok: false, status: 'error', error: err.message });
+  }
+});
+
+// POST: Trigger FASIH-SM Cloud synchronization
+router.post('/api-sync', async (req, res) => {
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const targetDate = req.body.date ? req.body.date.trim() : null;
+  const triggerWa = req.body.trigger_wa === '1' || req.body.trigger_wa === 'true' || req.body.trigger_wa === 'on';
+  const customUrl = req.body.apiUrl ? req.body.apiUrl.trim() : null;
+  const customKey = req.body.apiKey ? req.body.apiKey.trim() : null;
+  const saveConfig = req.body.saveConfig === '1' || req.body.saveConfig === 'true' || req.body.saveConfig === 'on';
+
+  // Persist custom config if requested
+  if (saveConfig && (customUrl || customKey)) {
+    try {
+      const db = getDb(activeSurvey);
+      const upsert = db.prepare(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`);
+      if (customUrl) upsert.run('fasih_api_url', customUrl);
+      if (customKey) upsert.run('fasih_api_key', customKey);
+    } catch (err) {
+      console.warn('Failed to save API config to settings:', err.message);
+    }
+  }
+
+  try {
+    const result = await fasihSyncService.syncFromFasih({
+      surveyId: activeSurvey,
+      date: targetDate,
+      triggerWa,
+      customUrl,
+      customKey
+    });
+
+    const waBadge = result.waNotification && result.waNotification.success
+      ? '<br>- <i class="bi bi-whatsapp text-green"></i> Notifikasi WhatsApp Terkirim'
+      : '';
+
+    req.flash('success', `
+      <strong>⚡ Sinkronisasi API FASIH-SM Berhasil!</strong><br>
+      - Tanggal Data: <strong>${result.date}</strong><br>
+      - Total SLS Disinkronkan: <strong>${result.totalSls.toLocaleString('id-ID')} SLS</strong><br>
+      - Berkas Sumber: <code>${result.sourceFile || 'api_sync'}</code><br>
+      - ID Upload: <strong>#${result.uploadId}</strong>${waBadge}
+    `);
+  } catch (err) {
+    console.error('[Upload Route] Error syncing from FASIH API:', err);
+    req.flash('error', `Gagal melakukan sinkronisasi otomatis dari FASIH-SM Cloud: ${err.message}`);
+  }
+
+  res.redirect(`${req.baseUrl || '/admin/upload'}?tab=fasih`);
+});
+
+// GET: Check connection & health status of FASIH-SM Spatial Points API
+router.get('/api-sync-spatial/status', async (req, res) => {
+  try {
+    const customUrl = req.query.url ? req.query.url.trim() : null;
+    const customKey = req.query.key ? req.query.key.trim() : null;
+    const status = await fasihSyncService.checkSpatialConnection(customUrl, customKey);
+    res.json(status);
+  } catch (err) {
+    res.status(500).json({ ok: false, status: 'error', error: err.message });
+  }
+});
+
+// POST: Trigger FASIH-SM Spatial Points API synchronization
+router.post('/api-sync-spatial', async (req, res) => {
+  const activeSurvey = res.locals.activeSurvey || 'se2026';
+  const mode = req.body.mode === 'append' ? 'append' : 'replace';
+  const customUrl = req.body.apiUrl ? req.body.apiUrl.trim() : null;
+  const customKey = req.body.apiKey ? req.body.apiKey.trim() : null;
+  const isAjax = req.xhr || req.query.ajax === '1' || (req.headers.accept && req.headers.accept.includes('application/json'));
+
+  try {
+    const result = await fasihSyncService.syncSpatialPoints({
+      surveyId: activeSurvey,
+      mode,
+      customUrl,
+      customKey
+    });
+
+    if (isAjax) {
+      return res.json({
+        success: true,
+        message: `Berhasil menyinkronkan ${result.totalImported.toLocaleString('id-ID')} titik spasial via API.`,
+        data: result
+      });
+    }
+
+    req.flash('success', `
+      <strong>⚡ Sinkronisasi Titik Spasial Berhasil!</strong><br>
+      - Total Titik Diimpor: <strong>${result.totalImported.toLocaleString('id-ID')} Titik</strong><br>
+      - Mode Sinkronisasi: <strong>${result.mode === 'replace' ? 'Gantikan Seluruh Data (Replace)' : 'Tambahkan Titik Baru (Append)'}</strong><br>
+      - Berkas Arsip: <code>${result.storedFilename}</code><br>
+      - Waktu Eksekusi: <strong>${result.latencyMs} ms</strong>
+    `);
+  } catch (err) {
+    console.error('[Upload Route] Error syncing spatial points from FASIH API:', err);
+    if (isAjax) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    req.flash('error', `Gagal melakukan sinkronisasi titik spasial: ${err.message}`);
+  }
+
   res.redirect(`${req.baseUrl || '/admin/upload'}?tab=ujipetik`);
 });
 

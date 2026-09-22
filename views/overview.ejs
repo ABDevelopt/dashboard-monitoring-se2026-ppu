@@ -24,8 +24,8 @@
 %>
 <div class="fade-in">
   <% if (!summary) { %>
-    <!-- EMPTY STATE -->
-    <div class="card empty-state text-center" style="padding: 80px 20px;">
+    <!-- EMPTY STATE WITH CLOUD API SYNC & MANUAL UPLOAD -->
+    <div class="card empty-state text-center" style="padding: 60px 20px; max-width: 680px; margin: 40px auto; border-radius: 20px; border: 1.5px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
       <% if (activeSurvey === 'se2026') { %>
       <img src="/logo-mark.png" alt="Emblem SE2026" class="logo-light" loading="eager" style="width: 80px; height: 80px; margin-bottom: 20px; opacity: 0.85; object-fit: contain;">
       <img src="/logo-mark-dark.png" alt="Emblem SE2026" class="logo-dark" fetchpriority="high" loading="eager" style="width: 80px; height: 80px; margin-bottom: 20px; opacity: 0.85; object-fit: contain;">
@@ -34,12 +34,76 @@
         <img src="<%= (typeof surveyLogoSrc !== 'undefined' ? surveyLogoSrc : (activeSurvey === 'sakernas-pemutakhiran' ? '/images/logo-sakernas-pemutakhiran.svg' : (activeSurvey === 'sakernas-pendataan' ? '/images/logo-sakernas-pendataan.svg' : '/images/logo-pananyo-taka-flow.svg'))) %>" alt="Logo <%= surveyConfig.shortName %>" width="80" height="80" style="object-fit: contain; filter: drop-shadow(0 6px 16px rgba(var(--accent-rgb), 0.35));">
       </div>
       <% } %>
-      <h2 class="empty-state-title" style="font-size: 22px; margin-bottom: 12px;">Selamat Datang di <%= surveyConfig.name %></h2>
-      <p class="empty-state-text" style="font-size: 14px; max-width: 540px; margin: 0 auto 24px; color: var(--text-secondary);">
-        Dashboard monitoring progres <%= surveyConfig.name %> belum terisi data. Silakan upload file status FASIH harian pertama Anda untuk memulai visualisasi monitoring.
+      <h2 class="empty-state-title" style="font-size: 22px; margin-bottom: 10px; font-weight: 800;">Selamat Datang di <%= surveyConfig.name %></h2>
+      <p class="empty-state-text" style="font-size: 14px; max-width: 520px; margin: 0 auto 20px; color: var(--text-secondary); line-height: 1.6;">
+        Dashboard monitoring progres <%= surveyConfig.name %> belum memiliki riwayat data lapangan. Anda dapat langsung menarik data mutakhir dari FASIH-SM Cloud via API atau mengunggah berkas Excel/CSV secara manual.
       </p>
-      <a href="<%= navPrefix %>/admin/upload" class="btn btn-primary"><i class="bi bi-lightning-charge-fill"></i> Upload Data Rekap Pertama</a>
+
+      <!-- Action Buttons Row -->
+      <div style="display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
+        <button type="button" id="btnSyncCloudProgress" onclick="syncCurrentSurveyProgress('<%= activeSurvey %>')" class="btn btn-primary" style="padding: 11px 24px; font-size: 14px; font-weight: 700; border-radius: 999px; box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.35);">
+          <i class="bi bi-cloud-arrow-down-fill"></i> <span id="lblSyncCloudProgress">⚡ Sinkronkan Progres via Cloud API</span>
+        </button>
+        <a href="<%= navPrefix %>/admin/upload" class="btn btn-secondary" style="padding: 11px 20px; font-size: 14px; font-weight: 600; border-radius: 999px;">
+          <i class="bi bi-upload"></i> Upload Berkas Manual
+        </a>
+      </div>
+
+      <!-- Cloud API Status Indicator -->
+      <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); background: rgba(var(--accent-rgb), 0.08); padding: 6px 16px; border-radius: 999px; border: 1px solid rgba(var(--accent-rgb), 0.15);">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+        <span>Layanan API: <strong>FASIH-SM Cloud Provider (43.163.98.53)</strong> Siap Terhubung</span>
+      </div>
+
+      <div id="syncProgressAlert" style="display: none; margin-top: 20px; padding: 12px 18px; border-radius: 12px; font-size: 13px; text-align: left;"></div>
     </div>
+
+    <script>
+      async function syncCurrentSurveyProgress(surveyId) {
+        const btn = document.getElementById('btnSyncCloudProgress');
+        const lbl = document.getElementById('lblSyncCloudProgress');
+        const alertBox = document.getElementById('syncProgressAlert');
+
+        if (!btn || btn.disabled) return;
+        btn.disabled = true;
+        lbl.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Menghubungi Cloud API & Ingesti Data...';
+
+        try {
+          const res = await fetch('/api/sync/progress/' + encodeURIComponent(surveyId), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ forceRefresh: true })
+          });
+
+          const data = await res.json();
+          if (data.success) {
+            lbl.innerHTML = '✅ Sinkronisasi Berhasil!';
+            if (alertBox) {
+              alertBox.style.display = 'block';
+              alertBox.style.background = 'rgba(16, 185, 129, 0.15)';
+              alertBox.style.border = '1px solid #10b981';
+              alertBox.style.color = '#10b981';
+              alertBox.innerHTML = '<strong>Sukses!</strong> Berhasil memuat ' + (data.totalSls || 0) + ' catatan progres dari Cloud. Memperbarui dasbor...';
+            }
+            setTimeout(() => {
+              window.location.reload();
+            }, 1200);
+          } else {
+            throw new Error(data.error || 'Gagal menyinkronkan data.');
+          }
+        } catch (err) {
+          btn.disabled = false;
+          lbl.innerHTML = '⚡ Coba Sinkronkan Lagi';
+          if (alertBox) {
+            alertBox.style.display = 'block';
+            alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+            alertBox.style.border = '1px solid #ef4444';
+            alertBox.style.color = '#ef4444';
+            alertBox.innerHTML = '<strong>Gagal:</strong> ' + (err.message || 'Koneksi ke API Cloud gagal.');
+          }
+        }
+      }
+    </script>
   <% } else { %>
     <!-- HEADER GRID: WEATHER WIDGET -->
     <div class="overview-top-grid" style="margin-top: 12px; margin-bottom: 4px; align-items: start;">

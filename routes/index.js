@@ -11,6 +11,8 @@ router.get('/', (req, res) => {
   let tren = [];
   let distLast = null;
   let pclDeltas = [];
+  let latestUpdateSpeedPerPcl = 0;
+  let diffTotal = 0;
 
   if (uploadId) {
     summary = getOverviewSummary(uploadId, res.locals.settings, surveyId);

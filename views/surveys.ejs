@@ -189,9 +189,9 @@
   }
 
   .portal-container {
-    max-width: 1100px;
+    max-width: 1280px;
     margin: 0 auto;
-    padding: 16px 16px 48px;
+    padding: 16px 20px 48px;
     position: relative;
     z-index: 10;
   }
@@ -200,25 +200,25 @@
   .artistic-hero-wrap {
     position: relative;
     text-align: center;
-    padding: 60px 20px 0;
-    margin-bottom: -60px;
+    padding: 48px 20px 0;
+    margin-bottom: 24px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    overflow: visible;
-    min-height: 320px;
+    overflow: hidden;
+    min-height: 280px;
     z-index: 1;
   }
 
-  /* Gradient fade di tepi bawah hero — jembatan visual ke kartu */
+  /* Gradient fade di tepi bawah hero — jembatan visual halus ke toolbar & kartu */
   .artistic-hero-wrap::after {
     content: '';
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 120px;
+    height: 80px;
     background: linear-gradient(to bottom, transparent 0%, var(--card-bg) 100%);
     pointer-events: none;
     z-index: 2;
@@ -242,15 +242,14 @@
   /* High-Contrast Panoramic PPU Landscape Illustration */
   .hero-ppu-panoramic-vector {
     position: absolute;
-    bottom: -40px;
+    bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: min(100vw, 960px);
-    height: 440px;
+    width: min(100vw, 920px);
+    height: 380px;
     pointer-events: none;
     z-index: 1;
     opacity: 0.7;
-    overflow: visible;
     transition: opacity 0.3s ease;
   }
 
@@ -270,13 +269,18 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-bottom: 160px;
+    padding-bottom: 110px;
+    pointer-events: none;
+  }
+
+  .hero-content-layer * {
+    pointer-events: auto;
   }
 
   /* Clean Static Sculptural Headline */
   .hero-portal-title {
     font-family: var(--font-display);
-    font-size: clamp(44px, 7.5vw, 76px);
+    font-size: clamp(30px, 6.5vw, 72px);
     font-weight: 900;
     letter-spacing: 0.08em;
     line-height: 1;
@@ -380,7 +384,7 @@
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
     gap: 22px;
     margin-top: 0;
-    padding-top: 32px;
+    padding-top: 0;
     position: relative;
     z-index: 10;
   }
@@ -467,6 +471,20 @@
     color: #8b5cf6;
     border-left-color: rgba(139, 92, 246, 0.3);
     border-bottom-color: rgba(139, 92, 246, 0.3);
+  }
+
+  .card-corner-badge.badge-pelatihan {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(5, 150, 105, 0.26));
+    color: #10b981;
+    border-left: 1px solid rgba(16, 185, 129, 0.35);
+    border-bottom: 1px solid rgba(16, 185, 129, 0.35);
+  }
+
+  .card-corner-badge.badge-ujicoba {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(79, 70, 229, 0.26));
+    color: #6366f1;
+    border-left: 1px solid rgba(99, 102, 241, 0.35);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.35);
   }
 
   /* Survey Name sits right below corner badge */
@@ -607,7 +625,215 @@
     box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
   }
 
+  .btn-theme-amber {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #000000 !important;
+    font-weight: 800;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+  }
 
+  .btn-theme-rose {
+    background: linear-gradient(135deg, #f43f5e, #e11d48);
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(244, 63, 94, 0.25);
+  }
+
+  .btn-theme-indigo {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+  }
+
+  .btn-theme-teal {
+    background: linear-gradient(135deg, #14b8a6, #0d9488);
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(20, 184, 166, 0.25);
+  }
+
+  /* ── PORTAL UNIFIED TOOLBAR & CLOUD SYNC BAR ── */
+  .portal-toolbar-wrap {
+    width: 100%;
+    margin: 0 auto 24px auto;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    z-index: 30;
+  }
+
+  .portal-toolbar-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: 18px;
+    padding: 16px 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 31;
+  }
+
+  .portal-toolbar-row-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--card-inner-border);
+    padding-bottom: 12px;
+  }
+
+  .portal-sync-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.28);
+    color: #10b981;
+  }
+
+  .btn-sync-catalog {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #000;
+    border: none;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 35;
+    pointer-events: auto;
+  }
+
+  .btn-sync-catalog:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+  }
+
+  .btn-sync-catalog:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .portal-toolbar-row-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .portal-filter-tabs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .portal-filter-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--card-inner-bg);
+    border: 1px solid var(--card-inner-border);
+    color: var(--card-label);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .portal-filter-tab:hover {
+    color: var(--card-val);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .portal-filter-tab.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  }
+
+  .portal-filter-tab .tab-count {
+    font-size: 10.5px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  .portal-search-wrap {
+    position: relative;
+    min-width: 260px;
+    flex: 1;
+    max-width: 420px;
+  }
+
+  .portal-search-wrap input {
+    width: 100%;
+    padding: 9px 14px 9px 36px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    background: var(--card-inner-bg);
+    border: 1px solid var(--card-inner-border);
+    color: var(--card-val);
+    outline: none;
+    transition: all 0.2s ease;
+  }
+
+  .portal-search-wrap input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+
+  .portal-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    pointer-events: none;
+    color: var(--card-tagline);
+    font-size: 12px;
+  }
+
+  .portal-empty-search {
+    grid-column: 1 / -1;
+    padding: 48px 24px;
+    text-align: center;
+    background: var(--card-bg);
+    border: 1px dashed var(--card-border);
+    border-radius: 18px;
+    color: var(--card-tagline);
+  }
+
+  .spin {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    100% { transform: rotate(360deg); }
+  }
 </style>
 
 <!-- ══════════════════════════════════════════════════════
@@ -733,19 +959,92 @@
   </header>
 
   <!-- ══════════════════════════════════════════════════════
+       PORTAL UNIFIED TOOLBAR: CLOUD SYNC, FILTER TABS & SMART SEARCH
+       ══════════════════════════════════════════════════════ -->
+  <section class="portal-toolbar-wrap" aria-label="Alat Navigasi & Filter Kegiatan">
+    <div class="portal-toolbar-card">
+      <!-- Baris 1: Status Sinkronisasi Cloud API & Tombol Aksi -->
+      <div class="portal-toolbar-row-top">
+        <div class="portal-sync-status-badge" id="cloudCatalogBadge">
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
+          <span id="cloudStatusText">FASIH-SM Cloud: <strong id="cloudTotalCount"><%= _list.length %></strong> Kegiatan Tersedia</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span id="searchResultCount" style="font-size: 12px; color: var(--card-tagline); font-weight: 500;">
+            Menampilkan <%= _list.length %> kegiatan
+          </span>
+          <button type="button" id="btnSyncCatalog" onclick="triggerCatalogSync()" class="btn-sync-catalog" title="Tarik kegiatan baru dari FASIH-SM Cloud dan generate dasbor otomatis">
+            <i class="bi bi-cloud-arrow-down-fill"></i>
+            <span id="lblSyncCatalog">⚡ Sinkron Katalog</span>
+          </button>
+          <button type="button" id="btnSyncAllProgress" onclick="triggerAllProgressSync()" class="btn-sync-catalog" style="background: linear-gradient(135deg, #06b6d4, #0284c7); color: #fff; box-shadow: 0 4px 14px rgba(6, 182, 212, 0.25);" title="Tarik pembaruan progres seluruh kegiatan dari FASIH-SM Cloud via API">
+            <i class="bi bi-arrow-repeat"></i>
+            <span id="lblSyncAllProgress">⚡ Tarik Semua Progres</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Baris 2: Filter Kategori & Input Pencarian Pintar -->
+      <div class="portal-toolbar-row-bottom">
+        <div class="portal-filter-tabs" role="tablist">
+          <button type="button" class="portal-filter-tab active" data-filter="" onclick="filterCategory(this, '')">
+            <i class="bi bi-grid-fill"></i>
+            <span>Semua Kegiatan</span>
+            <span class="tab-count" id="countAll"><%= (typeof categoryCounts !== 'undefined' && categoryCounts.all) ? categoryCounts.all : _list.length %></span>
+          </button>
+          <button type="button" class="portal-filter-tab" data-filter="pencacahan" onclick="filterCategory(this, 'pencacahan')">
+            <i class="bi bi-clipboard-data-fill" style="color: #06b6d4;"></i>
+            <span>Pencacahan</span>
+            <span class="tab-count" id="countPencacahan"><%= (typeof categoryCounts !== 'undefined' && categoryCounts.pencacahan) ? categoryCounts.pencacahan : 0 %></span>
+          </button>
+          <button type="button" class="portal-filter-tab" data-filter="pelatihan" onclick="filterCategory(this, 'pelatihan')">
+            <i class="bi bi-mortarboard-fill" style="color: #10b981;"></i>
+            <span>Pelatihan</span>
+            <span class="tab-count" id="countPelatihan"><%= (typeof categoryCounts !== 'undefined' && categoryCounts.pelatihan) ? categoryCounts.pelatihan : 0 %></span>
+          </button>
+          <button type="button" class="portal-filter-tab" data-filter="ujicoba" onclick="filterCategory(this, 'ujicoba')">
+            <i class="bi bi-cpu-fill" style="color: #6366f1;"></i>
+            <span>Ujicoba</span>
+            <span class="tab-count" id="countUjicoba"><%= (typeof categoryCounts !== 'undefined' && categoryCounts.ujicoba) ? categoryCounts.ujicoba : 0 %></span>
+          </button>
+          <button type="button" class="portal-filter-tab" data-filter="sensus" onclick="filterCategory(this, 'sensus')">
+            <i class="bi bi-globe2" style="color: #f97316;"></i>
+            <span>Sensus Lengkap</span>
+            <span class="tab-count" id="countSensus"><%= (typeof categoryCounts !== 'undefined' && categoryCounts.sensus) ? categoryCounts.sensus : 0 %></span>
+          </button>
+        </div>
+
+        <div class="portal-search-wrap">
+          <div class="portal-search-icon">
+            <i class="bi bi-search"></i>
+            <i class="bi bi-stars" style="color: #38bdf8; font-size: 10px;"></i>
+          </div>
+          <input type="text" id="surveySearchInput" placeholder="Cari nama kegiatan sensus/survei BPS..." oninput="handleSearch(this.value)" autocomplete="off">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
        SURVEY CARDS GRID: PEMBEDAAN SENSUS VS SURVEI
        ══════════════════════════════════════════════════════ -->
-  <main class="portal-cards-grid">
+  <main class="portal-cards-grid" id="portalCardsGrid">
     <% _list.forEach(s => { %>
-      <article class="survey-card theme-<%= s.theme %> card-category-<%= s.category || 'survei' %>">
+      <article
+        class="survey-card theme-<%= s.theme %> card-category-<%= s.category || 'survei' %>"
+        data-category="<%= s.category || 'survei' %>"
+        data-name="<%= (s.name || '').toLowerCase() %>"
+        data-shortname="<%= (s.shortName || '').toLowerCase() %>"
+        data-tagline="<%= (s.tagline || '').toLowerCase() %>"
+        style="border-top-color: <%= s.themeColor %>;"
+      >
         <div>
           <!-- Corner Badge Pojok Kanan Mentok (Category Type) -->
           <span class="card-corner-badge badge-<%= s.category || 'survei' %>">
             <i class="bi <%= s.categoryIcon || (s.category === 'sensus' ? 'bi-globe2' : 'bi-pie-chart-fill') %>"></i>
             <%= s.categoryBadge || (s.category === 'sensus' ? 'Sensus Lengkap' : 'Survei Sampel') %>
           </span>
-
-
 
           <!-- Nama Survei / Sensus (Fokus Utama) -->
           <h2 class="survey-name"><%= s.name %></h2>
@@ -769,22 +1068,40 @@
           </div>
         </div>
 
-        <!-- Tombol Buka Dasbor (Fokus Utama) -->
-        <div>
-          <a href="<%= s.route %>" class="btn-open-dashboard btn-theme-<%= s.theme %>">
+        <!-- Tombol Aksi Dasbor & Sinkron Cepat -->
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <a
+            href="<%= s.route %>"
+            class="btn-open-dashboard btn-theme-<%= s.theme %>"
+            style="flex: 1; <%= s.themeGradient ? 'background: ' + s.themeGradient + ';' : '' %>"
+          >
             <span>Buka Dasbor <%= s.shortName %></span>
             <i class="bi bi-arrow-right"></i>
           </a>
+          <button
+            type="button"
+            class="btn-quick-sync"
+            id="syncBtn_<%= s.id %>"
+            onclick="triggerCardProgressSync(event, '<%= s.id %>', '<%= (s.shortName || s.name || s.id).replace(/'/g, '') %>')"
+            title="Tarik data progres mutakhir untuk <%= s.shortName %> dari Cloud API"
+            style="width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: var(--card-inner-bg); border: 1px solid var(--card-inner-border); color: <%= s.themeColor %>; cursor: pointer; transition: all 0.2s ease; flex-shrink: 0;"
+          >
+            <i class="bi bi-cloud-arrow-down-fill" style="font-size: 16px;"></i>
+          </button>
         </div>
       </article>
     <% }) %>
+
+    <div id="emptySearchState" class="portal-empty-search" style="display: none;">
+      <i class="bi bi-search" style="font-size: 32px; opacity: 0.5;"></i>
+      <div style="font-weight: 700; font-size: 16px; margin-top: 10px; color: var(--card-val);">Tidak Ada Kegiatan Ditemukan</div>
+      <div style="font-size: 13px; margin-top: 4px; color: var(--card-tagline);">Coba gunakan kata kunci lain atau pilih tab kategori berbeda.</div>
+    </div>
   </main>
-
-
 
 </div>
 
-<!-- Clean up tower spotlight rig after animation completes (Sekali saja) -->
+<!-- Clean up tower spotlight rig & Client Interaction Scripts -->
 <script>
   (function() {
     const spotRig = document.getElementById('towerSpotlightRig');
@@ -796,4 +1113,198 @@
       }, 2300);
     }
   })();
+
+  // State
+  let currentCategoryFilter = '';
+  let currentSearchQuery = '';
+
+  function filterCategory(btn, cat) {
+    currentCategoryFilter = (cat || '').toLowerCase().trim();
+    document.querySelectorAll('.portal-filter-tab').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    applyFilters();
+  }
+
+  function handleSearch(query) {
+    currentSearchQuery = (query || '').toLowerCase().trim();
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const cards = document.querySelectorAll('#portalCardsGrid article.survey-card');
+    const emptyEl = document.getElementById('emptySearchState');
+    const countEl = document.getElementById('searchResultCount');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+      const cat = card.getAttribute('data-category') || '';
+      const name = card.getAttribute('data-name') || '';
+      const shortName = card.getAttribute('data-shortname') || '';
+      const tagline = card.getAttribute('data-tagline') || '';
+
+      // Category match
+      let matchCat = true;
+      if (currentCategoryFilter) {
+        if (currentCategoryFilter === 'sensus') {
+          matchCat = (cat === 'sensus') || name.includes('sensus') || name.includes('se2026');
+        } else {
+          matchCat = (cat === currentCategoryFilter);
+        }
+      }
+
+      // Search match
+      let matchQuery = true;
+      if (currentSearchQuery) {
+        matchQuery = name.includes(currentSearchQuery) ||
+                     shortName.includes(currentSearchQuery) ||
+                     tagline.includes(currentSearchQuery);
+      }
+
+      if (matchCat && matchQuery) {
+        card.style.display = '';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    if (emptyEl) {
+      emptyEl.style.display = (visibleCount === 0) ? 'block' : 'none';
+    }
+    if (countEl) {
+      countEl.innerText = `Menampilkan ${visibleCount} kegiatan`;
+    }
+  }
+
+  async function triggerCatalogSync() {
+    const btn = document.getElementById('btnSyncCatalog');
+    const lbl = document.getElementById('lblSyncCatalog');
+    if (!confirm('Tarik daftar seluruh kegiatan survei dan sensus terbaru dari FASIH-SM Cloud via API?\n\nSistem akan secara otomatis me-refresh dan men-generate dasbor untuk setiap kegiatan.')) {
+      return;
+    }
+
+    try {
+      if (btn) btn.disabled = true;
+      if (lbl) lbl.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Menyinkronkan kegiatan...';
+
+      const res = await fetch('/surveys/sync-catalog', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '<%= csrfToken %>'
+        },
+        body: JSON.stringify({ _csrf: '<%= csrfToken %>' })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Gagal menyinkronkan katalog kegiatan');
+      }
+
+      alert(`✅ Sinkronisasi Berhasil!\n${data.message || 'Katalog kegiatan berhasil diperbarui.'}\nMemuat ulang portal...`);
+      window.location.reload();
+    } catch (err) {
+      alert(`❌ Gagal Sinkronisasi Katalog: ${err.message}`);
+    } finally {
+      if (btn) btn.disabled = false;
+      if (lbl) lbl.innerHTML = '⚡ Sinkron Katalog';
+    }
+  }
+
+  async function triggerCardProgressSync(e, surveyId, name) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const btn = document.getElementById('syncBtn_' + surveyId);
+    if (!btn || btn.disabled) return;
+
+    btn.disabled = true;
+    const origHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i>';
+
+    try {
+      const res = await fetch('/surveys/sync-progress/' + encodeURIComponent(surveyId), {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '<%= csrfToken %>'
+        },
+        body: JSON.stringify({ forceRefresh: true, _csrf: '<%= csrfToken %>' })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Gagal menyinkronkan data progres.');
+      }
+
+      btn.innerHTML = '<i class="bi bi-check-lg" style="color: #10b981; font-weight: bold;"></i>';
+      btn.title = `Berhasil disinkronkan (${data.totalSls || 0} unit wilayah)!`;
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err) {
+      alert(`❌ Gagal Sinkronisasi Progres [${name}]: ${err.message}`);
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }
+  }
+
+  async function triggerAllProgressSync() {
+    const btn = document.getElementById('btnSyncAllProgress');
+    const lbl = document.getElementById('lblSyncAllProgress');
+
+    if (!confirm('Tarik data progres mutakhir untuk seluruh kegiatan survei dan sensus dari FASIH-SM Cloud via API?\n\nProses akan berjalan secara berurutan di latar belakang.')) {
+      return;
+    }
+
+    try {
+      if (btn) btn.disabled = true;
+      if (lbl) lbl.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Menarik seluruh progres...';
+
+      const res = await fetch('/surveys/sync-progress-all', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '<%= csrfToken %>'
+        },
+        body: JSON.stringify({ _csrf: '<%= csrfToken %>' })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Gagal menyinkronkan seluruh data progres');
+      }
+
+      alert(`✅ Sinkronisasi Massal Selesai!\n- Berhasil: ${data.synced} kegiatan\n- Tidak Berubah: ${data.skipped} kegiatan\n- Gagal: ${data.failed} kegiatan\n\nMemuat ulang portal...`);
+      window.location.reload();
+    } catch (err) {
+      alert(`❌ Gagal Sinkronisasi Massal: ${err.message}`);
+    } finally {
+      if (btn) btn.disabled = false;
+      if (lbl) lbl.innerHTML = '⚡ Tarik Semua Progres';
+    }
+  }
+
+  // Quick background health check for Cloud API catalog status
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const res = await fetch('/surveys/catalog-status');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.ok && data.status === 'online') {
+        const cloudTotalEl = document.getElementById('cloudTotalCount');
+        const badgeEl = document.getElementById('cloudCatalogBadge');
+        if (cloudTotalEl && data.totalSurveys) {
+          cloudTotalEl.innerText = data.totalSurveys;
+        }
+        if (badgeEl && data.latencyMs) {
+          badgeEl.title = `Latency Cloud: ${data.latencyMs}ms | Terdaftar lokal: ${data.totalRegistered || '--'} dasbor`;
+        }
+      }
+    } catch (_) {}
+  });
 </script>

@@ -1005,6 +1005,69 @@ router.get('/pcl-distribution', (req, res) => {
   }
 });
 
+// ─── FASIH-SM CLOUD PROGRESS SYNC ENDPOINTS ─────────────────────────────────────
+
+// POST /api/sync/progress or /api/sync/progress/:surveyId or /:surveyId/api/sync/progress
+router.post(['/sync/progress', '/sync/progress/:surveyId'], async (req, res) => {
+  const surveyId = req.params.surveyId || (req.body && req.body.surveyId) || res.locals.activeSurvey || 'se2026';
+  const fasihSyncService = require('../services/fasihSyncService');
+
+  try {
+    const result = await fasihSyncService.syncSurveyProgress(surveyId, {
+      date: req.body && req.body.date,
+      forceRefresh: req.body && req.body.forceRefresh,
+      triggerWa: req.body && req.body.triggerWa,
+      customUrl: req.body && req.body.apiUrl,
+      customKey: req.body && req.body.apiKey
+    });
+
+    return res.json({
+      success: true,
+      message: `Berhasil menyinkronkan data progres kegiatan [${surveyId}] dari FASIH-SM Cloud.`,
+      ...result
+    });
+  } catch (err) {
+    logger.error(`[API-SYNC-PROGRESS] Gagal menyinkronkan progres ${surveyId}: ${err.message}`);
+    return res.status(500).json({
+      success: false,
+      surveyId,
+      error: err.message
+    });
+  }
+});
+
+// POST /api/sync/progress-all - Sinkronisasi massal seluruh kegiatan survei
+router.post('/sync/progress-all', async (req, res) => {
+  const fasihSyncService = require('../services/fasihSyncService');
+
+  try {
+    const result = await fasihSyncService.syncAllSurveysProgress({
+      forceRefresh: req.body && req.body.forceRefresh,
+      skipIfUnchanged: req.body && req.body.skipIfUnchanged
+    });
+
+    return res.json(result);
+  } catch (err) {
+    logger.error(`[API-SYNC-ALL] Gagal sinkronisasi massal: ${err.message}`);
+    return res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+// GET /api/sync/progress-status or /api/sync/progress-status/:surveyId
+router.get(['/sync/progress-status', '/sync/progress-status/:surveyId'], (req, res) => {
+  const surveyId = req.params.surveyId || req.query.surveyId || res.locals.activeSurvey || 'se2026';
+  const fasihSyncService = require('../services/fasihSyncService');
+  const status = fasihSyncService.getSurveyProgressStatus(surveyId);
+  return res.json({
+    success: true,
+    surveyId,
+    status
+  });
+});
+
 router.callGeminiDirect = callGeminiDirect;
 
 module.exports = router;

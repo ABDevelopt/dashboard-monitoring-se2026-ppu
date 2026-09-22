@@ -3,6 +3,79 @@ const router = express.Router();
 const { getLatestUpload, getOverviewSummary, getSettings } = require('../database');
 const { getSurveysConfig } = require('../services/surveyRegistry');
 
+const fasihSyncService = require('../services/fasihSyncService');
+
+// GET /surveys/catalog-status - Cek koneksi live ke API katalog FASIH-SM Cloud
+router.get('/catalog-status', async (req, res) => {
+  try {
+    const conn = await fasihSyncService.checkSurveysCatalogConnection();
+    const surveysConfig = getSurveysConfig();
+    return res.json({
+      ...conn,
+      totalRegistered: Object.keys(surveysConfig).length
+    });
+  } catch (err) {
+    return res.status(500).json({ ok: false, status: 'error', error: err.message });
+  }
+});
+
+// POST /surveys/sync-catalog - Trigger penarikan katalog dan auto-generate dasbor kegiatan
+router.post('/sync-catalog', async (req, res) => {
+  try {
+    const result = await fasihSyncService.autoGenerateSurveyDashboards({
+      forceRefresh: true
+    });
+    return res.json({
+      success: true,
+      message: `Berhasil menyinkronkan ${result.totalInCloud} kegiatan resmi BPS dari Cloud. Total dasbor aktif: ${result.totalRegistered} (${result.added} baru ditambahkan).`,
+      ...result
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /surveys/sync-progress/:surveyId - Trigger sinkronisasi data progres untuk satu kegiatan tertentu
+router.post('/sync-progress/:surveyId', async (req, res) => {
+  const surveyId = req.params.surveyId;
+  try {
+    const result = await fasihSyncService.syncSurveyProgress(surveyId, {
+      forceRefresh: req.body && req.body.forceRefresh
+    });
+    return res.json({
+      success: true,
+      message: `Berhasil menyinkronkan data progres kegiatan [${surveyId}].`,
+      ...result
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, surveyId, error: err.message });
+  }
+});
+
+// POST /surveys/sync-progress-all - Trigger sinkronisasi massal seluruh data progres kegiatan
+router.post('/sync-progress-all', async (req, res) => {
+  try {
+    const result = await fasihSyncService.syncAllSurveysProgress({
+      forceRefresh: req.body && req.body.forceRefresh,
+      skipIfUnchanged: req.body && req.body.skipIfUnchanged !== false
+    });
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// GET /surveys/progress-status/:surveyId - Cek status progres lokal kegiatan
+router.get('/progress-status/:surveyId', (req, res) => {
+  const surveyId = req.params.surveyId;
+  const status = fasihSyncService.getSurveyProgressStatus(surveyId);
+  return res.json({
+    success: true,
+    surveyId,
+    status
+  });
+});
+
 // GET /surveys - Portal Induk Menu Utama Pananyo Taka & Katalog Dasbor Survei/Sensus
 router.get('/', (req, res) => {
   const surveysConfig = getSurveysConfig();
@@ -10,6 +83,14 @@ router.get('/', (req, res) => {
   let totalRealisasiAll = 0;
   let totalTargetAll = 0;
   let totalActiveSurveys = 0;
+
+  const categoryCounts = {
+    all: Object.keys(surveysConfig).length,
+    pencacahan: 0,
+    pelatihan: 0,
+    ujicoba: 0,
+    sensus: 0
+  };
 
   for (const [key, cfg] of Object.entries(surveysConfig)) {
     let summary = null;
@@ -25,7 +106,6 @@ router.get('/', (req, res) => {
     }
 
     // Hitung realisasi & target dari data upload nyata.
-    // Jika belum ada data upload, tampilkan 0 (bukan angka palsu/demo).
     const realisasi = summary
       ? ((summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0))
       : 0;
@@ -36,6 +116,16 @@ router.get('/', (req, res) => {
       totalActiveSurveys++;
       totalRealisasiAll += realisasi;
       totalTargetAll += target;
+    }
+
+    const cat = cfg.category || (key.startsWith('se') ? 'sensus' : 'survei');
+    if (cat === 'pelatihan') categoryCounts.pelatihan++;
+    else if (cat === 'ujicoba') categoryCounts.ujicoba++;
+    else if (cat === 'sensus') {
+      categoryCounts.sensus++;
+      categoryCounts.pencacahan++;
+    } else {
+      categoryCounts.pencacahan++;
     }
 
     surveysList.push({
@@ -58,10 +148,10 @@ router.get('/', (req, res) => {
       target,
       persen,
       status: (persen >= 100) ? 'Selesai 100%' : (latestUpload || realisasi > 0 ? 'Aktif Berjalan' : 'Siap Mulai'),
-      category: cfg.category || (key.startsWith('se') ? 'sensus' : 'survei'),
-      categoryLabel: cfg.categoryLabel || (key.startsWith('se') ? 'Sensus Lengkap' : 'Survei Sampel'),
-      categoryBadge: cfg.categoryBadge || (key.startsWith('se') ? 'Sensus Lengkap' : 'Survei Sampel'),
-      categoryIcon: cfg.categoryIcon || (key.startsWith('se') ? 'bi-globe2' : 'bi-pie-chart-fill'),
+      category: cat,
+      categoryLabel: cfg.categoryLabel || (cat === 'sensus' ? 'Sensus Lengkap' : (cat === 'pelatihan' ? 'Pelatihan' : (cat === 'ujicoba' ? 'Ujicoba' : 'Survei Sampel'))),
+      categoryBadge: cfg.categoryBadge || (cat === 'sensus' ? 'Sensus Lengkap' : (cat === 'pelatihan' ? 'Pelatihan' : (cat === 'ujicoba' ? 'Ujicoba' : 'Survei Sampel'))),
+      categoryIcon: cfg.categoryIcon || (cat === 'sensus' ? 'bi-globe2' : (cat === 'pelatihan' ? 'bi-mortarboard-fill' : (cat === 'ujicoba' ? 'bi-cpu-fill' : 'bi-pie-chart-fill'))),
       coverageDesc: cfg.coverageDesc || '',
       showUsahaColumns: cfg.showUsahaColumns,
       enabledPages: cfg.enabledPages || []
@@ -75,6 +165,7 @@ router.get('/', (req, res) => {
     layout: 'layout-portal',
     activePage: 'surveys',
     surveysList,
+    categoryCounts,
     statsAggregate: {
       totalModules: Object.keys(surveysConfig).length,
       totalActive: totalActiveSurveys,

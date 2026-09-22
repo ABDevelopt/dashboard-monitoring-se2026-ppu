@@ -3909,7 +3909,38 @@ function _loadTitikRowsFromFile(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   let rows = [];
 
-  if (ext === '.xlsx' || ext === '.xls') {
+  if (ext === '.json') {
+    const rawData = fs.readFileSync(filePath, 'utf-8');
+    const parsed = JSON.parse(rawData);
+    if (parsed && parsed.points && Array.isArray(parsed.points)) {
+      const headers = parsed.columns || [
+        'level_6_full_code', 'label', 'no_bang', 'kode_bang_label',
+        'latitude', 'longitude', 'is_kosong', 'pcl', 'pml', 'korlap'
+      ];
+      rows = [headers, ...parsed.points];
+    } else if (Array.isArray(parsed)) {
+      if (parsed.length > 0 && typeof parsed[0] === 'object' && !Array.isArray(parsed[0])) {
+        const headers = ['level_6_full_code', 'label', 'no_bang', 'kode_bang_label', 'latitude', 'longitude', 'is_kosong', 'pcl', 'pml', 'korlap'];
+        rows = [headers];
+        for (const item of parsed) {
+          rows.push([
+            item.level_6_full_code || item.kode_sls || '',
+            item.label || '',
+            item.no_bang || '',
+            item.kode_bang_label || '',
+            item.latitude,
+            item.longitude,
+            item.is_kosong ? 1 : 0,
+            item.pcl || '',
+            item.pml || '',
+            item.korlap || ''
+          ]);
+        }
+      } else {
+        rows = parsed;
+      }
+    }
+  } else if (ext === '.xlsx' || ext === '.xls') {
     const wb = XLSX.readFile(filePath, { raw: true, cellFormula: false, cellHTML: false, cellStyles: false, cellText: false });
     if (!wb.SheetNames || wb.SheetNames.length === 0) {
       throw new Error('File Excel tidak memiliki lembar kerja (sheet).');

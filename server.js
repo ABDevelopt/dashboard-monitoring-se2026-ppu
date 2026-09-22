@@ -177,8 +177,8 @@ app.use((req, res, next) => {
     return next();
   }
 
-  // Lewati verifikasi CSRF untuk request multipart (upload file) dan endpoint preferensi set-date
-  if (req.path.includes('/set-date')) {
+  // Lewati verifikasi CSRF untuk request multipart (upload file), endpoint sync-catalog, sync-progress, dan preferensi set-date
+  if (req.path.includes('/set-date') || req.path.includes('/surveys/sync-catalog') || req.path.includes('/sync-progress') || req.path.includes('/sync/progress') || req.path.includes('/api/sync/') || req.headers['x-fasih-api-key']) {
     return next();
   }
   const contentType = req.headers['content-type'] || '';
@@ -277,7 +277,7 @@ app.use((req, res, next) => {
   res.locals.navPrefix = '';
   res.locals.routePrefix = '';
   res.locals.activeSurvey = 'se2026';
-  res.locals.surveyConfig = require('./config/surveys.json')['se2026'];
+  res.locals.surveyConfig = require('./services/surveyRegistry').getSurveyById('se2026') || require('./config/surveys.json')['se2026'];
   res.locals.customStyles = '';
   res.locals.success = req.flash('success');
   res.locals.error = req.flash('error');
@@ -413,7 +413,8 @@ app.use((req, res, next) => {
 // Multi-Survey Template Context Resolver Middleware
 app.use((req, res, next) => {
   try {
-    const surveysConfig = require("./config/surveys.json");
+    const { getSurveysConfig } = require("./services/surveyRegistry");
+    const surveysConfig = getSurveysConfig();
     const queryIdx = req.url.indexOf('?');
     const rawPath = queryIdx !== -1 ? req.url.substring(0, queryIdx) : req.url;
     const rawSearch = queryIdx !== -1 ? req.url.substring(queryIdx) : '';
@@ -883,6 +884,14 @@ function init() {
     triggerAsyncSync(true); // Full clone all SQLite tables
   } catch (err) {
     logger.error('❌ Gagal menyinkronkan data ke Firebase pada startup:', err.message);
+  }
+
+  // Inisialisasi background auto-sync dari FASIH-SM Cloud
+  try {
+    const fasihSyncService = require('./services/fasihSyncService');
+    fasihSyncService.startBackgroundScheduler();
+  } catch (err) {
+    logger.error('❌ Gagal mengaktifkan background auto-sync FASIH-SM:', err.message);
   }
 
   // Jadwalkan WAL checkpoint otomatis setiap 6 jam.
