@@ -831,7 +831,7 @@
       const hiddenSet = new Set(this.state.hiddenBodyCols);
       const entries   = [
         ...map.map(info => ({ key: info.bodyIdx, label: info.label, isCustom: false, hidden: hiddenSet.has(info.bodyIdx) })),
-        ...this.state.customCols.map(col => ({ key: col.id, label: `✦ ${col.label}`, isCustom: true, hidden: hiddenSet.has(col.id) }))
+        ...this.state.customCols.map(col => ({ key: col.id, label: col.label, isCustom: true, hidden: hiddenSet.has(col.id) }))
       ];
 
       this.colPanel.innerHTML = `

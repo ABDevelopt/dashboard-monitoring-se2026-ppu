@@ -87,7 +87,7 @@ router.post('/test', async (req, res) => {
 
   const waStatus = whatsappService.getStatus();
   if (waStatus.status !== 'CONNECTED') {
-    req.flash('error', `❌ Bot WhatsApp belum terhubung (Status saat ini: ${waStatus.status}). Silakan scan QR Code terlebih dahulu sebelum mengirim pesan tes.`);
+    req.flash('error', `Bot WhatsApp belum terhubung (Status saat ini: ${waStatus.status}). Silakan scan QR Code terlebih dahulu sebelum mengirim pesan tes.`);
     return res.redirect('/admin/whatsapp');
   }
 
@@ -102,21 +102,21 @@ router.post('/test', async (req, res) => {
       // Mengirimkan notifikasi dengan template kustom/bawaan menggunakan data real terakhir
       const waRes = await whatsappService.sendUpdateNotification(latestUpload.id, groupId);
       if (waRes && waRes.success) {
-        req.flash('success', `✅ Pesan tes menggunakan template notifikasi berhasil dikirim ke grup WhatsApp (${waRes.groupName || groupId})!`);
+        req.flash('success', `Pesan tes menggunakan template notifikasi berhasil dikirim ke grup WhatsApp (${waRes.groupName || groupId})!`);
       } else {
-        req.flash('error', `❌ Gagal mengirim notifikasi WhatsApp: ${waRes?.error || 'Terjadi kesalahan saat pengiriman'}`);
+        req.flash('error', `Gagal mengirim notifikasi WhatsApp: ${waRes?.error || 'Terjadi kesalahan saat pengiriman'}`);
       }
     } else {
       // Fallback jika database masih kosong
-      const testMessage = `🧪 *TES INTEGRASI WHATSAPP SE2026 PPU*\n\n` +
+      const testMessage = `*TES INTEGRASI WHATSAPP SE2026 PPU*\n\n` +
                           `Pesan ini dikirim secara otomatis oleh Dashboard Monitoring SE2026 PPU untuk menguji koneksi bot ke grup WhatsApp ini.\n\n` +
-                          `Status: *Koneksi Berhasil* 👍\n` +
+                          `Status: *Koneksi Berhasil*\n` +
                           `Waktu: *${new Date().toLocaleString('id-ID')}*`;
       await whatsappService.sendDirectMessage(groupId, testMessage);
-      req.flash('success', '✅ Pesan tes koneksi dasar berhasil dikirim ke grup WhatsApp (tidak ada data upload untuk simulasi template).');
+      req.flash('success', 'Pesan tes koneksi dasar berhasil dikirim ke grup WhatsApp (tidak ada data upload untuk simulasi template).');
     }
   } catch (err) {
-    req.flash('error', `❌ Gagal mengirim pesan tes: ${err.message}`);
+    req.flash('error', `Gagal mengirim pesan tes: ${err.message}`);
   }
 
   res.redirect('/admin/whatsapp');

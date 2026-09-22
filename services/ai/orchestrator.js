@@ -240,8 +240,8 @@ function buildSystemInstruction(liveCtx = '', surveyId = 'se2026') {
 
   const surveyDirectives = `
 ## Karakteristik Khusus Kegiatan: ${surveyName}
-- **Kategori Kegiatan**: ${cfg.categoryLabel || (isCensus ? 'Sensus Lengkap' : 'Survei Sampel')}
-- **Metodologi**: ${cfg.coverageDesc || (isCensus ? 'Sensus Lengkap (Cakupan 100%)' : 'Hanya SLS/Blok Sensus Sampel Terpilih')}
+- **Kategori Kegiatan**: ${cfg.categoryLabel || (isCensus ? 'Sensus' : 'Survei')}
+- **Metodologi**: ${cfg.coverageDesc || (isCensus ? 'Sensus (Cakupan 100%)' : 'Hanya SLS/Blok Sensus Sampel Terpilih')}
 - **Unit Observasi / Pengukuran**: **${unitName}**
 - **Sebutan Petugas Lapangan**: Petugas Pendata/Pencacah disebut **${officerRole}**, Pengawas Lapangan disebut **PML**${cfg.hasKorlap ? ', Koordinator Lapangan disebut **Korlap**' : ''}.
 - **Interpretasi Kolom Target & Realisasi**:
@@ -754,7 +754,7 @@ async function sendMessageToAgent(userMessage, chatHistory = [], options = {}, u
     log.warn('Fallback to local simulation.');
     finalResult = runSimulation(userMessage, mergedHistory, currentSurveyId);
     const rawErr = lastError ? lastError.message : 'API key tidak terkonfigurasi';
-    finalResult.content = `⚠️ **AI Provider Error:** ${rawErr}\n\n*Fallback ke simulasi lokal:*\n\n` + finalResult.content;
+    finalResult.content = `**[AI Provider Error]** ${rawErr}\n\n*Fallback ke simulasi lokal:*\n\n` + finalResult.content;
   }
 
   // Simpan riwayat chat ke SQLite jika user_id dikirim
@@ -907,7 +907,7 @@ async function streamMessageToAgent(userMessage, chatHistory = [], options = {},
       friendlyErr = 'Server Gemini sedang kelebihan beban (503). Coba lagi nanti.';
     }
 
-    finalResult.content = `⚠️ **AI Provider Error:** ${friendlyErr}\n\n*Fallback ke simulasi lokal:*\n\n` + finalResult.content;
+    finalResult.content = `**[AI Provider Error]** ${friendlyErr}\n\n*Fallback ke simulasi lokal:*\n\n` + finalResult.content;
     onEvent('done', { reply: finalResult.content, isSimulation: true, role: 'model' });
   }
 

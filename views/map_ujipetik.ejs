@@ -1615,7 +1615,7 @@
         <% if (locals.isAdmin) { %>
         <div class="gmaps-control-row" style="display: grid; grid-template-columns: 1fr; gap: 7px; margin-top: 6px;">
           <button type="button" class="btn btn-secondary btn-sm" id="btnSyncMapCloud" onclick="triggerMapCloudSync()" title="Sinkronkan titik koordinat terbaru langsung dari FASIH-SM Cloud via API" style="font-size: 12px; font-weight: 700; border-radius: 999px; padding: 5px 12px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); color: #f59e0b;">
-            <i class="bi bi-cloud-arrow-down-fill"></i> <span id="lblSyncMapCloud">⚡ Sinkron Titik dari Cloud</span>
+            <i class="bi bi-cloud-arrow-down-fill"></i> <span id="lblSyncMapCloud">Sinkron Titik dari Cloud</span>
           </button>
         </div>
         <% } %>
@@ -4627,13 +4627,13 @@
           // Clear client-side IndexedDB cache so fresh points are fetched
           try { await UjiPetikStorage.clear(); } catch (_) {}
 
-          alert(`✅ Sinkronisasi Berhasil!\n${data.message || '75.467 titik berhasil diperbarui.'}\nMemuat ulang peta...`);
+          alert(`Sinkronisasi Berhasil!\n${data.message || '75.467 titik berhasil diperbarui.'}\nMemuat ulang peta...`);
           window.location.reload();
         } catch (err) {
-          alert(`❌ Gagal Sinkronisasi Cloud: ${err.message}`);
+          alert(`Gagal Sinkronisasi Cloud: ${err.message}`);
         } finally {
           if (btn) btn.disabled = false;
-          if (lbl) lbl.innerHTML = '⚡ Sinkron Titik dari Cloud';
+          if (lbl) lbl.innerHTML = 'Sinkron Titik dari Cloud';
         }
       };
 

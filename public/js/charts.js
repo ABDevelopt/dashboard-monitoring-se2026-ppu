@@ -1257,9 +1257,9 @@ function createIntradayLineChart(canvasId, intradayData) {
               const s = intradayData.sessions[ctxItem.dataIndex];
               if (!s) return null;
               if (ctxItem.datasetIndex === 0) {
-                return ` ➕ Penambahan Sesi: +${s.delta.toLocaleString('id-ID')} dokumen`;
+                return ` Penambahan Sesi: +${s.delta.toLocaleString('id-ID')} dokumen`;
               } else {
-                return ` 📊 Total Akumulasi: ${s.selesai_total.toLocaleString('id-ID')} dokumen`;
+                return ` Total Akumulasi: ${s.selesai_total.toLocaleString('id-ID')} dokumen`;
               }
             },
             footer: (tooltipItems) => {

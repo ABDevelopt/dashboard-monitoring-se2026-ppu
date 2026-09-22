@@ -1628,7 +1628,7 @@
 
   // Synchronous Markdown Renderer for instant, non-blocking UI updates
   function renderMarkdownBlocks(text) {
-    text = String(text || '').replace(/🤖\s*\*Smart Switch:[^*]*\*\s*/gi, '').trim();
+    text = String(text || '').replace(/(?:\u{1F916}\s*)?\*Smart Switch:[^*]*\*\s*/gi, '').trim();
     const lines = text.split(/\r?\n/);
     const blocks = [];
     let i = 0;
@@ -1868,12 +1868,12 @@
   }
 
   const sampleAnswers = {
-    "terendah": `🤖 **Menganalisis database SQLite...**<br>Berikut adalah daftar 3 petugas PCL dengan capaian terendah di Kecamatan Sepaku berdasarkan data upload terbaru:<br><br><div class="table-container"><table><thead><tr><th>Nama PCL</th><th>PML Pengawas</th><th>Realisasi FASIH</th><th>Progres (%)</th></tr></thead><tbody><tr><td>Ahmad Dahlan</td><td>Ismail</td><td>2 / 40 FASIH</td><td><span class="badge badge-red">5.00%</span></td></tr><tr><td>Dewi Lestari</td><td>Hartini</td><td>4 / 35 FASIH</td><td><span class="badge badge-red">11.43%</span></td></tr><tr><td>Budi Santoso</td><td>Abdul Basir</td><td>6 / 38 FASIH</td><td><span class="badge badge-red">15.79%</span></td></tr></tbody></table></div><br>**Rekomendasi Tindak Lanjut:**<br>PCL Ahmad Dahlan memiliki progres paling kritis (5.00%). Disarankan agar PML Ismail melakukan pendampingan lapangan langsung untuk mengidentifikasi kendala teknis (misal: kendala login aplikasi FASIH).`,
-    "rerata": `🤖 **Menganalisis database SQLite...**<br>Berdasarkan agregasi seluruh data progres terbaru pada tabel <strong>progres</strong>, rata-rata pencapaian realisasi di Kabupaten Penajam Paser Utara (BPS PPU) adalah sebagai berikut:<br><br><ul><li>Rata-rata Progres Realisasi Muatan: <strong>38.45%</strong> dari total beban prelist.</li><li>Kecamatan Tertinggi: Kecamatan Penajam (<strong>45.12%</strong>).</li><li>Kecamatan Terendah: Kecamatan Sepaku (<strong>29.80%</strong>).</li><li>Rata-rata Capaian Dokumen FASIH (Approved): <strong>32.10%</strong> dari total target.</li></ul><br>Progres Kecamatan Sepaku saat ini berada di bawah rata-rata kabupaten. Disarankan agar dilakukan monitoring harian terfokus pada wilayah Sepaku.`,
-    "anomali": `🤖 **Mengecek tabel progres & anomali...**<br>Ditemukan beberapa indikasi anomali data kualitas pengumpulan di lapangan:<br><br><ol><li><strong>Indikasi Usaha Ganda (Double Input):</strong><br>Terdapat <strong>8 baris</strong> pada tabel progres yang memiliki kolom <code>ganda > 0</code>. Kasus terbanyak berada di PML Hartini (5 kasus ganda).</li><li><strong>Petugas Aktif Tanpa Progres:</strong><br>Ada <strong>3 PCL</strong> yang sudah memegang muatan SLS (>10) namun memiliki realisasi muatan = 0.</li><li><strong>Rasio Reject Tinggi:</strong><br>PML Ismail melakukan reject terhadap <strong>12 dokumen</strong> yang disubmit PCL.</li></ol><br>**Rekomendasi:**<br>1. Lakukan verifikasi koordinat SLS pada PML Hartini untuk menghapus entri ganda.<br>2. Hubungi PCL yang masih memiliki progres nol untuk memastikan mereka sudah turun ke lapangan.`
+    "terendah": `**Menganalisis database SQLite...**<br>Berikut adalah daftar 3 petugas PCL dengan capaian terendah di Kecamatan Sepaku berdasarkan data upload terbaru:<br><br><div class="table-container"><table><thead><tr><th>Nama PCL</th><th>PML Pengawas</th><th>Realisasi FASIH</th><th>Progres (%)</th></tr></thead><tbody><tr><td>Ahmad Dahlan</td><td>Ismail</td><td>2 / 40 FASIH</td><td><span class="badge badge-red">5.00%</span></td></tr><tr><td>Dewi Lestari</td><td>Hartini</td><td>4 / 35 FASIH</td><td><span class="badge badge-red">11.43%</span></td></tr><tr><td>Budi Santoso</td><td>Abdul Basir</td><td>6 / 38 FASIH</td><td><span class="badge badge-red">15.79%</span></td></tr></tbody></table></div><br>**Rekomendasi Tindak Lanjut:**<br>PCL Ahmad Dahlan memiliki progres paling kritis (5.00%). Disarankan agar PML Ismail melakukan pendampingan lapangan langsung untuk mengidentifikasi kendala teknis (misal: kendala login aplikasi FASIH).`,
+    "rerata": `**Menganalisis database SQLite...**<br>Berdasarkan agregasi seluruh data progres terbaru pada tabel <strong>progres</strong>, rata-rata pencapaian realisasi di Kabupaten Penajam Paser Utara (BPS PPU) adalah sebagai berikut:<br><br><ul><li>Rata-rata Progres Realisasi Muatan: <strong>38.45%</strong> dari total beban prelist.</li><li>Kecamatan Tertinggi: Kecamatan Penajam (<strong>45.12%</strong>).</li><li>Kecamatan Terendah: Kecamatan Sepaku (<strong>29.80%</strong>).</li><li>Rata-rata Capaian Dokumen FASIH (Approved): <strong>32.10%</strong> dari total target.</li></ul><br>Progres Kecamatan Sepaku saat ini berada di bawah rata-rata kabupaten. Disarankan agar dilakukan monitoring harian terfokus pada wilayah Sepaku.`,
+    "anomali": `**Mengecek tabel progres & anomali...**<br>Ditemukan beberapa indikasi anomali data kualitas pengumpulan di lapangan:<br><br><ol><li><strong>Indikasi Usaha Ganda (Double Input):</strong><br>Terdapat <strong>8 baris</strong> pada tabel progres yang memiliki kolom <code>ganda > 0</code>. Kasus terbanyak berada di PML Hartini (5 kasus ganda).</li><li><strong>Petugas Aktif Tanpa Progres:</strong><br>Ada <strong>3 PCL</strong> yang sudah memegang muatan SLS (>10) namun memiliki realisasi muatan = 0.</li><li><strong>Rasio Reject Tinggi:</strong><br>PML Ismail melakukan reject terhadap <strong>12 dokumen</strong> yang disubmit PCL.</li></ol><br>**Rekomendasi:**<br>1. Lakukan verifikasi koordinat SLS pada PML Hartini untuk menghapus entri ganda.<br>2. Hubungi PCL yang masih memiliki progres nol untuk memastikan mereka sudah turun ke lapangan.`
   };
 
-  const defaultAnswer = `🤖 **Menganalisis database SQLite...**<br>Saya telah membaca skema tabel <code>subsls_master</code> and <code>progres</code>. Pertanyaan Anda berkaitan dengan analisis data sensus harian.<br><br>Untuk memberikan informasi real-time, saya dapat menjalankan query pembacaan data. Namun, saat ini fitur AI Agent berjalan dalam **Mode Simulasi (Preview)**.<br><br>**Menu yang Terdeteksi pada Database:**<br><ul><li>Jumlah SLS Terisi: <strong>1.042 SLS</strong></li><li>Jumlah Kecamatan: <strong>4 Kecamatan</strong> (Penajam, Waru, Babulu, Sepaku)</li></ul><br>Apabila integrasi Gemini API key telah selesai dikonfigurasi di file <code>.env</code> server, saya akan dapat menjawab kueri dinamis apa pun secara langsung dari SQLite.`;
+  const defaultAnswer = `**Menganalisis database SQLite...**<br>Saya telah membaca skema tabel <code>subsls_master</code> and <code>progres</code>. Pertanyaan Anda berkaitan dengan analisis data sensus harian.<br><br>Untuk memberikan informasi real-time, saya dapat menjalankan query pembacaan data. Namun, saat ini fitur AI Agent berjalan dalam **Mode Simulasi (Preview)**.<br><br>**Menu yang Terdeteksi pada Database:**<br><ul><li>Jumlah SLS Terisi: <strong>1.042 SLS</strong></li><li>Jumlah Kecamatan: <strong>4 Kecamatan</strong> (Penajam, Waru, Babulu, Sepaku)</li></ul><br>Apabila integrasi Gemini API key telah selesai dikonfigurasi di file <code>.env</code> server, saya akan dapat menjawab kueri dinamis apa pun secara langsung dari SQLite.`;
 
   window.copyChatMessage = function(btn) {
     const messageDiv = btn.closest('.message');
@@ -2312,10 +2312,10 @@
     const normalUrl = (navPrefix ? navPrefix : '') + '/agent/chat';
 
     console.group('%c[PANANYO AI - STREAM START]%c ' + (text.length > 50 ? text.slice(0, 50) + '...' : text), 'background: #2563eb; color: #fff; padding: 2px 6px; border-radius: 3px; font-weight: bold;', 'color: inherit;');
-    console.log('📝 Prompt:', text);
-    console.log('🤖 Provider / Model:', reqProvider, '/', reqModel || 'default');
-    console.log('📚 Riwayat yang dikirim (' + safePayloadHistory.length + ' pesan):', safePayloadHistory);
-    console.log('⏱️ Waktu mulai:', new Date().toLocaleTimeString());
+    console.log('Prompt:', text);
+    console.log('Provider / Model:', reqProvider, '/', reqModel || 'default');
+    console.log('Riwayat yang dikirim (' + safePayloadHistory.length + ' pesan):', safePayloadHistory);
+    console.log('Waktu mulai:', new Date().toLocaleTimeString());
 
     let chunkCount = 0;
     let hasReceivedError = false;
@@ -2338,7 +2338,7 @@
         })
       });
 
-      console.log('📡 HTTP Response Status:', res.status, res.statusText);
+      console.log('HTTP Response Status:', res.status, res.statusText);
 
       if (!res.ok) {
         let errBody;
@@ -2346,7 +2346,7 @@
           errBody = await res.json();
         } catch (_) {}
         const errorMsg = errBody?.error || `HTTP ${res.status}: ${res.statusText}`;
-        console.error('❌ HTTP Error dari Server:', errorMsg, errBody);
+        console.error('HTTP Error dari Server:', errorMsg, errBody);
         throw new Error(errorMsg);
       }
 
@@ -2390,7 +2390,7 @@
                 chunkCount++;
                 if (!firstChunkTime) {
                   firstChunkTime = Date.now();
-                  console.log(`⚡ First Token TTFT: ${firstChunkTime - startTime}ms`);
+                  console.log(`First Token TTFT: ${firstChunkTime - startTime}ms`);
                 }
                 streamingMsg.appendChunk(data.text || '');
               } else if (currentEvent === 'done') {

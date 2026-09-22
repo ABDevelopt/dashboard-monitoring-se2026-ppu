@@ -1379,6 +1379,45 @@ function runMigrations(dbConn, surveyId = 'se2026') {
     }
   });
 
+  migrations.push({
+    version: '20260922000000_add_officer_progress_telemetry',
+    up: (dbConn) => {
+      try {
+        dbConn.exec(`
+          CREATE TABLE IF NOT EXISTS officer_progress_telemetry (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            upload_id INTEGER REFERENCES uploads(id) ON DELETE CASCADE,
+            survey_id TEXT NOT NULL,
+            email TEXT NOT NULL,
+            username TEXT,
+            fullname TEXT NOT NULL,
+            role TEXT NOT NULL,
+            role_name TEXT,
+            role_sequence INTEGER,
+            total_target INTEGER DEFAULT 0,
+            approved INTEGER DEFAULT 0,
+            submitted INTEGER DEFAULT 0,
+            draft INTEGER DEFAULT 0,
+            rejected INTEGER DEFAULT 0,
+            open INTEGER DEFAULT 0,
+            completed INTEGER DEFAULT 0,
+            edited INTEGER DEFAULT 0,
+            progress_pct REAL DEFAULT 0.0,
+            raw_breakdown TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(upload_id, survey_id, email, role)
+          );
+
+          CREATE INDEX IF NOT EXISTS idx_opt_survey_role ON officer_progress_telemetry(survey_id, role);
+          CREATE INDEX IF NOT EXISTS idx_opt_upload ON officer_progress_telemetry(upload_id);
+          CREATE INDEX IF NOT EXISTS idx_opt_email ON officer_progress_telemetry(email);
+        `);
+      } catch (err) {
+        logger.error('Error creating officer_progress_telemetry table:', err);
+      }
+    }
+  });
+
   migrations.forEach(m => {
     if (!appliedMigrations.includes(m.version)) {
       logger.info(`Applying database migration: ${m.version}`);
@@ -1720,8 +1759,112 @@ function getKorlapStats(uploadId, settings, surveyId) {
   `).all(uploadId), effSettings);
 }
 
-// Agregate per PML
-function getPmlStats(uploadId, settings, surveyId) {
+// ==========================================
+// OFFICER PROGRESS TELEMETRY (DIRECT API)
+// ==========================================
+
+function hasOfficerProgressTelemetry(uploadId, surveyId, role) {
+  if (!uploadId) return false;
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  try {
+    const roleFilter = role ? "AND role = '" + role.toLowerCase() + "'" : "";
+    const res = db.prepare(`SELECT COUNT(*) as c FROM officer_progress_telemetry WHERE upload_id = ? ${roleFilter}`).get(uploadId);
+    return (res?.c || 0) > 0;
+  } catch (_) {
+    return false;
+  }
+}
+
+function saveOfficerProgressTelemetry(surveyId, uploadId, officersList) {
+  if (!Array.isArray(officersList) || officersList.length === 0) return 0;
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+
+  const insertStmt = db.prepare(`
+    INSERT INTO officer_progress_telemetry (
+      upload_id, survey_id, email, username, fullname,
+      role, role_name, role_sequence,
+      total_target, approved, submitted, draft, rejected, open, completed, edited,
+      progress_pct, raw_breakdown, created_at
+    ) VALUES (
+      ?, ?, ?, ?, ?,
+      ?, ?, ?,
+      ?, ?, ?, ?, ?, ?, ?, ?,
+      ?, ?, datetime('now', 'localtime')
+    )
+    ON CONFLICT(upload_id, survey_id, email, role) DO UPDATE SET
+      fullname = excluded.fullname,
+      username = excluded.username,
+      role_name = excluded.role_name,
+      role_sequence = excluded.role_sequence,
+      total_target = excluded.total_target,
+      approved = excluded.approved,
+      submitted = excluded.submitted,
+      draft = excluded.draft,
+      rejected = excluded.rejected,
+      open = excluded.open,
+      completed = excluded.completed,
+      edited = excluded.edited,
+      progress_pct = excluded.progress_pct,
+      raw_breakdown = excluded.raw_breakdown,
+      created_at = datetime('now', 'localtime')
+  `);
+
+  let count = 0;
+  db.transaction(() => {
+    for (const off of officersList) {
+      const email = String(off.email || off.username || '').toLowerCase().trim();
+      if (!email) continue;
+      const role = String(off.role || (off.roleSequence === 7 ? 'pml' : 'pcl')).toLowerCase().trim();
+      const rawBreakdown = typeof off.rawBreakdown === 'string' ? off.rawBreakdown : JSON.stringify(off.rawBreakdown || off.regionSummary || []);
+
+      insertStmt.run(
+        uploadId || null,
+        sId,
+        email,
+        off.username || email,
+        off.fullname || email,
+        role,
+        off.roleName || (role === 'pml' ? 'Pengawas' : 'Pencacah'),
+        off.roleSequence || (role === 'pml' ? 7 : 8),
+        off.totalTarget || off.total || 0,
+        off.approved || 0,
+        off.submitted || 0,
+        off.draft || 0,
+        off.rejected || 0,
+        off.open || 0,
+        off.completed || 0,
+        off.edited || 0,
+        off.progressPct !== undefined ? off.progressPct : 0.0,
+        rawBreakdown
+      );
+      count++;
+    }
+  })();
+
+  return count;
+}
+
+function getOfficerProgressTelemetry(surveyId, uploadId, role) {
+  const sId = resolveSurveyId(surveyId);
+  const db = getDb(sId);
+  try {
+    const roleClause = role ? 'AND role = ?' : '';
+    const query = `
+      SELECT * FROM officer_progress_telemetry 
+      WHERE (upload_id = ? OR (upload_id IS NULL AND ? IS NULL))
+      ${roleClause}
+      ORDER BY approved DESC, total_target DESC
+    `;
+    return role ? db.prepare(query).all(uploadId, uploadId, role.toLowerCase()) : db.prepare(query).all(uploadId, uploadId);
+  } catch (_) {
+    return [];
+  }
+}
+
+// Agregate per PML (supports mode: 'auto' | 'api' | 'smallcode')
+function getPmlStats(uploadId, settings, surveyId, mode = 'auto') {
   const sId = resolveSurveyId(surveyId);
   const masterTable = getMasterTableSql(sId);
   const effSettings = settings || getSettings(sId);
@@ -1732,7 +1875,108 @@ function getPmlStats(uploadId, settings, surveyId) {
   const usahaTotalFormula = getUsahaTotalFormula(effSettings.target_muatan_mode, 'p');
   const keluargaTotalFormula = getKeluargaTotalFormula(effSettings.target_muatan_mode, 'p');
 
-  return attachProgressPercentages(getDb(sId).prepare(`
+  // Check direct telemetry availability
+  const hasTelemetry = (mode !== 'smallcode') && hasOfficerProgressTelemetry(uploadId, sId, 'pml');
+
+  if (hasTelemetry) {
+    // 1. Get raw smallcode territory mapping per PML
+    const territoryRows = getDb(sId).prepare(`
+      SELECT 
+        m.pml,
+        m.korlap,
+        MAX(m.pml_email) AS email,
+        MAX(m.pml_sobat_id) AS sobat_id,
+        COUNT(DISTINCT COALESCE(p.pcl_email, m.pcl_email, m.pcl)) AS jumlah_pcl,
+        COUNT(DISTINCT p.kode) AS total_subsls,
+        SUM(${singleSelesaiFormula}) AS selesai,
+        SUM(${targetMuatanFormula}) AS total_muatan,
+        SUM(${realFormula}) AS muatan_selesai,
+        SUM(${usahaTotalFormula}) AS usaha_total,
+        SUM(${keluargaTotalFormula}) AS keluarga_total,
+        SUM(COALESCE(m.target_honor, 0)) AS target_honor_total
+      FROM progres p
+      LEFT JOIN ${masterTable} m ON p.kode = m.kode
+      WHERE p.upload_id = ? AND m.pml IS NOT NULL
+      GROUP BY m.pml, m.korlap
+    `).all(uploadId);
+
+    const territoryMapByName = new Map();
+    const territoryMapByEmail = new Map();
+    for (const row of territoryRows) {
+      if (row.pml) territoryMapByName.set(row.pml.trim().toLowerCase(), row);
+      if (row.email) territoryMapByEmail.set(row.email.trim().toLowerCase(), row);
+    }
+
+    // 2. Fetch direct telemetry records
+    const telemetryRows = getDb(sId).prepare(`
+      SELECT * FROM officer_progress_telemetry
+      WHERE upload_id = ? AND role = 'pml'
+      ORDER BY approved DESC, total_target DESC
+    `).all(uploadId);
+
+    const processedEmails = new Set();
+    const processedNames = new Set();
+    const result = [];
+
+    for (const t of telemetryRows) {
+      const emailLower = (t.email || '').toLowerCase().trim();
+      const nameLower = (t.fullname || '').toLowerCase().trim();
+      processedEmails.add(emailLower);
+      processedNames.add(nameLower);
+
+      const terr = territoryMapByEmail.get(emailLower) || territoryMapByName.get(nameLower) || {};
+
+      result.push({
+        pml: t.fullname || terr.pml || t.username,
+        korlap: terr.korlap || 'Koordinator Lapangan',
+        email: t.email || terr.email || '',
+        sobat_id: terr.sobat_id || '',
+        jumlah_pcl: terr.jumlah_pcl || 0,
+        total_subsls: terr.total_subsls || 0,
+        selesai: terr.selesai || 0,
+        total_muatan: terr.total_muatan || 0,
+        muatan_selesai: terr.muatan_selesai || 0,
+        usaha_total: terr.usaha_total || 0,
+        keluarga_total: terr.keluarga_total || 0,
+        draft_total: t.draft || 0,
+        open_total: t.open || 0,
+        submitted_total: t.submitted || 0,
+        approved_total: t.approved || 0,
+        rejected_total: t.rejected || 0,
+        target_fasih_total: t.total_target || 0,
+        target_static_total: t.total_target || 0,
+        target_upload_total: t.total_target || 0,
+        target_honor_total: terr.target_honor_total || 0,
+        is_telemetry: true
+      });
+    }
+
+    // Include any territory PML not in telemetry as fallback
+    for (const row of territoryRows) {
+      const eLower = (row.email || '').toLowerCase().trim();
+      const nLower = (row.pml || '').toLowerCase().trim();
+      if (!processedEmails.has(eLower) && !processedNames.has(nLower)) {
+        result.push({
+          ...row,
+          draft_total: 0,
+          open_total: 0,
+          submitted_total: 0,
+          approved_total: 0,
+          rejected_total: 0,
+          target_fasih_total: 0,
+          target_static_total: 0,
+          target_upload_total: 0,
+          is_telemetry: false
+        });
+      }
+    }
+
+    result.sort((a, b) => (b.approved_total || 0) - (a.approved_total || 0));
+    return attachProgressPercentages(result, effSettings);
+  }
+
+  // Legacy Smallcode Aggregation Fallback
+  const legacyRows = getDb(sId).prepare(`
     SELECT 
       m.pml,
       m.korlap,
@@ -1759,11 +2003,14 @@ function getPmlStats(uploadId, settings, surveyId) {
     WHERE p.upload_id = ? AND m.pml IS NOT NULL
     GROUP BY m.pml, m.korlap
     ORDER BY selesai ASC
-  `).all(uploadId), effSettings);
+  `).all(uploadId);
+
+  legacyRows.forEach(r => r.is_telemetry = false);
+  return attachProgressPercentages(legacyRows, effSettings);
 }
 
-// Agregate per PCL
-function getPclStats(uploadId, settings, surveyId) {
+// Agregate per PCL (supports mode: 'auto' | 'api' | 'smallcode')
+function getPclStats(uploadId, settings, surveyId, mode = 'auto') {
   const sId = resolveSurveyId(surveyId);
   const masterTable = getMasterTableSql(sId);
   const effSettings = settings || getSettings(sId);
@@ -1774,9 +2021,123 @@ function getPclStats(uploadId, settings, surveyId) {
   const usahaTotalFormula = getUsahaTotalFormula(effSettings.target_muatan_mode, 'p');
   const keluargaTotalFormula = getKeluargaTotalFormula(effSettings.target_muatan_mode, 'p');
 
-  return attachProgressPercentages(getDb(sId).prepare(`
+  // Check direct telemetry availability
+  const hasTelemetry = (mode !== 'smallcode') && hasOfficerProgressTelemetry(uploadId, sId, 'pcl');
+
+  if (hasTelemetry) {
+    // 1. Get raw smallcode territory mapping per PCL
+    const territoryRows = getDb(sId).prepare(`
+      SELECT 
+        COALESCE(m.pcl, p.pcl_name, '(Tanpa Petugas)') AS pcl,
+        MAX(COALESCE(p.pcl_email, m.pcl_email)) AS email,
+        MAX(COALESCE(p.pcl_sobat_id, m.pcl_sobat_id)) AS sobat_id,
+        MAX(m.pml) AS pml,
+        MAX(m.korlap) AS korlap,
+        MAX(m.kecamatan) AS kecamatan,
+        COUNT(DISTINCT p.kode) AS total_subsls,
+        SUM(${singleSelesaiFormula}) AS selesai,
+        SUM(${targetMuatanFormula}) AS total_muatan,
+        SUM(${realFormula}) AS muatan_selesai,
+        SUM(${usahaTotalFormula}) AS usaha_total,
+        SUM(${keluargaTotalFormula}) AS keluarga_total,
+        SUM(COALESCE(m.target_honor, 0)) AS target_honor_total,
+        SUM(COALESCE(p.usaha_ditemukan, 0)) AS usaha_ditemukan_total,
+        SUM(COALESCE(p.usaha_baru, 0)) AS usaha_baru_total,
+        SUM(COALESCE(p.usaha_tidak_ditemukan, 0)) AS usaha_tidak_ditemukan_total,
+        SUM(COALESCE(p.usaha_tutup, 0)) AS usaha_tutup_total,
+        SUM(COALESCE(p.usaha_ganda, 0)) AS usaha_ganda_total
+      FROM progres p
+      LEFT JOIN ${masterTable} m ON p.kode = m.kode
+      WHERE p.upload_id = ?
+      GROUP BY COALESCE(m.pcl, p.pcl_name, '(Tanpa Petugas)')
+    `).all(uploadId);
+
+    const territoryMapByName = new Map();
+    const territoryMapByEmail = new Map();
+    for (const row of territoryRows) {
+      if (row.pcl) territoryMapByName.set(row.pcl.trim().toLowerCase(), row);
+      if (row.email) territoryMapByEmail.set(row.email.trim().toLowerCase(), row);
+    }
+
+    // 2. Fetch direct telemetry records
+    const telemetryRows = getDb(sId).prepare(`
+      SELECT * FROM officer_progress_telemetry
+      WHERE upload_id = ? AND role IN ('pcl', 'ppl')
+      ORDER BY approved DESC, total_target DESC
+    `).all(uploadId);
+
+    const processedEmails = new Set();
+    const processedNames = new Set();
+    const result = [];
+
+    for (const t of telemetryRows) {
+      const emailLower = (t.email || '').toLowerCase().trim();
+      const nameLower = (t.fullname || '').toLowerCase().trim();
+      processedEmails.add(emailLower);
+      processedNames.add(nameLower);
+
+      const terr = territoryMapByEmail.get(emailLower) || territoryMapByName.get(nameLower) || {};
+
+      result.push({
+        pcl: t.fullname || terr.pcl || t.username || '(Tanpa Petugas)',
+        email: t.email || terr.email || '',
+        sobat_id: terr.sobat_id || '',
+        pml: terr.pml || '',
+        korlap: terr.korlap || '',
+        kecamatan: terr.kecamatan || '',
+        total_subsls: terr.total_subsls || 0,
+        selesai: terr.selesai || 0,
+        total_muatan: terr.total_muatan || 0,
+        muatan_selesai: terr.muatan_selesai || 0,
+        usaha_total: terr.usaha_total || 0,
+        keluarga_total: terr.keluarga_total || 0,
+        draft_total: t.draft || 0,
+        open_total: t.open || 0,
+        submitted_total: t.submitted || 0,
+        approved_total: t.approved || 0,
+        rejected_total: t.rejected || 0,
+        target_fasih_total: t.total_target || 0,
+        target_static_total: t.total_target || 0,
+        target_upload_total: t.total_target || 0,
+        target_honor_total: terr.target_honor_total || 0,
+        usaha_ditemukan_total: terr.usaha_ditemukan_total || 0,
+        usaha_baru_total: terr.usaha_baru_total || 0,
+        usaha_tidak_ditemukan_total: terr.usaha_tidak_ditemukan_total || 0,
+        usaha_tutup_total: terr.usaha_tutup_total || 0,
+        usaha_ganda_total: terr.usaha_ganda_total || 0,
+        is_telemetry: true
+      });
+    }
+
+    // Include any territory PCL not in telemetry as fallback
+    for (const row of territoryRows) {
+      const eLower = (row.email || '').toLowerCase().trim();
+      const nLower = (row.pcl || '').toLowerCase().trim();
+      if (!processedEmails.has(eLower) && !processedNames.has(nLower)) {
+        result.push({
+          ...row,
+          pcl: row.pcl || '(Tanpa Petugas)',
+          draft_total: 0,
+          open_total: 0,
+          submitted_total: 0,
+          approved_total: 0,
+          rejected_total: 0,
+          target_fasih_total: 0,
+          target_static_total: 0,
+          target_upload_total: 0,
+          is_telemetry: false
+        });
+      }
+    }
+
+    result.sort((a, b) => (b.approved_total || 0) - (a.approved_total || 0));
+    return attachProgressPercentages(result, effSettings);
+  }
+
+  // Legacy Smallcode Aggregation Fallback
+  const legacyRows = getDb(sId).prepare(`
     SELECT 
-      COALESCE(m.pcl, p.pcl_name) AS pcl,
+      COALESCE(m.pcl, p.pcl_name, '(Tanpa Petugas)') AS pcl,
       MAX(COALESCE(p.pcl_email, m.pcl_email)) AS email,
       MAX(COALESCE(p.pcl_sobat_id, m.pcl_sobat_id)) AS sobat_id,
       MAX(m.pml) AS pml,
@@ -1805,9 +2166,12 @@ function getPclStats(uploadId, settings, surveyId) {
     FROM progres p
     LEFT JOIN ${masterTable} m ON p.kode = m.kode
     WHERE p.upload_id = ?
-    GROUP BY COALESCE(m.pcl, p.pcl_name)
+    GROUP BY COALESCE(m.pcl, p.pcl_name, '(Tanpa Petugas)')
     ORDER BY approved_total DESC
-  `).all(uploadId), effSettings);
+  `).all(uploadId);
+
+  legacyRows.forEach(r => r.is_telemetry = false);
+  return attachProgressPercentages(legacyRows, effSettings);
 }
 
 // Tren harian (dapat dibatasi hingga tanggal cut-off tertentu)
@@ -2503,6 +2867,7 @@ _Notifikasi otomatis [monitoring.bpsppu.com]_`;
     'page_map': '1',
     'page_map_ujipetik': '1',
     'page_earlywarning': '1',
+    'show_early_warning_modal': '1',
     'page_deteksianomali': isSe2026 ? '1' : '0',
     'page_leaderboard': '1',
     'page_performatrendah': '1',
@@ -4614,7 +4979,8 @@ module.exports = {
   saveAgentQuery, getAgentQueryById, executeAgentQueryById, updateAgentQueryAnalysis,
   importTitikUjiPetik, importTitikUjiPetikFromCsv, clearTitikUjiPetik, getTitikUjiPetikStats, getTitikUjiPetikPoints, getTitikUjiPetikCompact,
   getTitikUjiPetikUploads, getTitikUjiPetikUploadById, deleteTitikUjiPetikUpload,
-  getSurveyProgressSnapshotsMap, upsertSurveyProgressSnapshot, refreshSurveyProgressSnapshot, refreshAllSurveyProgressSnapshots
+  getSurveyProgressSnapshotsMap, upsertSurveyProgressSnapshot, refreshSurveyProgressSnapshot, refreshAllSurveyProgressSnapshots,
+  hasOfficerProgressTelemetry, saveOfficerProgressTelemetry, getOfficerProgressTelemetry
 };
 
 

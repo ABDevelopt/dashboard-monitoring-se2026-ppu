@@ -376,7 +376,7 @@
             <input type="text" id="whatsapp_group_id" name="whatsapp_group_id" value="<%= settings.whatsapp_group_id || '' %>" placeholder="Contoh: 120363024890123456@g.us" required>
             <p class="settings-hint">
               ID grup WhatsApp berakhiran <code>@g.us</code>. 
-              <br>💡 <strong>Cara mendapatkan ID Grup:</strong> Masukkan bot ke grup Anda, lalu ketik pesan <code>!groupid</code> di grup tersebut. Bot akan membalas dengan ID grup secara otomatis. Anda tinggal menyalin dan menempelkannya di sini.
+              <br><i class="bi bi-lightbulb"></i> <strong>Cara mendapatkan ID Grup:</strong> Masukkan bot ke grup Anda, lalu ketik pesan <code>!groupid</code> di grup tersebut. Bot akan membalas dengan ID grup secara otomatis. Anda tinggal menyalin dan menempelkannya di sini.
             </p>
           </div>
 
@@ -615,10 +615,10 @@
             line.style.marginBottom = '4px';
             
             let badgeColor = '#38bdf8';
-            let icon = 'ℹ️';
-            if (log.type === 'success') { badgeColor = '#10b981'; icon = '🟢'; }
-            else if (log.type === 'warn') { badgeColor = '#f59e0b'; icon = '⚠️'; }
-            else if (log.type === 'error') { badgeColor = '#ef4444'; icon = '❌'; }
+            let icon = '<i class="bi bi-info-circle"></i>';
+            if (log.type === 'success') { badgeColor = '#10b981'; icon = '<i class="bi bi-check-circle"></i>'; }
+            else if (log.type === 'warn') { badgeColor = '#f59e0b'; icon = '<i class="bi bi-exclamation-triangle"></i>'; }
+            else if (log.type === 'error') { badgeColor = '#ef4444'; icon = '<i class="bi bi-x-circle"></i>'; }
 
             line.innerHTML = `<span style="color: #64748b;">[${log.timestamp}]</span> <span style="color: ${badgeColor}; font-weight: 600;">${icon} ${log.message}</span>`;
             terminalBody.appendChild(line);

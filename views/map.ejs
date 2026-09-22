@@ -2649,9 +2649,9 @@
           const optNotStarted = document.getElementById('optStatusNotStarted');
 
           if (optAll) optAll.textContent = `-- Semua Status SLS (${totalSls.toLocaleString('id-ID')} SLS) --`;
-          if (optDone) optDone.textContent = `🟢 SLS Selesai (${selesaiCount.toLocaleString('id-ID')} SLS - ${selesaiPct}%)`;
-          if (optInProgress) optInProgress.textContent = `🟡 SLS Sedang Progres (${inProgressCount.toLocaleString('id-ID')} SLS)`;
-          if (optNotStarted) optNotStarted.textContent = `🔴 SLS Belum Dimulai (${notStartedCount.toLocaleString('id-ID')} SLS)`;
+          if (optDone) optDone.textContent = `SLS Selesai (${selesaiCount.toLocaleString('id-ID')} SLS - ${selesaiPct}%)`;
+          if (optInProgress) optInProgress.textContent = `SLS Sedang Progres (${inProgressCount.toLocaleString('id-ID')} SLS)`;
+          if (optNotStarted) optNotStarted.textContent = `SLS Belum Dimulai (${notStartedCount.toLocaleString('id-ID')} SLS)`;
         }
 
         function filterByKpiStatus(statusKey) {

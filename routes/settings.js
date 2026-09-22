@@ -5,6 +5,7 @@ const { getSettings, updateSettings } = require('../database');
 const generalSettingKeys = [
   'page_map',
   'page_earlywarning',
+  'show_early_warning_modal',
   'page_deteksianomali',
   'page_leaderboard',
   'page_performatrendah',
@@ -303,7 +304,7 @@ router.post('/reset-sls-selesai', (req, res) => {
     const afterCount = db.prepare('SELECT COUNT(*) as c FROM progres WHERE sls_selesai = 1').get().c;
     const uniqueKodes = db.prepare("SELECT COUNT(DISTINCT kode) as c FROM progres WHERE sls_selesai = 1").get().c;
 
-    req.flash('success', `✅ Reset SLS Selesai berhasil. Sebelum: ${beforeCount} baris → Sesudah: ${afterCount} baris (${uniqueKodes} Sub-SLS unik selesai berdasarkan Excel BPS: ${monitoringUpload.status_filename})`);
+    req.flash('success', `Reset SLS Selesai berhasil. Sebelum: ${beforeCount} baris → Sesudah: ${afterCount} baris (${uniqueKodes} Sub-SLS unik selesai berdasarkan Excel BPS: ${monitoringUpload.status_filename})`);
     console.log(`[MAINTENANCE] reset-sls-selesai: ${beforeCount} → ${afterCount} rows, file: ${monitoringUpload.status_filename}`);
   } catch (err) {
     console.error('[MAINTENANCE] reset-sls-selesai error:', err);

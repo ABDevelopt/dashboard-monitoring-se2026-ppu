@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const XLSX = require('xlsx');
 const PDFDocument = require('pdfkit-table');
-const { getPmlStats, getDb, getSettings, attachProgressPercentages, compareFasihProgress, getAllUploads, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula } = require('../database');
+const { getPmlStats, getDb, getSettings, attachProgressPercentages, compareFasihProgress, getAllUploads, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, hasOfficerProgressTelemetry } = require('../database');
 
 // Heatmap color generator (HSL to RGB conversion)
 function getHeatmapColor(pct) {
@@ -294,8 +294,12 @@ router.get('/', (req, res) => {
     });
   }
 
+  const modeParam = (req.query.mode || 'auto').toLowerCase();
+  const hasTelemetry = hasOfficerProgressTelemetry(uploadId, surveyId, 'pml');
+  const activeMode = (modeParam === 'smallcode' || (!hasTelemetry && modeParam !== 'api')) ? 'smallcode' : 'api';
+
   if (uploadId) {
-    pmlStats = getPmlStats(uploadId, res.locals.settings, surveyId);
+    pmlStats = getPmlStats(uploadId, res.locals.settings, surveyId, activeMode);
     pmlStats.sort((a, b) => compareFasihProgress(a, b, 'pml'));
 
     if (filterPml) {
@@ -365,6 +369,8 @@ router.get('/', (req, res) => {
     selectedPmlStats,
     filterPml,
     pmlHistory,
+    activeMode,
+    hasTelemetry
   });
 });
 

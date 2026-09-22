@@ -326,13 +326,13 @@ async function handleUploadPost(req, res) {
           const whatsappService = require('../services/whatsappService');
           const waRes = await whatsappService.sendUpdateNotification(result.uploadId);
           if (waRes && waRes.success) {
-            successMessages.push(`📱 <strong>Notifikasi WhatsApp:</strong> Berhasil dikirim ke grup <em>${waRes.groupName || 'WhatsApp'}</em>.`);
+            successMessages.push(`<strong>Notifikasi WhatsApp:</strong> Berhasil dikirim ke grup <em>${waRes.groupName || 'WhatsApp'}</em>.`);
           } else if (waRes && waRes.error) {
-            errors.push(`⚠️ <strong>Notifikasi WhatsApp Gagal:</strong> ${waRes.error}`);
+            errors.push(`<strong>Notifikasi WhatsApp Gagal:</strong> ${waRes.error}`);
           }
         } catch (waErr) {
           console.error('Gagal mengirim notifikasi WhatsApp:', waErr);
-          errors.push(`⚠️ <strong>Notifikasi WhatsApp Gagal:</strong> ${waErr.message}`);
+          errors.push(`<strong>Notifikasi WhatsApp Gagal:</strong> ${waErr.message}`);
         }
       }
     } catch (err) {
@@ -534,13 +534,13 @@ router.post('/import-local', async (req, res) => {
         const whatsappService = require('../services/whatsappService');
         const waRes = await whatsappService.sendUpdateNotification(result.uploadId);
         if (waRes && waRes.success) {
-          waSuccessMsg = `<br>📱 <strong>Notifikasi WhatsApp:</strong> Berhasil dikirim ke grup <em>${waRes.groupName || 'WhatsApp'}</em>.`;
+          waSuccessMsg = `<br><strong>Notifikasi WhatsApp:</strong> Berhasil dikirim ke grup <em>${waRes.groupName || 'WhatsApp'}</em>.`;
         } else if (waRes && waRes.error) {
-          waErrorMsg = `<br>⚠️ <strong>Notifikasi WhatsApp Gagal:</strong> ${waRes.error}`;
+          waErrorMsg = `<br><strong>Notifikasi WhatsApp Gagal:</strong> ${waRes.error}`;
         }
       } catch (waErr) {
         console.error('Gagal mengirim notifikasi WhatsApp:', waErr);
-        waErrorMsg = `<br>⚠️ <strong>Notifikasi WhatsApp Gagal:</strong> ${waErr.message}`;
+        waErrorMsg = `<br><strong>Notifikasi WhatsApp Gagal:</strong> ${waErr.message}`;
       }
     }
 
@@ -835,7 +835,7 @@ router.post('/api-sync', async (req, res) => {
       : '';
 
     req.flash('success', `
-      <strong>⚡ Sinkronisasi API FASIH-SM Berhasil!</strong><br>
+      <strong>Sinkronisasi API FASIH-SM Berhasil!</strong><br>
       - Tanggal Data: <strong>${result.date}</strong><br>
       - Total SLS Disinkronkan: <strong>${result.totalSls.toLocaleString('id-ID')} SLS</strong><br>
       - Berkas Sumber: <code>${result.sourceFile || 'api_sync'}</code><br>
@@ -886,7 +886,7 @@ router.post('/api-sync-spatial', async (req, res) => {
     }
 
     req.flash('success', `
-      <strong>⚡ Sinkronisasi Titik Spasial Berhasil!</strong><br>
+      <strong>Sinkronisasi Titik Spasial Berhasil!</strong><br>
       - Total Titik Diimpor: <strong>${result.totalImported.toLocaleString('id-ID')} Titik</strong><br>
       - Mode Sinkronisasi: <strong>${result.mode === 'replace' ? 'Gantikan Seluruh Data (Replace)' : 'Tambahkan Titik Baru (Append)'}</strong><br>
       - Berkas Arsip: <code>${result.storedFilename}</code><br>

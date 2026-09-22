@@ -156,8 +156,36 @@
       <!-- PCL LIST TABLE -->
       <div class="card" style="margin-bottom: 0;">
         <div class="card-header flex-between" style="gap: 8px; flex-wrap: wrap;">
-          <div class="card-title" style="margin-bottom: 0;"><i class="bi bi-person-gear"></i> Progres Kinerja per <%= officerLabel %> (<%= isSakernas ? 'Petugas Pendataan' : 'Pencacah' %>) <span class="badge badge-blue" id="pclCountBadge"><%= pclStats.length %> <%= officerLabel %></span></div>
+          <div class="card-title" style="margin-bottom: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span><i class="bi bi-person-gear"></i> Progres Kinerja per <%= officerLabel %> (<%= isSakernas ? 'Petugas Pendataan' : 'Pencacah' %>)</span>
+            <span class="badge badge-blue" id="pclCountBadge"><%= pclStats.length %> <%= officerLabel %></span>
+            <% if (typeof activeMode !== 'undefined' && activeMode === 'api') { %>
+              <span class="badge badge-green" style="font-size: 0.72rem; padding: 2px 8px; font-weight: 600;" title="Akurasi 100%: Progres diambil langsung per akun petugas dari API FASIH BPS (report-progress-by-responsibility)">
+                <i class="bi bi-patch-check-fill"></i> Akun API
+              </span>
+            <% } else if (typeof activeMode !== 'undefined' && activeMode === 'smallcode') { %>
+              <span class="badge badge-gray" style="font-size: 0.72rem; padding: 2px 8px; font-weight: 500;" title="Agregasi Wilayah: Progres dihitung berdasarkan seluruh dokumen pada SLS tempat petugas dialokasikan">
+                <i class="bi bi-geo-alt"></i> Wilayah SLS
+              </span>
+            <% } %>
+          </div>
           <div class="card-actions flex-start" style="gap: 8px; align-items: center; flex-wrap: wrap;">
+            <% if (typeof hasTelemetry !== 'undefined' && hasTelemetry) { %>
+              <div class="btn-group data-source-toggle" role="group" aria-label="Sumber Data Progres" style="border: 1px solid var(--border); border-radius: 6px; overflow: hidden;">
+                <a href="<%= navPrefix %>/pcl?mode=api<%= filterKec ? '&kec=' + encodeURIComponent(filterKec) : '' %><%= filterPml ? '&pml=' + encodeURIComponent(filterPml) : '' %><%= filterKorlap ? '&korlap=' + encodeURIComponent(filterKorlap) : '' %>" 
+                   class="btn btn-xs <%= activeMode === 'api' ? 'btn-primary active font-bold' : 'btn-secondary' %>"
+                   style="font-size: 11px; padding: 3px 8px;"
+                   title="Akurasi 100%: Data ditarik langsung dari akun petugas di API FASIH">
+                  <i class="bi bi-lightning-charge-fill text-warning"></i> Akun API
+                </a>
+                <a href="<%= navPrefix %>/pcl?mode=smallcode<%= filterKec ? '&kec=' + encodeURIComponent(filterKec) : '' %><%= filterPml ? '&pml=' + encodeURIComponent(filterPml) : '' %><%= filterKorlap ? '&korlap=' + encodeURIComponent(filterKorlap) : '' %>" 
+                   class="btn btn-xs <%= activeMode === 'smallcode' ? 'btn-primary active font-bold' : 'btn-secondary' %>"
+                   style="font-size: 11px; padding: 3px 8px;"
+                   title="Agregasi Wilayah: Berdasarkan SLS tempat petugas dialokasikan pada master awal">
+                  <i class="bi bi-map"></i> Wilayah SLS
+                </a>
+              </div>
+            <% } %>
             <div class="stacked-legend-wrap d-none d-lg-flex hide-md">
               <span class="legend-item"><span class="legend-dot" style="background:#10b981;"></span>App</span>
               <span class="legend-item"><span class="legend-dot" style="background:#3b82f6;"></span>Sub</span>
@@ -269,14 +297,14 @@
                     const pRej = p.rejected_total || 0;
                     const pDft = p.draft_total || 0;
                     const pOpn = p.open_total !== undefined ? p.open_total : Math.max(0, fTgtNum - (pDft + fRealNum));
-                    const isKippPcl = kippPcls.includes(p.pcl.toUpperCase());
+                    const isKippPcl = (p.pcl && typeof p.pcl === 'string') ? kippPcls.includes(p.pcl.toUpperCase()) : false;
                     const isSelesaiPcl = fTgtNum > 0 && fRealNum >= fTgtNum;
                     const isOntrackPcl = parseFloat(fasihPct) >= activeTargetPct;
                     const isCriticalPcl = parseFloat(fasihPct) < 40;
                     const isZeroPcl = parseFloat(fasihPct) === 0;
-                    const searchKeywords = `${p.pcl} ${p.pml || ''} ${p.korlap || ''} ${p.kecamatan || ''} ${p.email || ''}`.toLowerCase();
+                    const searchKeywords = `${p.pcl || ''} ${p.pml || ''} ${p.korlap || ''} ${p.kecamatan || ''} ${p.email || ''}`.toLowerCase();
                   %>
-                  <tr class="<%= filterPcl === p.pcl ? 'active' : '' %>" 
+                  <tr class="<%= filterPcl && p.pcl && filterPcl === p.pcl ? 'active' : '' %>" 
                       data-search="<%= searchKeywords %>"
                       data-pct="<%= parseFloat(fasihPct) || 0 %>"
                       data-kipp="<%= isKippPcl ? '1' : '0' %>"
@@ -284,7 +312,7 @@
                       data-ontrack="<%= isOntrackPcl ? '1' : '0' %>"
                       data-critical="<%= isCriticalPcl ? '1' : '0' %>"
                       data-zero="<%= isZeroPcl ? '1' : '0' %>"
-                      style="<%= filterPcl === p.pcl ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
+                      style="<%= filterPcl && p.pcl && filterPcl === p.pcl ? 'background: var(--bg-card-hover); font-weight: 500;' : '' %>">
                     <td class="text-center td-index" data-sort="<%= index + 1 %>">
                       <% if (index === 0) { %>
                         <span style="color: #fbbf24; font-weight: 700;" title="Peringkat 1 (Tertinggi)"><%= index + 1 %></span>
@@ -297,10 +325,15 @@
                       <% } %>
                     </td>
                     <td class="td-primary">
-                      <a href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(p.pcl) %>&kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="link-plain" style="display: inline-block;">
-                        <i class="bi bi-person"></i> <%= p.pcl %>
+                      <a href="<%= navPrefix %>/pcl?pcl=<%= encodeURIComponent(p.pcl || '') %>&kec=<%= filterKec %>&korlap=<%= filterKorlap %>&pml=<%= filterPml %>" class="link-plain" style="display: inline-block;">
+                        <i class="bi bi-person"></i> <%= p.pcl || '(Tanpa Petugas)' %>
                       </a>
-                      <% if (kippPcls.includes(p.pcl.toUpperCase())) { %>
+                      <% if (p.is_telemetry) { %>
+                        <span class="badge badge-green badge-xs" style="vertical-align: middle; margin-left: 4px; font-size: 8px; padding: 1px 4px;" title="Capaian riil terverifikasi langsung dari akun petugas di API FASIH">
+                          <i class="bi bi-patch-check-fill"></i> API
+                        </span>
+                      <% } %>
+                      <% if (p.pcl && typeof p.pcl === 'string' && kippPcls.includes(p.pcl.toUpperCase())) { %>
                         <span class="badge badge-orange badge-xs" style="vertical-align: middle; margin-left: 4px;">KIPP</span>
                       <% } %>
                       <% if (p.email && isAdmin) { %>

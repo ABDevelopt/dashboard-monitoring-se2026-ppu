@@ -8,7 +8,7 @@
   const unitLabel = isSakernas ? 'RT' : 'dok';
   const unitLabelFull = isSakernas ? 'Rumah Tangga' : 'dokumen FASIH';
 
-  // Milestone target (25% & 40%) hanya relevan untuk SE2026, bukan survei sampel
+  // Milestone target (25% & 40%) hanya relevan untuk SE2026, bukan survei
   let activeTargetPct = null;
   let targetMonthName = '';
   const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
@@ -42,7 +42,7 @@
       <!-- Action Buttons Row -->
       <div style="display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
         <button type="button" id="btnSyncCloudProgress" onclick="syncCurrentSurveyProgress('<%= activeSurvey %>')" class="btn btn-primary" style="padding: 11px 24px; font-size: 14px; font-weight: 700; border-radius: 999px; box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.35);">
-          <i class="bi bi-cloud-arrow-down-fill"></i> <span id="lblSyncCloudProgress">⚡ Sinkronkan Progres via Cloud API</span>
+          <i class="bi bi-cloud-arrow-down-fill"></i> <span id="lblSyncCloudProgress">Sinkronkan Progres via Cloud API</span>
         </button>
         <a href="<%= navPrefix %>/admin/upload" class="btn btn-secondary" style="padding: 11px 20px; font-size: 14px; font-weight: 600; border-radius: 999px;">
           <i class="bi bi-upload"></i> Upload Berkas Manual
@@ -77,7 +77,7 @@
 
           const data = await res.json();
           if (data.success) {
-            lbl.innerHTML = '✅ Sinkronisasi Berhasil!';
+            lbl.innerHTML = 'Sinkronisasi Berhasil!';
             if (alertBox) {
               alertBox.style.display = 'block';
               alertBox.style.background = 'rgba(16, 185, 129, 0.15)';
@@ -93,7 +93,7 @@
           }
         } catch (err) {
           btn.disabled = false;
-          lbl.innerHTML = '⚡ Coba Sinkronkan Lagi';
+          lbl.innerHTML = 'Coba Sinkronkan Lagi';
           if (alertBox) {
             alertBox.style.display = 'block';
             alertBox.style.background = 'rgba(239, 68, 68, 0.15)';

@@ -118,9 +118,9 @@ try {
   const whatsappService = require('./services/whatsappService');
   whatsappService.initialize();
   whatsappService.startSupervisor();
-  logger.info('🚀 [Startup Top-Level] WhatsApp Service & Watchdog Supervisor 24/7 initialized.');
+  logger.info('[Startup Top-Level] WhatsApp Service & Watchdog Supervisor 24/7 initialized.');
 } catch (err) {
-  logger.error('❌ Gagal menginisialisasi WhatsApp Service pada top-level startup:', err);
+  logger.error('Gagal menginisialisasi WhatsApp Service pada top-level startup:', err);
 }
 
 // Global API Status WhatsApp (Bypass Passenger & Admin middleware routing issues in cPanel)
@@ -833,7 +833,7 @@ function init() {
     const { minifyAll } = require('./scripts/minify');
     minifyAll();
   } catch (err) {
-    logger.error('❌ Failed to run assets minification on startup:', err);
+    logger.error('Failed to run assets minification on startup:', err);
   }
 
   try {
@@ -846,10 +846,10 @@ function init() {
       }
       if (fs.existsSync(masterPath)) {
         const count = loadMasterFromJson(masterPath, 'se2026');
-        logger.info(`✅ Master SubSLS SE2026 loaded: ${count} records (from JSON)`);
+        logger.info(`[OK] Master SubSLS SE2026 loaded: ${count} records (from JSON)`);
       }
     } else {
-      logger.info(`✅ Master SubSLS SE2026 already populated: ${rowCount} records (from DB)`);
+      logger.info(`[OK] Master SubSLS SE2026 already populated: ${rowCount} records (from DB)`);
     }
 
     // Auto-seed Sakernas if databases are unseeded (e.g. fresh deployment on hosting server like Dewaweb)
@@ -857,7 +857,7 @@ function init() {
       const { seedAll } = require('./scripts/seed_sakernas_from_workspace');
       seedAll(false);
     } catch (sakernasErr) {
-      logger.error('❌ Error checking/seeding Sakernas databases:', sakernasErr.message);
+      logger.error('Error checking/seeding Sakernas databases:', sakernasErr.message);
     }
 
     // Rebuild cache on startup to ensure any code/formula updates are reflected
@@ -867,15 +867,15 @@ function init() {
         const { cleanupAllImputations } = require('./services/imputerService');
         cleanupAllImputations();
 
-        logger.info('🔄 Rebuilding summary caches...');
+        logger.info('Rebuilding summary caches...');
         rebuildAllSummaryCaches();
-        logger.info('✅ Summary caches successfully rebuilt');
+        logger.info('[OK] Summary caches successfully rebuilt');
       } catch (e) {
-        logger.error('❌ Failed to rebuild summary caches on startup:', e);
+        logger.error('Failed to rebuild summary caches on startup:', e);
       }
     }, 1000);
   } catch (err) {
-    logger.error('❌ Error loading master data:', err);
+    logger.error('Error loading master data:', err);
   }
 
 
@@ -884,7 +884,7 @@ function init() {
     const { triggerAsyncSync } = require('./services/firebaseSyncService');
     triggerAsyncSync(true); // Full clone all SQLite tables
   } catch (err) {
-    logger.error('❌ Gagal menyinkronkan data ke Firebase pada startup:', err.message);
+    logger.error('Gagal menyinkronkan data ke Firebase pada startup:', err.message);
   }
 
   // Inisialisasi background auto-sync dari FASIH-SM Cloud
@@ -892,7 +892,7 @@ function init() {
     const fasihSyncService = require('./services/fasihSyncService');
     fasihSyncService.startBackgroundScheduler();
   } catch (err) {
-    logger.error('❌ Gagal mengaktifkan background auto-sync FASIH-SM:', err.message);
+    logger.error('Gagal mengaktifkan background auto-sync FASIH-SM:', err.message);
   }
 
   // Jadwalkan WAL checkpoint otomatis setiap 6 jam.
@@ -903,10 +903,10 @@ function init() {
     try {
       runWalCheckpointAll();
     } catch (e) {
-      logger.error('❌ Scheduled WAL checkpoint error:', e.message);
+      logger.error('Scheduled WAL checkpoint error:', e.message);
     }
   }, WAL_CHECKPOINT_INTERVAL_MS);
-  logger.info(`⏰ WAL checkpoint terjadwal setiap 6 jam (interval: ${WAL_CHECKPOINT_INTERVAL_MS}ms)`);
+  logger.info(`WAL checkpoint terjadwal setiap 6 jam (interval: ${WAL_CHECKPOINT_INTERVAL_MS}ms)`);
 
 
   const os = require('os');
@@ -924,10 +924,10 @@ function init() {
 
   const localIp = getLocalIp();
   const server = app.listen(PORT, '0.0.0.0', () => {
-    logger.info(`🚀 Dashboard SE2026 PPU berjalan di:`);
+    logger.info(`Dashboard SE2026 PPU berjalan di:`);
     logger.info(`   - Local:   http://localhost:${PORT}`);
     logger.info(`   - Network: http://${localIp}:${PORT} (Akses via HP di Wi-Fi yang sama)`);
-    logger.info(`📅 ${new Date().toLocaleString('id-ID')}`);
+    logger.info(`   - Waktu:   ${new Date().toLocaleString('id-ID')}`);
   });
 
   // Konfigurasi timeout untuk mencegah pemutusan koneksi oleh reverse proxy hosting (Dewaweb/LiteSpeed/Nginx)

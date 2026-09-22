@@ -1182,7 +1182,7 @@ function updateTime() {
     const closeBtn = document.getElementById('sidebarClose');
     const overlay = document.getElementById('sidebarOverlay');
 
-    // ⚡ Safety reset: ensure overlay is always hidden on page load (never persists across navigations)
+    // Safety reset: ensure overlay is always hidden on page load (never persists across navigations)
     if (overlay) {
       overlay.classList.remove('active');
     }
@@ -2443,7 +2443,7 @@ function updateTime() {
         loader.classList.add('loading');
       }
 
-      // ⏳ Skeleton Threshold Timer (250ms Threshold)
+      // Skeleton Threshold Timer (250ms Threshold)
       // Halaman yang merespon secara instan (< 250ms) tidak akan memicu skeleton loader
       let skeletonTimer = null;
       if (oldContent) {
@@ -2763,7 +2763,7 @@ function updateTime() {
     }
     window.loadPage = loadPage;
 
-    // ⚡ 0ms Pointerdown/Touchstart Feedback on Sidebar Menu Items
+    // 0ms Pointerdown/Touchstart Feedback on Sidebar Menu Items
     document.addEventListener('pointerdown', (e) => {
       const navItem = e.target.closest('.sidebar .nav-item, .bottom-nav .bottom-nav-item, .bottom-sheet-item');
       if (navItem) {
@@ -2826,7 +2826,7 @@ function updateTime() {
 
       e.preventDefault();
       
-      // ⚡ INSTANT FEEDBACK (0ms): Langsung ubah warna menu yang diklik menjadi active tanpa menunggu load halaman!
+      // INSTANT FEEDBACK (0ms): Langsung ubah warna menu yang diklik menjadi active tanpa menunggu load halaman!
       if (typeof window.setInstantMenuActive === 'function') {
         window.setInstantMenuActive(href, a);
       }

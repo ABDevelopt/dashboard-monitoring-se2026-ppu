@@ -43,7 +43,7 @@
         name: 'Sakernas — Pemutakhiran',
         shortName: 'Sakernas Pemutakhiran',
         officerRole: 'PPL',
-        greetingHtml: 'Halo! 👋 Saya <strong>Pananyo Taka</strong>, Asisten Pintar Pemutakhiran Sakernas Penajam Paser Utara.<br>Ada yang bisa saya bantu terkait progres pemutakhiran muatan, beban kerja PPL/PML, atau target rumah tangga?',
+        greetingHtml: 'Halo! Saya <strong>Pananyo Taka</strong>, Asisten Pintar Pemutakhiran Sakernas Penajam Paser Utara.<br>Ada yang bisa saya bantu terkait progres pemutakhiran muatan, beban kerja PPL/PML, atau target rumah tangga?',
         placeholder: 'Tanyakan sesuatu tentang Sakernas Pemutakhiran...'
       };
     }
@@ -53,7 +53,7 @@
         name: 'Sakernas — Pendataan',
         shortName: 'Sakernas Pendataan (CAPI)',
         officerRole: 'PPL',
-        greetingHtml: 'Halo! 👋 Saya <strong>Pananyo Taka</strong>, Asisten Pintar Pencacahan Sampel Sakernas (CAPI) Penajam Paser Utara.<br>Ada yang bisa saya bantu terkait progres pendataan sampel 10 RT per BS, performa PPL/PML, atau status verifikasi dokumen?',
+        greetingHtml: 'Halo! Saya <strong>Pananyo Taka</strong>, Asisten Pintar Pencacahan Sampel Sakernas (CAPI) Penajam Paser Utara.<br>Ada yang bisa saya bantu terkait progres pendataan sampel 10 RT per BS, performa PPL/PML, atau status verifikasi dokumen?',
         placeholder: 'Tanyakan sesuatu tentang Sakernas Pendataan (CAPI)...'
       };
     }
@@ -62,7 +62,7 @@
       name: 'Sensus Ekonomi 2026',
       shortName: 'SE2026 PPU',
       officerRole: 'PCL',
-      greetingHtml: 'Halo! 👋 Saya <strong>Pananyo Taka</strong>, Asisten Pintar Sensus Ekonomi 2026 Penajam Paser Utara.<br>Ada yang bisa saya bantu terkait progres pendataan, status milestone, evaluasi petugas, atau deteksi anomali data?',
+      greetingHtml: 'Halo! Saya <strong>Pananyo Taka</strong>, Asisten Pintar Sensus Ekonomi 2026 Penajam Paser Utara.<br>Ada yang bisa saya bantu terkait progres pendataan, status milestone, evaluasi petugas, atau deteksi anomali data?',
       placeholder: 'Tanyakan sesuatu tentang SE2026...'
     };
   }
@@ -663,7 +663,7 @@
       showError(errText) {
         if (cursorEl.parentElement) cursorEl.remove();
         if (thinkingPill.parentElement) thinkingPill.remove();
-        contentEl.innerHTML = `⚠️ ${escapeHtml(errText)}`;
+        contentEl.innerHTML = `<i class="bi bi-exclamation-triangle-fill text-warning"></i> ${escapeHtml(errText)}`;
         body.scrollTop = body.scrollHeight;
       },
       abortNotice() {

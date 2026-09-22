@@ -64,7 +64,7 @@ router.get('/', (req, res) => {
       diffTotal = summary ? ((summary.submitted_total || 0) + (summary.approved_total || 0) + (summary.rejected_total || 0)) : 0;
     }
 
-    // Hitung distribusi bucket distLast berdasarkan jenis kegiatan (survei sampel vs sensus)
+    // Hitung distribusi bucket distLast berdasarkan jenis kegiatan (survei vs sensus)
     const isSakernas = surveyId.startsWith('sakernas');
     let buckets;
     if (isSakernas) {

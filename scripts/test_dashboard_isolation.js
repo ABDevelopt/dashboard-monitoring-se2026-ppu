@@ -122,10 +122,10 @@ async function runAllTests() {
       return 'Ketiga link modul survei lengkap di portal';
     });
     runAssertion(suitePortal, 'Identifikasi Kategori Sensus vs Survei', () => {
-      if (!res.body.includes('Sensus Lengkap') || !res.body.includes('Survei Sampel')) {
-        throw new Error('Badge kategori Sensus Lengkap / Survei Sampel tidak lengkap');
+      if (!res.body.includes('Sensus') || !res.body.includes('Survei')) {
+        throw new Error('Badge kategori Sensus / Survei tidak lengkap');
       }
-      return 'Kategori Sensus Lengkap dan Survei Sampel teridentifikasi';
+      return 'Kategori Sensus dan Survei teridentifikasi';
     });
   } catch (e) {
     suitePortal.tests.push({ name: 'Portal Fetch Failure', status: 'FAILED', error: e.message });
@@ -155,7 +155,7 @@ async function runAllTests() {
     });
     runAssertion(suiteSe, 'Navigasi Korlap Tersedia pada SE2026', () => {
       if (!res.body.includes('href="/korlap"')) throw new Error('Link korlap tidak ditemukan pada SE2026');
-      return 'Menu Korlap tersedia sesuai spesifikasi sensus lengkap';
+      return 'Menu Korlap tersedia sesuai spesifikasi sensus';
     });
     runAssertion(suiteSe, 'Mobile Bottom Dock SE2026', () => {
       if (!res.body.includes('id="bottomNavHomeBtn"')) throw new Error('Bottom nav home button tidak ditemukan');
@@ -346,7 +346,7 @@ async function runAllTests() {
       return `Redirect berhasil ke: ${resAnomali.location}`;
     });
 
-    // Korlap pada Sakernas (Harus di-redirect karena survei sampel tidak memiliki struktur korlap)
+    // Korlap pada Sakernas (Harus di-redirect karena survei tidak memiliki struktur korlap)
     const resKorlap = await fetchUrl('/sakernas-pemutakhiran/korlap');
     runAssertion(suiteRestrictions, 'Korlap di-redirect saat diakses di Sakernas', () => {
       if (resKorlap.status !== 302 && resKorlap.status !== 301) {

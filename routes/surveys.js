@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getLatestUpload, getOverviewSummary, getSettings, getSurveyProgressSnapshotsMap, refreshSurveyProgressSnapshot } = require('../database');
 const { getSurveysConfig } = require('../services/surveyRegistry');
+const surveyScheduleService = require('../services/surveyScheduleService');
 
 const fasihSyncService = require('../services/fasihSyncService');
 
@@ -143,8 +144,8 @@ router.get('/', (req, res) => {
       persen,
       status: (persen >= 100) ? 'Selesai 100%' : (hasData ? 'Aktif Berjalan' : 'Siap Mulai'),
       category: cat,
-      categoryLabel: cfg.categoryLabel || (cat === 'sensus' ? 'Sensus Lengkap' : (cat === 'pelatihan' ? 'Pelatihan' : (cat === 'ujicoba' ? 'Ujicoba' : 'Survei Sampel'))),
-      categoryBadge: cfg.categoryBadge || (cat === 'sensus' ? 'Sensus Lengkap' : (cat === 'pelatihan' ? 'Pelatihan' : (cat === 'ujicoba' ? 'Ujicoba' : 'Survei Sampel'))),
+      categoryLabel: cfg.categoryLabel || (cat === 'sensus' ? 'Sensus' : (cat === 'pelatihan' ? 'Pelatihan' : (cat === 'ujicoba' ? 'Ujicoba' : 'Survei'))),
+      categoryBadge: cfg.categoryBadge || (cat === 'sensus' ? 'Sensus' : (cat === 'pelatihan' ? 'Pelatihan' : (cat === 'ujicoba' ? 'Ujicoba' : 'Survei'))),
       categoryIcon: cfg.categoryIcon || (cat === 'sensus' ? 'bi-globe2' : (cat === 'pelatihan' ? 'bi-mortarboard-fill' : (cat === 'ujicoba' ? 'bi-cpu-fill' : 'bi-pie-chart-fill'))),
       coverageDesc: cfg.coverageDesc || '',
       showUsahaColumns: cfg.showUsahaColumns,
@@ -153,12 +154,14 @@ router.get('/', (req, res) => {
   }
 
   const aggregatePct = totalTargetAll > 0 ? parseFloat(((totalRealisasiAll / totalTargetAll) * 100).toFixed(1)) : 0;
+  const timelineData = surveyScheduleService.getTimelineDataset(surveysList);
 
   res.render('surveys', {
     title: 'Portal Induk Sensus & Survei — Pananyo Taka BPS PPU',
     layout: 'layout-portal',
     activePage: 'surveys',
     surveysList,
+    timelineData,
     categoryCounts,
     statsAggregate: {
       totalModules: Object.keys(surveysConfig).length,

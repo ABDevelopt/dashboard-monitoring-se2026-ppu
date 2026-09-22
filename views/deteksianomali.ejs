@@ -146,8 +146,8 @@
           <label for="filterStatus" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text-secondary);">Status Tindak Lanjut</label>
           <select id="filterStatus" name="status" onchange="this.form.submit();" style="width:100%; padding: 8px 12px; font-size: 13px; border-radius: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary);">
             <option value="">-- Semua Status --</option>
-            <option value="belum" <%= filterStatus === 'belum' ? 'selected' : '' %>>❌ Belum Ditindaklanjuti</option>
-            <option value="sudah" <%= filterStatus === 'sudah' ? 'selected' : '' %>>✅ Sudah Ditindaklanjuti</option>
+            <option value="belum" <%= filterStatus === 'belum' ? 'selected' : '' %>>Belum Ditindaklanjuti</option>
+            <option value="sudah" <%= filterStatus === 'sudah' ? 'selected' : '' %>>Sudah Ditindaklanjuti</option>
           </select>
         </div>
 
@@ -234,7 +234,7 @@
                   <td class="td-primary">
                     <strong style="color: var(--text-primary); font-size: 13.5px;" class="item-name"><%= item.nama_usaha %></strong>
                     <div class="item-penjelasan" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                      <% if (item.penjelasan) { %>💬 <i><%= item.penjelasan %></i><% } %>
+                      <% if (item.penjelasan) { %><i class="bi bi-chat-text"></i> <i><%= item.penjelasan %></i><% } %>
                     </div>
                   </td>
                   <td>
@@ -346,7 +346,7 @@
                   <td class="td-primary">
                     <strong style="color: var(--text-primary); font-size: 13.5px;" class="item-name"><%= item.nama_kk %></strong>
                     <div class="item-penjelasan" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                      <% if (item.penjelasan) { %>💬 <i><%= item.penjelasan %></i><% } %>
+                      <% if (item.penjelasan) { %><i class="bi bi-chat-text"></i> <i><%= item.penjelasan %></i><% } %>
                     </div>
                   </td>
                   <td>

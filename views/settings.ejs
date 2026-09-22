@@ -284,6 +284,26 @@
             </label>
           </div>
 
+          <!-- Pop-up Peringatan Dini Petugas -->
+          <div class="switch-item">
+            <div class="switch-info">
+              <span class="switch-icon" style="color: var(--accent-red);"><i class="bi bi-window-stack"></i></span>
+              <div style="min-width: 0;">
+                <label for="show_early_warning_modal" class="switch-label-text">Pop-up Peringatan Dini Kinerja Petugas</label>
+                <div class="switch-desc">Tampilkan pop-up dialog ringkasan kinerja kritis otomatis saat pengguna pertama kali membuka dasbor</div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button type="button" class="btn btn-xs btn-secondary" onclick="resetBrowserEwPreference()" title="Reset preferensi pop-up browser jika sebelumnya memilih 'Jangan tampilkan lagi'" style="font-size: 11px; padding: 4px 8px; border-radius: 6px; white-space: nowrap;">
+                <i class="bi bi-arrow-counterclockwise"></i> Reset Browser
+              </button>
+              <label class="toggle-switch">
+                <input type="checkbox" id="show_early_warning_modal" name="show_early_warning_modal" value="1" <%= (typeof settings === 'undefined' || !settings || settings.show_early_warning_modal !== '0') ? 'checked' : '' %>>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
           <!-- Deteksi Anomali -->
           <div class="switch-item">
             <div class="switch-info">
@@ -1163,7 +1183,7 @@
           </div>
         </div>
         <form method="POST" action="<%= navPrefix %>/admin/settings/reset-sls-selesai"
-              onsubmit="return confirm('⚠️ Yakin ingin mereset semua data SLS Selesai?\n\nProses ini akan:\n1. Reset semua sls_selesai = 0\n2. Reimport dari file Excel Monitoring BPS terakhir\n\nPastikan Anda sudah mengupload file Monitoring SLS BPS terbaru.');"
+              onsubmit="return confirm('Yakin ingin mereset semua data SLS Selesai?\n\nProses ini akan:\n1. Reset semua sls_selesai = 0\n2. Reimport dari file Excel Monitoring BPS terakhir\n\nPastikan Anda sudah mengupload file Monitoring SLS BPS terbaru.');"
               style="flex-shrink: 0; align-self: center;">
           <button type="submit" class="btn" style="background: var(--accent-red, #e53e3e); color: #fff; font-weight: 700; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px;">
             <i class="bi bi-arrow-counterclockwise"></i> Reset & Reimport
@@ -1174,3 +1194,11 @@
   </div>
 
 </div>
+
+<script>
+  function resetBrowserEwPreference() {
+    localStorage.removeItem('disable_early_warning_modal');
+    localStorage.removeItem('last_seen_ew_summary_signature');
+    alert('Preferensi browser berhasil direset!\n\nPop-up Peringatan Dini Kinerja Petugas akan kembali ditampilkan pada browser ini saat pertama membuka dasbor.');
+  }
+</script>

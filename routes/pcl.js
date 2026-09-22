@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getPclStats, getDb, getSettings, attachProgressPercentages, compareFasihProgress, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, getSubslsStatusFormula } = require('../database');
+const { getPclStats, getDb, getSettings, attachProgressPercentages, compareFasihProgress, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, getSubslsStatusFormula, hasOfficerProgressTelemetry } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -141,57 +141,68 @@ router.get('/', (req, res) => {
     });
   }
 
+  const modeParam = (req.query.mode || 'auto').toLowerCase();
+  const hasTelemetry = hasOfficerProgressTelemetry(uploadId, surveyId, 'pcl');
+  const activeMode = (modeParam === 'smallcode' || (!hasTelemetry && modeParam !== 'api')) ? 'smallcode' : 'api';
+
   if (uploadId) {
-    // Build dynamic filter
-    let where = 'WHERE 1=1';
-    const params = [uploadId];
-    if (filterKec) { where += ' AND m.kecamatan = ?'; params.push(filterKec); }
-    if (filterKorlap) { where += ' AND m.korlap = ?'; params.push(filterKorlap); }
-    if (filterPml) { where += ' AND m.pml = ?'; params.push(filterPml); }
+    if (activeMode === 'api') {
+      pclStats = getPclStats(uploadId, res.locals.settings, surveyId, 'api');
+      if (filterKec) pclStats = pclStats.filter(p => (p.kecamatan || '').toUpperCase().trim() === filterKec.toUpperCase().trim());
+      if (filterKorlap) pclStats = pclStats.filter(p => (p.korlap || '').toUpperCase().trim() === filterKorlap.toUpperCase().trim());
+      if (filterPml) pclStats = pclStats.filter(p => (p.pml || '').toUpperCase().trim() === filterPml.toUpperCase().trim());
+    } else {
+      // Build dynamic filter for legacy smallcode aggregation
+      let where = 'WHERE 1=1';
+      const params = [uploadId];
+      if (filterKec) { where += ' AND m.kecamatan = ?'; params.push(filterKec); }
+      if (filterKorlap) { where += ' AND m.korlap = ?'; params.push(filterKorlap); }
+      if (filterPml) { where += ' AND m.pml = ?'; params.push(filterPml); }
 
-    const settings = res.locals.settings;
-    const targetFormula = getTargetFormula(settings.target_fasih_mode);
-    const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
-    const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
-    const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
-    const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
+      const settings = res.locals.settings;
+      const targetFormula = getTargetFormula(settings.target_fasih_mode);
+      const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
+      const targetMuatanFormula = getAdaptiveMuatanFormula(settings.target_muatan_mode, 'p', 'm');
+      const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
+      const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
-    pclStats = attachProgressPercentages(db.prepare(`
-      SELECT 
-        m.pcl, m.pml, m.korlap, m.kecamatan,
-        MAX(COALESCE(p.pcl_email, m.pcl_email)) AS email,
-        COUNT(m.kode) AS total_subsls,
-        SUM(${getSingleSelesaiFormula(targetFormula, 'p')}) AS selesai,
-        SUM(${targetMuatanFormula}) AS total_muatan,
-        SUM(${realFormula}) AS muatan_selesai,
-        SUM(${usahaTotalFormula}) AS usaha_total,
-        SUM(COALESCE(p.usaha_ditemukan, 0)) AS usaha_ditemukan_total,
-        SUM(COALESCE(p.usaha_baru, 0)) AS usaha_baru_total,
-        SUM(COALESCE(p.usaha_tidak_ditemukan, 0)) AS usaha_tidak_ditemukan_total,
-        SUM(COALESCE(p.usaha_tutup, 0)) AS usaha_tutup_total,
-        SUM(COALESCE(p.usaha_ganda, 0)) AS usaha_ganda_total,
-        SUM(COALESCE(p.ditemukan, 0)) AS keluarga_ditemukan_total,
-        SUM(COALESCE(p.keluarga_baru, 0)) AS keluarga_baru_total,
-        SUM(COALESCE(p.tidak_ditemukan, 0)) AS keluarga_tidak_ditemukan_total,
-        SUM(COALESCE(p.meninggal, 0)) AS keluarga_meninggal_total,
-        SUM(COALESCE(p.tidak_eligible, 0)) AS keluarga_tidak_eligible_total,
-        SUM(COALESCE(p.tidak_dapat_ditemui, 0)) AS keluarga_tidak_dapat_ditemui_total,
-        SUM(${keluargaTotalFormula}) AS keluarga_total,
-        SUM(COALESCE(p.draft, 0)) AS draft_total,
-        SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
-        SUM(COALESCE(p.approved, 0)) AS approved_total,
-        SUM(COALESCE(p.rejected, 0)) AS rejected_total,
-        SUM(${targetFormula}) AS target_fasih_total,
-        SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${targetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
-        SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
-        SUM(COALESCE(p.target_upload, 0)) AS target_upload_total,
-        CASE WHEN SUM(${targetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${targetFormula}), 2) ELSE 0.0 END AS pct
-      FROM subsls_master m
-      LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-      ${where}
-      GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
-      ORDER BY pct DESC, (SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) DESC, SUM(${targetFormula}) DESC, m.pcl ASC
-    `).all(...params), settings);
+      pclStats = attachProgressPercentages(db.prepare(`
+        SELECT 
+          m.pcl, m.pml, m.korlap, m.kecamatan,
+          MAX(COALESCE(p.pcl_email, m.pcl_email)) AS email,
+          COUNT(m.kode) AS total_subsls,
+          SUM(${getSingleSelesaiFormula(targetFormula, 'p')}) AS selesai,
+          SUM(${targetMuatanFormula}) AS total_muatan,
+          SUM(${realFormula}) AS muatan_selesai,
+          SUM(${usahaTotalFormula}) AS usaha_total,
+          SUM(COALESCE(p.usaha_ditemukan, 0)) AS usaha_ditemukan_total,
+          SUM(COALESCE(p.usaha_baru, 0)) AS usaha_baru_total,
+          SUM(COALESCE(p.usaha_tidak_ditemukan, 0)) AS usaha_tidak_ditemukan_total,
+          SUM(COALESCE(p.usaha_tutup, 0)) AS usaha_tutup_total,
+          SUM(COALESCE(p.usaha_ganda, 0)) AS usaha_ganda_total,
+          SUM(COALESCE(p.ditemukan, 0)) AS keluarga_ditemukan_total,
+          SUM(COALESCE(p.keluarga_baru, 0)) AS keluarga_baru_total,
+          SUM(COALESCE(p.tidak_ditemukan, 0)) AS keluarga_tidak_ditemukan_total,
+          SUM(COALESCE(p.meninggal, 0)) AS keluarga_meninggal_total,
+          SUM(COALESCE(p.tidak_eligible, 0)) AS keluarga_tidak_eligible_total,
+          SUM(COALESCE(p.tidak_dapat_ditemui, 0)) AS keluarga_tidak_dapat_ditemui_total,
+          SUM(${keluargaTotalFormula}) AS keluarga_total,
+          SUM(COALESCE(p.draft, 0)) AS draft_total,
+          SUM(COALESCE(p.submitted_by_pcl, 0)) AS submitted_total,
+          SUM(COALESCE(p.approved, 0)) AS approved_total,
+          SUM(COALESCE(p.rejected, 0)) AS rejected_total,
+          SUM(${targetFormula}) AS target_fasih_total,
+          SUM(CASE WHEN COALESCE(p.open, 0) > 0 THEN COALESCE(p.open, 0) ELSE MAX(0, (${targetFormula}) - (COALESCE(p.draft, 0) + COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) END) AS open_total,
+          SUM(COALESCE(m.target_fasih, 0)) AS target_static_total,
+          SUM(COALESCE(p.target_upload, 0)) AS target_upload_total,
+          CASE WHEN SUM(${targetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${targetFormula}), 2) ELSE 0.0 END AS pct
+        FROM subsls_master m
+        LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
+        ${where}
+        GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
+        ORDER BY pct DESC, (SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0))) DESC, SUM(${targetFormula}) DESC, m.pcl ASC
+      `).all(...params), settings);
+    }
 
     // Ranking pengurutan: FASIH % tertinggi di atas, tie-breaker: approved -> submitted -> rejected -> draft -> open -> nama
     pclStats.sort((a, b) => compareFasihProgress(a, b, 'pcl'));
@@ -290,6 +301,8 @@ router.get('/', (req, res) => {
     diffDays,
     daysRemaining,
     pclHistory,
+    activeMode,
+    hasTelemetry
   });
 });
 

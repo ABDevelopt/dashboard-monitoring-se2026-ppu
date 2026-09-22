@@ -113,11 +113,11 @@ function rowToConfig(row, jsonCfg) {
     name: row.name,
     shortName: row.short_name,
     tagline: row.tagline,
-    category: row.category,
-    categoryLabel: row.category_label,
-    categoryBadge: row.category_badge,
-    categoryIcon: row.category_icon,
-    coverageDesc: row.coverage_desc,
+    category: row.category || jsonCfg.category,
+    categoryLabel: row.category_label || jsonCfg.categoryLabel,
+    categoryBadge: row.category_badge || jsonCfg.categoryBadge,
+    categoryIcon: row.category_icon || jsonCfg.categoryIcon,
+    coverageDesc: row.coverage_desc || jsonCfg.coverageDesc,
     themePack: row.theme_name,
     theme: (function () {
       if (jsonCfg && jsonCfg.theme) return jsonCfg.theme;

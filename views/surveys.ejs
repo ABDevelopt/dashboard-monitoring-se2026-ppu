@@ -22,6 +22,21 @@
     --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     --card-icon-border: rgba(255, 255, 255, 0.12);
 
+    /* Timeline & Gantt Chart Tokens (Dark Mode) */
+    --bg-portal: #080c14;
+    --bg-portal-card: #0f172a;
+    --bg-portal-card-hover: #1e293b;
+    --bg-portal-glass: rgba(15, 23, 42, 0.95);
+    --border-portal: #334155;
+    --border-portal-hover: #475569;
+    --text-portal-1: #f8fafc;
+    --text-portal-2: #cbd5e1;
+    --text-portal-3: #94a3b8;
+    --accent-orange: #f97316;
+    --accent-cyan: #06b6d4;
+    --accent-purple: #8b5cf6;
+    --accent-green: #10b981;
+
     --hero-glow: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(249, 115, 22, 0.07), transparent 75%);
     
     /* High-Contrast PPU Illustration Tokens (Dark Mode) */
@@ -50,6 +65,21 @@
     --card-val: #0f172a;
     --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     --card-icon-border: rgba(0, 0, 0, 0.08);
+
+    /* Timeline & Gantt Chart Tokens (Light Mode) */
+    --bg-portal: #f8fafc;
+    --bg-portal-card: #ffffff;
+    --bg-portal-card-hover: #f1f5f9;
+    --bg-portal-glass: rgba(255, 255, 255, 0.96);
+    --border-portal: #e2e8f0;
+    --border-portal-hover: #cbd5e1;
+    --text-portal-1: #0f172a;
+    --text-portal-2: #334155;
+    --text-portal-3: #64748b;
+    --accent-orange: #ea580c;
+    --accent-cyan: #0284c7;
+    --accent-purple: #7c3aed;
+    --accent-green: #059669;
 
     --hero-glow: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(249, 115, 22, 0.05), transparent 75%);
     
@@ -564,20 +594,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     width: 100%;
-    padding: 13px 20px;
-    font-family: var(--font-display);
-    font-size: 14px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    padding: 11px 18px;
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     text-decoration: none;
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
     border: none;
     margin-top: 8px;
+    box-sizing: border-box;
+    white-space: nowrap;
   }
 
   .btn-open-dashboard:hover {
@@ -586,12 +616,12 @@
   }
 
   .btn-open-dashboard i {
-    font-size: 18px;
+    font-size: 16px;
     transition: transform 0.2s ease;
   }
 
   .btn-open-dashboard:hover i {
-    transform: translateX(4px);
+    transform: scale(1.15);
   }
 
   .btn-theme-orange {
@@ -680,23 +710,18 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 16px;
     flex-wrap: wrap;
     border-bottom: 1px solid var(--card-inner-border);
-    padding-bottom: 12px;
+    padding-bottom: 14px;
   }
 
-  .portal-sync-status-badge {
-    display: inline-flex;
+  .portal-toolbar-actions {
+    display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.28);
-    color: #10b981;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
   }
 
   .btn-sync-catalog {
@@ -780,33 +805,60 @@
     background: rgba(0, 0, 0, 0.25);
   }
 
+  .btn-sync-all-progress {
+    background: linear-gradient(135deg, #06b6d4, #0284c7);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(6, 182, 212, 0.25);
+  }
+
+  /* ── SMART SEARCH BAR (FOKUS UTAMA TOOLBAR) ── */
   .portal-search-wrap {
     position: relative;
-    min-width: 260px;
-    flex: 1;
-    max-width: 420px;
+    flex: 1 1 360px;
+    min-width: 240px;
+    display: flex;
+    align-items: center;
   }
 
   .portal-search-wrap input {
     width: 100%;
-    padding: 9px 14px 9px 36px;
+    padding: 10px 72px 10px 42px;
     border-radius: 999px;
-    font-size: 12.5px;
+    font-size: 14px;
+    line-height: 1.5;
+    height: 44px;
     background: var(--card-inner-bg);
-    border: 1px solid var(--card-inner-border);
+    border: 1.5px solid var(--card-inner-border);
     color: var(--card-val);
     outline: none;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+
+  .portal-search-wrap input::placeholder {
+    color: var(--card-tagline);
+    opacity: 0.85;
+  }
+
+  .portal-search-wrap input:hover {
+    border-color: rgba(56, 189, 248, 0.5);
   }
 
   .portal-search-wrap input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    border-color: #38bdf8;
+    background: var(--card-inner-bg);
+    box-shadow: 0 0 0 3.5px rgba(56, 189, 248, 0.25), 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+
+  html.light-mode .portal-search-wrap input:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3.5px rgba(2, 132, 199, 0.2), 0 2px 8px rgba(0, 0, 0, 0.06);
   }
 
   .portal-search-icon {
     position: absolute;
-    left: 12px;
+    left: 15px;
     top: 50%;
     transform: translateY(-50%);
     display: flex;
@@ -814,7 +866,78 @@
     gap: 4px;
     pointer-events: none;
     color: var(--card-tagline);
+    font-size: 15px;
+    transition: color 0.2s ease;
+  }
+
+  .portal-search-wrap:focus-within .portal-search-icon {
+    color: #38bdf8;
+  }
+
+  html.light-mode .portal-search-wrap:focus-within .portal-search-icon {
+    color: #0284c7;
+  }
+
+  .portal-search-actions {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .portal-search-clear-btn {
+    background: transparent;
+    border: none;
+    padding: 2px;
+    cursor: pointer;
+    color: var(--card-tagline);
+    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: color 0.15s ease, transform 0.15s ease;
+  }
+
+  .portal-search-clear-btn:hover {
+    color: #f87171;
+    transform: scale(1.1);
+  }
+
+  .portal-search-kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: inherit;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--card-inner-border);
+    color: var(--card-tagline);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    user-select: none;
+    pointer-events: none;
+  }
+
+  html.light-mode .portal-search-kbd {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #64748b;
+  }
+
+  .portal-result-count {
     font-size: 12px;
+    color: var(--card-tagline);
+    font-weight: 600;
+    white-space: nowrap;
+    padding: 0 4px;
   }
 
   .portal-empty-search {
@@ -834,6 +957,1012 @@
   @keyframes spin {
     100% { transform: rotate(360deg); }
   }
+
+  /* ── VIEW MODE TOGGLE BUTTONS ── */
+  .portal-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  /* ── SORT SELECT CONTROLS ── */
+  .portal-sort-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .portal-sort-icon {
+    position: absolute;
+    left: 10px;
+    font-size: 12px;
+    color: var(--card-tagline);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .portal-sort-select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 0 24px 0 28px;
+    height: 38px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 999px;
+    background: var(--card-inner-bg);
+    border: 1px solid var(--card-inner-border);
+    color: var(--card-title);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    box-sizing: border-box;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 9px center;
+  }
+
+  .portal-sort-select:hover,
+  .portal-sort-select:focus {
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+  }
+
+  .portal-sort-select option {
+    background: var(--card-bg);
+    color: var(--card-title);
+    padding: 6px;
+  }
+
+  .portal-view-toggle {
+    display: inline-flex;
+    align-items: center;
+    background: var(--card-inner-bg);
+    border: 1px solid var(--card-inner-border);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+
+  .btn-portal-view {
+    background: transparent;
+    border: none;
+    color: var(--card-label);
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s ease;
+  }
+
+  .btn-portal-view:hover {
+    color: var(--card-val);
+  }
+
+  .btn-portal-view.active {
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+  }
+
+  /* ── LIST VIEW MODE (PERFECTLY ALIGNED & HERO FOCAL PROGRESS BAR) ── */
+  .portal-cards-grid.is-list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .portal-cards-grid.is-list-view .survey-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 22px;
+    border-radius: 16px;
+    gap: 24px;
+    border-top: 1.5px solid var(--card-border) !important;
+    border-left: 5px solid var(--card-accent, #f97316) !important;
+    box-shadow: var(--card-shadow);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .portal-cards-grid.is-list-view .survey-card:hover {
+    transform: translateX(4px);
+    border-color: var(--card-accent, #f97316);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+  }
+
+  .portal-cards-grid.is-list-view .survey-card-body {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* 1. Category Badge Column (Uniform width for perfect alignment) */
+  .portal-cards-grid.is-list-view .card-corner-badge {
+    position: static;
+    border-radius: 8px;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid currentColor;
+    flex: 0 0 115px;
+    width: 115px;
+    text-align: center;
+    justify-content: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    line-height: 1.2;
+    white-space: nowrap;
+    box-sizing: border-box;
+  }
+
+  /* 2. Title & Tagline Column (Takes remaining flexible space) */
+  .portal-cards-grid.is-list-view .survey-title-group {
+    flex: 1 1 auto;
+    min-width: 180px;
+    overflow: hidden;
+  }
+
+  .portal-cards-grid.is-list-view .survey-card .survey-name {
+    font-size: 15.5px;
+    font-weight: 700;
+    margin: 0 0 3px 0 !important;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .portal-cards-grid.is-list-view .survey-card .survey-tagline {
+    font-size: 12px;
+    margin: 0 !important;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--card-tagline);
+  }
+
+  /* 3. Progress Bar Column (PERFECTLY ALIGNED & HERO FOCAL POINT) */
+  .portal-cards-grid.is-list-view .survey-progress-box {
+    margin: 0;
+    flex: 0 0 380px;
+    width: 380px;
+    min-width: 380px;
+    max-width: 380px;
+    padding: 11px 18px;
+    background: var(--card-inner-bg);
+    border: 1.5px solid var(--card-inner-border);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-sizing: border-box;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    position: relative;
+    transition: all 0.2s ease;
+  }
+
+  .portal-cards-grid.is-list-view .survey-card:hover .survey-progress-box {
+    border-color: var(--card-accent, #f97316);
+    background: var(--card-bg);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+  }
+
+  .portal-cards-grid.is-list-view .progress-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--card-tagline);
+  }
+
+  .portal-cards-grid.is-list-view .progress-head .persen-val {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .portal-cards-grid.is-list-view .progress-bar-track {
+    height: 10px;
+    background: var(--card-track-bg);
+    border: 1px solid var(--card-inner-border);
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 2px 0 0 0;
+    position: relative;
+    box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.15);
+  }
+
+  .portal-cards-grid.is-list-view .progress-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+  }
+
+  .portal-cards-grid.is-list-view .progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.25) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    border-radius: 999px;
+  }
+
+  .portal-cards-grid.is-list-view .progress-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11.5px;
+    color: var(--card-tagline);
+    margin-top: 1px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .portal-cards-grid.is-list-view .progress-foot strong {
+    color: var(--card-val);
+    font-weight: 700;
+  }
+
+  /* 4. Action Buttons Column (Fixed uniform width) */
+  .portal-cards-grid.is-list-view .survey-card-actions {
+    flex: 0 0 180px;
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .portal-cards-grid.is-list-view .btn-open-dashboard {
+    height: 42px;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 10px;
+    white-space: nowrap;
+    margin-top: 0 !important;
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .portal-cards-grid.is-list-view .btn-quick-sync {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 10px !important;
+    flex-shrink: 0;
+  }
+
+  /* Breakpoint: Medium Screens (Laptops, Tablets Horizontal) */
+  @media (max-width: 1280px) and (min-width: 992px) {
+    .portal-cards-grid.is-list-view .survey-progress-box {
+      flex: 0 0 310px;
+      width: 310px;
+      min-width: 310px;
+      max-width: 310px;
+      padding: 10px 14px;
+    }
+    .portal-cards-grid.is-list-view .survey-progress-box .progress-head .persen-val {
+      font-size: 18px;
+    }
+    .portal-cards-grid.is-list-view .survey-card-actions {
+      flex: 0 0 190px;
+      width: 190px;
+      min-width: 190px;
+    }
+  }
+
+  /* Breakpoint: Tablet & Mobile (< 992px) */
+  @media (max-width: 991px) {
+    .portal-cards-grid.is-list-view .survey-card {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 14px;
+      padding: 16px;
+    }
+    .portal-cards-grid.is-list-view .survey-card-body {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .portal-cards-grid.is-list-view .card-corner-badge {
+      width: auto;
+      flex: 0 0 auto;
+      align-self: flex-start;
+    }
+    .portal-cards-grid.is-list-view .survey-name {
+      white-space: normal;
+    }
+    .portal-cards-grid.is-list-view .survey-tagline {
+      white-space: normal;
+    }
+    .portal-cards-grid.is-list-view .survey-progress-box {
+      width: 100%;
+      min-width: 100%;
+      max-width: 100%;
+      flex: 1 1 auto;
+    }
+    .portal-cards-grid.is-list-view .survey-card-actions {
+      width: 100%;
+      min-width: 100%;
+      max-width: 100%;
+      flex: 1 1 auto;
+    }
+    .portal-cards-grid.is-list-view .survey-card:hover {
+      transform: translateY(-2px);
+    }
+  }
+
+  /* =========================================================================
+     TIMELINE & GANTT RANGE BAR VIEW DESIGN SYSTEM
+     ========================================================================= */
+    .portal-timeline-view {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      animation: portalFadeIn 0.3s ease-out;
+    }
+
+    /* Toolbar & Filter Bar */
+    .tl-toolbar-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--bg-portal-card);
+      border: 1px solid var(--border-portal);
+      border-radius: 16px;
+      padding: 14px 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+    .tl-controls-left {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+    .tl-btn-group {
+      display: inline-flex;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 3px;
+      border-radius: 10px;
+      border: 1px solid var(--border-portal);
+    }
+    .tl-btn-year {
+      background: transparent;
+      border: none;
+      color: var(--text-portal-2);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tl-btn-year:hover {
+      color: var(--text-portal-1);
+    }
+    .tl-btn-year.active {
+      background: var(--accent-orange);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(249, 115, 22, 0.35);
+    }
+    .tl-select {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-portal);
+      color: var(--text-portal-1);
+      border-radius: 10px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .tl-select:focus {
+      border-color: var(--accent-orange);
+    }
+    .tl-legend-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+      font-size: 12px;
+      color: var(--text-portal-2);
+    }
+    .tl-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tl-legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .tl-legend-dot.dot-sensus { background: #f97316; box-shadow: 0 0 8px rgba(249, 115, 22, 0.5); }
+    .tl-legend-dot.dot-survei { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); }
+    .tl-legend-dot.dot-pelatihan { background: #8b5cf6; box-shadow: 0 0 8px rgba(139, 92, 246, 0.5); }
+    .tl-legend-dot.dot-today { background: #ef4444; width: 14px; height: 3px; border-radius: 2px; }
+
+    /* Executive Macro KPIs Strip */
+    .tl-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .tl-kpi-card {
+      background: var(--bg-portal-card);
+      border: 1px solid var(--border-portal);
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+    .tl-kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--accent-border, rgba(255, 255, 255, 0.1));
+    }
+    .tl-kpi-val {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-portal-1);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tl-kpi-lbl {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-portal-3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Monthly Workload Density Chart */
+    .tl-density-card {
+      background: var(--bg-portal-card);
+      border: 1px solid var(--border-portal);
+      border-radius: 16px;
+      padding: 18px 22px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+    .tl-density-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-portal-1);
+    }
+    .tl-density-badge {
+      background: rgba(249, 115, 22, 0.15);
+      border: 1px solid rgba(249, 115, 22, 0.35);
+      color: #f97316;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    .tl-density-bars-wrap {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 10px;
+      height: 115px;
+      align-items: flex-end;
+      padding: 12px 4px 0;
+      border-bottom: 1px solid var(--border-portal);
+    }
+    .tl-density-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+      gap: 6px;
+      cursor: pointer;
+      position: relative;
+    }
+    .tl-density-count {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-portal-2);
+      font-variant-numeric: tabular-nums;
+      transition: all 0.2s;
+    }
+    .tl-density-bar-body {
+      width: 100%;
+      max-width: 38px;
+      min-height: 4px;
+      border-radius: 6px 6px 2px 2px;
+      background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+    .tl-density-col:hover .tl-density-bar-body {
+      transform: scaleY(1.05);
+      filter: brightness(1.2);
+    }
+    .tl-density-col:hover .tl-density-count {
+      color: #38bdf8;
+      transform: translateY(-2px);
+    }
+    .tl-density-col.is-peak .tl-density-bar-body {
+      background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
+      box-shadow: 0 0 12px rgba(249, 115, 22, 0.4);
+    }
+    .tl-density-col.is-peak .tl-density-count {
+      color: #f97316;
+      font-weight: 800;
+    }
+    .tl-density-col.is-active-filter .tl-density-bar-body {
+      outline: 2px solid #ffffff;
+      outline-offset: 2px;
+    }
+    .tl-density-months-row {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 10px;
+      padding: 8px 4px 0;
+      text-align: center;
+    }
+    .tl-density-month-lbl {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-portal-3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Gantt / Timeline Matrix Card */
+    .tl-matrix-card {
+      background: var(--bg-portal-card);
+      border: 1px solid var(--border-portal);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+    .tl-matrix-scroller {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      position: relative;
+    }
+    .tl-matrix-scroller::-webkit-scrollbar {
+      height: 8px;
+    }
+    .tl-matrix-scroller::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .tl-matrix-scroller::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+    .tl-matrix-scroller::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .tl-matrix-table {
+      min-width: 1160px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Timeline Matrix Headers */
+    .tl-header-row {
+      display: flex;
+      align-items: stretch;
+      background: var(--bg-portal-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-portal);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .tl-header-col-name {
+      flex: 0 0 340px;
+      width: 340px;
+      box-sizing: border-box;
+      padding: 12px 18px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-portal-1);
+      border-right: 1px solid var(--border-portal);
+      background: var(--bg-portal-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      left: 0;
+      z-index: 25;
+    }
+    .tl-header-scale {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .tl-header-quarters {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-bottom: 1px solid var(--border-portal);
+    }
+    .tl-header-quarter-cell {
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-portal-2);
+      text-align: center;
+      border-right: 1px solid var(--border-portal);
+      letter-spacing: 0.5px;
+    }
+    .tl-header-quarter-cell:last-child {
+      border-right: none;
+    }
+    .tl-header-months {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+    }
+    .tl-header-month-cell {
+      padding: 8px 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-portal-3);
+      text-align: center;
+      border-right: 1px dashed var(--border-portal);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .tl-header-month-cell:last-child {
+      border-right: none;
+    }
+
+    .tl-today-line-header {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #ef4444;
+      z-index: 25;
+      pointer-events: none;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+    }
+    .tl-today-line-header .tl-today-badge {
+      position: absolute;
+      top: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 999px;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+      z-index: 26;
+    }
+
+    /* Timeline Body & Rows */
+    .tl-body {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .tl-row {
+      display: flex;
+      align-items: stretch;
+      min-height: 58px;
+      border-bottom: 1px solid var(--border-portal);
+      transition: background 0.15s ease;
+      position: relative;
+    }
+    .tl-row:hover {
+      background: var(--bg-portal-card-hover);
+    }
+    .tl-cell-info {
+      flex: 0 0 340px;
+      width: 340px;
+      box-sizing: border-box;
+      padding: 10px 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      border-right: 1px solid var(--border-portal);
+      position: sticky;
+      left: 0;
+      z-index: 15;
+      background: var(--bg-portal-card);
+      transition: background 0.15s;
+    }
+    .tl-row:hover .tl-cell-info {
+      background: var(--bg-portal-card-hover);
+    }
+    .tl-info-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tl-badge-cat {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .tl-badge-cat.cat-sensus { background: rgba(249, 115, 22, 0.2); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.4); }
+    .tl-badge-cat.cat-survei { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .tl-badge-cat.cat-pelatihan { background: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.4); }
+    .tl-badge-cat.cat-ujicoba { background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); }
+    
+    .tl-item-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-portal-1);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .tl-item-title:hover {
+      color: var(--accent-orange);
+    }
+    .tl-info-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-portal-3);
+    }
+    .tl-duration-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: var(--text-portal-2);
+      font-weight: 600;
+    }
+    .tl-progress-tag {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Track Area & Range Bar */
+    .tl-cell-track {
+      flex: 1 1 auto;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .tl-grid-guides {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .tl-guide-col {
+      border-right: 1px dashed var(--border-portal);
+      height: 100%;
+      opacity: 0.6;
+    }
+    .tl-guide-col:nth-child(3n) {
+      border-right: 1px solid var(--border-portal);
+      opacity: 1;
+    }
+    .tl-guide-col:last-child {
+      border-right: none;
+    }
+
+    /* Today Marker Line (Global Vertical Line) */
+    .tl-today-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #ef4444;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* Floating Range Bar */
+    .tl-range-bar {
+      position: absolute;
+      height: 34px;
+      min-width: 32px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 5;
+      text-decoration: none;
+      overflow: visible;
+      white-space: nowrap;
+      transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.18s, filter 0.18s;
+      user-select: none;
+    }
+    .tl-range-bar:hover {
+      transform: translateY(-2px) scaleY(1.04);
+      filter: brightness(1.15);
+      z-index: 12;
+    }
+    .tl-bar-fill-progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 999px;
+      pointer-events: none;
+      transition: width 0.3s ease;
+    }
+    .tl-bar-inner-text {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Interactive Floating Tooltip on Hover */
+    .tl-range-bar .tl-tooltip-popover {
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid var(--border-portal-hover);
+      backdrop-filter: blur(12px);
+      padding: 12px 16px;
+      border-radius: 12px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+      width: 280px;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 30;
+      color: var(--text-portal-1);
+    }
+    .tl-range-bar:hover .tl-tooltip-popover {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
+    .tl-popover-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+    .tl-popover-dates {
+      font-size: 11px;
+      color: #38bdf8;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .tl-popover-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      font-size: 11px;
+      padding: 6px 0;
+      border-top: 1px solid var(--border-portal);
+      border-bottom: 1px solid var(--border-portal);
+      margin-bottom: 8px;
+    }
+    .tl-popover-meta span {
+      color: var(--text-portal-3);
+    }
+    .tl-popover-meta strong {
+      color: var(--text-portal-1);
+    }
+    .tl-popover-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-orange);
+    }
+
+    /* Light Mode Overrides for Timeline */
+    html.light-mode .tl-range-bar .tl-tooltip-popover {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+      color: #0f172a;
+    }
+    html.light-mode .tl-popover-title {
+      color: #0f172a;
+    }
+    html.light-mode .tl-popover-meta {
+      border-top-color: #e2e8f0;
+      border-bottom-color: #e2e8f0;
+    }
+    html.light-mode .tl-popover-meta strong {
+      color: #0f172a;
+    }
+    html.light-mode .tl-duration-pill {
+      background: #f1f5f9;
+      border-color: #e2e8f0;
+      color: #334155;
+    }
+    html.light-mode .tl-btn-group {
+      background: #f1f5f9;
+      border-color: #e2e8f0;
+    }
+    html.light-mode .tl-select {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
 </style>
 
 <!-- ══════════════════════════════════════════════════════
@@ -963,29 +2092,49 @@
        ══════════════════════════════════════════════════════ -->
   <section class="portal-toolbar-wrap" aria-label="Alat Navigasi & Filter Kegiatan">
     <div class="portal-toolbar-card">
-      <!-- Baris 1: Status Sinkronisasi Cloud API & Tombol Aksi -->
+      <!-- Baris 1: Search Bar Utama (Fokus Utama Toolbar) & Tombol Aksi Cloud -->
       <div class="portal-toolbar-row-top">
-        <div class="portal-sync-status-badge" id="cloudCatalogBadge">
-          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
-          <span id="cloudStatusText">FASIH-SM Cloud: <strong id="cloudTotalCount"><%= _list.length %></strong> Kegiatan Tersedia</span>
+        <div class="portal-search-wrap">
+          <div class="portal-search-icon">
+            <i class="bi bi-search"></i>
+          </div>
+          <input
+            type="text"
+            id="surveySearchInput"
+            placeholder="Cari kegiatan sensus atau survei BPS..."
+            oninput="handleSearch(this.value)"
+            autocomplete="off"
+            aria-label="Cari kegiatan sensus atau survei"
+          >
+          <div class="portal-search-actions">
+            <button
+              type="button"
+              id="surveySearchClear"
+              class="portal-search-clear-btn"
+              onclick="clearSurveySearch()"
+              title="Hapus kata kunci pencarian"
+              aria-label="Hapus kata kunci pencarian"
+              style="display: none;"
+            >
+              <i class="bi bi-x-circle-fill"></i>
+            </button>
+            <kbd class="portal-search-kbd" title="Tekan '/' untuk mencari">/</kbd>
+          </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <span id="searchResultCount" style="font-size: 12px; color: var(--card-tagline); font-weight: 500;">
-            Menampilkan <%= _list.length %> kegiatan
-          </span>
+        <div class="portal-toolbar-actions">
           <button type="button" id="btnSyncCatalog" onclick="triggerCatalogSync()" class="btn-sync-catalog" title="Tarik kegiatan baru dari FASIH-SM Cloud dan generate dasbor otomatis">
             <i class="bi bi-cloud-arrow-down-fill"></i>
-            <span id="lblSyncCatalog">⚡ Sinkron Katalog</span>
+            <span id="lblSyncCatalog">Sinkron Katalog</span>
           </button>
-          <button type="button" id="btnSyncAllProgress" onclick="triggerAllProgressSync()" class="btn-sync-catalog" style="background: linear-gradient(135deg, #06b6d4, #0284c7); color: #fff; box-shadow: 0 4px 14px rgba(6, 182, 212, 0.25);" title="Tarik pembaruan progres seluruh kegiatan dari FASIH-SM Cloud via API">
+          <button type="button" id="btnSyncAllProgress" onclick="triggerAllProgressSync()" class="btn-sync-catalog btn-sync-all-progress" title="Tarik pembaruan progres seluruh kegiatan dari FASIH-SM Cloud via API">
             <i class="bi bi-arrow-repeat"></i>
-            <span id="lblSyncAllProgress">⚡ Tarik Semua Progres</span>
+            <span id="lblSyncAllProgress">Tarik Semua Progres</span>
           </button>
         </div>
       </div>
 
-      <!-- Baris 2: Filter Kategori & Input Pencarian Pintar -->
+      <!-- Baris 2: Filter Kategori, Status Jumlah Hasil, Sort & Mode Tampilan -->
       <div class="portal-toolbar-row-bottom">
         <div class="portal-filter-tabs" role="tablist">
           <button type="button" class="portal-filter-tab active" data-filter="" onclick="filterCategory(this, '')">
@@ -1010,52 +2159,83 @@
           </button>
           <button type="button" class="portal-filter-tab" data-filter="sensus" onclick="filterCategory(this, 'sensus')">
             <i class="bi bi-globe2" style="color: #f97316;"></i>
-            <span>Sensus Lengkap</span>
+            <span>Sensus</span>
             <span class="tab-count" id="countSensus"><%= (typeof categoryCounts !== 'undefined' && categoryCounts.sensus) ? categoryCounts.sensus : 0 %></span>
           </button>
         </div>
 
-        <div class="portal-search-wrap">
-          <div class="portal-search-icon">
-            <i class="bi bi-search"></i>
-            <i class="bi bi-stars" style="color: #38bdf8; font-size: 10px;"></i>
+        <div class="portal-toolbar-right">
+          <span id="searchResultCount" class="portal-result-count">
+            Menampilkan <%= _list.length %> kegiatan
+          </span>
+
+          <!-- Kontrol Pengurutan / Sort -->
+          <div class="portal-sort-wrap" title="Urutkan daftar kegiatan">
+            <i class="bi bi-arrow-down-up portal-sort-icon"></i>
+            <select id="surveySortSelect" class="portal-sort-select" onchange="handleSortChange(this.value)" aria-label="Urutkan kegiatan">
+              <option value="default">Urutan Bawaan</option>
+              <option value="progress-desc">Progres Tertinggi</option>
+              <option value="progress-asc">Progres Terendah</option>
+              <option value="name-asc">Nama (A - Z)</option>
+              <option value="name-desc">Nama (Z - A)</option>
+              <option value="target-desc">Target Terbanyak</option>
+              <option value="realisasi-desc">Realisasi Terbanyak</option>
+            </select>
           </div>
-          <input type="text" id="surveySearchInput" placeholder="Cari nama kegiatan sensus/survei BPS..." oninput="handleSearch(this.value)" autocomplete="off">
+
+          <!-- Pilihan Tampilan Grid / List / Timeline -->
+          <div class="portal-view-toggle" role="group" aria-label="Mode Tampilan">
+            <button type="button" class="btn-portal-view active" id="btnViewGrid" onclick="setPortalViewMode('grid')" title="Tampilan Kartu / Grid">
+              <i class="bi bi-grid-fill"></i>
+            </button>
+            <button type="button" class="btn-portal-view" id="btnViewList" onclick="setPortalViewMode('list')" title="Tampilan Daftar / List">
+              <i class="bi bi-view-list"></i>
+            </button>
+            <button type="button" class="btn-portal-view" id="btnViewTimeline" onclick="setPortalViewMode('timeline')" title="Tampilan Kalender & Timeline Rentang Waktu">
+              <i class="bi bi-calendar-range-fill"></i>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+      </div>
+    </section>
 
   <!-- ══════════════════════════════════════════════════════
        SURVEY CARDS GRID: PEMBEDAAN SENSUS VS SURVEI
        ══════════════════════════════════════════════════════ -->
   <main class="portal-cards-grid" id="portalCardsGrid">
-    <% _list.forEach(s => { %>
+    <% _list.forEach((s, index) => { %>
       <article
         class="survey-card theme-<%= s.theme %> card-category-<%= s.category || 'survei' %>"
         data-category="<%= s.category || 'survei' %>"
         data-name="<%= (s.name || '').toLowerCase() %>"
         data-shortname="<%= (s.shortName || '').toLowerCase() %>"
         data-tagline="<%= (s.tagline || '').toLowerCase() %>"
-        style="border-top-color: <%= s.themeColor %>;"
+        data-persen="<%= s.persen || 0 %>"
+        data-realisasi="<%= s.realisasi || 0 %>"
+        data-target="<%= s.target || 0 %>"
+        data-default-index="<%= index %>"
+        style="border-top-color: <%= s.themeColor %>; --card-accent: <%= s.themeColor %>;"
       >
-        <div>
+        <div class="survey-card-body">
           <!-- Corner Badge Pojok Kanan Mentok (Category Type) -->
           <span class="card-corner-badge badge-<%= s.category || 'survei' %>">
             <i class="bi <%= s.categoryIcon || (s.category === 'sensus' ? 'bi-globe2' : 'bi-pie-chart-fill') %>"></i>
-            <%= s.categoryBadge || (s.category === 'sensus' ? 'Sensus Lengkap' : 'Survei Sampel') %>
+            <%= s.categoryBadge || (s.category === 'sensus' ? 'Sensus' : 'Survei') %>
           </span>
 
-          <!-- Nama Survei / Sensus (Fokus Utama) -->
-          <h2 class="survey-name"><%= s.name %></h2>
-          <div class="survey-tagline">
-            <%= s.tagline || (s.id === 'se2026' ? 'Cakupan 54 Desa/Kelurahan se-PPU &amp; IKN Nusantara' : (s.id === 'sakernas-pemutakhiran' ? 'Tahap 1: Pemutakhiran Muatan Blok Sensus' : 'Tahap 2: Pencacahan Sampel Rumahtangga (CAPI)')) %>
+          <div class="survey-title-group">
+            <!-- Nama Survei / Sensus (Fokus Utama) -->
+            <h2 class="survey-name"><%= s.name %></h2>
+            <div class="survey-tagline">
+              <%= s.tagline || (s.id === 'se2026' ? 'Cakupan 54 Desa/Kelurahan se-PPU &amp; IKN Nusantara' : (s.id === 'sakernas-pemutakhiran' ? 'Tahap 1: Pemutakhiran Muatan Blok Sensus' : 'Tahap 2: Pencacahan Sampel Rumahtangga (CAPI)')) %>
+            </div>
           </div>
 
           <!-- Progress Ringkas -->
           <div class="survey-progress-box">
             <div class="progress-head">
-              <span>Progres Lapangan</span>
+              <span class="progress-label"><i class="bi bi-activity"></i> Progres Lapangan</span>
               <span class="persen-val" style="color: <%= s.themeColor %>;"><%= s.persen %>%</span>
             </div>
             <div class="progress-bar-track">
@@ -1069,14 +2249,15 @@
         </div>
 
         <!-- Tombol Aksi Dasbor & Sinkron Cepat -->
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <div class="survey-card-actions" style="display: flex; gap: 8px; align-items: center;">
           <a
             href="<%= s.route %>"
             class="btn-open-dashboard btn-theme-<%= s.theme %>"
-            style="flex: 1; <%= s.themeGradient ? 'background: ' + s.themeGradient + ';' : '' %>"
+            style="flex: 1; min-width: 0; <%= s.themeGradient ? 'background: ' + s.themeGradient + ';' : '' %>"
+            title="Buka Dasbor Monitoring <%= s.shortName %>"
           >
-            <span>Buka Dasbor <%= s.shortName %></span>
-            <i class="bi bi-arrow-right"></i>
+            <i class="bi bi-speedometer2"></i>
+            <span>Buka Dasbor</span>
           </a>
           <button
             type="button"
@@ -1084,6 +2265,7 @@
             id="syncBtn_<%= s.id %>"
             onclick="triggerCardProgressSync(event, '<%= s.id %>', '<%= (s.shortName || s.name || s.id).replace(/'/g, '') %>')"
             title="Tarik data progres mutakhir untuk <%= s.shortName %> dari Cloud API"
+            aria-label="Tarik data progres <%= s.shortName %>"
             style="width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: var(--card-inner-bg); border: 1px solid var(--card-inner-border); color: <%= s.themeColor %>; cursor: pointer; transition: all 0.2s ease; flex-shrink: 0;"
           >
             <i class="bi bi-cloud-arrow-down-fill" style="font-size: 16px;"></i>
@@ -1098,6 +2280,301 @@
       <div style="font-size: 13px; margin-top: 4px; color: var(--card-tagline);">Coba gunakan kata kunci lain atau pilih tab kategori berbeda.</div>
     </div>
   </main>
+
+  <!-- ══════════════════════════════════════════════════════
+       PORTAL TIMELINE VIEW: GANTT RANGE BAR CHART SEBARAN WAKTU BPS
+       ══════════════════════════════════════════════════════ -->
+  <section class="portal-timeline-view" id="portalTimelineView" style="display: none;" aria-label="Kalender & Timeline Rentang Waktu Sensus Survei BPS">
+    <% if (typeof timelineData !== 'undefined' && timelineData && timelineData.items) { %>
+      
+      <!-- 1. Timeline Top Toolbar Strip -->
+      <div class="tl-toolbar-strip">
+        <div class="tl-controls-left">
+          <!-- Filter Tahun -->
+          <div class="tl-btn-group" role="group" aria-label="Pilih Tahun Jadwal">
+            <button type="button" class="tl-btn-year active" id="tlYear2026" onclick="setTimelineYear(2026)">
+              Tahun 2026 (<%= timelineData.summary.count2026 %>)
+            </button>
+            <button type="button" class="tl-btn-year" id="tlYear2025" onclick="setTimelineYear(2025)">
+              Tahun 2025 (<%= timelineData.summary.count2025 %>)
+            </button>
+            <button type="button" class="tl-btn-year" id="tlYearAll" onclick="setTimelineYear('all')">
+              Semua Tahun (<%= timelineData.summary.totalCount %>)
+            </button>
+          </div>
+
+          <!-- Filter Status -->
+          <select id="tlStatusFilter" class="tl-select" onchange="handleTimelineStatusFilter(this.value)" aria-label="Saring Status Pelaksanaan">
+            <option value="all">Semua Status Pelaksanaan</option>
+            <option value="aktif">Sedang Berjalan (Aktif)</option>
+            <option value="selesai">Selesai / Terlaksana</option>
+            <option value="akan_datang">Akan Datang</option>
+          </select>
+        </div>
+
+        <!-- Legenda Kategori -->
+        <div class="tl-legend-wrap">
+          <span class="tl-legend-item"><span class="tl-legend-dot dot-sensus"></span> Sensus</span>
+          <span class="tl-legend-item"><span class="tl-legend-dot dot-survei"></span> Survei</span>
+          <span class="tl-legend-item"><span class="tl-legend-dot dot-pelatihan"></span> Pelatihan</span>
+          <span class="tl-legend-item"><span class="tl-legend-dot dot-today"></span> Penunjuk Hari Ini</span>
+        </div>
+      </div>
+
+      <!-- 2. Executive Macro KPIs Strip -->
+      <div class="tl-kpi-grid">
+        <div class="tl-kpi-card" style="--accent-border: #06b6d4;">
+          <div class="tl-kpi-val" style="color: #38bdf8;">
+            <i class="bi bi-calendar-check-fill" style="font-size: 18px;"></i>
+            <span id="tlKpiTotal"><%= timelineData.summary.count2026 %></span> Kegiatan
+          </div>
+          <div class="tl-kpi-lbl">
+            <i class="bi bi-card-checklist"></i> Terdaftar di Kalender BPS
+          </div>
+        </div>
+
+        <div class="tl-kpi-card" style="--accent-border: #10b981;">
+          <div class="tl-kpi-val" style="color: #10b981;">
+            <i class="bi bi-activity" style="font-size: 18px;"></i>
+            <span id="tlKpiActive"><%= timelineData.summary.countActive %></span> Kegiatan
+          </div>
+          <div class="tl-kpi-lbl">
+            <i class="bi bi-broadcast"></i> Sedang Berjalan Lapangan Hari Ini
+          </div>
+        </div>
+
+        <div class="tl-kpi-card" style="--accent-border: #f97316;">
+          <div class="tl-kpi-val" style="color: #f97316; font-size: 16px;">
+            <i class="bi bi-graph-up-arrow" style="font-size: 18px;"></i>
+            <span><%= timelineData.summary.peakSeason %></span>
+          </div>
+          <div class="tl-kpi-lbl">
+            <i class="bi bi-fire"></i> Puncak Beban Lapangan (Peak Season)
+          </div>
+        </div>
+
+        <div class="tl-kpi-card" style="--accent-border: #8b5cf6;">
+          <div class="tl-kpi-val" style="color: #a78bfa;">
+            <i class="bi bi-stopwatch-fill" style="font-size: 18px;"></i>
+            <span><%= timelineData.summary.avgDuration %> Hari</span>
+          </div>
+          <div class="tl-kpi-lbl">
+            <i class="bi bi-hourglass-split"></i> Rata-rata Durasi Pelaksanaan
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Monthly Workload Density Chart -->
+      <div class="tl-density-card">
+        <div class="tl-density-head">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="bi bi-bar-chart-fill" style="color: #38bdf8;"></i>
+            <span>Sebaran Kepadatan Beban Kerja Bulanan (Monthly Workload Density 2026)</span>
+            <span id="tlActiveMonthBadge" style="display: none; font-size: 11px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; padding: 2px 8px; border-radius: 999px; margin-left: 6px;"></span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" id="btnResetMonthFilter" onclick="resetTimelineMonthFilter()" style="display: none; background: transparent; border: 1px solid var(--border-portal); color: var(--text-portal-2); font-size: 11px; padding: 3px 10px; border-radius: 6px; cursor: pointer;">
+              <i class="bi bi-x-circle"></i> Reset Filter Bulan
+            </button>
+            <span class="tl-density-badge">
+              <i class="bi bi-arrow-up-right"></i> Puncak: <%= timelineData.summary.peakSeason %>
+            </span>
+          </div>
+        </div>
+
+        <div class="tl-density-bars-wrap">
+          <% (timelineData.density2026 || []).forEach((m) => { 
+             const heightPct = Math.max(8, Math.round((m.count / (timelineData.maxDensity || 1)) * 100));
+             const isPeak = (m.count === timelineData.maxDensity);
+          %>
+            <div
+              class="tl-density-col <%= isPeak ? 'is-peak' : '' %>"
+              id="densityCol_<%= m.monthNum %>"
+              onclick="filterTimelineByMonth('<%= m.monthNum %>', '<%= m.monthName %>')"
+              title="<%= m.monthName %> 2026: <%= m.count %> kegiatan aktif. Klik untuk menyaring jadwal."
+            >
+              <span class="tl-density-count"><%= m.count %></span>
+              <div class="tl-density-bar-body" style="height: <%= heightPct %>%;"></div>
+            </div>
+          <% }) %>
+        </div>
+
+        <div class="tl-density-months-row">
+          <% (timelineData.density2026 || []).forEach((m) => { %>
+            <div class="tl-density-month-lbl"><%= m.monthCode %></div>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- 4. The Master Gantt / Timeline Range Bar Matrix -->
+      <div class="tl-matrix-card">
+        <div class="tl-matrix-scroller">
+          <div class="tl-matrix-table">
+            
+            <!-- Table Header Scale -->
+            <div class="tl-header-row">
+              <div class="tl-header-col-name">
+                <span><i class="bi bi-list-task"></i> Kegiatan Sensus & Survei</span>
+                <span style="font-size: 11px; color: var(--text-portal-3); font-weight: normal;" id="tlVisibleCount">
+                  Menampilkan <%= timelineData.items.length %> baris
+                </span>
+              </div>
+              <div class="tl-header-scale">
+                <!-- Today Marker on Header -->
+                <div class="tl-today-line-header" id="tlTodayHeader" style="left: <%= timelineData.summary.todayPercent2026 %>%;">
+                  <div class="tl-today-badge">HARI INI (<%= timelineData.summary.todayFormatted || 'Hari Ini' %>)</div>
+                </div>
+
+                <!-- Row 1: Quarters -->
+                <div class="tl-header-quarters">
+                  <div class="tl-header-quarter-cell">Triwulan I (Q1: Jan — Mar)</div>
+                  <div class="tl-header-quarter-cell">Triwulan II (Q2: Apr — Jun)</div>
+                  <div class="tl-header-quarter-cell">Triwulan III (Q3: Jul — Sep)</div>
+                  <div class="tl-header-quarter-cell">Triwulan IV (Q4: Okt — Des)</div>
+                </div>
+                <!-- Row 2: 12 Months -->
+                <div class="tl-header-months">
+                  <div class="tl-header-month-cell">Jan</div>
+                  <div class="tl-header-month-cell">Feb</div>
+                  <div class="tl-header-month-cell">Mar</div>
+                  <div class="tl-header-month-cell">Apr</div>
+                  <div class="tl-header-month-cell">Mei</div>
+                  <div class="tl-header-month-cell">Jun</div>
+                  <div class="tl-header-month-cell">Jul</div>
+                  <div class="tl-header-month-cell">Ags</div>
+                  <div class="tl-header-month-cell">Sep</div>
+                  <div class="tl-header-month-cell">Okt</div>
+                  <div class="tl-header-month-cell">Nov</div>
+                  <div class="tl-header-month-cell">Des</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Table Body Rows -->
+            <div class="tl-body" id="tlBodyContainer">
+              <% timelineData.items.forEach((item, rIdx) => { %>
+                <div
+                  class="tl-row"
+                  id="tlRow_<%= item.id %>"
+                  data-id="<%= item.id %>"
+                  data-name="<%= item.name.toLowerCase() %>"
+                  data-shortname="<%= (item.shortName || '').toLowerCase() %>"
+                  data-category="<%= item.category %>"
+                  data-year="<%= item.year %>"
+                  data-status="<%= item.status %>"
+                  data-months="<%= (item.activeMonths || []).map(m => m.split('-')[1]).join(',') %>"
+                >
+                  <!-- Sticky Left Info Column -->
+                  <div class="tl-cell-info">
+                    <div class="tl-info-top">
+                      <span class="tl-badge-cat cat-<%= item.category %>">
+                        <%= item.categoryBadge || (item.category === 'sensus' ? 'Sensus' : 'Survei') %>
+                      </span>
+                      <span class="tl-duration-pill">
+                        <i class="bi bi-clock"></i> <%= item.durationDays %> hari
+                      </span>
+                      <span class="tl-progress-tag" style="color: <%= item.themeColor %>; margin-left: auto;">
+                        <%= item.persen %>%
+                      </span>
+                    </div>
+                    <a href="<%= item.route %>" class="tl-item-title" title="<%= item.name %>">
+                      <%= item.shortName || item.name %>
+                    </a>
+                    <div class="tl-info-meta">
+                      <span><%= item.stage || item.tagline %></span>
+                    </div>
+                  </div>
+
+                  <!-- Right Track & Range Bar Area -->
+                  <div class="tl-cell-track">
+                    <!-- Column Guides (12 Months) -->
+                    <div class="tl-grid-guides">
+                      <div class="tl-guide-col"></div>
+                      <div class="tl-guide-col"></div>
+                      <div class="tl-guide-col"></div>
+                      <div class="tl-guide-col"></div>
+                      <div class="tl-guide-col"></div>
+                      <div class="tl-guide-col"></div>
+                      <div class="tl-guide-col"></div>
+                      <div class="tl-guide-col"></div>
+                      <div class="tl-guide-col"></div>
+                      <div class="tl-guide-col"></div>
+                      <div class="tl-guide-col"></div>
+                      <div class="tl-guide-col"></div>
+                    </div>
+
+                    <!-- Today Marker Line -->
+                    <div class="tl-today-line" style="left: <%= timelineData.summary.todayPercent2026 %>%;"></div>
+
+                    <!-- Floating Range Bar -->
+                    <a
+                      href="<%= item.route %>"
+                      class="tl-range-bar"
+                      style="left: <%= item.leftPercent %>%; width: <%= item.widthPercent %>%; background: <%= item.themeGradient %>; box-shadow: <%= item.themeGlow %>;"
+                    >
+                      <!-- Progress Fill Bar -->
+                      <div class="tl-bar-fill-progress" style="width: <%= Math.min(100, item.persen) %>%;"></div>
+
+                      <!-- Inner Label -->
+                      <span class="tl-bar-inner-text">
+                        <i class="bi <%= item.themeIcon %>"></i>
+                        <span><%= item.shortName || item.name %></span>
+                        <span style="opacity: 0.85; font-size: 10px; margin-left: 2px;">(<%= item.durationDays %>h)</span>
+                      </span>
+
+                      <!-- Rich Hover Tooltip Popover -->
+                      <div class="tl-tooltip-popover">
+                        <div class="tl-popover-title"><%= item.name %></div>
+                        <div class="tl-popover-dates">
+                          <i class="bi bi-calendar3"></i> <%= item.startDateFormatted %> &rarr; <%= item.endDateFormatted %>
+                        </div>
+                        <div class="tl-popover-meta">
+                          <div>
+                            <span>Durasi:</span><br>
+                            <strong><%= item.durationDays %> Hari</strong>
+                          </div>
+                          <div>
+                            <span>Status:</span><br>
+                            <strong style="color: <%= item.status === 'aktif' ? '#10b981' : (item.persen >= 100 ? '#38bdf8' : '#cbd5e1') %>;">
+                              <%= item.statusLabel %>
+                            </strong>
+                          </div>
+                          <div>
+                            <span>Realisasi:</span><br>
+                            <strong><%= (item.realisasi || 0).toLocaleString('id-ID') %> <%= item.unitName %></strong>
+                          </div>
+                          <div>
+                            <span>Capaian:</span><br>
+                            <strong style="color: <%= item.themeColor %>;"><%= item.persen %>%</strong>
+                          </div>
+                        </div>
+                        <div class="tl-popover-link">
+                          Buka Dasbor Monitoring <i class="bi bi-arrow-right"></i>
+                        </div>
+                      </div>
+                    </a>
+                  </div>
+                </div>
+              <% }) %>
+
+              <!-- Empty State Timeline -->
+              <div id="tlEmptySearch" class="portal-empty-search" style="display: none; padding: 40px 20px; text-align: center;">
+                <i class="bi bi-calendar-x" style="font-size: 36px; opacity: 0.5;"></i>
+                <div style="font-weight: 700; font-size: 16px; margin-top: 10px; color: var(--text-portal-1);">Tidak Ada Jadwal Kegiatan Sesuai Filter</div>
+                <div style="font-size: 13px; margin-top: 4px; color: var(--text-portal-3);">Silakan sesuaikan pilihan tahun, kategori, atau kata kunci pencarian.</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    <% } else { %>
+      <div style="padding: 40px; text-align: center; color: var(--text-portal-3);">
+        Data jadwal belum tersedia.
+      </div>
+    <% } %>
+  </section>
 
 </div>
 
@@ -1117,25 +2594,119 @@
   // State
   let currentCategoryFilter = '';
   let currentSearchQuery = '';
+  let currentSortOption = 'default';
 
   function filterCategory(btn, cat) {
     currentCategoryFilter = (cat || '').toLowerCase().trim();
     document.querySelectorAll('.portal-filter-tab').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
-    applyFilters();
+    applySortingAndFilters();
   }
 
   function handleSearch(query) {
     currentSearchQuery = (query || '').toLowerCase().trim();
-    applyFilters();
+    const clearBtn = document.getElementById('surveySearchClear');
+    if (clearBtn) {
+      clearBtn.style.display = currentSearchQuery ? 'inline-flex' : 'none';
+    }
+    applySortingAndFilters();
   }
 
-  function applyFilters() {
-    const cards = document.querySelectorAll('#portalCardsGrid article.survey-card');
+  function clearSurveySearch() {
+    const input = document.getElementById('surveySearchInput');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+    handleSearch('');
+  }
+
+  function handleSortChange(sortVal) {
+    currentSortOption = sortVal || 'default';
+    try {
+      localStorage.setItem('portal_surveys_sort_mode', currentSortOption);
+    } catch (_) {}
+    applySortingAndFilters();
+  }
+
+  function applySortingAndFilters() {
+    const gridEl = document.getElementById('portalCardsGrid');
+    if (!gridEl) return;
+
+    const cards = Array.from(gridEl.querySelectorAll('article.survey-card'));
     const emptyEl = document.getElementById('emptySearchState');
     const countEl = document.getElementById('searchResultCount');
-    let visibleCount = 0;
 
+    // 1. Sort cards
+    cards.sort((a, b) => {
+      const idxA = parseInt(a.getAttribute('data-default-index'), 10) || 0;
+      const idxB = parseInt(b.getAttribute('data-default-index'), 10) || 0;
+
+      if (currentSortOption === 'progress-desc') {
+        const pA = parseFloat(a.getAttribute('data-persen')) || 0;
+        const pB = parseFloat(b.getAttribute('data-persen')) || 0;
+        if (pB !== pA) return pB - pA;
+        const rA = parseInt(a.getAttribute('data-realisasi'), 10) || 0;
+        const rB = parseInt(b.getAttribute('data-realisasi'), 10) || 0;
+        if (rB !== rA) return rB - rA;
+        return idxA - idxB;
+      }
+
+      if (currentSortOption === 'progress-asc') {
+        const pA = parseFloat(a.getAttribute('data-persen')) || 0;
+        const pB = parseFloat(b.getAttribute('data-persen')) || 0;
+        if (pA !== pB) return pA - pB;
+        const rA = parseInt(a.getAttribute('data-realisasi'), 10) || 0;
+        const rB = parseInt(b.getAttribute('data-realisasi'), 10) || 0;
+        if (rA !== rB) return rA - rB;
+        return idxA - idxB;
+      }
+
+      if (currentSortOption === 'name-asc') {
+        const nA = (a.getAttribute('data-name') || '').trim();
+        const nB = (b.getAttribute('data-name') || '').trim();
+        const cmp = nA.localeCompare(nB, 'id-ID');
+        if (cmp !== 0) return cmp;
+        return idxA - idxB;
+      }
+
+      if (currentSortOption === 'name-desc') {
+        const nA = (a.getAttribute('data-name') || '').trim();
+        const nB = (b.getAttribute('data-name') || '').trim();
+        const cmp = nB.localeCompare(nA, 'id-ID');
+        if (cmp !== 0) return cmp;
+        return idxA - idxB;
+      }
+
+      if (currentSortOption === 'target-desc') {
+        const tA = parseInt(a.getAttribute('data-target'), 10) || 0;
+        const tB = parseInt(b.getAttribute('data-target'), 10) || 0;
+        if (tB !== tA) return tB - tA;
+        return idxA - idxB;
+      }
+
+      if (currentSortOption === 'realisasi-desc') {
+        const rA = parseInt(a.getAttribute('data-realisasi'), 10) || 0;
+        const rB = parseInt(b.getAttribute('data-realisasi'), 10) || 0;
+        if (rB !== rA) return rB - rA;
+        return idxA - idxB;
+      }
+
+      // Default: Initial natural order
+      return idxA - idxB;
+    });
+
+    // 2. Re-insert sorted cards in DOM order before the empty state message
+    cards.forEach(card => {
+      if (emptyEl) {
+        gridEl.insertBefore(card, emptyEl);
+      } else {
+        gridEl.appendChild(card);
+      }
+    });
+
+    // 3. Filter by category tab and search query
+    let visibleCount = 0;
     cards.forEach(card => {
       const cat = card.getAttribute('data-category') || '';
       const name = card.getAttribute('data-name') || '';
@@ -1145,8 +2716,8 @@
       // Category match
       let matchCat = true;
       if (currentCategoryFilter) {
-        if (currentCategoryFilter === 'sensus') {
-          matchCat = (cat === 'sensus') || name.includes('sensus') || name.includes('se2026');
+        if (currentCategoryFilter === 'pencacahan') {
+          matchCat = (cat !== 'pelatihan' && cat !== 'ujicoba');
         } else {
           matchCat = (cat === currentCategoryFilter);
         }
@@ -1174,7 +2745,216 @@
     if (countEl) {
       countEl.innerText = `Menampilkan ${visibleCount} kegiatan`;
     }
+    applyTimelineFilters();
   }
+
+  function applyFilters() {
+    applySortingAndFilters();
+  }
+
+  // Portal View Mode (Grid vs List vs Timeline)
+  let currentTimelineYear = 2026;
+  let currentTimelineStatus = 'all';
+  let currentTimelineMonth = null;
+
+  function setPortalViewMode(mode) {
+    const gridEl = document.getElementById('portalCardsGrid');
+    const timelineEl = document.getElementById('portalTimelineView');
+    const btnGrid = document.getElementById('btnViewGrid');
+    const btnList = document.getElementById('btnViewList');
+    const btnTimeline = document.getElementById('btnViewTimeline');
+    if (!gridEl) return;
+
+    if (mode === 'timeline') {
+      gridEl.style.display = 'none';
+      if (timelineEl) timelineEl.style.display = 'flex';
+      if (btnGrid) btnGrid.classList.remove('active');
+      if (btnList) btnList.classList.remove('active');
+      if (btnTimeline) btnTimeline.classList.add('active');
+      try {
+        localStorage.setItem('portal_surveys_view_mode', 'timeline');
+      } catch (_) {}
+      applyTimelineFilters();
+    } else if (mode === 'list') {
+      if (timelineEl) timelineEl.style.display = 'none';
+      gridEl.style.display = '';
+      gridEl.classList.add('is-list-view');
+      if (btnGrid) btnGrid.classList.remove('active');
+      if (btnList) btnList.classList.add('active');
+      if (btnTimeline) btnTimeline.classList.remove('active');
+      try {
+        localStorage.setItem('portal_surveys_view_mode', 'list');
+      } catch (_) {}
+    } else {
+      if (timelineEl) timelineEl.style.display = 'none';
+      gridEl.style.display = '';
+      gridEl.classList.remove('is-list-view');
+      if (btnGrid) btnGrid.classList.add('active');
+      if (btnList) btnList.classList.remove('active');
+      if (btnTimeline) btnTimeline.classList.remove('active');
+      try {
+        localStorage.setItem('portal_surveys_view_mode', 'grid');
+      } catch (_) {}
+    }
+  }
+
+  function setTimelineYear(year) {
+    currentTimelineYear = year;
+    const btn2026 = document.getElementById('tlYear2026');
+    const btn2025 = document.getElementById('tlYear2025');
+    const btnAll = document.getElementById('tlYearAll');
+
+    if (btn2026) btn2026.classList.toggle('active', year === 2026);
+    if (btn2025) btn2025.classList.toggle('active', year === 2025);
+    if (btnAll) btnAll.classList.toggle('active', year === 'all');
+
+    // Toggle today marker
+    const todayHdr = document.getElementById('tlTodayHeader');
+    if (todayHdr) todayHdr.style.display = (year === 2025) ? 'none' : '';
+    document.querySelectorAll('.tl-today-line').forEach(el => {
+      el.style.display = (year === 2025) ? 'none' : '';
+    });
+
+    applyTimelineFilters();
+  }
+
+  function handleTimelineStatusFilter(statusVal) {
+    currentTimelineStatus = statusVal || 'all';
+    applyTimelineFilters();
+  }
+
+  function filterTimelineByMonth(monthNum, monthName) {
+    if (currentTimelineMonth === monthNum) {
+      resetTimelineMonthFilter();
+      return;
+    }
+    currentTimelineMonth = monthNum;
+    
+    document.querySelectorAll('.tl-density-col').forEach(c => c.classList.remove('is-active-filter'));
+    const activeCol = document.getElementById('densityCol_' + monthNum);
+    if (activeCol) activeCol.classList.add('is-active-filter');
+
+    const badge = document.getElementById('tlActiveMonthBadge');
+    if (badge) {
+      badge.innerText = `Bulan: ${monthName}`;
+      badge.style.display = 'inline-block';
+    }
+    const resetBtn = document.getElementById('btnResetMonthFilter');
+    if (resetBtn) resetBtn.style.display = 'inline-block';
+
+    applyTimelineFilters();
+  }
+
+  function resetTimelineMonthFilter() {
+    currentTimelineMonth = null;
+    document.querySelectorAll('.tl-density-col').forEach(c => c.classList.remove('is-active-filter'));
+    const badge = document.getElementById('tlActiveMonthBadge');
+    if (badge) badge.style.display = 'none';
+    const resetBtn = document.getElementById('btnResetMonthFilter');
+    if (resetBtn) resetBtn.style.display = 'none';
+    applyTimelineFilters();
+  }
+
+  function applyTimelineFilters() {
+    const rows = Array.from(document.querySelectorAll('.tl-row'));
+    if (!rows.length) return;
+
+    let visibleCount = 0;
+    let activeCount = 0;
+    let completedCount = 0;
+
+    rows.forEach(r => {
+      const year = r.getAttribute('data-year');
+      const cat = (r.getAttribute('data-category') || '').toLowerCase();
+      const status = r.getAttribute('data-status');
+      const months = (r.getAttribute('data-months') || '').split(',');
+      const name = r.getAttribute('data-name') || '';
+      const shortName = r.getAttribute('data-shortname') || '';
+
+      // 1. Year Match
+      let matchYear = true;
+      if (currentTimelineYear !== 'all') {
+        matchYear = (String(year) === String(currentTimelineYear));
+      }
+
+      // 2. Category Match (Sync dengan filter tabs utama)
+      let matchCat = true;
+      if (currentCategoryFilter) {
+        if (currentCategoryFilter === 'pencacahan') {
+          matchCat = (cat !== 'pelatihan' && cat !== 'ujicoba');
+        } else {
+          matchCat = (cat === currentCategoryFilter);
+        }
+      }
+
+      // 3. Status Match
+      let matchStatus = true;
+      if (currentTimelineStatus !== 'all') {
+        matchStatus = (status === currentTimelineStatus);
+      }
+
+      // 4. Month Match
+      let matchMonth = true;
+      if (currentTimelineMonth) {
+        matchMonth = months.includes(currentTimelineMonth);
+      }
+
+      // 5. Search Query Match
+      let matchSearch = true;
+      if (currentSearchQuery) {
+        matchSearch = name.includes(currentSearchQuery) || shortName.includes(currentSearchQuery);
+      }
+
+      const isMatch = matchYear && matchCat && matchStatus && matchMonth && matchSearch;
+      r.style.display = isMatch ? 'flex' : 'none';
+
+      if (isMatch) {
+        visibleCount++;
+        if (status === 'aktif') activeCount++;
+        if (status === 'selesai') completedCount++;
+      }
+    });
+
+    const visCountEl = document.getElementById('tlVisibleCount');
+    if (visCountEl) {
+      visCountEl.innerText = `Menampilkan ${visibleCount} baris`;
+    }
+
+    const emptyEl = document.getElementById('tlEmptySearch');
+    if (emptyEl) {
+      emptyEl.style.display = (visibleCount === 0) ? 'block' : 'none';
+    }
+
+    const kpiTotal = document.getElementById('tlKpiTotal');
+    if (kpiTotal) {
+      kpiTotal.innerText = visibleCount;
+    }
+
+    const kpiActive = document.getElementById('tlKpiActive');
+    if (kpiActive && (currentTimelineYear === 2026 || currentTimelineYear === 'all')) {
+      kpiActive.innerText = activeCount;
+    }
+  }
+
+  // Restore saved view mode & sort mode immediately
+  (function initPortalPreferences() {
+    try {
+      const savedMode = localStorage.getItem('portal_surveys_view_mode');
+      if (savedMode === 'timeline') {
+        setPortalViewMode('timeline');
+      } else if (savedMode === 'list') {
+        setPortalViewMode('list');
+      }
+      const savedSort = localStorage.getItem('portal_surveys_sort_mode');
+      if (savedSort) {
+        currentSortOption = savedSort;
+        const sortSel = document.getElementById('surveySortSelect');
+        if (sortSel) sortSel.value = savedSort;
+      }
+      applySortingAndFilters();
+      applyTimelineFilters();
+    } catch (_) {}
+  })();
 
   async function triggerCatalogSync() {
     const btn = document.getElementById('btnSyncCatalog');
@@ -1202,13 +2982,13 @@
         throw new Error(data.error || 'Gagal menyinkronkan katalog kegiatan');
       }
 
-      alert(`✅ Sinkronisasi Berhasil!\n${data.message || 'Katalog kegiatan berhasil diperbarui.'}\nMemuat ulang portal...`);
+      alert(`Sinkronisasi Berhasil!\n${data.message || 'Katalog kegiatan berhasil diperbarui.'}\nMemuat ulang portal...`);
       window.location.reload();
     } catch (err) {
-      alert(`❌ Gagal Sinkronisasi Katalog: ${err.message}`);
+      alert(`Gagal Sinkronisasi Katalog: ${err.message}`);
     } finally {
       if (btn) btn.disabled = false;
-      if (lbl) lbl.innerHTML = '⚡ Sinkron Katalog';
+      if (lbl) lbl.innerHTML = 'Sinkron Katalog';
     }
   }
 
@@ -1246,7 +3026,7 @@
         window.location.reload();
       }, 1000);
     } catch (err) {
-      alert(`❌ Gagal Sinkronisasi Progres [${name}]: ${err.message}`);
+      alert(`Gagal Sinkronisasi Progres [${name}]: ${err.message}`);
       btn.disabled = false;
       btn.innerHTML = origHtml;
     }
@@ -1279,13 +3059,13 @@
         throw new Error(data.error || 'Gagal menyinkronkan seluruh data progres');
       }
 
-      alert(`✅ Sinkronisasi Massal Selesai!\n- Berhasil: ${data.synced} kegiatan\n- Tidak Berubah: ${data.skipped} kegiatan\n- Gagal: ${data.failed} kegiatan\n\nMemuat ulang portal...`);
+      alert(`Sinkronisasi Massal Selesai!\n- Berhasil: ${data.synced} kegiatan\n- Tidak Berubah: ${data.skipped} kegiatan\n- Gagal: ${data.failed} kegiatan\n\nMemuat ulang portal...`);
       window.location.reload();
     } catch (err) {
-      alert(`❌ Gagal Sinkronisasi Massal: ${err.message}`);
+      alert(`Gagal Sinkronisasi Massal: ${err.message}`);
     } finally {
       if (btn) btn.disabled = false;
-      if (lbl) lbl.innerHTML = '⚡ Tarik Semua Progres';
+      if (lbl) lbl.innerHTML = 'Tarik Semua Progres';
     }
   }
 
@@ -1296,15 +3076,32 @@
       if (!res.ok) return;
       const data = await res.json();
       if (data.ok && data.status === 'online') {
-        const cloudTotalEl = document.getElementById('cloudTotalCount');
-        const badgeEl = document.getElementById('cloudCatalogBadge');
-        if (cloudTotalEl && data.totalSurveys) {
-          cloudTotalEl.innerText = data.totalSurveys;
-        }
-        if (badgeEl && data.latencyMs) {
-          badgeEl.title = `Latency Cloud: ${data.latencyMs}ms | Terdaftar lokal: ${data.totalRegistered || '--'} dasbor`;
+        const btnSync = document.getElementById('btnSyncCatalog');
+        if (btnSync && data.latencyMs) {
+          btnSync.title = `Latency Cloud: ${data.latencyMs}ms | Terdaftar: ${data.totalRegistered || '--'} dasbor kegiatan`;
         }
       }
     } catch (_) {}
+  });
+
+  // Global keyboard shortcut: Press '/' or 'Ctrl+K' to focus the primary search bar
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable);
+      if (!isInput) {
+        e.preventDefault();
+        const searchInput = document.getElementById('surveySearchInput');
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
+      }
+    } else if (e.key === 'Escape') {
+      const searchInput = document.getElementById('surveySearchInput');
+      if (document.activeElement === searchInput && searchInput.value) {
+        clearSurveySearch();
+      }
+    }
   });
 </script>

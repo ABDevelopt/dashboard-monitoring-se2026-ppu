@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const { getDb, getSharedDb, getSettings, rebuildSummaryCache, rebuildAllSummaryCaches, importTitikUjiPetik, reloadDbConnection, getSurveyProgressSnapshotsMap, upsertSurveyProgressSnapshot, refreshSurveyProgressSnapshot } = require('../database');
+const { getDb, getSharedDb, getSettings, rebuildSummaryCache, rebuildAllSummaryCaches, importTitikUjiPetik, reloadDbConnection, getSurveyProgressSnapshotsMap, upsertSurveyProgressSnapshot, refreshSurveyProgressSnapshot, saveOfficerProgressTelemetry, getLatestUpload } = require('../database');
 const logger = require('./logger');
 
 const DEFAULT_API_URL = process.env.FASIH_API_BASE_URL || 'http://43.163.98.53/api/sync/monitoring-data';
@@ -497,8 +497,8 @@ class FasihSyncService {
       const typeLower = (s.surveyType || '').toLowerCase();
 
       let category = 'survei';
-      let categoryLabel = 'Survei Sampel';
-      let categoryBadge = 'Survei Sampel';
+      let categoryLabel = 'Survei';
+      let categoryBadge = 'Survei';
       let categoryIcon = 'bi-pie-chart-fill';
       let unitName = 'dokumen';
       let showUsahaColumns = false;
@@ -522,8 +522,8 @@ class FasihSyncService {
         unitName = 'Sampel';
       } else if (nameLower.includes('sensus') || nameLower.includes('se2026')) {
         category = 'sensus';
-        categoryLabel = 'Sensus Lengkap (100%)';
-        categoryBadge = 'Sensus Lengkap';
+        categoryLabel = 'Sensus (100%)';
+        categoryBadge = 'Sensus';
         categoryIcon = 'bi-globe2';
         unitName = 'Unit Usaha';
         showUsahaColumns = true;
@@ -936,6 +936,16 @@ class FasihSyncService {
       db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(insertedCount, uploadId);
     })();
 
+    // 2b. Ingesti telemetri progres riil petugas langsung dari API (jika ada dalam payload)
+    if (Array.isArray(payload.officers_progress) && payload.officers_progress.length > 0) {
+      try {
+        const savedTel = saveOfficerProgressTelemetry(surveyId, uploadId, payload.officers_progress);
+        logger.info(`[FASIH-SYNC] 🎯 Berhasil menyimpan ${savedTel} telemetri progres riil petugas untuk [${surveyId}] (Upload #${uploadId})`);
+      } catch (telErr) {
+        logger.warn(`[FASIH-SYNC] Gagal menyimpan telemetri petugas: ${telErr.message}`);
+      }
+    }
+
     // 3. Rebuild summary_cache & reload connection
     try {
       rebuildSummaryCache(uploadId, surveyId);
@@ -1007,6 +1017,67 @@ class FasihSyncService {
    */
   async syncSurveyProgress(surveyId, options = {}) {
     return this.syncFromFasih({ ...options, surveyId });
+  }
+
+  /**
+   * Directly fetch and synchronize live officer progress telemetry from Cloud API
+   */
+  async syncOfficersProgressDirect(surveyId = 'se2026', options = {}) {
+    const { role = null, forceRefresh = false, customUrl = null, customKey = null } = options;
+    const config = this.getConfig();
+    let baseUrl = (customUrl || config.apiUrl).replace(/\/+$/, '');
+    if (baseUrl.includes('/api/sync/monitoring-data')) {
+      baseUrl = baseUrl.replace('/api/sync/monitoring-data', '/api/sync/officers-progress');
+    } else if (!baseUrl.includes('/api/sync/officers-progress')) {
+      baseUrl = baseUrl + '/api/sync/officers-progress';
+    }
+    const apiKey = customKey || config.apiKey;
+
+    const urlObj = new URL(baseUrl);
+    urlObj.searchParams.set('survey', surveyId);
+    if (role) urlObj.searchParams.set('role', role);
+    if (forceRefresh) urlObj.searchParams.set('refresh', 'true');
+
+    logger.info(`[FASIH-SYNC-OFFICERS] Mengambil telemetri langsung petugas dari: ${urlObj.toString()}...`);
+    const start = Date.now();
+
+    const response = await fetch(urlObj.toString(), {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'X-FASIH-API-KEY': apiKey
+      },
+      signal: AbortSignal.timeout(30000)
+    });
+
+    if (!response.ok) {
+      let msg = `HTTP Error ${response.status}: ${response.statusText}`;
+      try {
+        const errJson = await response.json();
+        if (errJson.error) msg = errJson.error;
+      } catch (_) {}
+      throw new Error(msg);
+    }
+
+    const payload = await response.json();
+    if (!payload.success || !Array.isArray(payload.officers)) {
+      throw new Error(payload.error || 'Data telemetri petugas kosong atau tidak valid.');
+    }
+
+    const latestUpload = getLatestUpload(surveyId);
+    const uploadId = latestUpload ? latestUpload.id : null;
+
+    const savedCount = saveOfficerProgressTelemetry(surveyId, uploadId, payload.officers);
+    logger.info(`[FASIH-SYNC-OFFICERS] Berhasil menyimpan ${savedCount} telemetri petugas untuk [${surveyId}] (${Date.now() - start}ms)`);
+
+    return {
+      success: true,
+      surveyId,
+      uploadId,
+      totalOfficers: payload.total_officers || payload.officers.length,
+      savedCount,
+      source: payload.source || 'bps_fasih_responsibility_api'
+    };
   }
 
   /**

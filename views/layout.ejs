@@ -987,6 +987,16 @@
     }
 
     function checkEarlyWarningSummary() {
+      // 1. Check server-side setting: if show_early_warning_modal is explicitly set to '0'
+      if (typeof globalSettings !== 'undefined' && globalSettings && globalSettings.show_early_warning_modal === '0') {
+        return;
+      }
+
+      // 2. Check client-side setting (user preference in browser)
+      if (localStorage.getItem('disable_early_warning_modal') === '1') {
+        return;
+      }
+
       fetch('<%= navPrefix %>/api/early-warning-summary')
         .then(res => res.json())
         .then(data => {
@@ -1016,14 +1026,19 @@
           <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 440px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 24px; position: relative; animation: slideInEwModal 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);">
             
             <!-- Header -->
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
-              <div class="pulse-icon-red">
-                <i class="bi bi-exclamation-triangle-fill"></i>
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 18px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="pulse-icon-red">
+                  <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <div style="text-align: left;">
+                  <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary);">Peringatan Dini Kinerja Petugas</h3>
+                  <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Ringkasan performa kritis per ${formatWitaString(data.latest_upload_date)}</p>
+                </div>
               </div>
-              <div style="text-align: left;">
-                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--text-primary);">Peringatan Dini Kinerja Petugas</h3>
-                <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted);">Ringkasan performa kritis per ${formatWitaString(data.latest_upload_date)}</p>
-              </div>
+              <button id="closeEwModalTopBtn" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 4px; line-height: 1; border-radius: 4px;" title="Tutup">
+                <i class="bi bi-x-lg"></i>
+              </button>
             </div>
 
             <!-- Grid of metrics -->
@@ -1059,12 +1074,20 @@
             </div>
 
             <!-- Warning Info Text -->
-            <p style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 24px; text-align: left;">
+            <p style="font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 18px; text-align: left;">
               Terdapat beberapa petugas lapangan dan pengawas yang memerlukan bimbingan khusus karena tidak menunjukkan aktivitas pengisian atau berisiko tinggi gagal menyelesaikan target sebelum tenggat waktu.
             </p>
 
+            <!-- Option to not show again -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-top: 10px; border-top: 1px solid var(--border);">
+              <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                <input type="checkbox" id="dontShowEwAgain" style="accent-color: var(--accent-red); width: 15px; height: 15px; cursor: pointer;">
+                <span>Jangan tampilkan pop-up peringatan dini ini lagi saat membuka dasbor</span>
+              </label>
+            </div>
+
             <!-- Action Buttons -->
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
               <button id="dismissEwModal" class="btn btn-secondary" style="font-size: 12px; padding: 8px 16px;">Abaikan</button>
               <a href="<%= navPrefix %>/early-warning" id="viewEwModal" class="btn btn-primary" style="font-size: 12px; padding: 8px 16px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                 <i class="bi bi-arrow-right-circle"></i> Lihat Rincian
@@ -1124,17 +1147,25 @@
       const modalElement = div.firstElementChild;
       document.body.appendChild(modalElement);
 
+      const topCloseBtn = modalElement.querySelector('#closeEwModalTopBtn');
       const dismissBtn = modalElement.querySelector('#dismissEwModal');
       const viewBtn = modalElement.querySelector('#viewEwModal');
 
-      const closeModal = () => {
-        localStorage.setItem('last_seen_ew_summary_signature', sig);
+      const closeModal = (shouldRememberChoice = true) => {
+        const dontShowCheckbox = modalElement.querySelector('#dontShowEwAgain');
+        if (dontShowCheckbox && dontShowCheckbox.checked) {
+          localStorage.setItem('disable_early_warning_modal', '1');
+        }
+        if (shouldRememberChoice) {
+          localStorage.setItem('last_seen_ew_summary_signature', sig);
+        }
         modalElement.style.animation = 'fadeInEwModal 0.2s ease reverse';
         setTimeout(() => modalElement.remove(), 180);
       };
 
-      dismissBtn.addEventListener('click', closeModal);
-      viewBtn.addEventListener('click', closeModal);
+      if (topCloseBtn) topCloseBtn.addEventListener('click', () => closeModal(true));
+      dismissBtn.addEventListener('click', () => closeModal(true));
+      viewBtn.addEventListener('click', () => closeModal(true));
     }
 
     // ====== IN-APP NOTIFICATION BELL & READ STATE HELPERS ======

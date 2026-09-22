@@ -83,15 +83,15 @@ function getFastPathResponse(userMessage, surveyId = 'se2026') {
   const officerTeam = hasKorlap ? `${officerRole}/PML/Korlap` : `${officerRole}/PML`;
 
   if (isGreeting) {
-    return `Halo! 👋 Saya **Pananyo Taka AI**, asisten cerdas pemantauan **${surveyName}** BPS Kabupaten Penajam Paser Utara.
+    return `Halo! Saya **Pananyo Taka AI**, asisten cerdas pemantauan **${surveyName}** BPS Kabupaten Penajam Paser Utara.
 
 Ada yang bisa saya bantu terkait progres data ${unitName}, evaluasi petugas (${officerTeam}), atau analisis wilayah?
 
-💡 **Contoh pertanyaan yang bisa Anda ajukan:**
-* 📊 *"Bagaimana ringkasan progres ${isCensus ? 'sensus' : 'survei ' + shortName} di Kabupaten PPU saat ini?"*
-* 👥 *"Siapa petugas (${officerRole}) dengan realisasi ${unitName} terbanyak?"*
-* 🏆 *"Kecamatan mana yang memiliki persentase capaian tertinggi?"*
-* ⚠️ *"Apakah ada petugas yang stagnan pada upload data terbaru?"*`;
+**Contoh pertanyaan yang bisa Anda ajukan:**
+* *"Bagaimana ringkasan progres ${isCensus ? 'sensus' : 'survei ' + shortName} di Kabupaten PPU saat ini?"*
+* *"Siapa petugas (${officerRole}) dengan realisasi ${unitName} terbanyak?"*
+* *"Kecamatan mana yang memiliki persentase capaian tertinggi?"*
+* *"Apakah ada petugas yang stagnan pada upload data terbaru?"*`;
   }
 
   // 2. Health-Check / Test / Ping
@@ -99,7 +99,7 @@ Ada yang bisa saya bantu terkait progres data ${unitName}, evaluasi petugas (${o
     /^(tes|test|testing|cek|ping|123)\b/.test(clean) && clean.split(' ').length <= 4;
 
   if (isTest) {
-    return `✅ **Sistem Aktif & Terhubung!**
+    return `**Sistem Aktif & Terhubung!**
 
 Layanan **Pananyo Taka AI** dan basis data pemantauan **${surveyName}** Kabupaten Penajam Paser Utara berjalan dengan normal dan siap melayani Anda.
 
@@ -111,7 +111,7 @@ Silakan ketik pertanyaan Anda seputar progres lapangan, kinerja petugas (${offic
     /^(terima\s*kasih|makasih|makasi|thanks|thank\s*you|mantap|siip|sip|oke|ok)\b/.test(clean) && clean.split(' ').length <= 4;
 
   if (isThanks) {
-    return `Sama-sama! Senang bisa membantu Anda. 🙏
+    return `Sama-sama! Senang bisa membantu Anda.
 
 Jika masih ada data, peringkat petugas, atau analisis wilayah lain yang ingin diperiksa, silakan tanyakan kapan saja!`;
   }
@@ -124,12 +124,12 @@ Jika masih ada data, peringkat petugas, atau analisis wilayah lain yang ingin di
   if (isHelp) {
     return `Saya adalah **Pananyo Taka AI**, asisten pemantauan data resmi BPS Kabupaten Penajam Paser Utara untuk **${surveyName}**.
 
-### 🚀 Kemampuan Utama Saya:
-1. 📊 **Ringkasan Agregat Wilayah**: Menampilkan capaian ${unitName} se-Kabupaten, per Kecamatan, per Desa, hingga detail ${isCensus ? 'SLS/SubSLS' : 'Blok Sensus / SLS Sampel'}.
-2. 👥 **Kinerja Petugas (${officerTeam})**: Peringkat capaian, analisis laju penambahan harian, beban kerja, dan estimasi waktu penyelesaian.
-3. ⚠️ **Deteksi Anomali & Early Warning**: Mendeteksi potensi kesalahan entri, keterlambatan progres, serta petugas stagnan.
-4. 🌦️ **Tren Waktu & Arsip Harian**: Menganalisis pergerakan status data harian dan sebaran distribusi penambahan.
-5. 🔎 **Pencarian Spesifik**: Pencarian instan data berdasarkan kode wilayah atau nama petugas.
+### Kemampuan Utama Saya:
+1. **Ringkasan Agregat Wilayah**: Menampilkan capaian ${unitName} se-Kabupaten, per Kecamatan, per Desa, hingga detail ${isCensus ? 'SLS/SubSLS' : 'Blok Sensus / SLS Sampel'}.
+2. **Kinerja Petugas (${officerTeam})**: Peringkat capaian, analisis laju penambahan harian, beban kerja, dan estimasi waktu penyelesaian.
+3. **Deteksi Anomali & Early Warning**: Mendeteksi potensi kesalahan entri, keterlambatan progres, serta petugas stagnan.
+4. **Tren Waktu & Arsip Harian**: Menganalisis pergerakan status data harian dan sebaran distribusi penambahan.
+5. **Pencarian Spesifik**: Pencarian instan data berdasarkan kode wilayah atau nama petugas.
 
 Ketik pertanyaan Anda secara bebas, dan saya akan langsung menganalisis datanya untuk Anda!`;
   }

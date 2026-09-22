@@ -668,7 +668,7 @@ function generateSimulatedInsights(payload) {
   const kecSection = lowKecText ? `. ${lowKecText}.` : '.';
 
   return `<div class="ai-insight-paragraph" style="font-size: 13.5px; line-height: 1.6; color: var(--text-primary); padding: 14px 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light); border-radius: 12px;">
-    💡 **Analisis Taktis (Offline Fallback):** Berdasarkan data pengawasan aktif, ${mainStatsText}${ewSection}${kecSection}
+    **Analisis Taktis (Offline Fallback):** Berdasarkan data pengawasan aktif, ${mainStatsText}${ewSection}${kecSection}
   </div>`;
 }
 
@@ -819,7 +819,7 @@ ATURAN STRICT & FORMAT JAWABAN (WAJIB DIIKUTI TANPA PENGECUALIAN):
 3. Tulis kalimat yang mengalir secara natural, profesional, mendalam, tajam, dan langsung menyoroti isu kritis berdasarkan data aktif yang tersedia.
 4. Bungkus paragraf analisis Anda menggunakan struktur HTML berikut agar menyatu dengan UI dasbor:
    <div class="ai-insight-paragraph" style="font-size: 13.5px; line-height: 1.6; color: var(--text-primary); padding: 14px 16px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-light); border-radius: 12px;">
-     💡 **Analisis Lapangan Terpadu:** [Tulis paragraf analisis strategis Anda di sini secara menyatu. Gunakan format markdown **bold** untuk menebalkan angka statistik, nama kecamatan terendah, atau kata kunci penting]
+     **Analisis Lapangan Terpadu:** [Tulis paragraf analisis strategis Anda di sini secara menyatu. Gunakan format markdown **bold** untuk menebalkan angka statistik, nama kecamatan terendah, atau kata kunci penting]
    </div>
 5. PENTING: Gunakan markdown sederhana seperti **bold** untuk penekanan teks penting. Jangan gunakan tag <ul>, <li>, <ol>, atau format markdown list/kolom apa pun.
 `;
@@ -841,7 +841,7 @@ ATURAN STRICT & FORMAT JAWABAN (WAJIB DIIKUTI TANPA PENGECUALIAN):
     // Simpan ke cache jika sukses
     if (content) {
       if (isFallback) {
-        content = content.replace('</div>', '<br><small style="opacity:0.75; font-size:10px;">💡 <i>Statistik teranalisis otomatis oleh sistem internal (Offline Fallback).</i></small></div>');
+        content = content.replace('</div>', '<br><small style="opacity:0.75; font-size:10px;"><i>Statistik teranalisis otomatis oleh sistem internal (Offline Fallback).</i></small></div>');
       }
       aiInsightsCache[activeSurvey] = {
         uploadId,
@@ -1028,6 +1028,34 @@ router.post(['/sync/progress', '/sync/progress/:surveyId'], async (req, res) => 
     });
   } catch (err) {
     logger.error(`[API-SYNC-PROGRESS] Gagal menyinkronkan progres ${surveyId}: ${err.message}`);
+    return res.status(500).json({
+      success: false,
+      surveyId,
+      error: err.message
+    });
+  }
+});
+
+// POST /api/sync/officers-progress or /api/sync/officers-progress/:surveyId
+router.post(['/sync/officers-progress', '/sync/officers-progress/:surveyId'], async (req, res) => {
+  const surveyId = req.params.surveyId || (req.body && req.body.surveyId) || res.locals.activeSurvey || 'se2026';
+  const fasihSyncService = require('../services/fasihSyncService');
+
+  try {
+    const result = await fasihSyncService.syncOfficersProgressDirect(surveyId, {
+      forceRefresh: req.body && req.body.forceRefresh,
+      role: req.body && req.body.role,
+      customUrl: req.body && req.body.apiUrl,
+      customKey: req.body && req.body.apiKey
+    });
+
+    return res.json({
+      success: true,
+      message: `Berhasil menyinkronkan telemetri langsung petugas [${surveyId}] dari API FASIH BPS.`,
+      ...result
+    });
+  } catch (err) {
+    logger.error(`[API-SYNC-OFFICERS] Gagal menyinkronkan telemetri petugas ${surveyId}: ${err.message}`);
     return res.status(500).json({
       success: false,
       surveyId,

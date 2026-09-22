@@ -240,7 +240,7 @@ function stopMasterTaskLoop() {
  */
 function startSupervisor() {
   if (supervisorInterval) return;
-  addWaLog('info', '🛡️ [WA-Watchdog] Background Supervisor 24/7 diaktifkan. WhatsApp selalu dipantau otomatis.');
+  addWaLog('info', '[WA-Watchdog] Background Supervisor 24/7 diaktifkan. WhatsApp selalu dipantau otomatis.');
 
   // Stagger acak startup (1s - 3s) agar semua worker Passenger tidak berebut acquireLock pada milidetik yang sama
   const initialDelay = Math.floor(Math.random() * 2000) + 1000;
@@ -258,14 +258,14 @@ function startSupervisor() {
 
       // 3. Jika ada sesi tersimpan di disk tapi socket belum CONNECTED dan tidak sedang initializing:
       if (hasValidSession() && clientStatus !== 'CONNECTED' && !isInitializing) {
-        addWaLog('info', '🛡️ [WA-Watchdog] Sesi tersimpan ditemukan tapi koneksi belum aktif. Memulai auto-reconnect background...');
+        addWaLog('info', '[WA-Watchdog] Sesi tersimpan ditemukan tapi koneksi belum aktif. Memulai auto-reconnect background...');
         initialize();
         return;
       }
 
       // 4. Jika belum ada sesi sama sekali dan tidak sedang initializing, siapkan socket agar siap pairing
       if (!hasValidSession() && clientStatus === 'DISCONNECTED' && !isInitializing) {
-        addWaLog('info', '🛡️ [WA-Watchdog] Inisialisasi awal background untuk pairing WhatsApp...');
+        addWaLog('info', '[WA-Watchdog] Inisialisasi awal background untuk pairing WhatsApp...');
         initialize();
       }
     }, 20000); // Evaluasi setiap 20 detik
@@ -465,7 +465,7 @@ async function initialize(forceTakeLock = false) {
         setWhatsappState('qr_code', '');
         setWhatsappState('user_info', { name: pushName, number: phoneNumber });
 
-        addWaLog('success', `[WA-Event] 🟢 WhatsApp Terhubung & Aktif! User: ${pushName} (${phoneNumber})`);
+        addWaLog('success', `[WA-Event] WhatsApp Terhubung & Aktif! User: ${pushName} (${phoneNumber})`);
 
         // Mulai heartbeat health check
         startHealthCheck();
@@ -474,7 +474,7 @@ async function initialize(forceTakeLock = false) {
       if (connection === 'close') {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
         const reason = lastDisconnect?.error?.message || String(statusCode || 'Unknown');
-        addWaLog('warn', `[WA-Event] ⚠️ Koneksi terputus. StatusCode: ${statusCode}, Reason: ${reason}`);
+        addWaLog('warn', `[WA-Event] Koneksi terputus. StatusCode: ${statusCode}, Reason: ${reason}`);
 
         const is408Error = statusCode === 408 || reason.includes('WebSocket Error') || statusCode === DisconnectReason.timedOut;
         if (is408Error) {
@@ -506,7 +506,7 @@ async function initialize(forceTakeLock = false) {
 
         // Jika Conflict (440): Sesi sedang dipakai oleh proses Node.js lain atau di device/server lain
         if (isConflict) {
-          addWaLog('warn', `⚠️ [WA-Conflict] Terdeteksi bentrokan koneksi WhatsApp (StatusCode 440 Conflict) pada PID ${process.pid}. Melepaskan master lock.`);
+          addWaLog('warn', `[WA-Conflict] Terdeteksi bentrokan koneksi WhatsApp (StatusCode 440 Conflict) pada PID ${process.pid}. Melepaskan master lock.`);
           releaseLock();
           await _closeSocket(false);
           return;
@@ -1042,7 +1042,7 @@ function buildNotificationMessage(template, uploadData, summary, kecStats, pmlSt
     }).slice(0, 5);
 
     topPclList = sortedPcl.map((p, i) => {
-      const badge = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+      const badge = `#${i + 1}`;
       const target = formatNumber(p.target_fasih_total || p.target_fasih || 0);
       const app = formatNumber(p.approved_total || p.approved || 0);
       const pct = p.fasih_pct_str || (p.target_fasih_total > 0 ? ((( (p.approved_total || 0) + (p.submitted_total || 0) + (p.rejected_total || 0) ) / p.target_fasih_total) * 100).toFixed(1) : '0.0');
@@ -1227,8 +1227,8 @@ async function sendUpdateNotification(uploadInput, targetGroupOverride = null, c
   const isSlsUpload = fnStatus.includes('monitoring_sls') || fnMain.includes('monitoring_sls');
   const isMuatanUpload = fnMain.includes('keluarga') || fnMain.includes('usaha');
 
-  const defaultFasihTemplate = `📊 *UPDATE DOKUMEN FASIH - SE2026 PPU*
-🗓️ *{waktu_lengkap}*
+  const defaultFasihTemplate = `*UPDATE DOKUMEN FASIH - SE2026 PPU*
+*{waktu_lengkap}*
 
 Pembaruan progres dokumen FASIH telah berhasil diproses.
 
@@ -1239,22 +1239,22 @@ Pembaruan progres dokumen FASIH telah berhasil diproses.
 • Rejected: *{total_rejected}* dok
 • Sisa Beban: *{sisa_fasih}* dok
 
-📍 *Progress per Kecamatan:*
+*Progress per Kecamatan:*
 {rincian_kecamatan}
 
-🏆 *Top 5 PCL:*
+*Top 5 PCL:*
 {top_pcl}
 
-🔗 Dashboard: {url_dashboard}
+Dashboard: {url_dashboard}
 _Pesan otomatis Sistem Monitoring SE2026 BPS Kab. Penajam Paser Utara_`;
 
-  const defaultMuatanTemplate = `📦 *UPDATE PROGRESS MUATAN LAPANGAN - SE2026 PPU*
-🗓️ *{waktu_lengkap}*
+  const defaultMuatanTemplate = `*UPDATE PROGRESS MUATAN LAPANGAN - SE2026 PPU*
+*{waktu_lengkap}*
 
 Berkas muatan lapangan (Keluarga/Usaha) telah berhasil diperbarui.
 
 *Rincian Hasil Pencacahan Lapangan:*
-👨‍👩‍👧‍👦 *Muatan Keluarga:*
+*Muatan Keluarga:*
 • Keluarga Ditemukan: *{keluarga_ditemukan}*
 • Keluarga Baru: *{keluarga_baru}*
 • Meninggal: *{keluarga_meninggal}*
@@ -1264,7 +1264,7 @@ Berkas muatan lapangan (Keluarga/Usaha) telah berhasil diperbarui.
 • Tidak Ditemukan: *{keluarga_tidak_ditemukan}*
 • Total Keluarga Terdata: *{keluarga_total}*
 
-🏢 *Muatan Usaha:*
+*Muatan Usaha:*
 • Usaha Ditemukan: *{usaha_ditemukan}*
 • Usaha Baru: *{usaha_baru}*
 • Usaha Tutup: *{usaha_tutup}*
@@ -1272,19 +1272,19 @@ Berkas muatan lapangan (Keluarga/Usaha) telah berhasil diperbarui.
 • Usaha Tidak Ditemukan: *{usaha_tidak_ditemukan}*
 • Total Usaha Terdata: *{usaha_total}*
 
-🔗 Dashboard: {url_dashboard}
+Dashboard: {url_dashboard}
 _Pesan otomatis Sistem Monitoring SE2026 BPS Kab. Penajam Paser Utara_`;
 
-  const defaultSlsTemplate = `🔔 *UPDATE STATUS SELESAI SLS/SUB-SLS - SE2026 PPU*
-🗓️ *{waktu_lengkap}*
+  const defaultSlsTemplate = `*UPDATE STATUS SELESAI SLS/SUB-SLS - SE2026 PPU*
+*{waktu_lengkap}*
 
 Pembaruan berkas status penyelesaian SLS telah selesai diproses.
 
 *Statistik Penyelesaian SLS:*
 • SLS Selesai: *{total_sls_selesai}* / *{total_sls}* SLS (*{persen_sls_selesai}*)
 
-📍 Status penyelesaian di web telah diperbarui ke kategori *Selesai* (Hijau).
-🔗 Akses Peta Sebaran SLS: {url_dashboard}/map
+Status penyelesaian di web telah diperbarui ke kategori *Selesai* (Hijau).
+Akses Peta Sebaran SLS: {url_dashboard}/map
 _Pesan otomatis Sistem Monitoring SE2026 BPS Kab. Penajam Paser Utara_`;
 
   let template = '';
