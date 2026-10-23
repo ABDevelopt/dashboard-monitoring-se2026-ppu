@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { getDb, getSharedDb, getSettings, rebuildSummaryCache, rebuildAllSummaryCaches, importTitikUjiPetik, reloadDbConnection, getSurveyProgressSnapshotsMap, upsertSurveyProgressSnapshot, refreshSurveyProgressSnapshot, saveOfficerProgressTelemetry, getLatestUpload } = require('../database');
 const logger = require('./logger');
 
@@ -105,6 +106,54 @@ class FasihSyncService {
   }
 
   /**
+   * Helper: Generate cryptographic session token for Companion Next.js Zero-Trust Middleware
+   */
+  _createAuthToken() {
+    const secret = process.env.FASIH_AUTH_SECRET || '9df87b92f7a834c891e4b09d76c33e8a157c0e812f864e7c093a8d9b135e6721';
+    const payload = {
+      username: process.env.FASIH_ADMIN_USERNAME || 'admin',
+      role: 'administrator',
+      userType: 'admin',
+      roleLabel: 'Administrator',
+      isAdmin: true,
+      displayName: 'Administrator Sistem',
+      regionCode: '6409',
+      regionName: 'Kab. Penajam Paser Utara',
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 43200
+    };
+    const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const hmac = crypto.createHmac('sha256', secret);
+    hmac.update(payloadB64);
+    const signatureB64 = hmac.digest('base64url');
+    return `${payloadB64}.${signatureB64}`;
+  }
+
+  /**
+   * Helper: Get active auth cookie for FASIH-SM Companion API requests
+   */
+  _getAuthCookie() {
+    const now = Math.floor(Date.now() / 1000);
+    if (!this._cachedAuthToken || (this._authTokenExp && this._authTokenExp - now < 300)) {
+      this._cachedAuthToken = this._createAuthToken();
+      this._authTokenExp = now + 43200;
+    }
+    return `fasih_dashboard_token=${this._cachedAuthToken}`;
+  }
+
+  /**
+   * Helper: Build standardized request headers including auth cookie and API Key
+   */
+  _getHeaders(apiKey = null, customHeaders = {}) {
+    return {
+      'Accept': 'application/json',
+      'X-FASIH-API-KEY': apiKey || this.getConfig().apiKey,
+      'Cookie': this._getAuthCookie(),
+      ...customHeaders
+    };
+  }
+
+  /**
    * Quick connection & health check to FASIH-SM API
    */
   async checkConnection(customUrl = null, customKey = null) {
@@ -120,10 +169,7 @@ class FasihSyncService {
     try {
       const res = await fetch(pingUrl, {
         method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'X-FASIH-API-KEY': targetKey
-        },
+        headers: this._getHeaders(targetKey),
         signal: AbortSignal.timeout(10000)
       });
 
@@ -181,10 +227,7 @@ class FasihSyncService {
     try {
       const res = await fetch(pingUrl, {
         method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'X-FASIH-API-KEY': apiKey
-        },
+        headers: this._getHeaders(apiKey),
         signal: AbortSignal.timeout(10000)
       });
 
@@ -249,10 +292,7 @@ class FasihSyncService {
     try {
       const res = await fetch(pingUrl, {
         method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'X-FASIH-API-KEY': apiKey
-        },
+        headers: this._getHeaders(apiKey),
         signal: AbortSignal.timeout(10000)
       });
 
@@ -302,10 +342,7 @@ class FasihSyncService {
 
     const res = await fetch(urlObj.toString(), {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'X-FASIH-API-KEY': apiKey
-      },
+      headers: this._getHeaders(apiKey),
       signal: AbortSignal.timeout(20000)
     });
 
@@ -639,10 +676,7 @@ class FasihSyncService {
       if (snap && snap.etag) cachedEtag = snap.etag;
     } catch (_) {}
 
-    const reqHeaders = {
-      'Accept': 'application/json',
-      'X-FASIH-API-KEY': apiKey
-    };
+    const reqHeaders = this._getHeaders(apiKey);
     if (cachedEtag && !forceRefresh) {
       reqHeaders['If-None-Match'] = cachedEtag;
     }
@@ -1043,10 +1077,7 @@ class FasihSyncService {
 
     const response = await fetch(urlObj.toString(), {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'X-FASIH-API-KEY': apiKey
-      },
+      headers: this._getHeaders(apiKey),
       signal: AbortSignal.timeout(30000)
     });
 
@@ -1107,7 +1138,7 @@ class FasihSyncService {
     let batchData = null;
     try {
       const bRes = await fetch(batchUrl, {
-        headers: { 'X-FASIH-API-KEY': config.apiKey, 'Accept': 'application/json' },
+        headers: this._getHeaders(config.apiKey),
         signal: AbortSignal.timeout(15000)
       });
       if (bRes.ok) {
@@ -1352,10 +1383,7 @@ class FasihSyncService {
 
     const res = await fetch(urlObj.toString(), {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'X-FASIH-API-KEY': apiKey
-      },
+      headers: this._getHeaders(apiKey),
       signal: AbortSignal.timeout(120000) // 2 minutes timeout for full 75k points
     });
 

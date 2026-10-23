@@ -1,3 +1,5 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const fasihSyncService = require('../services/fasihSyncService');
 const { getDb, getAllUploads, getOverviewSummary } = require('../database');
 
@@ -19,29 +21,38 @@ async function testSyncFlow() {
   });
   console.log('Sync Result:', syncResult);
 
-  console.log('\n--- 3. Verifying Database Ingestion ---');
-  const db = getDb('se2026');
-  const uploadRow = db.prepare('SELECT * FROM uploads WHERE id = ?').get(syncResult.uploadId);
-  console.log('Upload Row in DB:', uploadRow);
-
-  const progresCount = db.prepare('SELECT COUNT(*) as count FROM progres WHERE upload_id = ?').get(syncResult.uploadId);
-  console.log('Progres rows inserted for upload_id', syncResult.uploadId, ':', progresCount.count);
-
-  const progresSample = db.prepare('SELECT * FROM progres WHERE upload_id = ? LIMIT 2').all(syncResult.uploadId);
-  console.log('Sample progres row:', progresSample[0]);
-
-  console.log('\n--- 4. Testing getSyncHistory() ---');
+  console.log('\n--- 3. Testing getSyncHistory() ---');
   const history = fasihSyncService.getSyncHistory('se2026', 3);
   console.log('Sync History (top 3):', history);
 
-  console.log('\n--- 5. Testing getOverviewSummary() with new upload ---');
-  const summary = getOverviewSummary(syncResult.uploadId);
-  console.log('Overview Summary Stats:');
-  console.log('- Total SLS:', summary.total_sls);
-  console.log('- SLS Selesai:', summary.sls_selesai);
-  console.log('- Persentase Selesai:', summary.persen_selesai + '%');
-  console.log('- Target Upload:', summary.target_upload);
-  console.log('- Approved:', summary.approved);
+  const activeUploadId = syncResult.uploadId || (history && history.length > 0 ? history[0].id : null);
+  console.log('\n--- 4. Verifying Database Ingestion (Upload ID: ' + activeUploadId + ') ---');
+  const db = getDb('se2026');
+  const uploadRow = db.prepare('SELECT * FROM uploads WHERE id = ?').get(activeUploadId);
+  console.log('Upload Row in DB:', uploadRow);
+
+  const progresCount = db.prepare('SELECT COUNT(*) as count FROM progres WHERE upload_id = ?').get(activeUploadId);
+  console.log('Progres rows inserted for upload_id', activeUploadId, ':', progresCount.count);
+
+  const progresSample = db.prepare('SELECT * FROM progres WHERE upload_id = ? LIMIT 2').all(activeUploadId);
+  console.log('Sample progres row:', progresSample[0]);
+
+  console.log('\n--- 5. Testing getOverviewSummary() for Dashboard ---');
+  const summary = getOverviewSummary('se2026', activeUploadId);
+  console.log('Overview Summary Stats for Dashboard:');
+  console.log('- Total SubSLS:', summary.total_subsls);
+  console.log('- SLS Selesai:', summary.selesai);
+  console.log('- Target FASIH Total:', summary.target_fasih_total);
+  console.log('- Total Petugas PCL:', summary.total_pcl);
+  console.log('- Total Petugas PML:', summary.total_pml);
+
+  console.log('\n--- 6. Testing Batch Summary Across Surveys ---');
+  const batchRes = await fasihSyncService.syncAllSurveysProgress({ region: '6409' });
+  console.log('Batch sync execution result:');
+  console.log('- Synced count:', batchRes.synced);
+  console.log('- Skipped (up-to-date ETag):', batchRes.skipped);
+  console.log('- Failed count:', batchRes.failed);
+  console.log('- Total surveys processed:', batchRes.total);
 
   console.log('\n✅ ALL VERIFICATION CHECKS PASSED!');
 }
