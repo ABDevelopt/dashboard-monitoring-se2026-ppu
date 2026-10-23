@@ -1,0 +1,387 @@
+/**
+ * Taka UI — Code Blocks & Syntax Highlighting
+ * Modern, high-contrast code styling for dashboards, AI chat interfaces,
+ * documentation, and technical telemetry logs.
+ * Supports inline code, windowed code blocks, line numbers, and token colorization.
+ */
+
+/* ====== 1. INLINE CODE ====== */
+code,
+.taka-code,
+.code-inline {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs, 4px);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: break-spaces;
+  vertical-align: baseline;
+  word-break: break-word;
+}
+
+body.light-mode code,
+body.light-mode .taka-code,
+body.light-mode .code-inline {
+  background: rgba(60, 51, 46, 0.06);
+  color: #0f172a;
+  border-color: rgba(60, 51, 46, 0.14);
+}
+
+/* ====== 2. CODE BLOCK CONTAINER & WINDOW ====== */
+.code-block,
+.taka-code-block,
+.code-container {
+  background: #121218;
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 12px);
+  margin: 16px 0;
+  overflow: hidden;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast);
+}
+
+body.light-mode .code-block,
+body.light-mode .taka-code-block,
+body.light-mode .code-container {
+  background: #fdfcfb;
+  border-color: var(--border);
+}
+
+/* ====== 3. CODE HEADER & METADATA BAR ====== */
+.code-header,
+.code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption, 11px);
+  font-weight: 600;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+body.light-mode .code-header,
+body.light-mode .code-block-header {
+  background: rgba(60, 51, 46, 0.035);
+  border-bottom-color: var(--border);
+  color: var(--text-secondary);
+}
+
+/* Window decorative dots */
+.code-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.code-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-pill);
+}
+
+.code-dot.red    { background: #ef4444; opacity: 0.8; }
+.code-dot.yellow { background: #f59e0b; opacity: 0.8; }
+.code-dot.green  { background: #10b981; opacity: 0.8; }
+
+.code-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.code-lang-badge {
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs, 4px);
+  background: rgba(var(--accent-rgb), 0.15);
+  color: var(--accent-primary);
+  border: 1px solid rgba(var(--accent-rgb), 0.3);
+}
+
+/* Copy Code Button */
+.code-copy-btn,
+.copy-code-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: none !important;
+  transition: var(--transition-fast);
+  line-height: 1;
+}
+
+.code-copy-btn:hover,
+.copy-code-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+
+.code-copy-btn:active,
+.copy-code-btn:active {
+  transform: scale(0.96);
+}
+
+.code-copy-btn.copied,
+.copy-code-btn.copied {
+  color: var(--accent-green);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+/* ====== 4. CODE PRE & BODY ====== */
+pre.code-body,
+.code-block pre,
+.taka-code-block pre,
+pre {
+  margin: 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  tab-size: 2;
+  color: #e2e8f0;
+}
+
+body.light-mode pre.code-body,
+body.light-mode .code-block pre,
+body.light-mode .taka-code-block pre,
+body.light-mode pre {
+  color: #1e293b;
+}
+
+pre code {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  white-space: pre !important;
+  word-break: normal !important;
+}
+
+/* ====== 5. SYNTAX COLORIZATION TOKENS (HIGH CONTRAST) ====== */
+/* Keywords & Control Flow: Pink / Magenta */
+.tok-keyword,
+.token.keyword,
+.hljs-keyword,
+.kw {
+  color: #f472b6 !important;
+  font-weight: 600;
+}
+body.light-mode .tok-keyword,
+body.light-mode .token.keyword,
+body.light-mode .hljs-keyword,
+body.light-mode .kw {
+  color: #db2777 !important;
+}
+
+/* Strings & Literals: Mint Emerald */
+.tok-string,
+.token.string,
+.hljs-string,
+.str {
+  color: #34d399 !important;
+}
+body.light-mode .tok-string,
+body.light-mode .token.string,
+body.light-mode .hljs-string,
+body.light-mode .str {
+  color: #059669 !important;
+}
+
+/* Functions & Methods: Sky / Electric Blue */
+.tok-function,
+.token.function,
+.hljs-title.function_,
+.fn {
+  color: #60a5fa !important;
+  font-weight: 500;
+}
+body.light-mode .tok-function,
+body.light-mode .token.function,
+body.light-mode .hljs-title.function_,
+body.light-mode .fn {
+  color: #2563eb !important;
+}
+
+/* Numbers: Amber Gold */
+.tok-number,
+.token.number,
+.hljs-number,
+.num {
+  color: #fbbf24 !important;
+}
+body.light-mode .tok-number,
+body.light-mode .token.number,
+body.light-mode .hljs-number,
+body.light-mode .num {
+  color: #d97706 !important;
+}
+
+/* Booleans & Literals: Radiant Orange */
+.tok-boolean,
+.token.boolean,
+.hljs-literal,
+.bool {
+  color: #fb923c !important;
+  font-weight: 600;
+}
+body.light-mode .tok-boolean,
+body.light-mode .token.boolean,
+body.light-mode .hljs-literal,
+body.light-mode .bool {
+  color: #c2410c !important;
+}
+
+/* Comments: Slate Gray (Italic) */
+.tok-comment,
+.token.comment,
+.hljs-comment,
+.com {
+  color: #94a3b8 !important;
+  font-style: italic;
+}
+body.light-mode .tok-comment,
+body.light-mode .token.comment,
+body.light-mode .hljs-comment,
+body.light-mode .com {
+  color: #64748b !important;
+}
+
+/* HTML / XML Tags: Coral Red */
+.tok-tag,
+.token.tag,
+.hljs-tag,
+.tag {
+  color: #f87171 !important;
+}
+body.light-mode .tok-tag,
+body.light-mode .token.tag,
+body.light-mode .hljs-tag,
+body.light-mode .tag {
+  color: #dc2626 !important;
+}
+
+/* Attributes & Keys: Lavender Purple */
+.tok-attr,
+.token.attr-name,
+.token.property,
+.hljs-attr,
+.attr {
+  color: #c084fc !important;
+}
+body.light-mode .tok-attr,
+body.light-mode .token.attr-name,
+body.light-mode .token.property,
+body.light-mode .hljs-attr,
+body.light-mode .attr {
+  color: #7c3aed !important;
+}
+
+/* Types & Classes: Cyan */
+.tok-type,
+.token.class-name,
+.hljs-type,
+.type {
+  color: #38bdf8 !important;
+  font-weight: 600;
+}
+body.light-mode .tok-type,
+body.light-mode .token.class-name,
+body.light-mode .hljs-type,
+body.light-mode .type {
+  color: #0284c7 !important;
+}
+
+/* Operators & Punctuation */
+.tok-operator,
+.token.operator,
+.token.punctuation,
+.op,
+.punct {
+  color: #94a3b8 !important;
+}
+body.light-mode .tok-operator,
+body.light-mode .token.operator,
+body.light-mode .token.punctuation,
+body.light-mode .op,
+body.light-mode .punct {
+  color: #475569 !important;
+}
+
+/* Variables & Identifiers */
+.tok-var,
+.token.variable,
+.hljs-variable,
+.var {
+  color: #f1f5f9 !important;
+}
+body.light-mode .tok-var,
+body.light-mode .token.variable,
+body.light-mode .hljs-variable,
+body.light-mode .var {
+  color: #0f172a !important;
+}
+
+/* Shell & Terminal Prompt */
+.tok-prompt,
+.shell-prompt {
+  color: #34d399 !important;
+  user-select: none;
+  margin-right: 6px;
+  font-weight: 700;
+}
+body.light-mode .tok-prompt,
+body.light-mode .shell-prompt {
+  color: #059669 !important;
+}
+
+/* ====== 6. LINE NUMBERS GUTTER ====== */
+.code-with-lines {
+  display: table;
+  width: 100%;
+}
+
+.code-line {
+  display: table-row;
+}
+
+.code-line-num {
+  display: table-cell;
+  text-align: right;
+  padding-right: 14px;
+  color: var(--text-dim, #64748b);
+  user-select: none;
+  font-size: 11.5px;
+  vertical-align: top;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.code-line-content {
+  display: table-cell;
+  padding-left: 14px;
+  vertical-align: top;
+}

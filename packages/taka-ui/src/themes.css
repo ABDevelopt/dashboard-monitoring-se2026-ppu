@@ -1,0 +1,101 @@
+/**
+ * Taka UI — Multi-Theme Packs
+ * Swappable survey and application theme packs with pure accent isolation.
+ */
+
+/* ── 1. ORANGE / SE2026 (Default Sunburst Accent) ── */
+:root,
+.theme-orange,
+body.theme-orange {
+  --theme-primary: #f97316;
+  --theme-primary-hover: #ea580c;
+  --theme-secondary: #facc15;
+  --theme-rgb: 249, 115, 22;
+  --theme-gradient: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #facc15 100%);
+  --theme-glow: 0 16px 36px -8px rgba(249, 115, 22, 0.35);
+  --theme-border-subtle: rgba(249, 115, 22, 0.3);
+  --theme-badge-bg: rgba(249, 115, 22, 0.12);
+  --theme-badge-border: rgba(249, 115, 22, 0.35);
+}
+
+/* ── 2. CYAN / LISTING (Electric Cyan & Oceanic Teal) ── */
+.theme-cyan,
+body.theme-cyan {
+  --accent-primary: #06b6d4;
+  --accent-primary-hover: #0891b2;
+  --accent-secondary: #10b981;
+  --accent-blue: #06b6d4;
+  --accent-cyan: #06b6d4;
+  --accent-rgb: 6, 182, 212;
+  --theme-primary: #06b6d4;
+  --theme-primary-hover: #0891b2;
+  --theme-secondary: #10b981;
+  --theme-rgb: 6, 182, 212;
+  --theme-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #10b981 100%);
+  --theme-glow: 0 16px 36px -8px rgba(6, 182, 212, 0.35);
+  --theme-border-subtle: rgba(6, 182, 212, 0.3);
+  --theme-badge-bg: rgba(6, 182, 212, 0.12);
+  --theme-badge-border: rgba(6, 182, 212, 0.35);
+}
+
+/* ── 3. PURPLE / CAPI (Royal Indigo & Violet Pulse) ── */
+.theme-purple,
+body.theme-purple {
+  --accent-primary: #8b5cf6;
+  --accent-primary-hover: #7c3aed;
+  --accent-secondary: #6366f1;
+  --accent-blue: #8b5cf6;
+  --accent-cyan: #a78bfa;
+  --accent-rgb: 139, 92, 246;
+  --theme-primary: #8b5cf6;
+  --theme-primary-hover: #7c3aed;
+  --theme-secondary: #6366f1;
+  --theme-rgb: 139, 92, 246;
+  --theme-gradient: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6366f1 100%);
+  --theme-glow: 0 16px 36px -8px rgba(139, 92, 246, 0.35);
+  --theme-border-subtle: rgba(139, 92, 246, 0.3);
+  --theme-badge-bg: rgba(139, 92, 246, 0.12);
+  --theme-badge-border: rgba(139, 92, 246, 0.35);
+}
+
+/* ── 4. EMERALD / PROSPERITY (Emerald Prosperity & Gold Growth) ── */
+.theme-emerald,
+body.theme-emerald {
+  --accent-primary: #10b981;
+  --accent-primary-hover: #059669;
+  --accent-secondary: #f59e0b;
+  --accent-blue: #10b981;
+  --accent-cyan: #34d399;
+  --accent-rgb: 16, 185, 129;
+  --theme-primary: #10b981;
+  --theme-primary-hover: #059669;
+  --theme-secondary: #f59e0b;
+  --theme-rgb: 16, 185, 129;
+  --theme-gradient: linear-gradient(135deg, #10b981 0%, #059669 50%, #f59e0b 100%);
+  --theme-glow: 0 16px 36px -8px rgba(16, 185, 129, 0.35);
+  --theme-border-subtle: rgba(16, 185, 129, 0.3);
+  --theme-badge-bg: rgba(16, 185, 129, 0.12);
+  --theme-badge-border: rgba(16, 185, 129, 0.35);
+}
+
+/* ── 5. SAPPHIRE / BLUE (Sapphire Enterprise & Cobalt Flow) ── */
+.theme-blue,
+.theme-sapphire,
+body.theme-blue,
+body.theme-sapphire {
+  --accent-primary: #2563eb;
+  --accent-primary-hover: #1d4ed8;
+  --accent-secondary: #38bdf8;
+  --accent-blue: #2563eb;
+  --accent-cyan: #60a5fa;
+  --accent-rgb: 37, 99, 235;
+  --theme-primary: #2563eb;
+  --theme-primary-hover: #1d4ed8;
+  --theme-secondary: #38bdf8;
+  --theme-rgb: 37, 99, 235;
+  --theme-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #38bdf8 100%);
+  --theme-glow: 0 16px 36px -8px rgba(37, 99, 235, 0.35);
+  --theme-border-subtle: rgba(37, 99, 235, 0.3);
+  --theme-badge-bg: rgba(37, 99, 235, 0.12);
+  --theme-badge-border: rgba(37, 99, 235, 0.35);
+}

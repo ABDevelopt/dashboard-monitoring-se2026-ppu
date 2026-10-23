@@ -1,0 +1,27 @@
+{
+  "name": "taka-ui",
+  "version": "1.0.0",
+  "description": "Modern high-contrast dark-first dashboard and monitoring CSS framework with dynamic survey themes, tactile feedback, and mobile dual-navigation.",
+  "main": "dist/taka-ui.css",
+  "style": "dist/taka-ui.css",
+  "module": "src/index.css",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "keywords": [
+    "css-framework",
+    "dashboard-ui",
+    "dark-mode",
+    "monitoring",
+    "high-contrast",
+    "enterprise-ui",
+    "taka-ui",
+    "pananyo-taka"
+  ],
+  "author": "BPS Kabupaten Penajam Paser Utara",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "src"
+  ]
+}

@@ -1,0 +1,191 @@
+/**
+ * Taka UI — Pill Badges & Status Indicators
+ * Micro-capsule status badges, live pulse dots, and telemetry indicators.
+ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* Green (Success / Safe / Completed) */
+.badge-green {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-green);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+/* Yellow / Amber (Warning / At-Risk) */
+.badge-yellow {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+/* Red (Danger / High-Risk / No Progress) */
+.badge-red {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-red);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+/* Blue / Brand Primary */
+.badge-blue {
+  background: rgba(var(--accent-rgb), 0.15);
+  color: var(--accent-primary);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+}
+
+/* Orange */
+.badge-orange {
+  background: rgba(249, 115, 22, 0.15);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.25);
+}
+body.light-mode .badge-orange {
+  color: #c2410c;
+}
+
+/* Purple */
+.badge-purple {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+body.light-mode .badge-purple {
+  color: #7e22ce;
+}
+
+/* Gray / Muted */
+.badge-gray {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+/* Status Dot Indicator */
+.badge-dot::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+}
+
+/* ==========================================================================
+   LIVE PULSE DOT & TELEMETRY STATUS PILLS
+   ========================================================================== */
+.live-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-green, #10b981);
+  display: inline-block;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.live-pulse-dot::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-green, #10b981);
+  animation: livePulseGlow 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+.live-pulse-dot.pulse-cyan {
+  background: var(--accent-cyan, #06b6d4);
+}
+.live-pulse-dot.pulse-cyan::after {
+  border-color: var(--accent-cyan, #06b6d4);
+}
+
+.live-pulse-dot.pulse-amber {
+  background: var(--accent-yellow, #f59e0b);
+}
+.live-pulse-dot.pulse-amber::after {
+  border-color: var(--accent-yellow, #f59e0b);
+}
+
+.live-pulse-dot.pulse-red {
+  background: var(--accent-red, #ef4444);
+}
+.live-pulse-dot.pulse-red::after {
+  border-color: var(--accent-red, #ef4444);
+}
+
+@keyframes livePulseGlow {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+.live-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: rgba(16, 185, 129, 0.10);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-caption, 11px);
+  font-weight: 700;
+  color: var(--accent-green, #10b981);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   EMPTY STATE COMPONENT
+   ========================================================================== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.45;
+  animation: empty-state-pulse 2.8s ease-in-out infinite;
+}
+
+@keyframes empty-state-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.45; }
+  50% { transform: scale(1.08); opacity: 0.7; }
+}
+
+.empty-state-title {
+  font-size: var(--fs-sub-header, 16px);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.empty-state-desc {
+  font-size: var(--fs-helper, 12px);
+  color: var(--text-muted);
+  max-width: 380px;
+  line-height: var(--lh-normal, 1.5);
+}

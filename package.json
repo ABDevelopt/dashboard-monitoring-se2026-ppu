@@ -4,6 +4,10 @@
   "description": "",
   "main": "server.js",
   "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build:ui": "node packages/taka-ui/build.js && node scripts/minify.js",
+    "test:ui": "node packages/taka-ui/test/test-reusability.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrate": "node migrate.js",
     "convert:mermaid": "python scripts/convert_mermaid_to_png.py",

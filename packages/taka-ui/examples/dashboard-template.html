@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Starter — Taka UI</title>
+  
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap Icons CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <!-- Taka UI Framework (Ganti path sesuai letak project Anda) -->
+  <link rel="stylesheet" href="../dist/taka-ui.min.css">
+</head>
+<body class="theme-orange has-breadcrumb">
+
+  <!-- Mobile Backdrop Overlay -->
+  <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <i class="bi bi-speedometer2"></i>
+      </div>
+      <div class="sidebar-logo-text">
+        <h1>Pananyo Taka</h1>
+        <p>Sistem Pemantauan Terpadu</p>
+      </div>
+      <button class="btn-close-sidebar" onclick="toggleSidebar()" aria-label="Tutup Sidebar">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Telemetry / Sync Widget -->
+    <div class="sidebar-upload-info">
+      <strong><i class="bi bi-cloud-check-fill"></i> Data Terkini</strong>
+      <span>Sinkronisasi otomatis aktif (Live)</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-wrapper">
+        <div class="nav-section-header">
+          <span>Menu Utama</span>
+        </div>
+        <div class="nav-section-content">
+          <a href="#" class="nav-item active">
+            <span class="nav-icon icon-blue"><i class="bi bi-grid-fill"></i></span>
+            <span class="nav-label">Dashboard Overview</span>
+            <span class="nav-badge">Live</span>
+          </a>
+          <a href="#" class="nav-item">
+            <span class="nav-icon icon-emerald"><i class="bi bi-table"></i></span>
+            <span class="nav-label">Rekapitulasi Data</span>
+          </a>
+          <a href="#" class="nav-item">
+            <span class="nav-icon icon-purple"><i class="bi bi-file-earmark-bar-graph-fill"></i></span>
+            <span class="nav-label">Laporan Kinerja</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="nav-section-wrapper">
+        <div class="nav-section-header">
+          <span>Drilldown Wilayah</span>
+        </div>
+        <div class="nav-section-content">
+          <a href="#" class="nav-item">
+            <span class="nav-icon icon-cyan"><i class="bi bi-geo-alt"></i></span>
+            <span class="nav-label">Kecamatan</span>
+          </a>
+          <a href="#" class="nav-item">
+            <span class="nav-icon icon-amber"><i class="bi bi-box-seam"></i></span>
+            <span class="nav-label">Desa / Kelurahan</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="nav-section-wrapper">
+        <div class="nav-section-header">
+          <span>Konfigurasi</span>
+        </div>
+        <div class="nav-section-content">
+          <a href="#" class="nav-item">
+            <span class="nav-icon icon-indigo"><i class="bi bi-sliders"></i></span>
+            <span class="nav-label">Pengaturan Sistem</span>
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div>
+        <span style="font-weight: 700; color: var(--text-primary);">Taka UI v1.0</span><br>
+        <span style="color: var(--text-muted); font-size: 10px;">© BPS PPU 2026</span>
+      </div>
+      <span class="live-status-pill"><span class="live-pulse-dot"></span> Online</span>
+    </div>
+  </aside>
+
+  <!-- Main Shell -->
+  <div class="main-wrapper">
+    
+    <!-- Topbar / Navbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="topbar-action-btn" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle Sidebar">
+          <i class="bi bi-layout-sidebar-inset"></i>
+        </button>
+
+        <div class="topbar-title-container">
+          <div class="topbar-title">Dashboard Pemantauan</div>
+          <div class="topbar-subtitle">Penajam Paser Utara · SE2026</div>
+        </div>
+      </div>
+
+      <!-- Center Search Command Bar -->
+      <div class="topbar-search-wrapper">
+        <div class="topbar-search-bar" onclick="toggleSearchModal(true)">
+          <i class="bi bi-search topbar-search-icon"></i>
+          <span class="topbar-search-placeholder">Pencarian cepat entitas, wilayah...</span>
+          <span class="topbar-search-shortcut"><kbd>Ctrl</kbd><kbd>K</kbd></span>
+        </div>
+      </div>
+
+      <!-- Topbar Actions -->
+      <div class="topbar-actions">
+        <!-- Notification Bell with Live Pulse -->
+        <button class="topbar-action-btn" title="Notifikasi" style="position: relative;">
+          <i class="bi bi-bell-fill"></i>
+          <span class="topbar-badge"></span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button class="topbar-action-btn" onclick="toggleTheme()" title="Ganti Tema Gelap / Terang">
+          <i id="themeIcon" class="bi bi-sun-fill"></i>
+        </button>
+
+        <!-- User Chip -->
+        <button class="topbar-action-btn" title="Profil Petugas">
+          <i class="bi bi-person-circle"></i>
+          <span class="topbar-action-label">Petugas</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Breadcrumb Bar -->
+    <nav class="breadcrumb-bar" id="breadcrumb-bar" aria-label="Breadcrumb">
+      <ul class="breadcrumb-list">
+        <li class="breadcrumb-item"><a href="#"><i class="bi bi-house-door"></i> Beranda</a></li>
+        <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+        <li class="breadcrumb-item"><a href="#">Monitoring</a></li>
+        <li class="breadcrumb-separator"><i class="bi bi-chevron-right"></i></li>
+        <li class="breadcrumb-item active">Ringkasan Utama</li>
+      </ul>
+    </nav>
+
+    <!-- Page Content -->
+    <main class="page-content">
+      
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="page-title-wrap">
+          <h1 class="page-title">Ringkasan Pemantauan Lapangan</h1>
+          <p class="page-subtitle">Pembaruan data real-time seluruh wilayah tugas per 17 Oktober 2026</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-secondary">
+            <i class="bi bi-download"></i> Ekspor Data
+          </button>
+          <button class="btn btn-primary">
+            <i class="bi bi-arrow-repeat"></i> Muat Ulang
+          </button>
+        </div>
+      </div>
+
+      <!-- Metric Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span class="stat-label">Total Beban Usaha</span>
+            <div class="help-tooltip-container">
+              <i class="bi bi-question-circle help-tooltip-icon"></i>
+              <div class="help-tooltip-box">
+                <strong>Total Beban Usaha:</strong> Jumlah target seluruh unit usaha yang wajib dimutakhirkan pada putaran sensus ini.
+              </div>
+            </div>
+          </div>
+          <span class="stat-value">24.500</span>
+          <span class="stat-sub">Target Periode Ini</span>
+          <i class="bi bi-bar-chart-fill stat-icon"></i>
+        </div>
+
+        <div class="stat-card green">
+          <span class="stat-label">Selesai Dicacah</span>
+          <span class="stat-value text-success">18.200</span>
+          <span class="stat-sub">74.2% Tercapai</span>
+          <i class="bi bi-check-circle-fill stat-icon"></i>
+        </div>
+
+        <div class="stat-card yellow">
+          <span class="stat-label">Dalam Proses</span>
+          <span class="stat-value text-warning">4.100</span>
+          <span class="stat-sub">Tahap Verifikasi PML</span>
+          <i class="bi bi-hourglass-split stat-icon"></i>
+        </div>
+
+        <div class="stat-card red">
+          <span class="stat-label">Tertunda / Anomali</span>
+          <span class="stat-value text-danger">2.200</span>
+          <span class="stat-sub">Perlu Intervensi</span>
+          <i class="bi bi-exclamation-octagon-fill stat-icon"></i>
+        </div>
+      </div>
+
+      <!-- Main Data Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="bi bi-table text-accent"></i> Rekapitulasi Progres per Kecamatan
+          </div>
+          <div class="card-actions">
+            <span class="badge badge-green badge-dot">Sinkron</span>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <input type="search" placeholder="Cari nama kecamatan atau kode..." style="flex: 1; min-width: 220px;">
+          <select>
+            <option>Semua Status</option>
+            <option>Selesai 100%</option>
+            <option>At-Risk (<50%)</option>
+          </select>
+          <button class="btn btn-secondary">Terapkan Filter</button>
+        </div>
+
+        <!-- Touch-Scrollable Data Table -->
+        <div class="table-wrap">
+          <table class="table-striped">
+            <thead>
+              <tr>
+                <th style="width: 50px;">No</th>
+                <th class="sortable">Nama Kecamatan</th>
+                <th class="td-number sortable">Beban</th>
+                <th class="td-number sortable">Realisasi</th>
+                <th style="min-width: 140px;">Progres</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td><span class="td-primary">Penajam</span></td>
+                <td class="td-number">10.450</td>
+                <td class="td-number td-primary">8.560</td>
+                <td>
+                  <div class="table-progress">
+                    <div class="progress-bar-wrap" style="margin: 0; flex: 1;">
+                      <div class="progress-bar green" style="width: 81.9%;"></div>
+                    </div>
+                    <span style="font-size: 11px; font-weight: 700;">81.9%</span>
+                  </div>
+                </td>
+                <td><span class="badge badge-green badge-dot">Tinggi</span></td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td><span class="td-primary">Waru</span></td>
+                <td class="td-number">4.200</td>
+                <td class="td-number td-primary">3.250</td>
+                <td>
+                  <div class="table-progress">
+                    <div class="progress-bar-wrap" style="margin: 0; flex: 1;">
+                      <div class="progress-bar blue" style="width: 77.3%;"></div>
+                    </div>
+                    <span style="font-size: 11px; font-weight: 700;">77.3%</span>
+                  </div>
+                </td>
+                <td><span class="badge badge-blue badge-dot">Stabil</span></td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td><span class="td-primary">Babulu</span></td>
+                <td class="td-number">6.100</td>
+                <td class="td-number td-primary">4.120</td>
+                <td>
+                  <div class="table-progress">
+                    <div class="progress-bar-wrap" style="margin: 0; flex: 1;">
+                      <div class="progress-bar yellow" style="width: 67.5%;"></div>
+                    </div>
+                    <span style="font-size: 11px; font-weight: 700;">67.5%</span>
+                  </div>
+                </td>
+                <td><span class="badge badge-yellow badge-dot">Waspada</span></td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td><span class="td-primary">Sepaku</span></td>
+                <td class="td-number">3.750</td>
+                <td class="td-number td-primary">1.680</td>
+                <td>
+                  <div class="table-progress">
+                    <div class="progress-bar-wrap" style="margin: 0; flex: 1;">
+                      <div class="progress-bar red" style="width: 44.8%;"></div>
+                    </div>
+                    <span style="font-size: 11px; font-weight: 700;">44.8%</span>
+                  </div>
+                </td>
+                <td><span class="badge badge-red badge-dot">Tertinggal</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- High-Density Pagination -->
+        <div class="pagination">
+          <div class="pagination-info">Menampilkan 1-4 dari 4 kecamatan</div>
+          <div class="pagination-pages">
+            <button class="page-btn disabled" disabled><i class="bi bi-chevron-left"></i></button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn disabled" disabled><i class="bi bi-chevron-right"></i></button>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Mobile Floating Bottom Nav Dock -->
+  <nav class="bottom-nav">
+    <a href="#" class="bottom-nav-item active">
+      <i class="bi bi-grid-fill"></i>
+      <span>Beranda</span>
+    </a>
+    <a href="#" class="bottom-nav-item">
+      <i class="bi bi-table"></i>
+      <span>Data</span>
+    </a>
+    <a href="#" class="bottom-nav-item">
+      <i class="bi bi-map-fill"></i>
+      <span>Peta</span>
+    </a>
+    <button class="bottom-nav-item" onclick="toggleBottomNavSheet(true)">
+      <i class="bi bi-grid"></i>
+      <span>Menu</span>
+    </button>
+  </nav>
+
+  <!-- Mobile Bottom Sheet Drawer Modal -->
+  <div class="bottom-nav-overlay" id="bottomNavOverlay" onclick="toggleBottomNavSheet(false)"></div>
+  <div class="bottom-nav-sheet" id="bottomNavSheet">
+    <div class="bottom-nav-sheet-header">
+      <div class="bottom-nav-sheet-handle"></div>
+      <div class="bottom-nav-sheet-title">
+        <i class="bi bi-grid-3x3-gap-fill text-accent"></i> Menu Lengkap
+      </div>
+      <button class="bottom-nav-sheet-close" onclick="toggleBottomNavSheet(false)" aria-label="Tutup">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="bottom-nav-sheet-content">
+      <div class="sheet-section-title">Aksi Cepat</div>
+      <div class="sheet-quick-actions-bar">
+        <button class="sheet-quick-action-pill" onclick="toggleTheme()">
+          <i class="bi bi-circle-half"></i> Ganti Tema
+        </button>
+        <button class="sheet-quick-action-pill" onclick="toggleBottomNavSheet(false); toggleSearchModal(true);">
+          <i class="bi bi-search"></i> Pencarian
+        </button>
+      </div>
+
+      <div class="sheet-section-title">Drilldown Petugas</div>
+      <div class="sheet-quick-grid">
+        <a href="#" class="sheet-grid-card">
+          <div class="sheet-grid-icon icon-purple"><i class="bi bi-person-workspace"></i></div>
+          <span class="sheet-grid-name">Korlap</span>
+          <span class="sheet-grid-sub">Koordinator</span>
+        </a>
+        <a href="#" class="sheet-grid-card">
+          <div class="sheet-grid-icon icon-blue"><i class="bi bi-clipboard2-data"></i></div>
+          <span class="sheet-grid-name">PML</span>
+          <span class="sheet-grid-sub">Pengawas</span>
+        </a>
+        <a href="#" class="sheet-grid-card active">
+          <div class="sheet-grid-icon icon-cyan"><i class="bi bi-people-fill"></i></div>
+          <span class="sheet-grid-name">PCL</span>
+          <span class="sheet-grid-sub">Pencacah</span>
+        </a>
+      </div>
+
+      <div class="sheet-section-title">Analisis Lanjutan</div>
+      <a href="#" class="bottom-sheet-item bottom-sheet-hero">
+        <i class="bi bi-shield-check" style="font-size: 20px; color: var(--accent-primary);"></i>
+        <div>
+          <div style="font-weight: 700; color: var(--text-primary); font-size: 13px;">Early Warning System</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Deteksi anomali deviasi & beban kritis</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Ultra-Premium Spotlight Search Modal (Ctrl+K) -->
+  <div class="search-modal-backdrop hidden" id="searchModal" onclick="if(event.target === this) toggleSearchModal(false)">
+    <div class="search-modal-card">
+      <div class="search-modal-header">
+        <i class="bi bi-search search-modal-icon"></i>
+        <input type="text" placeholder="Ketik kata kunci untuk mencari..." autofocus>
+        <button class="search-modal-close" onclick="toggleSearchModal(false)" aria-label="Tutup">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="search-modal-body">
+        <div style="padding: 10px; font-size: 12px; color: var(--text-muted); text-align: center;">
+          Gunakan tombol panah untuk memilih, atau <kbd>Esc</kbd> untuk keluar.
+        </div>
+      </div>
+      <div class="search-modal-footer">
+        <span>Tekan <kbd>Ctrl+K</kbd> kapan saja</span>
+        <span>Taka UI Spotlight</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleSidebar() {
+      if (window.innerWidth <= 992) {
+        document.body.classList.toggle('sidebar-open');
+      } else {
+        document.body.classList.toggle('sidebar-collapsed');
+      }
+    }
+
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-mode');
+      const icon = document.getElementById('themeIcon');
+      if (isLight) {
+        icon.className = 'bi bi-moon-fill';
+      } else {
+        icon.className = 'bi bi-sun-fill';
+      }
+    }
+
+    function toggleBottomNavSheet(show) {
+      const overlay = document.getElementById('bottomNavOverlay');
+      const sheet = document.getElementById('bottomNavSheet');
+      if (show) {
+        overlay.classList.add('active');
+        sheet.classList.add('active');
+      } else {
+        overlay.classList.remove('active');
+        sheet.classList.remove('active');
+      }
+    }
+
+    function toggleSearchModal(show) {
+      const modal = document.getElementById('searchModal');
+      if (show) {
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    // Keyboard shortcut Ctrl+K
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        toggleSearchModal(true);
+      }
+      if (e.key === 'Escape') {
+        toggleSearchModal(false);
+        toggleBottomNavSheet(false);
+      }
+    });
+  </script>
+</body>
+</html>

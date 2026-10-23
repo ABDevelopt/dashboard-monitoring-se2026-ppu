@@ -1,0 +1,122 @@
+/**
+ * Taka UI — Toast & Banner Alerts
+ * Glassmorphic alerts with smooth cubic-bezier entrance animations.
+ */
+
+.toast-container,
+.flash-messages {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+  max-width: 420px;
+  width: calc(100% - 48px);
+}
+
+.alert {
+  pointer-events: auto;
+  padding: 14px 18px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-helper);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: takaToastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: opacity 0.3s ease, transform 0.3s ease, margin 0.3s ease, max-height 0.3s ease;
+  word-break: break-word;
+}
+
+@keyframes takaToastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(40px) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(50px) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+.alert.fade-out {
+  opacity: 0 !important;
+  transform: translateX(60px) !important;
+  pointer-events: none;
+}
+
+.alert-success {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+body.light-mode .alert-success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #065f46;
+}
+
+.alert-error {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+body.light-mode .alert-error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #991b1b;
+}
+
+.alert-warning {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+body.light-mode .alert-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #9a3412;
+}
+
+.alert-info {
+  background: rgba(var(--accent-rgb), 0.2);
+  border: 1px solid rgba(var(--accent-rgb), 0.4);
+  color: var(--accent-primary);
+}
+
+.alert-content {
+  flex: 1;
+  line-height: var(--lh-tight);
+}
+
+.alert-close-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity var(--transition-fast);
+  margin-left: auto;
+  font-size: 16px;
+}
+
+.alert-close-btn:hover {
+  opacity: 1;
+}

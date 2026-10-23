@@ -205,10 +205,6 @@
     <div class="card" style="margin-bottom: 0;">
       <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
         <div class="card-title"><i class="bi bi-shop text-cyan"></i> Daftar Temuan Anomali Usaha (UTP)</div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="badge badge-cyan"><%= totalRecordsUsaha %> Total Records</span>
-          <span class="badge badge-subtle">Halaman <%= currentPage %> / <%= totalPagesUsaha %></span>
-        </div>
       </div>
 
       <% if (paginatedUsaha && paginatedUsaha.length > 0) { %>
@@ -317,10 +313,6 @@
     <div class="card" style="margin-bottom: 0;">
       <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
         <div class="card-title"><i class="bi bi-house-door-fill text-purple"></i> Daftar Temuan Anomali Keluarga (KK)</div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="badge badge-purple"><%= totalRecordsKeluarga %> Total Records</span>
-          <span class="badge badge-subtle">Halaman <%= currentPage %> / <%= totalPagesKeluarga %></span>
-        </div>
       </div>
 
       <% if (paginatedKeluarga && paginatedKeluarga.length > 0) { %>
@@ -429,10 +421,6 @@
     <div class="card" style="margin-bottom: 0;">
       <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
         <div class="card-title"><i class="bi bi-people-fill text-yellow"></i> Rekap Penanganan Anomali per Petugas (PCL)</div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="badge badge-yellow"><%= totalRecordsPcl %> Petugas</span>
-          <span class="badge badge-subtle">Halaman <%= currentPage %> / <%= totalPagesPcl %></span>
-        </div>
       </div>
 
       <% if (paginatedPcl && paginatedPcl.length > 0) { %>

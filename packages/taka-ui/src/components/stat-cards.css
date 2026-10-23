@@ -1,0 +1,91 @@
+/**
+ * Taka UI — Stat Cards (Metric Boxes)
+ * High-density key performance indicators with color stripes and watermark icons.
+ */
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-card:hover {
+  border-color: var(--border-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  background: linear-gradient(135deg, var(--bg-card) 0%, rgba(var(--accent-rgb), 0.03) 100%);
+}
+
+/* Top Accent Stripe */
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--theme-gradient, var(--accent-gradient));
+}
+
+/* Color Stripe Variants */
+.stat-card.blue::before   { background: linear-gradient(90deg, #2563eb, #38bdf8); }
+.stat-card.green::before  { background: linear-gradient(90deg, #059669, #34d399); }
+.stat-card.yellow::before { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.stat-card.red::before    { background: linear-gradient(90deg, #dc2626, #f87171); }
+.stat-card.orange::before { background: linear-gradient(90deg, #ea580c, #fb923c); }
+.stat-card.purple::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+.stat-card.cyan::before   { background: linear-gradient(90deg, #0891b2, #67e8f9); }
+
+.stat-label {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: var(--fs-hero);
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 6px;
+  word-break: break-all;
+}
+
+.stat-sub {
+  font-size: var(--fs-helper);
+  color: var(--text-secondary);
+  line-height: var(--lh-tight);
+}
+
+.stat-icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 38px;
+  opacity: 0.08;
+  pointer-events: none;
+  color: var(--text-primary);
+}
+
+@media (max-width: 480px) {
+  .stat-card {
+    padding: 14px 14px;
+  }
+  .stat-value {
+    font-size: 22px;
+  }
+  .stat-icon {
+    font-size: 28px;
+    right: 10px;
+  }
+}

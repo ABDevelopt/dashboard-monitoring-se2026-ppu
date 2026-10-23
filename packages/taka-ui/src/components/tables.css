@@ -1,0 +1,465 @@
+/**
+ * Taka UI — High-Density Data Tables
+ * Touch-scrollable data grids, sticky headers & columns, multi-tier headers,
+ * sort indicators, zebra striping, semantic column tints, in-cell progress, and summary footers.
+ */
+
+/* ====== 1. TABLE WRAPPER & SCROLL CONTAINER ====== */
+.table-wrap,
+.table-container {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x pan-y !important;
+  width: 100%;
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  position: relative;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.table-wrap.table-scroll-y,
+.table-container.table-scroll-y {
+  max-height: 540px;
+  overflow-y: auto !important;
+}
+
+/* Custom Scrollbar for Dense Tables */
+.table-wrap::-webkit-scrollbar,
+.table-container::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.table-wrap::-webkit-scrollbar-track,
+.table-container::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.table-wrap::-webkit-scrollbar-thumb,
+.table-container::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: var(--radius-pill);
+}
+
+.table-wrap::-webkit-scrollbar-thumb:hover,
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+/* ====== 2. BASE TABLE STYLING ====== */
+table,
+.taka-table {
+  width: 100%;
+  min-width: max-content;
+  border-collapse: collapse;
+  font-size: var(--fs-helper, 13px);
+  text-align: left;
+  line-height: var(--lh-standard, 1.5);
+  color: var(--text-secondary);
+}
+
+/* ====== 3. TABLE HEADERS (THEAD) ====== */
+thead th {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: var(--fs-caption, 11px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  user-select: none;
+  vertical-align: middle;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+thead th:hover {
+  color: var(--text-primary);
+}
+
+/* Sortable Headers */
+th.sortable {
+  cursor: pointer;
+  position: relative;
+  padding-right: 24px;
+}
+
+th.sortable::after {
+  content: '↕';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--text-dim);
+  opacity: 0.6;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+}
+
+th.sortable:hover::after {
+  opacity: 1;
+  color: var(--text-primary);
+}
+
+th.sortable.sort-asc::after {
+  content: '▲';
+  opacity: 1;
+  color: var(--accent-primary);
+}
+
+th.sortable.sort-desc::after {
+  content: '▼';
+  opacity: 1;
+  color: var(--accent-primary);
+}
+
+/* Multi-tier Grouped Headers */
+thead tr:first-child th[colspan] {
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  font-weight: 800;
+}
+
+thead tr:first-child th[rowspan="2"] {
+  vertical-align: middle;
+}
+
+/* ====== 4. STICKY / FREEZE HEADERS & COLUMNS ====== */
+/* Sticky Top Row */
+.table-sticky-header thead th,
+.table-sticky-header-multi thead tr:first-child th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+
+.table-sticky-header-multi thead tr:nth-child(2) th {
+  position: sticky !important;
+  top: 36px !important;
+  z-index: 9 !important;
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+
+/* Sticky First Column (No / ID) */
+.table-sticky-col thead th:first-child,
+.table-sticky-col tbody td:first-child {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 5 !important;
+  background: var(--bg-card);
+  box-shadow: inset -1px 0 0 var(--border);
+}
+
+.table-sticky-col thead th:first-child {
+  z-index: 15 !important;
+  background: var(--bg-secondary) !important;
+}
+
+/* Sticky First Two Columns (No + Name) */
+.table-sticky-col-2 thead th:first-child,
+.table-sticky-col-2 tbody td:first-child {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 5 !important;
+  background: var(--bg-card);
+}
+
+.table-sticky-col-2 thead th:nth-child(2),
+.table-sticky-col-2 tbody td:nth-child(2) {
+  position: sticky !important;
+  left: 48px !important;
+  z-index: 5 !important;
+  background: var(--bg-card);
+  box-shadow: inset -1px 0 0 var(--border);
+}
+
+.table-sticky-col-2 thead th:first-child,
+.table-sticky-col-2 thead th:nth-child(2) {
+  z-index: 15 !important;
+  background: var(--bg-secondary) !important;
+}
+
+/* ====== 5. TABLE BODY & ROWS (TBODY) ====== */
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.15s ease;
+}
+
+tbody tr:last-child {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background: var(--bg-card-hover);
+}
+
+tbody tr.active {
+  background: rgba(var(--accent-rgb), 0.12) !important;
+}
+
+tbody td {
+  padding: 10px 14px;
+  color: var(--text-secondary);
+  vertical-align: middle;
+  line-height: var(--lh-standard, 1.5);
+  white-space: nowrap;
+}
+
+/* ====== 6. CELL TYPES & ALIGNMENTS ====== */
+.td-primary {
+  color: var(--text-primary) !important;
+  font-weight: 600;
+}
+
+.td-secondary {
+  color: var(--text-secondary) !important;
+}
+
+.td-muted {
+  color: var(--text-muted) !important;
+}
+
+.td-code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption, 11px);
+  color: var(--text-muted) !important;
+  letter-spacing: 0.02em;
+}
+
+.td-number,
+.text-right {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.td-center,
+.text-center {
+  text-align: center !important;
+}
+
+.td-truncate {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Daily Delta Cells (+5 / 12) */
+.td-delta-pos {
+  color: var(--accent-green) !important;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.td-delta-zero {
+  color: var(--text-muted) !important;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.td-delta-sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+/* ====== 7. SEMANTIC COLUMN TINTS & SECTION SHADING ====== */
+/* Dark Mode Tints */
+.bg-purple-soft { background: rgba(168, 85, 247, 0.08) !important; }
+.bg-cyan-soft   { background: rgba(6, 182, 212, 0.08) !important; }
+.bg-yellow-soft { background: rgba(245, 158, 11, 0.08) !important; }
+.bg-blue-soft   { background: rgba(59, 130, 246, 0.08) !important; }
+.bg-green-soft  { background: rgba(16, 185, 129, 0.08) !important; }
+.bg-red-soft    { background: rgba(239, 68, 68, 0.08) !important; }
+.bg-gray-soft   { background: rgba(148, 163, 184, 0.08) !important; }
+
+/* Light Mode Subtle Tints */
+body.light-mode .bg-purple-soft { background: rgba(109, 40, 217, 0.05) !important; }
+body.light-mode .bg-cyan-soft   { background: rgba(8, 145, 178, 0.05) !important; }
+body.light-mode .bg-yellow-soft { background: rgba(217, 119, 6, 0.05) !important; }
+body.light-mode .bg-blue-soft   { background: rgba(37, 99, 235, 0.05) !important; }
+body.light-mode .bg-green-soft  { background: rgba(5, 150, 105, 0.05) !important; }
+body.light-mode .bg-red-soft    { background: rgba(220, 38, 38, 0.05) !important; }
+body.light-mode .bg-gray-soft   { background: rgba(100, 116, 139, 0.05) !important; }
+
+/* Status Text Colors (Survey Workflow Assignment Stages) */
+.status-open-text    { color: #94a3b8 !important; }
+.status-draft-text   { color: var(--accent-yellow) !important; }
+.status-submit-text  { color: #60a5fa !important; }
+.status-approve-text { color: var(--accent-green) !important; }
+.status-reject-text  { color: var(--accent-red) !important; }
+
+body.light-mode .status-open-text    { color: #64748b !important; }
+body.light-mode .status-draft-text   { color: #b45309 !important; }
+body.light-mode .status-submit-text  { color: #2563eb !important; }
+body.light-mode .status-approve-text { color: #047857 !important; }
+body.light-mode .status-reject-text  { color: #b91c1c !important; }
+
+/* ====== 8. TABLE VARIANTS ====== */
+/* Zebra Striping */
+.table-striped tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.018);
+}
+body.light-mode .table-striped tbody tr:nth-child(even) {
+  background: rgba(60, 51, 46, 0.02);
+}
+
+/* Bordered Table */
+.table-bordered th,
+.table-bordered td {
+  border: 1px solid var(--border);
+}
+
+/* High-Density Compact Variant */
+.table-compact thead th,
+.table-dense thead th {
+  padding: 6px 10px;
+  font-size: 10px;
+}
+.table-compact tbody td,
+.table-dense tbody td {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+/* ====== 9. SUMMARY FOOTER (TFOOT) ====== */
+tfoot tr {
+  background: var(--bg-secondary);
+  border-top: 2px solid var(--border-light);
+  font-weight: 700;
+}
+
+tfoot td {
+  padding: 10px 14px;
+  color: var(--text-primary);
+  vertical-align: middle;
+  font-size: var(--fs-helper, 12px);
+  white-space: nowrap;
+}
+
+.tfoot-label {
+  font-size: var(--fs-caption, 11px);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+}
+
+.tfoot-total {
+  font-weight: 800;
+  font-size: var(--fs-body, 14px);
+  color: var(--accent-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ====== 10. TABLE CONTROLS & PAGINATION ====== */
+.table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
+}
+
+.table-search {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+  max-width: 380px;
+}
+
+.table-search input {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  font-size: var(--fs-helper, 12px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.table-search input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
+}
+
+.table-search-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.table-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-bottom-left-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+  font-size: var(--fs-helper, 12px);
+  color: var(--text-muted);
+}
+
+.table-pagination-btns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: var(--fs-helper, 12px);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: var(--transition-fast);
+}
+
+.page-btn:hover:not(.disabled):not(.active) {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+
+.page-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #ffffff !important;
+}
+
+.page-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}

@@ -1,0 +1,96 @@
+/**
+ * Taka UI — Tooltips & Contextual Hints
+ * High-contrast, adaptive tooltips with directional placement and micro-interactions.
+ */
+
+.help-tooltip-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.help-tooltip-icon {
+  color: var(--text-muted);
+  font-size: 14px;
+  transition: color var(--transition-fast), transform var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.help-tooltip-container:hover .help-tooltip-icon {
+  color: var(--accent-primary);
+  transform: scale(1.15);
+}
+
+.help-tooltip-box {
+  visibility: hidden;
+  width: 280px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  text-align: left;
+  border-radius: var(--radius);
+  padding: 14px;
+  position: absolute;
+  z-index: 999;
+  right: 0;
+  top: calc(100% + 8px);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--fs-caption, 11px);
+  line-height: var(--lh-normal, 1.5);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+/* Tooltip Arrow */
+.help-tooltip-box::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: 12px;
+  width: 10px;
+  height: 10px;
+  background: var(--bg-card);
+  border-left: 1px solid var(--border-light);
+  border-top: 1px solid var(--border-light);
+  transform: rotate(45deg);
+}
+
+body.light-mode .help-tooltip-box {
+  background-color: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  color: #334155 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.10) !important;
+}
+
+body.light-mode .help-tooltip-box::before {
+  background-color: #ffffff !important;
+  border-left: 1px solid rgba(0, 0, 0, 0.12) !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+body.light-mode .help-tooltip-box strong {
+  color: #0f172a !important;
+}
+
+.help-tooltip-container:hover .help-tooltip-box {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Left-aligned variant */
+.help-tooltip-box.tooltip-left {
+  right: auto;
+  left: 0;
+}
+.help-tooltip-box.tooltip-left::before {
+  right: auto;
+  left: 12px;
+}

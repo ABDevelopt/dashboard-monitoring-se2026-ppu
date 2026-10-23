@@ -80,7 +80,6 @@
         <div class="card-title">
           <span class="text-orange"><i class="bi bi-pause-circle"></i> PCL Stagnan — Tidak Ada Penambahan Dokumen FASIH selama 1 Hari</span>
         </div>
-        <span class="badge badge-orange"><%= warning.stagnanPcl.length %> Petugas</span>
       </div>
 
       <% if (warning.stagnanPcl.length > 0) { %>
@@ -174,7 +173,6 @@
         <div class="card-title">
           <span class="text-yellow"><i class="bi bi-hourglass-split"></i> PCL dengan Progres Lambat (< 5.0 dokumen/hari)</span>
         </div>
-        <span class="badge badge-yellow"><%= warning.slowPcl.length %> Petugas</span>
       </div>
 
       <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Daftar PCL dengan rata-rata progres di bawah 5.0 dokumen FASIH per hari sejak awal sensus (Sensus berjalan: <strong><%= warning.diffDays %></strong> hari).</p>
@@ -252,7 +250,6 @@
         <div class="card-title">
           <span class="text-red"><i class="bi bi-graph-down"></i> PCL Berisiko Tinggi (Proyeksi < 40% per 15 Jul atau < 100% per <%= formatIndonesianDateShort(settings.speedometer_target_date || '2026-08-31') %>)</span>
         </div>
-        <span class="badge badge-red"><%= (warning.lowProjectedPcl || []).length %> Petugas</span>
       </div>
 
       <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">

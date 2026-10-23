@@ -610,6 +610,12 @@ body.has-breadcrumb .page-content {
   gap: 8px;
   flex-wrap: wrap;
 }
+.card-header .badge,
+.card-header .taka-badge,
+.card > .badge,
+.card > .taka-badge {
+  display: none !important;
+}
 .card-title {
   font-size: 15px;
   font-weight: 700;
@@ -1577,6 +1583,7 @@ body.light-mode .pcl-pill-btn {
 @media (max-width: 768px) {
   .show-sm-flex { display: flex !important; }
   .show-sm-inline { display: inline-flex !important; }
+  .show-md-inline { display: none !important; }
   .pcl-filter-card.is-collapsed #filterForm { display: none !important; }
 }
 
@@ -4901,6 +4908,8 @@ th:has(.filter-header-wrapper) {
 
   /* Right: icon-only — hide all text labels */
   .topbar-action-label,
+  .topbar-date-label,
+  .show-md-inline,
   .target-btn-text,
   .topbar-chevron {
     display: none !important;

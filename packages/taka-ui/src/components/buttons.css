@@ -1,0 +1,176 @@
+/**
+ * Taka UI — Buttons & Tactile Feedback
+ * Button variants, pill sizes, survey CTA, and active micro-interactions.
+ * Flat, crisp aesthetic without colored glow halos.
+ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--fs-helper, 12px);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  box-shadow: none !important;
+  transition: var(--transition-fast);
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+/* Instant Tactile Press Effect */
+.btn:active,
+button:active,
+.btn-survey-cta:active {
+  transform: scale(0.975) !important;
+  transition: transform 0.08s ease-out !important;
+}
+
+/* Primary Button (Flat crisp fill, no glow) */
+.btn-primary {
+  background: var(--accent-primary);
+  color: #0f0f12;
+  border-color: transparent;
+  box-shadow: none !important;
+}
+
+.btn-primary:hover {
+  background: var(--accent-primary-hover);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: none !important;
+}
+
+body.light-mode .btn-primary {
+  color: #ffffff;
+}
+
+/* Secondary Button */
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-color: var(--border);
+  box-shadow: none !important;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+  box-shadow: none !important;
+}
+
+/* Semantic Action Buttons (No Glow) */
+.btn-success {
+  background: var(--accent-green);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: none !important;
+}
+.btn-success:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: none !important;
+}
+
+.btn-danger {
+  background: var(--accent-red);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: none !important;
+}
+.btn-danger:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: none !important;
+}
+
+.btn-warning {
+  background: var(--accent-yellow);
+  color: #0f172a;
+  border-color: transparent;
+  box-shadow: none !important;
+}
+.btn-warning:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: none !important;
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  box-shadow: none !important;
+}
+.btn-outline:hover {
+  background: rgba(var(--accent-rgb), 0.1);
+  box-shadow: none !important;
+}
+
+/* Ghost Button (Border-free flat button) */
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+  box-shadow: none !important;
+}
+.btn-ghost:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  box-shadow: none !important;
+}
+
+/* Sizes */
+.btn-lg {
+  padding: 12px 24px;
+  font-size: var(--fs-body, 14px);
+}
+
+.btn-sm {
+  padding: 5px 12px;
+  font-size: var(--fs-caption, 11px);
+}
+
+.btn-xs {
+  padding: 3px 8px;
+  font-size: 10px;
+}
+
+.btn-pill {
+  border-radius: var(--radius-pill);
+}
+
+/* High-Impact Survey / Hero CTA Button (No Glow) */
+.btn-survey-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 20px;
+  font-size: var(--fs-body, 14px);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  border: none;
+  color: #ffffff !important;
+  background: var(--theme-gradient, var(--accent-gradient));
+  box-shadow: none !important;
+}
+
+.btn-survey-cta:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+  box-shadow: none !important;
+}

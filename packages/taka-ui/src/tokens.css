@@ -1,0 +1,136 @@
+/**
+ * Taka UI — Design Tokens
+ * Variables for Dark Mode, Light Mode, Typography Scale, Spacing, & Elevations
+ */
+
+:root {
+  /* Surface & Background (Dark Mode Default) */
+  --bg-primary: #0f0f12;
+  --bg-secondary: #15151b;
+  --bg-card: #1b1b24;
+  --bg-card-hover: #23232f;
+  --bg-sidebar: var(--bg-primary);
+  --bg-summary: rgba(255, 255, 255, 0.03);
+  --bg-progress-wrap: rgba(255, 255, 255, 0.06);
+  --bg-warning-stat: rgba(255, 255, 255, 0.05);
+
+  /* Default Accent (SE2026 Radiant Orange) */
+  --accent-primary: #f97316;
+  --accent-primary-hover: #ea580c;
+  --accent-secondary: #fbbf24;
+  --accent-blue: #f97316;
+  --accent-cyan: #fbbf24;
+  --accent-orange: #c2410c;
+  --accent-rgb: 249, 115, 22;
+  --accent-gradient: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #fbbf24 100%);
+  --accent-glow: 0 16px 36px -8px rgba(249, 115, 22, 0.35);
+
+  /* Semantic Status Colors (High-Contrast Dark Mode) */
+  --accent-green: #34d399;
+  --accent-yellow: #fbbf24;
+  --accent-red: #f87171;
+  --accent-purple: #a78bfa;
+  --accent-sky: #38bdf8;
+
+  /* Typography Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  /* Borders & Dividers */
+  --border: #292938;
+  --border-light: #353549;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+
+  /* Shadows & Glows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+  --bg-glow: radial-gradient(circle at 50% -20%, rgba(var(--accent-rgb), 0.08), transparent 70%);
+
+  /* Border Radii */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  /* Layout Dimensions */
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 72px;
+  --header-height: 64px;
+  --breadcrumb-height: 36px;
+  --bottom-nav-height: 60px;
+
+  /* Motion & Transitions */
+  --transition-fast: all 0.15s ease;
+  --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Mobile-first Typography Scale (BPS / Standard Monitoring Scale) */
+  --fs-hero: 28px;
+  --fs-header: 22px;
+  --fs-sub-header: 16px;
+  --fs-body: 14px;
+  --fs-helper: 12px;
+  --fs-caption: 11px;
+
+  /* Line Heights */
+  --lh-tight: 1.25;
+  --lh-standard: 1.5;
+  --lh-relaxed: 1.6;
+
+  /* Font Families */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Courier New', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Light Mode (Warm Ivory / Parchment) */
+body.light-mode,
+[data-theme="light"] {
+  --bg-primary: #f5efe6;
+  --bg-secondary: #fdfcfb;
+  --bg-card: #fdfcfb;
+  --bg-card-hover: #ebe4d8;
+  --bg-sidebar: var(--bg-primary);
+  --bg-summary: rgba(60, 51, 46, 0.025);
+  --bg-progress-wrap: rgba(60, 51, 46, 0.06);
+  --bg-warning-stat: rgba(60, 51, 46, 0.04);
+
+  /* Light mode brand orange with strong contrast */
+  --accent-primary: #c2410c;
+  --accent-primary-hover: #9a3412;
+  --accent-secondary: #d97706;
+  --accent-blue: #c2410c;
+  --accent-cyan: #d97706;
+  --accent-orange: #c2410c;
+  --accent-rgb: 194, 65, 12;
+  --accent-gradient: linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #d97706 100%);
+  --accent-glow: 0 12px 30px -6px rgba(194, 65, 12, 0.25);
+
+  /* Accessible Light Mode Semantics */
+  --accent-green: #047857;
+  --accent-yellow: #b45309;
+  --accent-red: #b91c1c;
+  --accent-purple: #6d28d9;
+  --accent-sky: #0284c7;
+
+  /* High-Contrast Light Mode Typography */
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+
+  /* Soft Warm Borders */
+  --border: #dfd5c6;
+  --border-light: #d3c9b8;
+  --border-subtle: rgba(60, 51, 46, 0.08);
+
+  /* Delicate Shadows */
+  --shadow-sm: 0 2px 6px rgba(60, 51, 46, 0.03);
+  --shadow: 0 4px 20px rgba(60, 51, 46, 0.05);
+  --shadow-lg: 0 10px 30px rgba(60, 51, 46, 0.08);
+  --bg-glow: radial-gradient(circle at 50% -20%, rgba(var(--accent-rgb), 0.025), transparent 70%);
+}

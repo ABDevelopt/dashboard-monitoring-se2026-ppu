@@ -1,0 +1,292 @@
+/**
+ * Taka UI — Progress Bars & Milestone Trackers
+ * Capsule progress bars, in-cell table progress, milestone timeline with target markers,
+ * stacked bars, striped animations, and circular progress rings.
+ */
+
+/* ====== 1. CORE PROGRESS BAR ====== */
+.progress-bar-wrap {
+  background: var(--bg-progress-wrap);
+  border-radius: var(--radius-pill);
+  height: 8px;
+  overflow: hidden;
+  margin-top: 8px;
+  position: relative;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--theme-gradient, var(--accent-gradient));
+  position: relative;
+  min-width: 0;
+}
+
+/* ====== 2. COLOR GRADIENTS ====== */
+.progress-bar.green  { background: linear-gradient(90deg, #059669, #34d399); }
+.progress-bar.yellow { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.progress-bar.red    { background: linear-gradient(90deg, #dc2626, #f87171); }
+.progress-bar.blue   { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+.progress-bar.orange { background: linear-gradient(90deg, #ea580c, #fb923c); }
+.progress-bar.purple { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+.progress-bar.cyan   { background: linear-gradient(90deg, #0891b2, #22d3ee); }
+
+/* ====== 3. SIZE VARIANTS ====== */
+.progress-xs { height: 3px; }
+.progress-sm { height: 5px; }
+.progress-md { height: 12px; }
+.progress-lg {
+  height: 18px;
+  display: flex;
+  align-items: center;
+  padding: 0 2px;
+}
+.progress-xl {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+
+/* Label inside larger progress bars */
+.progress-bar-label {
+  font-size: var(--fs-caption, 11px);
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  padding: 0 8px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+/* ====== 4. IN-TABLE PROGRESS METRIC ====== */
+.table-progress {
+  min-width: 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  vertical-align: middle;
+}
+
+.table-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10.5px;
+  line-height: 1.2;
+  white-space: nowrap;
+  gap: 6px;
+}
+
+.table-progress-pct {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-progress-ratio {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+}
+
+.table-progress-track {
+  height: 5px;
+  background: var(--bg-progress-wrap);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Automated Threshold Helpers for Survey Targets */
+.table-progress-pct.success { color: var(--accent-green); }
+.table-progress-pct.warning { color: var(--accent-yellow); }
+.table-progress-pct.danger  { color: var(--accent-red); }
+
+/* ====== 5. HERO MILESTONE TIMELINE & TARGET MARKERS ====== */
+.progress-timeline-container {
+  position: relative;
+  height: 28px;
+  margin-top: 22px;
+  margin-bottom: 14px;
+  width: 100%;
+}
+
+.bg-progress-timeline {
+  width: 100%;
+  height: 14px;
+  background: var(--bg-progress-wrap);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-subtle);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.progress-bar-premium {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--theme-gradient, var(--accent-gradient));
+  box-shadow: 0 2px 10px rgba(var(--accent-rgb), 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Dashed Vertical Target Cumulative Markers (e.g. 25%, 40%, 100%) */
+.target-marker {
+  position: absolute;
+  top: -4px;
+  height: 36px;
+  border-left: 2px dashed var(--border-light);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.target-marker.active {
+  border-left-color: var(--accent-primary);
+}
+
+.target-marker-text {
+  position: absolute;
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--text-muted);
+  left: 50%;
+  transform: translateX(-50%);
+  letter-spacing: 0.02em;
+}
+
+.target-marker.top .target-marker-text {
+  top: -14px;
+}
+
+.target-marker.bottom .target-marker-text {
+  bottom: -14px;
+}
+
+.target-marker.active .target-marker-text {
+  color: var(--accent-primary);
+}
+
+/* ====== 6. MULTI-SEGMENT / STACKED PROGRESS ====== */
+.progress-stacked {
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  background: var(--bg-progress-wrap);
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.progress-stacked .progress-bar {
+  border-radius: 0;
+}
+
+.progress-stacked .progress-bar:first-child {
+  border-top-left-radius: var(--radius-pill);
+  border-bottom-left-radius: var(--radius-pill);
+}
+
+.progress-stacked .progress-bar:last-child {
+  border-top-right-radius: var(--radius-pill);
+  border-bottom-right-radius: var(--radius-pill);
+}
+
+/* ====== 7. STRIPED & ANIMATED PROGRESS ====== */
+.progress-bar-striped {
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.15) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 1rem 1rem;
+}
+
+.progress-bar-animated {
+  animation: taka-progress-stripes 1s linear infinite;
+}
+
+@keyframes taka-progress-stripes {
+  0% { background-position-x: 1rem; }
+  100% { background-position-x: 0; }
+}
+
+/* Indeterminate Loading Bar */
+.progress-indeterminate {
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-indeterminate::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 50%;
+  height: 100%;
+  background: var(--theme-gradient, var(--accent-gradient));
+  border-radius: var(--radius-pill);
+  animation: taka-indeterminate 1.5s infinite ease-in-out;
+}
+
+@keyframes taka-indeterminate {
+  0% { left: -50%; width: 50%; }
+  50% { left: 25%; width: 60%; }
+  100% { left: 100%; width: 50%; }
+}
+
+/* ====== 8. CIRCULAR PROGRESS RING ====== */
+.progress-ring-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.progress-ring-circle {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.progress-ring-text {
+  position: absolute;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.progress-ring-pct {
+  font-size: var(--fs-hero, 26px);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent-cyan, var(--accent-primary));
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-ring-label {
+  font-size: var(--fs-caption, 11px);
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

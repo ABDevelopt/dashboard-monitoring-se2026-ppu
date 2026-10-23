@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taka UI — Kitchen Sink & Documentation</title>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <!-- Taka UI CSS Framework -->
+  <link rel="stylesheet" href="../dist/taka-ui.css">
+</head>
+<body class="theme-orange">
+
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- ====== SIDEBAR ====== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <i class="bi bi-speedometer2"></i>
+      </div>
+      <div class="sidebar-logo-text">
+        <h1>Taka UI</h1>
+        <p>Framework v1.0.0</p>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">Utama</div>
+      <a href="#overview" class="nav-item active">
+        <i class="bi bi-grid-fill nav-icon"></i>
+        <span>Overview</span>
+      </a>
+      <a href="#stat-cards" class="nav-item">
+        <i class="bi bi-bar-chart-fill nav-icon"></i>
+        <span>Stat Cards</span>
+        <span class="nav-badge">7</span>
+      </a>
+      <a href="#tables" class="nav-item">
+        <i class="bi bi-table nav-icon"></i>
+        <span>Data Tables</span>
+      </a>
+
+      <div class="nav-section">Komponen UI</div>
+      <a href="#buttons" class="nav-item">
+        <i class="bi bi-hand-index-thumb-fill nav-icon"></i>
+        <span>Buttons & Tactile</span>
+      </a>
+      <a href="#badges" class="nav-item">
+        <i class="bi bi-patch-check-fill nav-icon"></i>
+        <span>Badges & Progress</span>
+      </a>
+      <a href="#forms" class="nav-item">
+        <i class="bi bi-filter-square-fill nav-icon"></i>
+        <span>Filter & Forms</span>
+      </a>
+      <a href="#dialogs" class="nav-item">
+        <i class="bi bi-window-stack nav-icon"></i>
+        <span>Modals & Toasts</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <span>BPS Penajam Paser Utara</span>
+      <span class="badge badge-green">MIT License</span>
+    </div>
+  </aside>
+
+  <!-- ====== MAIN CONTENT WRAPPER ====== -->
+  <div class="main-wrapper">
+    
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="topbar-action-btn" onclick="toggleSidebar()" title="Toggle Sidebar">
+        <i class="bi bi-list"></i>
+      </button>
+
+      <div class="topbar-brand">
+        <div>
+          <div class="topbar-title">Taka UI Showcase & Component Library</div>
+          <div class="topbar-subtitle">Modern High-Contrast Dark-First Dashboard Framework</div>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <!-- Live Theme Switcher -->
+        <select id="themeSelector" onchange="changeTheme(this.value)" style="padding: 6px 10px; font-weight: 600;">
+          <option value="theme-orange">🟠 Orange (SE2026)</option>
+          <option value="theme-cyan">🔵 Cyan (Sakernas Listing)</option>
+          <option value="theme-purple">🟣 Purple (Sakernas Pendataan)</option>
+          <option value="theme-emerald">🟢 Emerald (Prosperity)</option>
+          <option value="theme-blue">🔷 Sapphire (Enterprise)</option>
+        </select>
+
+        <!-- Dark/Light Mode Toggle -->
+        <button class="topbar-action-btn" onclick="toggleLightMode()" title="Toggle Dark/Light Mode">
+          <i id="themeModeIcon" class="bi bi-sun-fill"></i>
+        </button>
+
+        <a href="https://github.com" target="_blank" class="topbar-action-btn" title="GitHub Source">
+          <i class="bi bi-github"></i>
+        </a>
+      </div>
+    </header>
+
+    <!-- Page Content Container -->
+    <main class="page-content">
+
+      <!-- Hero Banner -->
+      <div class="card" style="margin-bottom: 24px; background: linear-gradient(135deg, var(--bg-card) 0%, rgba(var(--accent-rgb), 0.08) 100%);">
+        <div class="d-flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <span class="badge badge-blue mb-2">CSS Framework v1.0.0</span>
+            <h1 style="font-size: 26px; font-weight: 800; margin-bottom: 6px;">Taka UI — Modern Dashboard Style</h1>
+            <p style="max-width: 650px;">
+              Framework CSS mandiri yang diekstrak langsung dari arsitektur dashboard monitoring BPS PPU (Pananyo Taka / SE2026). Dirancang untuk aplikasi monitoring padat data, high-contrast WCAG AA, responsive dual-navigation, dan sistem aksen multi-survei.
+            </p>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary" onclick="showToast('info', 'Taka UI siap digunakan untuk project baru!')">
+              <i class="bi bi-download"></i> Unduh Framework
+            </button>
+            <a href="dashboard-template.html" class="btn btn-secondary">
+              <i class="bi bi-layout-text-window-reverse"></i> Template Kosong
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== 1. STAT CARDS SECTION ====== -->
+      <section id="stat-cards" class="mb-5">
+        <div class="d-flex items-center justify-between mb-3">
+          <h2 style="font-size: 18px; font-weight: 700;">1. Stat Cards (Signature Metric Boxes)</h2>
+          <span class="badge badge-gray">Auto-fit Grid</span>
+        </div>
+
+        <div class="stats-grid">
+          <!-- Default Accent Card -->
+          <div class="stat-card">
+            <span class="stat-label">Total Beban Tugas</span>
+            <span class="stat-value">12.840</span>
+            <span class="stat-sub">Dokumen Terdaftar</span>
+            <i class="bi bi-folder-fill stat-icon"></i>
+          </div>
+
+          <!-- Green Card -->
+          <div class="stat-card green">
+            <span class="stat-label">Realisasi Selesai</span>
+            <span class="stat-value text-success">9.420</span>
+            <span class="stat-sub">73.4% dari Target</span>
+            <i class="bi bi-check-circle-fill stat-icon"></i>
+          </div>
+
+          <!-- Yellow Card -->
+          <div class="stat-card yellow">
+            <span class="stat-label">Sedang Diproses</span>
+            <span class="stat-value text-warning">2.110</span>
+            <span class="stat-sub">Dalam Pemeriksaan PML</span>
+            <i class="bi bi-hourglass-split stat-icon"></i>
+          </div>
+
+          <!-- Red Card -->
+          <div class="stat-card red">
+            <span class="stat-label">Belum Ada Progres</span>
+            <span class="stat-value text-danger">1.310</span>
+            <span class="stat-sub">12 Petugas Perlu Atensi</span>
+            <i class="bi bi-exclamation-triangle-fill stat-icon"></i>
+          </div>
+
+          <!-- Purple Card -->
+          <div class="stat-card purple">
+            <span class="stat-label">Deteksi Anomali</span>
+            <span class="stat-value">48</span>
+            <span class="stat-sub">Validasi Logika Eror</span>
+            <i class="bi bi-shield-exclamation stat-icon"></i>
+          </div>
+
+          <!-- Blue Card -->
+          <div class="stat-card blue">
+            <span class="stat-label">Petugas Lapangan</span>
+            <span class="stat-value">184</span>
+            <span class="stat-sub">14 PML &bull; 170 PCL</span>
+            <i class="bi bi-people-fill stat-icon"></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== 2. DATA TABLES & PROGRESS SECTION ====== -->
+      <section id="tables" class="mb-5">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">
+                <i class="bi bi-table text-accent"></i>
+                Rekapitulasi Progres Kecamatan
+              </div>
+              <div class="card-subtitle">Tabel padat data dengan indikator bar progres dan badge status</div>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-sm btn-secondary" onclick="showToast('success', 'Data berhasil disegarkan!')">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+              <button class="btn btn-sm btn-primary" onclick="openModal()">
+                <i class="bi bi-plus-lg"></i> Tambah Data
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter & Search Toolbar -->
+          <div class="table-toolbar">
+            <div class="table-search">
+              <i class="bi bi-search table-search-icon"></i>
+              <input type="search" placeholder="Cari kecamatan, SLS, atau petugas...">
+            </div>
+            <div class="d-flex items-center gap-2">
+              <select style="min-width: 140px;">
+                <option value="">Semua Status</option>
+                <option>Selesai 100%</option>
+                <option>On Track</option>
+                <option>Kritis (< 40%)</option>
+              </select>
+              <button class="btn btn-secondary">
+                <i class="bi bi-download"></i> Ekspor CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Responsive High-Density Multi-Tier Sticky Data Table -->
+          <div class="table-wrap table-sticky-header table-sticky-col" style="border-top-left-radius: 0; border-top-right-radius: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-top: none; border-bottom: none;">
+            <table>
+              <thead>
+                <tr>
+                  <th rowspan="2" class="sortable sort-asc" style="width: 50px; text-align: center;">No</th>
+                  <th rowspan="2" class="sortable" style="min-width: 170px;">Nama Wilayah</th>
+                  <th rowspan="2" class="td-number bg-purple-soft" style="min-width: 150px;">Progres Survei</th>
+                  <th rowspan="2" class="td-number" style="min-width: 100px;">Target</th>
+                  <th colspan="3" class="text-center bg-cyan-soft" style="border-bottom: 1px solid var(--border);">Rincian Status Dokumen</th>
+                  <th rowspan="2" class="td-number" style="min-width: 90px;">Delta Harian</th>
+                  <th rowspan="2" class="text-center" style="width: 80px;">Status</th>
+                </tr>
+                <tr>
+                  <th class="td-number bg-cyan-soft status-draft-text" style="min-width: 70px;">Draft</th>
+                  <th class="td-number bg-cyan-soft status-submit-text" style="min-width: 75px;">Submit</th>
+                  <th class="td-number bg-cyan-soft status-approve-text" style="min-width: 80px;">Approved</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="text-center" style="font-weight: 700;">1</td>
+                  <td>
+                    <span class="td-primary">Penajam</span>
+                    <div class="td-code">KODE: 64.09.010</div>
+                  </td>
+                  <td class="bg-purple-soft">
+                    <div class="table-progress">
+                      <div class="table-progress-meta">
+                        <span class="table-progress-pct success">90.8%</span>
+                        <span class="table-progress-ratio">4.920 / 5.420</span>
+                      </div>
+                      <div class="table-progress-track">
+                        <div class="progress-bar green" style="width: 90.8%;"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="td-number">5.420</td>
+                  <td class="td-number bg-cyan-soft status-draft-text">140</td>
+                  <td class="td-number bg-cyan-soft status-submit-text">380</td>
+                  <td class="td-number bg-cyan-soft status-approve-text" style="font-weight: 700;">4.400</td>
+                  <td class="td-number td-delta-pos">+42 <span class="td-delta-sub">(dok)</span></td>
+                  <td class="text-center"><span class="badge badge-green badge-dot">Aman</span></td>
+                </tr>
+
+                <tr>
+                  <td class="text-center" style="font-weight: 700;">2</td>
+                  <td>
+                    <span class="td-primary">Waru</span>
+                    <div class="td-code">KODE: 64.09.020</div>
+                  </td>
+                  <td class="bg-purple-soft">
+                    <div class="table-progress">
+                      <div class="table-progress-meta">
+                        <span class="table-progress-pct" style="color: var(--accent-primary);">74.3%</span>
+                        <span class="table-progress-ratio">1.620 / 2.180</span>
+                      </div>
+                      <div class="table-progress-track">
+                        <div class="progress-bar" style="width: 74.3%;"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="td-number">2.180</td>
+                  <td class="td-number bg-cyan-soft status-draft-text">95</td>
+                  <td class="td-number bg-cyan-soft status-submit-text">210</td>
+                  <td class="td-number bg-cyan-soft status-approve-text" style="font-weight: 700;">1.315</td>
+                  <td class="td-number td-delta-pos">+18 <span class="td-delta-sub">(dok)</span></td>
+                  <td class="text-center"><span class="badge badge-blue badge-dot">On-Track</span></td>
+                </tr>
+
+                <tr>
+                  <td class="text-center" style="font-weight: 700;">3</td>
+                  <td>
+                    <span class="td-primary">Babulu</span>
+                    <div class="td-code">KODE: 64.09.030</div>
+                  </td>
+                  <td class="bg-purple-soft">
+                    <div class="table-progress">
+                      <div class="table-progress-meta">
+                        <span class="table-progress-pct warning">54.0%</span>
+                        <span class="table-progress-ratio">1.750 / 3.240</span>
+                      </div>
+                      <div class="table-progress-track">
+                        <div class="progress-bar yellow" style="width: 54.0%;"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="td-number">3.240</td>
+                  <td class="td-number bg-cyan-soft status-draft-text">320</td>
+                  <td class="td-number bg-cyan-soft status-submit-text">410</td>
+                  <td class="td-number bg-cyan-soft status-approve-text" style="font-weight: 700;">1.020</td>
+                  <td class="td-number td-delta-pos">+12 <span class="td-delta-sub">(dok)</span></td>
+                  <td class="text-center"><span class="badge badge-yellow badge-dot">At-Risk</span></td>
+                </tr>
+
+                <tr>
+                  <td class="text-center" style="font-weight: 700;">4</td>
+                  <td>
+                    <span class="td-primary">Sepaku (IKN)</span>
+                    <div class="td-code">KODE: 64.09.040</div>
+                  </td>
+                  <td class="bg-purple-soft">
+                    <div class="table-progress">
+                      <div class="table-progress-meta">
+                        <span class="table-progress-pct danger">36.0%</span>
+                        <span class="table-progress-ratio">720 / 2.000</span>
+                      </div>
+                      <div class="table-progress-track">
+                        <div class="progress-bar red" style="width: 36.0%;"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="td-number">2.000</td>
+                  <td class="td-number bg-cyan-soft status-draft-text">180</td>
+                  <td class="td-number bg-cyan-soft status-submit-text">190</td>
+                  <td class="td-number bg-cyan-soft status-approve-text" style="font-weight: 700;">350</td>
+                  <td class="td-number td-delta-zero">0 <span class="td-delta-sub">(stagnan)</span></td>
+                  <td class="text-center"><span class="badge badge-red badge-dot">Kritis</span></td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="2" class="tfoot-label">TOTAL KABUPATEN</td>
+                  <td class="bg-purple-soft">
+                    <div class="table-progress">
+                      <div class="table-progress-meta">
+                        <span class="table-progress-pct" style="color: var(--accent-primary); font-weight: 800;">70.1%</span>
+                        <span class="table-progress-ratio">9.010 / 12.840</span>
+                      </div>
+                      <div class="table-progress-track">
+                        <div class="progress-bar" style="width: 70.1%;"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="td-number tfoot-total">12.840</td>
+                  <td class="td-number bg-cyan-soft status-draft-text" style="font-weight: 700;">735</td>
+                  <td class="td-number bg-cyan-soft status-submit-text" style="font-weight: 700;">1.190</td>
+                  <td class="td-number bg-cyan-soft status-approve-text" style="font-weight: 800;">7.085</td>
+                  <td class="td-number td-delta-pos" style="font-weight: 800;">+72</td>
+                  <td class="text-center"><span class="badge badge-blue">Kolektif</span></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Table Pagination Footer -->
+          <div class="table-pagination">
+            <div>Menampilkan <strong>1-4</strong> dari <strong>4</strong> wilayah kecamatan</div>
+            <div class="table-pagination-btns">
+              <button class="page-btn disabled"><i class="bi bi-chevron-left"></i></button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn disabled"><i class="bi bi-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== 3. BUTTONS & BADGES SHOWCASE ====== -->
+      <section id="buttons" class="mb-5">
+        <div class="grid grid-cols-2 gap-4">
+          
+          <!-- Buttons Card -->
+          <div class="card">
+            <div class="card-title mb-3">
+              <i class="bi bi-hand-index-thumb text-accent"></i> Buttons & Tactile Feedback
+            </div>
+            <p class="mb-3">Semua tombol memiliki efek tekan instan <code>scale(0.975)</code> untuk pengalaman tactile.</p>
+            
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              <button class="btn btn-primary">Primary</button>
+              <button class="btn btn-secondary">Secondary</button>
+              <button class="btn btn-success">Success</button>
+              <button class="btn btn-warning">Warning</button>
+              <button class="btn btn-danger">Danger</button>
+              <button class="btn btn-outline">Outline</button>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2 items-center mb-3">
+              <button class="btn btn-lg btn-primary">Large Button</button>
+              <button class="btn btn-primary">Normal</button>
+              <button class="btn btn-sm btn-primary">Small</button>
+              <button class="btn btn-xs btn-primary">Mini</button>
+              <button class="btn btn-primary btn-pill">Pill Shape</button>
+            </div>
+
+            <button class="btn-survey-cta">
+              <span>Buka Modul Dasbor Utama</span>
+              <i class="bi bi-arrow-right"></i>
+            </button>
+          </div>
+
+          <!-- Badges & Progress Card -->
+          <div class="card" id="badges">
+            <div class="card-title mb-3">
+              <i class="bi bi-patch-check text-accent"></i> Badges & Progress Architecture
+            </div>
+            <p class="mb-3">Koleksi status badges WCAG AA dan ragam tipe progress bar pemantauan.</p>
+
+            <!-- Status Badges -->
+            <div class="d-flex flex-wrap gap-2 mb-4">
+              <span class="badge badge-green badge-dot">Completed</span>
+              <span class="badge badge-yellow badge-dot">In Progress</span>
+              <span class="badge badge-red badge-dot">Delayed</span>
+              <span class="badge badge-blue badge-dot">Active</span>
+              <span class="badge badge-purple badge-dot">Anomaly</span>
+              <span class="badge badge-orange badge-dot">Survey CTA</span>
+              <span class="badge badge-gray">Muted</span>
+            </div>
+
+            <!-- Milestone Timeline with Cumulative Target Markers -->
+            <label class="form-label mb-1">Hero Milestone Progress Timeline (Target 25% & 40%)</label>
+            <div class="progress-timeline-container" style="height: 32px; margin-top: 18px; margin-bottom: 24px;">
+              <div class="bg-progress-timeline" style="height: 18px;">
+                <div class="progress-bar progress-bar-premium" style="width: 70.1%;">
+                  <span class="progress-bar-label">70.1%</span>
+                </div>
+              </div>
+              <!-- Marker 25% -->
+              <div class="target-marker" style="left: 25%;">
+                <span class="target-marker-text" style="top: -14px;">30 Jun: 25%</span>
+              </div>
+              <!-- Marker 40% -->
+              <div class="target-marker active" style="left: 40%;">
+                <span class="target-marker-text" style="bottom: -14px;">15 Jul: 40%</span>
+              </div>
+              <!-- Marker 100% -->
+              <div class="target-marker" style="left: 100%;">
+                <span class="target-marker-text" style="top: -14px;">Target: 100%</span>
+              </div>
+            </div>
+
+            <!-- Multi-Segment Stacked Progress -->
+            <label class="form-label mb-1 mt-3">Multi-Segment / Stacked Bar (Workflow Distribution)</label>
+            <div class="progress-stacked mb-3" style="height: 10px;">
+              <div class="progress-bar yellow" style="width: 15%;" title="Draft: 15%"></div>
+              <div class="progress-bar blue" style="width: 25%;" title="Submitted: 25%"></div>
+              <div class="progress-bar green" style="width: 50%;" title="Approved: 50%"></div>
+              <div class="progress-bar red" style="width: 10%;" title="Rejected: 10%"></div>
+            </div>
+
+            <!-- Striped, Animated, & Indeterminate -->
+            <div class="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label class="form-label" style="font-size: 11px;">Striped & Animated</label>
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 65%;"></div>
+                </div>
+              </div>
+              <div>
+                <label class="form-label" style="font-size: 11px;">Indeterminate Loader</label>
+                <div class="progress-bar-wrap progress-indeterminate"></div>
+              </div>
+            </div>
+
+            <!-- Circular Progress Ring Preview -->
+            <div class="p-3 mt-3 d-flex items-center justify-between" style="background: var(--bg-secondary); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+              <div>
+                <div style="font-weight: 700; font-size: 13px;">Progress Ring KPI</div>
+                <div class="text-muted" style="font-size: 11px;">Rasio capaian sensus agregat</div>
+              </div>
+              <div class="progress-ring-wrap" style="width: 72px; height: 72px;">
+                <svg width="72" height="72">
+                  <circle cx="36" cy="36" r="30" stroke="var(--bg-progress-wrap)" stroke-width="6" fill="transparent" />
+                  <circle cx="36" cy="36" r="30" stroke="var(--accent-primary)" stroke-width="6" stroke-dasharray="188.4" stroke-dashoffset="56.5" stroke-linecap="round" fill="transparent" class="progress-ring-circle" />
+                </svg>
+                <div class="progress-ring-text">
+                  <span class="progress-ring-pct" style="font-size: 16px;">70%</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ====== 4. LIQUID GLASS SHOWCASE ====== -->
+      <section id="liquid-glass" class="mb-5">
+        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 6px;">4. Liquid Glass (Ultra-Premium Glassmorphism)</h2>
+        <p class="mb-4 text-muted">Efek kaca canggih dengan saturasi 220%, blur 32px, dan highlight specular ganda (dual-rim).</p>
+
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Liquid Glass Card -->
+          <div class="liquid-glass liquid-glass-card">
+            <div class="drag-pill-indicator"></div>
+            <div class="mb-2">
+              <h4 style="font-size: 15px; font-weight: 800; margin: 0;">Panel Kendali Mengambang</h4>
+            </div>
+            <p style="font-size: 12px; margin-bottom: 16px;">
+              Digunakan untuk panel mengambang peta GIS, command bar, pop-up leaflet, dan filter bar cepat.
+            </p>
+            <div class="d-flex flex-wrap gap-2 items-center">
+              <div class="liquid-glass liquid-glass-pill liquid-glass-active">Filter Aktif</div>
+              <div class="liquid-glass liquid-glass-pill">Semua Data</div>
+              <div class="liquid-glass liquid-glass-pill">Tertunda</div>
+            </div>
+          </div>
+
+          <!-- Liquid Glass Actions & Buttons -->
+          <div class="liquid-glass liquid-glass-card d-flex flex-col justify-between">
+            <div>
+              <h4 style="font-size: 15px; font-weight: 800; margin-bottom: 8px;">Floating Glass Actions</h4>
+              <p style="font-size: 12px; margin-bottom: 16px;">Tombol mengambang bulat dengan specular reflection dan glow saat di-hover.</p>
+              <div class="d-flex items-center gap-3">
+                <button class="liquid-glass-btn" title="Lokasi GPS"><i class="bi bi-geo-alt-fill"></i></button>
+                <button class="liquid-glass-btn" title="Layar Penuh"><i class="bi bi-fullscreen"></i></button>
+                <button class="liquid-glass-btn" title="Pengaturan Lapisan"><i class="bi bi-layers-fill"></i></button>
+                <button class="liquid-glass-btn" title="Cari Wilayah"><i class="bi bi-search"></i></button>
+              </div>
+            </div>
+            <div class="mt-4">
+              <span class="fs-caption text-muted">Gunakan class <code>.liquid-glass</code>, <code>.liquid-glass-pill</code>, <code>.liquid-glass-btn</code>.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== 5. CODE PROGRAM & SYNTAX HIGHLIGHTING ====== -->
+      <section id="code-syntax" class="mb-5">
+        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 6px;">5. Tampilan Code Program & Syntax Highlighting</h2>
+        <p class="mb-4 text-muted">Komponen tampilan blok kode program dengan pewarnaan sintaks kontras tinggi (WCAG AA) yang adaptif terhadap Dark dan Light mode.</p>
+
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Code Block: JavaScript / Client API -->
+          <div class="code-block">
+            <div class="code-header">
+              <div class="d-flex items-center gap-2">
+                <div class="code-dots">
+                  <span class="code-dot red"></span>
+                  <span class="code-dot yellow"></span>
+                  <span class="code-dot green"></span>
+                </div>
+                <span class="code-title"><i class="bi bi-file-earmark-code"></i> monitor-sync.js</span>
+              </div>
+              <div class="d-flex items-center gap-2">
+                <span class="code-lang-badge">JAVASCRIPT</span>
+                <button class="code-copy-btn" onclick="copyCodeSnippet(this)">
+                  <i class="bi bi-clipboard"></i> Salin
+                </button>
+              </div>
+            </div>
+            <pre class="code-body"><code><span class="tok-comment">// Inisialisasi sinkronisasi data progres survei</span>
+<span class="tok-keyword">import</span> { <span class="tok-type">TakaCharts</span>, <span class="tok-function">watchTheme</span> } <span class="tok-keyword">from</span> <span class="tok-string">'@bps/taka-ui'</span>;
+
+<span class="tok-keyword">async function</span> <span class="tok-function">fetchSurveyProgress</span>(<span class="tok-var">surveyId</span> = <span class="tok-string">'SE2026'</span>) {
+  <span class="tok-keyword">const</span> <span class="tok-var">endpoint</span> = <span class="tok-string">`/api/progress/<span class="tok-var">${surveyId}</span>`</span>;
+  <span class="tok-keyword">const</span> <span class="tok-var">res</span> = <span class="tok-keyword">await</span> <span class="tok-function">fetch</span>(<span class="tok-var">endpoint</span>);
+  <span class="tok-keyword">const</span> <span class="tok-var">data</span> = <span class="tok-keyword">await</span> <span class="tok-var">res</span>.<span class="tok-function">json</span>();
+  
+  <span class="tok-keyword">if</span> (<span class="tok-var">data</span>.<span class="tok-attr">status</span> === <span class="tok-number">200</span> &amp;&amp; <span class="tok-var">data</span>.<span class="tok-attr">active</span> === <span class="tok-boolean">true</span>) {
+    <span class="tok-keyword">return</span> {
+      <span class="tok-attr">realisasi</span>: <span class="tok-number">9010</span>,
+      <span class="tok-attr">target</span>: <span class="tok-number">12840</span>,
+      <span class="tok-attr">persentase</span>: <span class="tok-number">70.1</span>
+    };
+  }
+}</code></pre>
+          </div>
+
+          <!-- Code Block: SQL Query & In-line Code Elements -->
+          <div class="code-block">
+            <div class="code-header">
+              <div class="d-flex items-center gap-2">
+                <div class="code-dots">
+                  <span class="code-dot red"></span>
+                  <span class="code-dot yellow"></span>
+                  <span class="code-dot green"></span>
+                </div>
+                <span class="code-title"><i class="bi bi-database"></i> query-agregat.sql</span>
+              </div>
+              <div class="d-flex items-center gap-2">
+                <span class="code-lang-badge">SQL</span>
+                <button class="code-copy-btn" onclick="copyCodeSnippet(this)">
+                  <i class="bi bi-clipboard"></i> Salin
+                </button>
+              </div>
+            </div>
+            <pre class="code-body"><code><span class="tok-comment">-- Rekapitulasi agregat per kecamatan untuk PPU</span>
+<span class="tok-keyword">SELECT</span> 
+    <span class="tok-attr">kecamatan</span>,
+    <span class="tok-function">COUNT</span>(<span class="tok-var">sls_id</span>) <span class="tok-keyword">AS</span> <span class="tok-var">total_sls</span>,
+    <span class="tok-function">SUM</span>(<span class="tok-var">realisasi_fasih</span>) <span class="tok-keyword">AS</span> <span class="tok-var">capaian</span>,
+    <span class="tok-function">ROUND</span>(<span class="tok-function">AVG</span>(<span class="tok-var">pct</span>), <span class="tok-number">2</span>) <span class="tok-keyword">AS</span> <span class="tok-var">rata_persen</span>
+<span class="tok-keyword">FROM</span> <span class="tok-type">monitoring_progress</span>
+<span class="tok-keyword">WHERE</span> <span class="tok-attr">kode_kabupaten</span> = <span class="tok-string">'6409'</span> 
+  <span class="tok-keyword">AND</span> <span class="tok-attr">status_aktif</span> = <span class="tok-boolean">true</span>
+<span class="tok-keyword">GROUP BY</span> <span class="tok-attr">kecamatan</span>
+<span class="tok-keyword">ORDER BY</span> <span class="tok-var">capaian</span> <span class="tok-keyword">DESC</span>;</code></pre>
+          </div>
+        </div>
+
+        <!-- Inline Code Examples -->
+        <div class="card mt-3">
+          <div class="card-title mb-2"><i class="bi bi-terminal text-accent"></i> Format Inline Code & Shell Terminal</div>
+          <p class="mb-2" style="font-size: 13px;">Gunakan tag <code>&lt;code&gt;</code> untuk variabel seperti <code>--accent-primary</code>, status <code>.active</code>, atau path direktori <code>packages/taka-ui/dist/</code>.</p>
+          <div class="code-block" style="margin-top: 10px; margin-bottom: 0;">
+            <div class="code-header">
+              <span class="code-title"><i class="bi bi-terminal-fill"></i> Terminal Quick Install</span>
+              <span class="code-lang-badge">BASH</span>
+            </div>
+            <pre class="code-body" style="padding: 10px 16px;"><code><span class="tok-prompt">$</span>npm install @bps/taka-ui
+<span class="tok-prompt">$</span>import <span class="tok-string">'@bps/taka-ui/dist/taka-ui.min.css'</span>;</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== 6. DIALOGS & TOASTS TRIGGER ====== -->
+      <section id="dialogs" class="mb-5">
+        <div class="card">
+          <div class="card-title mb-2">
+            <i class="bi bi-window-stack text-accent"></i> Modal Dialogs & Toasts
+          </div>
+          <p class="mb-3">Komponen modal dan toast dengan glassmorphism backdrop dan animasi cubic-bezier halus.</p>
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-secondary" onclick="showToast('success', 'Operasi berhasil disimpan ke database!')">
+              <i class="bi bi-check-circle text-success"></i> Tes Toast Sukses
+            </button>
+            <button class="btn btn-secondary" onclick="showToast('error', 'Gagal memproses data: Koneksi timeout!')">
+              <i class="bi bi-x-circle text-danger"></i> Tes Toast Gagal
+            </button>
+            <button class="btn btn-secondary" onclick="showToast('warning', 'Peringatan: 5 dokumen belum lengkap!')">
+              <i class="bi bi-exclamation-triangle text-warning"></i> Tes Toast Peringatan
+            </button>
+            <button class="btn btn-primary" onclick="openModal()">
+              <i class="bi bi-window"></i> Buka Modal Dialog
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====== 7. COMMON ELEMENTS & SHELL UTILITIES ====== -->
+      <section id="common-elements" class="mb-5">
+        <div class="d-flex items-center justify-between mb-3">
+          <div>
+            <h2 style="font-size: 18px; font-weight: 700;">Common Elements & Micro-Interactions</h2>
+            <p style="font-size: 12px; color: var(--text-muted);">Tooltips, Pagination, Telemetry Live Pulses, Empty States, dan Spotlight Command Bar.</p>
+          </div>
+          <span class="badge badge-purple">High Fidelity</span>
+        </div>
+
+        <div class="row g-3">
+          <!-- Tooltips & Telemetry Card -->
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-title mb-2">
+                <i class="bi bi-info-circle text-accent"></i> Adaptive Tooltips & Live Pulses
+              </div>
+              <p style="font-size: 13px; margin-bottom: 16px;">Arahkan kursor pada ikon informasi untuk melihat tooltip adaptif dengan WCAG AA contrast.</p>
+              
+              <div class="d-flex items-center gap-3 mb-4 flex-wrap">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 13px; font-weight: 600;">Metrik SLS:</span>
+                  <div class="help-tooltip-container">
+                    <i class="bi bi-question-circle help-tooltip-icon"></i>
+                    <div class="help-tooltip-box">
+                      <strong>Satuan Lingkungan Setempat:</strong> Wilayah administratif terkecil (RT/RW/Dusun) yang menjadi unit pencacahan dasar.
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 13px; font-weight: 600;">Status Server:</span>
+                  <div class="help-tooltip-container">
+                    <span class="live-status-pill">
+                      <span class="live-pulse-dot"></span> Aktif
+                    </span>
+                    <div class="help-tooltip-box">
+                      <strong>Live Telemetry:</strong> Terkoneksi dengan server database lokal BPS Penajam Paser Utara.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex items-center gap-2 flex-wrap">
+                <span class="badge badge-green"><span class="live-pulse-dot" style="margin-right: 4px;"></span> Online</span>
+                <span class="badge badge-blue"><span class="live-pulse-dot pulse-cyan" style="margin-right: 4px;"></span> Syncing</span>
+                <span class="badge badge-yellow"><span class="live-pulse-dot pulse-amber" style="margin-right: 4px;"></span> At-Risk</span>
+                <span class="badge badge-red"><span class="live-pulse-dot pulse-red" style="margin-right: 4px;"></span> Critical</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pagination Card -->
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-title mb-2">
+                <i class="bi bi-segmented-nav text-accent"></i> High-Density Table Pagination
+              </div>
+              <p style="font-size: 13px; margin-bottom: 16px;">Komponen navigasi halaman dengan kontras tinggi, tombol tactile, dan status disabled.</p>
+
+              <div class="pagination" style="border-top: none; margin-top: 0; padding-top: 0;">
+                <div class="pagination-info">Menampilkan 1-10 dari 124 SLS</div>
+                <div class="pagination-pages">
+                  <button class="page-btn disabled" disabled><i class="bi bi-chevron-left"></i></button>
+                  <button class="page-btn active">1</button>
+                  <button class="page-btn">2</button>
+                  <button class="page-btn">3</button>
+                  <button class="page-btn">4</button>
+                  <button class="page-btn"><i class="bi bi-chevron-right"></i></button>
+                </div>
+              </div>
+
+              <!-- Spotlight Launcher Trigger -->
+              <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
+                <button class="btn btn-secondary w-100 justify-center" onclick="toggleSearchModal(true)">
+                  <i class="bi bi-search"></i> Buka Spotlight Command Palette (<kbd>Ctrl+K</kbd>)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State Preview -->
+        <div class="card mt-3">
+          <div class="empty-state">
+            <i class="bi bi-inbox empty-state-icon"></i>
+            <div class="empty-state-title">Belum Ada Data Anomali</div>
+            <div class="empty-state-desc">Seluruh 24.500 dokumen survei telah lolos validasi otomatis logika aturan rentang BPS.</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ====== MOBILE FROSTED GLASS BOTTOM NAVIGATION ====== -->
+  <nav class="bottom-nav">
+    <a href="#overview" class="bottom-nav-item active">
+      <i class="bi bi-grid-fill"></i>
+      <span>Overview</span>
+    </a>
+    <a href="#stat-cards" class="bottom-nav-item">
+      <i class="bi bi-bar-chart-fill"></i>
+      <span>Statistik</span>
+    </a>
+    <a href="#tables" class="bottom-nav-item">
+      <i class="bi bi-table"></i>
+      <span>Data</span>
+    </a>
+    <button class="bottom-nav-item" onclick="toggleSidebar()">
+      <i class="bi bi-list"></i>
+      <span>Menu</span>
+    </button>
+  </nav>
+
+  <!-- ====== TOAST CONTAINER ====== -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- ====== DEMO MODAL DIALOG ====== -->
+  <div id="demoModal" class="modal-backdrop" onclick="closeModalOnBackdrop(event)">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">Form Entri Alokasi Petugas</div>
+        <button class="alert-close-btn" onclick="closeModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3" style="font-size: 13px;">Gunakan modal ini untuk konfirmasi tindakan, form pop-up, atau rincian data petugas.</p>
+        <div class="form-group">
+          <label class="form-label">Nama Petugas</label>
+          <input type="text" placeholder="Contoh: Budi Santoso" value="Ahmad Subandi">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Peran Kegiatan</label>
+          <select>
+            <option>PCL — Petugas Cacah Lapangan</option>
+            <option>PML — Petugas Pemeriksa Lapangan</option>
+            <option>Koseka / Korlap</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Wilayah Tugas</label>
+          <select>
+            <option>64.09.010 — Penajam</option>
+            <option>64.09.020 — Waru</option>
+            <option>64.09.030 — Babulu</option>
+            <option>64.09.040 — Sepaku</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
+        <button class="btn btn-primary" onclick="closeModal(); showToast('success', 'Data petugas berhasil disimpan!')">Simpan Perubahan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== SPOTLIGHT SEARCH MODAL (Ctrl+K) ====== -->
+  <div class="search-modal-backdrop hidden" id="searchModal" onclick="if(event.target === this) toggleSearchModal(false)">
+    <div class="search-modal-card">
+      <div class="search-modal-header">
+        <i class="bi bi-search search-modal-icon"></i>
+        <input type="text" placeholder="Ketik kata kunci untuk mencari..." autofocus>
+        <button class="search-modal-close" onclick="toggleSearchModal(false)" aria-label="Tutup">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="search-modal-body">
+        <div style="padding: 10px; font-size: 12px; color: var(--text-muted); text-align: center;">
+          Gunakan tombol panah untuk memilih, atau <kbd>Esc</kbd> untuk keluar.
+        </div>
+      </div>
+      <div class="search-modal-footer">
+        <span>Tekan <kbd>Ctrl+K</kbd> kapan saja</span>
+        <span>Taka UI Spotlight</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== JAVASCRIPT LOGIC ====== -->
+  <script>
+    // Theme Selector
+    function changeTheme(themeClass) {
+      document.body.className = document.body.className
+        .replace(/theme-[a-z0-9-]+/g, '')
+        .trim();
+      document.body.classList.add(themeClass);
+    }
+
+    // Light / Dark Mode Toggle
+    function toggleLightMode() {
+      const isLight = document.body.classList.toggle('light-mode');
+      const icon = document.getElementById('themeModeIcon');
+      if (isLight) {
+        icon.className = 'bi bi-moon-fill';
+      } else {
+        icon.className = 'bi bi-sun-fill';
+      }
+    }
+
+    // Sidebar Toggle
+    function toggleSidebar() {
+      if (window.innerWidth <= 992) {
+        document.body.classList.toggle('sidebar-open');
+      } else {
+        document.body.classList.toggle('sidebar-collapsed');
+      }
+    }
+
+    // Toast Manager
+    function showToast(type, message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let alertClass = 'alert-info';
+      let icon = 'bi-info-circle-fill';
+      if (type === 'success') { alertClass = 'alert-success'; icon = 'bi-check-circle-fill'; }
+      if (type === 'error')   { alertClass = 'alert-error'; icon = 'bi-x-circle-fill'; }
+      if (type === 'warning') { alertClass = 'alert-warning'; icon = 'bi-exclamation-triangle-fill'; }
+
+      toast.className = `alert ${alertClass}`;
+      toast.innerHTML = `
+        <i class="bi ${icon}"></i>
+        <div class="alert-content">${message}</div>
+        <button class="alert-close-btn" onclick="this.parentElement.remove()">
+          <i class="bi bi-x"></i>
+        </button>
+      `;
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(40px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Modal Manager
+    function openModal() {
+      const modal = document.getElementById('demoModal');
+      modal.classList.add('show');
+    }
+    function closeModal() {
+      const modal = document.getElementById('demoModal');
+      modal.classList.remove('show');
+    }
+    function closeModalOnBackdrop(e) {
+      if (e.target.id === 'demoModal') closeModal();
+    }
+
+    // Spotlight Search Modal
+    function toggleSearchModal(show) {
+      const modal = document.getElementById('searchModal');
+      if (show) {
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        toggleSearchModal(true);
+      }
+      if (e.key === 'Escape') {
+        toggleSearchModal(false);
+      }
+    });
+
+    // Code Snippet Copy Function
+    function copyCodeSnippet(btn) {
+      const codeBlock = btn.closest('.code-block');
+      const code = codeBlock.querySelector('pre code').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check-lg" style="color: var(--accent-green);"></i> Tersalin!';
+        btn.classList.add('copied');
+        showToast('success', 'Kode berhasil disalin ke clipboard!');
+        setTimeout(() => {
+          btn.innerHTML = orig;
+          btn.classList.remove('copied');
+        }, 2000);
+      }).catch(() => {
+        showToast('error', 'Gagal menyalin kode.');
+      });
+    }
+  </script>
+</body>
+</html>

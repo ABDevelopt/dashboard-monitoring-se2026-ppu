@@ -1,0 +1,105 @@
+/**
+ * Taka UI — Charts & Visualizations
+ * Chart cards, canvas wrappers, responsive heights, and speedometer gauge styling.
+ */
+
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  transition: var(--transition-fast);
+}
+
+.chart-card:hover {
+  border-color: var(--border-light);
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.chart-title {
+  font-size: var(--fs-sub-header);
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-subtitle {
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.chart-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  min-height: 200px;
+}
+
+.chart-canvas-wrap.chart-tall {
+  height: 380px;
+}
+
+.chart-canvas-wrap.chart-compact {
+  height: 220px;
+}
+
+.chart-canvas-wrap.chart-gauge {
+  height: 160px;
+  max-width: 260px;
+  margin: 0 auto;
+}
+
+/* Custom Chart Tooltip & Legend */
+.chart-legend-custom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-caption);
+}
+
+.chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+
+.chart-legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* Gauge Indicator Column */
+.speedometer-gauge-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}

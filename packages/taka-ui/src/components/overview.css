@@ -1,0 +1,243 @@
+/**
+ * Taka UI — Overview Page Layout & Modules
+ * Extracted from Pananyo Taka / SE2026 Overview Architecture:
+ * - Top telemetry & insight header grid
+ * - Milestone timeline progress tracker
+ * - Hero speed & burn-down KPI card
+ * - Status breakdown capsules
+ */
+
+/* ====== 1. TOP TELEMETRY & INSIGHT HEADER GRID ====== */
+.overview-top-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+  margin-top: 8px;
+  margin-bottom: 20px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .overview-top-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* Telemetry Card (Weather, Time, System Telemetry) */
+.telemetry-card {
+  background: linear-gradient(135deg, var(--bg-card) 0%, rgba(var(--accent-rgb), 0.03) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.telemetry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.telemetry-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(var(--accent-rgb), 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+/* AI Smart Insights Banner */
+.ai-insights-card {
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.08) 0%, rgba(139, 92, 246, 0.03) 100%);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-insights-watermark {
+  position: absolute;
+  right: -10px;
+  top: -10px;
+  font-size: 100px;
+  opacity: 0.04;
+  line-height: 1;
+  pointer-events: none;
+  color: var(--accent-primary);
+}
+
+/* ====== 2. MILESTONE PROGRESS TRACKER & HERO KPI ====== */
+.milestone-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.milestone-flex-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: stretch;
+  width: 100%;
+}
+
+.milestone-left-panel {
+  flex: 1 1 340px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.milestone-right-panel {
+  flex: 0 1 260px;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .milestone-right-panel {
+    flex: 1 1 100% !important;
+    min-width: 100% !important;
+  }
+}
+
+/* Target Timeline Container with Dashed Milestone Markers */
+.progress-timeline-container {
+  position: relative;
+  height: 28px;
+  margin-top: 22px;
+  margin-bottom: 14px;
+  width: 100%;
+}
+
+.bg-progress-timeline {
+  width: 100%;
+  height: 14px;
+  background: var(--bg-progress-wrap);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.progress-bar-premium {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--theme-gradient, var(--accent-gradient));
+  box-shadow: 0 2px 10px rgba(var(--accent-rgb), 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.target-marker {
+  position: absolute;
+  top: -4px;
+  height: 36px;
+  border-left: 2px dashed var(--border-light);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.target-marker.active {
+  border-left-color: var(--accent-primary);
+}
+
+.target-marker-text {
+  position: absolute;
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--text-muted);
+  transform: translateX(-50%);
+  left: 50%;
+}
+
+.target-marker-text.top {
+  top: -16px;
+}
+
+.target-marker-text.bottom {
+  bottom: -16px;
+}
+
+/* Hero Speed / Burn-Down KPI Box */
+.milestone-hero-card {
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1) 0%, rgba(var(--accent-rgb), 0.02) 100%);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  border-radius: var(--radius);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  width: 100%;
+}
+
+.milestone-hero-number {
+  font-size: 34px;
+  font-weight: 900;
+  color: var(--accent-primary);
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.milestone-hero-label {
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+  font-weight: 600;
+  line-height: 1.35;
+  max-width: 220px;
+}
+
+/* ====== 3. STATUS BREAKDOWN CAPSULES GRID ====== */
+.status-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.status-card-capsule {
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid transparent;
+  transition: var(--transition-fast);
+}
+
+.status-card-capsule:hover {
+  transform: translateY(-1px);
+}
+
+.status-capsule-open    { background: rgba(249, 115, 22, 0.08); border-color: rgba(249, 115, 22, 0.2); }
+.status-capsule-draft   { background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.2); }
+.status-capsule-submit  { background: rgba(59, 130, 246, 0.08);  border-color: rgba(59, 130, 246, 0.2); }
+.status-capsule-approve { background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.2); }
+.status-capsule-reject  { background: rgba(239, 68, 68, 0.08);  border-color: rgba(239, 68, 68, 0.2); }
