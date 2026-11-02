@@ -1,3 +1,8 @@
+<%
+  const isSe2026Warn = (typeof activeSurvey !== 'undefined' ? activeSurvey === 'se2026' : (typeof surveyConfig !== 'undefined' ? surveyConfig.id === 'se2026' : true));
+  const isSakernas = typeof surveyConfig !== 'undefined' && surveyConfig.id && surveyConfig.id.startsWith('sakernas');
+  const officerLabel = isSakernas ? 'PPL' : ((typeof surveyConfig !== 'undefined' && surveyConfig.officerRole) ? surveyConfig.officerRole : 'PCL');
+%>
 <div class="fade-in">
   <% if (!uploadId) { %>
     <div class="card empty-state">
@@ -69,7 +74,11 @@
         <div class="stat-icon" style="color: var(--accent-red); background: rgba(239, 68, 68, 0.1);"><i class="bi bi-graph-down"></i></div>
         <div class="stat-label">PCL Berisiko Tinggi</div>
         <div class="stat-value" style="color: var(--accent-red);"><%= (warning.lowProjectedPcl || []).length %></div>
-        <div class="stat-sub">Prediksi < 40% (15 Jul) / < 100% (<%= formatIndonesianDateShort(settings.speedometer_target_date || '2026-08-31') %>)</div>
+        <% if (isSe2026Warn) { %>
+          <div class="stat-sub">Prediksi < 40% (15 Jul) / < 100% (<%= formatIndonesianDateShort(settings.speedometer_target_date || '2026-08-31') %>)</div>
+        <% } else { %>
+          <div class="stat-sub">Prediksi < 100% pada Akhir Kegiatan (<%= formatIndonesianDateShort(settings.speedometer_target_date || '2026-11-30') %>)</div>
+        <% } %>
       </div>
     </div>
 
@@ -248,12 +257,20 @@
     <div class="card mt-4">
       <div class="card-header">
         <div class="card-title">
-          <span class="text-red"><i class="bi bi-graph-down"></i> PCL Berisiko Tinggi (Proyeksi < 40% per 15 Jul atau < 100% per <%= formatIndonesianDateShort(settings.speedometer_target_date || '2026-08-31') %>)</span>
+          <% if (isSe2026Warn) { %>
+            <span class="text-red"><i class="bi bi-graph-down"></i> <%= officerLabel %> Berisiko Tinggi (Proyeksi < 40% per 15 Jul atau < 100% per <%= formatIndonesianDateShort(settings.speedometer_target_date || '2026-08-31') %>)</span>
+          <% } else { %>
+            <span class="text-red"><i class="bi bi-graph-down"></i> <%= officerLabel %> Berisiko Tinggi (Proyeksi < 100% per <%= formatIndonesianDateShort(settings.speedometer_target_date || '2026-11-30') %>)</span>
+          <% } %>
         </div>
       </div>
 
       <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
-        Daftar PCL yang berdasarkan kecepatan kerja saat ini (runrate) diprediksi akan menyelesaikan <strong>kurang dari 40% target FASIH pada 15 Juli 2026</strong> atau <strong>kurang dari 100% target pada akhir kegiatan (<%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>)</strong>.
+        <% if (isSe2026Warn) { %>
+          Daftar <%= officerLabel %> yang berdasarkan kecepatan kerja saat ini (runrate) diprediksi akan menyelesaikan <strong>kurang dari 40% target FASIH pada 15 Juli 2026</strong> atau <strong>kurang dari 100% target pada akhir kegiatan (<%= formatIndonesianDate(settings.speedometer_target_date || '2026-08-31') %>)</strong>.
+        <% } else { %>
+          Daftar <%= officerLabel %> yang berdasarkan kecepatan kerja saat ini (runrate) diprediksi akan menyelesaikan <strong>kurang dari 100% target pada akhir kegiatan (<%= formatIndonesianDate(settings.speedometer_target_date || '2026-11-30') %>)</strong>.
+        <% } %>
       </p>
 
       <% if (warning.lowProjectedPcl && warning.lowProjectedPcl.length > 0) { %>
@@ -274,7 +291,9 @@
                 <div class="warning-stats" style="flex-wrap: wrap; gap: 8px;">
                   <span class="warning-stat">Target: <strong><%= item.target_fasih_total %></strong></span>
                   <span class="warning-stat">Realisasi: <strong><%= item.selesai_sekarang %></strong></span>
+                  <% if (isSe2026Warn) { %>
                   <span class="warning-stat text-yellow">Proyeksi 15 Jul (40%): <strong class="<%= item.projected_pct_july15 < 40 ? 'text-red' : '' %>"><%= item.projected_final_july15 %> dok (<%= item.projected_pct_july15 %>%)</strong></span>
+                  <% } %>
                   <span class="warning-stat text-red">Proyeksi <%= formatIndonesianDateShort(settings.speedometer_target_date || '2026-08-31') %> (100%): <strong class="<%= item.projected_pct < 100 ? 'text-red' : '' %>"><%= item.projected_final %> dok (<%= item.projected_pct %>%)</strong></span>
                 </div>
                 <div class="fasih-grid-container">

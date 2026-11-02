@@ -2542,7 +2542,12 @@ function getEarlyWarning(uploadId, filters = {}, settings = null, surveyId = 'se
         const projectedAug31 = selesaiFasih + (runrate * daysToAug31);
         const projectedPctAug31 = (projectedAug31 / targetFasih) * 100;
         
-        if (projectedPctJuly15 < 40.0 || projectedPctAug31 < 100.0) {
+        const isSe2026 = sId === 'se2026';
+        const isAtRisk = isSe2026
+          ? (projectedPctJuly15 < 40.0 || projectedPctAug31 < 100.0)
+          : (projectedPctAug31 < 100.0);
+
+        if (isAtRisk) {
           lowProjectedPcl.push({
             pcl: item.pcl,
             pml: item.pml,

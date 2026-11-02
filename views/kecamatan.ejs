@@ -3,12 +3,16 @@
   const isSe2026Kec = (typeof activeSurvey !== 'undefined' ? activeSurvey === 'se2026' : (typeof surveyConfig !== 'undefined' ? surveyConfig.id === 'se2026' : true));
   const hideMuatanKec = !isSe2026Kec || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0');
 
-  let activeTargetPct = 25;
-  let targetMonthName = '30 Juni';
-  const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
-  if (isSe2026Kec && currentDate >= new Date('2026-07-01')) {
-    activeTargetPct = 40;
-    targetMonthName = '15 Juli';
+  let activeTargetPct = null;
+  let targetMonthName = '';
+  if (isSe2026Kec) {
+    activeTargetPct = 25;
+    targetMonthName = '30 Juni';
+    const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
+    if (currentDate >= new Date('2026-07-01')) {
+      activeTargetPct = 40;
+      targetMonthName = '15 Juli';
+    }
   }
 %>
 <div class="fade-in">

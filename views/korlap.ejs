@@ -1,10 +1,15 @@
 <%
-  let activeTargetPct = 25;
-  let targetMonthName = '30 Juni';
-  const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
-  if (currentDate >= new Date('2026-07-01')) {
-    activeTargetPct = 40;
-    targetMonthName = '15 Juli';
+  const isSe2026Korlap = (typeof activeSurvey !== 'undefined' ? activeSurvey === 'se2026' : (typeof surveyConfig !== 'undefined' ? surveyConfig.id === 'se2026' : true));
+  let activeTargetPct = null;
+  let targetMonthName = '';
+  if (isSe2026Korlap) {
+    activeTargetPct = 25;
+    targetMonthName = '30 Juni';
+    const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
+    if (currentDate >= new Date('2026-07-01')) {
+      activeTargetPct = 40;
+      targetMonthName = '15 Juli';
+    }
   }
 %>
 <div class="fade-in">

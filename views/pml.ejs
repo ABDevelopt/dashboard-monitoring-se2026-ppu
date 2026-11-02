@@ -4,12 +4,16 @@
   const hideMuatanPml = !isSe2026Pml || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0');
   const officerLabel = isSakernas ? 'PPL' : 'PCL';
 
-  let activeTargetPct = 25;
-  let targetMonthName = '30 Juni';
-  const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
-  if (isSe2026Pml && currentDate >= new Date('2026-07-01')) {
-    activeTargetPct = 40;
-    targetMonthName = '15 Juli';
+  let activeTargetPct = null;
+  let targetMonthName = '';
+  if (isSe2026Pml) {
+    activeTargetPct = 25;
+    targetMonthName = '30 Juni';
+    const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
+    if (currentDate >= new Date('2026-07-01')) {
+      activeTargetPct = 40;
+      targetMonthName = '15 Juli';
+    }
   }
 %>
 <div class="fade-in">

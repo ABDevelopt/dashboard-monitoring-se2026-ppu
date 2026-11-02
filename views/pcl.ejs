@@ -4,12 +4,16 @@
   const hideMuatanPcl = !isSe2026Pcl || (typeof settings !== 'undefined' && settings.show_progres_muatan === '0');
   const officerLabel = isSakernas ? 'PPL' : 'PCL';
 
-  let activeTargetPct = 25;
-  let targetMonthName = '30 Juni';
-  const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
-  if (isSe2026Pcl && currentDate >= new Date('2026-07-01')) {
-    activeTargetPct = 40;
-    targetMonthName = '15 Juli';
+  let activeTargetPct = null;
+  let targetMonthName = '';
+  if (isSe2026Pcl) {
+    activeTargetPct = 25;
+    targetMonthName = '30 Juni';
+    const currentDate = typeof latestUpload !== 'undefined' && latestUpload ? new Date(latestUpload.tanggal) : new Date();
+    if (currentDate >= new Date('2026-07-01')) {
+      activeTargetPct = 40;
+      targetMonthName = '15 Juli';
+    }
   }
   
   let activeStatusCols = 1;
@@ -299,7 +303,7 @@
                     const pOpn = p.open_total !== undefined ? p.open_total : Math.max(0, fTgtNum - (pDft + fRealNum));
                     const isKippPcl = (p.pcl && typeof p.pcl === 'string') ? kippPcls.includes(p.pcl.toUpperCase()) : false;
                     const isSelesaiPcl = fTgtNum > 0 && fRealNum >= fTgtNum;
-                    const isOntrackPcl = parseFloat(fasihPct) >= activeTargetPct;
+                    const isOntrackPcl = activeTargetPct !== null ? (parseFloat(fasihPct) >= activeTargetPct) : (parseFloat(fasihPct) >= 50);
                     const isCriticalPcl = parseFloat(fasihPct) < 40;
                     const isZeroPcl = parseFloat(fasihPct) === 0;
                     const searchKeywords = `${p.pcl || ''} ${p.pml || ''} ${p.korlap || ''} ${p.kecamatan || ''} ${p.email || ''}`.toLowerCase();
