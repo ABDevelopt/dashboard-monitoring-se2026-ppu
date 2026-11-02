@@ -1,0 +1,64 @@
+name: Auto-Deploy to Dewaweb
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch: # Memungkinkan trigger manual via tombol "Run workflow" di GitHub Actions
+
+jobs:
+  deploy:
+    name: Deploy to Dewaweb cPanel / CloudLinux
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚀 Eksekusi Auto-Deploy via SSH ke Dewaweb
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEWAWEB_HOST }}
+          username: ${{ secrets.DEWAWEB_USER }}
+          password: ${{ secrets.DEWAWEB_PASSWORD }}
+          key: ${{ secrets.DEWAWEB_SSH_KEY }}
+          port: ${{ secrets.DEWAWEB_PORT || 22 }}
+          script_stop: false
+          timeout: 120s
+          script: |
+            echo "=================================================="
+            echo "⚡ Memulai Auto-Deployment di Server Dewaweb"
+            echo "Waktu: $(date)"
+            echo "=================================================="
+
+            APP_DIR="${{ secrets.DEWAWEB_APP_DIR }}"
+            if [ -z "$APP_DIR" ]; then
+              # Default direktori aplikasi cPanel umum
+              if [ -d "$HOME/public_html/app" ]; then
+                APP_DIR="$HOME/public_html/app"
+              elif [ -d "$HOME/repositories/monitoring-se2026-ppu" ]; then
+                APP_DIR="$HOME/repositories/monitoring-se2026-ppu"
+              else
+                APP_DIR="$HOME/public_html"
+              fi
+            fi
+
+            echo "📁 Direktori Aplikasi: $APP_DIR"
+            cd "$APP_DIR" || exit 1
+
+            # 1. Update kode terbaru dari branch master
+            echo "📥 Menjalankan git pull origin master..."
+            git fetch origin master
+            git reset --hard origin/master
+
+            # 2. Update dependensi produksi jika ada package baru
+            if [ -f "package.json" ]; then
+              echo "📦 Memeriksa dependensi npm..."
+              npm install --omit=dev --no-audit --prefer-offline 2>&1 || echo "⚠️ npm install lewati galat non-fatal"
+            fi
+
+            # 3. Trigger restart instan Phusion Passenger di cPanel Dewaweb
+            echo "🔄 Memicu restart Node.js Passenger (touch tmp/restart.txt)..."
+            mkdir -p tmp
+            touch tmp/restart.txt
+
+            echo "=================================================="
+            echo "✅ Deployment Sukses! Commit aktif:"
+            git log -1 --oneline
+            echo "=================================================="

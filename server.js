@@ -111,7 +111,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.json({ verify: (req, res, buf) => { req.rawBody = buf; } }));
 
 // Inisialisasi WhatsApp Service saat Top-Level Server Boot (Kompatibel dengan cPanel Passenger, PM2, & CLI)
 try {
@@ -178,7 +178,7 @@ app.use((req, res, next) => {
   }
 
   // Lewati verifikasi CSRF untuk request multipart (upload file), endpoint sync-catalog, sync-progress, dan preferensi set-date
-  if (req.path.includes('/set-date') || req.path.includes('/surveys/sync-catalog') || req.path.includes('/sync-progress') || req.path.includes('/sync/progress') || req.path.includes('/api/sync/') || req.headers['x-fasih-api-key']) {
+  if (req.path.includes('/set-date') || req.path.includes('/surveys/sync-catalog') || req.path.includes('/sync-progress') || req.path.includes('/sync/progress') || req.path.includes('/api/sync/') || req.path.includes('/deploy-webhook') || req.headers['x-fasih-api-key']) {
     return next();
   }
   const contentType = req.headers['content-type'] || '';
@@ -749,6 +749,7 @@ app.use('/agent', require('./routes/agent'));
 app.use('/surveys', require('./routes/surveys'));
 app.use('/api', require('./routes/api'));
 app.use('/api/search-global', require('./routes/search'));
+app.use('/api/deploy-webhook', require('./routes/deployWebhook'));
 
 // Help / FAQ page (public, no auth required)
 app.get('/help', (req, res) => {
