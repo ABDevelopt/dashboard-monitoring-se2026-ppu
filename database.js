@@ -53,6 +53,7 @@ function initUsers(dbConn) {
   const stmt = dbConn.prepare('INSERT OR IGNORE INTO users (username, password, role) VALUES (?, ?, ?)');
   stmt.run('admin', hashPassword('adminse2026'), 'admin');
   stmt.run('korlap', hashPassword('korlapse2026'), 'korlap');
+  stmt.run('alya.faradila', hashPassword('pesse2026'), 'admin');
 }
 
 function resolveSurveyId(surveyId) {

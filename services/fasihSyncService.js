@@ -484,6 +484,7 @@ class FasihSyncService {
     fasihIdMap['a0429e96-51a5-477b-a415-485f9c153004'] = 'se2026'; // SENSUS EKONOMI 2026
     fasihIdMap['8b6f7c3e-ad48-45c5-83ad-4aa2c826b65d'] = 'sakernas-pemutakhiran'; // SAKERNAS AGUSTUS 2026 - PEMUTAKHIRAN
     fasihIdMap['3f1e8a1a-7ac0-49be-85d6-757133c63c38'] = 'sakernas-pendataan'; // SAKERNAS AGS 2026 - PENDATAAN
+    fasihIdMap['5135560c-8b67-4657-af7f-99ae7fef7eb2'] = 'pes-se2026'; // POST ENUMERATION SURVEY SE2026
 
     cloudSurveys.forEach((s, idx) => {
       // Check if already mapped

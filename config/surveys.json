@@ -2263,5 +2263,44 @@
       "subsls",
       "export"
     ]
+  },
+  "pes-se2026": {
+    "id": "pes-se2026",
+    "name": "Post Enumeration Survey (PES) Sensus Ekonomi 2026",
+    "shortName": "PES SE2026",
+    "category": "sensus",
+    "categoryLabel": "PES Sensus",
+    "categoryBadge": "PES",
+    "categoryIcon": "bi-patch-check-fill",
+    "coverageDesc": "Uji Petik Kualitas & Evaluasi Cakupan Sensus Ekonomi 2026",
+    "tagline": "Pemantauan Kegiatan PES Sensus Ekonomi 2026 Kabupaten Penajam Paser Utara",
+    "themePack": "Purple Prestige & Amber Audit",
+    "theme": "purple",
+    "themeColor": "#a855f7",
+    "themeSecondary": "#f59e0b",
+    "themeRgb": "168, 85, 247",
+    "themeGradient": "linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #f59e0b 100%)",
+    "themeGlow": "0 16px 36px -8px rgba(168, 85, 247, 0.35)",
+    "themeIcon": "bi-patch-check",
+    "unitName": "Usaha/Sampel",
+    "showUsahaColumns": true,
+    "showMuatanUsaha": false,
+    "officerRole": "PCL",
+    "officerFullRole": "Pencacah PES SE2026",
+    "hasKorlap": false,
+    "enabledPages": [
+      "map",
+      "agent",
+      "pml",
+      "pcl",
+      "earlywarning",
+      "performa",
+      "harian",
+      "leaderboard",
+      "kecamatan",
+      "subsls",
+      "export"
+    ],
+    "fasihSurveyId": "5135560c-8b67-4657-af7f-99ae7fef7eb2"
   }
 }

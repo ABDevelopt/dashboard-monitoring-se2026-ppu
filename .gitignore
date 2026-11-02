@@ -62,3 +62,6 @@ firebase-service-account.json
 *firebase*.json
 *-firebase-adminsdk-*.json
 *.pem
+
+# Public screenshots duplicates
+public/screenshots/
