@@ -384,4 +384,17 @@ router.post('/logs/clear', requireAdminOnly, (req, res) => {
   }
 });
 
+
+// ─────────────────────────────────────────────────────────────────
+//  GET /harness2-status — Status Telemetri Google Research Harness² Engine
+// ─────────────────────────────────────────────────────────────────
+router.get('/harness2-status', (req, res) => {
+  try {
+    const harness2Engine = require('../services/ai/harness2Engine');
+    res.json({ success: true, ...harness2Engine.getStatus() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;

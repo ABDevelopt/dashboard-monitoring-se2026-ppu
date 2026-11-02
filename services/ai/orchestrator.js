@@ -15,6 +15,7 @@ const toolRegistry = require('./toolRegistry');
 const llmGateway = require('./llmGateway');
 const fastPathHandler = require('./fastPathHandler');
 const keyPool = require('./keyPool');
+const harness2Engine = require('./harness2Engine');
 
 // LOGGER — using Winston to ensure all AI logs are captured in log files
 const _winstonLogger = require('../logger');
@@ -926,5 +927,6 @@ module.exports = {
   streamSimulation,
   getDownwardFallbackChain,
   isModelNotFoundError,
-  fetchPageData: toolRegistry.fetchPageDataCompat
+  fetchPageData: toolRegistry.fetchPageDataCompat,
+  harness2Engine
 };

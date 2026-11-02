@@ -65,3 +65,12 @@ firebase-service-account.json
 
 # Public screenshots duplicates
 public/screenshots/
+
+# Google Research Harness2 Toolkit
+tools/harness2/.venv/
+tools/harness2/runs/
+tools/harness2/*.egg-info/
+tools/harness2/dist/
+
+# External tools
+tools/
