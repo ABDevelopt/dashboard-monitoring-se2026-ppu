@@ -3059,9 +3059,9 @@ function updateSettings(settingsObj, surveyId) {
   const activeSurveyId = resolveSurveyId(surveyId);
   const db = getDb(activeSurveyId);
   const currentSettings = getSettings(activeSurveyId);
-  const update = db.prepare('UPDATE settings SET value = ? WHERE key = ?');
+  const update = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
   for (const [k, v] of Object.entries(settingsObj)) {
-    update.run(v, k);
+    update.run(k, String(v));
   }
   
   let needsRebuild = false;

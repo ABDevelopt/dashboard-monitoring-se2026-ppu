@@ -349,6 +349,8 @@ router.get('/', (req, res) => {
     pmlStats.sort((a, b) => compareFasihProgress(a, b, 'pml'));
 
     if (filterPml) {
+      const pmlAliases = resolveOfficerAliases(db, uploadId, filterPml, 'pml');
+      const pmlPlaceholders = pmlAliases.map(() => '?').join(',');
       const settings = res.locals.settings;
       const targetFormula = getTargetFormula(settings.target_fasih_mode);
       const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');

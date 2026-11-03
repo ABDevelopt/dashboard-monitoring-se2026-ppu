@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const { getDb, getSharedDb, getSettings, rebuildSummaryCache, rebuildAllSummaryCaches, importTitikUjiPetik, reloadDbConnection, getSurveyProgressSnapshotsMap, upsertSurveyProgressSnapshot, refreshSurveyProgressSnapshot, saveOfficerProgressTelemetry, getLatestUpload, harmonizePesSe2026 } = require('../database');
+const { getDb, getSharedDb, getSettings, rebuildSummaryCache, rebuildAllSummaryCaches, importTitikUjiPetik, reloadDbConnection, getSurveyProgressSnapshotsMap, upsertSurveyProgressSnapshot, refreshSurveyProgressSnapshot, saveOfficerProgressTelemetry, getLatestUpload, harmonizePesSe2026, updateSettings } = require('../database');
 const logger = require('./logger');
 
 const DEFAULT_API_URL = process.env.FASIH_API_BASE_URL || 'http://43.163.98.53/api/sync/monitoring-data';
@@ -797,6 +797,25 @@ class FasihSyncService {
 
     const effectiveDate = payload.data_date || date || new Date().toISOString().slice(0, 10);
     const records = payload.records;
+
+    // Auto-update survey period and deadline if provided by FASIH-SM API
+    if (payload.period_start_date || payload.period_end_date) {
+      try {
+        const updateObj = {};
+        if (payload.period_start_date) {
+          updateObj.speedometer_start_date = String(payload.period_start_date).slice(0, 10);
+        }
+        if (payload.period_end_date) {
+          updateObj.speedometer_target_date = String(payload.period_end_date).slice(0, 10);
+        }
+        if (Object.keys(updateObj).length > 0) {
+          updateSettings(updateObj, surveyId);
+          logger.info(`[FASIH-SYNC] Berhasil memperbarui target deadline survei [${surveyId}]: Mulai = ${updateObj.speedometer_start_date || 'tetap'}, Deadline = ${updateObj.speedometer_target_date || 'tetap'}`);
+        }
+      } catch (periodErr) {
+        logger.warn(`[FASIH-SYNC] Peringatan penyesuaian deadline survei: ${periodErr.message}`);
+      }
+    }
 
     // Cek deduplikasi jika diminta (misal dari scheduler background)
     if (skipIfUnchanged) {
