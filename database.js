@@ -5047,6 +5047,10 @@ function harmonizePesSe2026(dbConn) {
     const pesOfficers = [
       {
         kode: '64090100010001',
+        kode_kec: '03',
+        kecamatan: 'Penajam',
+        desa: 'Petung',
+        nama_sls: 'RT 010 PETUNG',
         email: 'claraaja850@gmail.com',
         prefix: 'claraaja%',
         pcl: 'Ismail',
@@ -5055,6 +5059,10 @@ function harmonizePesSe2026(dbConn) {
       },
       {
         kode: '64090100010011',
+        kode_kec: '04',
+        kecamatan: 'Sepaku',
+        desa: 'Pemaluan',
+        nama_sls: 'RT 005 PEMALUAN',
         email: 'faiqasiti@gmail.com',
         prefix: 'faiqasiti%',
         pcl: 'Siti Fatimah',
@@ -5063,6 +5071,10 @@ function harmonizePesSe2026(dbConn) {
       },
       {
         kode: '64090100010021',
+        kode_kec: '02',
+        kecamatan: 'Waru',
+        desa: 'Waru',
+        nama_sls: 'RT 007 WARU',
         email: 'kimnurazizah3@gmail.com',
         prefix: 'kimnurazizah%',
         pcl: 'Nur azizah',
@@ -5071,6 +5083,10 @@ function harmonizePesSe2026(dbConn) {
       },
       {
         kode: '64090100010031',
+        kode_kec: '03',
+        kecamatan: 'Penajam',
+        desa: 'Giri Mukti',
+        nama_sls: 'RT 005 DUSUN 1 GUNUNG PASIR',
         email: 'mearayu26@gmail.com',
         prefix: 'mearayu%',
         pcl: 'Ropah musrotin',
@@ -5079,6 +5095,10 @@ function harmonizePesSe2026(dbConn) {
       },
       {
         kode: '64090100010041',
+        kode_kec: '04',
+        kecamatan: 'Sepaku',
+        desa: 'Suka Raja',
+        nama_sls: 'RT 006 DUSUN 001 SUKA RAJA',
         email: 'noerhiee_85@yahoo.co.id',
         prefix: 'noerhiee%',
         pcl: 'Nur Hijrah',
@@ -5087,6 +5107,10 @@ function harmonizePesSe2026(dbConn) {
       },
       {
         kode: '64090100010051',
+        kode_kec: '03',
+        kecamatan: 'Penajam',
+        desa: 'Sotek',
+        nama_sls: 'RT 001 SOTEK',
         email: 'ony.fahrony91@gmail.com',
         prefix: 'ony%fahrony%',
         pcl: 'Fahroni',
@@ -5095,6 +5119,10 @@ function harmonizePesSe2026(dbConn) {
       },
       {
         kode: '64090100010061',
+        kode_kec: '01',
+        kecamatan: 'Babulu',
+        desa: 'Gunung Makmur',
+        nama_sls: 'RT 001 DUSUN I GIRI HARJA',
         email: 'riswanti117@gmail.com',
         prefix: 'riswanti%',
         pcl: 'Riswanti',
@@ -5103,6 +5131,10 @@ function harmonizePesSe2026(dbConn) {
       },
       {
         kode: '64090100010071',
+        kode_kec: '01',
+        kecamatan: 'Babulu',
+        desa: 'Babulu Darat',
+        nama_sls: 'RT 010 DUSUN I BABULU DARAT',
         email: 'rurimeylindas@gmail.com',
         prefix: 'rurimeylinda%',
         pcl: 'Ruri Meylinda Sari',
@@ -5111,6 +5143,10 @@ function harmonizePesSe2026(dbConn) {
       },
       {
         kode: '64090100010081',
+        kode_kec: '03',
+        kecamatan: 'Penajam',
+        desa: 'Penajam',
+        nama_sls: 'RT 001 PENAJAM',
         email: 'sn213965@gmail.com',
         prefix: 'sn%',
         pcl: 'Siti nurjanah',
@@ -5119,6 +5155,10 @@ function harmonizePesSe2026(dbConn) {
       },
       {
         kode: '64090100010091',
+        kode_kec: '01',
+        kecamatan: 'Babulu',
+        desa: 'Gunung Intan',
+        nama_sls: 'RT 001 GUNUNG INTAN',
         email: 'tiniazis.1920@gmail.com',
         prefix: 'tiniazis%',
         pcl: 'Surtini',
@@ -5127,21 +5167,25 @@ function harmonizePesSe2026(dbConn) {
       }
     ];
 
-    // Check if any SLS is still unallocated or has placeholder/email names
+    // Check if any SLS is still unallocated or needs geographic correction (e.g. Sepaku, Penajam, Waru)
     const needHarmonize = conn.prepare(`
       SELECT count(*) as c FROM subsls_master 
       WHERE pml NOT IN ('Fitrisia Taridipa S.Tr.Stat.', 'Nova Nauli Harahap', 'Sanjaya Abdillah Karim')
          OR pcl LIKE '%@%'
          OR pcl IN ('Claraaja', 'Faiqasiti', 'Kimnurazizah', 'Mearayu', 'Noerhiee', 'Ony Fahrony', 'Sn', 'Tiniazis')
+         OR (pcl = 'Siti Fatimah' AND kecamatan != 'Sepaku')
+         OR (pcl = 'Nur Hijrah' AND kecamatan != 'Sepaku')
+         OR (pcl = 'Ropah musrotin' AND kecamatan != 'Penajam')
     `).get()?.c || 0;
 
     if (needHarmonize > 0) {
-      logger.info(`[PES-SE2026] Mengotomasi alokasi definitif PML & PCL untuk ${needHarmonize} entri...`);
+      logger.info(`[PES-SE2026] Mengotomasi alokasi definitif PML, PCL & wilayah (Sepaku, Penajam, Waru, Babulu) untuk ${needHarmonize} entri...`);
 
       conn.transaction(() => {
         const updateMaster = conn.prepare(`
           UPDATE subsls_master 
-          SET pcl = ?, pml = ?, pcl_email = ?, pml_email = ?
+          SET pcl = ?, pml = ?, pcl_email = ?, pml_email = ?,
+              kode_kec = ?, kecamatan = ?, desa = ?, nama_sls = ?
           WHERE kode = ? 
              OR kode LIKE ?
              OR LOWER(pcl) LIKE ? 
@@ -5161,7 +5205,7 @@ function harmonizePesSe2026(dbConn) {
 
         for (const o of pesOfficers) {
           const kodePattern = `${o.kode}%`;
-          updateMaster.run(o.pcl, o.pml, o.email, o.pml_email, o.kode, kodePattern, o.prefix, o.pcl, o.email);
+          updateMaster.run(o.pcl, o.pml, o.email, o.pml_email, o.kode_kec, o.kecamatan, o.desa, o.nama_sls, o.kode, kodePattern, o.prefix, o.pcl, o.email);
           updateProgres.run(o.pcl, o.email, o.kode, kodePattern, o.prefix, o.pcl, o.email);
         }
       })();
