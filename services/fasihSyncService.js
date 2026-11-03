@@ -154,6 +154,21 @@ class FasihSyncService {
   }
 
   /**
+   * Helper: Resolve local survey slug to Cloud API identifier (UUID if configured, otherwise slug)
+   */
+  _resolveCloudSurveyIdentifier(surveyId) {
+    if (!surveyId) return 'se2026';
+    try {
+      const surveysConfig = require('../config/surveys.json');
+      const surveyDef = surveysConfig[surveyId];
+      if (surveyDef && surveyDef.fasihSurveyId) {
+        return surveyDef.fasihSurveyId;
+      }
+    } catch (_) {}
+    return surveyId;
+  }
+
+  /**
    * Quick connection & health check to FASIH-SM API
    */
   async checkConnection(customUrl = null, customKey = null) {
@@ -664,8 +679,9 @@ class FasihSyncService {
     const apiKey = customKey || config.apiKey;
 
     // Construct request query
+    const targetCloudSurvey = this._resolveCloudSurveyIdentifier(surveyId);
     const urlObj = new URL(baseUrl);
-    urlObj.searchParams.set('survey', surveyId);
+    urlObj.searchParams.set('survey', targetCloudSurvey);
     urlObj.searchParams.set('region', region);
     if (date) urlObj.searchParams.set('date', date);
     if (forceRefresh) urlObj.searchParams.set('refresh', 'true');
@@ -1068,8 +1084,9 @@ class FasihSyncService {
     }
     const apiKey = customKey || config.apiKey;
 
+    const targetCloudSurvey = this._resolveCloudSurveyIdentifier(surveyId);
     const urlObj = new URL(baseUrl);
-    urlObj.searchParams.set('survey', surveyId);
+    urlObj.searchParams.set('survey', targetCloudSurvey);
     if (role) urlObj.searchParams.set('role', role);
     if (forceRefresh) urlObj.searchParams.set('refresh', 'true');
 
@@ -1374,8 +1391,9 @@ class FasihSyncService {
     } = options;
 
     const { apiUrl, apiKey } = this.getSpatialConfig(customUrl, customKey);
+    const targetCloudSurvey = this._resolveCloudSurveyIdentifier(surveyId);
     const urlObj = new URL(apiUrl);
-    urlObj.searchParams.set('survey', surveyId);
+    urlObj.searchParams.set('survey', targetCloudSurvey);
     urlObj.searchParams.set('region', region);
     urlObj.searchParams.set('format', 'compact');
 
