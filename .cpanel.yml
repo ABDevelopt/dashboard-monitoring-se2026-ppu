@@ -1,4 +1,7 @@
 ---
 deployment:
   tasks:
-    - /bin/echo "Git deployment completed successfully"
+    - export DEPLOYPATH=/home/bpsppuco/monitoring.bpsppu.com
+    - /bin/mkdir -p $DEPLOYPATH/tmp
+    - /bin/touch $DEPLOYPATH/tmp/restart.txt
+    - /bin/echo "Deployment to $DEPLOYPATH completed successfully at $(date)"

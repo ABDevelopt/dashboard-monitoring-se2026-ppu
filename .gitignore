@@ -74,3 +74,8 @@ tools/harness2/dist/
 
 # External tools
 tools/
+
+# Runtime temporary and dynamic state
+tmp/
+data/harness_library.json
+*.log
