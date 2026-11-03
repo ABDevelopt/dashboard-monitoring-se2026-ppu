@@ -91,6 +91,17 @@
     @media (max-width: 992px) {
       .topbar-weather-widget { display: none !important; }
     }
+    @keyframes spin-anim {
+      100% { transform: rotate(360deg); }
+    }
+    .spin {
+      animation: spin-anim 1s linear infinite !important;
+      display: inline-block;
+    }
+    #topbarSyncBtn:hover #topbarSyncIcon:not(.spin) {
+      transform: rotate(45deg);
+      transition: transform 0.25s ease;
+    }
   </style>
 </head>
 <body class="survey-theme-<%= (typeof surveyConfig !== 'undefined' ? (surveyConfig.theme || surveyConfig.id) : 'orange') %> <%= (typeof activePage !== 'undefined' && activePage === 'login') ? 'page-login' : '' %> <%= (typeof activePage !== 'undefined' && activePage === 'agent') ? 'page-agent' : '' %> <%= (typeof activePage !== 'undefined' && (activePage === 'map' || activePage === 'map-ujipetik' || activePage === 'ujipetik')) ? 'page-map' : '' %>">
@@ -776,6 +787,12 @@
           </div>
         </div>
       </div>
+
+      <!-- Cloud Data Sync Button -->
+      <button type="button" class="btn btn-secondary topbar-action-btn" id="topbarSyncBtn" onclick="triggerTopbarDataSync(event)" title="Sinkronkan Data Progres Terkini (FASIH Cloud API)" aria-label="Sinkron Data Dasbor">
+        <i class="bi bi-arrow-repeat" id="topbarSyncIcon"></i>
+        <span class="topbar-action-label" id="topbarSyncLabel">Sinkron</span>
+      </button>
 
       <!-- Theme Toggle -->
       <button class="btn btn-secondary topbar-action-btn" id="themeToggle" title="Ubah Tema" aria-label="Ubah Tema" onclick="window.toggleTheme(event)">
@@ -1508,6 +1525,65 @@
           };
         });
       }
+
+      // === Topbar Data Sync Logic ===
+      window.triggerTopbarDataSync = async function(e) {
+        if (e) e.preventDefault();
+        const btn = document.getElementById('topbarSyncBtn');
+        const icon = document.getElementById('topbarSyncIcon');
+        const label = document.getElementById('topbarSyncLabel');
+
+        if (btn && btn.disabled) return;
+        if (btn) btn.disabled = true;
+        if (icon) {
+          icon.classList.remove('bi-check2', 'text-success', 'fw-bold', 'bi-exclamation-triangle', 'text-danger');
+          icon.classList.add('bi-arrow-repeat', 'spin');
+        }
+        if (label) label.textContent = 'Menyinkronkan...';
+
+        const surveyId = (typeof window.activeSurveyId !== 'undefined' && window.activeSurveyId)
+          || '<%= typeof activeSurvey !== "undefined" ? activeSurvey : "se2026" %>';
+
+        try {
+          const res = await fetch('/api/sync/progress/' + encodeURIComponent(surveyId), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ forceRefresh: true })
+          });
+
+          const data = await res.json();
+          if (!res.ok || data.success === false) {
+            throw new Error(data.error || ('HTTP ' + res.status));
+          }
+
+          if (icon) {
+            icon.classList.remove('spin', 'bi-arrow-repeat');
+            icon.classList.add('bi-check2', 'text-success', 'fw-bold');
+          }
+          if (label) label.textContent = 'Berhasil!';
+
+          if (typeof createToastNotification === 'function') {
+            createToastNotification([{
+              type: 'fasih',
+              title: 'Sinkronisasi Data Berhasil',
+              desc: 'Data progres kegiatan <strong>' + surveyId.toUpperCase() + '</strong> berhasil diperbarui (' + (data.totalSls || 0) + ' unit wilayah). Memuat ulang...'
+            }]);
+          }
+
+          setTimeout(() => {
+            window.location.reload();
+          }, 1100);
+        } catch (err) {
+          if (icon) {
+            icon.classList.remove('spin');
+            icon.classList.add('bi-arrow-repeat');
+          }
+          if (label) label.textContent = 'Coba Lagi';
+          if (btn) btn.disabled = false;
+
+          alert('Gagal Sinkronisasi Data Dasbor: ' + (err.message || 'Koneksi ke API Cloud gagal.'));
+        }
+      };
 
       window.initNotificationBell = initNotificationBell;
       initNotificationBell();

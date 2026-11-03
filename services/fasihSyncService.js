@@ -1494,6 +1494,63 @@ class FasihSyncService {
         logger.warn(`[FASIH-AUTO-SYNC] Pengecekan terjadwal error: ${err.message}`);
       }
     }, intervalMs);
+
+    // Jadwal Rutin Tepat Pukul 06:00 WITA Setiap Hari
+    const dailyTargetHour = parseInt(process.env.FASIH_DAILY_SYNC_HOUR || '6', 10);
+    this._scheduleDailySync(dailyTargetHour);
+  }
+
+  /**
+   * Schedule recurring daily synchronization at specified hour (Default 06:00 WITA / Asia/Makassar)
+   */
+  _scheduleDailySync(targetHour = 6) {
+    const calculateMsUntil = () => {
+      const now = new Date();
+      try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Asia/Makassar',
+          hour: 'numeric', minute: 'numeric', second: 'numeric',
+          hour12: false
+        });
+        const parts = Object.fromEntries(formatter.formatToParts(now).map(p => [p.type, p.value]));
+        const curH = parseInt(parts.hour, 10);
+        const curM = parseInt(parts.minute, 10);
+        const curS = parseInt(parts.second, 10);
+
+        let diffSec = (targetHour * 3600) - (curH * 3600 + curM * 60 + curS);
+        if (diffSec <= 0) {
+          diffSec += 24 * 3600; // Jadwalkan besok jika hari ini sudah melewati jam target
+        }
+        return diffSec * 1000;
+      } catch (_) {
+        // Fallback jika timezone Asia/Makassar tidak tersedia di OS
+        const curH = now.getHours();
+        const curM = now.getMinutes();
+        const curS = now.getSeconds();
+        let diffSec = (targetHour * 3600) - (curH * 3600 + curM * 60 + curS);
+        if (diffSec <= 0) diffSec += 24 * 3600;
+        return diffSec * 1000;
+      }
+    };
+
+    const scheduleNext = () => {
+      const ms = calculateMsUntil();
+      const hoursRemaining = (ms / 3600000).toFixed(1);
+      logger.info(`⏰ [FASIH-DAILY-SYNC] Jadwal sinkronisasi harian otomatis disetel untuk pukul ${String(targetHour).padStart(2, '0')}:00 WITA (dalam ~${hoursRemaining} jam).`);
+
+      this._dailyTimerId = setTimeout(async () => {
+        logger.info(`🌅 [FASIH-DAILY-SYNC] Pukul ${String(targetHour).padStart(2, '0')}:00 WITA tiba! Menjalankan sinkronisasi harian seluruh survei...`);
+        try {
+          const res = await this.syncAllSurveysProgress({ forceRefresh: true, skipIfUnchanged: false });
+          logger.info(`[FASIH-DAILY-SYNC] ✅ Sinkronisasi harian selesai! Berhasil: ${res.synced || 0}, Dilewati: ${res.skipped || 0}, Gagal: ${res.failed || 0}`);
+        } catch (err) {
+          logger.error(`[FASIH-DAILY-SYNC] ❌ Gagal sinkronisasi harian 06:00: ${err.message}`);
+        }
+        scheduleNext();
+      }, ms);
+    };
+
+    scheduleNext();
   }
 
   /**
