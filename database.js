@@ -89,6 +89,9 @@ function getDb(surveyId) {
     if (sId === 'se2026') {
       db = dbConn;
     }
+    if (sId === 'pes-se2026') {
+      harmonizePesSe2026(dbConn);
+    }
 
     // Rebuild only after the initialized connection is available to getDb().
     const uploadCount = dbConn.prepare('SELECT COUNT(*) as n FROM uploads').get().n;
@@ -5034,6 +5037,55 @@ function resolveOfficerAliases(db, uploadId, filterName, role = 'pcl') {
   return Array.from(aliases);
 }
 
+
+/**
+ * Auto-harmonize PES SE2026 officer allocations (Fitrisia, Nova, Sanjaya)
+ */
+function harmonizePesSe2026(dbConn) {
+  try {
+    const conn = dbConn || getDb('pes-se2026');
+    const unallocated = conn.prepare(`
+      SELECT count(*) as c FROM subsls_master 
+      WHERE pml LIKE '%Pengawas%Ppu%' OR pml LIKE '%Pengawas%BPS%' OR pml = '' OR pml IS NULL
+    `).get()?.c || 0;
+
+    if (unallocated > 0) {
+      logger.info(`[PES-SE2026] Mengotomasi alokasi PML & PCL untuk ${unallocated} SLS...`);
+      const pmlAssignments = [
+        { pcl: 'Nur azizah', pml: 'Fitrisia Taridipa S.Tr.Stat.' },
+        { pcl: 'Riswanti', pml: 'Fitrisia Taridipa S.Tr.Stat.' },
+        { pcl: 'Ruri Meylinda Sari', pml: 'Fitrisia Taridipa S.Tr.Stat.' },
+        { pcl: 'Surtini', pml: 'Fitrisia Taridipa S.Tr.Stat.' },
+        { pcl: 'Ropah musrotin', pml: 'Nova Nauli Harahap' },
+        { pcl: 'Fahroni', pml: 'Nova Nauli Harahap' },
+        { pcl: 'Siti nurjanah', pml: 'Nova Nauli Harahap' },
+        { pcl: 'Ismail', pml: 'Sanjaya Abdillah Karim' },
+        { pcl: 'Siti Fatimah', pml: 'Sanjaya Abdillah Karim' },
+        { pcl: 'Nur Hijrah', pml: 'Sanjaya Abdillah Karim' }
+      ];
+
+      conn.transaction(() => {
+        const updateStmt = conn.prepare(`
+          UPDATE subsls_master 
+          SET pml = ? 
+          WHERE LOWER(REPLACE(pcl, ' ', '')) = LOWER(REPLACE(?, ' ', ''))
+        `);
+        for (const a of pmlAssignments) {
+          updateStmt.run(a.pml, a.pcl);
+        }
+      })();
+
+      const uploads = conn.prepare('SELECT id FROM uploads').all();
+      for (const u of uploads) {
+        rebuildSummaryCache(u.id, 'pes-se2026');
+      }
+      logger.info('[PES-SE2026] Sukses menyelaraskan alokasi PML dan merebuild summary cache.');
+    }
+  } catch (err) {
+    logger.warn(`[PES-SE2026] Harmonization warning: ${err.message}`);
+  }
+}
+
 module.exports = {
   getDb, getSharedDb, resolveSurveyId, getLatestUpload, getUploadByDate, getLatestUploadsDetailed, getAllUploads, getAllUploadDates,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -5060,7 +5112,7 @@ module.exports = {
   importTitikUjiPetik, importTitikUjiPetikFromCsv, clearTitikUjiPetik, getTitikUjiPetikStats, getTitikUjiPetikPoints, getTitikUjiPetikCompact,
   getTitikUjiPetikUploads, getTitikUjiPetikUploadById, deleteTitikUjiPetikUpload,
   getSurveyProgressSnapshotsMap, upsertSurveyProgressSnapshot, refreshSurveyProgressSnapshot, refreshAllSurveyProgressSnapshots,
-  hasOfficerProgressTelemetry, saveOfficerProgressTelemetry, getOfficerProgressTelemetry, resolveOfficerAliases
+  hasOfficerProgressTelemetry, saveOfficerProgressTelemetry, getOfficerProgressTelemetry, resolveOfficerAliases, harmonizePesSe2026
 };
 
 
