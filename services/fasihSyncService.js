@@ -157,7 +157,21 @@ class FasihSyncService {
    * Helper: Resolve local survey slug to Cloud API identifier (UUID if configured, otherwise slug)
    */
   _resolveCloudSurveyIdentifier(surveyId) {
-    if (!surveyId) return 'se2026';
+    if (!surveyId) return 'a0429e96-51a5-477b-a415-485f9c153004';
+    
+    // Fallback dictionary for core surveys in case config/surveys.json is outdated or not reloaded
+    const KNOWN_MAP = {
+      'se2026': 'a0429e96-51a5-477b-a415-485f9c153004',
+      'sakernas-pemutakhiran': '8b6f7c3e-ad48-45c5-83ad-4aa2c826b65d',
+      'sakernas-pendataan': '3f1e8a1a-7ac0-49be-85d6-757133c63c38',
+      'pes-se2026': '5135560c-8b67-4657-af7f-99ae7fef7eb2',
+      'pes-se2026-ub': '0c72266f-5d2f-4f6d-ba6a-85d808e4de02',
+      'pendataan-skp2026': '895b912a-3cc8-4394-a489-218f0c6e9302'
+    };
+    if (KNOWN_MAP[surveyId]) {
+      return KNOWN_MAP[surveyId];
+    }
+
     try {
       const surveysConfig = require('../config/surveys.json');
       const surveyDef = surveysConfig[surveyId];

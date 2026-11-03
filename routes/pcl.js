@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getPclStats, getDb, getSettings, attachProgressPercentages, compareFasihProgress, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, getSubslsStatusFormula, hasOfficerProgressTelemetry } = require('../database');
+const { getPclStats, getDb, resolveOfficerAliases, getSettings, attachProgressPercentages, compareFasihProgress, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, getSubslsStatusFormula, hasOfficerProgressTelemetry } = require('../database');
 
 router.get('/', (req, res) => {
   const uploadId = res.locals.uploadId;
@@ -40,6 +40,10 @@ router.get('/', (req, res) => {
     const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
     // Query stats only for the selected PCL (sub-millisecond)
+    const pclAliases = resolveOfficerAliases(db, uploadId, filterPcl, 'pcl');
+    const pclPlaceholders = pclAliases.map(() => '?').join(',');
+
+    // Query stats only for the selected PCL (sub-millisecond)
     const selectedPclStatsRows = attachProgressPercentages(db.prepare(`
       SELECT 
         m.pcl, m.pml, m.korlap, m.kecamatan,
@@ -72,10 +76,11 @@ router.get('/', (req, res) => {
         CASE WHEN SUM(${targetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${targetFormula}), 2) ELSE 0.0 END AS pct
       FROM subsls_master m
       LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-      WHERE UPPER(TRIM(m.pcl)) = UPPER(TRIM(?))
+      WHERE (UPPER(TRIM(m.pcl)) IN (${pclPlaceholders}) OR UPPER(TRIM(COALESCE(p.pcl_name, ''))) IN (${pclPlaceholders}) OR UPPER(TRIM(COALESCE(p.pcl_email, m.pcl_email, ''))) IN (${pclPlaceholders}))
       GROUP BY m.pcl, m.pml, m.korlap, m.kecamatan
-    `).all(uploadId, filterPcl), settings);
-    const selectedPclStats = selectedPclStatsRows[0] || null;
+    `).all(uploadId, ...pclAliases, ...pclAliases, ...pclAliases), settings);
+    
+    let selectedPclStats = selectedPclStatsRows[0] || null;
 
     detailSubsls = attachProgressPercentages(db.prepare(`
       SELECT 
@@ -94,9 +99,28 @@ router.get('/', (req, res) => {
         ${keluargaTotalFormula} AS keluarga_total
       FROM subsls_master m
       LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-      WHERE (UPPER(TRIM(COALESCE(NULLIF(p.pcl_name, ''), m.pcl))) = UPPER(TRIM(?)))
+      WHERE (UPPER(TRIM(COALESCE(NULLIF(p.pcl_name, ''), m.pcl))) IN (${pclPlaceholders}) OR UPPER(TRIM(COALESCE(p.pcl_email, m.pcl_email, ''))) IN (${pclPlaceholders}))
       ORDER BY sudah_diisi ASC, m.kecamatan, m.desa, m.kode
-    `).all(uploadId, filterPcl), settings);
+    `).all(uploadId, ...pclAliases, ...pclAliases), settings);
+
+    if (!selectedPclStats) {
+      try {
+        const tRow = db.prepare(`
+          SELECT fullname AS pcl, email, total_target AS target_fasih_total, approved AS approved_total, submitted AS submitted_total, draft AS draft_total, (open + rejected) AS open_total
+          FROM officer_progress_telemetry
+          WHERE upload_id = ? AND UPPER(TRIM(fullname)) IN (${pclPlaceholders})
+          LIMIT 1
+        `).get(uploadId, ...pclAliases);
+        if (tRow) {
+          selectedPclStats = {
+            ...tRow,
+            total_subsls: detailSubsls.length,
+            selesai: (tRow.submitted_total || 0) + (tRow.approved_total || 0),
+            pct: tRow.target_fasih_total > 0 ? Math.round(10000.0 * ((tRow.submitted_total || 0) + (tRow.approved_total || 0)) / tRow.target_fasih_total) / 100 : 0
+          };
+        }
+      } catch (_) {}
+    }
 
     const START_DATE = new Date(settings.speedometer_start_date || (surveyId === 'se2026' ? '2026-06-15' : '2026-08-01'));
     let diffDays = 1;
@@ -208,6 +232,8 @@ router.get('/', (req, res) => {
     pclStats.sort((a, b) => compareFasihProgress(a, b, 'pcl'));
 
     if (filterPcl) {
+      const pclAliases = resolveOfficerAliases(db, uploadId, filterPcl, 'pcl');
+      const pclPlaceholders = pclAliases.map(() => '?').join(',');
       const settings = res.locals.settings;
       const targetFormula = getTargetFormula(settings.target_fasih_mode);
       const realFormula = getRealizationFormula(settings.target_muatan_mode, 'p');
@@ -232,9 +258,9 @@ router.get('/', (req, res) => {
           ${keluargaTotalFormula} AS keluarga_total
         FROM subsls_master m
         LEFT JOIN progres p ON m.kode = p.kode AND p.upload_id = ?
-        WHERE (UPPER(TRIM(COALESCE(NULLIF(p.pcl_name, ''), m.pcl))) = UPPER(TRIM(?)))
+        WHERE (UPPER(TRIM(COALESCE(NULLIF(p.pcl_name, ''), m.pcl))) IN (${pclPlaceholders}) OR UPPER(TRIM(COALESCE(p.pcl_email, m.pcl_email, ''))) IN (${pclPlaceholders}))
         ORDER BY sudah_diisi ASC, m.kecamatan, m.desa, m.kode
-      `).all(uploadId, filterPcl), settings);
+      `).all(uploadId, ...pclAliases, ...pclAliases), settings);
     }
   }
 

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const XLSX = require('xlsx');
 const PDFDocument = require('pdfkit-table');
-const { getPmlStats, getDb, getSettings, attachProgressPercentages, compareFasihProgress, getAllUploads, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, hasOfficerProgressTelemetry } = require('../database');
+const { getPmlStats, getDb, resolveOfficerAliases, getSettings, attachProgressPercentages, compareFasihProgress, getAllUploads, getTargetFormula, getRealizationFormula, getUsahaTotalFormula, getKeluargaTotalFormula, getAdaptiveMuatanFormula, getSingleSelesaiFormula, hasOfficerProgressTelemetry } = require('../database');
 
 // Heatmap color generator (HSL to RGB conversion)
 function getHeatmapColor(pct) {
@@ -211,6 +211,9 @@ router.get('/', (req, res) => {
     const usahaTotalFormula = getUsahaTotalFormula(settings.target_muatan_mode, 'p');
     const keluargaTotalFormula = getKeluargaTotalFormula(settings.target_muatan_mode, 'p');
 
+    const pmlAliases = resolveOfficerAliases(db, uploadId, filterPml, 'pml');
+    const pmlPlaceholders = pmlAliases.map(() => '?').join(',');
+
     // Query stats only for selected PML
     const selectedPmlStatsRows = attachProgressPercentages(db.prepare(`
       SELECT 
@@ -236,9 +239,9 @@ router.get('/', (req, res) => {
         SUM(COALESCE(m.target_honor, 0)) AS target_honor_total
       FROM progres p
       LEFT JOIN subsls_master m ON p.kode = m.kode
-      WHERE p.upload_id = ? AND UPPER(TRIM(m.pml)) = UPPER(TRIM(?))
+      WHERE p.upload_id = ? AND (UPPER(TRIM(m.pml)) IN (${pmlPlaceholders})  OR UPPER(TRIM(COALESCE(m.pml_email, ''))) IN (${pmlPlaceholders}))
       GROUP BY m.pml
-    `).all(uploadId, filterPml), settings);
+    `).all(uploadId, ...pmlAliases, ...pmlAliases), settings);
     const selectedPmlStats = selectedPmlStatsRows[0] || null;
 
     detailPcl = attachProgressPercentages(db.prepare(`
@@ -261,10 +264,29 @@ router.get('/', (req, res) => {
         CASE WHEN SUM(${targetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${targetFormula}), 2) ELSE 0.0 END AS pct
       FROM progres p
       LEFT JOIN subsls_master m ON p.kode = m.kode
-      WHERE p.upload_id = ? AND UPPER(TRIM(m.pml)) = UPPER(TRIM(?))
+      WHERE p.upload_id = ? AND (UPPER(TRIM(m.pml)) IN (${pmlPlaceholders})  OR UPPER(TRIM(COALESCE(m.pml_email, ''))) IN (${pmlPlaceholders}))
       GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), m.kecamatan
       ORDER BY selesai ASC
-    `).all(uploadId, filterPml), settings);
+    `).all(uploadId, ...pmlAliases, ...pmlAliases), settings);
+
+    if (!selectedPmlStats) {
+      try {
+        const tRow = db.prepare(`
+          SELECT fullname AS pml, email, total_target AS target_fasih_total, approved AS approved_total, submitted AS submitted_total, draft AS draft_total, (open + rejected) AS open_total
+          FROM officer_progress_telemetry
+          WHERE upload_id = ? AND UPPER(TRIM(fullname)) IN (${pmlPlaceholders})
+          LIMIT 1
+        `).get(uploadId, ...pmlAliases);
+        if (tRow) {
+          selectedPmlStats = {
+            ...tRow,
+            total_subsls: detailPcl.length,
+            selesai: (tRow.submitted_total || 0) + (tRow.approved_total || 0),
+            pct: tRow.target_fasih_total > 0 ? Math.round(10000.0 * ((tRow.submitted_total || 0) + (tRow.approved_total || 0)) / tRow.target_fasih_total) / 100 : 0
+          };
+        }
+      } catch (_) {}
+    }
     detailPcl.sort((a, b) => compareFasihProgress(a, b, 'pcl'));
 
     let pmlHistory = db.prepare(`
@@ -330,10 +352,10 @@ router.get('/', (req, res) => {
           CASE WHEN SUM(${targetFormula}) > 0 THEN ROUND(100.0 * SUM(COALESCE(p.submitted_by_pcl, 0) + COALESCE(p.approved, 0) + COALESCE(p.rejected, 0)) / SUM(${targetFormula}), 2) ELSE 0.0 END AS pct
         FROM progres p
         LEFT JOIN subsls_master m ON p.kode = m.kode
-        WHERE p.upload_id = ? AND UPPER(TRIM(m.pml)) = UPPER(TRIM(?))
+        WHERE p.upload_id = ? AND (UPPER(TRIM(m.pml)) IN (${pmlPlaceholders})  OR UPPER(TRIM(COALESCE(m.pml_email, ''))) IN (${pmlPlaceholders}))
         GROUP BY COALESCE(p.pcl_email, m.pcl_email, m.pcl), m.kecamatan
         ORDER BY selesai ASC
-      `).all(uploadId, filterPml), settings);
+      `).all(uploadId, ...pmlAliases, ...pmlAliases), settings);
       detailPcl.sort((a, b) => compareFasihProgress(a, b, 'pcl'));
     }
   }

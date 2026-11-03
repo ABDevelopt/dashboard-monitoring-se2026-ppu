@@ -4960,6 +4960,80 @@ function getTitikUjiPetikCompact(surveyId = 'se2026') {
   return compact;
 }
 
+/**
+ * Resolves all known aliases (fullname, email, username, prefix, subsls variant) for an officer
+ * to ensure that drilldown/detail views always match assigned SLS tasks 100%.
+ */
+function resolveOfficerAliases(db, uploadId, filterName, role = 'pcl') {
+  const aliases = new Set();
+  const raw = (filterName || '').trim();
+  if (!raw) return [];
+  aliases.add(raw.toUpperCase());
+
+  try {
+    let teleRows = [];
+    if (uploadId) {
+      teleRows = db.prepare(`
+        SELECT fullname, username, email FROM officer_progress_telemetry
+        WHERE upload_id = ? AND (
+          UPPER(TRIM(fullname)) = UPPER(TRIM(?))
+          OR UPPER(TRIM(username)) = UPPER(TRIM(?))
+          OR UPPER(TRIM(email)) = UPPER(TRIM(?))
+        )
+      `).all(uploadId, raw, raw, raw);
+    }
+    if (teleRows.length === 0) {
+      teleRows = db.prepare(`
+        SELECT fullname, username, email FROM officer_progress_telemetry
+        WHERE UPPER(TRIM(fullname)) = UPPER(TRIM(?))
+          OR UPPER(TRIM(username)) = UPPER(TRIM(?))
+          OR UPPER(TRIM(email)) = UPPER(TRIM(?))
+        LIMIT 5
+      `).all(raw, raw, raw);
+    }
+
+    const emails = [];
+    for (const r of teleRows) {
+      if (r.fullname) aliases.add(r.fullname.trim().toUpperCase());
+      if (r.username) aliases.add(r.username.trim().toUpperCase());
+      if (r.email) {
+        aliases.add(r.email.trim().toUpperCase());
+        emails.push(r.email.trim().toLowerCase());
+        const prefix = r.email.split('@')[0];
+        aliases.add(prefix.toUpperCase());
+        const cleanPrefix = prefix.replace(/[0-9._-]+/g, '').toUpperCase();
+        if (cleanPrefix.length >= 2) aliases.add(cleanPrefix);
+      }
+    }
+
+    const col = role === 'pml' ? 'pml' : 'pcl';
+    const emailCol = role === 'pml' ? 'pml_email' : 'pcl_email';
+    const subslsRows = db.prepare(`SELECT ${col} as name, ${emailCol} as email FROM subsls_master`).all();
+    for (const s of subslsRows) {
+      if (!s.name) continue;
+      const sNameUpper = s.name.trim().toUpperCase();
+      const sNameClean = sNameUpper.replace(/[^A-Z0-9]/g, '');
+
+      if (aliases.has(sNameUpper)) {
+        aliases.add(sNameUpper);
+        continue;
+      }
+      for (const em of emails) {
+        const emClean = em.split('@')[0].replace(/[^a-z0-9]/g, '');
+        if (emClean.includes(sNameClean.toLowerCase()) || sNameClean.toLowerCase().includes(emClean)) {
+          aliases.add(sNameUpper);
+        }
+      }
+      const rawClean = raw.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      if (sNameClean.length >= 3 && (rawClean.includes(sNameClean) || sNameClean.includes(rawClean))) {
+        aliases.add(sNameUpper);
+      }
+    }
+  } catch (_) {}
+
+  return Array.from(aliases);
+}
+
 module.exports = {
   getDb, getSharedDb, resolveSurveyId, getLatestUpload, getUploadByDate, getLatestUploadsDetailed, getAllUploads, getAllUploadDates,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -4986,7 +5060,7 @@ module.exports = {
   importTitikUjiPetik, importTitikUjiPetikFromCsv, clearTitikUjiPetik, getTitikUjiPetikStats, getTitikUjiPetikPoints, getTitikUjiPetikCompact,
   getTitikUjiPetikUploads, getTitikUjiPetikUploadById, deleteTitikUjiPetikUpload,
   getSurveyProgressSnapshotsMap, upsertSurveyProgressSnapshot, refreshSurveyProgressSnapshot, refreshAllSurveyProgressSnapshots,
-  hasOfficerProgressTelemetry, saveOfficerProgressTelemetry, getOfficerProgressTelemetry
+  hasOfficerProgressTelemetry, saveOfficerProgressTelemetry, getOfficerProgressTelemetry, resolveOfficerAliases
 };
 
 
