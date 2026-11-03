@@ -595,26 +595,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('ajax-container');
   if (!container) return;
 
-  function initPclHistoryChart() {
+  window.initPclHistoryChart = function(retries = 15) {
     const dataEl = document.getElementById('pclHistoryData');
     if (!dataEl) return;
+    if (typeof Chart === 'undefined' || typeof createPclHistoryChart !== 'function') {
+      if (retries > 0) {
+        return setTimeout(() => window.initPclHistoryChart(retries - 1), 100);
+      }
+      return;
+    }
     try {
       const data = JSON.parse(dataEl.textContent);
       if (data && data.length) {
-        if (typeof Chart !== 'undefined') {
-          const existingChart = Chart.getChart("pclHistoryChartCanvas");
-          if (existingChart) {
-            existingChart.destroy();
-          }
+        const existingChart = Chart.getChart("pclHistoryChartCanvas");
+        if (existingChart) {
+          existingChart.destroy();
         }
-        if (typeof createPclHistoryChart === 'function') {
-          createPclHistoryChart('pclHistoryChartCanvas', data);
-        }
+        createPclHistoryChart('pclHistoryChartCanvas', data);
       }
     } catch (e) {
       console.error('Failed to init PCL history chart:', e);
     }
-  }
+  };
+  const initPclHistoryChart = window.initPclHistoryChart;
 
   function attachListeners() {
     // Initialize expand buttons for AJAX loaded content

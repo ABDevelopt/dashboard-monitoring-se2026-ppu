@@ -1006,6 +1006,7 @@ class FasihSyncService {
       try {
         const savedTel = saveOfficerProgressTelemetry(surveyId, uploadId, payload.officers_progress);
         logger.info(`[FASIH-SYNC] 🎯 Berhasil menyimpan ${savedTel} telemetri progres riil petugas untuk [${surveyId}] (Upload #${uploadId})`);
+        this._harmonizeOfficerAssignments(surveyId, uploadId);
       } catch (telErr) {
         logger.warn(`[FASIH-SYNC] Gagal menyimpan telemetri petugas: ${telErr.message}`);
       }
@@ -1132,6 +1133,7 @@ class FasihSyncService {
 
     const savedCount = saveOfficerProgressTelemetry(surveyId, uploadId, payload.officers);
     logger.info(`[FASIH-SYNC-OFFICERS] Berhasil menyimpan ${savedCount} telemetri petugas untuk [${surveyId}] (${Date.now() - start}ms)`);
+    this._harmonizeOfficerAssignments(surveyId, uploadId);
 
     return {
       success: true,
@@ -1565,6 +1567,80 @@ class FasihSyncService {
     };
 
     scheduleNext();
+  }
+
+  /**
+   * Harmonize and allocate PML and PCL names in subsls_master based on official telemetry
+   */
+  _harmonizeOfficerAssignments(surveyId, uploadId) {
+    try {
+      const db = getDb(surveyId);
+      const officers = db.prepare('SELECT fullname, username, email, role, total_target FROM officer_progress_telemetry WHERE upload_id = ?').all(uploadId);
+      if (!officers || officers.length === 0) return 0;
+
+      const pcls = officers.filter(o => o.role === 'pcl');
+      const pmls = officers.filter(o => o.role === 'pml');
+
+      // 1. Harmonize PCLs in subsls_master
+      for (const pcl of pcls) {
+        const emailPrefix = (pcl.email || '').split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+        const rows = db.prepare('SELECT kode, pcl, pcl_email FROM subsls_master').all();
+        for (const r of rows) {
+          const cleanPcl = (r.pcl || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (cleanPcl.length >= 3 && (emailPrefix.includes(cleanPcl) || cleanPcl.includes(emailPrefix))) {
+            db.prepare('UPDATE subsls_master SET pcl = ?, pcl_email = ? WHERE kode = ?').run(pcl.fullname, pcl.email, r.kode);
+            db.prepare('UPDATE progres SET pcl_name = ?, pcl_email = ? WHERE kode = ? AND upload_id = ?').run(pcl.fullname, pcl.email, r.kode, uploadId);
+          }
+        }
+      }
+
+      // 2. Harmonize PMLs if subsls_master has unallocated/placeholder PMLs
+      const unallocated = db.prepare("SELECT COUNT(*) as c FROM subsls_master WHERE pml IS NULL OR pml = '' OR pml LIKE '%Pengawas%'").get();
+      if (unallocated && unallocated.c > 0 && pmls.length > 0) {
+        const currentSubsls = db.prepare('SELECT kode, pcl, pcl_email, target_fasih FROM subsls_master').all();
+        const pclMap = new Map();
+        for (const s of currentSubsls) {
+          const pName = s.pcl;
+          if (!pclMap.has(pName)) pclMap.set(pName, { name: pName, target: 0, kodes: [] });
+          const ent = pclMap.get(pName);
+          ent.target += (s.target_fasih || 0);
+          ent.kodes.push(s.kode);
+        }
+        const pclItems = Array.from(pclMap.values());
+        const assignedPcls = new Set();
+        for (const pml of pmls) {
+          const unassigned = pclItems.filter(p => !assignedPcls.has(p.name));
+          const n = unassigned.length;
+          let matchedSubset = null;
+
+          for (let mask = 1; mask < (1 << n); mask++) {
+            let sum = 0;
+            const curSubset = [];
+            for (let i = 0; i < n; i++) {
+              if (mask & (1 << i)) {
+                sum += unassigned[i].target;
+                curSubset.push(unassigned[i]);
+              }
+            }
+            if (Math.abs(sum - pml.total_target) <= 5) {
+              matchedSubset = curSubset;
+              break;
+            }
+          }
+
+          if (matchedSubset) {
+            for (const p of matchedSubset) {
+              assignedPcls.add(p.name);
+              for (const k of p.kodes) {
+                db.prepare('UPDATE subsls_master SET pml = ?, pml_email = ? WHERE kode = ?').run(pml.fullname, pml.email, k);
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn(`[FASIH-SYNC] Gagal harmonisasi alokasi petugas: ${err.message}`);
+    }
   }
 
   /**

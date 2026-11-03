@@ -135,21 +135,49 @@ router.get('/', (req, res) => {
       daysRemaining = Math.max(0, Math.ceil((deadline - d2) / (1000 * 60 * 60 * 24)));
     }
 
-    let pclHistory = db.prepare(`
-      SELECT 
-        u.tanggal,
-        SUM(c.draft_total) AS draft_total,
-        SUM(c.submitted_total) AS submitted_total,
-        SUM(c.approved_total) AS approved_total,
-        SUM(c.rejected_total) AS rejected_total,
-        SUM(c.submitted_total + c.approved_total + c.rejected_total) AS selesai_total,
-        SUM(c.target_fasih_total) AS target_fasih_total
-      FROM summary_cache c
-      JOIN uploads u ON c.upload_id = u.id
-      WHERE UPPER(TRIM(c.pcl)) = UPPER(TRIM(?))
-      GROUP BY u.tanggal, u.id
-      ORDER BY u.tanggal ASC
-    `).all(filterPcl);
+    let pclHistory = [];
+    try {
+      pclHistory = db.prepare(`
+        SELECT 
+          u.tanggal,
+          SUM(c.draft_total) AS draft_total,
+          SUM(c.submitted_total) AS submitted_total,
+          SUM(c.approved_total) AS approved_total,
+          SUM(c.rejected_total) AS rejected_total,
+          SUM(c.submitted_total + c.approved_total + c.rejected_total) AS selesai_total,
+          SUM(c.target_fasih_total) AS target_fasih_total
+        FROM (
+          SELECT upload_id, pcl, draft_total, submitted_total, approved_total, rejected_total, target_fasih_total
+          FROM summary_cache
+          WHERE upload_id IN (SELECT MAX(id) FROM uploads GROUP BY tanggal)
+        ) c
+        JOIN uploads u ON c.upload_id = u.id
+        WHERE UPPER(TRIM(c.pcl)) IN (${pclPlaceholders})
+        GROUP BY u.tanggal
+        ORDER BY u.tanggal ASC
+      `).all(...pclAliases);
+    } catch (_) {}
+
+    if (!pclHistory || pclHistory.length === 0) {
+      try {
+        pclHistory = db.prepare(`
+          SELECT 
+            u.tanggal,
+            t.draft AS draft_total,
+            t.submitted AS submitted_total,
+            t.approved AS approved_total,
+            t.rejected AS rejected_total,
+            (t.submitted + t.approved + t.rejected) AS selesai_total,
+            t.total_target AS target_fasih_total
+          FROM officer_progress_telemetry t
+          JOIN uploads u ON t.upload_id = u.id
+          WHERE upload_id IN (SELECT MAX(id) FROM uploads GROUP BY tanggal)
+            AND (UPPER(TRIM(t.fullname)) IN (${pclPlaceholders}) OR UPPER(TRIM(t.username)) IN (${pclPlaceholders}) OR UPPER(TRIM(t.email)) IN (${pclPlaceholders}))
+          GROUP BY u.tanggal
+          ORDER BY u.tanggal ASC
+        `).all(...pclAliases, ...pclAliases, ...pclAliases);
+      } catch (_) {}
+    }
 
     return res.render('partials/pcl_detail', {
       layout: false,
@@ -291,21 +319,50 @@ router.get('/', (req, res) => {
   // Get historical progress of selected PCL
   let pclHistory = [];
   if (uploadId && filterPcl) {
-    pclHistory = db.prepare(`
-      SELECT 
-        u.tanggal,
-        SUM(c.draft_total) AS draft_total,
-        SUM(c.submitted_total) AS submitted_total,
-        SUM(c.approved_total) AS approved_total,
-        SUM(c.rejected_total) AS rejected_total,
-        SUM(c.submitted_total + c.approved_total + c.rejected_total) AS selesai_total,
-        SUM(c.target_fasih_total) AS target_fasih_total
-      FROM summary_cache c
-      JOIN uploads u ON c.upload_id = u.id
-      WHERE UPPER(TRIM(c.pcl)) = UPPER(TRIM(?))
-      GROUP BY u.tanggal, u.id
-      ORDER BY u.tanggal ASC
-    `).all(filterPcl);
+    const pclAliases = resolveOfficerAliases(db, uploadId, filterPcl, 'pcl');
+    const pclPlaceholders = pclAliases.map(() => '?').join(',');
+    try {
+      pclHistory = db.prepare(`
+        SELECT 
+          u.tanggal,
+          SUM(c.draft_total) AS draft_total,
+          SUM(c.submitted_total) AS submitted_total,
+          SUM(c.approved_total) AS approved_total,
+          SUM(c.rejected_total) AS rejected_total,
+          SUM(c.submitted_total + c.approved_total + c.rejected_total) AS selesai_total,
+          SUM(c.target_fasih_total) AS target_fasih_total
+        FROM (
+          SELECT upload_id, pcl, draft_total, submitted_total, approved_total, rejected_total, target_fasih_total
+          FROM summary_cache
+          WHERE upload_id IN (SELECT MAX(id) FROM uploads GROUP BY tanggal)
+        ) c
+        JOIN uploads u ON c.upload_id = u.id
+        WHERE UPPER(TRIM(c.pcl)) IN (${pclPlaceholders})
+        GROUP BY u.tanggal
+        ORDER BY u.tanggal ASC
+      `).all(...pclAliases);
+    } catch (_) {}
+
+    if (!pclHistory || pclHistory.length === 0) {
+      try {
+        pclHistory = db.prepare(`
+          SELECT 
+            u.tanggal,
+            t.draft AS draft_total,
+            t.submitted AS submitted_total,
+            t.approved AS approved_total,
+            t.rejected AS rejected_total,
+            (t.submitted + t.approved + t.rejected) AS selesai_total,
+            t.total_target AS target_fasih_total
+          FROM officer_progress_telemetry t
+          JOIN uploads u ON t.upload_id = u.id
+          WHERE upload_id IN (SELECT MAX(id) FROM uploads GROUP BY tanggal)
+            AND (UPPER(TRIM(t.fullname)) IN (${pclPlaceholders}) OR UPPER(TRIM(t.username)) IN (${pclPlaceholders}) OR UPPER(TRIM(t.email)) IN (${pclPlaceholders}))
+          GROUP BY u.tanggal
+          ORDER BY u.tanggal ASC
+        `).all(...pclAliases, ...pclAliases, ...pclAliases);
+      } catch (_) {}
+    }
   }
 
   const selectedPclStats = filterPcl ? pclStats.find(p => p.pcl && p.pcl.toUpperCase().trim() === filterPcl.toUpperCase().trim()) : null;

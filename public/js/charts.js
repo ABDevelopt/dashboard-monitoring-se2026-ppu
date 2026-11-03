@@ -935,15 +935,39 @@ function createPclHistoryChart(canvasId, historyData) {
   const ctx = document.getElementById(canvasId);
   if (!ctx || !historyData || !historyData.length) return null;
 
+  // Clone to avoid mutating original
+  let processedData = [...historyData];
+
+  // Synthesize Day 0 baseline if only 1 day of records exist
+  if (processedData.length === 1) {
+    const first = processedData[0];
+    const d = new Date(first.tanggal);
+    d.setDate(d.getDate() - 1);
+    const prevDate = d.toISOString().split('T')[0];
+    processedData = [
+      {
+        tanggal: prevDate,
+        draft_total: 0,
+        submitted_total: 0,
+        approved_total: 0,
+        rejected_total: 0,
+        selesai_total: 0,
+        target_fasih_total: first.target_fasih_total || 0,
+        open_total: first.target_fasih_total || 0
+      },
+      first
+    ];
+  }
+
   const theme = getThemeColors();
-  const labels = historyData.map(d => d.tanggal);
-  const dataOpen = historyData.map(d => d.open_total !== undefined ? d.open_total : Math.max(0, (d.target_fasih_total || 0) - ((d.draft_total || 0) + (d.submitted_total || 0) + (d.approved_total || 0) + (d.rejected_total || 0))));
-  const dataDraft = historyData.map(d => d.draft_total || 0);
-  const dataSubmitted = historyData.map(d => d.submitted_total || 0);
-  const dataApproved = historyData.map(d => d.approved_total || 0);
-  const dataRejected = historyData.map(d => d.rejected_total || 0);
-  const dataProgres = historyData.map(d => d.selesai_total || 0);
-  const dataTarget = historyData.map(d => d.target_fasih_total || 0);
+  const labels = processedData.map(d => d.tanggal);
+  const dataOpen = processedData.map(d => d.open_total !== undefined ? d.open_total : Math.max(0, (d.target_fasih_total || 0) - ((d.draft_total || 0) + (d.submitted_total || 0) + (d.approved_total || 0) + (d.rejected_total || 0))));
+  const dataDraft = processedData.map(d => d.draft_total || 0);
+  const dataSubmitted = processedData.map(d => d.submitted_total || 0);
+  const dataApproved = processedData.map(d => d.approved_total || 0);
+  const dataRejected = processedData.map(d => d.rejected_total || 0);
+  const dataProgres = processedData.map(d => d.selesai_total || 0);
+  const dataTarget = processedData.map(d => d.target_fasih_total || 0);
 
   const chart = new Chart(ctx, {
     type: 'line',
@@ -2008,3 +2032,5 @@ if (document.readyState === 'loading') {
 }
 
 
+
+window.createPmlHistoryChart = createPclHistoryChart;

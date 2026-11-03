@@ -289,23 +289,47 @@ router.get('/', (req, res) => {
     }
     detailPcl.sort((a, b) => compareFasihProgress(a, b, 'pcl'));
 
-    let pmlHistory = db.prepare(`
-      SELECT 
-        u.tanggal,
-        SUM(c.draft_total) AS draft_total,
-        SUM(c.submitted_total) AS submitted_total,
-        SUM(c.approved_total) AS approved_total,
-        SUM(c.rejected_total) AS rejected_total,
-        SUM(c.submitted_total + c.approved_total + c.rejected_total) AS selesai_total,
-        SUM(c.target_fasih_total) AS target_fasih_total
-      FROM summary_cache c
-      JOIN (
-        SELECT MAX(id) AS id, tanggal FROM uploads GROUP BY tanggal
-      ) u ON c.upload_id = u.id
-      WHERE UPPER(TRIM(c.pml)) = UPPER(TRIM(?))
-      GROUP BY u.tanggal
-      ORDER BY u.tanggal ASC
-    `).all(filterPml);
+    let pmlHistory = [];
+    try {
+      pmlHistory = db.prepare(`
+        SELECT 
+          u.tanggal,
+          SUM(c.draft_total) AS draft_total,
+          SUM(c.submitted_total) AS submitted_total,
+          SUM(c.approved_total) AS approved_total,
+          SUM(c.rejected_total) AS rejected_total,
+          SUM(c.submitted_total + c.approved_total + c.rejected_total) AS selesai_total,
+          SUM(c.target_fasih_total) AS target_fasih_total
+        FROM summary_cache c
+        JOIN (
+          SELECT MAX(id) AS id, tanggal FROM uploads GROUP BY tanggal
+        ) u ON c.upload_id = u.id
+        WHERE UPPER(TRIM(c.pml)) IN (${pmlPlaceholders})
+        GROUP BY u.tanggal
+        ORDER BY u.tanggal ASC
+      `).all(...pmlAliases);
+    } catch (_) {}
+
+    if (!pmlHistory || pmlHistory.length === 0) {
+      try {
+        pmlHistory = db.prepare(`
+          SELECT 
+            u.tanggal,
+            t.draft AS draft_total,
+            t.submitted AS submitted_total,
+            t.approved AS approved_total,
+            t.rejected AS rejected_total,
+            (t.submitted + t.approved + t.rejected) AS selesai_total,
+            t.total_target AS target_fasih_total
+          FROM officer_progress_telemetry t
+          JOIN uploads u ON t.upload_id = u.id
+          WHERE upload_id IN (SELECT MAX(id) FROM uploads GROUP BY tanggal)
+            AND (UPPER(TRIM(t.fullname)) IN (${pmlPlaceholders}) OR UPPER(TRIM(t.username)) IN (${pmlPlaceholders}) OR UPPER(TRIM(t.email)) IN (${pmlPlaceholders}))
+          GROUP BY u.tanggal
+          ORDER BY u.tanggal ASC
+        `).all(...pmlAliases, ...pmlAliases, ...pmlAliases);
+      } catch (_) {}
+    }
 
     return res.render('partials/pml_detail', {
       layout: false,
@@ -362,23 +386,48 @@ router.get('/', (req, res) => {
 
   let pmlHistory = [];
   if (uploadId && filterPml) {
-    pmlHistory = db.prepare(`
-      SELECT 
-        u.tanggal,
-        SUM(c.draft_total) AS draft_total,
-        SUM(c.submitted_total) AS submitted_total,
-        SUM(c.approved_total) AS approved_total,
-        SUM(c.rejected_total) AS rejected_total,
-        SUM(c.submitted_total + c.approved_total + c.rejected_total) AS selesai_total,
-        SUM(c.target_fasih_total) AS target_fasih_total
-      FROM summary_cache c
-      JOIN (
-        SELECT MAX(id) AS id, tanggal FROM uploads GROUP BY tanggal
-      ) u ON c.upload_id = u.id
-      WHERE UPPER(TRIM(c.pml)) = UPPER(TRIM(?))
-      GROUP BY u.tanggal
-      ORDER BY u.tanggal ASC
-    `).all(filterPml);
+    const pmlAliases = resolveOfficerAliases(db, uploadId, filterPml, 'pml');
+    const pmlPlaceholders = pmlAliases.map(() => '?').join(',');
+    try {
+      pmlHistory = db.prepare(`
+        SELECT 
+          u.tanggal,
+          SUM(c.draft_total) AS draft_total,
+          SUM(c.submitted_total) AS submitted_total,
+          SUM(c.approved_total) AS approved_total,
+          SUM(c.rejected_total) AS rejected_total,
+          SUM(c.submitted_total + c.approved_total + c.rejected_total) AS selesai_total,
+          SUM(c.target_fasih_total) AS target_fasih_total
+        FROM summary_cache c
+        JOIN (
+          SELECT MAX(id) AS id, tanggal FROM uploads GROUP BY tanggal
+        ) u ON c.upload_id = u.id
+        WHERE UPPER(TRIM(c.pml)) IN (${pmlPlaceholders})
+        GROUP BY u.tanggal
+        ORDER BY u.tanggal ASC
+      `).all(...pmlAliases);
+    } catch (_) {}
+
+    if (!pmlHistory || pmlHistory.length === 0) {
+      try {
+        pmlHistory = db.prepare(`
+          SELECT 
+            u.tanggal,
+            t.draft AS draft_total,
+            t.submitted AS submitted_total,
+            t.approved AS approved_total,
+            t.rejected AS rejected_total,
+            (t.submitted + t.approved + t.rejected) AS selesai_total,
+            t.total_target AS target_fasih_total
+          FROM officer_progress_telemetry t
+          JOIN uploads u ON t.upload_id = u.id
+          WHERE upload_id IN (SELECT MAX(id) FROM uploads GROUP BY tanggal)
+            AND (UPPER(TRIM(t.fullname)) IN (${pmlPlaceholders}) OR UPPER(TRIM(t.username)) IN (${pmlPlaceholders}) OR UPPER(TRIM(t.email)) IN (${pmlPlaceholders}))
+          GROUP BY u.tanggal
+          ORDER BY u.tanggal ASC
+        `).all(...pmlAliases, ...pmlAliases, ...pmlAliases);
+      } catch (_) {}
+    }
   }
 
   const selectedPmlStats = filterPml ? pmlStats.find(p => p.pml && p.pml.toUpperCase().trim() === filterPml.toUpperCase().trim()) : null;
