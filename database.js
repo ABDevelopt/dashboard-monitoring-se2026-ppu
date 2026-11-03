@@ -5044,34 +5044,125 @@ function resolveOfficerAliases(db, uploadId, filterName, role = 'pcl') {
 function harmonizePesSe2026(dbConn) {
   try {
     const conn = dbConn || getDb('pes-se2026');
-    const unallocated = conn.prepare(`
+    const pesOfficers = [
+      {
+        kode: '64090100010001',
+        email: 'claraaja850@gmail.com',
+        prefix: 'claraaja%',
+        pcl: 'Ismail',
+        pml: 'Sanjaya Abdillah Karim',
+        pml_email: 's.karim@bps.go.id'
+      },
+      {
+        kode: '64090100010011',
+        email: 'faiqasiti@gmail.com',
+        prefix: 'faiqasiti%',
+        pcl: 'Siti Fatimah',
+        pml: 'Sanjaya Abdillah Karim',
+        pml_email: 's.karim@bps.go.id'
+      },
+      {
+        kode: '64090100010021',
+        email: 'kimnurazizah3@gmail.com',
+        prefix: 'kimnurazizah%',
+        pcl: 'Nur azizah',
+        pml: 'Fitrisia Taridipa S.Tr.Stat.',
+        pml_email: 'fitrisia.taridipa@bps.go.id'
+      },
+      {
+        kode: '64090100010031',
+        email: 'mearayu26@gmail.com',
+        prefix: 'mearayu%',
+        pcl: 'Ropah musrotin',
+        pml: 'Nova Nauli Harahap',
+        pml_email: 'nova.harahap@bps.go.id'
+      },
+      {
+        kode: '64090100010041',
+        email: 'noerhiee_85@yahoo.co.id',
+        prefix: 'noerhiee%',
+        pcl: 'Nur Hijrah',
+        pml: 'Sanjaya Abdillah Karim',
+        pml_email: 's.karim@bps.go.id'
+      },
+      {
+        kode: '64090100010051',
+        email: 'ony.fahrony91@gmail.com',
+        prefix: 'ony%fahrony%',
+        pcl: 'Fahroni',
+        pml: 'Nova Nauli Harahap',
+        pml_email: 'nova.harahap@bps.go.id'
+      },
+      {
+        kode: '64090100010061',
+        email: 'riswanti117@gmail.com',
+        prefix: 'riswanti%',
+        pcl: 'Riswanti',
+        pml: 'Fitrisia Taridipa S.Tr.Stat.',
+        pml_email: 'fitrisia.taridipa@bps.go.id'
+      },
+      {
+        kode: '64090100010071',
+        email: 'rurimeylindas@gmail.com',
+        prefix: 'rurimeylinda%',
+        pcl: 'Ruri Meylinda Sari',
+        pml: 'Fitrisia Taridipa S.Tr.Stat.',
+        pml_email: 'fitrisia.taridipa@bps.go.id'
+      },
+      {
+        kode: '64090100010081',
+        email: 'sn213965@gmail.com',
+        prefix: 'sn%',
+        pcl: 'Siti nurjanah',
+        pml: 'Nova Nauli Harahap',
+        pml_email: 'nova.harahap@bps.go.id'
+      },
+      {
+        kode: '64090100010091',
+        email: 'tiniazis.1920@gmail.com',
+        prefix: 'tiniazis%',
+        pcl: 'Surtini',
+        pml: 'Fitrisia Taridipa S.Tr.Stat.',
+        pml_email: 'fitrisia.taridipa@bps.go.id'
+      }
+    ];
+
+    // Check if any SLS is still unallocated or has placeholder/email names
+    const needHarmonize = conn.prepare(`
       SELECT count(*) as c FROM subsls_master 
-      WHERE pml LIKE '%Pengawas%Ppu%' OR pml LIKE '%Pengawas%BPS%' OR pml = '' OR pml IS NULL
+      WHERE pml NOT IN ('Fitrisia Taridipa S.Tr.Stat.', 'Nova Nauli Harahap', 'Sanjaya Abdillah Karim')
+         OR pcl LIKE '%@%'
+         OR pcl IN ('Claraaja', 'Faiqasiti', 'Kimnurazizah', 'Mearayu', 'Noerhiee', 'Ony Fahrony', 'Sn', 'Tiniazis')
     `).get()?.c || 0;
 
-    if (unallocated > 0) {
-      logger.info(`[PES-SE2026] Mengotomasi alokasi PML & PCL untuk ${unallocated} SLS...`);
-      const pmlAssignments = [
-        { pcl: 'Nur azizah', pml: 'Fitrisia Taridipa S.Tr.Stat.' },
-        { pcl: 'Riswanti', pml: 'Fitrisia Taridipa S.Tr.Stat.' },
-        { pcl: 'Ruri Meylinda Sari', pml: 'Fitrisia Taridipa S.Tr.Stat.' },
-        { pcl: 'Surtini', pml: 'Fitrisia Taridipa S.Tr.Stat.' },
-        { pcl: 'Ropah musrotin', pml: 'Nova Nauli Harahap' },
-        { pcl: 'Fahroni', pml: 'Nova Nauli Harahap' },
-        { pcl: 'Siti nurjanah', pml: 'Nova Nauli Harahap' },
-        { pcl: 'Ismail', pml: 'Sanjaya Abdillah Karim' },
-        { pcl: 'Siti Fatimah', pml: 'Sanjaya Abdillah Karim' },
-        { pcl: 'Nur Hijrah', pml: 'Sanjaya Abdillah Karim' }
-      ];
+    if (needHarmonize > 0) {
+      logger.info(`[PES-SE2026] Mengotomasi alokasi definitif PML & PCL untuk ${needHarmonize} entri...`);
 
       conn.transaction(() => {
-        const updateStmt = conn.prepare(`
+        const updateMaster = conn.prepare(`
           UPDATE subsls_master 
-          SET pml = ? 
-          WHERE LOWER(REPLACE(pcl, ' ', '')) = LOWER(REPLACE(?, ' ', ''))
+          SET pcl = ?, pml = ?, pcl_email = ?, pml_email = ?
+          WHERE kode = ? 
+             OR kode LIKE ?
+             OR LOWER(pcl) LIKE ? 
+             OR LOWER(REPLACE(pcl, ' ', '')) = LOWER(REPLACE(?, ' ', ''))
+             OR LOWER(COALESCE(pcl_email, '')) = LOWER(?)
         `);
-        for (const a of pmlAssignments) {
-          updateStmt.run(a.pml, a.pcl);
+
+        const updateProgres = conn.prepare(`
+          UPDATE progres 
+          SET pcl_name = ?, pcl_email = ?
+          WHERE kode = ? 
+             OR kode LIKE ?
+             OR LOWER(COALESCE(pcl_name, '')) LIKE ? 
+             OR LOWER(REPLACE(COALESCE(pcl_name, ''), ' ', '')) = LOWER(REPLACE(?, ' ', ''))
+             OR LOWER(COALESCE(pcl_email, '')) = LOWER(?)
+        `);
+
+        for (const o of pesOfficers) {
+          const kodePattern = `${o.kode}%`;
+          updateMaster.run(o.pcl, o.pml, o.email, o.pml_email, o.kode, kodePattern, o.prefix, o.pcl, o.email);
+          updateProgres.run(o.pcl, o.email, o.kode, kodePattern, o.prefix, o.pcl, o.email);
         }
       })();
 
@@ -5079,7 +5170,7 @@ function harmonizePesSe2026(dbConn) {
       for (const u of uploads) {
         rebuildSummaryCache(u.id, 'pes-se2026');
       }
-      logger.info('[PES-SE2026] Sukses menyelaraskan alokasi PML dan merebuild summary cache.');
+      logger.info('[PES-SE2026] Sukses menyelaraskan seluruh alokasi PML dan merebuild summary cache.');
     }
   } catch (err) {
     logger.warn(`[PES-SE2026] Harmonization warning: ${err.message}`);
