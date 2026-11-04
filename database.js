@@ -1422,6 +1422,28 @@ function runMigrations(dbConn, surveyId = 'se2026') {
     }
   });
 
+  migrations.push({
+    version: '20261104000000_standardize_uploads_created_at_utc',
+    up: (dbConn) => {
+      try {
+        dbConn.prepare(`
+          UPDATE uploads 
+          SET created_at = datetime(created_at, '-8 hours') 
+          WHERE (filename LIKE 'API_FASIH_%' OR stored_filename LIKE 'api_sync_%')
+            AND created_at IS NOT NULL
+        `).run();
+
+        dbConn.prepare(`
+          UPDATE officer_progress_telemetry 
+          SET created_at = datetime(created_at, '-8 hours') 
+          WHERE created_at IS NOT NULL
+        `).run();
+      } catch (err) {
+        logger.error('Error standardizing created_at to UTC:', err);
+      }
+    }
+  });
+
   migrations.forEach(m => {
     if (!appliedMigrations.includes(m.version)) {
       logger.info(`Applying database migration: ${m.version}`);
@@ -1795,7 +1817,7 @@ function saveOfficerProgressTelemetry(surveyId, uploadId, officersList) {
       ?, ?, ?, ?, ?,
       ?, ?, ?,
       ?, ?, ?, ?, ?, ?, ?, ?,
-      ?, ?, datetime('now', 'localtime')
+      ?, ?, CURRENT_TIMESTAMP
     )
     ON CONFLICT(upload_id, survey_id, email, role) DO UPDATE SET
       fullname = excluded.fullname,
@@ -1812,7 +1834,7 @@ function saveOfficerProgressTelemetry(surveyId, uploadId, officersList) {
       edited = excluded.edited,
       progress_pct = excluded.progress_pct,
       raw_breakdown = excluded.raw_breakdown,
-      created_at = datetime('now', 'localtime')
+      created_at = CURRENT_TIMESTAMP
   `);
 
   let count = 0;

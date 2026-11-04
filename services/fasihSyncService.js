@@ -905,7 +905,7 @@ class FasihSyncService {
         INSERT INTO uploads (
           filename, stored_filename, tanggal, total_subsls_terisi, 
           status_filename, stored_status_filename, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
+        ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `).run(
         originalFilename,
         storedFilename,
