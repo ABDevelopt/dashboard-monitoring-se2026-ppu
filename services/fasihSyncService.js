@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const { getDb, getSharedDb, getSettings, rebuildSummaryCache, rebuildAllSummaryCaches, importTitikUjiPetik, reloadDbConnection, getSurveyProgressSnapshotsMap, upsertSurveyProgressSnapshot, refreshSurveyProgressSnapshot, saveOfficerProgressTelemetry, getLatestUpload, harmonizePesSe2026, updateSettings } = require('../database');
+const { getDb, getSharedDb, getSettings, rebuildSummaryCache, rebuildAllSummaryCaches, importTitikUjiPetik, reloadDbConnection, getSurveyProgressSnapshotsMap, upsertSurveyProgressSnapshot, refreshSurveyProgressSnapshot, saveOfficerProgressTelemetry, getLatestUpload, harmonizePesSe2026, updateSettings, hasDailySyncRunToday, recordSyncLog, getLatestSyncLog } = require('../database');
 const logger = require('./logger');
 
 const DEFAULT_API_URL = process.env.FASIH_API_BASE_URL || 'http://43.163.98.53/api/sync/monitoring-data';
@@ -674,6 +674,32 @@ class FasihSyncService {
   }
 
   /**
+   * Helper: Apply graceful local database fallback when Cloud API is unavailable or returns empty
+   */
+  _applyLocalFallback(surveyId, reason = 'API Cloud offline/error') {
+    try {
+      const db = getDb(surveyId);
+      const existingUploads = db.prepare('SELECT COUNT(*) as c FROM uploads').get()?.c || 0;
+      if (existingUploads > 0) {
+        if (surveyId === 'pes-se2026') harmonizePesSe2026(db);
+        refreshSurveyProgressSnapshot(surveyId);
+        const totalSls = db.prepare('SELECT COUNT(*) as c FROM subsls_master').get()?.c || 0;
+        logger.info(`[FASIH-SYNC] Menggunakan basis data lokal mutakhir untuk [${surveyId}] (${existingUploads} uploads tersedia). Alasan: ${reason}`);
+        return {
+          success: true,
+          fallback: true,
+          surveyId,
+          message: `Data progres kegiatan [${surveyId}] tetap terjaga dari basis data lokal mutakhir (${reason}).`,
+          totalSls
+        };
+      }
+    } catch (e) {
+      logger.warn(`[FASIH-SYNC] Gagal evaluasi fallback lokal [${surveyId}]: ${e.message}`);
+    }
+    return null;
+  }
+
+  /**
    * Pull and synchronize monitoring data from FASIH-SM API into SQLite
    */
   async syncFromFasih(options = {}) {
@@ -748,22 +774,8 @@ class FasihSyncService {
       } catch (_) {}
       logger.error(`[FASIH-SYNC] Respon error dari API: ${msg}`);
 
-      // Graceful fallback for pes-se2026 if local data already exists
-      if (surveyId === 'pes-se2026') {
-        const db = getDb(surveyId);
-        const existingUploads = db.prepare('SELECT COUNT(*) as c FROM uploads').get()?.c || 0;
-        if (existingUploads > 0) {
-          harmonizePesSe2026(db);
-          logger.info(`[FASIH-SYNC] Menggunakan basis data lokal mutakhir untuk pes-se2026 (${existingUploads} uploads tersedia).`);
-          return {
-            success: true,
-            fallback: true,
-            surveyId,
-            message: 'Data progres kegiatan PES SE2026 telah sinkron dengan basis data lokal mutakhir.',
-            totalSls: 10
-          };
-        }
-      }
+      const fallbackResult = this._applyLocalFallback(surveyId, msg);
+      if (fallbackResult) return fallbackResult;
 
       throw new Error(msg);
     }
@@ -777,21 +789,9 @@ class FasihSyncService {
     }
 
     if (!payload.success || !Array.isArray(payload.records) || payload.records.length === 0) {
-      if (surveyId === 'pes-se2026') {
-        const db = getDb(surveyId);
-        const existingUploads = db.prepare('SELECT COUNT(*) as c FROM uploads').get()?.c || 0;
-        if (existingUploads > 0) {
-          harmonizePesSe2026(db);
-          logger.info(`[FASIH-SYNC] Menggunakan basis data lokal mutakhir untuk pes-se2026 (${existingUploads} uploads tersedia).`);
-          return {
-            success: true,
-            fallback: true,
-            surveyId,
-            message: 'Data progres kegiatan PES SE2026 telah sinkron dengan basis data lokal mutakhir.',
-            totalSls: 10
-          };
-        }
-      }
+      const fallbackResult = this._applyLocalFallback(surveyId, payload.error || 'Respons kosong dari Cloud');
+      if (fallbackResult) return fallbackResult;
+
       throw new Error(payload.error || 'Data yang diterima kosong atau tidak memiliki catatan SLS.');
     }
 
@@ -1248,14 +1248,35 @@ class FasihSyncService {
         const remoteInfo = remoteSurveys[key];
         const localSnap = snapshotsMap[key];
 
-        // 1. Jika survei belum memiliki data sama sekali di Cloud atau 0 target di wilayah ini, lewati seketika
-        if (!remoteInfo || (remoteInfo.total_sls === 0 && remoteInfo.target === 0)) {
+        // 1. Cek ketersediaan data di remote atau database lokal
+        const CORE_ACTIVE_SURVEYS = new Set([
+          'se2026', 'pes-se2026', 'sakernas-pemutakhiran', 'sakernas-pendataan', 'pendataan-skp2026', 'sensus-ekonomi-2026-ub'
+        ]);
+
+        let hasLocalData = false;
+        try {
+          const sdb = getDb(key);
+          hasLocalData = (sdb.prepare('SELECT COUNT(*) as c FROM uploads').get()?.c || 0) > 0;
+        } catch (_) {}
+
+        if (!remoteInfo && !CORE_ACTIVE_SURVEYS.has(key) && !hasLocalData) {
           skippedCount++;
           results.push({
             surveyId: key,
             name: surveysConfig[key]?.name || key,
             status: 'skipped',
-            reason: !remoteInfo ? 'no_remote_data' : 'no_records_for_region'
+            reason: 'no_remote_data'
+          });
+          continue;
+        }
+
+        if (remoteInfo && (remoteInfo.total_sls === 0 && remoteInfo.target === 0) && !hasLocalData) {
+          skippedCount++;
+          results.push({
+            surveyId: key,
+            name: surveysConfig[key]?.name || key,
+            status: 'skipped',
+            reason: 'no_records_for_region'
           });
           continue;
         }
@@ -1566,6 +1587,109 @@ class FasihSyncService {
     // Jadwal Rutin Tepat Pukul 06:00 WITA Setiap Hari
     const dailyTargetHour = parseInt(process.env.FASIH_DAILY_SYNC_HOUR || '6', 10);
     this._scheduleDailySync(dailyTargetHour);
+
+    // Self-Healing Catch-up: Jika server baru aktif setelah pukul 06:00 WITA dan hari ini belum disinkronkan
+    const witaNow = this.getWitaDateParts();
+    if (witaNow.hour >= dailyTargetHour && !hasDailySyncRunToday(witaNow.dateStr)) {
+      logger.info(`🌅 [FASIH-DAILY-SYNC] Pukul ${String(dailyTargetHour).padStart(2, '0')}:00 WITA untuk hari ini (${witaNow.dateStr}) telah lewat dan belum tersinkronkan. Menjalankan catch-up sinkronisasi otomatis dalam 5 detik...`);
+      setTimeout(async () => {
+        try {
+          await this.runDailySync('catch_up_startup');
+        } catch (e) {
+          logger.error(`[FASIH-DAILY-SYNC] Catch-up startup gagal: ${e.message}`);
+        }
+      }, 5000);
+    }
+  }
+
+  /**
+   * Helper: Get current datetime parts in WITA (Asia/Makassar, UTC+8)
+   */
+  getWitaDateParts(date = new Date()) {
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Makassar',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: 'numeric', minute: 'numeric', second: 'numeric',
+        hour12: false
+      });
+      const parts = Object.fromEntries(formatter.formatToParts(date).map(p => [p.type, p.value]));
+      return {
+        year: parseInt(parts.year, 10),
+        month: parts.month,
+        day: parts.day,
+        dateStr: `${parts.year}-${parts.month}-${parts.day}`,
+        hour: parseInt(parts.hour, 10),
+        minute: parseInt(parts.minute, 10),
+        second: parseInt(parts.second, 10)
+      };
+    } catch (_) {
+      const d = new Date(date.getTime() + 8 * 3600 * 1000);
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(d.getUTCDate()).padStart(2, '0');
+      return {
+        year: y,
+        month: m,
+        day: day,
+        dateStr: `${y}-${m}-${day}`,
+        hour: d.getUTCHours(),
+        minute: d.getUTCMinutes(),
+        second: d.getUTCSeconds()
+      };
+    }
+  }
+
+  /**
+   * Execute daily synchronization and record to sys_sync_log
+   */
+  async runDailySync(triggerSource = 'scheduler') {
+    const wita = this.getWitaDateParts();
+    logger.info(`🌅 [FASIH-DAILY-SYNC] (${triggerSource}) Menjalankan sinkronisasi harian seluruh kegiatan untuk tanggal ${wita.dateStr}...`);
+
+    try {
+      const res = await this.syncAllSurveysProgress({ forceRefresh: true, skipIfUnchanged: false });
+      logger.info(`[FASIH-DAILY-SYNC] ✅ Selesai (${triggerSource})! Berhasil: ${res.synced || 0}, Dilewati: ${res.skipped || 0}, Gagal: ${res.failed || 0}`);
+      recordSyncLog('daily_0600', wita.dateStr, {
+        synced: res.synced || 0,
+        skipped: res.skipped || 0,
+        failed: res.failed || 0,
+        details: { triggerSource, timestamp: new Date().toISOString() }
+      });
+      return res;
+    } catch (err) {
+      logger.error(`[FASIH-DAILY-SYNC] ❌ Gagal sinkronisasi harian (${triggerSource}): ${err.message}`);
+      recordSyncLog('daily_0600', wita.dateStr, {
+        synced: 0,
+        skipped: 0,
+        failed: 1,
+        details: { triggerSource, error: err.message, timestamp: new Date().toISOString() }
+      });
+      throw err;
+    }
+  }
+
+  /**
+   * Check traffic catch-up when requests hit the dashboard (Passenger idle wakeup)
+   */
+  checkTrafficCatchUp() {
+    const now = Date.now();
+    if (this._lastTrafficCheck && now - this._lastTrafficCheck < 180000) return;
+    this._lastTrafficCheck = now;
+
+    try {
+      const dailyTargetHour = parseInt(process.env.FASIH_DAILY_SYNC_HOUR || '6', 10);
+      const wita = this.getWitaDateParts();
+      if (wita.hour >= dailyTargetHour && !hasDailySyncRunToday(wita.dateStr)) {
+        if (!this._isCatchingUp) {
+          this._isCatchingUp = true;
+          logger.info(`🌅 [FASIH-DAILY-SYNC] Pengunjung terdeteksi setelah 06:00 WITA (${wita.dateStr}) dan sinkronisasi harian belum berjalan. Memulai catch-up otomatis di latar belakang...`);
+          this.runDailySync('catch_up_web_traffic')
+            .catch(e => logger.error(`[FASIH-DAILY-SYNC] Catch-up traffic gagal: ${e.message}`))
+            .finally(() => { this._isCatchingUp = false; });
+        }
+      }
+    } catch (_) {}
   }
 
   /**
@@ -1573,32 +1697,12 @@ class FasihSyncService {
    */
   _scheduleDailySync(targetHour = 6) {
     const calculateMsUntil = () => {
-      const now = new Date();
-      try {
-        const formatter = new Intl.DateTimeFormat('en-US', {
-          timeZone: 'Asia/Makassar',
-          hour: 'numeric', minute: 'numeric', second: 'numeric',
-          hour12: false
-        });
-        const parts = Object.fromEntries(formatter.formatToParts(now).map(p => [p.type, p.value]));
-        const curH = parseInt(parts.hour, 10);
-        const curM = parseInt(parts.minute, 10);
-        const curS = parseInt(parts.second, 10);
-
-        let diffSec = (targetHour * 3600) - (curH * 3600 + curM * 60 + curS);
-        if (diffSec <= 0) {
-          diffSec += 24 * 3600; // Jadwalkan besok jika hari ini sudah melewati jam target
-        }
-        return diffSec * 1000;
-      } catch (_) {
-        // Fallback jika timezone Asia/Makassar tidak tersedia di OS
-        const curH = now.getHours();
-        const curM = now.getMinutes();
-        const curS = now.getSeconds();
-        let diffSec = (targetHour * 3600) - (curH * 3600 + curM * 60 + curS);
-        if (diffSec <= 0) diffSec += 24 * 3600;
-        return diffSec * 1000;
+      const wita = this.getWitaDateParts();
+      let diffSec = (targetHour * 3600) - (wita.hour * 3600 + wita.minute * 60 + wita.second);
+      if (diffSec <= 0) {
+        diffSec += 24 * 3600; // Jadwalkan besok jika hari ini sudah melewati jam target
       }
+      return diffSec * 1000;
     };
 
     const scheduleNext = () => {
@@ -1607,12 +1711,11 @@ class FasihSyncService {
       logger.info(`⏰ [FASIH-DAILY-SYNC] Jadwal sinkronisasi harian otomatis disetel untuk pukul ${String(targetHour).padStart(2, '0')}:00 WITA (dalam ~${hoursRemaining} jam).`);
 
       this._dailyTimerId = setTimeout(async () => {
-        logger.info(`🌅 [FASIH-DAILY-SYNC] Pukul ${String(targetHour).padStart(2, '0')}:00 WITA tiba! Menjalankan sinkronisasi harian seluruh survei...`);
+        logger.info(`🌅 [FASIH-DAILY-SYNC] Pukul ${String(targetHour).padStart(2, '0')}:00 WITA tiba! Menjalankan sinkronisasi harian...`);
         try {
-          const res = await this.syncAllSurveysProgress({ forceRefresh: true, skipIfUnchanged: false });
-          logger.info(`[FASIH-DAILY-SYNC] ✅ Sinkronisasi harian selesai! Berhasil: ${res.synced || 0}, Dilewati: ${res.skipped || 0}, Gagal: ${res.failed || 0}`);
+          await this.runDailySync('daily_alarm');
         } catch (err) {
-          logger.error(`[FASIH-DAILY-SYNC] ❌ Gagal sinkronisasi harian 06:00: ${err.message}`);
+          logger.error(`[FASIH-DAILY-SYNC] ❌ Gagal alarm harian 06:00: ${err.message}`);
         }
         scheduleNext();
       }, ms);
@@ -1700,23 +1803,18 @@ class FasihSyncService {
    */
   async runAutoSyncTask() {
     const triggerWa = process.env.FASIH_AUTO_SYNC_WA === 'true';
-    logger.info(`[FASIH-AUTO-SYNC] Memeriksa data baru di FASIH-SM Cloud...`);
+    logger.info(`[FASIH-AUTO-SYNC] Memeriksa pembaruan data seluruh kegiatan di FASIH-SM Cloud...`);
 
     try {
-      const result = await this.syncFromFasih({
-        surveyId: 'se2026',
+      const result = await this.syncAllSurveysProgress({
         skipIfUnchanged: true,
         triggerWa
       });
 
-      if (result.skipped) {
-        logger.info(`[FASIH-AUTO-SYNC] Data sudah paling mutakhir. Tidak ada perubahan status.`);
-      } else {
-        logger.info(`[FASIH-AUTO-SYNC] ✅ Berhasil menyinkronkan data baru! Upload ID: #${result.uploadId} (${result.totalSls} SLS)`);
-      }
+      logger.info(`[FASIH-AUTO-SYNC] ✅ Pengecekan terjadwal selesai! Disinkronkan: ${result.synced || 0}, Dilewati (tetap): ${result.skipped || 0}, Gagal: ${result.failed || 0}`);
       return result;
     } catch (err) {
-      logger.warn(`[FASIH-AUTO-SYNC] Gagal memeriksa/menyinkronkan data: ${err.message}`);
+      logger.warn(`[FASIH-AUTO-SYNC] Gagal memeriksa data berkala: ${err.message}`);
       return { success: false, error: err.message };
     }
   }

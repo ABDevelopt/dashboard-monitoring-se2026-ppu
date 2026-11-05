@@ -183,6 +183,19 @@ function initSharedDb(dbConn) {
     );
 
     CREATE INDEX IF NOT EXISTS idx_survey_snapshots_updated ON survey_progress_snapshots(updated_at);
+
+    CREATE TABLE IF NOT EXISTS sys_sync_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sync_type TEXT NOT NULL,
+      sync_date TEXT NOT NULL,
+      synced_count INTEGER DEFAULT 0,
+      skipped_count INTEGER DEFAULT 0,
+      failed_count INTEGER DEFAULT 0,
+      details TEXT,
+      executed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_sys_sync_log_date ON sys_sync_log(sync_type, sync_date);
   `);
 
   // Ensure survey_progress_snapshots has all columns
@@ -5243,6 +5256,46 @@ function harmonizePesSe2026(dbConn) {
   }
 }
 
+function hasDailySyncRunToday(targetDate = null) {
+  try {
+    const sDb = getSharedDb();
+    const dateStr = targetDate || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Makassar' });
+    const row = sDb.prepare("SELECT id FROM sys_sync_log WHERE sync_type = 'daily_0600' AND sync_date = ? AND failed_count = 0").get(dateStr);
+    return !!row;
+  } catch (_) {
+    return false;
+  }
+}
+
+function recordSyncLog(syncType, syncDate, stats = {}) {
+  try {
+    const sDb = getSharedDb();
+    const dateStr = syncDate || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Makassar' });
+    sDb.prepare(`
+      INSERT INTO sys_sync_log (sync_type, sync_date, synced_count, skipped_count, failed_count, details, executed_at)
+      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(
+      syncType,
+      dateStr,
+      stats.synced || 0,
+      stats.skipped || 0,
+      stats.failed || 0,
+      typeof stats.details === 'string' ? stats.details : JSON.stringify(stats.details || {})
+    );
+  } catch (err) {
+    logger.error('Error recording sync log:', err.message);
+  }
+}
+
+function getLatestSyncLog(syncType = 'daily_0600') {
+  try {
+    const sDb = getSharedDb();
+    return sDb.prepare('SELECT * FROM sys_sync_log WHERE sync_type = ? ORDER BY id DESC LIMIT 1').get(syncType);
+  } catch (_) {
+    return null;
+  }
+}
+
 module.exports = {
   getDb, getSharedDb, resolveSurveyId, getLatestUpload, getUploadByDate, getLatestUploadsDetailed, getAllUploads, getAllUploadDates,
   getProgresWithMaster, getKecamatanStats, getKorlapStats,
@@ -5269,7 +5322,8 @@ module.exports = {
   importTitikUjiPetik, importTitikUjiPetikFromCsv, clearTitikUjiPetik, getTitikUjiPetikStats, getTitikUjiPetikPoints, getTitikUjiPetikCompact,
   getTitikUjiPetikUploads, getTitikUjiPetikUploadById, deleteTitikUjiPetikUpload,
   getSurveyProgressSnapshotsMap, upsertSurveyProgressSnapshot, refreshSurveyProgressSnapshot, refreshAllSurveyProgressSnapshots,
-  hasOfficerProgressTelemetry, saveOfficerProgressTelemetry, getOfficerProgressTelemetry, resolveOfficerAliases, harmonizePesSe2026
+  hasOfficerProgressTelemetry, saveOfficerProgressTelemetry, getOfficerProgressTelemetry, resolveOfficerAliases, harmonizePesSe2026,
+  hasDailySyncRunToday, recordSyncLog, getLatestSyncLog
 };
 
 

@@ -1096,6 +1096,38 @@ router.get(['/sync/progress-status', '/sync/progress-status/:surveyId'], (req, r
   });
 });
 
+
+// ALL /api/sync/cron-daily - Dedicated webhook endpoint for cPanel Cron Job (curl -s ...)
+router.all('/sync/cron-daily', async (req, res) => {
+  const apiKey = req.query.key || req.query.api_key || req.headers['x-fasih-api-key'] || (req.body && req.body.key);
+  const VALID_KEY = process.env.MONITORING_SYNC_API_KEY || 'fasih_ppu_sync_secret_token_2026';
+
+  if (!apiKey || apiKey !== VALID_KEY) {
+    return res.status(401).json({
+      success: false,
+      error: 'Akses ditolak: API Secret Token tidak valid atau tidak disertakan.'
+    });
+  }
+
+  const fasihSyncService = require('../services/fasihSyncService');
+  try {
+    const triggerSource = req.query.source || 'cpanel_cron_webhook';
+    const result = await fasihSyncService.runDailySync(triggerSource);
+    return res.json({
+      success: true,
+      message: 'Sinkronisasi harian berhasil dijalankan.',
+      triggerSource,
+      result
+    });
+  } catch (err) {
+    logger.error(`[CRON-DAILY-SYNC] Gagal: ${err.message}`);
+    return res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
 router.callGeminiDirect = callGeminiDirect;
 
 module.exports = router;

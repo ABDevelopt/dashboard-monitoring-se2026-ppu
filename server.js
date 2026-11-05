@@ -209,6 +209,17 @@ app.use((req, res, next) => {
 
 
 // Auto-login from Remember Me cookie (Instagram Style)
+// Self-Healing Catch-Up: Jalankan sinkronisasi harian 06:00 WITA secara otomatis jika ada kunjungan dan sinkronisasi hari ini belum jalan
+const fasihSyncService = require('./services/fasihSyncService');
+app.use((req, res, next) => {
+  if (req.method === 'GET' && !req.path.startsWith('/css') && !req.path.startsWith('/js') && !req.path.startsWith('/images') && !req.path.startsWith('/vendor')) {
+    try {
+      fasihSyncService.checkTrafficCatchUp();
+    } catch (_) {}
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   const cookies = {};
   if (req.headers.cookie) {
