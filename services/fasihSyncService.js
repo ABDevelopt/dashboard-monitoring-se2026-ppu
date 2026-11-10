@@ -870,6 +870,22 @@ class FasihSyncService {
       }
     }
 
+    // Safety guard for pes-se2026: Jangan overwrite jika cloud API masih mengembalikan data placeholder dummy
+    // sedangkan database lokal sudah memiliki SLS riil definitif dari hasil unggah monitoring
+    if (surveyId === 'pes-se2026') {
+      const isDummyPayload = records.length > 0 && records.every(r => (r.kode_sls || '').startsWith('640901000100'));
+      const localRealMasterCount = getDb('pes-se2026').prepare("SELECT COUNT(*) as c FROM subsls_master WHERE kode NOT LIKE '640901000100%'").get()?.c || 0;
+      if (isDummyPayload && localRealMasterCount >= 20) {
+        logger.info(`[FASIH-SYNC] Melewati penimpaan data [pes-se2026] karena cloud API mengembalikan ${records.length} data placeholder dummy sedangkan data lokal sudah berisi ${localRealMasterCount} SLS riil definitif.`);
+        return {
+          success: true,
+          skipped: true,
+          reason: 'cloud_payload_is_placeholder',
+          totalSls: localRealMasterCount
+        };
+      }
+    }
+
     // 1. Simpan backup berkas JSON fisik ke folder uploads/ untuk audit trail & riwayat
     const uploadsDir = path.join(__dirname, '../uploads');
     if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
