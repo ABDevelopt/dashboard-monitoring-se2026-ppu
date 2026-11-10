@@ -21,7 +21,8 @@ const {
   getRefDesa,
   getSurveyPetugasAssignments,
   assignPetugasToSurvey,
-  getPetugasCrossSurveyStats
+  getPetugasCrossSurveyStats,
+  rebuildSummaryCache
 } = require('../database');
 
 /**
@@ -92,7 +93,7 @@ router.get('/', (req, res) => {
       UNION
       SELECT DISTINCT LOWER(TRIM(pml)) as name FROM subsls_master WHERE pml IS NOT NULL AND TRIM(pml) != ''
       UNION
-      SELECT DISTINCT LOWER(TRIM(korlap)) as name FROM subsls_master WHERE korlap IS NOT NULL AND TRIM(korlap) != ''
+      SELECT DISTINCT LOWER(TRIM(korlap)) as name FROM subsls_master WHERE korlap IS NOT NULL AND TRIM(korlap) != '' AND TRIM(korlap) != 'Lainnya'
     `).all();
     uniqueAssignedOfficers = assignedNames.length;
   } catch (err) {
@@ -141,22 +142,30 @@ router.get('/', (req, res) => {
   try {
     // Agregasi jumlah SLS per petugas di survei aktif
     const activeSurveyCounts = db.prepare(`
-      SELECT LOWER(TRIM(pcl)) as nama, COUNT(*) as sls_count, 'PCL' as role FROM subsls_master WHERE pcl IS NOT NULL AND TRIM(pcl) != '' GROUP BY LOWER(TRIM(pcl))
+      SELECT LOWER(TRIM(pcl)) as nama, LOWER(TRIM(COALESCE(pcl_email, ''))) as email, COUNT(*) as sls_count, 'PCL' as role 
+      FROM subsls_master WHERE pcl IS NOT NULL AND TRIM(pcl) != '' 
+      GROUP BY LOWER(TRIM(pcl)), LOWER(TRIM(COALESCE(pcl_email, '')))
       UNION ALL
-      SELECT LOWER(TRIM(pml)) as nama, COUNT(*) as sls_count, 'PML' as role FROM subsls_master WHERE pml IS NOT NULL AND TRIM(pml) != '' GROUP BY LOWER(TRIM(pml))
+      SELECT LOWER(TRIM(pml)) as nama, LOWER(TRIM(COALESCE(pml_email, ''))) as email, COUNT(*) as sls_count, 'PML' as role 
+      FROM subsls_master WHERE pml IS NOT NULL AND TRIM(pml) != '' 
+      GROUP BY LOWER(TRIM(pml)), LOWER(TRIM(COALESCE(pml_email, '')))
     `).all();
 
     const countMap = {};
     for (const row of activeSurveyCounts) {
-      if (!countMap[row.nama]) countMap[row.nama] = { pcl: 0, pml: 0, total: 0 };
-      if (row.role === 'PCL') countMap[row.nama].pcl += row.sls_count;
-      if (row.role === 'PML') countMap[row.nama].pml += row.sls_count;
-      countMap[row.nama].total += row.sls_count;
+      const keys = [row.nama, row.email].filter(Boolean);
+      for (const k of keys) {
+        if (!countMap[k]) countMap[k] = { pcl: 0, pml: 0, total: 0 };
+        if (row.role === 'PCL') countMap[k].pcl += row.sls_count;
+        if (row.role === 'PML') countMap[k].pml += row.sls_count;
+        countMap[k].total += row.sls_count;
+      }
     }
 
     officerWorkloads = allPetugas.map(p => {
       const cleanName = (p.nama_lengkap || '').toLowerCase().trim();
-      const usage = countMap[cleanName] || { pcl: 0, pml: 0, total: 0 };
+      const cleanEmail = (p.email || '').toLowerCase().trim();
+      const usage = countMap[cleanEmail] || countMap[cleanName] || { pcl: 0, pml: 0, total: 0 };
       let statusBeban = 'Cadangan';
       let badgeClass = 'bg-slate-100 text-slate-700 border-slate-300';
 
@@ -253,22 +262,44 @@ router.post('/assign-sls', (req, res) => {
 
     // Dapatkan info kontak dari ref_petugas jika ada
     const sharedDb = getSharedDb();
-    const pclPetugas = pclVal ? sharedDb.prepare('SELECT id, email, sobat_id FROM ref_petugas WHERE LOWER(nama_lengkap) = LOWER(?)').get(pclVal) : null;
-    const pmlPetugas = pmlVal ? sharedDb.prepare('SELECT id, email, sobat_id FROM ref_petugas WHERE LOWER(nama_lengkap) = LOWER(?)').get(pmlVal) : null;
-    const korlapPetugas = korlapVal ? sharedDb.prepare('SELECT id, email, sobat_id FROM ref_petugas WHERE LOWER(nama_lengkap) = LOWER(?)').get(korlapVal) : null;
+    const pclPetugas = pclVal ? sharedDb.prepare('SELECT id, email, sobat_id, nama_lengkap FROM ref_petugas WHERE LOWER(TRIM(nama_lengkap)) = LOWER(TRIM(?)) OR LOWER(TRIM(email)) = LOWER(TRIM(?))').get(pclVal, pclVal) : null;
+    const pmlPetugas = pmlVal ? sharedDb.prepare('SELECT id, email, sobat_id, nama_lengkap FROM ref_petugas WHERE LOWER(TRIM(nama_lengkap)) = LOWER(TRIM(?)) OR LOWER(TRIM(email)) = LOWER(TRIM(?))').get(pmlVal, pmlVal) : null;
+    const korlapPetugas = korlapVal ? sharedDb.prepare('SELECT id, email, sobat_id, nama_lengkap FROM ref_petugas WHERE LOWER(TRIM(nama_lengkap)) = LOWER(TRIM(?)) OR LOWER(TRIM(email)) = LOWER(TRIM(?))').get(korlapVal, korlapVal) : null;
+
+    // Sinkronkan ke survey_petugas_assignment
+    const pclAssignId = pclPetugas ? assignPetugasToSurvey(surveyId, pclPetugas.id, 'pcl') : null;
+    const pmlAssignId = pmlPetugas ? assignPetugasToSurvey(surveyId, pmlPetugas.id, 'pml') : null;
+    const korlapAssignId = korlapPetugas ? assignPetugasToSurvey(surveyId, korlapPetugas.id, 'korlap') : null;
+
+    const canonicalPclName = pclPetugas ? pclPetugas.nama_lengkap : pclVal;
+    const canonicalPmlName = pmlPetugas ? pmlPetugas.nama_lengkap : pmlVal;
+    const canonicalKorlapName = korlapPetugas ? korlapPetugas.nama_lengkap : korlapVal;
 
     db.prepare(`
       UPDATE subsls_master
-      SET pcl = ?, pcl_id = ?, pcl_email = ?, pcl_sobat_id = ?,
-          pml = ?, pml_id = ?, pml_email = ?, pml_sobat_id = ?,
-          korlap = ?, korlap_id = ?, korlap_email = ?, korlap_sobat_id = ?
+      SET pcl = ?, pcl_id = ?, pcl_email = ?, pcl_sobat_id = ?, pcl_assignment_id = ?,
+          pml = ?, pml_id = ?, pml_email = ?, pml_sobat_id = ?, pml_assignment_id = ?,
+          korlap = ?, korlap_id = ?, korlap_email = ?, korlap_sobat_id = ?, korlap_assignment_id = ?
       WHERE kode = ?
     `).run(
-      pclVal, pclPetugas ? pclPetugas.id : null, pclPetugas ? pclPetugas.email : null, pclPetugas ? pclPetugas.sobat_id : null,
-      pmlVal, pmlPetugas ? pmlPetugas.id : null, pmlPetugas ? pmlPetugas.email : null, pmlPetugas ? pmlPetugas.sobat_id : null,
-      korlapVal, korlapPetugas ? korlapPetugas.id : null, korlapPetugas ? korlapPetugas.email : null, korlapPetugas ? korlapPetugas.sobat_id : null,
-      kode_sls
+      canonicalPclName || null, pclPetugas ? pclPetugas.id : null, pclPetugas ? pclPetugas.email : null, pclPetugas ? pclPetugas.sobat_id : null, pclAssignId,
+      canonicalPmlName || null, pmlPetugas ? pmlPetugas.id : null, pmlPetugas ? pmlPetugas.email : null, pmlPetugas ? pmlPetugas.sobat_id : null, pmlAssignId,
+      canonicalKorlapName || null, korlapPetugas ? korlapPetugas.id : null, korlapPetugas ? korlapPetugas.email : null, korlapPetugas ? korlapPetugas.sobat_id : null, korlapAssignId,
+      kode_sls.trim()
     );
+
+    // Sinkronkan progres tabel untuk petugas lapangan (PCL)
+    db.prepare(`
+      UPDATE progres
+      SET pcl_name = ?, pcl_email = ?, pcl_sobat_id = ?
+      WHERE kode = ?
+    `).run(canonicalPclName || null, pclPetugas ? pclPetugas.email : null, pclPetugas ? pclPetugas.sobat_id : null, kode_sls.trim());
+
+    // Rebuild summary cache untuk seluruh upload terkait survei ini
+    const uploads = db.prepare('SELECT id FROM uploads').all();
+    for (const u of uploads) {
+      try { rebuildSummaryCache(u.id, surveyId); } catch (_) {}
+    }
 
     req.flash('success', `Alokasi petugas untuk SLS ${kode_sls} berhasil diperbarui.`);
   } catch (err) {
@@ -295,7 +326,8 @@ router.post('/bulk-assign', (req, res) => {
   try {
     const db = getDb(surveyId);
     const sharedDb = getSharedDb();
-    const officerInfo = sharedDb.prepare('SELECT id, email, sobat_id FROM ref_petugas WHERE LOWER(nama_lengkap) = LOWER(?)').get(officer_name.trim());
+    const officerInfo = sharedDb.prepare('SELECT id, email, sobat_id, nama_lengkap FROM ref_petugas WHERE LOWER(TRIM(nama_lengkap)) = LOWER(TRIM(?)) OR LOWER(TRIM(email)) = LOWER(TRIM(?))').get(officer_name.trim(), officer_name.trim());
+    const assignId = officerInfo ? assignPetugasToSurvey(surveyId, officerInfo.id, target_role.toLowerCase()) : null;
 
     let whereClause = 'WHERE 1=1';
     const params = [];
@@ -311,22 +343,41 @@ router.post('/bulk-assign', (req, res) => {
 
     let updateSql = '';
     if (target_role === 'pcl') {
-      updateSql = `UPDATE subsls_master SET pcl = ?, pcl_id = ?, pcl_email = ?, pcl_sobat_id = ? ${whereClause}`;
+      updateSql = `UPDATE subsls_master SET pcl = ?, pcl_id = ?, pcl_email = ?, pcl_sobat_id = ?, pcl_assignment_id = ? ${whereClause}`;
     } else if (target_role === 'pml') {
-      updateSql = `UPDATE subsls_master SET pml = ?, pml_id = ?, pml_email = ?, pml_sobat_id = ? ${whereClause}`;
+      updateSql = `UPDATE subsls_master SET pml = ?, pml_id = ?, pml_email = ?, pml_sobat_id = ?, pml_assignment_id = ? ${whereClause}`;
     } else if (target_role === 'korlap') {
-      updateSql = `UPDATE subsls_master SET korlap = ?, korlap_id = ?, korlap_email = ?, korlap_sobat_id = ? ${whereClause}`;
+      updateSql = `UPDATE subsls_master SET korlap = ?, korlap_id = ?, korlap_email = ?, korlap_sobat_id = ?, korlap_assignment_id = ? ${whereClause}`;
     }
 
+    const canonicalOfficerName = officerInfo ? officerInfo.nama_lengkap : officer_name.trim();
+
     const fullParams = [
-      officer_name.trim(),
+      canonicalOfficerName,
       officerInfo ? officerInfo.id : null,
       officerInfo ? officerInfo.email : null,
       officerInfo ? officerInfo.sobat_id : null,
+      assignId,
       ...params
     ];
 
     const result = db.prepare(updateSql).run(...fullParams);
+
+    // Sinkronkan ke progres jika perannya adalah PCL
+    if (target_role === 'pcl') {
+      db.prepare(`
+        UPDATE progres
+        SET pcl_name = ?, pcl_email = ?, pcl_sobat_id = ?
+        WHERE kode IN (SELECT kode FROM subsls_master ${whereClause})
+      `).run(canonicalOfficerName, officerInfo ? officerInfo.email : null, officerInfo ? officerInfo.sobat_id : null, ...params);
+    }
+
+    // Rebuild summary cache untuk seluruh upload terkait survei ini
+    const uploads = db.prepare('SELECT id FROM uploads').all();
+    for (const u of uploads) {
+      try { rebuildSummaryCache(u.id, surveyId); } catch (_) {}
+    }
+
     req.flash('success', `Berhasil mengalokasikan ${result.changes} SLS kepada ${officer_name} sebagai ${target_role.toUpperCase()}.`);
   } catch (err) {
     console.error('[Petugas Alokasi] Error bulk assigning:', err.message);
@@ -346,18 +397,28 @@ router.post('/clear-assignment', (req, res) => {
 
   try {
     const db = getDb(surveyId);
+    const targetKode = (kode_sls || '').trim();
     if (clear_role === 'pcl') {
-      db.prepare('UPDATE subsls_master SET pcl = NULL, pcl_id = NULL, pcl_email = NULL, pcl_sobat_id = NULL WHERE kode = ?').run(kode_sls);
+      db.prepare('UPDATE subsls_master SET pcl = NULL, pcl_id = NULL, pcl_email = NULL, pcl_sobat_id = NULL, pcl_assignment_id = NULL WHERE kode = ?').run(targetKode);
+      db.prepare('UPDATE progres SET pcl_name = NULL, pcl_email = NULL, pcl_sobat_id = NULL WHERE kode = ?').run(targetKode);
     } else if (clear_role === 'pml') {
-      db.prepare('UPDATE subsls_master SET pml = NULL, pml_id = NULL, pml_email = NULL, pml_sobat_id = NULL WHERE kode = ?').run(kode_sls);
+      db.prepare('UPDATE subsls_master SET pml = NULL, pml_id = NULL, pml_email = NULL, pml_sobat_id = NULL, pml_assignment_id = NULL WHERE kode = ?').run(targetKode);
     } else {
       db.prepare(`
         UPDATE subsls_master 
-        SET pcl = NULL, pcl_id = NULL, pcl_email = NULL, pcl_sobat_id = NULL,
-            pml = NULL, pml_id = NULL, pml_email = NULL, pml_sobat_id = NULL
+        SET pcl = NULL, pcl_id = NULL, pcl_email = NULL, pcl_sobat_id = NULL, pcl_assignment_id = NULL,
+            pml = NULL, pml_id = NULL, pml_email = NULL, pml_sobat_id = NULL, pml_assignment_id = NULL
         WHERE kode = ?
-      `).run(kode_sls);
+      `).run(targetKode);
+      db.prepare('UPDATE progres SET pcl_name = NULL, pcl_email = NULL, pcl_sobat_id = NULL WHERE kode = ?').run(targetKode);
     }
+
+    // Rebuild summary cache untuk seluruh upload terkait survei ini
+    const uploads = db.prepare('SELECT id FROM uploads').all();
+    for (const u of uploads) {
+      try { rebuildSummaryCache(u.id, surveyId); } catch (_) {}
+    }
+
     req.flash('success', `Alokasi petugas pada SLS ${kode_sls} berhasil dilepaskan.`);
   } catch (err) {
     req.flash('error', `Gagal melepaskan alokasi: ${err.message}`);

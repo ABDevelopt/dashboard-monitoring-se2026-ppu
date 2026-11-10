@@ -597,13 +597,13 @@
                     <%= settings.target_fasih_mode === 'fasih-sm' ? 'Target FASIH-SM' : 'Target Statis' %>
                   </span>
                 </h3>
-                <p class="m-0 mt-0-5 fs-xs text-muted" style="line-height: 1.2;">Realisasi Approved vs Target FASIH (Fokus Utama Monitoring)</p>
+                <p class="m-0 mt-0-5 fs-xs text-muted" style="line-height: 1.2;">Kinerja Pengerjaan Lapangan (Submitted + Approved) vs Target FASIH</p>
               </div>
             </div>
             <div class="text-right flex-shrink-0">
               <div class="fs-title-md fw-extrabold text-purple"><%= fasihPct %>%</div>
               <div class="fs-sm fw-bold text-primary mt-0-5"><%= totalPengerjaan.toLocaleString('id-ID') %> <span class="fw-medium fs-xs text-muted">/ <%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></span></div>
-              <div class="fs-xs text-muted mt-0-5">Capaian Utama FASIH</div>
+              <div class="fs-xs text-muted mt-0-5">Approved Pengawas: <span class="fw-bold text-success"><%= (summary.approved_total || 0).toLocaleString('id-ID') %></span> dok</div>
             </div>
           </div>
 
@@ -634,20 +634,28 @@
         </div>
 
           <!-- Ringkasan Capaian / Target / Sisa -->
-          <div class="d-grid grid-cols-3 gap-3 mt-4 pt-4 border-t-default mb-2">
+          <div class="d-grid grid-cols-4 gap-2 mt-4 pt-4 border-t-default mb-2">
             <div>
-              <div class="fs-caption text-muted text-uppercase fw-semibold">Capaian</div>
+              <div class="fs-caption text-muted text-uppercase fw-semibold">Pengerjaan</div>
               <div class="fs-lg fw-extrabold text-primary mt-0-5"><%= totalPengerjaan.toLocaleString('id-ID') %></div>
+              <div class="fs-xxs text-muted">Submitted+Approved</div>
             </div>
             <div>
-              <div class="fs-caption text-muted text-uppercase fw-semibold">Target</div>
+              <div class="fs-caption text-muted text-uppercase fw-semibold">Approved PML</div>
+              <div class="fs-lg fw-extrabold text-success mt-0-5"><%= (summary.approved_total || 0).toLocaleString('id-ID') %></div>
+              <div class="fs-xxs text-muted">Diterima Pengawas</div>
+            </div>
+            <div>
+              <div class="fs-caption text-muted text-uppercase fw-semibold">Target FASIH</div>
               <div class="fs-lg fw-extrabold text-primary mt-0-5">
                 <%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %>
               </div>
+              <div class="fs-xxs text-muted">Target Alokasi</div>
             </div>
             <div>
-              <div class="fs-caption text-muted text-uppercase fw-semibold">Sisa</div>
+              <div class="fs-caption text-muted text-uppercase fw-semibold">Sisa Target</div>
               <div class="fs-lg fw-extrabold mt-0-5" style="color: var(--accent-yellow);"><%= Math.max(0, summary.target_fasih_total - totalPengerjaan).toLocaleString('id-ID') %></div>
+              <div class="fs-xxs text-muted">Belum Selesai</div>
             </div>
           </div>
           </div>

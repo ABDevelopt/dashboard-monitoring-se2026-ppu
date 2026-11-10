@@ -780,13 +780,21 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
     WHERE upload_id = ? AND kode = ?
   `);
 
-  // Prepared statement to dynamically populate subsls_master data
+  // Prepared statement to dynamically populate subsls_master data (non-destructive upsert)
   const insertSubslsMaster = db.prepare(`
-    INSERT OR REPLACE INTO subsls_master (
+    INSERT INTO subsls_master (
       kode, kecamatan, desa, nama_sls, korlap, pml, pcl, target_fasih
     ) VALUES (
       ?, ?, ?, ?, ?, ?, ?, ?
     )
+    ON CONFLICT(kode) DO UPDATE SET
+      kecamatan = COALESCE(subsls_master.kecamatan, excluded.kecamatan),
+      desa = COALESCE(subsls_master.desa, excluded.desa),
+      nama_sls = CASE WHEN subsls_master.nama_sls IS NOT NULL AND subsls_master.nama_sls != subsls_master.kode THEN subsls_master.nama_sls ELSE excluded.nama_sls END,
+      korlap = CASE WHEN subsls_master.korlap IS NOT NULL AND subsls_master.korlap != 'Lainnya' AND subsls_master.korlap != '' THEN subsls_master.korlap ELSE excluded.korlap END,
+      pml = CASE WHEN subsls_master.pml IS NOT NULL AND subsls_master.pml != 'Lainnya' AND subsls_master.pml != 'PML Belum Dialokasikan' AND subsls_master.pml != '' THEN subsls_master.pml ELSE excluded.pml END,
+      pcl = CASE WHEN subsls_master.pcl IS NOT NULL AND subsls_master.pcl != 'Belum Dialokasikan' AND subsls_master.pcl != '' THEN subsls_master.pcl ELSE excluded.pcl END,
+      target_fasih = CASE WHEN excluded.target_fasih > 0 THEN excluded.target_fasih ELSE subsls_master.target_fasih END
   `);
 
   let processedCount = 0;
@@ -862,11 +870,11 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
         let rowPml = colIdx.pml !== -1 ? String(row[colIdx.pml] || '').trim() : '';
         let rowPcl = colIdx.pcl !== -1 ? String(row[colIdx.pcl] || '').trim() : '';
 
-        // Lookup from se2026 master data if kecamatan/desa missing in upload file (e.g. smallcode monitoring recap)
+        // Lookup from se2026 master data for geographic hierarchy if kecamatan/desa missing in upload file (e.g. smallcode monitoring recap)
         let masterInfo = null;
         if (!rowKec || !rowDesa) {
           try {
-            masterInfo = masterDb.prepare('SELECT kecamatan, desa, nama_sls, korlap, pml, pcl FROM subsls_master WHERE kode = ?').get(kode);
+            masterInfo = masterDb.prepare('SELECT kecamatan, desa, nama_sls FROM subsls_master WHERE kode = ?').get(kode);
           } catch (_) {}
         }
 
@@ -881,11 +889,13 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
         rowDesa = toTitleCase(rowDesa);
         const isNumericString = (s) => /^\d+$/.test(String(s || '').trim());
         if (isNumericString(rowPcl)) rowPcl = '';
-        const existingPcl = (existingMaster && !isNumericString(existingMaster.pcl)) ? existingMaster.pcl : '';
-        rowPcl = rowPcl || existingPcl || (masterInfo && !isNumericString(masterInfo.pcl) ? masterInfo.pcl : '') || 'Belum Dialokasikan';
+        const existingPcl = (existingMaster && !isNumericString(existingMaster.pcl) && existingMaster.pcl !== 'Belum Dialokasikan') ? existingMaster.pcl : '';
+        // Hapus fallback PCL ke sensus reguler se2026.db untuk survei non-se2026 (termasuk pes-se2026)
+        rowPcl = rowPcl || existingPcl || 'Belum Dialokasikan';
 
+        const existingPml = (existingMaster && existingMaster.pml && existingMaster.pml !== 'Lainnya' && existingMaster.pml !== 'PML Belum Dialokasikan') ? existingMaster.pml : '';
+        rowPml = rowPml || existingPml || 'Lainnya';
         rowKorlap = rowKorlap || (existingMaster && existingMaster.korlap) || 'Lainnya';
-        rowPml = rowPml || (existingMaster && existingMaster.pml) || 'Lainnya';
 
         rowKorlap = normalizeName(rowKorlap);
         rowPml = normalizeName(rowPml);

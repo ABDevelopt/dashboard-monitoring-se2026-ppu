@@ -3626,49 +3626,107 @@ function deletePetugasEmail(id) {
   return res.changes;
 }
 
-function resyncPetugasEmailsToMaster() {
+function resyncPetugasEmailsToMaster(targetSurveyId = null) {
   const dbShared = getSharedDb();
-  const emails = dbShared.prepare('SELECT id, nama_lengkap, email, sobat_id FROM ref_petugas').all();
+  const allPetugas = dbShared.prepare('SELECT id, nama_lengkap, email, sobat_id, jenis_kelamin, kode_prov, kode_kab, nama_kab FROM ref_petugas').all();
   const cleanStr = (s) => (s ? s.toString().toLowerCase().replace(/[^a-z0-9]/g, '') : '');
   const emailMapExact = {};
   const emailMapClean = {};
+  const emailMapByEmail = {};
 
-  emails.forEach(r => {
+  allPetugas.forEach(r => {
     if (r.nama_lengkap) {
       const ex = r.nama_lengkap.trim().toLowerCase();
       const cl = cleanStr(r.nama_lengkap);
       emailMapExact[ex] = r;
       emailMapClean[cl] = r;
     }
+    if (r.email) {
+      emailMapByEmail[r.email.trim().toLowerCase()] = r;
+    }
   });
 
   const roles = [
-    { roleCol: 'pcl', emailCol: 'pcl_email', sobatCol: 'pcl_sobat_id' },
-    { roleCol: 'pml', emailCol: 'pml_email', sobatCol: 'pml_sobat_id' },
-    { roleCol: 'korlap', emailCol: 'korlap_email', sobatCol: 'korlap_sobat_id' }
+    { roleCol: 'pcl', emailCol: 'pcl_email', sobatCol: 'pcl_sobat_id', idCol: 'pcl_id', assignCol: 'pcl_assignment_id' },
+    { roleCol: 'pml', emailCol: 'pml_email', sobatCol: 'pml_sobat_id', idCol: 'pml_id', assignCol: 'pml_assignment_id' },
+    { roleCol: 'korlap', emailCol: 'korlap_email', sobatCol: 'korlap_sobat_id', idCol: 'korlap_id', assignCol: 'korlap_assignment_id' }
   ];
 
-  // Sinkronkan ke SEMUA survei yang terdaftar di surveys.json
+  let totalUpdatedSls = 0;
+
   try {
     const surveysJson = require('./config/surveys.json');
-    for (const sId of Object.keys(surveysJson)) {
+    const surveyList = targetSurveyId ? [resolveSurveyId(targetSurveyId)] : Object.keys(surveysJson);
+
+    for (const sId of surveyList) {
       try {
         const dbSurvey = getDb(sId);
-        roles.forEach(({ roleCol, emailCol, sobatCol }) => {
-          const uniqueOfficers = dbSurvey.prepare(`SELECT DISTINCT ${roleCol} FROM subsls_master WHERE ${roleCol} IS NOT NULL AND ${roleCol} != ''`).all();
+
+        // 1. Sinkronkan ref_petugas dari shared.db ke dbSurvey lokal agar foreign key assignment valid
+        try {
+          const insRef = dbSurvey.prepare(`
+            INSERT INTO ref_petugas (id, sobat_id, nama_lengkap, email, jenis_kelamin, kode_prov, kode_kab, nama_kab)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+              sobat_id = excluded.sobat_id,
+              nama_lengkap = excluded.nama_lengkap,
+              email = excluded.email,
+              jenis_kelamin = excluded.jenis_kelamin
+          `);
+          dbSurvey.transaction(() => {
+            for (const p of allPetugas) {
+              insRef.run(p.id, p.sobat_id, p.nama_lengkap, p.email, p.jenis_kelamin, p.kode_prov, p.kode_kab, p.nama_kab);
+            }
+          })();
+        } catch (_) {}
+
+        // 2. Hubungkan petugas dan assignment untuk setiap peran
+        roles.forEach(({ roleCol, emailCol, sobatCol, idCol, assignCol }) => {
+          const uniqueOfficers = dbSurvey.prepare(`SELECT DISTINCT ${roleCol} as name, ${emailCol} as email FROM subsls_master WHERE ${roleCol} IS NOT NULL AND ${roleCol} != ''`).all();
           uniqueOfficers.forEach(o => {
-            const name = o[roleCol] ? o[roleCol].trim() : '';
-            if (!name) return;
+            const name = o.name ? o.name.trim() : '';
+            const email = o.email ? o.email.trim().toLowerCase() : '';
+            if (!name && !email) return;
+
             const ex = name.toLowerCase();
             const cl = cleanStr(name);
+            const target = (email && emailMapByEmail[email]) || emailMapExact[ex] || emailMapClean[cl];
 
-            const target = emailMapExact[ex] || emailMapClean[cl];
             if (target) {
-              dbSurvey.prepare(`UPDATE subsls_master SET ${emailCol} = ?, ${sobatCol} = ? WHERE LOWER(TRIM(${roleCol})) = LOWER(TRIM(?))`)
-                .run(target.email, target.sobat_id, name);
+              let assignId = null;
+              try {
+                assignId = assignPetugasToSurvey(sId, target.id, roleCol);
+              } catch (_) {}
+
+              const res = dbSurvey.prepare(`
+                UPDATE subsls_master 
+                SET ${roleCol} = ?, ${emailCol} = ?, ${sobatCol} = ?, ${idCol} = ?, ${assignCol} = ?
+                WHERE (LOWER(TRIM(${roleCol})) = LOWER(TRIM(?)) OR LOWER(TRIM(${emailCol})) = LOWER(TRIM(?)))
+              `).run(target.nama_lengkap, target.email, target.sobat_id, target.id, assignId, name, target.email);
+
+              totalUpdatedSls += (res.changes || 0);
+
+              // Jika peran PCL, sinkronkan ke tabel transaksi progres
+              if (roleCol === 'pcl') {
+                try {
+                  dbSurvey.prepare(`
+                    UPDATE progres
+                    SET pcl_name = ?, pcl_email = ?, pcl_sobat_id = ?
+                    WHERE kode IN (SELECT kode FROM subsls_master WHERE LOWER(TRIM(pcl)) = LOWER(TRIM(?)) OR LOWER(TRIM(pcl_email)) = LOWER(TRIM(?)))
+                  `).run(target.nama_lengkap, target.email, target.sobat_id, name, target.email);
+                } catch (_) {}
+              }
             }
           });
         });
+
+        // 3. Rebuild summary cache untuk survei ini
+        try {
+          const uploads = dbSurvey.prepare('SELECT id FROM uploads').all();
+          for (const u of uploads) {
+            rebuildSummaryCache(u.id, sId);
+          }
+        } catch (_) {}
       } catch (errSurvey) {
         logger.error(`Error resyncing to survey DB ${sId}:`, errSurvey.message);
       }
@@ -3676,9 +3734,9 @@ function resyncPetugasEmailsToMaster() {
   } catch (err) {
     logger.error('Error in resyncPetugasEmailsToMaster:', err.message);
   }
+
+  return totalUpdatedSls;
 }
-
-
 
 /**
  * Atomic Inter-Process Lock menggunakan SQLite (ACID compliant across multiple Passenger/Node processes)
@@ -3966,6 +4024,24 @@ function assignPetugasToSurvey(surveyId, petugasId, role) {
   try {
     const sId = resolveSurveyId(surveyId);
     const dbConn = getDb(sId);
+
+    // Pastikan entri ref_petugas tersedia di basis data survei lokal untuk memenuhi foreign key
+    const checkPetugas = dbConn.prepare('SELECT id FROM ref_petugas WHERE id = ?').get(petugasId);
+    if (!checkPetugas) {
+      const p = getSharedDb().prepare('SELECT * FROM ref_petugas WHERE id = ?').get(petugasId);
+      if (p) {
+        dbConn.prepare(`
+          INSERT INTO ref_petugas (id, sobat_id, nama_lengkap, email, jenis_kelamin, kode_prov, kode_kab, nama_kab)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            sobat_id = excluded.sobat_id,
+            nama_lengkap = excluded.nama_lengkap,
+            email = excluded.email,
+            jenis_kelamin = excluded.jenis_kelamin
+        `).run(p.id, p.sobat_id, p.nama_lengkap, p.email, p.jenis_kelamin, p.kode_prov, p.kode_kab, p.nama_kab);
+      }
+    }
+
     const stmt = dbConn.prepare(`
       INSERT INTO survey_petugas_assignment (survey_id, petugas_id, role)
       VALUES (?, ?, ?)
@@ -5075,131 +5151,39 @@ function resolveOfficerAliases(db, uploadId, filterName, role = 'pcl') {
 
 /**
  * Auto-harmonize PES SE2026 officer allocations (Fitrisia, Nova, Sanjaya)
+ * Definitive mapping of 22 SLS to 10 PCL and 3 PML (target total: 2.011)
  */
 function harmonizePesSe2026(dbConn) {
   try {
     const conn = dbConn || getDb('pes-se2026');
     const pesOfficers = [
-      {
-        kode: '64090100010001',
-        kode_kec: '03',
-        kecamatan: 'Penajam',
-        desa: 'Petung',
-        nama_sls: 'RT 010 PETUNG',
-        email: 'claraaja850@gmail.com',
-        prefix: 'claraaja%',
-        pcl: 'Ismail',
-        pml: 'Sanjaya Abdillah Karim',
-        pml_email: 's.karim@bps.go.id'
-      },
-      {
-        kode: '64090100010011',
-        kode_kec: '04',
-        kecamatan: 'Sepaku',
-        desa: 'Pemaluan',
-        nama_sls: 'RT 005 PEMALUAN',
-        email: 'faiqasiti@gmail.com',
-        prefix: 'faiqasiti%',
-        pcl: 'Siti Fatimah',
-        pml: 'Sanjaya Abdillah Karim',
-        pml_email: 's.karim@bps.go.id'
-      },
-      {
-        kode: '64090100010021',
-        kode_kec: '02',
-        kecamatan: 'Waru',
-        desa: 'Waru',
-        nama_sls: 'RT 007 WARU',
-        email: 'kimnurazizah3@gmail.com',
-        prefix: 'kimnurazizah%',
-        pcl: 'Nur azizah',
-        pml: 'Fitrisia Taridipa S.Tr.Stat.',
-        pml_email: 'fitrisia.taridipa@bps.go.id'
-      },
-      {
-        kode: '64090100010031',
-        kode_kec: '03',
-        kecamatan: 'Penajam',
-        desa: 'Giri Mukti',
-        nama_sls: 'RT 005 DUSUN 1 GUNUNG PASIR',
-        email: 'mearayu26@gmail.com',
-        prefix: 'mearayu%',
-        pcl: 'Ropah musrotin',
-        pml: 'Nova Nauli Harahap',
-        pml_email: 'nova.harahap@bps.go.id'
-      },
-      {
-        kode: '64090100010041',
-        kode_kec: '04',
-        kecamatan: 'Sepaku',
-        desa: 'Suka Raja',
-        nama_sls: 'RT 006 DUSUN 001 SUKA RAJA',
-        email: 'noerhiee_85@yahoo.co.id',
-        prefix: 'noerhiee%',
-        pcl: 'Nur Hijrah',
-        pml: 'Sanjaya Abdillah Karim',
-        pml_email: 's.karim@bps.go.id'
-      },
-      {
-        kode: '64090100010051',
-        kode_kec: '03',
-        kecamatan: 'Penajam',
-        desa: 'Sotek',
-        nama_sls: 'RT 001 SOTEK',
-        email: 'ony.fahrony91@gmail.com',
-        prefix: 'ony%fahrony%',
-        pcl: 'Fahroni',
-        pml: 'Nova Nauli Harahap',
-        pml_email: 'nova.harahap@bps.go.id'
-      },
-      {
-        kode: '64090100010061',
-        kode_kec: '01',
-        kecamatan: 'Babulu',
-        desa: 'Gunung Makmur',
-        nama_sls: 'RT 001 DUSUN I GIRI HARJA',
-        email: 'riswanti117@gmail.com',
-        prefix: 'riswanti%',
-        pcl: 'Riswanti',
-        pml: 'Fitrisia Taridipa S.Tr.Stat.',
-        pml_email: 'fitrisia.taridipa@bps.go.id'
-      },
-      {
-        kode: '64090100010071',
-        kode_kec: '01',
-        kecamatan: 'Babulu',
-        desa: 'Babulu Darat',
-        nama_sls: 'RT 010 DUSUN I BABULU DARAT',
-        email: 'rurimeylindas@gmail.com',
-        prefix: 'rurimeylinda%',
-        pcl: 'Ruri Meylinda Sari',
-        pml: 'Fitrisia Taridipa S.Tr.Stat.',
-        pml_email: 'fitrisia.taridipa@bps.go.id'
-      },
-      {
-        kode: '64090100010081',
-        kode_kec: '03',
-        kecamatan: 'Penajam',
-        desa: 'Penajam',
-        nama_sls: 'RT 001 PENAJAM',
-        email: 'sn213965@gmail.com',
-        prefix: 'sn%',
-        pcl: 'Siti nurjanah',
-        pml: 'Nova Nauli Harahap',
-        pml_email: 'nova.harahap@bps.go.id'
-      },
-      {
-        kode: '64090100010091',
-        kode_kec: '01',
-        kecamatan: 'Babulu',
-        desa: 'Gunung Intan',
-        nama_sls: 'RT 001 GUNUNG INTAN',
-        email: 'tiniazis.1920@gmail.com',
-        prefix: 'tiniazis%',
-        pcl: 'Surtini',
-        pml: 'Fitrisia Taridipa S.Tr.Stat.',
-        pml_email: 'fitrisia.taridipa@bps.go.id'
-      }
+      // Fitrisia Taridipa S.Tr.Stat. (8 SLS: Babulu, Waru, Sotek, Riko; target 786)
+      { kode: '6409010004000100', target: 58, pcl: 'Riswanti', email: 'riswanti117@gmail.com', sobat_id: '640922090042', pml: 'Fitrisia Taridipa S.Tr.Stat.', pml_email: 'fitrisia.taridipa@bps.go.id' },
+      { kode: '6409010010000202', target: 59, pcl: 'Riswanti', email: 'riswanti117@gmail.com', sobat_id: '640922090042', pml: 'Fitrisia Taridipa S.Tr.Stat.', pml_email: 'fitrisia.taridipa@bps.go.id' },
+      { kode: '6409010008000401', target: 108, pcl: 'Ruri Meylinda Sari', email: 'rurimeylindas@gmail.com', sobat_id: '640922040007', pml: 'Fitrisia Taridipa S.Tr.Stat.', pml_email: 'fitrisia.taridipa@bps.go.id' },
+      { kode: '6409010008002801', target: 40, pcl: 'Ruri Meylinda Sari', email: 'rurimeylindas@gmail.com', sobat_id: '640922040007', pml: 'Fitrisia Taridipa S.Tr.Stat.', pml_email: 'fitrisia.taridipa@bps.go.id' },
+      { kode: '6409020003000800', target: 187, pcl: 'Nur azizah', email: 'kimnurazizah3@gmail.com', sobat_id: '640926050035', pml: 'Fitrisia Taridipa S.Tr.Stat.', pml_email: 'fitrisia.taridipa@bps.go.id' },
+      { kode: '6409020004001400', target: 42, pcl: 'Nur azizah', email: 'kimnurazizah3@gmail.com', sobat_id: '640926050035', pml: 'Fitrisia Taridipa S.Tr.Stat.', pml_email: 'fitrisia.taridipa@bps.go.id' },
+      { kode: '6409030015001202', target: 143, pcl: 'Surtini', email: 'tiniazis.1920@gmail.com', sobat_id: '640923040002', pml: 'Fitrisia Taridipa S.Tr.Stat.', pml_email: 'fitrisia.taridipa@bps.go.id' },
+      { kode: '6409030017000100', target: 149, pcl: 'Surtini', email: 'tiniazis.1920@gmail.com', sobat_id: '640923040002', pml: 'Fitrisia Taridipa S.Tr.Stat.', pml_email: 'fitrisia.taridipa@bps.go.id' },
+
+      // Nova Nauli Harahap (7 SLS: Penajam Kota; target 683)
+      { kode: '6409030009000200', target: 124, pcl: 'Fahroni', email: 'ony.fahrony91@gmail.com', sobat_id: '640926050082', pml: 'Nova Nauli Harahap', pml_email: 'nova.harahap@bps.go.id' },
+      { kode: '6409030009000701', target: 79, pcl: 'Fahroni', email: 'ony.fahrony91@gmail.com', sobat_id: '640926050082', pml: 'Nova Nauli Harahap', pml_email: 'nova.harahap@bps.go.id' },
+      { kode: '6409030013000104', target: 74, pcl: 'Siti nurjanah', email: 'sn213965@gmail.com', sobat_id: '640922040043', pml: 'Nova Nauli Harahap', pml_email: 'nova.harahap@bps.go.id' },
+      { kode: '6409030013000801', target: 56, pcl: 'Siti nurjanah', email: 'sn213965@gmail.com', sobat_id: '640922040043', pml: 'Nova Nauli Harahap', pml_email: 'nova.harahap@bps.go.id' },
+      { kode: '6409030014000102', target: 73, pcl: 'Siti nurjanah', email: 'sn213965@gmail.com', sobat_id: '640922040043', pml: 'Nova Nauli Harahap', pml_email: 'nova.harahap@bps.go.id' },
+      { kode: '6409030003000801', target: 87, pcl: 'Ropah musrotin', email: 'mearayu26@gmail.com', sobat_id: '640926050037', pml: 'Nova Nauli Harahap', pml_email: 'nova.harahap@bps.go.id' },
+      { kode: '6409030022000800', target: 190, pcl: 'Ropah musrotin', email: 'mearayu26@gmail.com', sobat_id: '640926050037', pml: 'Nova Nauli Harahap', pml_email: 'nova.harahap@bps.go.id' },
+
+      // Sanjaya Abdillah Karim (7 SLS: Sepaku; target 542)
+      { kode: '6409040006000600', target: 31, pcl: 'Ismail', email: 'claraaja850@gmail.com', sobat_id: '640922040080', pml: 'Sanjaya Abdillah Karim', pml_email: 's.karim@bps.go.id' },
+      { kode: '6409040009001700', target: 178, pcl: 'Ismail', email: 'claraaja850@gmail.com', sobat_id: '640922040080', pml: 'Sanjaya Abdillah Karim', pml_email: 's.karim@bps.go.id' },
+      { kode: '6409040010002202', target: 18, pcl: 'Nur Hijrah', email: 'noerhiee_85@yahoo.co.id', sobat_id: '640926060004', pml: 'Sanjaya Abdillah Karim', pml_email: 's.karim@bps.go.id' },
+      { kode: '6409040012000202', target: 60, pcl: 'Nur Hijrah', email: 'noerhiee_85@yahoo.co.id', sobat_id: '640926060004', pml: 'Sanjaya Abdillah Karim', pml_email: 's.karim@bps.go.id' },
+      { kode: '6409040001001400', target: 35, pcl: 'Siti Fatimah', email: 'faiqasiti@gmail.com', sobat_id: '640926050088', pml: 'Sanjaya Abdillah Karim', pml_email: 's.karim@bps.go.id' },
+      { kode: '6409040001002100', target: 83, pcl: 'Siti Fatimah', email: 'faiqasiti@gmail.com', sobat_id: '640926050088', pml: 'Sanjaya Abdillah Karim', pml_email: 's.karim@bps.go.id' },
+      { kode: '6409040014000200', target: 137, pcl: 'Siti Fatimah', email: 'faiqasiti@gmail.com', sobat_id: '640926050088', pml: 'Sanjaya Abdillah Karim', pml_email: 's.karim@bps.go.id' }
     ];
 
     // 1. Bersihkan kode dummy sintetis jika sudah ada kode SLS riil
@@ -5219,7 +5203,7 @@ function harmonizePesSe2026(dbConn) {
     // 2. Sinkronkan hierarki wilayah (kecamatan, desa, nama_sls) dari master se2026 jika masih generik
     try {
       const seDb = getDb('se2026');
-      const needWilayah = conn.prepare("SELECT kode FROM subsls_master WHERE kecamatan = 'Kecamatan Lain' OR desa = 'Desa Lain'").all();
+      const needWilayah = conn.prepare("SELECT kode FROM subsls_master WHERE kecamatan = 'Kecamatan Lain' OR desa = 'Desa Lain' OR nama_sls = kode").all();
       if (needWilayah.length > 0) {
         conn.transaction(() => {
           for (const s of needWilayah) {
@@ -5233,70 +5217,139 @@ function harmonizePesSe2026(dbConn) {
       }
     } catch (_) {}
 
-    // 3. Alokasikan PML definitif per Kecamatan untuk PES SE2026
-    conn.transaction(() => {
-      conn.prepare(`
-        UPDATE subsls_master 
-        SET pml = 'Fitrisia Taridipa S.Tr.Stat.', pml_email = 'fitrisia.taridipa@bps.go.id'
-        WHERE kecamatan IN ('Babulu', 'Waru') 
-          AND (pml IS NULL OR pml = '' OR pml = 'Lainnya' OR pml = '0' OR pml NOT IN ('Fitrisia Taridipa S.Tr.Stat.', 'Nova Nauli Harahap', 'Sanjaya Abdillah Karim'))
-      `).run();
+    // 3. Pastikan ref_petugas di shared.db memuat 10 PCL dan 3 PML secara lengkap dan akurat
+    const sDb = getSharedDb();
+    try {
+      // Pastikan Fitrisia Taridipa S.Tr.Stat. ada di shared.db
+      const existingFitri = sDb.prepare("SELECT id FROM ref_petugas WHERE email = 'fitrisia.taridipa@bps.go.id'").get();
+      if (!existingFitri) {
+        sDb.prepare(`
+          INSERT INTO ref_petugas (sobat_id, nama_lengkap, email, jenis_kelamin, kode_prov, kode_kab, nama_kab)
+          VALUES ('64090018', 'Fitrisia Taridipa S.Tr.Stat.', 'fitrisia.taridipa@bps.go.id', 'Pr', 64, 9, 'PENAJAM PASER UTARA')
+        `).run();
+      }
 
-      conn.prepare(`
-        UPDATE subsls_master 
-        SET pml = 'Nova Nauli Harahap', pml_email = 'nova.harahap@bps.go.id'
-        WHERE kecamatan = 'Penajam' 
-          AND (pml IS NULL OR pml = '' OR pml = 'Lainnya' OR pml = '0' OR pml NOT IN ('Fitrisia Taridipa S.Tr.Stat.', 'Nova Nauli Harahap', 'Sanjaya Abdillah Karim'))
-      `).run();
+      // Pastikan nama Nova Nauli Harahap selaras di shared.db
+      sDb.prepare("UPDATE ref_petugas SET nama_lengkap = 'Nova Nauli Harahap' WHERE email = 'nova.harahap@bps.go.id'").run();
 
-      conn.prepare(`
-        UPDATE subsls_master 
-        SET pml = 'Sanjaya Abdillah Karim', pml_email = 's.karim@bps.go.id'
-        WHERE kecamatan = 'Sepaku' 
-          AND (pml IS NULL OR pml = '' OR pml = 'Lainnya' OR pml = '0' OR pml NOT IN ('Fitrisia Taridipa S.Tr.Stat.', 'Nova Nauli Harahap', 'Sanjaya Abdillah Karim'))
-      `).run();
-    })();
+      // Pastikan nama Sanjaya Abdillah Karim selaras di shared.db
+      sDb.prepare("UPDATE ref_petugas SET nama_lengkap = 'Sanjaya Abdillah Karim' WHERE email = 's.karim@bps.go.id'").run();
 
-    // Check if any SLS is still unallocated or needs geographic correction (e.g. Sepaku, Penajam, Waru)
-    const needHarmonize = conn.prepare(`
-      SELECT count(*) as c FROM subsls_master 
-      WHERE pml NOT IN ('Fitrisia Taridipa S.Tr.Stat.', 'Nova Nauli Harahap', 'Sanjaya Abdillah Karim')
-         OR pcl LIKE '%@%'
-         OR pcl IN ('Claraaja', 'Faiqasiti', 'Kimnurazizah', 'Mearayu', 'Noerhiee', 'Ony Fahrony', 'Sn', 'Tiniazis')
-         OR (pcl = 'Siti Fatimah' AND kecamatan != 'Sepaku')
-         OR (pcl = 'Nur Hijrah' AND kecamatan != 'Sepaku')
-         OR (pcl = 'Ropah musrotin' AND kecamatan != 'Penajam')
-    `).get()?.c || 0;
+      // Sinkronkan kontak PCL lainnya
+      const updatePetugas = sDb.prepare(`
+        UPDATE ref_petugas 
+        SET email = ?, sobat_id = ?
+        WHERE LOWER(TRIM(nama_lengkap)) = LOWER(TRIM(?)) AND (email IS NULL OR email = '' OR sobat_id IS NULL OR sobat_id = '')
+      `);
+      for (const o of pesOfficers) {
+        updatePetugas.run(o.email, o.sobat_id, o.pcl);
+      }
+    } catch (errShared) {
+      logger.warn('[PES-SE2026] Warning updating shared ref_petugas:', errShared.message);
+    }
 
-    if (needHarmonize > 0) {
-      logger.info(`[PES-SE2026] Mengotomasi alokasi definitif PML, PCL & wilayah (Sepaku, Penajam, Waru, Babulu) untuk ${needHarmonize} entri...`);
+    // 4. Salin seluruh ref_petugas dari shared.db ke pes-se2026.db lokal agar constraint foreign key terpenuhi
+    try {
+      const allSharedPetugas = sDb.prepare('SELECT id, sobat_id, nama_lengkap, email, jenis_kelamin, kode_prov, kode_kab, nama_kab FROM ref_petugas').all();
+      const insLocalRef = conn.prepare(`
+        INSERT INTO ref_petugas (id, sobat_id, nama_lengkap, email, jenis_kelamin, kode_prov, kode_kab, nama_kab)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          sobat_id = excluded.sobat_id,
+          nama_lengkap = excluded.nama_lengkap,
+          email = excluded.email,
+          jenis_kelamin = excluded.jenis_kelamin
+      `);
+      conn.transaction(() => {
+        for (const p of allSharedPetugas) {
+          insLocalRef.run(p.id, p.sobat_id, p.nama_lengkap, p.email, p.jenis_kelamin, p.kode_prov, p.kode_kab, p.nama_kab);
+        }
+      })();
+    } catch (errLocalRef) {
+      logger.warn('[PES-SE2026] Warning copying ref_petugas to local pesDb:', errLocalRef.message);
+    }
+
+    // 5. Cek apakah ada SLS yang alokasinya belum selaras dengan definitif PES
+    const checkStmt = conn.prepare(`
+      SELECT pcl, pml, pcl_email, target_fasih, pcl_assignment_id, pml_assignment_id, kode_kec, kode_desa 
+      FROM subsls_master WHERE kode = ?
+    `);
+
+    let needHarmonize = false;
+    for (const o of pesOfficers) {
+      const row = checkStmt.get(o.kode);
+      if (!row || row.pcl !== o.pcl || row.pml !== o.pml || row.pcl_email !== o.email || row.target_fasih !== o.target || !row.pcl_assignment_id || !row.pml_assignment_id || !row.kode_kec || !row.kode_desa) {
+        needHarmonize = true;
+        break;
+      }
+    }
+
+    // Juga periksa apakah progres memiliki pcl_name yang masih NULL atau target_upload yang dobel (4022)
+    if (!needHarmonize) {
+      const nullProgres = conn.prepare("SELECT COUNT(*) as c FROM progres WHERE pcl_name IS NULL OR pcl_name = ''").get()?.c || 0;
+      if (nullProgres > 0) needHarmonize = true;
+    }
+    if (!needHarmonize) {
+      const doubleTarget = conn.prepare("SELECT COUNT(*) as c FROM progres WHERE target_upload > 200 AND kode IN ('6409010004000100', '6409010010000202', '6409040006000600')").get()?.c || 0;
+      if (doubleTarget > 0) needHarmonize = true;
+    }
+
+    if (needHarmonize) {
+      logger.info('[PES-SE2026] Menyelaraskan alokasi definitif 22 SLS ke 10 PCL dan 3 PML (target total: 2.011)...');
+
+      const getPetugasStmt = conn.prepare('SELECT id, email, sobat_id FROM ref_petugas WHERE LOWER(TRIM(nama_lengkap)) = LOWER(TRIM(?)) OR LOWER(TRIM(email)) = LOWER(TRIM(?))');
+      const insAssignStmt = conn.prepare('INSERT OR IGNORE INTO survey_petugas_assignment (survey_id, petugas_id, role) VALUES (?, ?, ?)');
+      const getAssignStmt = conn.prepare('SELECT id FROM survey_petugas_assignment WHERE survey_id = ? AND petugas_id = ? AND role = ?');
 
       conn.transaction(() => {
         const updateMaster = conn.prepare(`
           UPDATE subsls_master 
-          SET pcl = ?, pml = ?, pcl_email = ?, pml_email = ?,
-              kode_kec = ?, kecamatan = ?, desa = ?, nama_sls = ?
-          WHERE kode = ? 
-             OR kode LIKE ?
-             OR LOWER(pcl) LIKE ? 
-             OR LOWER(REPLACE(pcl, ' ', '')) = LOWER(REPLACE(?, ' ', ''))
-             OR LOWER(COALESCE(pcl_email, '')) = LOWER(?)
+          SET pcl = ?, pcl_id = ?, pcl_email = ?, pcl_sobat_id = ?, pcl_assignment_id = ?,
+              pml = ?, pml_id = ?, pml_email = ?, pml_sobat_id = ?, pml_assignment_id = ?,
+              kode_kec = ?, kode_desa = ?,
+              target_fasih = ?, muatan = ?, muatan_original = ?
+          WHERE kode = ?
         `);
 
         const updateProgres = conn.prepare(`
           UPDATE progres 
-          SET pcl_name = ?, pcl_email = ?
-          WHERE kode = ? 
-             OR kode LIKE ?
-             OR LOWER(COALESCE(pcl_name, '')) LIKE ? 
-             OR LOWER(REPLACE(COALESCE(pcl_name, ''), ' ', '')) = LOWER(REPLACE(?, ' ', ''))
-             OR LOWER(COALESCE(pcl_email, '')) = LOWER(?)
+          SET pcl_name = ?, pcl_email = ?, pcl_sobat_id = ?
+          WHERE kode = ?
+        `);
+
+        const fixProgresTarget = conn.prepare(`
+          UPDATE progres
+          SET target_upload = ?
+          WHERE kode = ? AND target_upload = ?
         `);
 
         for (const o of pesOfficers) {
-          const kodePattern = `${o.kode}%`;
-          updateMaster.run(o.pcl, o.pml, o.email, o.pml_email, o.kode_kec, o.kecamatan, o.desa, o.nama_sls, o.kode, kodePattern, o.prefix, o.pcl, o.email);
-          updateProgres.run(o.pcl, o.email, o.kode, kodePattern, o.prefix, o.pcl, o.email);
+          const pclInfo = getPetugasStmt.get(o.pcl, o.email);
+          const pmlInfo = getPetugasStmt.get(o.pml, o.pml_email);
+
+          let pclAssignId = null;
+          let pmlAssignId = null;
+
+          if (pclInfo) {
+            insAssignStmt.run('pes-se2026', pclInfo.id, 'pcl');
+            pclAssignId = getAssignStmt.get('pes-se2026', pclInfo.id, 'pcl')?.id || null;
+          }
+          if (pmlInfo) {
+            insAssignStmt.run('pes-se2026', pmlInfo.id, 'pml');
+            pmlAssignId = getAssignStmt.get('pes-se2026', pmlInfo.id, 'pml')?.id || null;
+          }
+
+          const kodeKec = o.kode.slice(4, 6);
+          const kodeDesa = o.kode.slice(0, 10);
+
+          updateMaster.run(
+            o.pcl, pclInfo ? pclInfo.id : null, o.email, o.sobat_id, pclAssignId,
+            o.pml, pmlInfo ? pmlInfo.id : null, o.pml_email, pmlInfo ? pmlInfo.sobat_id : null, pmlAssignId,
+            kodeKec, kodeDesa,
+            o.target, o.target, o.target, o.kode
+          );
+          updateProgres.run(o.pcl, o.email, o.sobat_id, o.kode);
+          fixProgresTarget.run(o.target, o.kode, o.target * 2);
         }
       })();
 
@@ -5304,13 +5357,12 @@ function harmonizePesSe2026(dbConn) {
       for (const u of uploads) {
         rebuildSummaryCache(u.id, 'pes-se2026');
       }
-      logger.info('[PES-SE2026] Sukses menyelaraskan seluruh alokasi PML dan merebuild summary cache.');
+      logger.info('[PES-SE2026] Sukses menyelaraskan seluruh 22 alokasi definitif PES dan merebuild summary cache.');
     }
   } catch (err) {
     logger.warn(`[PES-SE2026] Harmonization warning: ${err.message}`);
   }
 }
-
 function hasDailySyncRunToday(targetDate = null) {
   try {
     const sDb = getSharedDb();

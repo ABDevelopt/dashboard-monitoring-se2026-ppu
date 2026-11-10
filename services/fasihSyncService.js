@@ -938,13 +938,15 @@ class FasihSyncService {
           draft, open, submitted_by_pcl, approved, rejected, target_upload, sls_selesai,
           usaha_ditemukan, usaha_baru, usaha_tidak_ditemukan, usaha_tutup, usaha_ganda,
           ditemukan, keluarga_baru, tidak_ditemukan, meninggal, tidak_eligible, tidak_dapat_ditemui,
-          rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya, keluarga_khusus
+          rumah_tunggal, rumah_deret, rumah_susun, apartemen, lainnya, keluarga_khusus,
+          pcl_name, pcl_email, pcl_sobat_id
         ) VALUES (
           ?, ?,
           ?, ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?,
-          0, 0, 0, 0, 0, 0
+          0, 0, 0, 0, 0, 0,
+          ?, ?, ?
         )
       `);
 
@@ -958,10 +960,10 @@ class FasihSyncService {
           ?, ?, ?, ?, ?, ?, 0
         )
         ON CONFLICT(kode) DO UPDATE SET
-          target_fasih = CASE WHEN (target_fasih IS NULL OR target_fasih = 0) AND excluded.target_fasih > 0 THEN excluded.target_fasih ELSE target_fasih END,
+          target_fasih = CASE WHEN excluded.target_fasih > 0 THEN excluded.target_fasih ELSE target_fasih END,
           muatan = CASE WHEN (muatan IS NULL OR muatan = 0) AND excluded.muatan > 0 THEN excluded.muatan ELSE muatan END,
-          pcl = CASE WHEN (pcl IS NULL OR pcl = '' OR pcl = 'Petugas Lapangan') AND excluded.pcl != '' THEN excluded.pcl ELSE pcl END,
-          pml = CASE WHEN (pml IS NULL OR pml = '' OR pml = 'Pengawas Lapangan') AND excluded.pml != '' THEN excluded.pml ELSE pml END
+          pcl = CASE WHEN (pcl IS NULL OR pcl = '' OR pcl = 'Petugas Lapangan' OR pcl = 'Belum Dialokasikan') AND excluded.pcl != '' AND excluded.pcl != 'Petugas Lapangan' THEN excluded.pcl ELSE pcl END,
+          pml = CASE WHEN (pml IS NULL OR pml = '' OR pml = 'Pengawas Lapangan' OR pml = 'PML Belum Dialokasikan') AND excluded.pml != '' AND excluded.pml != 'Pengawas Lapangan' THEN excluded.pml ELSE pml END
       `);
 
       // Cek apakah subsls_master sudah pernah terisi lengkap sebelumnya
@@ -1017,18 +1019,21 @@ class FasihSyncService {
           }
         }
 
-        const pclName = this._formatOfficerName(rec.pcl || rec.pcl_name, existingMaster ? existingMaster.pcl : null);
-        const pmlName = this._formatOfficerName(rec.pml || rec.pml_name || 'Pengawas BPS PPU', existingMaster ? existingMaster.pml : null);
-        const korlapName = (existingMaster && existingMaster.korlap) || rec.korlap || 'Koordinator Lapangan';
+        // Ambil info master dari database survei aktif jika ada (hindari fallback ke petugas sensus reguler se2026)
+        const currentSurveyMaster = surveyId !== 'se2026' ? db.prepare('SELECT pcl, pml, korlap, pcl_email, pcl_sobat_id, pml_email FROM subsls_master WHERE kode = ?').get(kode) : null;
+        const officerFallbackPcl = (currentSurveyMaster && currentSurveyMaster.pcl) || (surveyId === 'se2026' && existingMaster ? existingMaster.pcl : null);
+        const officerFallbackPml = (currentSurveyMaster && currentSurveyMaster.pml) || (surveyId === 'se2026' && existingMaster ? existingMaster.pml : null);
+
+        const pclName = this._formatOfficerName(rec.pcl || rec.pcl_name, officerFallbackPcl);
+        const pmlName = this._formatOfficerName(rec.pml || rec.pml_name || 'Pengawas BPS PPU', officerFallbackPml);
+        const korlapName = (currentSurveyMaster && currentSurveyMaster.korlap) || (existingMaster && existingMaster.korlap) || rec.korlap || 'Koordinator Lapangan';
         const targetUpload = rec.target || 0;
 
-        // Pastikan entri master SLS tersimpan di subsls_master jika belum ada
-        if (needMasterSeed) {
-          upsertMaster.run(
-            kode, kodeKec, kecamatan, desa, namaSls || ('SLS ' + kode.slice(10, 14)),
-            korlapName, pmlName, pclName, targetUpload, kode, targetUpload
-          );
-        }
+        // Pastikan entri master SLS tersimpan atau diperbarui di subsls_master (upsert aman)
+        upsertMaster.run(
+          kode, kodeKec, kecamatan, desa, namaSls || ('SLS ' + kode.slice(10, 14)),
+          korlapName, pmlName, pclName, targetUpload, kode, targetUpload
+        );
 
         let prevM = null;
         if (prevMuatanId) {
@@ -1055,11 +1060,15 @@ class FasihSyncService {
         const kTdkEligible = rec.tidak_eligible || (prevM ? prevM.tidak_eligible : 0) || 0;
         const kTdkDitemui = rec.tidak_dapat_ditemui || (prevM ? prevM.tidak_dapat_ditemui : 0) || 0;
 
+        const activePclEmail = (currentSurveyMaster && currentSurveyMaster.pcl_email) || rec.pcl_email || null;
+        const activePclSobatId = (currentSurveyMaster && currentSurveyMaster.pcl_sobat_id) || rec.pcl_sobat_id || null;
+
         insertProgres.run(
           uploadId, kode,
           draft, openVal, submitted, approved, rejected, targetUpload, slsSelesai,
           uDitemukan, uBaru, uTdkDitemukan, uTutup, uGanda,
-          kDitemukan, kBaru, kTdkDitemukan, kMeninggal, kTdkEligible, kTdkDitemui
+          kDitemukan, kBaru, kTdkDitemukan, kMeninggal, kTdkEligible, kTdkDitemui,
+          pclName || null, activePclEmail, activePclSobatId
         );
 
         insertedCount++;
@@ -1082,6 +1091,10 @@ class FasihSyncService {
 
     // 3. Rebuild summary_cache & reload connection
     try {
+      if (surveyId === 'pes-se2026') {
+        const { harmonizePesSe2026 } = require('../database');
+        harmonizePesSe2026(db);
+      }
       rebuildSummaryCache(uploadId, surveyId);
       reloadDbConnection(surveyId);
       logger.info(`[FASIH-SYNC] Cache ringkasan berhasil diperbarui untuk ${surveyId} (Upload ID: #${uploadId})`);
