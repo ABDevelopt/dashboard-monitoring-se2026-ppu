@@ -457,8 +457,23 @@ function findStatusColumnIndexes(headers) {
   const desaIdx = findIndex(['desa', 'nama_desa', 'kelurahan']);
   const slsIdx = findIndex(['sls', 'nama_sls', 'subsls']);
   const kecIdx = findIndex(['kecamatan', 'nama_kecamatan', 'kec']);
-  const pmlIdx = findIndex(['pengawas', 'pml', 'nama_pml', 'nama pengawas', 'nama_pml_pl']);
-  const pclIdx = findIndex(['pencacah', 'pcl', 'nama_pcl', 'nama pencacah', 'nama_pcl_pl']);
+  const findOfficerIndex = (possibleNames) => {
+    for (const name of possibleNames) {
+      const idx = headers.findIndex(h => {
+        if (!h.includes(name)) return false;
+        // Ignore status-count headers like 'approved by pengawas', 'submitted by pencacah', etc.
+        if (h.includes('submitted') || h.includes('submit') || h.includes('approved') || h.includes('rejected') || h.includes('revoked') || h.includes('draft') || h.includes('edited')) {
+          return false;
+        }
+        return true;
+      });
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  const pmlIdx = findOfficerIndex(['nama_pml', 'nama pml', 'nama_pengawas', 'nama pengawas', 'nama_pml_pl', 'pengawas', 'pml']);
+  const pclIdx = findOfficerIndex(['nama_pcl', 'nama pcl', 'nama_pencacah', 'nama pencacah', 'nama_pcl_pl', 'pencacah', 'pcl']);
   const korlapIdx = findIndex(['korlap', 'nama_korlap', 'kose']);
 
   const missingCols = [];
@@ -657,6 +672,7 @@ function parseAndSaveStatusExcel(filePath, uploadId, surveyId = 'se2026') {
 
 function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename, tanggal, surveyId = 'se2026') {
   const db = getDb(surveyId);
+  const masterDb = getDb('se2026');
   const wb = XLSX.readFile(filePath, { raw: true });
   const ws = findDataSheet(wb);
   if (!ws) throw new Error('Sheet dalam file rekap status tidak ditemukan.');
@@ -846,13 +862,36 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
         let rowPml = colIdx.pml !== -1 ? String(row[colIdx.pml] || '').trim() : '';
         let rowPcl = colIdx.pcl !== -1 ? String(row[colIdx.pcl] || '').trim() : '';
 
-        rowKec = toTitleCase(rowKec) || 'Kecamatan Lain';
-        rowDesa = toTitleCase(rowDesa) || 'Desa Lain';
-        rowKorlap = normalizeName(rowKorlap) || 'Lainnya';
-        rowPml = normalizeName(rowPml) || 'Lainnya';
-        rowPcl = normalizeName(rowPcl) || 'Lainnya';
+        // Lookup from se2026 master data if kecamatan/desa missing in upload file (e.g. smallcode monitoring recap)
+        let masterInfo = null;
+        if (!rowKec || !rowDesa) {
+          try {
+            masterInfo = masterDb.prepare('SELECT kecamatan, desa, nama_sls, korlap, pml, pcl FROM subsls_master WHERE kode = ?').get(kode);
+          } catch (_) {}
+        }
 
-        insertSubslsMaster.run(kode, rowKec, rowDesa, kode, rowKorlap, rowPml, rowPcl, targetUpload);
+        // Also check if current survey's subsls_master already has info for this kode
+        const existingMaster = db.prepare('SELECT kecamatan, desa, nama_sls, korlap, pml, pcl FROM subsls_master WHERE kode = ?').get(kode);
+
+        rowKec = rowKec || (existingMaster && existingMaster.kecamatan) || (masterInfo && masterInfo.kecamatan) || 'Kecamatan Lain';
+        rowDesa = rowDesa || (existingMaster && existingMaster.desa) || (masterInfo && masterInfo.desa) || 'Desa Lain';
+        let slsName = (existingMaster && existingMaster.nama_sls && existingMaster.nama_sls !== kode ? existingMaster.nama_sls : null) || (masterInfo && masterInfo.nama_sls) || kode;
+
+        rowKec = toTitleCase(rowKec);
+        rowDesa = toTitleCase(rowDesa);
+        const isNumericString = (s) => /^\d+$/.test(String(s || '').trim());
+        if (isNumericString(rowPcl)) rowPcl = '';
+        const existingPcl = (existingMaster && !isNumericString(existingMaster.pcl)) ? existingMaster.pcl : '';
+        rowPcl = rowPcl || existingPcl || (masterInfo && !isNumericString(masterInfo.pcl) ? masterInfo.pcl : '') || 'Belum Dialokasikan';
+
+        rowKorlap = rowKorlap || (existingMaster && existingMaster.korlap) || 'Lainnya';
+        rowPml = rowPml || (existingMaster && existingMaster.pml) || 'Lainnya';
+
+        rowKorlap = normalizeName(rowKorlap);
+        rowPml = normalizeName(rowPml);
+        rowPcl = normalizeName(rowPcl);
+
+        insertSubslsMaster.run(kode, rowKec, rowDesa, slsName, rowKorlap, rowPml, rowPcl, targetUpload);
       }
 
       let uTd = 0, uDit = 0, uBaru = 0, uTut = 0, uGan = 0, kTd = 0, kDit = 0, kBaru = 0, kMeng = 0, kTe = 0, kTdd = 0, kKhus = 0;
@@ -889,16 +928,22 @@ function parseAndSaveStatusExcelOnly(filePath, originalFilename, storedFilename,
   updateTx(rows);
 
   // Sinkronkan urutan status & muatan secara kronologis (mencegah data terhapus/0 saat upload parsial)
-  resyncChronologicalData();
+  resyncChronologicalData(surveyId);
+
+  // Harmonize PES SE2026 officers & allocations
+  if (surveyId === 'pes-se2026') {
+    const { harmonizePesSe2026 } = require('../database');
+    harmonizePesSe2026(db);
+  }
 
   // Update total_subsls_terisi count
-  ensureAllSubslsInUpload(uploadId);
+  ensureAllSubslsInUpload(uploadId, surveyId);
   const actualCount = db.prepare('SELECT COUNT(*) as n FROM progres WHERE upload_id = ?').get(uploadId).n;
   db.prepare('UPDATE uploads SET total_subsls_terisi = ? WHERE id = ?').run(actualCount, uploadId);
 
   // Rebuild summary cache for this upload
   const { rebuildSummaryCache } = require('../database');
-  rebuildSummaryCache(uploadId);
+  rebuildSummaryCache(uploadId, surveyId);
 
   return { uploadId, uniqueSubsls: processedCount };
 }
@@ -2057,8 +2102,8 @@ function ensureAllSubslsInUpload(uploadId, surveyId = 'se2026') {
  * sehingga apabila pengguna meng-upload salah satu jenis berkas saja (parsial), data jenis berkas lainnya
  * TIDAK PERNAH terhapus atau bernilai 0.
  */
-function resyncChronologicalData() {
-  const db = getDb();
+function resyncChronologicalData(surveyId = 'se2026') {
+  const db = getDb(surveyId);
   const uploads = db.prepare('SELECT id, tanggal FROM uploads ORDER BY tanggal ASC, id ASC').all();
   if (uploads.length <= 1) return;
 

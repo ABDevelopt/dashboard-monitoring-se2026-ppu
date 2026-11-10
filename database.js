@@ -5202,6 +5202,61 @@ function harmonizePesSe2026(dbConn) {
       }
     ];
 
+    // 1. Bersihkan kode dummy sintetis jika sudah ada kode SLS riil
+    const realCodesCount = conn.prepare("SELECT count(*) as c FROM subsls_master WHERE kode NOT LIKE '640901000100%'").get()?.c || 0;
+    if (realCodesCount > 0) {
+      const dummyCodes = conn.prepare("SELECT kode FROM subsls_master WHERE kode LIKE '640901000100%'").all().map(r => r.kode);
+      if (dummyCodes.length > 0) {
+        conn.transaction(() => {
+          for (const c of dummyCodes) {
+            conn.prepare('DELETE FROM subsls_master WHERE kode = ?').run(c);
+            conn.prepare('DELETE FROM progres WHERE kode = ?').run(c);
+          }
+        })();
+      }
+    }
+
+    // 2. Sinkronkan hierarki wilayah (kecamatan, desa, nama_sls) dari master se2026 jika masih generik
+    try {
+      const seDb = getDb('se2026');
+      const needWilayah = conn.prepare("SELECT kode FROM subsls_master WHERE kecamatan = 'Kecamatan Lain' OR desa = 'Desa Lain'").all();
+      if (needWilayah.length > 0) {
+        conn.transaction(() => {
+          for (const s of needWilayah) {
+            const m = seDb.prepare('SELECT kecamatan, desa, nama_sls FROM subsls_master WHERE kode = ?').get(s.kode);
+            if (m) {
+              conn.prepare('UPDATE subsls_master SET kecamatan = ?, desa = ?, nama_sls = ? WHERE kode = ?')
+                .run(m.kecamatan, m.desa, m.nama_sls, s.kode);
+            }
+          }
+        })();
+      }
+    } catch (_) {}
+
+    // 3. Alokasikan PML definitif per Kecamatan untuk PES SE2026
+    conn.transaction(() => {
+      conn.prepare(`
+        UPDATE subsls_master 
+        SET pml = 'Fitrisia Taridipa S.Tr.Stat.', pml_email = 'fitrisia.taridipa@bps.go.id'
+        WHERE kecamatan IN ('Babulu', 'Waru') 
+          AND (pml IS NULL OR pml = '' OR pml = 'Lainnya' OR pml = '0' OR pml NOT IN ('Fitrisia Taridipa S.Tr.Stat.', 'Nova Nauli Harahap', 'Sanjaya Abdillah Karim'))
+      `).run();
+
+      conn.prepare(`
+        UPDATE subsls_master 
+        SET pml = 'Nova Nauli Harahap', pml_email = 'nova.harahap@bps.go.id'
+        WHERE kecamatan = 'Penajam' 
+          AND (pml IS NULL OR pml = '' OR pml = 'Lainnya' OR pml = '0' OR pml NOT IN ('Fitrisia Taridipa S.Tr.Stat.', 'Nova Nauli Harahap', 'Sanjaya Abdillah Karim'))
+      `).run();
+
+      conn.prepare(`
+        UPDATE subsls_master 
+        SET pml = 'Sanjaya Abdillah Karim', pml_email = 's.karim@bps.go.id'
+        WHERE kecamatan = 'Sepaku' 
+          AND (pml IS NULL OR pml = '' OR pml = 'Lainnya' OR pml = '0' OR pml NOT IN ('Fitrisia Taridipa S.Tr.Stat.', 'Nova Nauli Harahap', 'Sanjaya Abdillah Karim'))
+      `).run();
+    })();
+
     // Check if any SLS is still unallocated or needs geographic correction (e.g. Sepaku, Penajam, Waru)
     const needHarmonize = conn.prepare(`
       SELECT count(*) as c FROM subsls_master 
