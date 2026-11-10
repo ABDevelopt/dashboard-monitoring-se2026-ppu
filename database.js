@@ -5319,7 +5319,12 @@ function harmonizePesSe2026(dbConn) {
 
         const fixProgresTarget = conn.prepare(`
           UPDATE progres
-          SET target_upload = ?
+          SET target_upload = ?,
+              draft = CASE WHEN target_upload = ? THEN ROUND(draft / 2) ELSE draft END,
+              open = CASE WHEN target_upload = ? THEN ROUND(open / 2) ELSE open END,
+              submitted_by_pcl = CASE WHEN target_upload = ? THEN ROUND(submitted_by_pcl / 2) ELSE submitted_by_pcl END,
+              approved = CASE WHEN target_upload = ? THEN ROUND(approved / 2) ELSE approved END,
+              rejected = CASE WHEN target_upload = ? THEN ROUND(rejected / 2) ELSE rejected END
           WHERE kode = ? AND target_upload = ?
         `);
 
@@ -5349,7 +5354,7 @@ function harmonizePesSe2026(dbConn) {
             o.target, o.target, o.target, o.kode
           );
           updateProgres.run(o.pcl, o.email, o.sobat_id, o.kode);
-          fixProgresTarget.run(o.target, o.kode, o.target * 2);
+          fixProgresTarget.run(o.target, o.target * 2, o.target * 2, o.target * 2, o.target * 2, o.target * 2, o.kode, o.target * 2);
         }
       })();
 

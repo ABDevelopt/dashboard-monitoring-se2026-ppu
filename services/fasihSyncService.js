@@ -817,13 +817,13 @@ class FasihSyncService {
       }
     }
 
-    // Cek deduplikasi jika diminta (misal dari scheduler background)
-    if (skipIfUnchanged) {
+    // Cek deduplikasi jika tidak dipaksa refresh (baik dari scheduler background maupun manual sync)
+    if (!forceRefresh) {
       const db = getDb(surveyId);
       const latestUpload = db.prepare(`
         SELECT u.id, u.tanggal, u.stored_status_filename 
         FROM uploads u 
-        WHERE u.tanggal = ? AND (u.filename LIKE 'API_FASIH_%' OR u.stored_filename LIKE 'api_sync_%')
+        WHERE u.tanggal = ?
         ORDER BY u.id DESC LIMIT 1
       `).get(effectiveDate);
 
@@ -855,7 +855,7 @@ class FasihSyncService {
               logger.warn(`[FASIH-SYNC] Gagal update ETag di snapshot: ${etagErr.message}`);
             }
           }
-          logger.info(`[FASIH-AUTO-SYNC] Data untuk tanggal ${effectiveDate} tidak mengalami perubahan (Approved: ${remoteSummary.total_approved}). Melewati sinkronisasi duplikat.`);
+          logger.info(`[FASIH-AUTO-SYNC] Data untuk tanggal ${effectiveDate} tidak mengalami perubahan (Approved: ${remoteSummary.total_approved}, Submitted: ${remoteSummary.total_submitted}). Melewati sinkronisasi duplikat (Upload #${latestUpload.id}).`);
           return {
             success: true,
             skipped: true,

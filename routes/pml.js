@@ -60,10 +60,17 @@ function getReportData(selectedUploadIds, filterPml, surveyId = 'se2026') {
   let uploads = [];
   if (selectedUploadIds && selectedUploadIds.length > 0) {
     const placeholders = selectedUploadIds.map(() => '?').join(',');
-    uploads = db.prepare(`SELECT id, tanggal FROM uploads WHERE id IN (${placeholders}) ORDER BY tanggal ASC`).all(...selectedUploadIds);
-  } else {
-    // Default to last 6 uploads
-    uploads = db.prepare('SELECT id, tanggal FROM uploads ORDER BY tanggal DESC LIMIT 6').all().reverse();
+    uploads = db.prepare(`
+      SELECT id, tanggal FROM (
+        SELECT MAX(id) AS id, tanggal 
+        FROM uploads 
+        WHERE total_subsls_terisi > 0 
+          AND (filename IS NULL OR filename NOT LIKE '%Imputasi Otomatis%')
+        GROUP BY tanggal 
+        ORDER BY tanggal DESC 
+        LIMIT 6
+      ) ORDER BY tanggal ASC
+    `).all();
   }
 
   if (uploads.length === 0) {
