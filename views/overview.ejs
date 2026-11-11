@@ -603,7 +603,7 @@
             <div class="text-right flex-shrink-0">
               <div class="fs-title-md fw-extrabold text-purple"><%= fasihPct %>%</div>
               <div class="fs-sm fw-bold text-primary mt-0-5"><%= totalPengerjaan.toLocaleString('id-ID') %> <span class="fw-medium fs-xs text-muted">/ <%= (summary.target_fasih_total || 0).toLocaleString('id-ID') %></span></div>
-              <div class="fs-xs text-muted mt-0-5">Approved Pengawas: <span class="fw-bold text-success"><%= (summary.approved_total || 0).toLocaleString('id-ID') %></span> dok</div>
+              <div class="fs-xs text-muted mt-0-5">Approved Pengawas / Admin: <span class="fw-bold text-success"><%= (summary.approved_total || 0).toLocaleString('id-ID') %></span> dok</div>
             </div>
           </div>
 
@@ -717,7 +717,7 @@
               <div class="d-flex items-center justify-between gap-2 w-full">
                 <div>
                   <div class="fs-xxs text-muted fw-bold text-uppercase">SUBMITTED</div>
-                  <div class="fs-xs text-secondary" style="line-height: 1.2;">Oleh <%= officerLabel %></div>
+                  <div class="fs-xs text-secondary" style="line-height: 1.2;">Oleh <%= officerLabel %> / Responden</div>
                 </div>
                 <div class="status-submit-text fs-md fw-extrabold text-right">
                   <%= (summary.submitted_total || 0).toLocaleString('id-ID') %>
@@ -736,7 +736,7 @@
               <div class="d-flex items-center justify-between gap-2 w-full">
                 <div>
                   <div class="fs-xxs text-muted fw-bold text-uppercase">APPROVED</div>
-                  <div class="fs-xs text-secondary" style="line-height: 1.2;">Diterima PML</div>
+                  <div class="fs-xs text-secondary" style="line-height: 1.2;">Diterima PML / Admin</div>
                 </div>
                 <div class="status-approve-text fs-md fw-extrabold text-right">
                   <%= (summary.approved_total || 0).toLocaleString('id-ID') %>
@@ -755,7 +755,7 @@
               <div class="d-flex items-center justify-between gap-2 w-full">
                 <div>
                   <div class="fs-xxs text-muted fw-bold text-uppercase">REJECTED</div>
-                  <div class="fs-xs text-secondary" style="line-height: 1.2;">Ditolak PML</div>
+                  <div class="fs-xs text-secondary" style="line-height: 1.2;">Ditolak PML / Admin</div>
                 </div>
                 <div class="status-reject-text fs-md fw-extrabold text-right">
                   <%= (summary.rejected_total || 0).toLocaleString('id-ID') %>
